@@ -8,6 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+.idea
 env/
 build/
 develop-eggs/
@@ -99,3 +100,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+
+config.json
