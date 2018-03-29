@@ -1,7 +1,7 @@
 from binance.client import Client
 from config.cst import *
 import pandas
-
+from aenum import MultiValueEnum
 from exchanges.exchange import Exchange
 
 
@@ -14,19 +14,19 @@ class BinanceExchange(Exchange):
 
     # @return DataFrame of prices
     def get_symbol_prices(self, symbol, time_frame):
-        candles = self.client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1DAY)
-        prices = {PriceStrings.STR_PRICE_HIGH: [],
-                  PriceStrings.STR_PRICE_LOW: [],
-                  PriceStrings.STR_PRICE_OPEN: [],
-                  PriceStrings.STR_PRICE_CLOSE: [],
-                  PriceStrings.STR_PRICE_VOL: []}
+        candles = self.client.get_klines(symbol=symbol, interval=time_frame.value)
+        prices = {PriceStrings.STR_PRICE_HIGH.value: [],
+                  PriceStrings.STR_PRICE_LOW.value: [],
+                  PriceStrings.STR_PRICE_OPEN.value: [],
+                  PriceStrings.STR_PRICE_CLOSE.value: [],
+                  PriceStrings.STR_PRICE_VOL.value: []}
 
         for c in candles:
-            prices[PriceStrings.STR_PRICE_OPEN].append(float(c[1]))
-            prices[PriceStrings.STR_PRICE_HIGH].append(float(c[2]))
-            prices[PriceStrings.STR_PRICE_LOW].append(float(c[3]))
-            prices[PriceStrings.STR_PRICE_CLOSE].append(float(c[4]))
-            prices[PriceStrings.STR_PRICE_VOL].append(float(c[5]))
+            prices[PriceStrings.STR_PRICE_OPEN.value].append(float(c[1]))
+            prices[PriceStrings.STR_PRICE_HIGH.value].append(float(c[2]))
+            prices[PriceStrings.STR_PRICE_LOW.value].append(float(c[3]))
+            prices[PriceStrings.STR_PRICE_CLOSE.value].append(float(c[4]))
+            prices[PriceStrings.STR_PRICE_VOL.value].append(float(c[5]))
 
         return pandas.DataFrame(data=prices)
 
@@ -35,11 +35,14 @@ class BinanceExchange(Exchange):
         return BinanceTimeFrames
 
 
-class BinanceTimeFrames(TimeFrames):
-    ONE_HOUR = Client.KLINE_INTERVAL_1HOUR
-    TWO_HOURS = Client.KLINE_INTERVAL_2HOUR
-    FOUR_HOURS = Client.KLINE_INTERVAL_4HOUR
-    ONE_DAY = Client.KLINE_INTERVAL_1DAY
-    THREE_DAYS = Client.KLINE_INTERVAL_3DAY
-    ONE_WEEK = Client.KLINE_INTERVAL_1WEEK
-    ONE_MONTH = Client.KLINE_INTERVAL_1MONTH
+class BinanceTimeFrames(MultiValueEnum):
+    ONE_MINUTE = Client.KLINE_INTERVAL_1MINUTE, TimeFrames.ONE_MINUTE
+    FIVE_MINUTES = Client.KLINE_INTERVAL_5MINUTE, TimeFrames.FIVE_MINUTES
+    THIRTY_MINUTES = Client.KLINE_INTERVAL_30MINUTE, TimeFrames.THIRTY_MINUTES
+    ONE_HOUR = Client.KLINE_INTERVAL_1HOUR, TimeFrames.ONE_HOUR
+    TWO_HOURS = Client.KLINE_INTERVAL_2HOUR, TimeFrames.TWO_HOURS
+    FOUR_HOURS = Client.KLINE_INTERVAL_4HOUR, TimeFrames.FOUR_HOURS
+    ONE_DAY = Client.KLINE_INTERVAL_1DAY, TimeFrames.ONE_DAY
+    THREE_DAYS = Client.KLINE_INTERVAL_3DAY, TimeFrames.THREE_DAYS
+    ONE_WEEK = Client.KLINE_INTERVAL_1WEEK, TimeFrames.ONE_WEEK
+    ONE_MONTH = Client.KLINE_INTERVAL_1MONTH, TimeFrames.ONE_MONTH

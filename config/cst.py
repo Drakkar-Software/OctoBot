@@ -10,6 +10,9 @@ class PriceStrings(Enum):
 
 
 class TimeFrames(Enum):
+    ONE_MINUTE = 1
+    FIVE_MINUTES = 5
+    THIRTY_MINUTES = 30
     ONE_HOUR = 60
     TWO_HOURS = 120
     FOUR_HOURS = 240
@@ -17,3 +20,5 @@ class TimeFrames(Enum):
     THREE_DAYS = 4320
     ONE_WEEK = 10080
     ONE_MONTH = 43200
+
+
