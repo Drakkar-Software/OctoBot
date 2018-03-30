@@ -1,9 +1,4 @@
-from evaluator.Social_evaluator import SocialEvaluator
-
-
-class ForumEvaluator(SocialEvaluator):
-    def __init__(self):
-        super().__init__()
+from evaluator.Social_evaluator import ForumEvaluator
 
 
 class RedditForumEvaluator(ForumEvaluator):

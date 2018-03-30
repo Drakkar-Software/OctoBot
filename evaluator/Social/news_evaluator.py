@@ -1,9 +1,4 @@
-from evaluator.Social_evaluator import SocialEvaluator
-
-
-class NewsEvaluator(SocialEvaluator):
-    def __init__(self):
-        super().__init__()
+from evaluator.Social_evaluator import NewsEvaluator
 
 
 class TwitterNewsEvaluator(NewsEvaluator):
