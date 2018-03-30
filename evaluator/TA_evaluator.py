@@ -1,4 +1,10 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
+from enum import Enum
+
+from evaluator.TA.momentum_evaluator import *
+from evaluator.TA.orderbook_evaluator import *
+from evaluator.TA.trend_evaluator import *
+from evaluator.TA.volatility_evaluator import *
 
 
 class TAEvaluator:
@@ -15,12 +21,20 @@ class TAEvaluator:
     def set_config(self, config):
         self.config = config
 
+    @abstractmethod
+    def _eval(self):
+        raise NotImplementedError("Eval not implemented")
+
 
 class MomentumEvaluator(TAEvaluator):
     __metaclass__ = ABCMeta
 
     def __init__(self):
         super().__init__()
+
+    @abstractmethod
+    def _eval(self):
+        raise NotImplementedError("Eval not implemented")
 
 
 class OrderBookEvaluator(TAEvaluator):
@@ -29,6 +43,10 @@ class OrderBookEvaluator(TAEvaluator):
     def __init__(self):
         super().__init__()
 
+    @abstractmethod
+    def _eval(self):
+        raise NotImplementedError("Eval not implemented")
+
 
 class VolatilityEvaluator(TAEvaluator):
     __metaclass__ = ABCMeta
@@ -36,9 +54,25 @@ class VolatilityEvaluator(TAEvaluator):
     def __init__(self):
         super().__init__()
 
+    @abstractmethod
+    def _eval(self):
+        raise NotImplementedError("Eval not implemented")
+
 
 class TrendEvaluator(TAEvaluator):
     __metaclass__ = ABCMeta
 
     def __init__(self):
         super().__init__()
+
+    @abstractmethod
+    def _eval(self):
+        raise NotImplementedError("Eval not implemented")
+
+
+class TAEvaluatorClasses(Enum):
+    OBVMomentumEvaluator()
+    RSIMomentumEvaluator()
+    WhalesOrderBookEvaluator()
+    ADXMomentumEvaluator()
+    BBVolatilityEvaluator()

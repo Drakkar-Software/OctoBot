@@ -1,11 +1,6 @@
 from evaluator.TA_evaluator import MomentumEvaluator
 
 
-class SimpleMomentumEvaluator(MomentumEvaluator):
-    def __init__(self):
-        super().__init__()
-
-
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()

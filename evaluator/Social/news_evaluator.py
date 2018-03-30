@@ -1,11 +1,11 @@
-from evaluator.Social_evaluator import NewsEvaluator
+from evaluator.Social_evaluator import NewsSocialEvaluator
 
 
-class TwitterNewsEvaluator(NewsEvaluator):
+class TwitterNewsEvaluator(NewsSocialEvaluator):
     def __init__(self):
         super().__init__()
 
 
-class MediumNewsEvaluator(NewsEvaluator):
+class MediumNewsEvaluator(NewsSocialEvaluator):
     def __init__(self):
         super().__init__()

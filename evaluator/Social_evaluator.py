@@ -1,4 +1,9 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
+from enum import Enum
+
+from evaluator.Social.forum_evaluator import *
+from evaluator.Social.news_evaluator import *
+from evaluator.Social.stats_evaluator import *
 
 
 class SocialEvaluator:
@@ -19,23 +24,47 @@ class SocialEvaluator:
     def set_config(self, config):
         self.config = config
 
+    @abstractmethod
+    def _eval(self):
+        raise NotImplementedError("Eval not implemented")
 
-class StatsEvaluator(SocialEvaluator):
+
+class StatsSocialEvaluator(SocialEvaluator):
     __metaclass__ = ABCMeta
 
     def __init__(self):
         super().__init__()
 
+    @abstractmethod
+    def _eval(self):
+        raise NotImplementedError("Eval not implemented")
 
-class ForumEvaluator(SocialEvaluator):
+
+class ForumSocialEvaluator(SocialEvaluator):
     __metaclass__ = ABCMeta
 
     def __init__(self):
         super().__init__()
 
+    @abstractmethod
+    def _eval(self):
+        raise NotImplementedError("Eval not implemented")
 
-class NewsEvaluator(SocialEvaluator):
+
+class NewsSocialEvaluator(SocialEvaluator):
     __metaclass__ = ABCMeta
 
     def __init__(self):
         super().__init__()
+
+    @abstractmethod
+    def _eval(self):
+        raise NotImplementedError("Eval not implemented")
+
+
+class SocialEvaluatorClasses(Enum):
+    # TwitterNewsEvaluator()
+    # MediumNewsEvaluator()
+    # RedditForumEvaluator()
+    # BTCTalkForumEvaluator()
+    GoogleTrendStatsEvaluator()
