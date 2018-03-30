@@ -1,11 +1,11 @@
-from evaluator.Social.Social_evaluator import SocialEvaluator
+from evaluator.Social_evaluator import SocialEvaluator
 
 
 class StatsEvaluator(SocialEvaluator):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self):
+        super().__init__()
 
 
 class GoogleTrendStatsEvaluator(StatsEvaluator):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self):
+        super().__init__()

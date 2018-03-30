@@ -1,4 +1,4 @@
-from evaluator.TA.TA_evaluator import TAEvaluator
+from evaluator.TA_evaluator import TAEvaluator
 
 
 class TrendEvaluator(TAEvaluator):
