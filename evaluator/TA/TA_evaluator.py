@@ -1,7 +1,10 @@
-from evaluator.evaluator import Evaluator
+class TAEvaluator:
+    def __init__(self):
+        self.config = None
+        self.data = None
 
-
-class TAEvaluator(Evaluator):
-    def __init__(self, config, data):
-        super().__init__(config)
+    def set_data(self, data):
         self.data = data
+
+    def set_config(self, config):
+        self.config = config

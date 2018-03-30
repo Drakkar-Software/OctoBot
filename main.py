@@ -4,7 +4,7 @@ from time import sleep
 from botcore.config.config import load_config
 
 from exchanges.binance import *
-from lib.indicator import *
+from tools.indicator import *
 
 
 def main():
