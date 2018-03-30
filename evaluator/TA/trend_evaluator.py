@@ -1,9 +1,4 @@
-from evaluator.TA_evaluator import TAEvaluator
-
-
-class TrendEvaluator(TAEvaluator):
-    def __init__(self):
-        super().__init__()
+from evaluator.TA_evaluator import TrendEvaluator
 
 
 # directional_movement_index --> trend strength

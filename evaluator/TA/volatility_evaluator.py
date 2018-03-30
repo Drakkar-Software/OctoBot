@@ -1,12 +1,7 @@
-from evaluator.TA_evaluator import TAEvaluator
-
-
-class VolatilityEvaluator(TAEvaluator):
-    def __init__(self):
-        super().__init__()
-
-
 # average_true_range
+from evaluator.TA_evaluator import VolatilityEvaluator
+
+
 class ATRVolatilityEvaluator(VolatilityEvaluator):
     def __init__(self):
         super().__init__()

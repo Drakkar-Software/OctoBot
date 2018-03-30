@@ -1,9 +1,4 @@
-from evaluator.TA_evaluator import TAEvaluator
-
-
-class MomentumEvaluator(TAEvaluator):
-    def __init__(self):
-        super().__init__()
+from evaluator.TA_evaluator import MomentumEvaluator
 
 
 class SimpleMomentumEvaluator(MomentumEvaluator):
