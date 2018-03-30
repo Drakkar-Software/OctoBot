@@ -1,11 +1,11 @@
-from evaluator.Social_evaluator import ForumEvaluator
+from evaluator.Social_evaluator import ForumSocialEvaluator
 
 
-class RedditForumEvaluator(ForumEvaluator):
+class RedditForumEvaluator(ForumSocialEvaluator):
     def __init__(self):
         super().__init__()
 
 
-class BTCTalkForumEvaluator(ForumEvaluator):
+class BTCTalkForumEvaluator(ForumSocialEvaluator):
     def __init__(self):
         super().__init__()

@@ -20,5 +20,3 @@ class TimeFrames(Enum):
     THREE_DAYS = 4320
     ONE_WEEK = 10080
     ONE_MONTH = 43200
-
-
