@@ -5,12 +5,12 @@ from exchanges.binance import *
 
 
 def main():
-    # TEMP : Config
+    # TODO : TEMP LOCATION / Config
     config = load_config()
     time_frame = TimeFrames.ONE_MINUTE
     symbol = "BTCUSDT"
 
-    # TEMP : Exchange get data --> binance
+    # TODO : TEMP LOCATION / Exchange get data --> binance
     binance_exchange = BinanceExchange(config)
     binance_enum_time_frame = binance_exchange.get_time_frame_enum()
     data = binance_exchange.get_symbol_prices("BTCUSDT", binance_enum_time_frame(time_frame))
@@ -21,6 +21,7 @@ def main():
     evaluator.set_symbol(symbol)
     evaluator.set_history_time(time_frame.value)
     evaluator.social_eval()
+    evaluator.ta_eval()
 
     # thread = Thread(target=binance_williams_r, args=(binance_exchange, time_frame))
     # thread.start()
