@@ -1,4 +1,4 @@
-from evaluator.TA_evaluator import VolatilityEvaluator
+from evaluator.TA.TA_evaluator import VolatilityEvaluator
 
 
 # average_true_range

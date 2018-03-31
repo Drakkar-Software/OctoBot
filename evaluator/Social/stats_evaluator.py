@@ -1,6 +1,6 @@
 from pytrends.request import TrendReq
 
-from evaluator.Social_evaluator import StatsSocialEvaluator
+from evaluator.Social.Social_evaluator import StatsSocialEvaluator
 
 
 class GoogleTrendStatsEvaluator(StatsSocialEvaluator):

@@ -1,4 +1,4 @@
-from evaluator.TA_evaluator import OrderBookEvaluator
+from evaluator.TA.TA_evaluator import OrderBookEvaluator
 
 
 class WhalesOrderBookEvaluator(OrderBookEvaluator):
