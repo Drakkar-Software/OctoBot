@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 
@@ -14,6 +15,11 @@ class EvaluatorThread(threading.Thread):
         self.symbol = symbol
         self.time_frame = time_frame
 
+        self.thread_name = "THREAD - " + self.symbol \
+                           + " - " + self.exchange.__class__.__name__ \
+                           + " - " + str(self.time_frame)
+        self.logger = logging.getLogger(self.thread_name)
+
         self.evaluator = Evaluator()
         self.evaluator.set_config(self.config)
         self.evaluator.set_symbol(self.symbol)
@@ -23,7 +29,7 @@ class EvaluatorThread(threading.Thread):
         while True:
             self.evaluator.set_data(self.exchange.get_symbol_prices(self.symbol,
                                                                     self.exchange_time_frame(self.time_frame)))
-            print(self.evaluator.social_eval())
-            print(self.evaluator.ta_eval())
+            self.logger.info("Social Eval : " + str(self.evaluator.social_eval()))
+            self.logger.info("TA Eval : " + str(self.evaluator.ta_eval()))
 
             time.sleep(self.time_frame.value * MINUTE_TO_SECONDS)
