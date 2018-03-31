@@ -1,5 +1,13 @@
 from enum import Enum
 
+from evaluator.Social.forum_evaluator import *
+from evaluator.Social.news_evaluator import *
+from evaluator.Social.stats_evaluator import *
+from evaluator.TA.momentum_evaluator import *
+from evaluator.TA.orderbook_evaluator import *
+from evaluator.TA.trend_evaluator import *
+from evaluator.TA.volatility_evaluator import *
+
 
 class PriceStrings(Enum):
     STR_PRICE_CLOSE = "<CLOSE>"
@@ -20,3 +28,18 @@ class TimeFrames(Enum):
     THREE_DAYS = 4320
     ONE_WEEK = 10080
     ONE_MONTH = 43200
+
+
+# TwitterNewsEvaluator()
+# MediumNewsEvaluator()
+# RedditForumEvaluator()
+# BTCTalkForumEvaluator()
+class SocialEvaluatorClasses(Enum):
+    GoogleTrendStatsEvaluator()
+
+class TAEvaluatorClasses(Enum):
+    OBVMomentumEvaluator()
+    RSIMomentumEvaluator()
+    WhalesOrderBookEvaluator()
+    ADXMomentumEvaluator()
+    BBVolatilityEvaluator()

@@ -1,4 +1,4 @@
-from evaluator.Social_evaluator import *
+from config.cst import *
 
 
 class Evaluator:
