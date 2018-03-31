@@ -1,11 +1,6 @@
-from config.cst import EvaluatorClasses
-from evaluator.Social.forum_evaluator import ForumSocialEvaluatorClasses
-from evaluator.Social.news_evaluator import NewsSocialEvaluatorClasses
-from evaluator.Social.stats_evaluator import StatsSocialEvaluatorClasses
-from evaluator.TA.momentum_evaluator import MomentumEvaluatorClasses
-from evaluator.TA.orderbook_evaluator import OrderBookEvaluatorClasses
-from evaluator.TA.trend_evaluator import TrendEvaluatorClasses
-from evaluator.TA.volatility_evaluator import VolatilityEvaluatorClasses
+from evaluator.Social_evaluator import *
+from evaluator.stats_evaluator import GoogleTrendStatsEvaluator
+from evaluator.TA_evaluator import *
 
 
 class Evaluator:
@@ -32,8 +27,9 @@ class Evaluator:
         self.history_time = history_time
 
     def social_eval(self):
-        for social_type in SocialEvaluatorClasses().get_classes():
-            for social_eval_class in social_type.get_classes():
+        for social_type in SocialEvaluator.__subclasses__():
+            for social_eval_class_type in social_type.__subclasses__():
+                social_eval_class = social_eval_class_type()
                 social_eval_class.set_config(self.config)
                 social_eval_class.set_history_time(self.history_time)
                 social_eval_class.set_symbol(self.symbol)
@@ -44,34 +40,12 @@ class Evaluator:
         print(self.social_eval_list)
 
     def ta_eval(self):
-        for ta_type in TAEvaluatorClasses().get_classes():
-            for ta_eval_class in ta_type.get_classes():
+        for ta_type in TAEvaluator.__subclasses__():
+            for ta_eval_class_type in ta_type.__subclasses__():
+                ta_eval_class = ta_eval_class_type()
                 ta_eval_class.set_config(self.config)
                 ta_eval_class.set_data(self.data)
 
                 self.ta_eval_list.append(ta_eval_class.eval())
 
         print(self.ta_eval_list)
-
-
-# TODO : TEMP LOCATION
-class SocialEvaluatorClasses(EvaluatorClasses):
-    def __init__(self):
-        super().__init__()
-        self.classes = [
-            StatsSocialEvaluatorClasses(),
-            ForumSocialEvaluatorClasses(),
-            NewsSocialEvaluatorClasses()
-        ]
-
-
-# TODO : TEMP LOCATION
-class TAEvaluatorClasses(EvaluatorClasses):
-    def __init__(self):
-        super().__init__()
-        self.classes = [
-            VolatilityEvaluatorClasses(),
-            TrendEvaluatorClasses(),
-            OrderBookEvaluatorClasses(),
-            MomentumEvaluatorClasses()
-        ]

@@ -1,6 +1,5 @@
 from pytrends.request import TrendReq
 
-from config.cst import EvaluatorClasses
 from evaluator.Social_evaluator import StatsSocialEvaluator
 
 
@@ -20,11 +19,3 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
         # interest_over_time_df = self.pytrends.interest_over_time()
         # print(interest_over_time_df.head())
         return 0
-
-
-class StatsSocialEvaluatorClasses(EvaluatorClasses):
-    def __init__(self):
-        super().__init__()
-        self.classes = [
-            GoogleTrendStatsEvaluator()
-        ]
