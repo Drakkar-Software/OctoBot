@@ -1,8 +1,5 @@
-from threading import Thread
-
 from botcore.config.config import load_config
 
-from evaluator.evaluator import Evaluator
 from evaluator.evaluator_thread import EvaluatorThread
 from exchanges.binance import *
 

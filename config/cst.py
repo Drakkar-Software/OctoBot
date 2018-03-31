@@ -1,5 +1,7 @@
 from enum import Enum
 
+MINUTE_TO_SECONDS = 60
+
 
 class PriceStrings(Enum):
     STR_PRICE_CLOSE = "<CLOSE>"
@@ -20,14 +22,3 @@ class TimeFrames(Enum):
     THREE_DAYS = 4320
     ONE_WEEK = 10080
     ONE_MONTH = 43200
-
-
-# TODO : TEMP LOCATION
-class EvaluatorClasses:
-    def __init__(self):
-        self.classes = []
-
-    def get_classes(self):
-        return self.classes
-
-

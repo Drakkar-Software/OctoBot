@@ -1,8 +1,7 @@
-# average_true_range
-from config.cst import EvaluatorClasses
 from evaluator.TA_evaluator import VolatilityEvaluator
 
 
+# average_true_range
 class ATRVolatilityEvaluator(VolatilityEvaluator):
     def __init__(self):
         super().__init__()
@@ -35,14 +34,3 @@ class ChaikinVolatilityEvaluator(VolatilityEvaluator):
 
     def eval(self):
         pass
-
-
-class VolatilityEvaluatorClasses(EvaluatorClasses):
-    def __init__(self):
-        super().__init__()
-        self.classes = [
-            ChaikinVolatilityEvaluator(),
-            MassIndexVolatilityEvaluator(),
-            BBVolatilityEvaluator(),
-            ATRVolatilityEvaluator()
-        ]

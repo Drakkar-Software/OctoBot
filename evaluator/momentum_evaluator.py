@@ -1,4 +1,3 @@
-from config.cst import EvaluatorClasses
 from evaluator.TA_evaluator import MomentumEvaluator
 
 
@@ -78,19 +77,3 @@ class UOMomentumEvaluator(MomentumEvaluator):
 
     def eval(self):
         pass
-
-
-class MomentumEvaluatorClasses(EvaluatorClasses):
-    def __init__(self):
-        super().__init__()
-        self.classes = [
-            UOMomentumEvaluator(),
-            TRIXMomentumEvaluator(),
-            WilliamsRMomentumEvaluator(),
-            PVIMomentumEvaluator(),
-            NVIMomentumEvaluator(),
-            OBVMomentumEvaluator(),
-            RSIMomentumEvaluator(),
-            MFIMomentumEvaluator(),
-            ChaikinOscillatorMomentumEvaluator()
-        ]
