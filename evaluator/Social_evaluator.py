@@ -1,9 +1,4 @@
-from abc import ABCMeta, abstractmethod
-from enum import Enum
-
-from evaluator.Social.forum_evaluator import *
-from evaluator.Social.news_evaluator import *
-from evaluator.Social.stats_evaluator import *
+from abc import *
 
 
 class SocialEvaluator:
@@ -60,11 +55,3 @@ class NewsSocialEvaluator(SocialEvaluator):
     @abstractmethod
     def _eval(self):
         raise NotImplementedError("Eval not implemented")
-
-
-class SocialEvaluatorClasses(Enum):
-    # TwitterNewsEvaluator()
-    # MediumNewsEvaluator()
-    # RedditForumEvaluator()
-    # BTCTalkForumEvaluator()
-    GoogleTrendStatsEvaluator()

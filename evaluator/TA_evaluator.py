@@ -1,10 +1,4 @@
-from abc import ABCMeta, abstractmethod
-from enum import Enum
-
-from evaluator.TA.momentum_evaluator import *
-from evaluator.TA.orderbook_evaluator import *
-from evaluator.TA.trend_evaluator import *
-from evaluator.TA.volatility_evaluator import *
+from abc import *
 
 
 class TAEvaluator:
@@ -68,11 +62,3 @@ class TrendEvaluator(TAEvaluator):
     @abstractmethod
     def _eval(self):
         raise NotImplementedError("Eval not implemented")
-
-
-class TAEvaluatorClasses(Enum):
-    OBVMomentumEvaluator()
-    RSIMomentumEvaluator()
-    WhalesOrderBookEvaluator()
-    ADXMomentumEvaluator()
-    BBVolatilityEvaluator()
