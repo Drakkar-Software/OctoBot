@@ -1,5 +1,7 @@
 from enum import Enum
 
+MINUTE_TO_SECONDS = 60
+
 
 class PriceStrings(Enum):
     STR_PRICE_CLOSE = "<CLOSE>"
@@ -10,6 +12,9 @@ class PriceStrings(Enum):
 
 
 class TimeFrames(Enum):
+    ONE_MINUTE = 1
+    FIVE_MINUTES = 5
+    THIRTY_MINUTES = 30
     ONE_HOUR = 60
     TWO_HOURS = 120
     FOUR_HOURS = 240

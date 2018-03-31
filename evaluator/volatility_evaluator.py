@@ -1,9 +1,4 @@
-from evaluator.TA.TA_evaluator import TAEvaluator
-
-
-class VolatilityEvaluator(TAEvaluator):
-    def __init__(self):
-        super().__init__()
+from evaluator.TA_evaluator import VolatilityEvaluator
 
 
 # average_true_range
@@ -11,19 +6,31 @@ class ATRVolatilityEvaluator(VolatilityEvaluator):
     def __init__(self):
         super().__init__()
 
+    def eval(self):
+        pass
+
 
 # bollinger_bands
 class BBVolatilityEvaluator(VolatilityEvaluator):
     def __init__(self):
         super().__init__()
 
+    def eval(self):
+        pass
+
 
 # mass index
-class MassIndexTrendEvaluator(VolatilityEvaluator):
+class MassIndexVolatilityEvaluator(VolatilityEvaluator):
     def __init__(self):
         super().__init__()
 
+    def eval(self):
+        pass
 
-class ChaikinTrendEvaluator(VolatilityEvaluator):
+
+class ChaikinVolatilityEvaluator(VolatilityEvaluator):
     def __init__(self):
         super().__init__()
+
+    def eval(self):
+        pass
