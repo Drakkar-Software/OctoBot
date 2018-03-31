@@ -48,7 +48,7 @@ class Crypto_Bot:
     def start_threads(self):
         for thread in self.symbols_threads:
             thread.start()
-            self.logger.info("Evaluation threads started...")
+        self.logger.info("Evaluation threads started...")
 
     def join_threads(self):
         for thread in self.symbols_threads:

@@ -13,6 +13,10 @@ class Evaluator:
         self.social_eval_list = []
         self.ta_eval_list = []
 
+        self.social_final_eval = START_EVAL_NOTE
+        self.ta_final_eval = START_EVAL_NOTE
+        self.decision = {}
+
     def set_config(self, config):
         self.config = config
 
@@ -52,3 +56,40 @@ class Evaluator:
                 self.ta_eval_list.append(ta_eval_class.get_eval_note())
 
         return self.ta_eval_list
+
+    def finalize(self):
+        # TA analysis
+        for evaluated in self.ta_eval_list:
+            self.ta_final_eval += evaluated
+
+        if len(self.ta_eval_list) > 0:
+            self.ta_final_eval /= len(self.ta_eval_list)
+        else:
+            self.ta_final_eval = START_EVAL_NOTE
+
+        # Social analysis
+        for evaluated in self.social_eval_list:
+            self.social_final_eval += evaluated
+
+        if len(self.social_eval_list) > 0:
+            self.social_final_eval /= len(self.social_eval_list)
+        else:
+            self.social_final_eval = START_EVAL_NOTE
+
+    def decide(self):
+        if self.ta_final_eval > START_EVAL_NOTE:
+            ta_decision = DECISION_GO_SHORT
+        else:
+            ta_decision = DECISION_GO_LONG
+
+        if self.social_final_eval > START_EVAL_NOTE:
+            social_decision = DECISION_GO_SHORT
+        else:
+            social_decision = DECISION_GO_LONG
+
+        self.decision = {
+            "TA": ta_decision,
+            "SOCIAL": social_decision
+        }
+
+        return self.decision
