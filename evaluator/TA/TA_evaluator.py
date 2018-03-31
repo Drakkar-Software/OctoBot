@@ -1,5 +1,7 @@
 from abc import *
 
+from config.cst import START_EVAL_NOTE
+
 
 class TAEvaluator:
     __metaclass__ = ABCMeta
@@ -8,12 +10,16 @@ class TAEvaluator:
         super().__init__()
         self.data = None
         self.config = None
+        self.eval_note = START_EVAL_NOTE
 
     def set_data(self, data):
         self.data = data
 
     def set_config(self, config):
         self.config = config
+
+    def get_eval_note(self):
+        return self.eval_note
 
     @abstractmethod
     def eval(self):

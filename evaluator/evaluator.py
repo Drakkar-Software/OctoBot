@@ -35,7 +35,8 @@ class Evaluator:
                 social_eval_class.set_symbol(self.symbol)
 
                 social_eval_class.get_data()
-                self.social_eval_list.append(social_eval_class.eval())
+                social_eval_class.eval()
+                self.social_eval_list.append(social_eval_class.get_eval_note())
 
         return self.social_eval_list
 
@@ -46,7 +47,8 @@ class Evaluator:
                 ta_eval_class = ta_eval_class_type()
                 ta_eval_class.set_config(self.config)
                 ta_eval_class.set_data(self.data)
+                ta_eval_class.eval()
 
-                self.ta_eval_list.append(ta_eval_class.eval())
+                self.ta_eval_list.append(ta_eval_class.get_eval_note())
 
         return self.ta_eval_list

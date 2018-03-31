@@ -26,13 +26,23 @@ class RSIMomentumEvaluator(MomentumEvaluator):
     # TODO : temp analysis
     def eval(self):
         rsi_v = rsi(self.data)
-        print(rsi_v)
-        if rsi_v > 70:
-            return 0.8
-        elif rsi_v < 30:
-            return 0.2
+
+        # get the last 10 values of RSI
+        last_values = rsi_v.tail(10)["rsi"]
+
+        first = last_values.iloc[0]
+        last = last_values.iloc[-1]
+
+        # Difference between the last 10 candles
+        if first > last:
+            self.eval_note += (first-last)
         else:
-            return 0.5
+            self.eval_note -= (last - first)
+
+        if last > 50:
+            self.eval_note += last - 0.5
+        else:
+            self.eval_note -= 0.5 - last
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):
