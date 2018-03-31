@@ -7,11 +7,11 @@ from evaluator import *
 
 
 class EvaluatorThread(threading.Thread):
-    def __init__(self, config, symbol, time_frame, exchange, exchange_time_frame):
+    def __init__(self, config, symbol, time_frame, exchange):
         threading.Thread.__init__(self)
         self.config = config
         self.exchange = exchange
-        self.exchange_time_frame = exchange_time_frame
+        self.exchange_time_frame = self.exchange.get_time_frame_enum()
         self.symbol = symbol
         self.time_frame = time_frame
 
