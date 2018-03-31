@@ -1,4 +1,5 @@
-from evaluator.TA_evaluator import MomentumEvaluator
+from evaluator.TA.TA_evaluator import MomentumEvaluator
+from tools.indicator import rsi
 
 
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
@@ -22,8 +23,16 @@ class RSIMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
 
+    # TODO : temp analysis
     def eval(self):
-        pass
+        rsi_v = rsi(self.data)
+        print(rsi_v)
+        if rsi_v > 70:
+            return 0.8
+        elif rsi_v < 30:
+            return 0.2
+        else:
+            return 0.5
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):
