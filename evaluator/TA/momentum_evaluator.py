@@ -35,9 +35,9 @@ class RSIMomentumEvaluator(MomentumEvaluator):
 
         # Difference between the last 10 candles
         if first > last:
-            self.eval_note += (first-last)
+            self.eval_note -= (first-last)
         else:
-            self.eval_note -= (last - first)
+            self.eval_note += (last - first)
 
         if last > 50:
             self.eval_note += last - 0.5
