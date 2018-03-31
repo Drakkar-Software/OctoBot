@@ -1,7 +1,7 @@
 from enum import Enum
 
 MINUTE_TO_SECONDS = 60
-
+START_EVAL_NOTE = 0.5
 
 class PriceStrings(Enum):
     STR_PRICE_CLOSE = "<CLOSE>"

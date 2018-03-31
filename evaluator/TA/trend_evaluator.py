@@ -1,4 +1,4 @@
-from evaluator.TA_evaluator import TrendEvaluator
+from evaluator.TA.TA_evaluator import TrendEvaluator
 
 
 # directional_movement_index --> trend strength

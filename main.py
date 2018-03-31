@@ -1,9 +1,11 @@
 from botcore.config.config import load_config
 
-from evaluator.evaluator_thread import EvaluatorThread
-from exchanges.binance import *
+from evaluator import *
+from exchanges import *
 
 
+# Eval > 0.5 --> go short
+# Eval < 0.5 --> go long
 def main():
     # TODO : TEMP LOCATION / Config
     config = load_config()

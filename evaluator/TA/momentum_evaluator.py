@@ -1,4 +1,5 @@
-from evaluator.TA_evaluator import MomentumEvaluator
+from evaluator.TA.TA_evaluator import MomentumEvaluator
+from tools.indicator import rsi
 
 
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
@@ -22,8 +23,26 @@ class RSIMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
 
+    # TODO : temp analysis
     def eval(self):
-        pass
+        rsi_v = rsi(self.data)
+
+        # get the last 10 values of RSI
+        last_values = rsi_v.tail(10)["rsi"]
+
+        first = last_values.iloc[0]
+        last = last_values.iloc[-1]
+
+        # Difference between the last 10 candles
+        if first > last:
+            self.eval_note += (first-last)
+        else:
+            self.eval_note -= (last - first)
+
+        if last > 50:
+            self.eval_note += last - 0.5
+        else:
+            self.eval_note -= 0.5 - last
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):
