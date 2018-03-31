@@ -1,6 +1,9 @@
+from threading import Thread
+
 from botcore.config.config import load_config
 
 from evaluator.evaluator import Evaluator
+from evaluator.evaluator_thread import EvaluatorThread
 from exchanges.binance import *
 
 
@@ -8,32 +11,28 @@ def main():
     # TODO : TEMP LOCATION / Config
     config = load_config()
     time_frame = TimeFrames.ONE_MINUTE
-    symbol = "BTCUSDT"
+    symbols = ["BTCUSDT", "ETHUSDT"]
 
     # TODO : TEMP LOCATION / Exchange get data --> binance
     binance_exchange = BinanceExchange(config)
     binance_enum_time_frame = binance_exchange.get_time_frame_enum()
-    data = binance_exchange.get_symbol_prices("BTCUSDT", binance_enum_time_frame(time_frame))
 
-    evaluator = Evaluator()
-    evaluator.set_config(config)
-    evaluator.set_data(data)
-    evaluator.set_symbol(symbol)
-    evaluator.set_history_time(time_frame.value)
-    evaluator.social_eval()
-    evaluator.ta_eval()
+    # THREADS
+    symbol_threads = []
 
-    # thread = Thread(target=binance_williams_r, args=(binance_exchange, time_frame))
-    # thread.start()
-    # thread.join()
+    # TODO for each time frame
 
+    # create symbol threads
+    for symbol in symbols:
+        symbol_threads.append(EvaluatorThread(config, symbol, time_frame, binance_exchange, binance_enum_time_frame))
 
-# def binance_williams_r(binance_exchange, time_frame):
-#     while(True):
-#         binance_enum_time_frame = binance_exchange.get_time_frame_enum()
-#         data = binance_exchange.get_symbol_prices("BTCUSDT", binance_enum_time_frame(time_frame))
-#         print(williams_r(data))
-#         sleep(time_frame.value * 1000)
+    # start threads
+    for thread in symbol_threads:
+        thread.start()
+
+    # join threads
+    for thread in symbol_threads:
+        thread.join()
 
 
 if __name__ == '__main__':
