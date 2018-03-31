@@ -44,13 +44,11 @@ class Evaluator:
         print(self.social_eval_list)
 
     def ta_eval(self):
-        for ta_type in SocialEvaluatorClasses().get_classes():
+        for ta_type in TAEvaluatorClasses().get_classes():
             for ta_eval_class in ta_type.get_classes():
                 ta_eval_class.set_config(self.config)
-                ta_eval_class.set_history_time(self.history_time)
-                ta_eval_class.set_symbol(self.symbol)
+                ta_eval_class.set_data(self.data)
 
-                ta_eval_class.get_data()
                 self.ta_eval_list.append(ta_eval_class.eval())
 
         print(self.ta_eval_list)
