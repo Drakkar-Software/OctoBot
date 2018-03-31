@@ -1,6 +1,6 @@
 from abc import *
 
-from config.cst import START_EVAL_NOTE
+from config.cst import *
 
 
 class TAEvaluator:
@@ -11,6 +11,8 @@ class TAEvaluator:
         self.data = None
         self.config = None
         self.eval_note = START_EVAL_NOTE
+        self.ponderation = START_EVAL_PONDERATION
+        self.logger = None
 
     def set_data(self, data):
         self.data = data

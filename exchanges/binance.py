@@ -30,6 +30,16 @@ class BinanceExchange(Exchange):
 
         return pandas.DataFrame(data=prices)
 
+    def get_symbol_list(self):
+        for symbol_data in self.client.get_exchange_info()["symbols"]:
+            self.symbol_list.append(symbol_data["symbol"])
+
+    def symbol_exists(self, symbol):
+        if symbol in self.symbol_list:
+            return True
+        else:
+            return False
+
     @staticmethod
     def get_time_frame_enum():
         return BinanceTimeFrames
