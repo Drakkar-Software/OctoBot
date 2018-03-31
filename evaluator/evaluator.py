@@ -1,6 +1,5 @@
-from evaluator.Social_evaluator import *
-from evaluator.stats_evaluator import GoogleTrendStatsEvaluator
-from evaluator.TA_evaluator import *
+from evaluator.Social import *
+from evaluator.TA import *
 
 
 class Evaluator:
@@ -27,6 +26,7 @@ class Evaluator:
         self.history_time = history_time
 
     def social_eval(self):
+        self.social_eval_list = []
         for social_type in SocialEvaluator.__subclasses__():
             for social_eval_class_type in social_type.__subclasses__():
                 social_eval_class = social_eval_class_type()
@@ -37,9 +37,10 @@ class Evaluator:
                 social_eval_class.get_data()
                 self.social_eval_list.append(social_eval_class.eval())
 
-        print(self.social_eval_list)
+        return self.social_eval_list
 
     def ta_eval(self):
+        self.ta_eval_list = []
         for ta_type in TAEvaluator.__subclasses__():
             for ta_eval_class_type in ta_type.__subclasses__():
                 ta_eval_class = ta_eval_class_type()
@@ -48,4 +49,4 @@ class Evaluator:
 
                 self.ta_eval_list.append(ta_eval_class.eval())
 
-        print(self.ta_eval_list)
+        return self.ta_eval_list
