@@ -23,4 +23,4 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.social_eval()
         self.evaluator.ta_eval()
 
-        time.sleep(self.time_frame.value * 1000)
+        time.sleep(self.time_frame.value * 60)
