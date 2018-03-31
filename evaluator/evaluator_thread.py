@@ -2,7 +2,7 @@ import threading
 import time
 
 from config.cst import MINUTE_TO_SECONDS
-from evaluator.evaluator import Evaluator
+from evaluator import *
 
 
 class EvaluatorThread(threading.Thread):
@@ -21,8 +21,9 @@ class EvaluatorThread(threading.Thread):
 
     def run(self):
         while True:
-            self.evaluator.set_data(self.exchange.get_symbol_prices(self.symbol, self.exchange_time_frame(self.time_frame)))
-            self.evaluator.social_eval()
-            self.evaluator.ta_eval()
+            self.evaluator.set_data(self.exchange.get_symbol_prices(self.symbol,
+                                                                    self.exchange_time_frame(self.time_frame)))
+            print(self.evaluator.social_eval())
+            print(self.evaluator.ta_eval())
 
             time.sleep(self.time_frame.value * MINUTE_TO_SECONDS)

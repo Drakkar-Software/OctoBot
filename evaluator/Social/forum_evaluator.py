@@ -1,4 +1,4 @@
-from evaluator.Social_evaluator import ForumSocialEvaluator
+from evaluator.Social.Social_evaluator import ForumSocialEvaluator
 
 
 class RedditForumEvaluator(ForumSocialEvaluator):

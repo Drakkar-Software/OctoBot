@@ -585,9 +585,9 @@ def rsi(data, periods=14, close_col='<CLOSE>'):
 
             prev_close = data.at[index - periods, close_col]
             if prev_close < row[close_col]:
-                data.set_value(index, 'rsi_u', row[close_col] - prev_close)
+                data.at(index, 'rsi_u', row[close_col] - prev_close)
             elif prev_close > row[close_col]:
-                data.set_value(index, 'rsi_d', prev_close - row[close_col])
+                data.at(index, 'rsi_d', prev_close - row[close_col])
 
     data['rsi'] = data['rsi_u'].ewm(ignore_na=False, min_periods=0, com=periods, adjust=True).mean() / (
             data['rsi_u'].ewm(ignore_na=False, min_periods=0, com=periods, adjust=True).mean() + data['rsi_d'].ewm(

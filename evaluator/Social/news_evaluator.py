@@ -1,4 +1,4 @@
-from evaluator.Social_evaluator import NewsSocialEvaluator
+from evaluator.Social.Social_evaluator import NewsSocialEvaluator
 
 
 class TwitterNewsEvaluator(NewsSocialEvaluator):
