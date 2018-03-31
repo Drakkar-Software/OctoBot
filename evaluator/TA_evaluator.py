@@ -16,7 +16,7 @@ class TAEvaluator:
         self.config = config
 
     @abstractmethod
-    def _eval(self):
+    def eval(self):
         raise NotImplementedError("Eval not implemented")
 
 
@@ -27,7 +27,7 @@ class MomentumEvaluator(TAEvaluator):
         super().__init__()
 
     @abstractmethod
-    def _eval(self):
+    def eval(self):
         raise NotImplementedError("Eval not implemented")
 
 
@@ -38,7 +38,7 @@ class OrderBookEvaluator(TAEvaluator):
         super().__init__()
 
     @abstractmethod
-    def _eval(self):
+    def eval(self):
         raise NotImplementedError("Eval not implemented")
 
 
@@ -49,7 +49,7 @@ class VolatilityEvaluator(TAEvaluator):
         super().__init__()
 
     @abstractmethod
-    def _eval(self):
+    def eval(self):
         raise NotImplementedError("Eval not implemented")
 
 
@@ -60,5 +60,5 @@ class TrendEvaluator(TAEvaluator):
         super().__init__()
 
     @abstractmethod
-    def _eval(self):
+    def eval(self):
         raise NotImplementedError("Eval not implemented")

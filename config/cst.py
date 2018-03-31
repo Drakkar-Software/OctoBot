@@ -1,13 +1,5 @@
 from enum import Enum
 
-from evaluator.Social.forum_evaluator import *
-from evaluator.Social.news_evaluator import *
-from evaluator.Social.stats_evaluator import *
-from evaluator.TA.momentum_evaluator import *
-from evaluator.TA.orderbook_evaluator import *
-from evaluator.TA.trend_evaluator import *
-from evaluator.TA.volatility_evaluator import *
-
 
 class PriceStrings(Enum):
     STR_PRICE_CLOSE = "<CLOSE>"
@@ -30,16 +22,12 @@ class TimeFrames(Enum):
     ONE_MONTH = 43200
 
 
-# TwitterNewsEvaluator()
-# MediumNewsEvaluator()
-# RedditForumEvaluator()
-# BTCTalkForumEvaluator()
-class SocialEvaluatorClasses(Enum):
-    GoogleTrendStatsEvaluator()
+# TODO : TEMP LOCATION
+class EvaluatorClasses:
+    def __init__(self):
+        self.classes = []
 
-class TAEvaluatorClasses(Enum):
-    OBVMomentumEvaluator()
-    RSIMomentumEvaluator()
-    WhalesOrderBookEvaluator()
-    ADXMomentumEvaluator()
-    BBVolatilityEvaluator()
+    def get_classes(self):
+        return self.classes
+
+

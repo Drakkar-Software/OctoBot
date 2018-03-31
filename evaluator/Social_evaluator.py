@@ -20,8 +20,12 @@ class SocialEvaluator:
         self.config = config
 
     @abstractmethod
-    def _eval(self):
+    def eval(self):
         raise NotImplementedError("Eval not implemented")
+
+    @abstractmethod
+    def get_data(self):
+        raise NotImplementedError("Get Data not implemented")
 
 
 class StatsSocialEvaluator(SocialEvaluator):
@@ -31,8 +35,12 @@ class StatsSocialEvaluator(SocialEvaluator):
         super().__init__()
 
     @abstractmethod
-    def _eval(self):
+    def eval(self):
         raise NotImplementedError("Eval not implemented")
+
+    @abstractmethod
+    def get_data(self):
+        raise NotImplementedError("Get Data not implemented")
 
 
 class ForumSocialEvaluator(SocialEvaluator):
@@ -42,8 +50,12 @@ class ForumSocialEvaluator(SocialEvaluator):
         super().__init__()
 
     @abstractmethod
-    def _eval(self):
+    def eval(self):
         raise NotImplementedError("Eval not implemented")
+
+    @abstractmethod
+    def get_data(self):
+        raise NotImplementedError("Get Data not implemented")
 
 
 class NewsSocialEvaluator(SocialEvaluator):
@@ -53,5 +65,9 @@ class NewsSocialEvaluator(SocialEvaluator):
         super().__init__()
 
     @abstractmethod
-    def _eval(self):
+    def eval(self):
         raise NotImplementedError("Eval not implemented")
+
+    @abstractmethod
+    def get_data(self):
+        raise NotImplementedError("Get Data not implemented")
