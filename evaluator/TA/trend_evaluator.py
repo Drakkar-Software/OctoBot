@@ -1,6 +1,14 @@
 from evaluator.TA.TA_evaluator import TrendEvaluator
 
 
+class CandleAnalysisTrendEvaluator(TrendEvaluator):
+    def __init__(self):
+        super().__init__()
+
+    def eval(self):
+        pass
+
+
 # directional_movement_index --> trend strength
 class DMITrendEvaluator(TrendEvaluator):
     def __init__(self):
@@ -26,4 +34,3 @@ class ADXTrendEvaluator(TrendEvaluator):
 
     def eval(self):
         pass
-

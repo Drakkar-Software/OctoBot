@@ -3,3 +3,4 @@ aenum
 pytrends
 python-binance
 HerklosBotsCore
+TA-Lib
