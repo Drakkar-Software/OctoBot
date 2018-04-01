@@ -22,6 +22,7 @@ class Crypto_Bot:
         self.time_frames = [TimeFrames.ONE_MINUTE, TimeFrames.ONE_HOUR, TimeFrames.ONE_DAY]
         self.symbols = ["BTCUSDT", "ETHUSDT"]
         self.exchanges = [BinanceExchange]
+        self.risk = EvaluatorRisk.MEDIUM
 
         self.symbols_threads = []
 
@@ -39,7 +40,11 @@ class Crypto_Bot:
                 if exchange_inst.symbol_exists(symbol):
 
                     for time_frame in self.time_frames:
-                        self.symbols_threads.append(EvaluatorThread(self.config, symbol, time_frame, exchange_inst))
+                        self.symbols_threads.append(EvaluatorThread(self.config,
+                                                                    symbol,
+                                                                    time_frame,
+                                                                    exchange_inst,
+                                                                    self.risk))
 
                 # notify that exchanges doesn't support this symbol
                 else:

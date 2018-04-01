@@ -3,21 +3,28 @@ import talib
 from evaluator.TA.TA_evaluator import MomentumEvaluator, PriceStrings
 
 
-class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
+# https://mrjbq7.github.io/ta-lib/func_groups/momentum_indicators.html
+
+# ADX --> trend_strength
+class ADXMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
 
+    # TODO : temp analysis
     def eval(self):
-        pass
+        adx_v = talib.ADX(self.data[PriceStrings.STR_PRICE_HIGH.value],
+                          self.data[PriceStrings.STR_PRICE_LOW.value],
+                          self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
+        last = adx_v.tail(1).values
 
-# money_flow_index --> buy and sell pressure
-class MFIMomentumEvaluator(MomentumEvaluator):
-    def __init__(self):
-        super().__init__()
+        # An ADX above 30 on the scale indicates there is a strong trend
+        if last > 30:
+            pass
 
-    def eval(self):
-        pass
+        # When ADX drops below 18, it often leads to a sideways or horizontal trading pattern
+        elif last < 18:
+            pass
 
 
 class RSIMomentumEvaluator(MomentumEvaluator):
@@ -44,12 +51,12 @@ class RSIMomentumEvaluator(MomentumEvaluator):
             rsi_eval += (last - first)
 
         if last > 50:
-            rsi_eval += last - 0.5
+            rsi_eval += (last - 50)
         else:
-            rsi_eval -= 0.5 - last
+            rsi_eval -= (50 - last)
 
         # 2 : modifications
-        self.eval_note += rsi_eval / 2
+        self.eval_note += rsi_eval / (2 * 100)
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):
@@ -57,25 +64,8 @@ class OBVMomentumEvaluator(MomentumEvaluator):
         super().__init__()
 
     def eval(self):
-        pass
-
-
-# Negative Volume Index (NVI) --> "Detect smart money"
-class NVIMomentumEvaluator(MomentumEvaluator):
-    def __init__(self):
-        super().__init__()
-
-    def eval(self):
-        pass
-
-
-# Positive Volume Index (PVI) --> market noise on particular market conditions
-class PVIMomentumEvaluator(MomentumEvaluator):
-    def __init__(self):
-        super().__init__()
-
-    def eval(self):
-        pass
+        obv_v = talib.OBV(self.data[PriceStrings.STR_PRICE_CLOSE.value],
+                          self.data[PriceStrings.STR_PRICE_VOL.value])
 
 
 # William's % R --> overbought / oversold
@@ -84,7 +74,9 @@ class WilliamsRMomentumEvaluator(MomentumEvaluator):
         super().__init__()
 
     def eval(self):
-        pass
+        willr_v = talib.WILLR(self.data[PriceStrings.STR_PRICE_HIGH.value],
+                              self.data[PriceStrings.STR_PRICE_LOW.value],
+                              self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
 
 # TRIX --> percent rate-of-change trend
@@ -93,13 +85,30 @@ class TRIXMomentumEvaluator(MomentumEvaluator):
         super().__init__()
 
     def eval(self):
-        pass
+        trix_v = talib.TRIX(self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
 
-# ultimate_oscillator --> see divergences
-class UOMomentumEvaluator(MomentumEvaluator):
+class MACDMomentumEvaluator(MomentumEvaluator):
+    def __init__(self):
+        super().__init__()
+
+    def eval(self):
+        macd_v = talib.MACD(self.data[PriceStrings.STR_PRICE_CLOSE.value])
+
+
+class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
 
     def eval(self):
         pass
+
+
+class StochasticMomentumEvaluator(MomentumEvaluator):
+    def __init__(self):
+        super().__init__()
+
+    def eval(self):
+        slowk, slowd = talib.STOCH(self.data[PriceStrings.STR_PRICE_HIGH.value],
+                                   self.data[PriceStrings.STR_PRICE_LOW.value],
+                                   self.data[PriceStrings.STR_PRICE_CLOSE.value])

@@ -1,3 +1,5 @@
+import logging
+
 from evaluator.Social import *
 from evaluator.TA import *
 
@@ -9,6 +11,7 @@ class Evaluator:
         self.history_time = None
         self.data = None
         self.symbol = None
+        self.risk = EvaluatorRisk.MEDIUM
 
         self.social_eval_list = []
         self.ta_eval_list = []
@@ -26,6 +29,9 @@ class Evaluator:
 
     def set_symbol(self, symbol):
         self.symbol = symbol
+
+    def set_risk(self, risk):
+        self.risk = risk
 
     def set_state(self, state):
         if state != self.state:
@@ -46,6 +52,7 @@ class Evaluator:
         for social_type in SocialEvaluator.__subclasses__():
             for social_eval_class_type in social_type.__subclasses__():
                 social_eval_class = social_eval_class_type()
+                social_eval_class.set_logger(logging.getLogger(social_eval_class_type.__name__))
                 social_eval_class.set_config(self.config)
                 social_eval_class.set_history_time(self.history_time)
                 social_eval_class.set_symbol(self.symbol)
@@ -61,6 +68,7 @@ class Evaluator:
         for ta_type in TAEvaluator.__subclasses__():
             for ta_eval_class_type in ta_type.__subclasses__():
                 ta_eval_class = ta_eval_class_type()
+                ta_eval_class.set_logger(logging.getLogger(ta_eval_class_type.__name__))
                 ta_eval_class.set_config(self.config)
                 ta_eval_class.set_data(self.data)
                 ta_eval_class.eval()
