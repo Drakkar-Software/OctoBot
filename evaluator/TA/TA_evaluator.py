@@ -8,11 +8,15 @@ class TAEvaluator:
 
     def __init__(self):
         super().__init__()
+        self.logger = None
         self.data = None
         self.config = None
         self.eval_note = START_EVAL_NOTE
         self.pertinence = START_EVAL_PERTINENCE
         self.logger = None
+
+    def set_logger(self, logger):
+        self.logger = logger
 
     def set_data(self, data):
         self.data = data

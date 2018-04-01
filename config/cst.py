@@ -5,6 +5,12 @@ START_EVAL_NOTE = 0.5
 START_EVAL_PERTINENCE = 1
 
 
+class EvaluatorRisk(Enum):
+    HIGH = 1
+    MEDIUM = 2
+    LOW = 3
+
+
 class EvaluatorStates(Enum):
     SHORT = 1
     VERY_SHORT = 2
