@@ -2,7 +2,7 @@
 ## Install
 ```
 git clone https://github.com/Herklos-Bots/CryptoBot
-cd CryptoBot`<br>
+cd CryptoBot
 sudo pip install git+https://github.com/Herklos-Bots/BotCore
 sudo pip install -r requirements.txt
 ```
