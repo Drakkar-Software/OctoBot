@@ -13,6 +13,9 @@ class BinanceExchange(Exchange):
                              self.config["exchanges"]["binance"]["api-secret"],
                              {"verify": True, "timeout": 20})
 
+    def get_name(self):
+        return "Binance"
+
     # @return DataFrame of prices
     def get_symbol_prices(self, symbol, time_frame):
         candles = self.client.get_klines(symbol=symbol, interval=time_frame.value)
