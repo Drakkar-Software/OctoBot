@@ -2,13 +2,13 @@
 ## Install
 ```
 git clone https://github.com/Herklos-Bots/CryptoBot
-cd CryptoBot`<br>
+cd CryptoBot
 sudo pip install git+https://github.com/Herklos-Bots/BotCore
 sudo pip install -r requirements.txt
 ```
 
 ## Configuration
-*Create a **config.json** file in the config **folder** with the following example :*
+Create a **config.json** file in the **config folder** with the following example :
 ```
 {
   "exchanges": {
@@ -19,3 +19,6 @@ sudo pip install -r requirements.txt
   }
 }
 ```
+## Changelog
+
+For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).
