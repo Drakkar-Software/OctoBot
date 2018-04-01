@@ -1,6 +1,6 @@
 from logging.config import fileConfig
 
-from botcore import config
+from botcore import load_config
 
 from evaluator import *
 from exchanges import *
@@ -16,7 +16,7 @@ class Crypto_Bot:
 
         # Config
         self.logger.info("Load config file...")
-        self.config = config.load_config()
+        self.config = load_config()
 
         # TODO : CONFIG TEMP LOCATION
         self.time_frames = [TimeFrames.ONE_MINUTE, TimeFrames.ONE_HOUR, TimeFrames.ONE_DAY]
