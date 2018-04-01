@@ -13,7 +13,7 @@ Create a **config.json** file in the **config folder** with the following exampl
 ```
 {
   "exchanges": {
-    "binance": {
+    "Binance": {
       "api-key": "YOUR_BINANCE_API_KEY",
       "api-secret": "YOUR_BINANCE_API_SECRET"
     }

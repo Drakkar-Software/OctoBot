@@ -1,3 +1,5 @@
+import logging
+
 from binance.client import Client
 
 from config.cst import *
@@ -9,12 +11,23 @@ from exchanges.exchange import Exchange
 class BinanceExchange(Exchange):
     def __init__(self, config):
         super().__init__(config)
-        self.client = Client(self.config["exchanges"]["binance"]["api-key"],
-                             self.config["exchanges"]["binance"]["api-secret"],
-                             {"verify": True, "timeout": 20})
+        self.name = "Binance"
+        self.logger = logging.getLogger(self.name + "Exchange")
+        if self.enabled():
+            self.client = Client(self.config["exchanges"][self.name]["api-key"],
+                                 self.config["exchanges"][self.name]["api-secret"],
+                                 {"verify": True, "timeout": 20})
+        else:
+            self.logger.debug("Disabled")
 
     def get_name(self):
-        return "Binance"
+        return self.name
+
+    def enabled(self):
+        if self.name in self.config["exchanges"]:
+            return True
+        else:
+            return False
 
     # @return DataFrame of prices
     def get_symbol_prices(self, symbol, time_frame):
