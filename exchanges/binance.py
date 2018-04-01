@@ -1,4 +1,5 @@
 from binance.client import Client
+
 from config.cst import *
 import pandas
 from aenum import MultiValueEnum

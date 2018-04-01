@@ -1,6 +1,6 @@
 from logging.config import fileConfig
 
-from botcore.config.config import load_config
+from botcore import load_config
 
 from evaluator import *
 from exchanges import *
