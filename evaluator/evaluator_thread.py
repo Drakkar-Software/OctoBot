@@ -24,7 +24,7 @@ class EvaluatorThread(threading.Thread):
         self.evaluator = Evaluator()
         self.evaluator.set_config(self.config)
         self.evaluator.set_symbol(self.symbol)
-        self.evaluator.set_history_time(self.time_frame.value)
+        self.evaluator.set_time_frame(self.time_frame)
         self.evaluator.set_notifier(self.notifier)
         self.evaluator.set_trader(self.trader)
 
