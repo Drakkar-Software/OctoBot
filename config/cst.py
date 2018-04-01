@@ -29,15 +29,15 @@ class TimeFrames(Enum):
     ONE_MONTH = 43200
 
 
-# TODO
+# TODO : review
 class TimeFramePertinence(Enum):
-    ONE_MINUTE = 1
-    FIVE_MINUTES = 1
-    THIRTY_MINUTES = 1
-    ONE_HOUR = 1
-    TWO_HOURS = 1
-    FOUR_HOURS = 1
-    ONE_DAY = 1
-    THREE_DAYS = 1
-    ONE_WEEK = 1
-    ONE_MONTH = 1
+    ONE_MINUTE = 1, TimeFrames.ONE_MINUTE
+    FIVE_MINUTES = 1, TimeFrames.FIVE_MINUTES
+    THIRTY_MINUTES = 1, TimeFrames.THIRTY_MINUTES
+    ONE_HOUR = 1, TimeFrames.ONE_HOUR
+    TWO_HOURS = 1, TimeFrames.TWO_HOURS
+    FOUR_HOURS = 1, TimeFrames.FOUR_HOURS
+    ONE_DAY = 1, TimeFrames.ONE_DAY
+    THREE_DAYS = 1, TimeFrames.THREE_DAYS
+    ONE_WEEK = 1, TimeFrames.ONE_WEEK
+    ONE_MONTH = 1, TimeFrames.ONE_MONTH
