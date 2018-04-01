@@ -1,4 +1,4 @@
-# CryptoBot
+# CryptoBot - Alpha version
 ## Install
 ```
 git clone https://github.com/Herklos-Bots/CryptoBot
