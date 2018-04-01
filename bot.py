@@ -8,6 +8,9 @@ from exchanges import *
 
 # Eval > 0.5 --> go short
 # Eval < 0.5 --> go long
+from tools import Notification
+
+
 class Crypto_Bot:
     def __init__(self):
         # Logger
@@ -22,7 +25,9 @@ class Crypto_Bot:
         self.time_frames = [TimeFrames.ONE_MINUTE, TimeFrames.ONE_HOUR, TimeFrames.ONE_DAY]
         self.symbols = ["BTCUSDT", "ETHUSDT"]
         self.exchanges = [BinanceExchange]
-        self.risk = EvaluatorRisk.MEDIUM
+
+        # Notifier
+        self.notifier = Notification(self.config)
 
         self.symbols_threads = []
 
@@ -44,7 +49,7 @@ class Crypto_Bot:
                                                                     symbol,
                                                                     time_frame,
                                                                     exchange_inst,
-                                                                    self.risk))
+                                                                    self.notifier))
 
                 # notify that exchanges doesn't support this symbol
                 else:

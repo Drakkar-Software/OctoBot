@@ -11,7 +11,7 @@ class Evaluator:
         self.history_time = None
         self.data = None
         self.symbol = None
-        self.risk = EvaluatorRisk.MEDIUM
+        self.notifier = None
 
         self.social_eval_list = []
         self.ta_eval_list = []
@@ -27,16 +27,20 @@ class Evaluator:
     def set_data(self, data):
         self.data = data
 
+    def set_notifier(self, notifier):
+        self.notifier = notifier
+
     def set_symbol(self, symbol):
         self.symbol = symbol
-
-    def set_risk(self, risk):
-        self.risk = risk
 
     def set_state(self, state):
         if state != self.state:
             self.state = state
-            # TODO Add notify change
+            if self.notifier.enabled():
+                self.notifier.notify(self.symbol, state)
+            else:
+                # TODO : prepare trade
+                pass
 
     def get_state(self):
         return self.state
