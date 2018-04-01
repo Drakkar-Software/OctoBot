@@ -1,5 +1,6 @@
-from evaluator.TA.TA_evaluator import MomentumEvaluator
-from tools.indicator import rsi
+import talib
+
+from evaluator.TA.TA_evaluator import MomentumEvaluator, PriceStrings
 
 
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
@@ -26,13 +27,13 @@ class RSIMomentumEvaluator(MomentumEvaluator):
 
     # TODO : temp analysis
     def eval(self):
-        rsi_v = rsi(self.data)
+        rsi_v = talib.RSI(self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
         # get the last 10 values of RSI
-        last_values = rsi_v.tail(10)["rsi"]
+        last_values = rsi_v.tail(10).values
 
-        first = last_values.iloc[0]
-        last = last_values.iloc[-1]
+        first = last_values[0]
+        last = last_values[-1]
 
         rsi_eval = self.eval_note
 

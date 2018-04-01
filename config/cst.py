@@ -19,11 +19,11 @@ class EvaluatorsPertinence(Enum):
 
 
 class PriceStrings(Enum):
-    STR_PRICE_CLOSE = "<CLOSE>"
-    STR_PRICE_OPEN = "<OPEN>"
-    STR_PRICE_HIGH = "<HIGH>"
-    STR_PRICE_LOW = "<LOW>"
-    STR_PRICE_VOL = "<VOL>"
+    STR_PRICE_CLOSE = "close"
+    STR_PRICE_OPEN = "open"
+    STR_PRICE_HIGH = "high"
+    STR_PRICE_LOW = "low"
+    STR_PRICE_VOL = "vol"
 
 
 class TimeFrames(Enum):
