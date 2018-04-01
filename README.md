@@ -8,7 +8,7 @@ sudo pip install -r requirements.txt
 ```
 
 ## Configuration
-*Create a **config.json** file in the config **folder** with the following example :*
+Create a **config.json** file in the **config folder** with the following example :
 ```
 {
   "exchanges": {
