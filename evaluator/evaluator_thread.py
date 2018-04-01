@@ -6,14 +6,14 @@ from evaluator import *
 
 
 class EvaluatorThread(threading.Thread):
-    def __init__(self, config, symbol, time_frame, exchange, risk):
+    def __init__(self, config, symbol, time_frame, exchange, notifier):
         threading.Thread.__init__(self)
         self.config = config
         self.exchange = exchange
         self.exchange_time_frame = self.exchange.get_time_frame_enum()
         self.symbol = symbol
         self.time_frame = time_frame
-        self.risk = risk
+        self.notifier = notifier
 
         self.thread_name = "THREAD - " + self.symbol \
                            + " - " + self.exchange.__class__.__name__ \
@@ -24,7 +24,7 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.set_config(self.config)
         self.evaluator.set_symbol(self.symbol)
         self.evaluator.set_history_time(self.time_frame.value)
-        self.evaluator.set_risk(self.risk)
+        self.evaluator.set_notifier(self.notifier)
 
     def run(self):
         while True:
