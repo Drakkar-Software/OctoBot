@@ -8,12 +8,16 @@ class SocialEvaluator:
 
     def __init__(self):
         super().__init__()
+        self.logger = None
         self.symbol = None
         self.history_time = None
         self.config = None
         self.eval_note = START_EVAL_NOTE
         self.logger = None
         self.pertinence = START_EVAL_PERTINENCE
+
+    def set_logger(self, logger):
+        self.logger = logger
 
     def set_symbol(self, symbol):
         self.symbol = symbol
