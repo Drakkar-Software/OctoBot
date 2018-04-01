@@ -16,6 +16,15 @@ Create a **config.json** file in the **config folder** with the following exampl
       "api-key": "YOUR_BINANCE_API_KEY",
       "api-secret": "YOUR_BINANCE_API_SECRET"
     }
+  },
+  "notification":{
+    "enabled": true,
+    "type": 1,
+    "mail_dest": "your_destination_mail@xxx.com"
+  },
+  "trader":{
+    "enabled": false,
+    "risk": 1
   }
 }
 ```
