@@ -19,5 +19,6 @@ Create a **config.json** file in the **config folder** with the following exampl
   }
 }
 ```
+## Changelog
 
 For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).
