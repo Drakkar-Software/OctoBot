@@ -10,7 +10,11 @@ class Exchange:
 
     @abstractmethod
     def get_name(self):
-        raise NotImplementedError("get_name not implemented")
+        raise NotImplementedError("Get_name not implemented")
+
+    @abstractmethod
+    def enabled(self):
+        raise NotImplementedError("Enabled not implemented")
 
     # @return DataFrame of prices
     @abstractmethod

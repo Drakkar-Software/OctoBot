@@ -1,6 +1,6 @@
 from logging.config import fileConfig
 
-from botcore import load_config
+from botcore.config.config import load_config
 
 from evaluator import *
 from exchanges import *
@@ -36,26 +36,28 @@ class Crypto_Bot:
 
         for exchange_type in self.exchanges:
             exchange_inst = exchange_type(self.config)
-            exchange_inst.get_symbol_list()
 
-            # create trader instance for this exchange
-            exchange_trader = Trader(self.config, exchange_inst)
+            if exchange_inst.enabled():
+                exchange_inst.get_symbol_list()
 
-            for symbol in self.symbols:
-                # Verify that symbol exists on this exchange
-                if exchange_inst.symbol_exists(symbol):
+                # create trader instance for this exchange
+                exchange_trader = Trader(self.config, exchange_inst)
 
-                    for time_frame in self.time_frames:
-                        self.symbols_threads.append(EvaluatorThread(self.config,
-                                                                    symbol,
-                                                                    time_frame,
-                                                                    exchange_inst,
-                                                                    self.notifier,
-                                                                    exchange_trader))
+                for symbol in self.symbols:
+                    # Verify that symbol exists on this exchange
+                    if exchange_inst.symbol_exists(symbol):
 
-                # notify that exchanges doesn't support this symbol
-                else:
-                    self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
+                        for time_frame in self.time_frames:
+                            self.symbols_threads.append(EvaluatorThread(self.config,
+                                                                        symbol,
+                                                                        time_frame,
+                                                                        exchange_inst,
+                                                                        self.notifier,
+                                                                        exchange_trader))
+
+                    # notify that exchanges doesn't support this symbol
+                    else:
+                        self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
 
     def start_threads(self):
         for thread in self.symbols_threads:

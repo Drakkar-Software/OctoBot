@@ -56,7 +56,7 @@ class RSIMomentumEvaluator(MomentumEvaluator):
             rsi_eval -= (50 - last)
 
         # 2 : modifications
-        self.eval_note += rsi_eval / (2)
+        self.eval_note += rsi_eval / (2 * 100)
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):
