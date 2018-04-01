@@ -11,7 +11,7 @@ class TAEvaluator:
         self.data = None
         self.config = None
         self.eval_note = START_EVAL_NOTE
-        self.ponderation = START_EVAL_PONDERATION
+        self.pertinence = START_EVAL_PERTINENCE
         self.logger = None
 
     def set_data(self, data):
@@ -22,6 +22,9 @@ class TAEvaluator:
 
     def get_eval_note(self):
         return self.eval_note
+
+    def get_pertinence(self):
+        return self.pertinence
 
     @abstractmethod
     def eval(self):

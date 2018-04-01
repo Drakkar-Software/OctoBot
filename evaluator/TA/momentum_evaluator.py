@@ -22,6 +22,7 @@ class MFIMomentumEvaluator(MomentumEvaluator):
 class RSIMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
+        self.pertinence = 2
 
     # TODO : temp analysis
     def eval(self):

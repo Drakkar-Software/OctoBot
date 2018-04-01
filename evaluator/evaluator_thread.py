@@ -28,8 +28,18 @@ class EvaluatorThread(threading.Thread):
         while True:
             self.evaluator.set_data(self.exchange.get_symbol_prices(self.symbol,
                                                                     self.exchange_time_frame(self.time_frame)))
-            self.logger.debug("Social Eval : " + str(self.evaluator.social_eval()))
-            self.logger.debug("TA Eval : " + str(self.evaluator.ta_eval()))
+
+            # show eval list
+            social_eval_value_list = []
+            TA_eval_value_list = []
+            for social_eval_class in self.evaluator.social_eval():
+                social_eval_value_list.append(social_eval_class.get_eval_note())
+
+            for TA_eval_class in self.evaluator.ta_eval():
+                TA_eval_value_list.append(TA_eval_class.get_eval_note())
+
+            self.logger.debug("Social Eval : " + str(social_eval_value_list))
+            self.logger.debug("TA Eval : " + str(TA_eval_value_list))
 
             self.evaluator.finalize()
             self.logger.debug("DECISION : " + str(self.evaluator.decide()))

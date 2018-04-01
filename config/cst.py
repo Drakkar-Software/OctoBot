@@ -2,7 +2,7 @@ from enum import Enum
 
 MINUTE_TO_SECONDS = 60
 START_EVAL_NOTE = 0.5
-START_EVAL_PONDERATION = 1
+START_EVAL_PERTINENCE = 1
 
 DECISION_GO_LONG = "BUY"
 DECISION_GO_SHORT = "SELL"
@@ -27,3 +27,17 @@ class TimeFrames(Enum):
     THREE_DAYS = 4320
     ONE_WEEK = 10080
     ONE_MONTH = 43200
+
+
+# TODO
+class TimeFramePertinence(Enum):
+    ONE_MINUTE = 1
+    FIVE_MINUTES = 1
+    THIRTY_MINUTES = 1
+    ONE_HOUR = 1
+    TWO_HOURS = 1
+    FOUR_HOURS = 1
+    ONE_DAY = 1
+    THREE_DAYS = 1
+    ONE_WEEK = 1
+    ONE_MONTH = 1
