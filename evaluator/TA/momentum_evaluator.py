@@ -56,7 +56,7 @@ class RSIMomentumEvaluator(MomentumEvaluator):
             rsi_eval -= (50 - last)
 
         # 2 : modifications
-        self.eval_note += rsi_eval / (2)
+        self.eval_note += rsi_eval / (2 * 100)
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):
@@ -66,6 +66,11 @@ class OBVMomentumEvaluator(MomentumEvaluator):
     def eval(self):
         obv_v = talib.OBV(self.data[PriceStrings.STR_PRICE_CLOSE.value],
                           self.data[PriceStrings.STR_PRICE_VOL.value])
+        first = obv_v.iloc[0, 0]
+        last = obv_v.iloc[-1, 0]
+
+        if first - last > 0:
+            pass
 
 
 # William's % R --> overbought / oversold
@@ -77,6 +82,11 @@ class WilliamsRMomentumEvaluator(MomentumEvaluator):
         willr_v = talib.WILLR(self.data[PriceStrings.STR_PRICE_HIGH.value],
                               self.data[PriceStrings.STR_PRICE_LOW.value],
                               self.data[PriceStrings.STR_PRICE_CLOSE.value])
+        first = willr_v.iloc[0, 0]
+        last = willr_v.iloc[-1, 0]
+
+        if first - last > 0:
+            pass
 
 
 # TRIX --> percent rate-of-change trend
@@ -86,6 +96,11 @@ class TRIXMomentumEvaluator(MomentumEvaluator):
 
     def eval(self):
         trix_v = talib.TRIX(self.data[PriceStrings.STR_PRICE_CLOSE.value])
+        first = trix_v.iloc[0, 0]
+        last = trix_v.iloc[-1, 0]
+
+        if first - last > 0:
+            pass
 
 
 class MACDMomentumEvaluator(MomentumEvaluator):

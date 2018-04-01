@@ -2,6 +2,7 @@ import logging
 
 from evaluator.Social import *
 from evaluator.TA import *
+from exchanges.trader import *
 
 
 class Evaluator:
@@ -49,8 +50,7 @@ class Evaluator:
                 self.notifier.notify(self.time_frame, self.symbol, state)
             else:
                 # TODO : prepare trade
-                # self.trader
-                pass
+                self.trader.create_order(TraderOrderType.BUY_LIMIT)
 
     def get_state(self):
         return self.state
