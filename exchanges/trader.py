@@ -24,7 +24,7 @@ class Trader:
     def get_risk(self):
         return self.risk
 
-    def create_order(self, type):
+    def create_order(self, order_type):
         pass
 
 
