@@ -40,7 +40,7 @@ class Evaluator:
 
                 social_eval_class.get_data()
                 social_eval_class.eval()
-                self.social_eval_list.append(social_eval_class.get_eval_note())
+                self.social_eval_list.append(social_eval_class)
 
         return self.social_eval_list
 
@@ -53,26 +53,30 @@ class Evaluator:
                 ta_eval_class.set_data(self.data)
                 ta_eval_class.eval()
 
-                self.ta_eval_list.append(ta_eval_class.get_eval_note())
+                self.ta_eval_list.append(ta_eval_class)
 
         return self.ta_eval_list
 
     def finalize(self):
+        ta_analysis_note_counter = 0
         # TA analysis
         for evaluated in self.ta_eval_list:
-            self.ta_final_eval += evaluated
+            self.ta_final_eval += evaluated.get_eval_note() * evaluated.get_pertinence()
+            ta_analysis_note_counter += evaluated.get_pertinence()
 
-        if len(self.ta_eval_list) > 0:
-            self.ta_final_eval /= len(self.ta_eval_list) + 1
+        if ta_analysis_note_counter > 0:
+            self.ta_final_eval /= ta_analysis_note_counter
         else:
             self.ta_final_eval = START_EVAL_NOTE
 
         # Social analysis
+        social_analysis_note_counter = 0
         for evaluated in self.social_eval_list:
-            self.social_final_eval += evaluated
+            self.social_final_eval += evaluated.get_eval_note() * evaluated.get_pertinence()
+            social_analysis_note_counter += evaluated.get_pertinence()
 
-        if len(self.social_eval_list) > 0:
-            self.social_final_eval /= len(self.social_eval_list) + 1
+        if social_analysis_note_counter > 0:
+            self.social_final_eval /= social_analysis_note_counter
         else:
             self.social_final_eval = START_EVAL_NOTE
 
@@ -87,6 +91,7 @@ class Evaluator:
         else:
             social_decision = DECISION_GO_LONG
 
+        # Debug
         self.decision = {
             "TA": ta_decision,
             "SOCIAL": social_decision

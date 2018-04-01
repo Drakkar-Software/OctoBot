@@ -1,6 +1,6 @@
 from abc import *
 
-from config.cst import START_EVAL_NOTE, START_EVAL_PONDERATION
+from config.cst import *
 
 
 class SocialEvaluator:
@@ -13,7 +13,7 @@ class SocialEvaluator:
         self.config = None
         self.eval_note = START_EVAL_NOTE
         self.logger = None
-        self.ponderation = START_EVAL_PONDERATION
+        self.pertinence = START_EVAL_PERTINENCE
 
     def set_symbol(self, symbol):
         self.symbol = symbol
@@ -26,6 +26,9 @@ class SocialEvaluator:
 
     def get_eval_note(self):
         return self.eval_note
+
+    def get_pertinence(self):
+        return self.pertinence
 
     @abstractmethod
     def eval(self):
