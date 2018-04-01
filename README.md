@@ -1,4 +1,5 @@
-# CryptoBot
+# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Herklos-Bots/CryptoBot&amp;utm_campaign=Badge_Grade)
+#### Version 0.0.3-alpha 
 ## Install
 ```
 git clone https://github.com/Herklos-Bots/CryptoBot
@@ -16,6 +17,15 @@ Create a **config.json** file in the **config folder** with the following exampl
       "api-key": "YOUR_BINANCE_API_KEY",
       "api-secret": "YOUR_BINANCE_API_SECRET"
     }
+  },
+  "notification":{
+    "enabled": true,
+    "type": 1,
+    "mail_dest": "your_destination_mail@xxx.com"
+  },
+  "trader":{
+    "enabled": false,
+    "risk": 1
   }
 }
 ```
