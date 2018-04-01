@@ -63,7 +63,7 @@ class Evaluator:
             self.ta_final_eval += evaluated
 
         if len(self.ta_eval_list) > 0:
-            self.ta_final_eval /= len(self.ta_eval_list)
+            self.ta_final_eval /= len(self.ta_eval_list) + 1
         else:
             self.ta_final_eval = START_EVAL_NOTE
 
@@ -72,7 +72,7 @@ class Evaluator:
             self.social_final_eval += evaluated
 
         if len(self.social_eval_list) > 0:
-            self.social_final_eval /= len(self.social_eval_list)
+            self.social_final_eval /= len(self.social_eval_list) + 1
         else:
             self.social_final_eval = START_EVAL_NOTE
 
