@@ -8,6 +8,7 @@ class Evaluator:
     def __init__(self):
         self.config = None
         self.symbol = None
+        self.time_frame = None
         self.history_time = None
         self.data = None
         self.symbol = None
@@ -37,11 +38,15 @@ class Evaluator:
     def set_symbol(self, symbol):
         self.symbol = symbol
 
+    def set_time_frame(self, time_frame):
+        self.time_frame = time_frame
+        self.history_time = time_frame.value
+
     def set_state(self, state):
         if state != self.state:
             self.state = state
             if self.notifier.enabled():
-                self.notifier.notify(self.symbol, state)
+                self.notifier.notify(self.time_frame, self.symbol, state)
             else:
                 # TODO : prepare trade
                 # self.trader
