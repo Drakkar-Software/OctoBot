@@ -4,8 +4,18 @@ MINUTE_TO_SECONDS = 60
 START_EVAL_NOTE = 0.5
 START_EVAL_PERTINENCE = 1
 
-DECISION_GO_LONG = "BUY"
-DECISION_GO_SHORT = "SELL"
+
+class EvaluatorStates(Enum):
+    SHORT = 1
+    VERY_SHORT = 2
+    LONG = 3
+    VERY_LONG = 4
+    NEUTRAL = 5
+
+
+class EvaluatorsPertinence(Enum):
+    SocialEvaluator = 1
+    TAEvaluator = 1
 
 
 class PriceStrings(Enum):

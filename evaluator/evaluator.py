@@ -13,9 +13,10 @@ class Evaluator:
         self.social_eval_list = []
         self.ta_eval_list = []
 
+        self.final_eval = START_EVAL_NOTE
         self.social_final_eval = START_EVAL_NOTE
         self.ta_final_eval = START_EVAL_NOTE
-        self.decision = {}
+        self.state = EvaluatorStates.NEUTRAL
 
     def set_config(self, config):
         self.config = config
@@ -26,8 +27,19 @@ class Evaluator:
     def set_symbol(self, symbol):
         self.symbol = symbol
 
+    def set_state(self, state):
+        if state != self.state:
+            self.state = state
+            # TODO Add notify change
+
+    def get_state(self):
+        return self.state
+
     def set_history_time(self, history_time):
         self.history_time = history_time
+
+    def get_final_eval(self):
+        return self.final_eval
 
     def social_eval(self):
         self.social_eval_list = []
@@ -80,21 +92,19 @@ class Evaluator:
         else:
             self.social_final_eval = START_EVAL_NOTE
 
-    def decide(self):
-        if self.ta_final_eval > START_EVAL_NOTE:
-            ta_decision = DECISION_GO_SHORT
+        # TODO
+        self.final_eval = (self.ta_final_eval * EvaluatorsPertinence.TAEvaluator.value
+                           + self.social_final_eval * EvaluatorsPertinence.SocialEvaluator.value)
+        self.final_eval /= (EvaluatorsPertinence.TAEvaluator.value + EvaluatorsPertinence.SocialEvaluator.value)
+
+        # TODO : temp
+        if self.final_eval < 0.2:
+            self.set_state(EvaluatorStates.VERY_LONG)
+        elif self.final_eval < 0.4:
+            self.set_state(EvaluatorStates.LONG)
+        elif self.final_eval < 0.6:
+            self.set_state(EvaluatorStates.NEUTRAL)
+        elif self.final_eval < 0.8:
+            self.set_state(EvaluatorStates.SHORT)
         else:
-            ta_decision = DECISION_GO_LONG
-
-        if self.social_final_eval > START_EVAL_NOTE:
-            social_decision = DECISION_GO_SHORT
-        else:
-            social_decision = DECISION_GO_LONG
-
-        # Debug
-        self.decision = {
-            "TA": ta_decision,
-            "SOCIAL": social_decision
-        }
-
-        return self.decision
+            self.set_state(EvaluatorStates.VERY_SHORT)

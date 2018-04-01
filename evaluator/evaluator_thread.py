@@ -42,6 +42,6 @@ class EvaluatorThread(threading.Thread):
             self.logger.debug("TA Eval : " + str(TA_eval_value_list))
 
             self.evaluator.finalize()
-            self.logger.debug("DECISION : " + str(self.evaluator.decide()))
+            self.logger.debug("FINAL : " + str(self.evaluator.get_state()))
 
             time.sleep(self.time_frame.value * MINUTE_TO_SECONDS)
