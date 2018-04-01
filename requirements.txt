@@ -1,1 +1,5 @@
+pandas
+aenum
 pytrends
+python-binance
+HerklosBotsCore
