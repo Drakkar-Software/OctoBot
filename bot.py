@@ -5,9 +5,9 @@ from botcore import load_config
 from evaluator import *
 from exchanges import *
 
-
 # Eval > 0.5 --> go short
 # Eval < 0.5 --> go long
+from exchanges.trader import Trader
 from tools import Notification
 
 
@@ -34,13 +34,14 @@ class Crypto_Bot:
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
 
-        # create symbol threads
-        for symbol in self.symbols:
+        for exchange_type in self.exchanges:
+            exchange_inst = exchange_type(self.config)
+            exchange_inst.get_symbol_list()
 
-            for exchange_type in self.exchanges:
-                exchange_inst = exchange_type(self.config)
-                exchange_inst.get_symbol_list()
+            # create trader instance for this exchange
+            exchange_trader = Trader(self.config, exchange_inst)
 
+            for symbol in self.symbols:
                 # Verify that symbol exists on this exchange
                 if exchange_inst.symbol_exists(symbol):
 
@@ -49,7 +50,8 @@ class Crypto_Bot:
                                                                     symbol,
                                                                     time_frame,
                                                                     exchange_inst,
-                                                                    self.notifier))
+                                                                    self.notifier,
+                                                                    exchange_trader))
 
                 # notify that exchanges doesn't support this symbol
                 else:

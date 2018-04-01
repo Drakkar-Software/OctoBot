@@ -12,6 +12,7 @@ class Evaluator:
         self.data = None
         self.symbol = None
         self.notifier = None
+        self.trader = None
 
         self.social_eval_list = []
         self.ta_eval_list = []
@@ -30,6 +31,9 @@ class Evaluator:
     def set_notifier(self, notifier):
         self.notifier = notifier
 
+    def set_trader(self, trader):
+        self.trader = trader
+
     def set_symbol(self, symbol):
         self.symbol = symbol
 
@@ -40,6 +44,7 @@ class Evaluator:
                 self.notifier.notify(self.symbol, state)
             else:
                 # TODO : prepare trade
+                # self.trader
                 pass
 
     def get_state(self):

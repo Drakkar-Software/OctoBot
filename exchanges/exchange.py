@@ -8,6 +8,10 @@ class Exchange:
         self.config = config
         self.symbol_list = []
 
+    @abstractmethod
+    def get_name(self):
+        raise NotImplementedError("get_name not implemented")
+
     # @return DataFrame of prices
     @abstractmethod
     def get_symbol_prices(self, symbol, time_frame):
