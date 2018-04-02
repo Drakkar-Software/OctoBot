@@ -24,12 +24,28 @@ class Notification:
 
     def notify(self, time_frame, symbol, result):
         if self.notification_type == NotificationTypes.MAIL.value:
-            mail = GmailMailSendFactory(self.config)
-            mail.set_to(self.config["notification"]["mail_dest"])
-            mail.set_subject("CRYPTO BOT ALERT : " + str(time_frame) + " / " + symbol + " / " + str(result))
-            mail.set_content("CRYPTO BOT ALERT : " + str(time_frame) + " / " + symbol + " / " + str(result))
-            mail.send()
-            self.logger.info("Mail sent")
+            # if config contains enough data for mailing
+            if self.mail_enabled():
+                mail = GmailMailSendFactory(self.config)
+                mail.set_to(self.config["notification"]["mail_dest"])
+                mail.set_subject("CRYPTO BOT ALERT : " + str(time_frame) + " / " + symbol + " / " + str(result))
+                mail.set_content("CRYPTO BOT ALERT : " + str(time_frame) + " / " + symbol + " / " + str(result))
+                mail.send()
+                self.logger.info("Mail sent")
+            else:
+                self.logger.debug("Mail disabled")
+
+    def mail_enabled(self):
+        if self.service_enabled() and "mail" in self.config["service"]:
+            return True
+        else:
+            return False
+
+    def service_enabled(self):
+        if "service" in self.config:
+            return True
+        else:
+            return False
 
 
 class NotificationTypes(Enum):
