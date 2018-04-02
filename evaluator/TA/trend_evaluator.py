@@ -8,6 +8,7 @@ from evaluator.TA.TA_evaluator import TrendEvaluator, PriceStrings
 class CandleAnalysisTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         pass
@@ -17,6 +18,7 @@ class CandleAnalysisTrendEvaluator(TrendEvaluator):
 class DMITrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         pass
@@ -26,6 +28,7 @@ class DMITrendEvaluator(TrendEvaluator):
 class BBTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         upperband, middleband, lowerband = talib.BBANDS(self.data[PriceStrings.STR_PRICE_CLOSE.value])
@@ -35,6 +38,7 @@ class BBTrendEvaluator(TrendEvaluator):
 class EOMTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         pass

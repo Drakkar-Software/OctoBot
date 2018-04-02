@@ -9,6 +9,7 @@ from evaluator.TA.TA_evaluator import MomentumEvaluator, PriceStrings
 class ADXMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     # TODO : temp analysis
     def eval(self):
@@ -62,6 +63,7 @@ class RSIMomentumEvaluator(MomentumEvaluator):
 class OBVMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         obv_v = talib.OBV(self.data[PriceStrings.STR_PRICE_CLOSE.value],
@@ -72,6 +74,7 @@ class OBVMomentumEvaluator(MomentumEvaluator):
 class WilliamsRMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         willr_v = talib.WILLR(self.data[PriceStrings.STR_PRICE_HIGH.value],
@@ -83,6 +86,7 @@ class WilliamsRMomentumEvaluator(MomentumEvaluator):
 class TRIXMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         trix_v = talib.TRIX(self.data[PriceStrings.STR_PRICE_CLOSE.value])
@@ -91,6 +95,7 @@ class TRIXMomentumEvaluator(MomentumEvaluator):
 class MACDMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         macd_v = talib.MACD(self.data[PriceStrings.STR_PRICE_CLOSE.value])
@@ -99,6 +104,7 @@ class MACDMomentumEvaluator(MomentumEvaluator):
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         pass
@@ -107,6 +113,7 @@ class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
 class StochasticMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         slowk, slowd = talib.STOCH(self.data[PriceStrings.STR_PRICE_HIGH.value],

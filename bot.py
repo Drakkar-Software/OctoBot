@@ -22,7 +22,7 @@ class Crypto_Bot:
         self.config = load_config()
 
         # TODO : CONFIG TEMP LOCATION
-        self.time_frames = [TimeFrames.ONE_MINUTE, TimeFrames.ONE_HOUR, TimeFrames.ONE_DAY]
+        self.time_frames = [TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
         self.symbols = ["BTCUSDT", "ETHUSDT"]
         self.exchanges = [BinanceExchange]
 
