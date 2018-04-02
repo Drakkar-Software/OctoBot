@@ -14,6 +14,7 @@ class TAEvaluator:
         self.eval_note = START_EVAL_NOTE
         self.pertinence = START_EVAL_PERTINENCE
         self.logger = None
+        self.enabled = True
 
     def set_logger(self, logger):
         self.logger = logger
@@ -29,6 +30,9 @@ class TAEvaluator:
 
     def get_pertinence(self):
         return self.pertinence
+
+    def is_enabled(self):
+        return self.enabled
 
     @abstractmethod
     def eval(self):

@@ -5,6 +5,7 @@ from evaluator.TA.TA_evaluator import VolatilityEvaluator
 class ATRVolatilityEvaluator(VolatilityEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         pass
@@ -14,6 +15,7 @@ class ATRVolatilityEvaluator(VolatilityEvaluator):
 class MassIndexVolatilityEvaluator(VolatilityEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         pass
@@ -22,6 +24,7 @@ class MassIndexVolatilityEvaluator(VolatilityEvaluator):
 class ChaikinVolatilityEvaluator(VolatilityEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def eval(self):
         pass

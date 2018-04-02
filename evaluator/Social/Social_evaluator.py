@@ -15,6 +15,7 @@ class SocialEvaluator:
         self.eval_note = START_EVAL_NOTE
         self.logger = None
         self.pertinence = START_EVAL_PERTINENCE
+        self.enabled = True
 
     def set_logger(self, logger):
         self.logger = logger
@@ -33,6 +34,9 @@ class SocialEvaluator:
 
     def get_pertinence(self):
         return self.pertinence
+
+    def is_enabled(self):
+        return self.enabled
 
     @abstractmethod
     def eval(self):
