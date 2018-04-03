@@ -27,7 +27,7 @@ class Notification:
             # if config contains enough data for mailing
             if self.mail_enabled():
                 mail = GmailMailSendFactory(self.config)
-                mail.set_to(self.config["notification"]["mail_dest"])
+                mail.set_to(self.config["service"]["mail"]["mail_dest"])
                 mail.set_subject("CRYPTO BOT ALERT : " + str(time_frame) + " / " + symbol + " / " + str(result))
                 mail.set_content("CRYPTO BOT ALERT : " + str(time_frame) + " / " + symbol + " / " + str(result))
                 mail.send()
