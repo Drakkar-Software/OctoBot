@@ -118,12 +118,12 @@ class Evaluator:
         else:
             self.social_final_eval = START_EVAL_NOTE
 
-        # TODO
+        # TODO : improve
         self.final_eval = (self.ta_final_eval * EvaluatorsPertinence.TAEvaluator.value
                            + self.social_final_eval * EvaluatorsPertinence.SocialEvaluator.value)
         self.final_eval /= (EvaluatorsPertinence.TAEvaluator.value + EvaluatorsPertinence.SocialEvaluator.value)
 
-        # TODO : temp
+        # TODO : improve
         if self.final_eval < 0.2:
             self.set_state(EvaluatorStates.VERY_LONG)
         elif self.final_eval < 0.4:

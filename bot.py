@@ -5,8 +5,8 @@ from botcore.config.config import load_config
 from evaluator import *
 from exchanges import *
 
-# Eval > 0.5 --> go short
-# Eval < 0.5 --> go long
+# Eval > 1 --> go short
+# Eval < -1 --> go long
 from exchanges.trader import Trader
 from tools import Notification
 
@@ -22,8 +22,8 @@ class Crypto_Bot:
         self.config = load_config()
 
         # TODO : CONFIG TEMP LOCATION
-        self.time_frames = [TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
-        self.symbols = ["BTCUSDT", "ETHUSDT"]
+        self.time_frames = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
+        self.symbols = ["BTCUSDT"]
         self.exchanges = [BinanceExchange]
 
         # Notifier
