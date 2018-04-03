@@ -6,9 +6,9 @@ START_EVAL_PERTINENCE = 1
 
 
 class EvaluatorRisk(Enum):
-    HIGH = 1
+    LOW = 1
     MEDIUM = 2
-    LOW = 3
+    HIGH = 3
 
 
 class EvaluatorStates(Enum):

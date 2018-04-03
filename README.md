@@ -1,8 +1,8 @@
-# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Herklos-Bots/CryptoBot&amp;utm_campaign=Badge_Grade)
+# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://travis-ci.org/Trading-Bot/CryptoBot.svg?branch=master)](https://travis-ci.org/Trading-Bot/CryptoBot)
 #### Version 0.0.3-alpha 
 ## Install
 ```
-git clone https://github.com/Herklos-Bots/CryptoBot
+git clone https://github.com/Trading-Bot/CryptoBot
 cd CryptoBot
 sudo pip install git+https://github.com/Herklos-Bots/BotCore
 sudo pip install -r requirements.txt
@@ -20,12 +20,11 @@ Create a **config.json** file in the **config folder** with the following exampl
   },
   "notification":{
     "enabled": true,
-    "type": 1,
-    "mail_dest": "your_destination_mail@xxx.com"
+    "type": 1
   },
   "trader":{
     "enabled": false,
-    "risk": 1
+    "risk": 2
   }
 }
 ```
