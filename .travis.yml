@@ -6,10 +6,9 @@ notifications:
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
 install: 
   - git clone https://github.com/Trading-Bot/CryptoBot
-  - cd CryptoBot
-  - sudo chmod 775 ./doc/install/install-ta-lib.sh
+  - cd CryptoBot/
   - bash ./doc/install/install-ta-lib.sh
-  - sudo pip install git+https://github.com/Herklos-Bots/BotCore
+  - pip install git+https://github.com/Herklos-Bots/BotCore
   - python -m pip install -r requirements.txt
 
 
