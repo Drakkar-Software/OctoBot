@@ -24,7 +24,7 @@ Create a **config.json** file in the **config folder** with the following exampl
   },
   "trader":{
     "enabled": false,
-    "risk": 1
+    "risk": 2
   }
 }
 ```
