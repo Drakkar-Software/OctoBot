@@ -48,7 +48,6 @@ class SocialEvaluator(threading.Thread):
     def notify_if_necessary(self):
         if self.need_to_notify():
             self.notify_evaluator_threads()
-            print("notified with value: "+str(self.eval_note))
 
     def notify_evaluator_threads(self):
         for thread in self.evaluator_threads:
@@ -90,7 +89,7 @@ class StatsSocialEvaluator(SocialEvaluator):
             self.eval()
             self.update_evaluation_matrix()
             self.notify_if_necessary()
-            time.sleep(2)
+            time.sleep(self.history_time * MINUTE_TO_SECONDS)
 
     @abstractmethod
     def need_to_notify(self):
