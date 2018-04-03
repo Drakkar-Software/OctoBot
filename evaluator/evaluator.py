@@ -61,11 +61,11 @@ class Evaluator:
     def get_final_eval(self):
         return self.final_eval
 
-    def social_eval(self):
+    def social_eval(self, evaluation_matrix, evaluator_thread):
         self.social_eval_list = []
         for social_type in SocialEvaluator.__subclasses__():
             for social_eval_class_type in social_type.__subclasses__():
-                social_eval_class = social_eval_class_type()
+                social_eval_class = social_eval_class_type(evaluation_matrix, evaluator_thread)
                 if social_eval_class.is_enabled():
                     social_eval_class.set_logger(logging.getLogger(social_eval_class_type.__name__))
                     social_eval_class.set_config(self.config)
@@ -73,8 +73,8 @@ class Evaluator:
                     social_eval_class.set_symbol(self.symbol)
 
                     # Start eval process
-                    social_eval_class.get_data()
-                    social_eval_class.eval()
+                    #social_eval_class.get_data()
+                    #social_eval_class.eval()
                     self.social_eval_list.append(social_eval_class)
 
         return self.social_eval_list

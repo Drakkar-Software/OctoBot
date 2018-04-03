@@ -1,9 +1,9 @@
-from evaluator.Social.Social_evaluator import NewsSocialEvaluator
+from evaluator.Social.social_evaluator import NewsSocialEvaluator
 
 
 class TwitterNewsEvaluator(NewsSocialEvaluator):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, evaluation_matrix, evaluator_thread):
+        super().__init__(evaluation_matrix, evaluator_thread)
         self.enabled = False
 
     def get_data(self):
@@ -14,8 +14,8 @@ class TwitterNewsEvaluator(NewsSocialEvaluator):
 
 
 class MediumNewsEvaluator(NewsSocialEvaluator):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, evaluation_matrix, evaluator_thread):
+        super().__init__(evaluation_matrix, evaluator_thread)
         self.enabled = False
 
     def get_data(self):
