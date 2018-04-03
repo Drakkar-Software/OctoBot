@@ -35,7 +35,8 @@ class TAEvaluatorThread(threading.Thread):
         return self.evaluationMatrix
 
     def notify(self, notifier_name):
-        self.logger.debug(notifier_name+" notified value: "+ str(self.evaluationMatrix.get_social_evals())+" to: " + self.thread_name)
+        self.logger.debug(notifier_name+" notified value: " + str(self.evaluationMatrix.get_social_evals()) + " to: "
+                          + self.thread_name)
         self.update_relevant_instant_indicators()
         self.compute_aggregated_values()
 
@@ -50,7 +51,8 @@ class TAEvaluatorThread(threading.Thread):
             self.evaluationMatrix.set_TA_eval(TA_eval_class.get_evaluator_name()
                                               , TA_eval_class.get_eval_note())
 
-        self.logger.debug("Updated TA Eval : " + str(self.evaluationMatrix.get_TA_evals())+ " social evals: "+ str(self.evaluationMatrix.get_social_evals()))
+        self.logger.debug("Updated TA Eval : " + str(self.evaluationMatrix.get_TA_evals()) + " social evals: "
+                          + str(self.evaluationMatrix.get_social_evals()))
 
     def compute_aggregated_values(self):
         self.evaluator.finalize()
@@ -92,9 +94,8 @@ class SocialEvaluatorThread(threading.Thread):
         return self.evaluationMatrix
 
     def notify(self, notifier_name):
-        print(notifier_name+" notified something.")
-        print("++++++notification social Eval : " + str(self.evaluationMatrix.get_social_evals()))
-        print("+++++++++++++++++++++")
+        self.logger.warning("SHOULD NOT HAPPEN (social thread got notified): " + notifier_name+" notified value: "
+                            + str(self.evaluationMatrix.get_social_evals()) + " to: " + self.thread_name)
 
     def run(self):
         for thread in self.social_threads:
