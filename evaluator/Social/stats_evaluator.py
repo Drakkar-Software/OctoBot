@@ -1,12 +1,12 @@
 from pytrends.exceptions import ResponseError
 from pytrends.request import TrendReq
 
-from evaluator.Social.Social_evaluator import StatsSocialEvaluator, TimeFrames
+from evaluator.Social.social_evaluator import StatsSocialEvaluator, TimeFrames
 
 
 class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, evaluation_matrix, evaluator_thread):
+        super().__init__(evaluation_matrix, evaluator_thread)
         self.pytrends = None
 
     # Use pytrends lib (https://github.com/GeneralMills/pytrends)
@@ -52,5 +52,11 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
             else:
                 self.eval_note -= 0.5
 
+            print("GoogleTrendStatsEvaluator: "+str(self.eval_note))
+
         except Exception as e:
             self.logger.warn(str(e))
+
+    def need_to_notify(self):
+        return (self.get_eval_note() > 0.8
+                or self.get_eval_note() < 0.2)
