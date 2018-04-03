@@ -20,8 +20,7 @@ Create a **config.json** file in the **config folder** with the following exampl
   },
   "notification":{
     "enabled": true,
-    "type": 1,
-    "mail_dest": "your_destination_mail@xxx.com"
+    "type": 1
   },
   "trader":{
     "enabled": false,
