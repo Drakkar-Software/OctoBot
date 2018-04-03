@@ -5,6 +5,35 @@ from evaluator.TA.TA_evaluator import MomentumEvaluator, PriceStrings
 
 # https://mrjbq7.github.io/ta-lib/func_groups/momentum_indicators.html
 
+class RSIMomentumEvaluator(MomentumEvaluator):
+    def __init__(self):
+        super().__init__()
+        self.pertinence = 1
+
+    # TODO : temp analysis
+    def eval(self):
+        rsi_v = talib.RSI(self.data[PriceStrings.STR_PRICE_CLOSE.value])
+
+        long_trend = self.get_trend(rsi_v, self.long_term_averages)
+        short_trend = self.get_trend(rsi_v, self.short_term_averages)
+
+        # check if trend change
+        if short_trend > 0 > long_trend:
+            # trend changed to up
+            self.set_eval_note(-short_trend)
+
+        elif long_trend > 0 > short_trend:
+            # trend changed to down
+            self.set_eval_note(short_trend)
+
+        # use RSI current value
+        last_rsi_value = rsi_v.tail(1).values[0]
+        if last_rsi_value > 50:
+            self.set_eval_note(rsi_v.tail(1).values[0] / 100)
+        else:
+            self.set_eval_note((rsi_v.tail(1).values[0] - 100) / 100)
+
+
 # ADX --> trend_strength
 class ADXMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
@@ -26,38 +55,6 @@ class ADXMomentumEvaluator(MomentumEvaluator):
         # When ADX drops below 18, it often leads to a sideways or horizontal trading pattern
         elif last < 18:
             pass
-
-
-class RSIMomentumEvaluator(MomentumEvaluator):
-    def __init__(self):
-        super().__init__()
-        self.pertinence = 2
-
-    # TODO : temp analysis
-    def eval(self):
-        rsi_v = talib.RSI(self.data[PriceStrings.STR_PRICE_CLOSE.value])
-
-        # get the last 10 values of RSI
-        last_values = rsi_v.tail(10).values
-
-        first = last_values[0]
-        last = last_values[-1]
-
-        rsi_eval = self.eval_note
-
-        # Difference between the last 10 candles
-        if first > last:
-            rsi_eval -= (first - last)
-        else:
-            rsi_eval += (last - first)
-
-        if last > 50:
-            rsi_eval += (last - 50)
-        else:
-            rsi_eval -= (50 - last)
-
-        # 2 : modifications
-        self.eval_note += rsi_eval / (2 * 100)
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):

@@ -4,7 +4,6 @@ from evaluator.TA.TA_evaluator import TrendEvaluator, PriceStrings
 
 
 # https://mrjbq7.github.io/ta-lib/func_groups/overlap_studies.html
-
 class CandleAnalysisTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
