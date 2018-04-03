@@ -4,7 +4,7 @@ class EvaluationMatrix:
         self.social_eval_value_dict = {}
         self.TA_eval_value_dict = {}
 
-# ---- getters and setter ----
+# ---- getters and setters ----
     def set_social_eval(self, evaluator_name, value):
         self.social_eval_value_dict[evaluator_name] = value
 
