@@ -8,6 +8,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
     def __init__(self):
         super().__init__()
         self.pytrends = None
+        self.enabled = False
 
     # Use pytrends lib (https://github.com/GeneralMills/pytrends)
     # https://github.com/GeneralMills/pytrends/blob/master/examples/example.py
