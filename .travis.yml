@@ -4,6 +4,7 @@ notifications:
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
 install: 
   - "git clone https://github.com/Trading-Bot/CryptoBot"
+  - sudo chmod 775 ./doc/install/install-ta-lib.sh
   - ./doc/install/install-ta-lib.sh
   - "python -m pip install -r requirements.txt"
 
