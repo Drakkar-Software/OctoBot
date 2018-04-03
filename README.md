@@ -1,4 +1,4 @@
-# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Herklos-Bots/CryptoBot&amp;utm_campaign=Badge_Grade)
+# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://travis-ci.org/Trading-Bot/CryptoBot.svg?branch=master)](https://travis-ci.org/Trading-Bot/CryptoBot)
 #### Version 0.0.3-alpha 
 ## Install
 ```
