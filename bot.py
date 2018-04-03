@@ -29,7 +29,8 @@ class Crypto_Bot:
         # Notifier
         self.notifier = Notification(self.config)
 
-        self.symbols_threads = []
+        self.symbols_social_threads = []
+        self.symbols_TA_threads = []
 
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
@@ -64,19 +65,21 @@ class Crypto_Bot:
                         self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
             #2 Social
             if at_least_one_TA:
-                self.symbols_threads.extend(current_symbols_threads)
-                self.symbols_threads.append(SocialEvaluatorThread(self.config,
+                self.symbols_TA_threads.extend(current_symbols_threads)
+                self.symbols_social_threads.append(SocialEvaluatorThread(self.config,
                                                                symbol,
-                                                               time_frame,
+                                                               TimeFrames.ONE_HOUR,
                                                                self.notifier,
                                                                current_symbols_threads))
 
 
     def start_threads(self):
-        for thread in self.symbols_threads:
+        for thread in self.symbols_TA_threads:
+            thread.start()
+        for thread in self.symbols_social_threads:
             thread.start()
         self.logger.info("Evaluation threads started...")
 
     def join_threads(self):
-        for thread in self.symbols_threads:
+        for thread in self.symbols_TA_threads:
             thread.join()

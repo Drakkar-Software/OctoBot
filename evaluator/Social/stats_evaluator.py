@@ -52,8 +52,6 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
             else:
                 self.eval_note -= 0.5
 
-            print("GoogleTrendStatsEvaluator: "+str(self.eval_note))
-
         except Exception as e:
             self.logger.warn(str(e))
 

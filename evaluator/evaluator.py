@@ -72,9 +72,6 @@ class Evaluator:
                     social_eval_class.set_history_time(self.history_time)
                     social_eval_class.set_symbol(self.symbol)
 
-                    # Start eval process
-                    #social_eval_class.get_data()
-                    #social_eval_class.eval()
                     self.social_eval_list.append(social_eval_class)
 
         return self.social_eval_list
