@@ -1,0 +1,12 @@
+language: python
+sudo: enabled
+notifications:
+  slack: cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb
+    on_success: always
+    on_failure: always
+
+install:
+  - git clone https://github.com/Trading-Bot/CryptoBot
+  - ./doc/install/install-ta-lib.sh
+  - python -m pip install -r requirements.txt
+
