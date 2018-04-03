@@ -57,5 +57,6 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
             self.logger.warn(str(e))
 
     def need_to_notify(self):
+        #example basic implementation
         return (self.get_eval_note() > 0.8
                 or self.get_eval_note() < 0.2)
