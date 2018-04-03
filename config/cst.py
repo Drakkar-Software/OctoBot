@@ -1,14 +1,14 @@
 from enum import Enum
 
 MINUTE_TO_SECONDS = 60
-START_EVAL_NOTE = 0.5
+START_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
 
 
 class EvaluatorRisk(Enum):
-    HIGH = 1
+    LOW = 1
     MEDIUM = 2
-    LOW = 3
+    HIGH = 3
 
 
 class EvaluatorStates(Enum):
@@ -20,7 +20,7 @@ class EvaluatorStates(Enum):
 
 
 class EvaluatorsPertinence(Enum):
-    SocialEvaluator = 1
+    SocialEvaluator = 0 # temp
     TAEvaluator = 1
 
 
