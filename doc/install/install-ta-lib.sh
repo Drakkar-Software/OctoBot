@@ -5,3 +5,5 @@ cd ta-lib
 ./configure --prefix=/usr
 make
 sudo make install
+cd ..
+cd ..
