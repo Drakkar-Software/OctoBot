@@ -1,14 +1,13 @@
 import threading
-import time
-
 from abc import *
+
 from config.cst import *
 
 
 class SocialEvaluator(threading.Thread):
     __metaclass__ = ABCMeta
 
-    def __init__(self, evaluation_matrix, TA_threads):
+    def __init__(self):
         threading.Thread.__init__(self)
         self.logger = None
         self.symbol = None
@@ -17,8 +16,7 @@ class SocialEvaluator(threading.Thread):
         self.eval_note = START_EVAL_NOTE
         self.logger = None
         self.pertinence = START_EVAL_PERTINENCE
-        self._evaluationMatrix = evaluation_matrix  #used only for debug purposes
-        self.evaluator_threads = TA_threads
+        self.need_to_notify = False
         self.enabled = True
 
     def set_logger(self, logger):
@@ -36,64 +34,60 @@ class SocialEvaluator(threading.Thread):
     def get_eval_note(self):
         return self.eval_note
 
-    def get_pertinence(self):
-        return self.pertinence
-
     def is_enabled(self):
         return self.enabled
 
-    def get_evaluator_name(self):
-        return self.__class__.__name__
+    def get_pertinence(self):
+        return self.pertinence
 
+    # getter used be evaluator thread to check if this evaluator notified
     def notify_if_necessary(self):
-        if self.need_to_notify():
-            self.notify_evaluator_threads()
+        current = self.need_to_notify
 
-    def notify_evaluator_threads(self):
-        for thread in self.evaluator_threads:
-            thread.notify(self.get_evaluator_name())
+        # remove notify
+        self.need_to_notify = False
 
-    # updates local matrix and all TA threads matrix
-    def update_evaluation_matrix(self):
-        self._evaluationMatrix.set_social_eval(self.get_evaluator_name(), self.get_eval_note())
-        for thread in self.evaluator_threads:
-            thread.get_evaluation_matrix().set_social_eval(self.get_evaluator_name(), self.get_eval_note())
+        return current
 
-    @abstractmethod
-    def need_to_notify(self):
-        raise NotImplementedError("NeedToNotify not implemented")
-
-    @abstractmethod
-    def run(self):
-        raise NotImplementedError("Run not implemented")
-
+    # eval new data
+    # Notify if new data is relevant
+    # example :
+    # def eval(self):
+    #   for post in post_selected
+    #       note = sentiment_evaluator(post.text)
+    #       if(note > 10 || note < 0):
+    #           self.need_to_notify = True
+    #       self.eval_note += note
     @abstractmethod
     def eval(self):
         raise NotImplementedError("Eval not implemented")
 
+    # get data needed to perform the eval
+    # example :
+    # def get_data(self):
+    #   for follow in followers:
+    #       self.data.append(twitter.API(XXXXX))
     @abstractmethod
     def get_data(self):
         raise NotImplementedError("Get Data not implemented")
+
+    # thread that will use get_data to provide real time data
+    # example :
+    # def run(self):
+    #     while True:
+    #         self.get_data()                           --> pull the new data
+    #         self.eval()                               --> create a notification if necessary
+    #         time.sleep(own_time * MINUTE_TO_SECONDS)  --> use its own refresh time (near real time)
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError("Eval not implemented")
 
 
 class StatsSocialEvaluator(SocialEvaluator):
     __metaclass__ = ABCMeta
 
-    def __init__(self, evaluation_matrix, evaluator_thread):
-        super().__init__(evaluation_matrix, evaluator_thread)
-        self.updatePeriod = 10; #default update period, to specify later in config according to evaluator
-
-    def run(self):
-        while True:
-            self.get_data()
-            self.eval()
-            self.update_evaluation_matrix()
-            self.notify_if_necessary()
-            time.sleep(self.history_time * MINUTE_TO_SECONDS)
-
-    @abstractmethod
-    def need_to_notify(self):
-        raise NotImplementedError("NeedToNotify not implemented")
+    def __init__(self):
+        super().__init__()
 
     @abstractmethod
     def eval(self):
@@ -102,22 +96,17 @@ class StatsSocialEvaluator(SocialEvaluator):
     @abstractmethod
     def get_data(self):
         raise NotImplementedError("Get Data not implemented")
+
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError("Eval not implemented")
 
 
 class ForumSocialEvaluator(SocialEvaluator):
     __metaclass__ = ABCMeta
 
-    def __init__(self, evaluation_matrix, evaluator_thread):
-        super().__init__(evaluation_matrix, evaluator_thread)
-
-    # To define here or in impletementation according to available APIs
-    @abstractmethod
-    def run(self):
-        raise NotImplementedError("Run not implemented")
-
-    @abstractmethod
-    def need_to_notify(self):
-        raise NotImplementedError("NeedToNotify not implemented")
+    def __init__(self):
+        super().__init__()
 
     @abstractmethod
     def eval(self):
@@ -126,22 +115,17 @@ class ForumSocialEvaluator(SocialEvaluator):
     @abstractmethod
     def get_data(self):
         raise NotImplementedError("Get Data not implemented")
+
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError("Eval not implemented")
 
 
 class NewsSocialEvaluator(SocialEvaluator):
     __metaclass__ = ABCMeta
 
-    def __init__(self, evaluation_matrix, evaluator_thread):
-        super().__init__(evaluation_matrix, evaluator_thread)
-
-    # To define here or in impletementation according to available APIs
-    @abstractmethod
-    def run(self):
-        raise NotImplementedError("Run not implemented")
-
-    @abstractmethod
-    def need_to_notify(self):
-        raise NotImplementedError("NeedToNotify not implemented")
+    def __init__(self):
+        super().__init__()
 
     @abstractmethod
     def eval(self):
@@ -150,3 +134,7 @@ class NewsSocialEvaluator(SocialEvaluator):
     @abstractmethod
     def get_data(self):
         raise NotImplementedError("Get Data not implemented")
+
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError("Eval not implemented")
