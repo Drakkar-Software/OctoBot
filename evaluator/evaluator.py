@@ -66,14 +66,16 @@ class Evaluator:
         for social_type in SocialEvaluator.__subclasses__():
             for social_eval_class_type in social_type.__subclasses__():
                 social_eval_class = social_eval_class_type()
-                social_eval_class.set_logger(logging.getLogger(social_eval_class_type.__name__))
-                social_eval_class.set_config(self.config)
-                social_eval_class.set_history_time(self.history_time)
-                social_eval_class.set_symbol(self.symbol)
+                if social_eval_class.is_enabled():
+                    social_eval_class.set_logger(logging.getLogger(social_eval_class_type.__name__))
+                    social_eval_class.set_config(self.config)
+                    social_eval_class.set_history_time(self.history_time)
+                    social_eval_class.set_symbol(self.symbol)
 
-                social_eval_class.get_data()
-                social_eval_class.eval()
-                self.social_eval_list.append(social_eval_class)
+                    # start refreshing thread
+                    social_eval_class.start()
+
+                    self.social_eval_list.append(social_eval_class)
 
         return self.social_eval_list
 
@@ -82,12 +84,14 @@ class Evaluator:
         for ta_type in TAEvaluator.__subclasses__():
             for ta_eval_class_type in ta_type.__subclasses__():
                 ta_eval_class = ta_eval_class_type()
-                ta_eval_class.set_logger(logging.getLogger(ta_eval_class_type.__name__))
-                ta_eval_class.set_config(self.config)
-                ta_eval_class.set_data(self.data)
-                ta_eval_class.eval()
+                if ta_eval_class.is_enabled():
+                    ta_eval_class.set_logger(logging.getLogger(ta_eval_class_type.__name__))
+                    ta_eval_class.set_config(self.config)
+                    ta_eval_class.set_data(self.data)
 
-                self.ta_eval_list.append(ta_eval_class)
+                    # Start eval process
+                    ta_eval_class.eval()
+                    self.ta_eval_list.append(ta_eval_class)
 
         return self.ta_eval_list
 
@@ -114,12 +118,12 @@ class Evaluator:
         else:
             self.social_final_eval = START_EVAL_NOTE
 
-        # TODO
+        # TODO : improve
         self.final_eval = (self.ta_final_eval * EvaluatorsPertinence.TAEvaluator.value
                            + self.social_final_eval * EvaluatorsPertinence.SocialEvaluator.value)
         self.final_eval /= (EvaluatorsPertinence.TAEvaluator.value + EvaluatorsPertinence.SocialEvaluator.value)
 
-        # TODO : temp
+        # TODO : improve
         if self.final_eval < 0.2:
             self.set_state(EvaluatorStates.VERY_LONG)
         elif self.final_eval < 0.4:

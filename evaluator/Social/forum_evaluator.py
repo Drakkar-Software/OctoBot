@@ -1,9 +1,10 @@
-from evaluator.Social.Social_evaluator import ForumSocialEvaluator
+from evaluator.Social.social_evaluator import ForumSocialEvaluator
 
 
 class RedditForumEvaluator(ForumSocialEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def get_data(self):
         pass
@@ -15,6 +16,7 @@ class RedditForumEvaluator(ForumSocialEvaluator):
 class BTCTalkForumEvaluator(ForumSocialEvaluator):
     def __init__(self):
         super().__init__()
+        self.enabled = False
 
     def get_data(self):
         pass

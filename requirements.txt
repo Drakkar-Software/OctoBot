@@ -1,3 +1,4 @@
+bitex
 pandas
 aenum
 pytrends
