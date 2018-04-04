@@ -5,3 +5,4 @@ pytrends
 python-binance
 HerklosBotsCore
 TA-Lib
+pytest
