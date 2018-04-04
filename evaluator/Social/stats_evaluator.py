@@ -5,8 +5,8 @@ from evaluator.Social.social_evaluator import StatsSocialEvaluator, TimeFrames
 
 
 class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
-    def __init__(self, evaluation_matrix, evaluator_thread):
-        super().__init__(evaluation_matrix, evaluator_thread)
+    def __init__(self):
+        super().__init__()
         self.pytrends = None
         self.enabled = False
 
@@ -56,7 +56,5 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
         except Exception as e:
             self.logger.warn(str(e))
 
-    def need_to_notify(self):
-        #example basic implementation
-        return (self.get_eval_note() > 0.8
-                or self.get_eval_note() < 0.2)
+    def run(self):
+        pass
