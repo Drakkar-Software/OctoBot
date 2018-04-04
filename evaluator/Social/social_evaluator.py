@@ -10,6 +10,7 @@ class SocialEvaluator(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
+        self.social_config = None
         self.config = None
         self.logger = None
         self.symbol = None
@@ -25,7 +26,7 @@ class SocialEvaluator(threading.Thread):
     def load_config(self):
         config_file = self.get_config_file_name()
         if os.path.isfile(config_file):
-            self.config = load_config(config_file)
+            self.social_config = load_config(config_file)
         else:
             self.set_default_config()
 
