@@ -1,13 +1,14 @@
 from pytrends.exceptions import ResponseError
 from pytrends.request import TrendReq
 
-from evaluator.Social.Social_evaluator import StatsSocialEvaluator, TimeFrames
+from evaluator.Social.social_evaluator import StatsSocialEvaluator, TimeFrames
 
 
 class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
     def __init__(self):
         super().__init__()
         self.pytrends = None
+        self.enabled = False
 
     # Use pytrends lib (https://github.com/GeneralMills/pytrends)
     # https://github.com/GeneralMills/pytrends/blob/master/examples/example.py
@@ -54,3 +55,6 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
 
         except Exception as e:
             self.logger.warn(str(e))
+
+    def run(self):
+        pass
