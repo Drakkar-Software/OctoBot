@@ -4,6 +4,7 @@ python:
   - 3.6
 notifications: 
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
+  email: false
 install:
   - ./doc/install/install-ta-lib.sh
   - pip install git+https://github.com/Herklos-Bots/BotCore
