@@ -3,10 +3,9 @@ import threading
 import time
 
 from evaluator import *
-from evaluator.evalutionUtil import *
 
 
-class TAEvaluatorThread(threading.Thread):
+class EvaluatorThread(threading.Thread):
     def __init__(self, config, symbol, time_frame, exchange, notifier, trader):
         threading.Thread.__init__(self)
         self.config = config
@@ -22,6 +21,10 @@ class TAEvaluatorThread(threading.Thread):
                            + " - " + str(self.time_frame)
         self.logger = logging.getLogger(self.thread_name)
 
+        # Create data refresh thread
+        self.data_refresher = TimeFrameDataThread(self)
+
+        # Create Evaluator
         self.evaluator = Evaluator()
         self.evaluator.set_config(self.config)
         self.evaluator.set_symbol(self.symbol)
@@ -29,74 +32,55 @@ class TAEvaluatorThread(threading.Thread):
         self.evaluator.set_notifier(self.notifier)
         self.evaluator.set_trader(self.trader)
 
-        self.evaluationMatrix = EvaluationMatrix()
+    def check_notifications(self):
+        result = False
+        for social_eval_class in self.evaluator.social_eval():
+            if social_eval_class.need_to_notify:
+                result = True
+                break
+        return result
 
-    def get_evaluation_matrix(self):
-        return self.evaluationMatrix
+    def run(self):
+        # run data refresh
+        self.data_refresher.start()
 
-    def notify(self, notifier_name):
-        self.logger.debug(notifier_name+" notified value: " + str(self.evaluationMatrix.get_social_evals()) + " to: "
-                          + self.thread_name)
-        self.update_relevant_instant_indicators()
-        self.compute_aggregated_values()
+        while True:
 
-    def update_relevant_instant_indicators(self):
-        self.update_TAs()
+            # If data is beeing refreshed wait
+            if not self.data_refresher.get_refreshed():
+                continue
 
-    def update_TAs(self):
-        self.evaluator.set_data(self.exchange.get_symbol_prices(self.symbol,
-                                                                self.exchange_time_frame(self.time_frame)))
+            self.evaluator.finalize()
+            self.logger.debug("FINAL : " + str(self.evaluator.get_state()))
 
-        for TA_eval_class in self.evaluator.ta_eval():
-            self.evaluationMatrix.set_TA_eval(TA_eval_class.get_evaluator_name()
-                                              , TA_eval_class.get_eval_note())
+            # wait refresh time or refresh if notified
+            while True:
+                # if an evaluator create notification --> re-eval before the next time frame end
+                if self.check_notifications():
+                    break
+                time.sleep(1)
 
-        self.logger.debug("Updated TA Eval : " + str(self.evaluationMatrix.get_TA_evals()) + " social evals: "
-                          + str(self.evaluationMatrix.get_social_evals()))
 
-    def compute_aggregated_values(self):
-        self.evaluator.finalize()
-        self.logger.debug("FINAL AGGREGATED VALUE: " + str(self.evaluator.get_state()))
+# reset to count sec
+# At the end of a time frame --> update time frame depending data
+class TimeFrameDataThread(threading.Thread):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.refreshed = False
+
+    def get_refreshed(self):
+        return self.refreshed
+
+    def refresh_data(self):
+        self.refreshed = False
+        self.parent.evaluator.set_data(
+            self.parent.exchange.get_symbol_prices(
+                self.parent.symbol,
+                self.parent.exchange_time_frame(self.parent.time_frame)))
+        self.refreshed = True
 
     def run(self):
         while True:
-            # update every TA
-            self.update_TAs()
-            self.compute_aggregated_values()
-            time.sleep(self.time_frame.value * MINUTE_TO_SECONDS)
-
-
-class SocialEvaluatorThread(threading.Thread):
-    def __init__(self, config, symbol, time_frame, notifier, TA_threads):
-        threading.Thread.__init__(self)
-        self.config = config
-        self.symbol = symbol
-        self.notifier = notifier
-        self.time_frame = time_frame
-        self.TA_threads = TA_threads
-
-        self.thread_name = "SOCIAL THREAD - " + self.symbol
-        self.logger = logging.getLogger(self.thread_name)
-
-        self.evaluator = Evaluator()
-        self.evaluator.set_time_frame(self.time_frame)
-        self.evaluator.set_config(self.config)
-        self.evaluator.set_symbol(self.symbol)
-
-        self.evaluationMatrix = EvaluationMatrix()
-
-        self.social_threads = []
-
-        for social_eval_class in self.evaluator.social_eval(self.evaluationMatrix, TA_threads):
-            self.social_threads.append(social_eval_class)
-
-    def get_evaluation_matrix(self):
-        return self.evaluationMatrix
-
-    def notify(self, notifier_name):
-        self.logger.warning("SHOULD NOT HAPPEN (social thread got notified): " + notifier_name+" notified value: "
-                            + str(self.evaluationMatrix.get_social_evals()) + " to: " + self.thread_name)
-
-    def run(self):
-        for thread in self.social_threads:
-            thread.start()
+            self.refresh_data()
+            time.sleep(self.parent.time_frame.value * MINUTE_TO_SECONDS)
