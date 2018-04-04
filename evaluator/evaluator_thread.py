@@ -54,6 +54,20 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.ta_eval()
 
         while True:
+            # for Debug purpose
+            ta_eval_list_result = []
+            for ta_eval in self.evaluator.get_ta_eval_list():
+                ta_eval_list_result.append(ta_eval.get_eval_note())
+
+            self.logger.debug("TA EVAL : " + str(ta_eval_list_result))
+
+            social_eval_list_result = []
+            for social_eval in self.evaluator.get_social_eval_list():
+                social_eval_list_result.append(social_eval.get_eval_note())
+
+            self.logger.debug("Social EVAL : " + str(social_eval_list_result))
+
+            # calculate the final result
             self.evaluator.finalize()
             self.logger.debug("FINAL : " + str(self.evaluator.get_state()))
 
