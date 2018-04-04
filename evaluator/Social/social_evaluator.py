@@ -1,7 +1,8 @@
-import threading
+import threading, os
 from abc import *
 
 from config.cst import *
+from botcore.config.config import load_config
 
 
 class SocialEvaluator(threading.Thread):
@@ -9,16 +10,27 @@ class SocialEvaluator(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
+        self.config = None
         self.logger = None
         self.symbol = None
         self.history_time = None
-        self.config = None
         self.eval_note = START_EVAL_NOTE
         self.logger = None
         self.pertinence = START_EVAL_PERTINENCE
         self.need_to_notify = False
         self.enabled = True
         self.is_threaded = False
+        self.load_config()
+
+    def load_config(self):
+        config_file = self.get_config_file_name()
+        if os.path.isfile(config_file):
+            self.config = load_config(config_file)
+        else:
+            self.set_default_config()
+
+    def get_config_file_name(self):
+        return "config/social_evaluator_config/"+self.__class__.__name__+".json"
 
     def set_logger(self, logger):
         self.logger = logger
@@ -43,6 +55,10 @@ class SocialEvaluator(threading.Thread):
 
     def get_pertinence(self):
         return self.pertinence
+
+    # to implement in subclasses if config necessary
+    def set_default_config(self):
+        pass
 
     # getter used be evaluator thread to check if this evaluator notified
     def notify_if_necessary(self):
