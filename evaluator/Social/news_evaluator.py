@@ -14,15 +14,14 @@ class TwitterNewsEvaluator(NewsSocialEvaluator):
 
     def eval(self):
         v = randint(0, 9)
-        if v == 9:
+        if v == 5:
             self.need_to_notify = True
-            print("ASK Notification")
 
     def run(self):
         while True:
             self.get_data()
             self.eval()
-            time.sleep(5)
+            time.sleep(2)
 
 
 class MediumNewsEvaluator(NewsSocialEvaluator):
