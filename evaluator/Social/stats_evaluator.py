@@ -61,5 +61,5 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
         pass
 
     def set_default_config(self):
-        self.config = {"refresh_rate_seconds": 3600
+        self.social_config = {"refresh_rate_seconds": 3600
                        }
