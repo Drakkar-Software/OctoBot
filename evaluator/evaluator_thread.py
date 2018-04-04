@@ -6,7 +6,7 @@ from evaluator import *
 
 
 class EvaluatorThread(threading.Thread):
-    def __init__(self, config, symbol, time_frame, exchange, notifier, trader):
+    def __init__(self, config, symbol, time_frame, exchange, notifier, trader, social_eval_list):
         threading.Thread.__init__(self)
         self.config = config
         self.exchange = exchange
@@ -31,6 +31,7 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.set_time_frame(self.time_frame)
         self.evaluator.set_notifier(self.notifier)
         self.evaluator.set_trader(self.trader)
+        self.evaluator.set_social_eval(social_eval_list)
 
     def check_notifications(self):
         result = False
@@ -50,7 +51,6 @@ class EvaluatorThread(threading.Thread):
                 break
 
         # first eval --> create_instances
-        self.evaluator.social_eval()
         self.evaluator.ta_eval()
 
         while True:

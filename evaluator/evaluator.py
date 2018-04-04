@@ -67,22 +67,25 @@ class Evaluator:
     def get_ta_eval_list(self):
         return self.ta_eval_list
 
+    def set_social_eval(self, new_social_list):
+        self.social_eval_list = new_social_list
+
     def social_eval(self):
-        self.social_eval_list = []
-        for social_type in SocialEvaluator.__subclasses__():
-            for social_eval_class_type in social_type.__subclasses__():
-                social_eval_class = social_eval_class_type()
-                if social_eval_class.get_is_enabled():
-                    social_eval_class.set_logger(logging.getLogger(social_eval_class_type.__name__))
-                    social_eval_class.set_config(self.config)
-                    social_eval_class.set_history_time(self.history_time)
-                    social_eval_class.set_symbol(self.symbol)
+        if not self.social_eval_list:
+            for social_type in SocialEvaluator.__subclasses__():
+                for social_eval_class_type in social_type.__subclasses__():
+                    social_eval_class = social_eval_class_type()
+                    if social_eval_class.get_is_enabled():
+                        social_eval_class.set_logger(logging.getLogger(social_eval_class_type.__name__))
+                        social_eval_class.set_config(self.config)
+                        social_eval_class.set_history_time(self.history_time)
+                        social_eval_class.set_symbol(self.symbol)
 
-                    # start refreshing thread
-                    if social_eval_class.get_is_threaded():
-                        social_eval_class.start()
+                        # start refreshing thread
+                        if social_eval_class.get_is_threaded():
+                            social_eval_class.start()
 
-                    self.social_eval_list.append(social_eval_class)
+                        self.social_eval_list.append(social_eval_class)
 
         return self.social_eval_list
 
