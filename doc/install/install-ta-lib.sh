@@ -6,3 +6,4 @@ cd ta-lib
 make
 sudo make install
 cd ..
+cd ..
