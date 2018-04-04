@@ -7,6 +7,7 @@ notifications:
   email: false
 install:
   - ./doc/install/install-ta-lib.sh
+  - $HOME/Trading-Bot/CryptoBot
   - pip install git+https://github.com/Herklos-Bots/BotCore
   - python -m pip install -r requirements.txt
 script: pytest
