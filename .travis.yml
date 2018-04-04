@@ -5,7 +5,6 @@ python:
 notifications: 
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
 install:
-  - cd CryptoBot/
   - ./doc/install/install-ta-lib.sh
   - pip install git+https://github.com/Herklos-Bots/BotCore
   - python -m pip install -r requirements.txt
