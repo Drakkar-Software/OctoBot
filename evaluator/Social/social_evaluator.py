@@ -18,6 +18,7 @@ class SocialEvaluator(threading.Thread):
         self.pertinence = START_EVAL_PERTINENCE
         self.need_to_notify = False
         self.enabled = True
+        self.is_threaded = False
 
     def set_logger(self, logger):
         self.logger = logger
@@ -34,8 +35,11 @@ class SocialEvaluator(threading.Thread):
     def get_eval_note(self):
         return self.eval_note
 
-    def is_enabled(self):
+    def get_is_enabled(self):
         return self.enabled
+
+    def get_is_threaded(self):
+        return self.is_threaded
 
     def get_pertinence(self):
         return self.pertinence

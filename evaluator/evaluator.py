@@ -61,19 +61,26 @@ class Evaluator:
     def get_final_eval(self):
         return self.final_eval
 
+    def get_social_eval_list(self):
+        return self.social_eval_list
+
+    def get_ta_eval_list(self):
+        return self.ta_eval_list
+
     def social_eval(self):
         self.social_eval_list = []
         for social_type in SocialEvaluator.__subclasses__():
             for social_eval_class_type in social_type.__subclasses__():
                 social_eval_class = social_eval_class_type()
-                if social_eval_class.is_enabled():
+                if social_eval_class.get_is_enabled():
                     social_eval_class.set_logger(logging.getLogger(social_eval_class_type.__name__))
                     social_eval_class.set_config(self.config)
                     social_eval_class.set_history_time(self.history_time)
                     social_eval_class.set_symbol(self.symbol)
 
                     # start refreshing thread
-                    social_eval_class.start()
+                    if social_eval_class.get_is_threaded():
+                        social_eval_class.start()
 
                     self.social_eval_list.append(social_eval_class)
 
@@ -84,7 +91,7 @@ class Evaluator:
         for ta_type in TAEvaluator.__subclasses__():
             for ta_eval_class_type in ta_type.__subclasses__():
                 ta_eval_class = ta_eval_class_type()
-                if ta_eval_class.is_enabled():
+                if ta_eval_class.get_is_enabled():
                     ta_eval_class.set_logger(logging.getLogger(ta_eval_class_type.__name__))
                     ta_eval_class.set_config(self.config)
                     ta_eval_class.set_data(self.data)

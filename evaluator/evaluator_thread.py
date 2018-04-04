@@ -34,8 +34,8 @@ class EvaluatorThread(threading.Thread):
 
     def check_notifications(self):
         result = False
-        for social_eval_class in self.evaluator.social_eval():
-            if social_eval_class.need_to_notify:
+        for social_eval_class in self.evaluator.get_social_eval_list():
+            if social_eval_class.notify_if_necessary():
                 result = True
                 break
         return result
@@ -44,12 +44,16 @@ class EvaluatorThread(threading.Thread):
         # run data refresh
         self.data_refresher.start()
 
+        # wait for first data
         while True:
+            if self.data_refresher.get_refreshed():
+                break
 
-            # If data is beeing refreshed wait
-            if not self.data_refresher.get_refreshed():
-                continue
+        # first eval --> create_instances
+        self.evaluator.social_eval()
+        self.evaluator.ta_eval()
 
+        while True:
             self.evaluator.finalize()
             self.logger.debug("FINAL : " + str(self.evaluator.get_state()))
 
@@ -58,6 +62,11 @@ class EvaluatorThread(threading.Thread):
                 # if an evaluator create notification --> re-eval before the next time frame end
                 if self.check_notifications():
                     break
+
+                # If data is refreshed --> recalculate
+                if self.data_refresher.get_refreshed():
+                    break
+
                 time.sleep(1)
 
 
@@ -70,10 +79,11 @@ class TimeFrameDataThread(threading.Thread):
         self.refreshed = False
 
     def get_refreshed(self):
-        return self.refreshed
+        current = self.refreshed
+        self.refreshed = False
+        return current
 
     def refresh_data(self):
-        self.refreshed = False
         self.parent.evaluator.set_data(
             self.parent.exchange.get_symbol_prices(
                 self.parent.symbol,
