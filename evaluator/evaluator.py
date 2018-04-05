@@ -119,11 +119,13 @@ class Evaluator:
 
         return self.ta_eval_list
 
-    def update_ta_eval(self):
+    def update_ta_eval(self, ignored_evaluator=None):
         # update only with new data
         if self.data_changed:
             for ta_evaluator in self.ta_eval_list:
-                ta_evaluator.eval()
+                if not (ta_evaluator.__class__.__name__ == ignored_evaluator
+                        or ta_evaluator.get_is_updating()):
+                    ta_evaluator.eval()
 
             # reset data changed after update
             self.data_changed = False

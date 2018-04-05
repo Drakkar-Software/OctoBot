@@ -33,6 +33,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
             self.logger.warn(str(e))
 
     def eval(self):
+        self.is_updating = True
         # Attention apparement limite de request / h assez faible
         try:
             interest_over_time_df = self.pytrends.interest_over_time()
@@ -57,6 +58,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
 
         except Exception as e:
             self.logger.warn(str(e))
+        self.is_updating = False
 
     def run(self):
         pass

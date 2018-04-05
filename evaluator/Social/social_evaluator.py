@@ -22,6 +22,7 @@ class SocialEvaluator(threading.Thread):
         self.enabled = True
         self.is_threaded = False
         self.evaluator_threads = []
+        self.is_updating = False
         self.load_config()
 
     def add_evaluator_thread(self, evaluator_thread):
@@ -64,6 +65,9 @@ class SocialEvaluator(threading.Thread):
 
     def get_pertinence(self):
         return self.pertinence
+
+    def get_is_updating(self):
+        return self.is_updating
 
     # to implement in subclasses if config necessary
     # required if is_threaded = False --> provide evaluator refreshing time
