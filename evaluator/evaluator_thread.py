@@ -39,8 +39,9 @@ class EvaluatorThread(threading.Thread):
         self.social_evaluator_refresh = SocialEvaluatorNotThreadedUpdateThread(self)
 
     def notify(self, notifier_name):
-        self.logger.debug("Notified by " + notifier_name)
-        self.refresh_eval(notifier_name)
+        if self.data_refresher.get_refreshed_times() > 0:
+            self.logger.debug("Notified by " + notifier_name)
+            self.refresh_eval(notifier_name)
 
     def refresh_eval(self, ignored_evaluator=None):
         # First eval --> create_instances
@@ -87,12 +88,17 @@ class TimeFrameUpdateDataThread(threading.Thread):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
+        self.refreshed_times = 0
+
+    def get_refreshed_times(self):
+        return self.refreshed_times
 
     def refresh_data(self):
         self.parent.evaluator.set_data(
             self.parent.exchange.get_symbol_prices(
                 self.parent.symbol,
                 self.parent.exchange_time_frame(self.parent.time_frame)))
+        self.refreshed_times += 1
         self.parent.notify(self.__class__.__name__)
 
     def run(self):
