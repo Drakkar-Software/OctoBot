@@ -42,7 +42,7 @@ class EvaluatorThread(threading.Thread):
 
     def notify(self, notifier_name):
         if self.data_refresher.get_refreshed_times() > 0:
-            self.logger.debug("Notified by " + notifier_name)
+            self.logger.debug("** Notified by " + notifier_name + " **")
             self.refresh_eval(notifier_name)
         else:
             self.logger.debug("Notification by " + notifier_name + " ignored")
@@ -66,7 +66,7 @@ class EvaluatorThread(threading.Thread):
 
         # calculate the final result
         self.evaluator.finalize()
-        self.logger.debug("FINAL : " + str(self.evaluator.get_final().get_state()))
+        self.logger.debug("--> " + str(self.evaluator.get_final().get_state()))
         self.logger.debug("MATRIX : " + pprint.pformat(self.matrix.get_matrix()))
 
     def run(self):
