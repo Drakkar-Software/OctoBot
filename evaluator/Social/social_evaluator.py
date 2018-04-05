@@ -1,7 +1,8 @@
-import threading
+import threading, os
 from abc import *
 
 from config.cst import *
+from botcore.config.config import load_config
 
 
 class SocialEvaluator(threading.Thread):
@@ -9,15 +10,36 @@ class SocialEvaluator(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
+        self.social_config = None
+        self.config = None
         self.logger = None
         self.symbol = None
         self.history_time = None
-        self.config = None
         self.eval_note = START_EVAL_NOTE
         self.logger = None
         self.pertinence = START_EVAL_PERTINENCE
         self.need_to_notify = False
         self.enabled = True
+        self.is_threaded = False
+        self.evaluator_threads = []
+        self.load_config()
+
+    def add_evaluator_thread(self, evaluator_thread):
+        self.evaluator_threads.append(evaluator_thread)
+
+    def notify_evaluator_threads(self, notifier_name):
+        for thread in self.evaluator_threads:
+            thread.notify(notifier_name)
+
+    def load_config(self):
+        config_file = self.get_config_file_name()
+        if os.path.isfile(config_file):
+            self.social_config = load_config(config_file)
+        else:
+            self.set_default_config()
+
+    def get_config_file_name(self):
+        return SOCIAL_SPECIFIC_CONFIG_PATH + self.__class__.__name__ + ".json"
 
     def set_logger(self, logger):
         self.logger = logger
@@ -34,20 +56,18 @@ class SocialEvaluator(threading.Thread):
     def get_eval_note(self):
         return self.eval_note
 
-    def is_enabled(self):
+    def get_is_enabled(self):
         return self.enabled
+
+    def get_is_threaded(self):
+        return self.is_threaded
 
     def get_pertinence(self):
         return self.pertinence
 
-    # getter used be evaluator thread to check if this evaluator notified
-    def notify_if_necessary(self):
-        current = self.need_to_notify
-
-        # remove notify
-        self.need_to_notify = False
-
-        return current
+    # to implement in subclasses if config necessary
+    def set_default_config(self):
+        pass
 
     # eval new data
     # Notify if new data is relevant

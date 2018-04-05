@@ -9,6 +9,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
         super().__init__()
         self.pytrends = None
         self.enabled = False
+        self.is_threaded = False
 
     # Use pytrends lib (https://github.com/GeneralMills/pytrends)
     # https://github.com/GeneralMills/pytrends/blob/master/examples/example.py
@@ -58,3 +59,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
 
     def run(self):
         pass
+
+    def set_default_config(self):
+        self.social_config = {"refresh_rate_seconds": 3600
+                       }

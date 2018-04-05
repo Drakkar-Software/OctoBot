@@ -30,20 +30,35 @@ class Crypto_Bot:
         self.notifier = Notification(self.config)
 
         self.symbols_threads = []
+        self.exchange_traders = {}
+        self.exchanges_list = {}
+
+    def create_exchange_traders(self):
+        for exchange_type in self.exchanges:
+            exchange_inst = exchange_type(self.config)
+
+            # create trader instance for this exchange
+            exchange_trader = Trader(self.config, exchange_inst)
+
+            self.exchanges_list[exchange_type.__name__] = exchange_inst
+            self.exchange_traders[exchange_type.__name__] = exchange_trader
 
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
 
-        for exchange_type in self.exchanges:
-            exchange_inst = exchange_type(self.config)
+        # create Socials and TA evaluators
+        for symbol in self.symbols:
 
-            if exchange_inst.enabled():
-                exchange_inst.get_symbol_list()
+            # create Socials Evaluators
+            social_eval_list = self.create_social_list_evaluator(symbol)
 
-                # create trader instance for this exchange
-                exchange_trader = Trader(self.config, exchange_inst)
+            # create TA evaluators
+            for exchange_type in self.exchanges:
+                exchange_inst = self.exchanges_list[exchange_type.__name__]
 
-                for symbol in self.symbols:
+                if exchange_inst.enabled():
+                    exchange_inst.get_symbol_list()
+
                     # Verify that symbol exists on this exchange
                     if exchange_inst.symbol_exists(symbol):
 
@@ -53,11 +68,19 @@ class Crypto_Bot:
                                                                         time_frame,
                                                                         exchange_inst,
                                                                         self.notifier,
-                                                                        exchange_trader))
+                                                                        self.exchange_traders[exchange_type.__name__],
+                                                                        social_eval_list))
 
                     # notify that exchanges doesn't support this symbol
                     else:
                         self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
+
+    # TODO improve
+    def create_social_list_evaluator(self, symbol):
+        evaluator = Evaluator()
+        evaluator.set_config(self.config)
+        evaluator.set_symbol(symbol)
+        return evaluator.create_social_eval()
 
     def start_threads(self):
         for thread in self.symbols_threads:
