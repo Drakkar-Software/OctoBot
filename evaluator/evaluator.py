@@ -77,24 +77,24 @@ class Evaluator:
         for social_eval in self.social_eval_list:
             social_eval.add_evaluator_thread(evaluator_thread)
 
-    def create_social_eval(self):
-        if not self.social_eval_list:
-            for social_type in SocialEvaluator.__subclasses__():
-                for social_eval_class_type in social_type.__subclasses__():
-                    social_eval_class = social_eval_class_type()
-                    if social_eval_class.get_is_enabled():
-                        social_eval_class.set_logger(logging.getLogger(social_eval_class_type.__name__))
-                        social_eval_class.set_config(self.config)
-                        social_eval_class.set_history_time(self.history_time)
-                        social_eval_class.set_symbol(self.symbol)
+    @staticmethod
+    def create_social_eval(config, symbol):
+        social_eval_list = []
+        for social_type in SocialEvaluator.__subclasses__():
+            for social_eval_class_type in social_type.__subclasses__():
+                social_eval_class = social_eval_class_type()
+                if social_eval_class.get_is_enabled():
+                    social_eval_class.set_logger(logging.getLogger(social_eval_class_type.__name__))
+                    social_eval_class.set_config(config)
+                    social_eval_class.set_symbol(symbol)
 
-                        # start refreshing thread
-                        if social_eval_class.get_is_threaded():
-                            social_eval_class.start()
+                    # start refreshing thread
+                    if social_eval_class.get_is_threaded():
+                        social_eval_class.start()
 
-                        self.social_eval_list.append(social_eval_class)
+                    social_eval_list.append(social_eval_class)
 
-        return self.social_eval_list
+        return social_eval_list
 
     def create_social_not_threaded_list(self):
         for social_eval in self.social_eval_list:
@@ -106,7 +106,7 @@ class Evaluator:
         return self.ta_eval_not_threaded_list
 
     def create_ta_eval(self):
-        if not self.ta_eval_list:
+        if not ta_eval_list:
             for ta_type in TAEvaluator.__subclasses__():
                 for ta_eval_class_type in ta_type.__subclasses__():
                     ta_eval_class = ta_eval_class_type()
