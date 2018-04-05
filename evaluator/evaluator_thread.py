@@ -34,7 +34,7 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.set_social_eval(social_eval_list, self)
 
     def notify(self, notifier_name):
-        self.logger.info("Notified by " + notifier_name)
+        self.logger.debug("Notified by " + notifier_name)
         self.refresh_eval()
 
     def refresh_eval(self):
@@ -67,7 +67,6 @@ class EvaluatorThread(threading.Thread):
         # run data refresh
         self.data_refresher.start()
         self.data_refresher.join()
-
 
 # reset to count sec
 # At the end of a time frame --> update time frame depending data
