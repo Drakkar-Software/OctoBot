@@ -1,0 +1,3 @@
+[
+  "tests/test_start_bot.py::test_create_bot"
+]

@@ -42,7 +42,7 @@ class TAEvaluator:
     def get_pertinence(self):
         return self.pertinence
 
-    def is_enabled(self):
+    def get_is_enabled(self):
         return self.enabled
 
     def get_evaluator_name(self):

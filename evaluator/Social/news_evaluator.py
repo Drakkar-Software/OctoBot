@@ -8,14 +8,15 @@ class TwitterNewsEvaluator(NewsSocialEvaluator):
     def __init__(self):
         super().__init__()
         self.enabled = True
+        self.is_threaded = True
 
     def get_data(self):
         pass
 
     def eval(self):
         v = randint(0, 9)
-        if v == 5:
-            self.need_to_notify = True
+        if v >= 2:
+            self.notify_evaluator_threads(self.__class__.__name__)
 
     def run(self):
         while True:
@@ -28,6 +29,7 @@ class MediumNewsEvaluator(NewsSocialEvaluator):
     def __init__(self):
         super().__init__()
         self.enabled = False
+        self.is_threaded = False
 
     def get_data(self):
         pass

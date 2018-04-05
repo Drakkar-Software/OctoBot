@@ -4,6 +4,8 @@ MINUTE_TO_SECONDS = 60
 START_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
 
+SOCIAL_SPECIFIC_CONFIG_PATH = "config/social_evaluator_config/"
+
 
 class EvaluatorRisk(Enum):
     LOW = 1
@@ -20,7 +22,7 @@ class EvaluatorStates(Enum):
 
 
 class EvaluatorsPertinence(Enum):
-    SocialEvaluator = 0 # temp
+    SocialEvaluator = 0  # temp
     TAEvaluator = 1
 
 

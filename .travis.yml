@@ -4,12 +4,12 @@ python:
   - 3.6
 notifications: 
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
-install: 
-  - git clone https://github.com/Trading-Bot/CryptoBot
-  - git checkout dev
-  - cd CryptoBot/
+  email: false
+install:
   - ./doc/install/install-ta-lib.sh
+  - cp ./doc/install/config_test.json ./config/config.json
   - pip install git+https://github.com/Herklos-Bots/BotCore
   - python -m pip install -r requirements.txt
+script: pytest tests/
 
 

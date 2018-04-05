@@ -1,0 +1,27 @@
+{
+  "exchanges": {
+    "Binance": {
+      "api-key": "",
+      "api-secret": ""
+    },
+    "Bitfinex": {
+      "api-key": "",
+      "api-secret": ""
+    }
+  },
+  "service": {
+    "mail": {
+      "gmail_user": "",
+      "gmail_password": "",
+      "mail_dest": ""
+    }
+  },
+  "notification":{
+    "enabled": true,
+    "type": 1
+  },
+  "trader":{
+    "enabled": true,
+    "risk": 1
+  }
+}
