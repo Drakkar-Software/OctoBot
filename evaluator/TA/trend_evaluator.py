@@ -30,7 +30,9 @@ class BBTrendEvaluator(TrendEvaluator):
         self.enabled = False
 
     def eval(self):
+        self.is_updating = True
         upperband, middleband, lowerband = talib.BBANDS(self.data[PriceStrings.STR_PRICE_CLOSE.value])
+        self.is_updating = False
 
 
 # ease_of_movement --> ease to change trend --> trend strength

@@ -1,6 +1,7 @@
 from pytrends.exceptions import ResponseError
 from pytrends.request import TrendReq
 
+from config.cst import *
 from evaluator.Social.social_evaluator import StatsSocialEvaluator, TimeFrames
 
 
@@ -32,6 +33,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
             self.logger.warn(str(e))
 
     def eval(self):
+        self.is_updating = True
         # Attention apparement limite de request / h assez faible
         try:
             interest_over_time_df = self.pytrends.interest_over_time()
@@ -41,7 +43,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
             last = interest_over_time_df.iloc[-1, 0]
 
             if first > 0:
-                percent_diff = last/first
+                percent_diff = last / first
             else:
                 percent_diff = last
 
@@ -56,10 +58,12 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
 
         except Exception as e:
             self.logger.warn(str(e))
+        self.is_updating = False
 
     def run(self):
         pass
 
     def set_default_config(self):
-        self.social_config = {"refresh_rate_seconds": 3600
-                       }
+        self.social_config = {
+            SOCIAL_CONFIG_REFRESH_RATE: 3600
+        }

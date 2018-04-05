@@ -15,6 +15,7 @@ class TAEvaluator:
         self.pertinence = START_EVAL_PERTINENCE
         self.logger = None
         self.enabled = True
+        self.is_updating = False
 
         self.short_term_averages = [7, 5, 4, 3, 2, 1]
         self.long_term_averages = [40, 30, 20, 15, 10]
@@ -45,8 +46,11 @@ class TAEvaluator:
     def get_is_enabled(self):
         return self.enabled
 
-    def get_evaluator_name(self):
-        return self.__class__.__name__
+    def get_is_evaluable(self):
+        return not (self.get_is_updating() or self.data is None)
+
+    def get_is_updating(self):
+        return self.is_updating
 
     @abstractmethod
     def eval(self):
