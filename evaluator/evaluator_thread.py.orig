@@ -41,7 +41,11 @@ class EvaluatorThread(threading.Thread):
     def refresh_eval(self):
         # First eval --> create_instances
         # Instances will be created only if they don't already exist
+<<<<<<< HEAD
+        Evaluator.create_social_eval(self.config,self.symbol)
+=======
         self.evaluator.create_ta_eval()
+>>>>>>> 9da7b3ae763c28869ab2cf45e19fd5a5aba7af91
 
         # update eval
         self.evaluator.update_ta_eval()
