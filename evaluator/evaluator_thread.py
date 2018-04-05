@@ -36,15 +36,15 @@ class EvaluatorThread(threading.Thread):
 
     def notify(self, notifier_name):
         self.logger.debug("Notified by " + notifier_name)
-        self.refresh_eval()
+        self.refresh_eval(notifier_name)
 
-    def refresh_eval(self):
+    def refresh_eval(self, ignored_evaluator=None):
         # First eval --> create_instances
         # Instances will be created only if they don't already exist
         self.evaluator.create_ta_eval()
 
         # update eval
-        self.evaluator.update_ta_eval()
+        self.evaluator.update_ta_eval(ignored_evaluator)
 
         # for Debug purpose
         ta_eval_list_result = []
