@@ -10,7 +10,8 @@ from evaluator.Updaters.time_frame_update import TimeFrameUpdateDataThread
 
 
 class EvaluatorThread(threading.Thread):
-    def __init__(self, config, symbol, time_frame, exchange, notifier, trader, social_eval_list):
+    def __init__(self, config, symbol, time_frame, exchange, notifier, trader
+                 , social_eval_list, real_time_TA_eval_list):
         threading.Thread.__init__(self)
         self.config = config
         self.exchange = exchange
@@ -35,6 +36,7 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.set_notifier(self.notifier)
         self.evaluator.set_trader(self.trader)
         self.evaluator.get_creator().set_social_eval(social_eval_list, self)
+        self.evaluator.get_creator().set_real_time_eval(real_time_TA_eval_list, self)
 
         # Create refreshing threads
         self.data_refresher = TimeFrameUpdateDataThread(self)
@@ -63,6 +65,10 @@ class EvaluatorThread(threading.Thread):
         for social_eval in self.evaluator.get_creator().get_social_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.__class__.__name__,
                                  social_eval.get_eval_note())
+
+        for real_time_eval in self.evaluator.get_creator().get_real_time_eval_list():
+            self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.__class__.__name__,
+                                 real_time_eval.get_eval_note())
 
         # calculate the final result
         self.evaluator.finalize()
