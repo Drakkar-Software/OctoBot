@@ -15,8 +15,8 @@ class TwitterNewsEvaluator(NewsSocialEvaluator):
 
     def eval(self):
         v = randint(0, 9)
-        if v == 5:
-            self.need_to_notify = True
+        if v >= 2:
+            self.notify_evaluator_threads(self.__class__.__name__)
 
     def run(self):
         while True:

@@ -21,7 +21,15 @@ class SocialEvaluator(threading.Thread):
         self.need_to_notify = False
         self.enabled = True
         self.is_threaded = False
+        self.evaluator_threads = []
         self.load_config()
+
+    def add_evaluator_thread(self, evaluator_thread):
+        self.evaluator_threads.append(evaluator_thread)
+
+    def notify_evaluator_threads(self, notifier_name):
+        for thread in self.evaluator_threads:
+            thread.notify(notifier_name)
 
     def load_config(self):
         config_file = self.get_config_file_name()
@@ -31,7 +39,7 @@ class SocialEvaluator(threading.Thread):
             self.set_default_config()
 
     def get_config_file_name(self):
-        return "config/social_evaluator_config/"+self.__class__.__name__+".json"
+        return SOCIAL_SPECIFIC_CONFIG_PATH + self.__class__.__name__ + ".json"
 
     def set_logger(self, logger):
         self.logger = logger
@@ -60,15 +68,6 @@ class SocialEvaluator(threading.Thread):
     # to implement in subclasses if config necessary
     def set_default_config(self):
         pass
-
-    # getter used be evaluator thread to check if this evaluator notified
-    def notify_if_necessary(self):
-        current = self.need_to_notify
-
-        # remove notify
-        self.need_to_notify = False
-
-        return current
 
     # eval new data
     # Notify if new data is relevant
