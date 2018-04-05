@@ -1,4 +1,5 @@
 import logging
+import pprint
 import threading
 
 from config.cst import *
@@ -33,7 +34,7 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.set_time_frame(self.time_frame)
         self.evaluator.set_notifier(self.notifier)
         self.evaluator.set_trader(self.trader)
-        self.evaluator.set_social_eval(social_eval_list, self)
+        self.evaluator.get_creator().set_social_eval(social_eval_list, self)
 
         # Create refreshing threads
         self.data_refresher = TimeFrameUpdateDataThread(self)
@@ -41,7 +42,7 @@ class EvaluatorThread(threading.Thread):
 
     def notify(self, notifier_name):
         if self.data_refresher.get_refreshed_times() > 0:
-            self.logger.debug("Notified by " + notifier_name)
+            self.logger.debug("** Notified by " + notifier_name + " **")
             self.refresh_eval(notifier_name)
         else:
             self.logger.debug("Notification by " + notifier_name + " ignored")
@@ -49,32 +50,24 @@ class EvaluatorThread(threading.Thread):
     def refresh_eval(self, ignored_evaluator=None):
         # First eval --> create_instances
         # Instances will be created only if they don't already exist
-        self.evaluator.create_ta_eval()
+        self.evaluator.get_creator().create_ta_eval()
 
         # update eval
         self.evaluator.update_ta_eval(ignored_evaluator)
 
-        # for Debug purpose
-        ta_eval_list_result = []
-        for ta_eval in self.evaluator.get_ta_eval_list():
-            result = ta_eval.get_eval_note()
-            ta_eval_list_result.append(result)
-            self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.__class__.__name__, result)
+        # update matrix
+        for ta_eval in self.evaluator.get_creator().get_ta_eval_list():
+            self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.__class__.__name__,
+                                 ta_eval.get_eval_note())
 
-        self.logger.debug("TA EVAL : " + str(ta_eval_list_result))
-
-        social_eval_list_result = []
-        for social_eval in self.evaluator.get_social_eval_list():
-            result = social_eval.get_eval_note()
-            social_eval_list_result.append(result)
-            self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.__class__.__name__, result)
-
-        self.logger.debug("Social EVAL : " + str(social_eval_list_result))
+        for social_eval in self.evaluator.get_creator().get_social_eval_list():
+            self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.__class__.__name__,
+                                 social_eval.get_eval_note())
 
         # calculate the final result
         self.evaluator.finalize()
-        self.logger.debug("FINAL : " + str(self.evaluator.get_state()))
-        self.logger.debug("MATRIX : " + str(self.matrix.get_matrix()))
+        self.logger.debug("--> " + str(self.evaluator.get_final().get_state()))
+        self.logger.debug("MATRIX : " + pprint.pformat(self.matrix.get_matrix()))
 
     def run(self):
         # Start refresh threads

@@ -8,7 +8,7 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        self.social_evaluator_list = self.parent.evaluator.create_social_not_threaded_list()
+        self.social_evaluator_list = self.parent.evaluator.get_creator().create_social_not_threaded_list()
         self.social_evaluator_list_timers = []
         self.get_eval_timers()
 
@@ -37,8 +37,5 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                 if social_eval["last_refresh"] >= social_eval["refresh_rate"]:
                     social_eval["last_refresh"] = 0
                     social_eval["social_evaluator_class_inst"].eval()
-                    self.parent.logger.debug(social_eval["social_evaluator_class_inst"].__class__.__name__
-                                             + " refreshed by generic social refresher thread after "
-                                             + str(social_eval["refresh_rate"]) + "sec")
 
             time.sleep(SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE)
