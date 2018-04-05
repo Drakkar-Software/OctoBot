@@ -46,9 +46,12 @@ class TAEvaluator:
     def get_is_enabled(self):
         return self.enabled
 
+    def get_is_evaluable(self):
+        return not (self.get_is_updating() or self.data is None)
 
     def get_is_updating(self):
         return self.is_updating
+
     @abstractmethod
     def eval(self):
         raise NotImplementedError("Eval not implemented")

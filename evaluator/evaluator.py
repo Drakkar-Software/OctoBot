@@ -123,8 +123,7 @@ class Evaluator:
         # update only with new data
         if self.data_changed:
             for ta_evaluator in self.ta_eval_list:
-                if not (ta_evaluator.__class__.__name__ == ignored_evaluator
-                        or ta_evaluator.get_is_updating()):
+                if not ta_evaluator.__class__.__name__ == ignored_evaluator and ta_evaluator.get_is_evaluable():
                     ta_evaluator.eval()
 
             # reset data changed after update
