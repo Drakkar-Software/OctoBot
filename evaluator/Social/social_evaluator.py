@@ -40,7 +40,7 @@ class SocialEvaluator(threading.Thread):
             self.set_default_config()
 
     def get_config_file_name(self):
-        return SOCIAL_SPECIFIC_CONFIG_PATH + self.__class__.__name__ + ".json"
+        return SPECIFIC_CONFIG_PATH + self.__class__.__name__ + ".json"
 
     def set_logger(self, logger):
         self.logger = logger
