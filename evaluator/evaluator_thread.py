@@ -2,7 +2,9 @@ import logging
 import threading
 import time
 
-from evaluator import *
+from config.cst import *
+from evaluator.evaluator import Evaluator
+from evaluator.evaluator_matrix import EvaluatorMatrix
 
 
 class EvaluatorThread(threading.Thread):
@@ -15,6 +17,8 @@ class EvaluatorThread(threading.Thread):
         self.time_frame = time_frame
         self.notifier = notifier
         self.trader = trader
+
+        self.matrix = EvaluatorMatrix()
 
         self.thread_name = "TA THREAD - " + self.symbol \
                            + " - " + self.exchange.__class__.__name__ \
@@ -49,19 +53,24 @@ class EvaluatorThread(threading.Thread):
         # for Debug purpose
         ta_eval_list_result = []
         for ta_eval in self.evaluator.get_ta_eval_list():
-            ta_eval_list_result.append(ta_eval.get_eval_note())
+            result = ta_eval.get_eval_note()
+            ta_eval_list_result.append(result)
+            self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.__class__.__name__, result)
 
         self.logger.debug("TA EVAL : " + str(ta_eval_list_result))
 
         social_eval_list_result = []
         for social_eval in self.evaluator.get_social_eval_list():
-            social_eval_list_result.append(social_eval.get_eval_note())
+            result = social_eval.get_eval_note()
+            social_eval_list_result.append(result)
+            self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.__class__.__name__, result)
 
         self.logger.debug("Social EVAL : " + str(social_eval_list_result))
 
         # calculate the final result
         self.evaluator.finalize()
         self.logger.debug("FINAL : " + str(self.evaluator.get_state()))
+        self.logger.debug("MATRIX : " + str(self.matrix.get_matrix()))
 
     def run(self):
         # Start refresh threads
