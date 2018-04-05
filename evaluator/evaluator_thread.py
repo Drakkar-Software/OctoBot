@@ -41,7 +41,7 @@ class EvaluatorThread(threading.Thread):
     def refresh_eval(self):
         # First eval --> create_instances
         # Instances will be created only if they don't already exist
-        self.evaluator.create_social_eval()
+        Evaluator.create_social_eval(self.config,self.symbol)
 
         # update eval
         self.evaluator.update_ta_eval()
@@ -108,7 +108,8 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                     {
                         "social_evaluator_class_inst": social_eval,
                         "refresh_rate": social_eval.get_social_config()[SOCIAL_CONFIG_REFRESH_RATE],
-                        "last_refresh": 0,
+                        # force first refresh
+                        "last_refresh": social_eval.get_social_config()[SOCIAL_CONFIG_REFRESH_RATE],
                         "last_refresh_time": time.time()
                     })
             else:
@@ -119,8 +120,9 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
         while True:
             for social_eval in self.social_evaluator_list_timers:
                 if social_eval["last_refresh"] < social_eval["refresh_rate"]:
-                    social_eval["last_refresh_time"] += time.time()
-                    social_eval["last_refresh"] += 1
+                    now = time.time()
+                    social_eval["last_refresh"] += now - social_eval["last_refresh_time"]
+                    social_eval["last_refresh_time"] = now
                 else:
                     social_eval["last_refresh"] = 0
                     social_eval["social_evaluator_class_inst"].eval()
