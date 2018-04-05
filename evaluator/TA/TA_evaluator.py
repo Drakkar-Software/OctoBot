@@ -45,9 +45,6 @@ class TAEvaluator:
     def get_is_enabled(self):
         return self.enabled
 
-    def get_evaluator_name(self):
-        return self.__class__.__name__
-
     @abstractmethod
     def eval(self):
         raise NotImplementedError("Eval not implemented")

@@ -1,12 +1,10 @@
+import logging
 from logging.config import fileConfig
-
 from botcore.config.config import load_config
-
-from evaluator import *
-from exchanges import *
-
-# Eval > 1 --> go short
-# Eval < -1 --> go long
+from config.cst import *
+from evaluator.evaluator import Evaluator
+from evaluator.evaluator_thread import EvaluatorThread
+from exchanges import BinanceExchange
 from exchanges.trader import Trader
 from tools import Notification
 
