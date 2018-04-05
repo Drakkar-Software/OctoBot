@@ -109,7 +109,8 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                     {
                         "social_evaluator_class_inst": social_eval,
                         "refresh_rate": social_eval.get_social_config()[SOCIAL_CONFIG_REFRESH_RATE],
-                        "last_refresh": 0
+                        "last_refresh": 0,
+                        "last_refresh_time": time.time()
                     })
             else:
                 self.parent.logger.warn("Social evaluator " + social_eval.__class__.__name__
@@ -119,6 +120,7 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
         while True:
             for social_eval in self.social_evaluator_list_timers:
                 if social_eval["last_refresh"] < social_eval["refresh_rate"]:
+                    social_eval["last_refresh_time"] += time.time()
                     social_eval["last_refresh"] += 1
                 else:
                     social_eval["last_refresh"] = 0
