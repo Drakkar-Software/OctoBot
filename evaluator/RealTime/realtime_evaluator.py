@@ -20,6 +20,7 @@ class RealTimeEvaluator(threading.Thread):
         self.data = None
         self.enabled = True
         self.is_updating = False
+        self.evaluator_threads = []
         self.load_config()
 
     def load_config(self):
@@ -54,12 +55,31 @@ class RealTimeEvaluator(threading.Thread):
     def get_is_enabled(self):
         return self.enabled
 
-    def set_data(self, data):
-        self.data = data
-
     # to implement in subclasses if config necessary
     def set_default_config(self):
         pass
+
+    @abstractmethod
+    def eval(self):
+        raise NotImplementedError("Eval not implemented")
+
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError("Eval not implemented")
+
+
+class RealTimeTAEvaluator(RealTimeEvaluator):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, exchange_inst, symbol):
+        super().__init__()
+        self.symbol = symbol
+        self.exchange = exchange_inst
+        self.exchange_time_frame = self.exchange.get_time_frame_enum()
+
+    @abstractmethod
+    def refresh_data(self, symbol):
+        raise NotImplementedError("Eval not implemented")
 
     @abstractmethod
     def eval(self):

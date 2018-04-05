@@ -1,6 +1,7 @@
 import logging
 
 from evaluator.Social import SocialEvaluator
+from evaluator.RealTime import RealTimeEvaluator
 from evaluator.TA import TAEvaluator
 
 
@@ -10,9 +11,13 @@ class EvaluatorCreator:
         self.social_eval_list = []
         self.ta_eval_list = []
         self.social_eval_not_threaded_list = []
+        self.real_time_eval_list = []
 
     def get_social_eval_list(self):
         return self.social_eval_list
+
+    def get_real_time_eval_list(self):
+        return self.real_time_eval_list
 
     def get_ta_eval_list(self):
         return self.ta_eval_list
@@ -24,6 +29,11 @@ class EvaluatorCreator:
         self.social_eval_list = new_social_list
         for social_eval in self.social_eval_list:
             social_eval.add_evaluator_thread(evaluator_thread)
+
+    def set_real_time_eval(self, new_real_time_list, evaluator_thread):
+        self.real_time_eval_list = new_real_time_list
+        for real_time_eval in self.real_time_eval_list:
+            real_time_eval.add_evaluator_thread(evaluator_thread)
 
     @staticmethod
     def create_social_eval(config, symbol):
@@ -43,6 +53,23 @@ class EvaluatorCreator:
                     social_eval_list.append(social_eval_class)
 
         return social_eval_list
+
+    @staticmethod
+    def create_real_time_TA_evals(config, exchange_inst, symbol):
+        real_time_TA_eval_list = []
+        for real_time_type in RealTimeEvaluator.__subclasses__():
+            for real_time_class_type in real_time_type.__subclasses__():
+                real_time_eval_class = real_time_class_type(exchange_inst, symbol)
+                if real_time_eval_class.get_is_enabled():
+                    real_time_eval_class.set_logger(logging.getLogger(real_time_class_type.__name__))
+                    real_time_eval_class.set_config(config)
+
+                    # start refreshing thread
+                    real_time_eval_class.start()
+
+                    real_time_TA_eval_list.append(real_time_eval_class)
+
+        return real_time_TA_eval_list
 
     def create_social_not_threaded_list(self):
         for social_eval in self.get_social_eval_list():

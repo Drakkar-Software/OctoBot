@@ -62,6 +62,9 @@ class Crypto_Bot:
                     # Verify that symbol exists on this exchange
                     if exchange_inst.symbol_exists(symbol):
 
+                        # Create real time TA evaluators
+                        real_time_TA_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config, exchange_inst, symbol)
+
                         for time_frame in self.time_frames:
                             self.symbols_threads.append(EvaluatorThread(self.config,
                                                                         symbol,
@@ -69,7 +72,8 @@ class Crypto_Bot:
                                                                         exchange_inst,
                                                                         self.notifier,
                                                                         self.exchange_traders[exchange_type.__name__],
-                                                                        social_eval_list))
+                                                                        social_eval_list,
+                                                                        real_time_TA_eval_list))
 
                     # notify that exchanges doesn't support this symbol
                     else:
