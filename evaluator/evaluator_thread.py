@@ -4,8 +4,8 @@ import threading
 from config.cst import *
 from evaluator.evaluator import Evaluator
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from evaluator.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
-from evaluator.time_frame_update import TimeFrameUpdateDataThread
+from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
+from evaluator.Updaters.time_frame_update import TimeFrameUpdateDataThread
 
 
 class EvaluatorThread(threading.Thread):
