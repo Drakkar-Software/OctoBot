@@ -1,10 +1,11 @@
 import logging
 import threading
-import time
 
 from config.cst import *
 from evaluator.evaluator import Evaluator
 from evaluator.evaluator_matrix import EvaluatorMatrix
+from evaluator.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
+from evaluator.time_frame_update import TimeFrameUpdateDataThread
 
 
 class EvaluatorThread(threading.Thread):
@@ -42,6 +43,8 @@ class EvaluatorThread(threading.Thread):
         if self.data_refresher.get_refreshed_times() > 0:
             self.logger.debug("Notified by " + notifier_name)
             self.refresh_eval(notifier_name)
+        else:
+            self.logger.debug("Notification by " + notifier_name + " ignored")
 
     def refresh_eval(self, ignored_evaluator=None):
         # First eval --> create_instances
@@ -79,69 +82,3 @@ class EvaluatorThread(threading.Thread):
         self.social_evaluator_refresh.start()
         self.data_refresher.join()
         self.social_evaluator_refresh.join()
-
-
-# reset to count sec
-# At the end of a time frame --> update time frame depending data
-# Bug issue : https://github.com/Trading-Bot/CryptoBot/issues/38
-class TimeFrameUpdateDataThread(threading.Thread):
-    def __init__(self, parent):
-        super().__init__()
-        self.parent = parent
-        self.refreshed_times = 0
-
-    def get_refreshed_times(self):
-        return self.refreshed_times
-
-    def refresh_data(self):
-        self.parent.evaluator.set_data(
-            self.parent.exchange.get_symbol_prices(
-                self.parent.symbol,
-                self.parent.exchange_time_frame(self.parent.time_frame)))
-        self.refreshed_times += 1
-        self.parent.notify(self.__class__.__name__)
-
-    def run(self):
-        while True:
-            self.refresh_data()
-            time.sleep(self.parent.time_frame.value * MINUTE_TO_SECONDS)
-
-
-class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
-    def __init__(self, parent):
-        super().__init__()
-        self.parent = parent
-        self.social_evaluator_list = self.parent.evaluator.create_social_not_threaded_list()
-        self.social_evaluator_list_timers = []
-        self.get_eval_timers()
-
-    def get_eval_timers(self):
-        for social_eval in self.social_evaluator_list:
-            # if key exists --> else this social eval will not be refreshed
-            if SOCIAL_CONFIG_REFRESH_RATE in social_eval.get_social_config():
-                self.social_evaluator_list_timers.append(
-                    {
-                        "social_evaluator_class_inst": social_eval,
-                        "refresh_rate": social_eval.get_social_config()[SOCIAL_CONFIG_REFRESH_RATE],
-                        # force first refresh
-                        "last_refresh": social_eval.get_social_config()[SOCIAL_CONFIG_REFRESH_RATE],
-                        "last_refresh_time": time.time()
-                    })
-            else:
-                self.parent.logger.warn("Social evaluator " + social_eval.__class__.__name__
-                                        + " doesn't have a valid social config refresh rate.")
-
-    def run(self):
-        while True:
-            for social_eval in self.social_evaluator_list_timers:
-                now = time.time()
-                social_eval["last_refresh"] += now - social_eval["last_refresh_time"]
-                social_eval["last_refresh_time"] = now
-                if social_eval["last_refresh"] >= social_eval["refresh_rate"]:
-                    social_eval["last_refresh"] = 0
-                    social_eval["social_evaluator_class_inst"].eval()
-                    self.parent.logger.debug(social_eval["social_evaluator_class_inst"].__class__.__name__
-                                             + " refreshed by generic social refresher thread after "
-                                             + str(social_eval["refresh_rate"]) + "sec")
-
-            time.sleep(1)
