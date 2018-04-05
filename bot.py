@@ -1,8 +1,10 @@
 import logging
 from logging.config import fileConfig
+
 from botcore.config.config import load_config
+
 from config.cst import *
-from evaluator.evaluator import Evaluator
+from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_thread import EvaluatorThread
 from exchanges import BinanceExchange
 from exchanges.trader import Trader
@@ -48,7 +50,7 @@ class Crypto_Bot:
         for symbol in self.symbols:
 
             # create Socials Evaluators
-            social_eval_list = Evaluator.create_social_eval(self.config, symbol)
+            social_eval_list = EvaluatorCreator.create_social_eval(self.config, symbol)
 
             # create TA evaluators
             for exchange_type in self.exchanges:

@@ -8,7 +8,7 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        self.social_evaluator_list = self.parent.evaluator.create_social_not_threaded_list()
+        self.social_evaluator_list = self.parent.evaluator.get_creator().create_social_not_threaded_list()
         self.social_evaluator_list_timers = []
         self.get_eval_timers()
 
