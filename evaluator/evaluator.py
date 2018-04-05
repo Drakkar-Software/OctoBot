@@ -1,7 +1,6 @@
-import logging
-
 from evaluator.Social import *
 from evaluator.TA import *
+from evaluator.evaluator_final import FinalEvaluator
 from exchanges.trader import *
 
 
@@ -23,10 +22,8 @@ class Evaluator:
         self.ta_eval_list = []
         self.ta_eval_not_threaded_list = []
 
-        self.final_eval = START_EVAL_NOTE
-        self.social_final_eval = START_EVAL_NOTE
-        self.ta_final_eval = START_EVAL_NOTE
-        self.state = EvaluatorStates.NEUTRAL
+        # final
+        self.final = FinalEvaluator(self)
 
     def set_config(self, config):
         self.config = config
@@ -48,23 +45,17 @@ class Evaluator:
         self.time_frame = time_frame
         self.history_time = time_frame.value
 
-    def set_state(self, state):
-        if state != self.state:
-            self.state = state
-            if self.notifier.enabled():
-                self.notifier.notify(self.time_frame, self.symbol, state)
-            else:
-                # TODO : prepare trade
-                self.trader.create_order(TraderOrderType.BUY_LIMIT)
-
-    def get_state(self):
-        return self.state
-
     def set_history_time(self, history_time):
         self.history_time = history_time
 
-    def get_final_eval(self):
-        return self.final_eval
+    def get_notifier(self):
+        return self.notifier
+
+    def get_trader(self):
+        return self.trader
+
+    def get_final(self):
+        return self.final
 
     def get_social_eval_list(self):
         return self.social_eval_list
@@ -131,41 +122,6 @@ class Evaluator:
             self.data_changed = False
 
     def finalize(self):
-        ta_analysis_note_counter = 0
-        # TA analysis
-        for evaluated in self.ta_eval_list:
-            self.ta_final_eval += evaluated.get_eval_note() * evaluated.get_pertinence()
-            ta_analysis_note_counter += evaluated.get_pertinence()
-
-        if ta_analysis_note_counter > 0:
-            self.ta_final_eval /= ta_analysis_note_counter
-        else:
-            self.ta_final_eval = START_EVAL_NOTE
-
-        # Social analysis
-        social_analysis_note_counter = 0
-        for evaluated in self.social_eval_list:
-            self.social_final_eval += evaluated.get_eval_note() * evaluated.get_pertinence()
-            social_analysis_note_counter += evaluated.get_pertinence()
-
-        if social_analysis_note_counter > 0:
-            self.social_final_eval /= social_analysis_note_counter
-        else:
-            self.social_final_eval = START_EVAL_NOTE
-
-        # TODO : improve
-        self.final_eval = (self.ta_final_eval * EvaluatorsPertinence.TAEvaluator.value
-                           + self.social_final_eval * EvaluatorsPertinence.SocialEvaluator.value)
-        self.final_eval /= (EvaluatorsPertinence.TAEvaluator.value + EvaluatorsPertinence.SocialEvaluator.value)
-
-        # TODO : improve
-        if self.final_eval < 0.2:
-            self.set_state(EvaluatorStates.VERY_LONG)
-        elif self.final_eval < 0.4:
-            self.set_state(EvaluatorStates.LONG)
-        elif self.final_eval < 0.6:
-            self.set_state(EvaluatorStates.NEUTRAL)
-        elif self.final_eval < 0.8:
-            self.set_state(EvaluatorStates.SHORT)
-        else:
-            self.set_state(EvaluatorStates.VERY_SHORT)
+        self.final.prepare()
+        self.final.calculate_final()
+        self.final.create_state()

@@ -73,7 +73,7 @@ class EvaluatorThread(threading.Thread):
 
         # calculate the final result
         self.evaluator.finalize()
-        self.logger.debug("FINAL : " + str(self.evaluator.get_state()))
+        self.logger.debug("FINAL : " + str(self.evaluator.get_final().get_state()))
         self.logger.debug("MATRIX : " + str(self.matrix.get_matrix()))
 
     def run(self):
