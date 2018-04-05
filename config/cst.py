@@ -5,7 +5,7 @@ START_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
 
 SOCIAL_SPECIFIC_CONFIG_PATH = "config/social_evaluator_config/"
-
+SOCIAL_CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 
 class EvaluatorRisk(Enum):
     LOW = 1
