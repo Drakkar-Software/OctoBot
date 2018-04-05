@@ -1,12 +1,10 @@
+import logging
 from logging.config import fileConfig
-
 from botcore.config.config import load_config
-
-from evaluator import *
-from exchanges import *
-
-# Eval > 1 --> go short
-# Eval < -1 --> go long
+from config.cst import *
+from evaluator.evaluator import Evaluator
+from evaluator.evaluator_thread import EvaluatorThread
+from exchanges import BinanceExchange
 from exchanges.trader import Trader
 from tools import Notification
 
@@ -50,7 +48,7 @@ class Crypto_Bot:
         for symbol in self.symbols:
 
             # create Socials Evaluators
-            social_eval_list = self.create_social_list_evaluator(symbol)
+            social_eval_list = Evaluator.create_social_eval(self.config, symbol)
 
             # create TA evaluators
             for exchange_type in self.exchanges:
@@ -74,13 +72,6 @@ class Crypto_Bot:
                     # notify that exchanges doesn't support this symbol
                     else:
                         self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
-
-    # TODO improve
-    def create_social_list_evaluator(self, symbol):
-        evaluator = Evaluator()
-        evaluator.set_config(self.config)
-        evaluator.set_symbol(symbol)
-        return evaluator.create_social_eval()
 
     def start_threads(self):
         for thread in self.symbols_threads:

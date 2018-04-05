@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.orig
 
 # C extensions
 *.so
@@ -9,6 +10,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 .idea
+.pytest_cache/
 env/
 build/
 develop-eggs/
