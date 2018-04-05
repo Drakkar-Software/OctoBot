@@ -4,7 +4,7 @@ from config.cst import *
 
 
 # TODO : temp class
-class RulesEvaluator:
+class RealTimeEvaluator:
     __metaclass__ = ABCMeta
 
     def __init__(self):
