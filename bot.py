@@ -80,7 +80,7 @@ class Crypto_Bot:
         evaluator = Evaluator()
         evaluator.set_config(self.config)
         evaluator.set_symbol(symbol)
-        return evaluator.social_eval()
+        return evaluator.create_social_eval()
 
     def start_threads(self):
         for thread in self.symbols_threads:
