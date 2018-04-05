@@ -45,5 +45,5 @@ class MediumNewsEvaluator(NewsSocialEvaluator):
 
     def set_default_config(self):
         self.social_config = {
-            SOCIAL_CONFIG_REFRESH_RATE: 2
+            CONFIG_REFRESH_RATE: 2
         }

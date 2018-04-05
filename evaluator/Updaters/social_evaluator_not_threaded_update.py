@@ -15,13 +15,13 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
     def get_eval_timers(self):
         for social_eval in self.social_evaluator_list:
             # if key exists --> else this social eval will not be refreshed
-            if SOCIAL_CONFIG_REFRESH_RATE in social_eval.get_social_config():
+            if CONFIG_REFRESH_RATE in social_eval.get_social_config():
                 self.social_evaluator_list_timers.append(
                     {
                         "social_evaluator_class_inst": social_eval,
-                        "refresh_rate": social_eval.get_social_config()[SOCIAL_CONFIG_REFRESH_RATE],
+                        "refresh_rate": social_eval.get_social_config()[CONFIG_REFRESH_RATE],
                         # force first refresh
-                        "last_refresh": social_eval.get_social_config()[SOCIAL_CONFIG_REFRESH_RATE],
+                        "last_refresh": social_eval.get_social_config()[CONFIG_REFRESH_RATE],
                         "last_refresh_time": time.time()
                     })
             else:
