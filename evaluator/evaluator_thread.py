@@ -119,11 +119,10 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
     def run(self):
         while True:
             for social_eval in self.social_evaluator_list_timers:
-                if social_eval["last_refresh"] < social_eval["refresh_rate"]:
-                    now = time.time()
-                    social_eval["last_refresh"] += now - social_eval["last_refresh_time"]
-                    social_eval["last_refresh_time"] = now
-                else:
+                now = time.time()
+                social_eval["last_refresh"] += now - social_eval["last_refresh_time"]
+                social_eval["last_refresh_time"] = now
+                if social_eval["last_refresh"] >= social_eval["refresh_rate"]:
                     social_eval["last_refresh"] = 0
                     social_eval["social_evaluator_class_inst"].eval()
                     self.parent.logger.debug(social_eval["social_evaluator_class_inst"].__class__.__name__
