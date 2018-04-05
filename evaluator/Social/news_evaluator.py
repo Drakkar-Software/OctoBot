@@ -36,7 +36,7 @@ class MediumNewsEvaluator(NewsSocialEvaluator):
         pass
 
     def eval(self):
-        pass
+        self.notify_evaluator_threads(self.__class__.__name__)
 
     def run(self):
         pass
