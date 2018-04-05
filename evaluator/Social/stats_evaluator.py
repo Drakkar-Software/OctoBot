@@ -1,6 +1,7 @@
 from pytrends.exceptions import ResponseError
 from pytrends.request import TrendReq
 
+from config.cst import *
 from evaluator.Social.social_evaluator import StatsSocialEvaluator, TimeFrames
 
 
@@ -41,7 +42,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
             last = interest_over_time_df.iloc[-1, 0]
 
             if first > 0:
-                percent_diff = last/first
+                percent_diff = last / first
             else:
                 percent_diff = last
 
@@ -61,5 +62,6 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
         pass
 
     def set_default_config(self):
-        self.social_config = {"refresh_rate_seconds": 3600
-                       }
+        self.social_config = {
+            SOCIAL_CONFIG_REFRESH_RATE: 3600
+        }

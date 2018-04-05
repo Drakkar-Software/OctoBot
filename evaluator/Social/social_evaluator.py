@@ -66,8 +66,12 @@ class SocialEvaluator(threading.Thread):
         return self.pertinence
 
     # to implement in subclasses if config necessary
+    # required if is_threaded = False --> provide evaluator refreshing time
     def set_default_config(self):
         pass
+
+    def get_social_config(self):
+        return self.social_config
 
     # eval new data
     # Notify if new data is relevant

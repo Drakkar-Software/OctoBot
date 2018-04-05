@@ -21,6 +21,7 @@ class Evaluator:
 
         self.social_eval_list = []
         self.ta_eval_list = []
+        self.ta_eval_not_threaded_list = []
 
         self.final_eval = START_EVAL_NOTE
         self.social_final_eval = START_EVAL_NOTE
@@ -94,6 +95,15 @@ class Evaluator:
                         self.social_eval_list.append(social_eval_class)
 
         return self.social_eval_list
+
+    def create_social_not_threaded_list(self):
+        for social_eval in self.social_eval_list:
+
+            # if not threaded --> ask him to refresh with generic thread
+            if not social_eval.get_is_threaded():
+                self.ta_eval_not_threaded_list.append(social_eval)
+
+        return self.ta_eval_not_threaded_list
 
     def create_ta_eval(self):
         if not self.ta_eval_list:
