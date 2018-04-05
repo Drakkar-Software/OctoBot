@@ -106,7 +106,7 @@ class Evaluator:
         return self.ta_eval_not_threaded_list
 
     def create_ta_eval(self):
-        if not ta_eval_list:
+        if not self.ta_eval_list:
             for ta_type in TAEvaluator.__subclasses__():
                 for ta_eval_class_type in ta_type.__subclasses__():
                     ta_eval_class = ta_eval_class_type()
