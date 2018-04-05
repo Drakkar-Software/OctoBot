@@ -50,7 +50,7 @@ class Crypto_Bot:
         for symbol in self.symbols:
 
             # create Socials Evaluators
-            social_eval_list = self.create_social_list_evaluator(symbol)
+            social_eval_list = Evaluator.create_social_eval(self.config, symbol)
 
             # create TA evaluators
             for exchange_type in self.exchanges:
@@ -74,13 +74,6 @@ class Crypto_Bot:
                     # notify that exchanges doesn't support this symbol
                     else:
                         self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
-
-    # TODO improve
-    def create_social_list_evaluator(self, symbol):
-        evaluator = Evaluator()
-        evaluator.set_config(self.config)
-        evaluator.set_symbol(symbol)
-        return evaluator.create_social_eval()
 
     def start_threads(self):
         for thread in self.symbols_threads:
