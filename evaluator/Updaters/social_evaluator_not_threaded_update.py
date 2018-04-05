@@ -37,8 +37,5 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                 if social_eval["last_refresh"] >= social_eval["refresh_rate"]:
                     social_eval["last_refresh"] = 0
                     social_eval["social_evaluator_class_inst"].eval()
-                    self.parent.logger.debug(social_eval["social_evaluator_class_inst"].__class__.__name__
-                                             + " refreshed by generic social refresher thread after "
-                                             + str(social_eval["refresh_rate"]) + "sec")
 
             time.sleep(SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE)
