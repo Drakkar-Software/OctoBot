@@ -81,3 +81,11 @@ class EvaluatorThread(threading.Thread):
         self.social_evaluator_refresh.start()
         self.data_refresher.join()
         self.social_evaluator_refresh.join()
+
+    def stop(self):
+        for thread in self.evaluator.get_creator().get_social_eval_list():
+            thread.stop()
+        for thread in self.evaluator.get_creator().get_real_time_eval_list():
+            thread.stop()
+        self.data_refresher.stop()
+        self.social_evaluator_refresh.stop()

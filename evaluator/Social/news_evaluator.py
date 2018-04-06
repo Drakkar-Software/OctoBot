@@ -20,7 +20,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator):
             self.notify_evaluator_threads(self.__class__.__name__)
 
     def run(self):
-        while True:
+        while self.keep_running:
             self.get_data()
             self.eval()
             time.sleep(2)

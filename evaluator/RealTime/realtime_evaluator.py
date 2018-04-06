@@ -21,7 +21,11 @@ class RealTimeEvaluator(threading.Thread):
         self.enabled = True
         self.is_updating = False
         self.evaluator_threads = []
+        self.keep_running = True
         self.load_config()
+
+    def stop(self):
+        self.keep_running = False
 
     def load_config(self):
         config_file = self.get_config_file_name()

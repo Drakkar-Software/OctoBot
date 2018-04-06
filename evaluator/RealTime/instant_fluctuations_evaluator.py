@@ -30,7 +30,7 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
         }
 
     def run(self):
-        while True:
+        while self.keep_running:
             self.refresh_data()
             self.eval()
             time.sleep(self.specific_config[CONFIG_REFRESH_RATE])

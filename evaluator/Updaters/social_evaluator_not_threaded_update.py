@@ -11,6 +11,10 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
         self.social_evaluator_list = self.parent.evaluator.get_creator().create_social_not_threaded_list()
         self.social_evaluator_list_timers = []
         self.get_eval_timers()
+        self.keep_running = True
+
+    def stop(self):
+        self.keep_running = False
 
     def get_eval_timers(self):
         for social_eval in self.social_evaluator_list:
@@ -29,7 +33,7 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                                         + " doesn't have a valid social config refresh rate.")
 
     def run(self):
-        while True:
+        while self.keep_running:
             for social_eval in self.social_evaluator_list_timers:
                 now = time.time()
                 social_eval["last_refresh"] += now - social_eval["last_refresh_time"]
