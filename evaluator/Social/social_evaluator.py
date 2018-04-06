@@ -26,6 +26,14 @@ class SocialEvaluator(threading.Thread):
         self.load_config()
         self.keep_running = True
 
+    @classmethod
+    def get_config_file_name(cls):
+        return SPECIFIC_CONFIG_PATH + cls.__name__ + CONFIG_FILE_EXT
+
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
+
     def stop(self):
         self.keep_running = False
 
@@ -42,10 +50,6 @@ class SocialEvaluator(threading.Thread):
             self.social_config = load_config(config_file)
         else:
             self.set_default_config()
-
-    @classmethod
-    def get_config_file_name(cls):
-        return SPECIFIC_CONFIG_PATH + cls.__name__ + CONFIG_FILE_EXT
 
     def set_logger(self, logger):
         self.logger = logger

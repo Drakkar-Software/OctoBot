@@ -24,6 +24,14 @@ class RealTimeEvaluator(threading.Thread):
         self.keep_running = True
         self.load_config()
 
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
+
+    @classmethod
+    def get_config_file_name(cls):
+        return SPECIFIC_CONFIG_PATH + cls.get_name() + ".json"
+
     def stop(self):
         self.keep_running = False
 
@@ -33,9 +41,6 @@ class RealTimeEvaluator(threading.Thread):
             self.specific_config = load_config(config_file)
         else:
             self.set_default_config()
-
-    def get_config_file_name(self):
-        return SPECIFIC_CONFIG_PATH + self.__class__.__name__ + ".json"
 
     def add_evaluator_thread(self, evaluator_thread):
         self.evaluator_threads.append(evaluator_thread)

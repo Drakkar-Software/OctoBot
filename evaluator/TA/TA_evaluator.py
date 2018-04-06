@@ -20,6 +20,10 @@ class TAEvaluator:
         self.short_term_averages = [7, 5, 4, 3, 2, 1]
         self.long_term_averages = [40, 30, 20, 15, 10]
 
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
+
     def set_logger(self, logger):
         self.logger = logger
 
