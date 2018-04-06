@@ -1,12 +1,12 @@
 import logging
 
 
-class Trader:
+class PortfolioTrader:
     def __init__(self, config, exchange):
         self.exchange = exchange
         self.config = config
         self.risk = self.config["trader"]["risk"]
-        self.logger = logging.getLogger("Trader")
+        self.logger = logging.getLogger("PortfolioTrader")
 
         # Debug
         if self.enabled():

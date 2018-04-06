@@ -58,6 +58,13 @@ class TimeFrames(Enum):
     ONE_MONTH = 43200
 
 
+class TraderOrderType(Enum):
+    BUY_MARKET = 1
+    BUY_LIMIT = 2
+    STOP_LOSS = 3
+    SELL_MARKET = 4
+    SELL_LIMIT = 5
+
 # TODO : review
 class TimeFramePertinence(Enum):
     ONE_MINUTE = 1, TimeFrames.ONE_MINUTE
