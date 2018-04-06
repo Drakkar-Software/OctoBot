@@ -33,6 +33,9 @@ class Crypto_Bot:
         self.exchange_traders = {}
         self.exchanges_list = {}
 
+    def set_time_frames(self, time_frames):
+        self.time_frames = time_frames
+
     def create_exchange_traders(self):
         for exchange_type in self.exchanges:
             exchange_inst = exchange_type(self.config)
@@ -87,3 +90,8 @@ class Crypto_Bot:
     def join_threads(self):
         for thread in self.symbols_threads:
             thread.join()
+
+    def stop_threads(self):
+        self.logger.info("Stopping threads ...")
+        for thread in self.symbols_threads:
+            thread.stop()

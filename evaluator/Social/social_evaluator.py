@@ -24,6 +24,10 @@ class SocialEvaluator(threading.Thread):
         self.evaluator_threads = []
         self.is_updating = False
         self.load_config()
+        self.keep_running = True
+
+    def stop(self):
+        self.keep_running = False
 
     def add_evaluator_thread(self, evaluator_thread):
         self.evaluator_threads.append(evaluator_thread)
