@@ -16,6 +16,10 @@ class RulesEvaluator:
         self.logger = None
         self.enabled = True
 
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
+
     def set_logger(self, logger):
         self.logger = logger
 
@@ -30,9 +34,6 @@ class RulesEvaluator:
 
     def get_is_enabled(self):
         return self.enabled
-
-    def get_evaluator_name(self):
-        return self.__class__.__name__
 
     @abstractmethod
     def eval(self):

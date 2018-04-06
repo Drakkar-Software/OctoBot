@@ -10,8 +10,14 @@ from evaluator.Updaters.time_frame_update import TimeFrameUpdateDataThread
 
 
 class EvaluatorThread(threading.Thread):
-    def __init__(self, config, symbol, time_frame, exchange, notifier, trader
-                 , social_eval_list, real_time_TA_eval_list):
+    def __init__(self, config,
+                 symbol,
+                 time_frame,
+                 exchange,
+                 notifier,
+                 trader,
+                 social_eval_list,
+                 real_time_TA_eval_list):
         threading.Thread.__init__(self)
         self.config = config
         self.exchange = exchange
@@ -59,15 +65,15 @@ class EvaluatorThread(threading.Thread):
 
         # update matrix
         for ta_eval in self.evaluator.get_creator().get_ta_eval_list():
-            self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.__class__.__name__,
+            self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
                                  ta_eval.get_eval_note())
 
         for social_eval in self.evaluator.get_creator().get_social_eval_list():
-            self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.__class__.__name__,
+            self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
                                  social_eval.get_eval_note())
 
         for real_time_eval in self.evaluator.get_creator().get_real_time_eval_list():
-            self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.__class__.__name__,
+            self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
                                  real_time_eval.get_eval_note())
 
         # calculate the final result
