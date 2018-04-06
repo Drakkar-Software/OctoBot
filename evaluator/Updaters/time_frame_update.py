@@ -26,5 +26,6 @@ class TimeFrameUpdateDataThread(threading.Thread):
 
     def run(self):
         while True:
+            now = time.time()
             self.refresh_data()
-            time.sleep(self.parent.time_frame.value * MINUTE_TO_SECONDS)
+            time.sleep(self.parent.time_frame.value * MINUTE_TO_SECONDS - (time.time() - now))
