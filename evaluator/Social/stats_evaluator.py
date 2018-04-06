@@ -32,8 +32,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
         except ResponseError as e:
             self.logger.warn(str(e))
 
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         # Attention apparement limite de request / h assez faible
         try:
             interest_over_time_df = self.pytrends.interest_over_time()
@@ -58,12 +57,11 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
 
         except Exception as e:
             self.logger.warn(str(e))
-        self.is_updating = False
 
     def run(self):
         pass
 
     def set_default_config(self):
         self.social_config = {
-            SOCIAL_CONFIG_REFRESH_RATE: 3600
+            CONFIG_REFRESH_RATE: 3600
         }

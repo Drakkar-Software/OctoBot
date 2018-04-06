@@ -11,7 +11,7 @@ class RedditForumEvaluator(ForumSocialEvaluator):
     def get_data(self):
         pass
 
-    def eval(self):
+    def eval_impl(self):
         pass
 
     def run(self):
@@ -19,7 +19,7 @@ class RedditForumEvaluator(ForumSocialEvaluator):
 
     def set_default_config(self):
         self.social_config = {
-            SOCIAL_CONFIG_REFRESH_RATE: 3
+            CONFIG_REFRESH_RATE: 3
         }
 
 
@@ -32,7 +32,7 @@ class BTCTalkForumEvaluator(ForumSocialEvaluator):
     def get_data(self):
         pass
 
-    def eval(self):
+    def eval_impl(self):
         pass
 
     def run(self):

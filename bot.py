@@ -1,8 +1,10 @@
 import logging
 from logging.config import fileConfig
+
 from botcore.config.config import load_config
+
 from config.cst import *
-from evaluator.evaluator import Evaluator
+from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_thread import EvaluatorThread
 from exchanges import BinanceExchange
 from exchanges.trader import Trader
@@ -31,6 +33,9 @@ class Crypto_Bot:
         self.exchange_traders = {}
         self.exchanges_list = {}
 
+    def set_time_frames(self, time_frames):
+        self.time_frames = time_frames
+
     def create_exchange_traders(self):
         for exchange_type in self.exchanges:
             exchange_inst = exchange_type(self.config)
@@ -48,7 +53,7 @@ class Crypto_Bot:
         for symbol in self.symbols:
 
             # create Socials Evaluators
-            social_eval_list = Evaluator.create_social_eval(self.config, symbol)
+            social_eval_list = EvaluatorCreator.create_social_eval(self.config, symbol)
 
             # create TA evaluators
             for exchange_type in self.exchanges:
@@ -60,6 +65,9 @@ class Crypto_Bot:
                     # Verify that symbol exists on this exchange
                     if exchange_inst.symbol_exists(symbol):
 
+                        # Create real time TA evaluators
+                        real_time_TA_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config, exchange_inst, symbol)
+
                         for time_frame in self.time_frames:
                             self.symbols_threads.append(EvaluatorThread(self.config,
                                                                         symbol,
@@ -67,7 +75,8 @@ class Crypto_Bot:
                                                                         exchange_inst,
                                                                         self.notifier,
                                                                         self.exchange_traders[exchange_type.__name__],
-                                                                        social_eval_list))
+                                                                        social_eval_list,
+                                                                        real_time_TA_eval_list))
 
                     # notify that exchanges doesn't support this symbol
                     else:
@@ -81,3 +90,8 @@ class Crypto_Bot:
     def join_threads(self):
         for thread in self.symbols_threads:
             thread.join()
+
+    def stop_threads(self):
+        self.logger.info("Stopping threads ...")
+        for thread in self.symbols_threads:
+            thread.stop()

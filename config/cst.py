@@ -4,8 +4,10 @@ MINUTE_TO_SECONDS = 60
 START_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
 
-SOCIAL_SPECIFIC_CONFIG_PATH = "config/social_evaluator_config/"
-SOCIAL_CONFIG_REFRESH_RATE = "refresh_rate_seconds"
+SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
+CONFIG_REFRESH_RATE = "refresh_rate_seconds"
+CONFIG_TIME_FRAME = "time_frame"
+CONFIG_FILE_EXT = ".json"
 
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
 
@@ -20,6 +22,7 @@ class EvaluatorMatrixTypes(Enum):
     TA = "TA"
     SOCIAL = "SOCIAL"
     REAL_TIME = "REAL_TIME"
+    RULES = "RULES"
 
 
 class EvaluatorStates(Enum):
@@ -55,6 +58,13 @@ class TimeFrames(Enum):
     ONE_WEEK = 10080
     ONE_MONTH = 43200
 
+
+class TraderOrderType(Enum):
+    BUY_MARKET = 1
+    BUY_LIMIT = 2
+    STOP_LOSS = 3
+    SELL_MARKET = 4
+    SELL_LIMIT = 5
 
 # TODO : review
 class TimeFramePertinence(Enum):
