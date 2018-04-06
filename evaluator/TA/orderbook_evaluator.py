@@ -6,5 +6,5 @@ class WhalesOrderBookEvaluator(OrderBookEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
+    def eval_impl(self):
         pass

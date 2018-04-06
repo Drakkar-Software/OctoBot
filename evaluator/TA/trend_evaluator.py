@@ -1,6 +1,6 @@
 import talib
 
-from evaluator.TA.TA_evaluator import TrendEvaluator, PriceStrings
+from evaluator.TA.TA_evaluator import TrendEvaluator
 
 
 # https://mrjbq7.github.io/ta-lib/func_groups/overlap_studies.html
@@ -9,7 +9,7 @@ class CandleAnalysisTrendEvaluator(TrendEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
+    def eval_impl(self):
         pass
 
 
@@ -19,7 +19,7 @@ class DMITrendEvaluator(TrendEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
+    def eval_impl(self):
         pass
 
 
@@ -29,10 +29,8 @@ class BBTrendEvaluator(TrendEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         upperband, middleband, lowerband = talib.BBANDS(self.data[PriceStrings.STR_PRICE_CLOSE.value])
-        self.is_updating = False
 
 
 # ease_of_movement --> ease to change trend --> trend strength
@@ -41,5 +39,5 @@ class EOMTrendEvaluator(TrendEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
+    def eval_impl(self):
         pass

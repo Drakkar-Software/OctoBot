@@ -20,7 +20,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator):
             self.notify_evaluator_threads(self.__class__.__name__)
 
     def run(self):
-        while True:
+        while self.keep_running:
             self.get_data()
             self.eval()
             time.sleep(2)
@@ -35,15 +35,13 @@ class MediumNewsEvaluator(NewsSocialEvaluator):
     def get_data(self):
         pass
 
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         self.notify_evaluator_threads(self.__class__.__name__)
-        self.is_updating = False
 
     def run(self):
         pass
 
     def set_default_config(self):
         self.social_config = {
-            SOCIAL_CONFIG_REFRESH_RATE: 2
+            CONFIG_REFRESH_RATE: 2
         }

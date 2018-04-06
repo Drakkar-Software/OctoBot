@@ -1,39 +1,75 @@
+import threading, os
+
 from abc import *
 
 from config.cst import *
+from botcore.config.config import load_config
+
+from evaluator.abstract_evaluator import AbstractEvaluator
 
 
-# TODO : temp class
-class RealTimeEvaluator:
+class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
     __metaclass__ = ABCMeta
 
     def __init__(self):
         super().__init__()
-        self.logger = None
-        self.config = None
-        self.eval_note = START_EVAL_NOTE
-        self.pertinence = START_EVAL_PERTINENCE
-        self.logger = None
-        self.enabled = True
+        self.specific_config = None
+        self.data = None
+        self.evaluator_threads = []
+        self.keep_running = True
+        self.load_config()
 
-    def set_logger(self, logger):
-        self.logger = logger
+    @classmethod
+    def get_config_file_name(cls):
+        return SPECIFIC_CONFIG_PATH + cls.get_name() + ".json"
 
-    def set_config(self, config):
-        self.config = config
+    def stop(self):
+        self.keep_running = False
 
-    def get_eval_note(self):
-        return self.eval_note
+    def load_config(self):
+        config_file = self.get_config_file_name()
+        if os.path.isfile(config_file):
+            self.specific_config = load_config(config_file)
+        else:
+            self.set_default_config()
 
-    def get_pertinence(self):
-        return self.pertinence
+    def add_evaluator_thread(self, evaluator_thread):
+        self.evaluator_threads.append(evaluator_thread)
 
-    def get_is_enabled(self):
-        return self.enabled
+    def notify_evaluator_threads(self, notifier_name):
+        for thread in self.evaluator_threads:
+            thread.notify(notifier_name)
 
-    def get_evaluator_name(self):
-        return self.__class__.__name__
+    # to implement in subclasses if config necessary
+    def set_default_config(self):
+        pass
 
     @abstractmethod
-    def eval(self):
-        raise NotImplementedError("Eval not implemented")
+    def eval_impl(self) -> None:
+        raise NotImplementedError("Eval_impl not implemented")
+
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError("Run not implemented")
+
+
+class RealTimeTAEvaluator(RealTimeEvaluator):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, exchange_inst, symbol):
+        super().__init__()
+        self.symbol = symbol
+        self.exchange = exchange_inst
+        self.exchange_time_frame = self.exchange.get_time_frame_enum()
+
+    @abstractmethod
+    def refresh_data(self):
+        raise NotImplementedError("Eval_impl not implemented")
+
+    @abstractmethod
+    def eval_impl(self):
+        raise NotImplementedError("Eval_impl not implemented")
+
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError("Eval_impl not implemented")

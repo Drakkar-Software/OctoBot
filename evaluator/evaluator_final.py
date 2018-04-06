@@ -28,7 +28,7 @@ class FinalEvaluator:
     def prepare(self):
         ta_analysis_note_counter = 0
         # TA analysis
-        for evaluated in self.evaluator.get_ta_eval_list():
+        for evaluated in self.evaluator.get_creator().get_ta_eval_list():
             self.ta_final_eval += evaluated.get_eval_note() * evaluated.get_pertinence()
             ta_analysis_note_counter += evaluated.get_pertinence()
 
@@ -39,7 +39,7 @@ class FinalEvaluator:
 
         # Social analysis
         social_analysis_note_counter = 0
-        for evaluated in self.evaluator.get_social_eval_list():
+        for evaluated in self.evaluator.get_creator().get_social_eval_list():
             self.social_final_eval += evaluated.get_eval_note() * evaluated.get_pertinence()
             social_analysis_note_counter += evaluated.get_pertinence()
 

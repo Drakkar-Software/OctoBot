@@ -12,6 +12,10 @@ class TimeFrameUpdateDataThread(threading.Thread):
         super().__init__()
         self.parent = parent
         self.refreshed_times = 0
+        self.keep_running = True
+
+    def stop(self):
+        self.keep_running = False
 
     def get_refreshed_times(self):
         return self.refreshed_times
@@ -25,6 +29,7 @@ class TimeFrameUpdateDataThread(threading.Thread):
         self.parent.notify(self.__class__.__name__)
 
     def run(self):
-        while True:
+        while self.keep_running:
+            now = time.time()
             self.refresh_data()
-            time.sleep(self.parent.time_frame.value * MINUTE_TO_SECONDS)
+            time.sleep(self.parent.time_frame.value * MINUTE_TO_SECONDS - (time.time() - now))

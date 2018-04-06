@@ -7,7 +7,7 @@ class ATRVolatilityEvaluator(VolatilityEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
+    def eval_impl(self):
         pass
 
 
@@ -17,7 +17,7 @@ class MassIndexVolatilityEvaluator(VolatilityEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
+    def eval_impl(self):
         pass
 
 
@@ -26,5 +26,5 @@ class ChaikinVolatilityEvaluator(VolatilityEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
+    def eval_impl(self):
         pass
