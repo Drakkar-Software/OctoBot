@@ -1,9 +1,10 @@
-import threading, os
+import os
+import threading
 from abc import *
 
-from config.cst import *
 from botcore.config.config import load_config
 
+from config.cst import *
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
@@ -16,9 +17,9 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
         self.social_config = None
         self.need_to_notify = False
         self.is_threaded = False
+        self.keep_running = True
         self.evaluator_threads = []
         self.load_config()
-        self.keep_running = True
 
     @classmethod
     def get_config_file_name(cls):

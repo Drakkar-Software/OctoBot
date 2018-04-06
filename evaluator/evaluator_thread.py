@@ -41,6 +41,8 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.set_time_frame(self.time_frame)
         self.evaluator.set_notifier(self.notifier)
         self.evaluator.set_trader(self.trader)
+
+        # Add threaded evaluators that can notify the current thread
         self.evaluator.get_creator().set_social_eval(social_eval_list, self)
         self.evaluator.get_creator().set_real_time_eval(real_time_TA_eval_list, self)
 
@@ -56,14 +58,30 @@ class EvaluatorThread(threading.Thread):
             self.logger.debug("Notification by " + notifier_name + " ignored")
 
     def refresh_eval(self, ignored_evaluator=None):
-        # First eval --> create_instances
         # Instances will be created only if they don't already exist
-        self.evaluator.get_creator().create_ta_eval()
+        self.evaluator.get_creator().create_ta_eval_list()
+        self.evaluator.get_creator().create_rules_eval_list()
 
         # update eval
         self.evaluator.update_ta_eval(ignored_evaluator)
 
         # update matrix
+        self.refresh_matrix()
+
+        # update rules matrix
+        self.evaluator.update_rules_eval(self.matrix, ignored_evaluator)
+
+        # use matrix
+        for rules_eval in self.evaluator.get_creator().get_rules_eval_list():
+            self.matrix.set_eval(EvaluatorMatrixTypes.RULES, rules_eval.get_name(),
+                                 rules_eval.get_eval_note())
+
+        # calculate the final result
+        self.evaluator.finalize()
+        self.logger.debug("--> " + str(self.evaluator.get_final().get_state()))
+        self.logger.debug("MATRIX : " + pprint.pformat(self.matrix.get_matrix()))
+
+    def refresh_matrix(self):
         for ta_eval in self.evaluator.get_creator().get_ta_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
                                  ta_eval.get_eval_note())
@@ -75,11 +93,6 @@ class EvaluatorThread(threading.Thread):
         for real_time_eval in self.evaluator.get_creator().get_real_time_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
                                  real_time_eval.get_eval_note())
-
-        # calculate the final result
-        self.evaluator.finalize()
-        self.logger.debug("--> " + str(self.evaluator.get_final().get_state()))
-        self.logger.debug("MATRIX : " + pprint.pformat(self.matrix.get_matrix()))
 
     def run(self):
         # Start refresh threads

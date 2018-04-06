@@ -1,6 +1,5 @@
 from abc import *
 
-from config.cst import *
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 

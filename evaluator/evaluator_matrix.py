@@ -6,7 +6,8 @@ class EvaluatorMatrix:
         self.matrix = {
             EvaluatorMatrixTypes.TA: {},
             EvaluatorMatrixTypes.SOCIAL: {},
-            EvaluatorMatrixTypes.REAL_TIME: {}
+            EvaluatorMatrixTypes.REAL_TIME: {},
+            EvaluatorMatrixTypes.RULES: {}
         }
 
     # ---- getters and setters----
