@@ -43,8 +43,9 @@ class SocialEvaluator(threading.Thread):
         else:
             self.set_default_config()
 
-    def get_config_file_name(self):
-        return SPECIFIC_CONFIG_PATH + self.__class__.__name__ + ".json"
+    @classmethod
+    def get_config_file_name(cls):
+        return SPECIFIC_CONFIG_PATH + cls.__name__ + CONFIG_FILE_EXT
 
     def set_logger(self, logger):
         self.logger = logger
@@ -81,12 +82,14 @@ class SocialEvaluator(threading.Thread):
     def get_social_config(self):
         return self.social_config
 
+    # generic social eval that will call the indicator eval()
+    # and provide a safe execution by disabling multi-call
     def eval(self):
         self.is_updating = True
         try:
             self.eval_impl()
         except Exception as e:
-            self.logger.error(" Exception in eval_impl(): "+str(e))
+            self.logger.error("Exception in eval_impl(): "+str(e))
         finally:
             self.is_updating = False
 
