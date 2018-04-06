@@ -7,6 +7,7 @@ START_EVAL_PERTINENCE = 1
 SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 CONFIG_TIME_FRAME = "time_frame"
+CONFIG_FILE_EXT = ".json"
 
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
 

@@ -91,7 +91,7 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
         self.exchange_time_frame = self.exchange.get_time_frame_enum()
 
     @abstractmethod
-    def refresh_data(self, symbol):
+    def refresh_data(self):
         raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
