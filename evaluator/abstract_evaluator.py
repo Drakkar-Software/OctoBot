@@ -22,27 +22,35 @@ class AbstractEvaluator:
     def get_name(cls):
         return cls.__name__
 
+    # Used to provide a new logger for this particular indicator
     def set_logger(self, logger):
         self.logger = logger
 
+    # Used to provide the global config
     def set_config(self, config):
         self.config = config
 
+    # Symbol is the cryptocurrency symbol
     def set_symbol(self, symbol):
         self.symbol = symbol
 
+    # history time represents the period of time of the indicator
     def set_history_time(self, history_time):
         self.history_time = history_time
 
+    # Eval note will be set by the eval_impl at each call
     def get_eval_note(self):
         return self.eval_note
 
+    # Pertinence of indicator will be used with the eval_note to provide a relevancy
     def get_pertinence(self):
         return self.pertinence
 
+    # If this indicator is enabled
     def get_is_enabled(self):
         return self.enabled
 
+    # If the eval method is running
     def get_is_updating(self):
         return self.is_updating
 

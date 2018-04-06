@@ -11,17 +11,12 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        super().__init__()
         threading.Thread.__init__(self)
         self.social_config = None
-
-        self.eval_note = START_EVAL_NOTE
-        self.logger = None
-        self.pertinence = START_EVAL_PERTINENCE
         self.need_to_notify = False
-        self.enabled = True
         self.is_threaded = False
         self.evaluator_threads = []
-        self.is_updating = False
         self.load_config()
         self.keep_running = True
 
