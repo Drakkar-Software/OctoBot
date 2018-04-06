@@ -1,6 +1,7 @@
 import talib
 
-from evaluator.TA.TA_evaluator import MomentumEvaluator, PriceStrings
+from config.cst import *
+from evaluator.TA.TA_evaluator import MomentumEvaluator
 
 
 # https://mrjbq7.github.io/ta-lib/func_groups/momentum_indicators.html

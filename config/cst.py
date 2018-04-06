@@ -22,6 +22,7 @@ class EvaluatorMatrixTypes(Enum):
     TA = "TA"
     SOCIAL = "SOCIAL"
     REAL_TIME = "REAL_TIME"
+    RULES = "RULES"
 
 
 class EvaluatorStates(Enum):

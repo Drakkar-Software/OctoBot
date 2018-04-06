@@ -1,6 +1,6 @@
 import talib
 
-from evaluator.TA.TA_evaluator import TrendEvaluator, PriceStrings
+from evaluator.TA.TA_evaluator import TrendEvaluator
 
 
 # https://mrjbq7.github.io/ta-lib/func_groups/overlap_studies.html

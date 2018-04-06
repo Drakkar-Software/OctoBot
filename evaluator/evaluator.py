@@ -59,11 +59,17 @@ class Evaluator:
         if self.data_changed:
             for ta_evaluator in self.creator.get_ta_eval_list():
                 ta_evaluator.set_data(self.data)
-                if not ta_evaluator.__class__.__name__ == ignored_evaluator and ta_evaluator.get_is_evaluable():
+                if not ta_evaluator.get_name() == ignored_evaluator and ta_evaluator.get_is_evaluable():
                     ta_evaluator.eval()
 
             # reset data changed after update
             self.data_changed = False
+
+    def update_rules_eval(self, new_matrix, ignored_evaluator=None):
+        for rules_evaluator in self.creator.get_rules_eval_list():
+            rules_evaluator.set_matrix(new_matrix)
+            if not rules_evaluator.get_name() == ignored_evaluator and rules_evaluator.get_is_evaluable():
+                rules_evaluator.eval()
 
     def finalize(self):
         self.final.prepare()
