@@ -77,18 +77,27 @@ class SocialEvaluator(threading.Thread):
     def get_social_config(self):
         return self.social_config
 
+    def eval(self):
+        self.is_updating = True
+        try:
+            self.eval_impl()
+        except Exception as e:
+            self.logger.error(" Exception in eval_impl(): "+str(e))
+        finally:
+            self.is_updating = False
+
     # eval new data
     # Notify if new data is relevant
     # example :
-    # def eval(self):
+    # def eval_impl(self):
     #   for post in post_selected
     #       note = sentiment_evaluator(post.text)
     #       if(note > 10 || note < 0):
     #           self.need_to_notify = True
     #       self.eval_note += note
     @abstractmethod
-    def eval(self):
-        raise NotImplementedError("Eval not implemented")
+    def eval_impl(self):
+        raise NotImplementedError("Eval_impl not implemented")
 
     # get data needed to perform the eval
     # example :
@@ -108,7 +117,7 @@ class SocialEvaluator(threading.Thread):
     #         time.sleep(own_time * MINUTE_TO_SECONDS)  --> use its own refresh time (near real time)
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval not implemented")
+        raise NotImplementedError("Eval_impl not implemented")
 
 
 class StatsSocialEvaluator(SocialEvaluator):
@@ -118,8 +127,8 @@ class StatsSocialEvaluator(SocialEvaluator):
         super().__init__()
 
     @abstractmethod
-    def eval(self):
-        raise NotImplementedError("Eval not implemented")
+    def eval_impl(self):
+        raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
     def get_data(self):
@@ -127,7 +136,7 @@ class StatsSocialEvaluator(SocialEvaluator):
 
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval not implemented")
+        raise NotImplementedError("Eval_impl not implemented")
 
 
 class ForumSocialEvaluator(SocialEvaluator):
@@ -137,8 +146,8 @@ class ForumSocialEvaluator(SocialEvaluator):
         super().__init__()
 
     @abstractmethod
-    def eval(self):
-        raise NotImplementedError("Eval not implemented")
+    def eval_impl(self):
+        raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
     def get_data(self):
@@ -146,7 +155,7 @@ class ForumSocialEvaluator(SocialEvaluator):
 
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval not implemented")
+        raise NotImplementedError("Eval_impl not implemented")
 
 
 class NewsSocialEvaluator(SocialEvaluator):
@@ -156,8 +165,8 @@ class NewsSocialEvaluator(SocialEvaluator):
         super().__init__()
 
     @abstractmethod
-    def eval(self):
-        raise NotImplementedError("Eval not implemented")
+    def eval_impl(self):
+        raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
     def get_data(self):
@@ -165,4 +174,4 @@ class NewsSocialEvaluator(SocialEvaluator):
 
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval not implemented")
+        raise NotImplementedError("Eval_impl not implemented")

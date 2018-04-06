@@ -35,10 +35,8 @@ class MediumNewsEvaluator(NewsSocialEvaluator):
     def get_data(self):
         pass
 
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         self.notify_evaluator_threads(self.__class__.__name__)
-        self.is_updating = False
 
     def run(self):
         pass

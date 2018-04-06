@@ -1,7 +1,7 @@
 import logging
 
 from evaluator.Social import SocialEvaluator
-from evaluator.RealTime import RealTimeEvaluator
+from evaluator.RealTime import RealTimeTAEvaluator
 from evaluator.TA import TAEvaluator
 
 
@@ -57,17 +57,16 @@ class EvaluatorCreator:
     @staticmethod
     def create_real_time_TA_evals(config, exchange_inst, symbol):
         real_time_TA_eval_list = []
-        for real_time_type in RealTimeEvaluator.__subclasses__():
-            for real_time_class_type in real_time_type.__subclasses__():
-                real_time_eval_class = real_time_class_type(exchange_inst, symbol)
-                if real_time_eval_class.get_is_enabled():
-                    real_time_eval_class.set_logger(logging.getLogger(real_time_class_type.__name__))
-                    real_time_eval_class.set_config(config)
+        for real_time_class_type in RealTimeTAEvaluator.__subclasses__():
+            real_time_eval_class = real_time_class_type(exchange_inst, symbol)
+            if real_time_eval_class.get_is_enabled():
+                real_time_eval_class.set_logger(logging.getLogger(real_time_class_type.__name__))
+                real_time_eval_class.set_config(config)
 
-                    # start refreshing thread
-                    real_time_eval_class.start()
+                # start refreshing thread
+                real_time_eval_class.start()
 
-                    real_time_TA_eval_list.append(real_time_eval_class)
+                real_time_TA_eval_list.append(real_time_eval_class)
 
         return real_time_TA_eval_list
 

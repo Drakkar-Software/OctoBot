@@ -11,8 +11,7 @@ class RSIMomentumEvaluator(MomentumEvaluator):
         self.pertinence = 1
 
     # TODO : temp analysis
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         rsi_v = talib.RSI(self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
         long_trend = self.get_trend(rsi_v, self.long_term_averages)
@@ -33,7 +32,6 @@ class RSIMomentumEvaluator(MomentumEvaluator):
             self.set_eval_note(rsi_v.tail(1).values[0] / 100)
         else:
             self.set_eval_note((rsi_v.tail(1).values[0] - 100) / 100)
-        self.is_updating = False
 
 
 # ADX --> trend_strength
@@ -43,8 +41,7 @@ class ADXMomentumEvaluator(MomentumEvaluator):
         self.enabled = False
 
     # TODO : temp analysis
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         adx_v = talib.ADX(self.data[PriceStrings.STR_PRICE_HIGH.value],
                           self.data[PriceStrings.STR_PRICE_LOW.value],
                           self.data[PriceStrings.STR_PRICE_CLOSE.value])
@@ -58,7 +55,6 @@ class ADXMomentumEvaluator(MomentumEvaluator):
         # When ADX drops below 18, it often leads to a sideways or horizontal trading pattern
         elif last < 18:
             pass
-        self.is_updating = False
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):
@@ -66,11 +62,9 @@ class OBVMomentumEvaluator(MomentumEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         obv_v = talib.OBV(self.data[PriceStrings.STR_PRICE_CLOSE.value],
                           self.data[PriceStrings.STR_PRICE_VOL.value])
-        self.is_updating = False
 
 
 # William's % R --> overbought / oversold
@@ -79,12 +73,10 @@ class WilliamsRMomentumEvaluator(MomentumEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         willr_v = talib.WILLR(self.data[PriceStrings.STR_PRICE_HIGH.value],
                               self.data[PriceStrings.STR_PRICE_LOW.value],
                               self.data[PriceStrings.STR_PRICE_CLOSE.value])
-        self.is_updating = False
 
 
 # TRIX --> percent rate-of-change trend
@@ -93,10 +85,8 @@ class TRIXMomentumEvaluator(MomentumEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         trix_v = talib.TRIX(self.data[PriceStrings.STR_PRICE_CLOSE.value])
-        self.is_updating = False
 
 
 class MACDMomentumEvaluator(MomentumEvaluator):
@@ -104,10 +94,8 @@ class MACDMomentumEvaluator(MomentumEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         macd_v = talib.MACD(self.data[PriceStrings.STR_PRICE_CLOSE.value])
-        self.is_updating = False
 
 
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
@@ -115,7 +103,7 @@ class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
+    def eval_impl(self):
         pass
 
 
@@ -124,9 +112,7 @@ class StochasticMomentumEvaluator(MomentumEvaluator):
         super().__init__()
         self.enabled = False
 
-    def eval(self):
-        self.is_updating = True
+    def eval_impl(self):
         slowk, slowd = talib.STOCH(self.data[PriceStrings.STR_PRICE_HIGH.value],
                                    self.data[PriceStrings.STR_PRICE_LOW.value],
                                    self.data[PriceStrings.STR_PRICE_CLOSE.value])
-        self.is_updating = False

@@ -59,13 +59,22 @@ class RealTimeEvaluator(threading.Thread):
     def set_default_config(self):
         pass
 
-    @abstractmethod
     def eval(self):
-        raise NotImplementedError("Eval not implemented")
+        self.is_updating = True
+        try:
+            self.eval_impl()
+        except Exception as e:
+            self.logger.error(" Exception in eval_impl(): "+str(e))
+        finally:
+            self.is_updating = False
+
+    @abstractmethod
+    def eval_impl(self):
+        raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval not implemented")
+        raise NotImplementedError("Eval_impl not implemented")
 
 
 class RealTimeTAEvaluator(RealTimeEvaluator):
@@ -79,12 +88,12 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
 
     @abstractmethod
     def refresh_data(self, symbol):
-        raise NotImplementedError("Eval not implemented")
+        raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
-    def eval(self):
-        raise NotImplementedError("Eval not implemented")
+    def eval_impl(self):
+        raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval not implemented")
+        raise NotImplementedError("Eval_impl not implemented")
