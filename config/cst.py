@@ -65,9 +65,12 @@ class TimeFrames(Enum):
 class TraderOrderType(Enum):
     BUY_MARKET = 1
     BUY_LIMIT = 2
-    STOP_LOSS = 3
-    SELL_MARKET = 4
-    SELL_LIMIT = 5
+    TAKE_PROFIT = 3
+    TAKE_PROFIT_LIMIT = 4
+    STOP_LOSS = 5
+    STOP_LOSS_LIMIT = 6
+    SELL_MARKET = 7
+    SELL_LIMIT = 8
 
 # TODO : review
 class TimeFramePertinence(Enum):

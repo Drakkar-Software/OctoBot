@@ -17,7 +17,8 @@ class FinalEvaluator:
                 self.evaluator.get_notifier().notify(self.evaluator.time_frame, self.evaluator.symbol, state)
             else:
                 # TODO : prepare trade
-                self.evaluator.get_trader().create_order(TraderOrderType.BUY_LIMIT)
+                # self.evaluator.get_trader().create_order(TraderOrderType.BUY_LIMIT, None, None)
+                pass
 
     def get_state(self):
         return self.state
