@@ -40,6 +40,7 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                 social_eval["last_refresh_time"] = now
                 if social_eval["last_refresh"] >= social_eval["refresh_rate"]:
                     social_eval["last_refresh"] = 0
+                    social_eval["social_evaluator_class_inst"].get_data()
                     social_eval["social_evaluator_class_inst"].eval()
 
             time.sleep(SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE)

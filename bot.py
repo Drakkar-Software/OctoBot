@@ -23,7 +23,6 @@ class Crypto_Bot:
 
         # TODO : CONFIG TEMP LOCATION
         self.time_frames = [TimeFrames.ONE_HOUR]
-        self.symbols = ["BTCUSDT"]
         self.exchanges = [BinanceExchange]
 
         # Notifier
@@ -49,38 +48,40 @@ class Crypto_Bot:
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
 
-        # create Socials and TA evaluators
-        for symbol in self.symbols:
+        # create Social and TA evaluators
+        for crypto_currency, symbol_list in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
-            # create Socials Evaluators
-            social_eval_list = EvaluatorCreator.create_social_eval(self.config, symbol)
+            # create Social evaluators
+            social_eval_list = EvaluatorCreator.create_social_eval(self.config, crypto_currency)
 
             # create TA evaluators
-            for exchange_type in self.exchanges:
-                exchange_inst = self.exchanges_list[exchange_type.__name__]
+            for symbol in symbol_list:
 
-                if exchange_inst.enabled():
-                    exchange_inst.get_symbol_list()
+                for exchange_type in self.exchanges:
+                    exchange_inst = self.exchanges_list[exchange_type.__name__]
 
-                    # Verify that symbol exists on this exchange
-                    if exchange_inst.symbol_exists(symbol):
+                    if exchange_inst.enabled():
+                        exchange_inst.get_symbol_list()
 
-                        # Create real time TA evaluators
-                        real_time_TA_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config, exchange_inst, symbol)
+                        # Verify that symbol exists on this exchange
+                        if exchange_inst.symbol_exists(symbol):
 
-                        for time_frame in self.time_frames:
-                            self.symbols_threads.append(EvaluatorThread(self.config,
-                                                                        symbol,
-                                                                        time_frame,
-                                                                        exchange_inst,
-                                                                        self.notifier,
-                                                                        self.exchange_traders[exchange_type.__name__],
-                                                                        social_eval_list,
-                                                                        real_time_TA_eval_list))
+                            # Create real time TA evaluators
+                            real_time_TA_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config, exchange_inst, symbol)
 
-                    # notify that exchanges doesn't support this symbol
-                    else:
-                        self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
+                            for time_frame in self.time_frames:
+                                self.symbols_threads.append(EvaluatorThread(self.config,
+                                                                            symbol,
+                                                                            time_frame,
+                                                                            exchange_inst,
+                                                                            self.notifier,
+                                                                            self.exchange_traders[exchange_type.__name__],
+                                                                            social_eval_list,
+                                                                            real_time_TA_eval_list))
+
+                        # notify that exchanges doesn't support this symbol
+                        else:
+                            self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
 
     def start_threads(self):
         for thread in self.symbols_threads:
