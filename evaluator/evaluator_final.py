@@ -6,8 +6,6 @@ class FinalEvaluator:
     def __init__(self, evaluator):
         self.evaluator = evaluator
         self.final_eval = START_EVAL_NOTE
-        self.social_final_eval = START_EVAL_NOTE
-        self.ta_final_eval = START_EVAL_NOTE
         self.state = EvaluatorStates.NEUTRAL
 
     def set_state(self, state):
@@ -27,33 +25,23 @@ class FinalEvaluator:
         return self.final_eval
 
     def prepare(self):
-        ta_analysis_note_counter = 0
-        # TA analysis
-        for evaluated in self.evaluator.get_creator().get_ta_eval_list():
-            self.ta_final_eval += evaluated.get_eval_note() * evaluated.get_pertinence()
-            ta_analysis_note_counter += evaluated.get_pertinence()
+        rules_analysis_note_counter = 0
+        # Rules analysis
+        for evaluated_rules in self.evaluator.get_creator().get_rules_eval_list():
+            self.final_eval += evaluated_rules.get_eval_note() * evaluated_rules.get_pertinence()
+            rules_analysis_note_counter += evaluated_rules.get_pertinence()
 
-        if ta_analysis_note_counter > 0:
-            self.ta_final_eval /= ta_analysis_note_counter
+        if rules_analysis_note_counter > 0:
+            self.final_eval /= rules_analysis_note_counter
         else:
-            self.ta_final_eval = START_EVAL_NOTE
-
-        # Social analysis
-        social_analysis_note_counter = 0
-        for evaluated in self.evaluator.get_creator().get_social_eval_list():
-            self.social_final_eval += evaluated.get_eval_note() * evaluated.get_pertinence()
-            social_analysis_note_counter += evaluated.get_pertinence()
-
-        if social_analysis_note_counter > 0:
-            self.social_final_eval /= social_analysis_note_counter
-        else:
-            self.social_final_eval = START_EVAL_NOTE
+            self.final_eval = START_EVAL_NOTE
 
     def calculate_final(self):
         # TODO : improve
-        self.final_eval = (self.ta_final_eval * EvaluatorsPertinence.TAEvaluator.value
-                           + self.social_final_eval * EvaluatorsPertinence.SocialEvaluator.value)
-        self.final_eval /= (EvaluatorsPertinence.TAEvaluator.value + EvaluatorsPertinence.SocialEvaluator.value)
+        # self.final_eval = (self.ta_final_eval * EvaluatorsPertinence.TAEvaluator.value
+        #                    + self.social_final_eval * EvaluatorsPertinence.SocialEvaluator.value)
+        # self.final_eval /= (EvaluatorsPertinence.TAEvaluator.value + EvaluatorsPertinence.SocialEvaluator.value)
+        pass
 
     def create_state(self):
         # TODO : improve
