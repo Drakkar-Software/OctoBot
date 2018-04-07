@@ -1,5 +1,3 @@
-import talib, numpy
-
 from pytrends.exceptions import ResponseError
 from pytrends.request import TrendReq
 
