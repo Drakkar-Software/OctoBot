@@ -17,7 +17,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
     # https://github.com/GeneralMills/pytrends/blob/master/examples/example.py
     def get_data(self):
         self.pytrends = TrendReq(hl='en-US', tz=0)
-        #self.pytrends.GENERAL_URL = "https://trends.google.com/trends/explore"
+        # self.pytrends.GENERAL_URL = "https://trends.google.com/trends/explore"
         # self.symbol
         key_words = [self.symbol]
         try:

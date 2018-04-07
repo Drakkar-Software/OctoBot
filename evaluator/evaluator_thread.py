@@ -20,11 +20,19 @@ class EvaluatorThread(threading.Thread):
                  real_time_TA_eval_list):
         threading.Thread.__init__(self)
         self.config = config
-        self.exchange = exchange
-        self.exchange_time_frame = self.exchange.get_time_frame_enum()
         self.symbol = symbol
         self.time_frame = time_frame
+
+        # Exchange
+        self.exchange = exchange
+        self.exchange_time_frame = self.exchange.get_time_frame_enum()
+        self.exchange_order_type = self.exchange.get_order_type_enum()
+        self.exchange.update_balance(self.symbol)
+
+        # Notifer
         self.notifier = notifier
+
+        # Trader
         self.trader = trader
 
         self.matrix = EvaluatorMatrix()
