@@ -8,9 +8,12 @@ SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
+CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
 
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
 
+STATS_EVALUATOR_HISTORY_TIME = "relevant_history_months"
+STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 
 class EvaluatorRisk(Enum):
     LOW = 1
