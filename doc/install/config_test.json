@@ -1,4 +1,7 @@
 {
+  "crypto_currencies":{
+    "Bitcoin": ["BTCUSDT"]
+  },
   "exchanges": {
     "Binance": {
       "api-key": "",
