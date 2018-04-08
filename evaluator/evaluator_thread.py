@@ -72,7 +72,7 @@ class EvaluatorThread(threading.Thread):
     def refresh_eval(self, ignored_evaluator=None):
         # Instances will be created only if they don't already exist
         self.evaluator.get_creator().create_ta_eval_list()
-        self.evaluator.get_creator().create_rules_eval_list()
+        self.evaluator.get_creator().create_strategies_eval_list()
 
         # update eval
         self.evaluator.update_ta_eval(ignored_evaluator)
@@ -80,13 +80,13 @@ class EvaluatorThread(threading.Thread):
         # update matrix
         self.refresh_matrix()
 
-        # update rules matrix
-        self.evaluator.update_rules_eval(self.matrix, ignored_evaluator)
+        # update strategies matrix
+        self.evaluator.update_strategies_eval(self.matrix, ignored_evaluator)
 
         # use matrix
-        for rules_eval in self.evaluator.get_creator().get_rules_eval_list():
-            self.matrix.set_eval(EvaluatorMatrixTypes.RULES, rules_eval.get_name(),
-                                 rules_eval.get_eval_note())
+        for strategies_eval in self.evaluator.get_creator().get_strategies_eval_list():
+            self.matrix.set_eval(EvaluatorMatrixTypes.STRATEGIES, strategies_eval.get_name(),
+                                 strategies_eval.get_eval_note())
 
         # calculate the final result
         self.evaluator.finalize()
