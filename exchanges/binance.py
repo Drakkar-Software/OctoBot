@@ -14,6 +14,7 @@ class BinanceExchange(Exchange):
         self.name = "Binance"
         self.logger = logging.getLogger(self.name + "Exchange")
         self.create_client()
+        self.markets = ["USDT", "BTC", "ETH"]
 
     @staticmethod
     def get_time_frame_enum():
@@ -22,6 +23,15 @@ class BinanceExchange(Exchange):
     @staticmethod
     def get_order_type_enum():
         return BinanceOrderType
+
+    @staticmethod
+    def parse_symbol(symbol):
+        return symbol.replace(MARKET_SEPARATOR, "")
+
+    def unparse_symbol(self, symbol):
+        for market in self.markets:
+            if market in symbol:
+                return symbol.replace(market, "") + MARKET_SEPARATOR + market
 
     def create_client(self):
         if self.enabled():
@@ -44,7 +54,7 @@ class BinanceExchange(Exchange):
 
     # @return DataFrame of prices
     def get_symbol_prices(self, symbol, time_frame):
-        candles = self.client.get_klines(symbol=symbol, interval=time_frame.value)
+        candles = self.client.get_klines(symbol=self.parse_symbol(symbol), interval=time_frame.value)
         prices = {PriceStrings.STR_PRICE_HIGH.value: [],
                   PriceStrings.STR_PRICE_LOW.value: [],
                   PriceStrings.STR_PRICE_OPEN.value: [],
@@ -62,7 +72,7 @@ class BinanceExchange(Exchange):
 
     def get_symbol_list(self):
         for symbol_data in self.client.get_exchange_info()["symbols"]:
-            self.symbol_list.append(symbol_data["symbol"])
+            self.symbol_list.append(self.unparse_symbol(symbol_data["symbol"]))
 
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         if self.connected:
@@ -109,20 +119,21 @@ class BinanceExchange(Exchange):
                 timeInForce=Client.TIME_IN_FORCE_GTC,
             )
 
-            status, order_id, total_fee, filled_price, filled_quantity, transaction_time = self.parse_order_result(
-                order_result)
+            return self.parse_order_result(order_result)
 
-            if symbol in self.balance:
-                old = self.balance[symbol]
-            else:
-                old = 0
+            # status, order_id, total_fee, filled_price, filled_quantity, transaction_time
 
-            if side == Client.SIDE_BUY:
-                new_quantity = old + filled_quantity
-            else:
-                new_quantity = old - filled_quantity
+            # if symbol in self.balance:
+            #     old = self.balance[symbol]
+            # else:
+            #     old = 0
 
-            self.set_balance(symbol, new_quantity)
+            # if side == Client.SIDE_BUY:
+            #     new_quantity = old + filled_quantity
+            # else:
+            #     new_quantity = old - filled_quantity
+            #
+            # self.set_balance(symbol, new_quantity)
 
     @staticmethod
     def parse_order_result(result):
@@ -136,9 +147,15 @@ class BinanceExchange(Exchange):
         for filled in result["fills"]:
             total_fee += filled["commission"]
 
+        if status == "FILLED":
+            status = True
+        else:
+            status = False
+
         return status, order_id, total_fee, filled_price, filled_quantity, transaction_time
 
     def update_balance(self, symbol):
+        symbol = self.parse_symbol(symbol)
         if self.connected:
             self.set_balance(symbol, self.client.get_asset_balance(asset=symbol))
 

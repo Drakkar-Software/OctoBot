@@ -7,6 +7,7 @@ from config.cst import *
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_thread import EvaluatorThread
 from exchanges import BinanceExchange
+from exchanges.simulator.trader_simulator import TraderSimulator
 from exchanges.trader import Trader
 from tools import Notification
 
@@ -30,6 +31,7 @@ class Crypto_Bot:
 
         self.symbols_threads = []
         self.exchange_traders = {}
+        self.exchange_trader_simulators = {}
         self.exchanges_list = {}
 
     def set_time_frames(self, time_frames):
@@ -41,9 +43,11 @@ class Crypto_Bot:
 
             # create trader instance for this exchange
             exchange_trader = Trader(self.config, exchange_inst)
+            exchange_trader_simulator = TraderSimulator(self.config, exchange_inst)
 
             self.exchanges_list[exchange_type.__name__] = exchange_inst
             self.exchange_traders[exchange_type.__name__] = exchange_trader
+            self.exchange_trader_simulators[exchange_type.__name__] = exchange_trader_simulator
 
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
@@ -77,9 +81,13 @@ class Crypto_Bot:
                                                                             time_frame,
                                                                             exchange_inst,
                                                                             self.notifier,
-                                                                            self.exchange_traders[exchange_type.__name__],
                                                                             social_eval_list,
-                                                                            real_time_TA_eval_list))
+                                                                            real_time_TA_eval_list,
+                                                                            self.exchange_traders[
+                                                                                exchange_type.__name__],
+                                                                            self.exchange_trader_simulators[
+                                                                                exchange_type.__name__]
+                                                                            ))
 
                         # notify that exchanges doesn't support this symbol
                         else:

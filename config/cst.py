@@ -1,5 +1,7 @@
 from enum import Enum
 
+MARKET_SEPARATOR = "/"
+
 MINUTE_TO_SECONDS = 60
 START_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
@@ -14,6 +16,7 @@ SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
 
 STATS_EVALUATOR_HISTORY_TIME = "relevant_history_months"
 STATS_EVALUATOR_MAX_HISTORY_TIME = 3
+
 
 class EvaluatorRisk(Enum):
     LOW = 1
@@ -62,6 +65,11 @@ class TimeFrames(Enum):
     ONE_MONTH = 43200
 
 
+class TradeOrderSide(Enum):
+    BUY = 1
+    SELL = 2
+
+
 class TraderOrderType(Enum):
     BUY_MARKET = 1
     BUY_LIMIT = 2
@@ -71,6 +79,7 @@ class TraderOrderType(Enum):
     STOP_LOSS_LIMIT = 6
     SELL_MARKET = 7
     SELL_LIMIT = 8
+
 
 # TODO : review
 class TimeFramePertinence(Enum):

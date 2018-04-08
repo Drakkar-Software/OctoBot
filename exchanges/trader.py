@@ -7,6 +7,7 @@ class Trader:
     def __init__(self, config, exchange):
         self.exchange = exchange
         self.config = config
+        self.portfolio = {}
         self.risk = self.config["trader"]["risk"]
         self.logger = logging.getLogger("Trader")
 
@@ -25,16 +26,34 @@ class Trader:
     def get_risk(self):
         return self.risk
 
-    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
-        if order_type == TraderOrderType.BUY_MARKET:
-            pass
-        elif order_type == TraderOrderType.BUY_LIMIT:
-            pass
-        elif order_type == TraderOrderType.SELL_MARKET:
-            pass
-        elif order_type == TraderOrderType.SELL_LIMIT:
-            pass
-        elif order_type == TraderOrderType.STOP_LOSS:
-            pass
-        elif order_type == TraderOrderType.STOP_LOSS_LIMIT:
-            pass
+    # TODO
+    def create_order(self, order_type, symbol, quantity, price, limit_price=None):
+        pass
+
+    def update_portfolio(self, symbol, filled_quantity, filled_price, total_fee, status, side):
+        if status:
+            currency, market = self.exchange.split_symbol(symbol)
+
+            # update currency
+            if currency in self.portfolio:
+                if side == TradeOrderSide.BUY:
+                    self.portfolio[currency] += filled_quantity
+                else:
+                    self.portfolio[currency] -= filled_quantity
+            else:
+                self.portfolio[currency] = filled_quantity
+
+            # update market
+            if market in self.portfolio:
+                if side == TradeOrderSide.BUY:
+                    self.portfolio[market] -= (filled_quantity * filled_price) - total_fee
+                else:
+                    self.portfolio[market] += (filled_quantity * filled_price) - total_fee
+            else:
+                self.portfolio[market] = (-filled_quantity * filled_price) - total_fee
+
+            self.logger.info("Portfolio updated | " + currency + " " + self.portfolio[currency]
+                             + " | " + market + " " + self.portfolio[market])
+
+        else:
+            self.logger.warning("ORDER NOT FILLED")

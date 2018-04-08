@@ -1,4 +1,3 @@
-from config.cst import *
 from exchanges.trader import *
 
 
@@ -13,10 +12,10 @@ class FinalEvaluator:
             self.state = state
             if self.evaluator.notifier.enabled():
                 self.evaluator.get_notifier().notify(self.evaluator.time_frame, self.evaluator.symbol, state)
-            else:
-                # TODO : prepare trade
-                # self.evaluator.get_trader().create_order(TraderOrderType.BUY_LIMIT, None, None)
-                pass
+            elif self.evaluator.trader.enabled():
+                self.create_trader_order()
+            elif self.evaluator.trader_simulator.enabled():
+                self.create_trader_simulator_order()
 
     def get_state(self):
         return self.state
@@ -55,3 +54,52 @@ class FinalEvaluator:
             self.set_state(EvaluatorStates.SHORT)
         else:
             self.set_state(EvaluatorStates.VERY_SHORT)
+
+    def create_trader_order(self):
+        # TODO : prepare trade
+        if EvaluatorStates.VERY_SHORT:
+            self.evaluator.get_trader().create_order(TraderOrderType.SELL_MARKET,
+                                                     self.evaluator.symbol,
+                                                     None,
+                                                     None)
+        elif EvaluatorStates.SHORT:
+            self.evaluator.get_trader().create_order(TraderOrderType.SELL_LIMIT,
+                                                     self.evaluator.symbol,
+                                                     None,
+                                                     None)
+        elif EvaluatorStates.NEUTRAL:
+            pass
+        elif EvaluatorStates.LONG:
+            self.evaluator.get_trader().create_order(TraderOrderType.BUY_LIMIT,
+                                                     self.evaluator.symbol,
+                                                     None,
+                                                     None)
+        elif EvaluatorStates.VERY_LONG:
+            self.evaluator.get_trader().create_order(TraderOrderType.SELL_MARKET,
+                                                     self.evaluator.symbol,
+                                                     None,
+                                                     None)
+
+    def create_trader_simulator_order(self):
+        if EvaluatorStates.VERY_SHORT:
+            self.evaluator.get_trader_simulator().create_order(TraderOrderType.SELL_MARKET,
+                                                               self.evaluator.symbol,
+                                                               None,
+                                                               None)
+        elif EvaluatorStates.SHORT:
+            self.evaluator.get_trader_simulator().create_order(TraderOrderType.SELL_LIMIT,
+                                                               self.evaluator.symbol,
+                                                               None,
+                                                               None)
+        elif EvaluatorStates.NEUTRAL:
+            pass
+        elif EvaluatorStates.LONG:
+            self.evaluator.get_trader_simulator().create_order(TraderOrderType.BUY_LIMIT,
+                                                               self.evaluator.symbol,
+                                                               None,
+                                                               None)
+        elif EvaluatorStates.VERY_LONG:
+            self.evaluator.get_trader_simulator().create_order(TraderOrderType.SELL_MARKET,
+                                                               self.evaluator.symbol,
+                                                               None,
+                                                               None)

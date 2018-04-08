@@ -20,11 +20,19 @@
     }
   },
   "notification":{
-    "enabled": true,
+    "enabled": false,
     "type": 1
   },
   "trader":{
+    "enabled": false,
+    "portfolio": 0,
+    "risk": 1,
+    "portfolio_management": false
+  },
+  "simulator":{
     "enabled": true,
-    "risk": 1
+    "portfolio": 10,
+    "risk": 1,
+    "portfolio_management": false
   }
 }

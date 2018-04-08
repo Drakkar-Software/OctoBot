@@ -12,6 +12,7 @@ class Evaluator:
         self.symbol = None
         self.notifier = None
         self.trader = None
+        self.trader_simulator = None
 
         self.data_changed = False
 
@@ -32,6 +33,9 @@ class Evaluator:
     def set_trader(self, trader):
         self.trader = trader
 
+    def set_trader_simulator(self, simulator):
+        self.trader_simulator = simulator
+
     def set_symbol(self, symbol):
         self.symbol = symbol
 
@@ -47,6 +51,9 @@ class Evaluator:
 
     def get_trader(self):
         return self.trader
+
+    def get_trader_simulator(self):
+        return self.trader_simulator
 
     def get_final(self):
         return self.final

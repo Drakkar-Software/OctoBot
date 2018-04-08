@@ -1,5 +1,7 @@
 from abc import *
 
+from config.cst import MARKET_SEPARATOR
+
 
 class Exchange:
     __metaclass__ = ABCMeta
@@ -69,6 +71,20 @@ class Exchange:
     @abstractmethod
     def get_trade_history(self):
         raise NotImplementedError("Get_trade_history not implemented")
+
+    @staticmethod
+    @abstractmethod
+    def parse_symbol(symbol):
+        raise NotImplementedError("Parse_symbol not implemented")
+
+    @abstractmethod
+    def unparse_symbol(self, symbol):
+        raise NotImplementedError("Unparse_symbol not implemented")
+
+    # Return currency, market
+    def split_symbol(self, symbol):
+        splitted = symbol.split(MARKET_SEPARATOR)
+        return splitted[0], splitted[1]
 
     def get_name(self):
         return self.name
