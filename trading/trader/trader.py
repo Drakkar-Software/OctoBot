@@ -61,10 +61,10 @@ class Trader:
 
             # Only for log purpose
             if side == TradeOrderSide.BUY:
-                currency_portfolio_num = "+" + str(self.portfolio[currency])
+                currency_portfolio_num = "+" + str(filled_quantity)
                 market_portfolio_num = "-" + str(self.portfolio[market])
             else:
-                currency_portfolio_num = "-" + str(self.portfolio[currency])
+                currency_portfolio_num = "-" + str(filled_quantity)
                 market_portfolio_num = "+" + str(self.portfolio[market])
 
             self.logger.debug("Portfolio updated | " + currency + " " + currency_portfolio_num

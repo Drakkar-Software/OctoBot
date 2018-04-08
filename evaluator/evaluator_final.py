@@ -1,4 +1,4 @@
-from exchanges.trader import *
+from trading.trader.trader import *
 
 
 class FinalEvaluator:

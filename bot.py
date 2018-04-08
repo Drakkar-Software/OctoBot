@@ -6,9 +6,9 @@ from botcore.config.config import load_config
 from config.cst import *
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_thread import EvaluatorThread
-from exchanges import BinanceExchange
-from exchanges.simulator.trader_simulator import TraderSimulator
-from exchanges.trader import Trader
+from trading import BinanceExchange
+from trading.trader.trader_simulator import TraderSimulator
+from trading.trader.trader import Trader
 from tools import Notification
 
 
@@ -89,7 +89,7 @@ class Crypto_Bot:
                                                                                 exchange_type.__name__]
                                                                             ))
 
-                        # notify that exchanges doesn't support this symbol
+                        # notify that exchange doesn't support this symbol
                         else:
                             self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
 

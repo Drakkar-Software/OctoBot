@@ -5,7 +5,7 @@ from binance.client import Client
 from config.cst import *
 import pandas
 from aenum import MultiValueEnum
-from exchanges.exchange import Exchange
+from trading.exchanges.exchange import Exchange
 
 
 class BinanceExchange(Exchange):
