@@ -95,7 +95,7 @@ class BinanceExchange(Exchange):
             self.set_balance(symbol, new_quantity)
 
     def create_test_order(self, order_type, symbol, quantity, price=None, stop_price=None):
-            if self.connected:
+        if self.connected:
             side, *_ = order_type
             _, order, *_ = order_type
 
