@@ -15,9 +15,10 @@ class EvaluatorThread(threading.Thread):
                  time_frame,
                  exchange,
                  notifier,
-                 trader,
                  social_eval_list,
-                 real_time_TA_eval_list):
+                 real_time_TA_eval_list,
+                 trader,
+                 simulator):
         threading.Thread.__init__(self)
         self.config = config
         self.symbol = symbol
@@ -34,6 +35,7 @@ class EvaluatorThread(threading.Thread):
 
         # Trader
         self.trader = trader
+        self.simulator = simulator
 
         self.matrix = EvaluatorMatrix()
 
@@ -49,6 +51,7 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.set_time_frame(self.time_frame)
         self.evaluator.set_notifier(self.notifier)
         self.evaluator.set_trader(self.trader)
+        self.evaluator.set_trader_simulator(self.simulator)
 
         # Add threaded evaluators that can notify the current thread
         self.evaluator.get_creator().set_social_eval(social_eval_list, self)
