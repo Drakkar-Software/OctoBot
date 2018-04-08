@@ -13,12 +13,7 @@ class BinanceExchange(Exchange):
         super().__init__(config)
         self.name = "Binance"
         self.logger = logging.getLogger(self.name + "Exchange")
-        if self.enabled():
-            self.client = Client(self.config["exchanges"][self.name]["api-key"],
-                                 self.config["exchanges"][self.name]["api-secret"],
-                                 {"verify": True, "timeout": 20})
-        else:
-            self.logger.debug("Disabled")
+        self.create_client()
 
     @staticmethod
     def get_time_frame_enum():
@@ -27,6 +22,25 @@ class BinanceExchange(Exchange):
     @staticmethod
     def get_order_type_enum():
         return BinanceOrderType
+
+    def create_client(self):
+        if self.enabled():
+            if self.check_config():
+                self.client = Client(self.config["exchanges"][self.name]["api-key"],
+                                     self.config["exchanges"][self.name]["api-secret"],
+                                     {"verify": True, "timeout": 20})
+                self.connected = True
+            else:
+                self.client = Client(None, None, {"timeout": 20})
+        else:
+            self.logger.debug("Disabled")
+
+    def check_config(self):
+        if not self.config["exchanges"][self.name]["api-key"] \
+                and not self.config["exchanges"][self.name]["api-secret"]:
+            return False
+        else:
+            return True
 
     # @return DataFrame of prices
     def get_symbol_prices(self, symbol, time_frame):
@@ -51,60 +65,64 @@ class BinanceExchange(Exchange):
             self.symbol_list.append(symbol_data["symbol"])
 
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
-        side, *_ = order_type
-        _, order, *_ = order_type
+        if self.connected:
+            side, *_ = order_type
+            _, order, *_ = order_type
 
-        order_result = self.client.create_order(
-            symbol=symbol,
-            side=side,
-            type=order,
-            quantity=quantity,
-            price=price,
-            stopPrice=stop_price,
-            timeInForce=Client.TIME_IN_FORCE_GTC,
-        )
+            order_result = self.client.create_order(
+                symbol=symbol,
+                side=side,
+                type=order,
+                quantity=quantity,
+                price=price,
+                stopPrice=stop_price,
+                timeInForce=Client.TIME_IN_FORCE_GTC,
+            )
 
-        status, order_id, total_fee, filled_price, filled_quantity, transaction_time = self.parse_order_result(order_result)
+            status, order_id, total_fee, filled_price, filled_quantity, transaction_time = self.parse_order_result(
+                order_result)
 
-        if symbol in self.balance:
-            old = self.balance[symbol]
-        else:
-            old = 0
+            if symbol in self.balance:
+                old = self.balance[symbol]
+            else:
+                old = 0
 
-        if side == Client.SIDE_BUY:
-            new_quantity = old + filled_quantity
-        else:
-            new_quantity = old - filled_quantity
+            if side == Client.SIDE_BUY:
+                new_quantity = old + filled_quantity
+            else:
+                new_quantity = old - filled_quantity
 
-        self.set_balance(symbol, new_quantity)
+            self.set_balance(symbol, new_quantity)
 
     def create_test_order(self, order_type, symbol, quantity, price=None, stop_price=None):
-        side, *_ = order_type
-        _, order, *_ = order_type
+            if self.connected:
+            side, *_ = order_type
+            _, order, *_ = order_type
 
-        order_result = self.client.create_test_order(
-            symbol=symbol,
-            side=side,
-            type=order,
-            quantity=quantity,
-            price=price,
-            stopPrice=stop_price,
-            timeInForce=Client.TIME_IN_FORCE_GTC,
-        )
+            order_result = self.client.create_test_order(
+                symbol=symbol,
+                side=side,
+                type=order,
+                quantity=quantity,
+                price=price,
+                stopPrice=stop_price,
+                timeInForce=Client.TIME_IN_FORCE_GTC,
+            )
 
-        status, order_id, total_fee, filled_price, filled_quantity, transaction_time = self.parse_order_result(order_result)
+            status, order_id, total_fee, filled_price, filled_quantity, transaction_time = self.parse_order_result(
+                order_result)
 
-        if symbol in self.balance:
-            old = self.balance[symbol]
-        else:
-            old = 0
+            if symbol in self.balance:
+                old = self.balance[symbol]
+            else:
+                old = 0
 
-        if side == Client.SIDE_BUY:
-            new_quantity = old + filled_quantity
-        else:
-            new_quantity = old - filled_quantity
+            if side == Client.SIDE_BUY:
+                new_quantity = old + filled_quantity
+            else:
+                new_quantity = old - filled_quantity
 
-        self.set_balance(symbol, new_quantity)
+            self.set_balance(symbol, new_quantity)
 
     @staticmethod
     def parse_order_result(result):
@@ -121,7 +139,8 @@ class BinanceExchange(Exchange):
         return status, order_id, total_fee, filled_price, filled_quantity, transaction_time
 
     def update_balance(self, symbol):
-        self.set_balance(symbol, self.client.get_asset_balance(asset=symbol))
+        if self.connected:
+            self.set_balance(symbol, self.client.get_asset_balance(asset=symbol))
 
     def get_order(self, order_id):
         self.client.get_order(orderId=order_id)
@@ -156,7 +175,8 @@ class BinanceOrderType(MultiValueEnum):
     BUY_MARKET = frozenset([Client.SIDE_BUY, Client.ORDER_TYPE_MARKET]), TraderOrderType.BUY_MARKET
     BUY_LIMIT = frozenset([Client.SIDE_BUY, Client.ORDER_TYPE_LIMIT]), TraderOrderType.BUY_LIMIT
     TAKE_PROFIT = frozenset([Client.SIDE_SELL, Client.ORDER_TYPE_TAKE_PROFIT]), TraderOrderType.TAKE_PROFIT
-    TAKE_PROFIT_LIMIT = frozenset([Client.SIDE_SELL, Client.ORDER_TYPE_TAKE_PROFIT_LIMIT]), TraderOrderType.TAKE_PROFIT_LIMIT
+    TAKE_PROFIT_LIMIT = frozenset(
+        [Client.SIDE_SELL, Client.ORDER_TYPE_TAKE_PROFIT_LIMIT]), TraderOrderType.TAKE_PROFIT_LIMIT
     STOP_LOSS = frozenset([Client.SIDE_SELL, Client.ORDER_TYPE_STOP_LOSS]), TraderOrderType.STOP_LOSS
     STOP_LOSS_LIMIT = frozenset([Client.SIDE_SELL, Client.ORDER_TYPE_STOP_LOSS_LIMIT]), TraderOrderType.STOP_LOSS_LIMIT
     SELL_MARKET = frozenset([Client.SIDE_SELL, Client.ORDER_TYPE_MARKET]), TraderOrderType.SELL_MARKET

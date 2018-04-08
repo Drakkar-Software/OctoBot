@@ -6,11 +6,21 @@ class Exchange:
 
     def __init__(self, config):
         self.name = None
+        self.client = None
+        self.connected = False
         self.config = config
         self.symbol_list = []
         self.balance = {}
         self.open_orders = []
         self.pending_orders = []
+
+    @abstractmethod
+    def create_client(self):
+        raise NotImplementedError("Create_client not implemented")
+
+    @abstractmethod
+    def check_config(self):
+        raise NotImplementedError("Check_config not implemented")
 
     # @return DataFrame of prices
     @abstractmethod
