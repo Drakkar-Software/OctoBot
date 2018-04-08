@@ -1,7 +1,7 @@
 import logging
 
 from config.cst import *
-from exchanges.trader import Trader
+from trading.trader.trader import Trader
 
 
 class TraderSimulator(Trader):
