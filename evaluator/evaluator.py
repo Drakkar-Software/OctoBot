@@ -64,11 +64,11 @@ class Evaluator:
             # reset data changed after update
             self.data_changed = False
 
-    def update_rules_eval(self, new_matrix, ignored_evaluator=None):
-        for rules_evaluator in self.creator.get_rules_eval_list():
-            rules_evaluator.set_matrix(new_matrix)
-            if not rules_evaluator.get_name() == ignored_evaluator and rules_evaluator.get_is_evaluable():
-                rules_evaluator.eval()
+    def update_strategies_eval(self, new_matrix, ignored_evaluator=None):
+        for strategies_evaluator in self.creator.get_strategies_eval_list():
+            strategies_evaluator.set_matrix(new_matrix)
+            if not strategies_evaluator.get_name() == ignored_evaluator and strategies_evaluator.get_is_evaluable():
+                strategies_evaluator.eval()
 
     def finalize(self):
         self.final.prepare()

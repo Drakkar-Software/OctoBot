@@ -24,14 +24,14 @@ class FinalEvaluator:
         return self.final_eval
 
     def prepare(self):
-        rules_analysis_note_counter = 0
-        # Rules analysis
-        for evaluated_rules in self.evaluator.get_creator().get_rules_eval_list():
-            self.final_eval += evaluated_rules.get_eval_note() * evaluated_rules.get_pertinence()
-            rules_analysis_note_counter += evaluated_rules.get_pertinence()
+        strategies_analysis_note_counter = 0
+        # Strategies analysis
+        for evaluated_strategies in self.evaluator.get_creator().get_strategies_eval_list():
+            self.final_eval += evaluated_strategies.get_eval_note() * evaluated_strategies.get_pertinence()
+            strategies_analysis_note_counter += evaluated_strategies.get_pertinence()
 
-        if rules_analysis_note_counter > 0:
-            self.final_eval /= rules_analysis_note_counter
+        if strategies_analysis_note_counter > 0:
+            self.final_eval /= strategies_analysis_note_counter
         else:
             self.final_eval = START_EVAL_NOTE
 
