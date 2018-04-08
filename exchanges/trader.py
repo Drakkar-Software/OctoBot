@@ -26,8 +26,15 @@ class Trader:
     def get_risk(self):
         return self.risk
 
+    def get_portfolio(self, currency):
+        if currency in self.portfolio:
+            return self.portfolio[currency]
+        else:
+            self.portfolio[currency] = 0
+            return self.portfolio[currency]
+
     # TODO
-    def create_order(self, order_type, symbol, quantity, price, limit_price=None):
+    def create_order(self, order_type, symbol, quantity, price=None, limit_price=None):
         pass
 
     def update_portfolio(self, symbol, filled_quantity, filled_price, total_fee, status, side):
@@ -52,8 +59,16 @@ class Trader:
             else:
                 self.portfolio[market] = (-filled_quantity * filled_price) - total_fee
 
-            self.logger.info("Portfolio updated | " + currency + " " + self.portfolio[currency]
-                             + " | " + market + " " + self.portfolio[market])
+            # Only for log purpose
+            if side == TradeOrderSide.BUY:
+                currency_portfolio_num = "+" + str(self.portfolio[currency])
+                market_portfolio_num = "-" + str(self.portfolio[market])
+            else:
+                currency_portfolio_num = "-" + str(self.portfolio[currency])
+                market_portfolio_num = "+" + str(self.portfolio[market])
+
+            self.logger.debug("Portfolio updated | " + currency + " " + currency_portfolio_num
+                              + " | " + market + " " + market_portfolio_num)
 
         else:
             self.logger.warning("ORDER NOT FILLED")

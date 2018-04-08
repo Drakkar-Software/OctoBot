@@ -17,7 +17,9 @@ class TraderSimulator(Trader):
         else:
             return False
 
-    def create_order(self, order_type, symbol, quantity, price, limit_price=None):
+    def create_order(self, order_type, symbol, quantity, price=None, limit_price=None):
+        self.logger.debug("Order creation : " + str(symbol) + " | " + str(order_type))
+
         if order_type == TraderOrderType.BUY_MARKET:
             # status, _, total_fee, filled_price, filled_quantity, _ = self.exchange.create_test_order(order_type,
             #                                                                                          symbol,

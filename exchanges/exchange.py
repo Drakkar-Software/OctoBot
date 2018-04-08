@@ -72,6 +72,11 @@ class Exchange:
     def get_trade_history(self):
         raise NotImplementedError("Get_trade_history not implemented")
 
+    # {"price": X, "quantity": X, "time": X, "buyer": bool}
+    @abstractmethod
+    def get_recent_trades(self, symbol):
+        raise NotImplementedError("Get_recent_trades not implemented")
+
     @staticmethod
     @abstractmethod
     def parse_symbol(symbol):
