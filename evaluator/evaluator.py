@@ -1,5 +1,6 @@
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_final import FinalEvaluator
+from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 
 
 class Evaluator:
@@ -13,8 +14,11 @@ class Evaluator:
         self.notifier = None
         self.trader = None
         self.trader_simulator = None
+        self.exchange = None
 
         self.data_changed = False
+
+        self.evaluator_order_creator = EvaluatorOrderCreator(self.config, self)
 
         self.creator = EvaluatorCreator(self)
 
@@ -46,20 +50,8 @@ class Evaluator:
     def set_history_time(self, history_time):
         self.history_time = history_time
 
-    def get_notifier(self):
-        return self.notifier
-
-    def get_trader(self):
-        return self.trader
-
-    def get_trader_simulator(self):
-        return self.trader_simulator
-
-    def get_final(self):
-        return self.final
-
-    def get_creator(self):
-        return self.creator
+    def set_exchange(self, exchange):
+        self.exchange = exchange
 
     def update_ta_eval(self, ignored_evaluator=None):
         # update only with new data
@@ -82,3 +74,30 @@ class Evaluator:
         self.final.prepare()
         self.final.calculate_final()
         self.final.create_state()
+
+    def get_notifier(self):
+        return self.notifier
+
+    def get_trader(self):
+        return self.trader
+
+    def get_trader_simulator(self):
+        return self.trader_simulator
+
+    def get_evaluator_creator(self):
+        return self.evaluator_order_creator
+
+    def get_final(self):
+        return self.final
+
+    def get_creator(self):
+        return self.creator
+
+    def get_data(self):
+        return self.data
+
+    def get_exchange(self):
+        return self.exchange
+
+    def get_symbol(self):
+        return self.symbol

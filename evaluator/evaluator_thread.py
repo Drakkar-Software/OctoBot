@@ -52,6 +52,7 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.set_notifier(self.notifier)
         self.evaluator.set_trader(self.trader)
         self.evaluator.set_trader_simulator(self.simulator)
+        self.evaluator.set_exchange(self.exchange)
 
         # Add threaded evaluators that can notify the current thread
         self.evaluator.get_creator().set_social_eval(social_eval_list, self)

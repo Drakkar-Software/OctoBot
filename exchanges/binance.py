@@ -171,6 +171,18 @@ class BinanceExchange(Exchange):
     def get_trade_history(self):
         pass
 
+    def get_recent_trades(self, symbol):
+        result = []
+        data = self.client.get_recent_trades(symbol=self.parse_symbol(symbol))
+        for d in data:
+            result.append({
+                "price": d["price"],
+                "quantity": d["qty"],
+                "time": d["time"],
+                "buyer": d["isBuyerMaker"]
+            })
+        return result
+
     def get_all_orders(self):
         self.client.get_all_orders()
 
