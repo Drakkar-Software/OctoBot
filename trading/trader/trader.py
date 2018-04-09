@@ -1,6 +1,7 @@
 import logging
 
 from trading.trader.portfolio import Portfolio
+from trading.trader.trade import Trade
 
 
 class Trader:
@@ -12,6 +13,7 @@ class Trader:
         self.simulate = False
 
         self.open_orders = []
+        self.trades = []
 
         self.portfolio = Portfolio(self.config, self)
 
@@ -40,7 +42,14 @@ class Trader:
         pass
 
     def notify_order_close(self, order):
+        # update portfolio with ended order
         self.portfolio.update_portfolio(order)
+
+        # add to trade history
+        self.trades.append(Trade(self.exchange, order))
+
+        # remove order to open_orders
+        self.open_orders.remove(order)
 
     def get_open_orders(self):
         return self.open_orders

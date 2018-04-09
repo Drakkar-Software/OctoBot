@@ -27,6 +27,7 @@ class Order(threading.Thread):
         self.order_id = None
         self.keep_running = True
         self.status = None
+        self.order_type = None
         self.ex_time = 0
 
     def new(self, order_type, symbol, quantity, price=None, stop_price=None):
@@ -34,6 +35,7 @@ class Order(threading.Thread):
         self.origin_quantity = quantity
         self.origin_stop_price = stop_price
         self.symbol = symbol
+        self.order_type = order_type
         self.currency, self.market = self.exchange.split_symbol(symbol)
         if not self.trader.simulate:
             self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.ex_time = self.exchange.create_order(
@@ -67,6 +69,12 @@ class Order(threading.Thread):
 
     def get_filled_price(self):
         return self.filled_price
+
+    def get_status(self):
+        return self.status
+
+    def get_order_type(self):
+        return self.order_type
 
     # wait for order status to change
     def run(self):
