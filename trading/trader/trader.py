@@ -1,6 +1,5 @@
 import logging
 
-from trading.trader.order import Order
 from trading.trader.portfolio import Portfolio
 
 
@@ -55,3 +54,7 @@ class Trader:
     def stop_order_listeners(self):
         for order in self.open_orders:
             order.stop()
+
+    def join_order_listeners(self):
+        for order in self.open_orders:
+            order.join()

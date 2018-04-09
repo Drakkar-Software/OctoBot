@@ -75,23 +75,28 @@ class Crypto_Bot:
                                                                                                 exchange_inst,
                                                                                                 symbol)
 
-                            for time_frame in self.time_frames:
-                                self.symbols_threads.append(EvaluatorThread(self.config,
-                                                                            symbol,
-                                                                            time_frame,
-                                                                            exchange_inst,
-                                                                            self.notifier,
-                                                                            social_eval_list,
-                                                                            real_time_TA_eval_list,
-                                                                            self.exchange_traders[
-                                                                                exchange_type.__name__],
-                                                                            self.exchange_trader_simulators[
-                                                                                exchange_type.__name__]
-                                                                            ))
+                            self.create_evaluator_threads(symbol,
+                                                          exchange_inst,
+                                                          social_eval_list,
+                                                          real_time_TA_eval_list,
+                                                          exchange_type)
 
                         # notify that exchange doesn't support this symbol
                         else:
                             self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
+
+    def create_evaluator_threads(self, symbol, exchange_inst, social_eval_list, real_time_TA_eval_list, exchange_type):
+        for time_frame in self.time_frames:
+            self.symbols_threads.append(EvaluatorThread(self.config,
+                                                        symbol,
+                                                        time_frame,
+                                                        exchange_inst,
+                                                        self.notifier,
+                                                        social_eval_list,
+                                                        real_time_TA_eval_list,
+                                                        self.exchange_traders[exchange_type.__name__],
+                                                        self.exchange_trader_simulators[exchange_type.__name__]
+                                                        ))
 
     def start_threads(self):
         for thread in self.symbols_threads:
@@ -101,6 +106,12 @@ class Crypto_Bot:
     def join_threads(self):
         for thread in self.symbols_threads:
             thread.join()
+
+        for trader in self.exchange_traders:
+            self.exchange_traders[trader].stop_order_listeners()
+
+        for trader_simulator in self.exchange_trader_simulators:
+            self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
 
     def stop_threads(self):
         self.logger.info("Stopping threads ...")
