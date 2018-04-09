@@ -60,7 +60,6 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
         super().__init__()
         self.symbol = symbol
         self.exchange = exchange_inst
-        self.exchange_time_frame = self.exchange.get_time_frame_enum()
 
     @abstractmethod
     def refresh_data(self):
