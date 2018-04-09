@@ -1,8 +1,7 @@
-bitex
 pandas
 aenum
 pytrends
-python-binance
+ccxt
 HerklosBotsCore
 TA-Lib
 pytest

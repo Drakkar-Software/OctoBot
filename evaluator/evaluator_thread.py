@@ -26,9 +26,7 @@ class EvaluatorThread(threading.Thread):
 
         # Exchange
         self.exchange = exchange
-        self.exchange_time_frame = self.exchange.get_time_frame_enum()
-        self.exchange_order_type = self.exchange.get_order_type_enum()
-        self.exchange.update_balance(self.symbol)
+        # self.exchange.update_balance(self.symbol)
 
         # Notifer
         self.notifier = notifier

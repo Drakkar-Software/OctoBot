@@ -13,7 +13,7 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
     def refresh_data(self):
         self.exchange.get_symbol_prices(
             self.symbol,
-            self.exchange_time_frame(self.specific_config[CONFIG_TIME_FRAME]))
+            self.specific_config[CONFIG_TIME_FRAME])
 
     def eval_impl(self):
         # example !
