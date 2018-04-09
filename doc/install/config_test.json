@@ -25,14 +25,14 @@
   },
   "trader":{
     "enabled": false,
-    "portfolio": 0,
-    "risk": 1,
-    "portfolio_management": false
+    "risk": 1
   },
   "simulator":{
     "enabled": true,
-    "portfolio": 10,
     "risk": 1,
-    "portfolio_management": false
+    "starting_portfolio": {
+      "BTC": 10,
+      "USDT": 1000
+    }
   }
 }
