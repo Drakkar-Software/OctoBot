@@ -1,4 +1,4 @@
-from trading.trader.trader import *
+from config.cst import START_EVAL_NOTE, EvaluatorStates
 
 
 class FinalEvaluator:
@@ -13,9 +13,9 @@ class FinalEvaluator:
             if self.evaluator.notifier.enabled():
                 self.evaluator.get_notifier().notify(self.evaluator.time_frame, self.evaluator.symbol, state)
             elif self.evaluator.trader.enabled():
-                self.evaluator.get_evaluator_creator().create_order(self.evaluator.get_trader())
+                self.evaluator.get_evaluator_creator().create_order(self.evaluator.get_trader(), state)
             elif self.evaluator.trader_simulator.enabled():
-                self.evaluator.get_evaluator_creator().create_order(self.evaluator.get_trader_simulator())
+                self.evaluator.get_evaluator_creator().create_order(self.evaluator.get_trader_simulator(), state)
 
     def get_state(self):
         return self.state

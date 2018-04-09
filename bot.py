@@ -23,7 +23,7 @@ class Crypto_Bot:
         self.config = load_config()
 
         # TODO : CONFIG TEMP LOCATION
-        self.time_frames = [TimeFrames.ONE_HOUR]
+        self.time_frames = [TimeFrames.FOUR_HOURS]
         self.exchanges = [BinanceExchange]
 
         # Notifier
@@ -106,3 +106,9 @@ class Crypto_Bot:
         self.logger.info("Stopping threads ...")
         for thread in self.symbols_threads:
             thread.stop()
+
+        for trader in self.exchange_traders:
+            trader.stop_order_listenners()
+
+        for trader_simulator in self.exchange_trader_simulators:
+            trader_simulator.stop_order_listenners()

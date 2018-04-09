@@ -89,20 +89,7 @@ class BinanceExchange(Exchange):
                 timeInForce=Client.TIME_IN_FORCE_GTC,
             )
 
-            status, order_id, total_fee, filled_price, filled_quantity, transaction_time = self.parse_order_result(
-                order_result)
-
-            if symbol in self.balance:
-                old = self.balance[symbol]
-            else:
-                old = 0
-
-            if side == Client.SIDE_BUY:
-                new_quantity = old + filled_quantity
-            else:
-                new_quantity = old - filled_quantity
-
-            self.set_balance(symbol, new_quantity)
+            return self.parse_order_result(order_result)
 
     def create_test_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         if self.connected:
@@ -121,20 +108,6 @@ class BinanceExchange(Exchange):
 
             return self.parse_order_result(order_result)
 
-            # status, order_id, total_fee, filled_price, filled_quantity, transaction_time
-
-            # if symbol in self.balance:
-            #     old = self.balance[symbol]
-            # else:
-            #     old = 0
-
-            # if side == Client.SIDE_BUY:
-            #     new_quantity = old + filled_quantity
-            # else:
-            #     new_quantity = old - filled_quantity
-            #
-            # self.set_balance(symbol, new_quantity)
-
     @staticmethod
     def parse_order_result(result):
         order_id = result["orderId"]
@@ -148,9 +121,9 @@ class BinanceExchange(Exchange):
             total_fee += filled["commission"]
 
         if status == "FILLED":
-            status = True
-        else:
-            status = False
+            status = OrderStatus.FILLED
+        elif status == "NEW":
+            status = OrderStatus.PENDING
 
         return status, order_id, total_fee, filled_price, filled_quantity, transaction_time
 
