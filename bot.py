@@ -16,14 +16,14 @@ class Crypto_Bot:
     def __init__(self):
         # Logger
         fileConfig('config/logging_config.ini')
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger("CryptoBot")
 
         # Config
         self.logger.info("Load config file...")
         self.config = load_config()
 
         # TODO : CONFIG TEMP LOCATION
-        self.time_frames = [TimeFrames.FOUR_HOURS]
+        self.time_frames = [TimeFrames.ONE_MINUTE]
         self.exchanges = [BinanceExchange]
 
         # Notifier
