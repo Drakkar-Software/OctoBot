@@ -70,6 +70,11 @@ class TradeOrderSide(Enum):
     SELL = 2
 
 
+class OrderStatus(Enum):
+    FILLED = 1
+    PENDING = 2
+
+
 class TraderOrderType(Enum):
     BUY_MARKET = 1
     BUY_LIMIT = 2

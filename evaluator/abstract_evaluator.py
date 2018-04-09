@@ -62,7 +62,10 @@ class AbstractEvaluator:
         try:
             self.eval_impl()
         except Exception as e:
-            self.logger.error(" Exception in eval_impl(): " + str(e))
+            if self.config["DEBUG"]:
+                raise e
+            else:
+                self.logger.error(" Exception in eval_impl(): " + str(e))
         finally:
             self.is_updating = False
 

@@ -1,15 +1,20 @@
 import logging
 
-from config.cst import *
+from trading.trader.order import Order
+from trading.trader.portfolio import Portfolio
 
 
 class Trader:
     def __init__(self, config, exchange):
         self.exchange = exchange
         self.config = config
-        self.portfolio = {}
         self.risk = self.config["trader"]["risk"]
         self.logger = logging.getLogger("Trader")
+        self.simulate = False
+
+        self.open_orders = []
+
+        self.portfolio = Portfolio(self.config, self)
 
         # Debug
         if self.enabled():
@@ -26,49 +31,27 @@ class Trader:
     def get_risk(self):
         return self.risk
 
-    def get_portfolio(self, currency):
-        if currency in self.portfolio:
-            return self.portfolio[currency]
-        else:
-            self.portfolio[currency] = 0
-            return self.portfolio[currency]
+    def get_exchange(self):
+        return self.exchange
 
-    # TODO
+    def get_portfolio(self):
+        return self.portfolio
+
     def create_order(self, order_type, symbol, quantity, price=None, limit_price=None):
         pass
 
-    def update_portfolio(self, symbol, filled_quantity, filled_price, total_fee, status, side):
-        if status:
-            currency, market = self.exchange.split_symbol(symbol)
+    def notify_order_close(self, order):
+        self.portfolio.update_portfolio(order)
 
-            # update currency
-            if currency in self.portfolio:
-                if side == TradeOrderSide.BUY:
-                    self.portfolio[currency] += filled_quantity
-                else:
-                    self.portfolio[currency] -= filled_quantity
-            else:
-                self.portfolio[currency] = filled_quantity
+    def get_open_orders(self):
+        return self.open_orders
 
-            # update market
-            if market in self.portfolio:
-                if side == TradeOrderSide.BUY:
-                    self.portfolio[market] -= (filled_quantity * filled_price) - total_fee
-                else:
-                    self.portfolio[market] += (filled_quantity * filled_price) - total_fee
-            else:
-                self.portfolio[market] = (-filled_quantity * filled_price) - total_fee
+    def close_open_orders(self):
+        pass
 
-            # Only for log purpose
-            if side == TradeOrderSide.BUY:
-                currency_portfolio_num = "+" + str(filled_quantity)
-                market_portfolio_num = "-" + str(self.portfolio[market])
-            else:
-                currency_portfolio_num = "-" + str(filled_quantity)
-                market_portfolio_num = "+" + str(self.portfolio[market])
+    def update_open_orders(self):
+        pass
 
-            self.logger.debug("Portfolio updated | " + currency + " " + currency_portfolio_num
-                              + " | " + market + " " + market_portfolio_num)
-
-        else:
-            self.logger.warning("ORDER NOT FILLED")
+    def stop_order_listenners(self):
+        for order in self.open_orders:
+            order.stop()
