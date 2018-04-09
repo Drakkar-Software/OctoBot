@@ -1,6 +1,6 @@
 import logging
 
-from evaluator.Strategies import strategiesEvaluator
+from evaluator.Strategies import StrategiesEvaluator
 from evaluator.Social import SocialEvaluator
 from evaluator.RealTime import RealTimeTAEvaluator
 from evaluator.TA import TAEvaluator
@@ -100,7 +100,7 @@ class EvaluatorCreator:
 
     def create_strategies_eval_list(self):
         if not self.strategies_eval_list:
-            for strategies_type in strategiesEvaluator.__subclasses__():
+            for strategies_type in StrategiesEvaluator.__subclasses__():
                 for strategies_eval_class_type in strategies_type.__subclasses__():
                     strategies_eval_class = strategies_eval_class_type()
                     if strategies_eval_class.get_is_enabled():
