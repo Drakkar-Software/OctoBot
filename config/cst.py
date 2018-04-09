@@ -1,5 +1,7 @@
 from enum import Enum
 
+MARKET_SEPARATOR = "/"
+
 MINUTE_TO_SECONDS = 60
 START_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
@@ -8,8 +10,12 @@ SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
+CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
 
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
+
+STATS_EVALUATOR_HISTORY_TIME = "relevant_history_months"
+STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 
 
 class EvaluatorRisk(Enum):
@@ -22,7 +28,7 @@ class EvaluatorMatrixTypes(Enum):
     TA = "TA"
     SOCIAL = "SOCIAL"
     REAL_TIME = "REAL_TIME"
-    RULES = "RULES"
+    STRATEGIES = "STRATEGIES"
 
 
 class EvaluatorStates(Enum):
@@ -59,12 +65,26 @@ class TimeFrames(Enum):
     ONE_MONTH = 43200
 
 
+class TradeOrderSide(Enum):
+    BUY = 1
+    SELL = 2
+
+
+class OrderStatus(Enum):
+    FILLED = 1
+    PENDING = 2
+
+
 class TraderOrderType(Enum):
     BUY_MARKET = 1
     BUY_LIMIT = 2
-    STOP_LOSS = 3
-    SELL_MARKET = 4
-    SELL_LIMIT = 5
+    TAKE_PROFIT = 3
+    TAKE_PROFIT_LIMIT = 4
+    STOP_LOSS = 5
+    STOP_LOSS_LIMIT = 6
+    SELL_MARKET = 7
+    SELL_LIMIT = 8
+
 
 # TODO : review
 class TimeFramePertinence(Enum):

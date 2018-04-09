@@ -5,18 +5,21 @@ from evaluator.TA.TA_evaluator import MomentumEvaluator
 
 
 # https://mrjbq7.github.io/ta-lib/func_groups/momentum_indicators.html
+from evaluator.Util.trend_analysis import TrendAnalysis
+
 
 class RSIMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
         self.pertinence = 1
+        self.enabled = True
 
     # TODO : temp analysis
     def eval_impl(self):
         rsi_v = talib.RSI(self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
-        long_trend = self.get_trend(rsi_v, self.long_term_averages)
-        short_trend = self.get_trend(rsi_v, self.short_term_averages)
+        long_trend = TrendAnalysis.get_trend(rsi_v, self.long_term_averages)
+        short_trend = TrendAnalysis.get_trend(rsi_v, self.short_term_averages)
 
         # check if trend change
         if short_trend > 0 > long_trend:
