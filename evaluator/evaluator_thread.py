@@ -15,17 +15,27 @@ class EvaluatorThread(threading.Thread):
                  time_frame,
                  exchange,
                  notifier,
-                 trader,
                  social_eval_list,
-                 real_time_TA_eval_list):
+                 real_time_TA_eval_list,
+                 trader,
+                 simulator):
         threading.Thread.__init__(self)
         self.config = config
-        self.exchange = exchange
-        self.exchange_time_frame = self.exchange.get_time_frame_enum()
         self.symbol = symbol
         self.time_frame = time_frame
+
+        # Exchange
+        self.exchange = exchange
+        self.exchange_time_frame = self.exchange.get_time_frame_enum()
+        self.exchange_order_type = self.exchange.get_order_type_enum()
+        self.exchange.update_balance(self.symbol)
+
+        # Notifer
         self.notifier = notifier
+
+        # Trader
         self.trader = trader
+        self.simulator = simulator
 
         self.matrix = EvaluatorMatrix()
 
@@ -41,6 +51,8 @@ class EvaluatorThread(threading.Thread):
         self.evaluator.set_time_frame(self.time_frame)
         self.evaluator.set_notifier(self.notifier)
         self.evaluator.set_trader(self.trader)
+        self.evaluator.set_trader_simulator(self.simulator)
+        self.evaluator.set_exchange(self.exchange)
 
         # Add threaded evaluators that can notify the current thread
         self.evaluator.get_creator().set_social_eval(social_eval_list, self)
@@ -60,7 +72,7 @@ class EvaluatorThread(threading.Thread):
     def refresh_eval(self, ignored_evaluator=None):
         # Instances will be created only if they don't already exist
         self.evaluator.get_creator().create_ta_eval_list()
-        self.evaluator.get_creator().create_rules_eval_list()
+        self.evaluator.get_creator().create_strategies_eval_list()
 
         # update eval
         self.evaluator.update_ta_eval(ignored_evaluator)
@@ -68,13 +80,13 @@ class EvaluatorThread(threading.Thread):
         # update matrix
         self.refresh_matrix()
 
-        # update rules matrix
-        self.evaluator.update_rules_eval(self.matrix, ignored_evaluator)
+        # update strategies matrix
+        self.evaluator.update_strategies_eval(self.matrix, ignored_evaluator)
 
         # use matrix
-        for rules_eval in self.evaluator.get_creator().get_rules_eval_list():
-            self.matrix.set_eval(EvaluatorMatrixTypes.RULES, rules_eval.get_name(),
-                                 rules_eval.get_eval_note())
+        for strategies_eval in self.evaluator.get_creator().get_strategies_eval_list():
+            self.matrix.set_eval(EvaluatorMatrixTypes.STRATEGIES, strategies_eval.get_name(),
+                                 strategies_eval.get_eval_note())
 
         # calculate the final result
         self.evaluator.finalize()

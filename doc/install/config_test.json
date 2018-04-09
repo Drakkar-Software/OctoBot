@@ -1,4 +1,7 @@
 {
+  "crypto_currencies":{
+    "Bitcoin": ["BTCUSDT"]
+  },
   "exchanges": {
     "Binance": {
       "api-key": "",
@@ -17,11 +20,19 @@
     }
   },
   "notification":{
-    "enabled": true,
+    "enabled": false,
     "type": 1
   },
   "trader":{
-    "enabled": true,
+    "enabled": false,
     "risk": 1
+  },
+  "simulator":{
+    "enabled": true,
+    "risk": 1,
+    "starting_portfolio": {
+      "BTC": 10,
+      "USDT": 1000
+    }
   }
 }

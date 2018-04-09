@@ -6,3 +6,4 @@ python-binance
 HerklosBotsCore
 TA-Lib
 pytest
+numpy

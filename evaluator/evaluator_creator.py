@@ -1,6 +1,6 @@
 import logging
 
-from evaluator.Rules import RulesEvaluator
+from evaluator.Strategies import strategiesEvaluator
 from evaluator.Social import SocialEvaluator
 from evaluator.RealTime import RealTimeTAEvaluator
 from evaluator.TA import TAEvaluator
@@ -13,7 +13,7 @@ class EvaluatorCreator:
         self.ta_eval_list = []
         self.social_eval_not_threaded_list = []
         self.real_time_eval_list = []
-        self.rules_eval_list = []
+        self.strategies_eval_list = []
 
     def get_social_eval_list(self):
         return self.social_eval_list
@@ -24,8 +24,8 @@ class EvaluatorCreator:
     def get_ta_eval_list(self):
         return self.ta_eval_list
 
-    def get_rules_eval_list(self):
-        return self.rules_eval_list
+    def get_strategies_eval_list(self):
+        return self.strategies_eval_list
 
     def get_social_eval_not_threaded_list(self):
         return self.social_eval_not_threaded_list
@@ -98,15 +98,15 @@ class EvaluatorCreator:
 
         return self.ta_eval_list
 
-    def create_rules_eval_list(self):
-        if not self.rules_eval_list:
-            for rules_type in RulesEvaluator.__subclasses__():
-                for rules_eval_class_type in rules_type.__subclasses__():
-                    rules_eval_class = rules_eval_class_type()
-                    if rules_eval_class.get_is_enabled():
-                        rules_eval_class.set_logger(logging.getLogger(rules_eval_class.get_name()))
-                        rules_eval_class.set_config(self.evaluator.config)
+    def create_strategies_eval_list(self):
+        if not self.strategies_eval_list:
+            for strategies_type in strategiesEvaluator.__subclasses__():
+                for strategies_eval_class_type in strategies_type.__subclasses__():
+                    strategies_eval_class = strategies_eval_class_type()
+                    if strategies_eval_class.get_is_enabled():
+                        strategies_eval_class.set_logger(logging.getLogger(strategies_eval_class.get_name()))
+                        strategies_eval_class.set_config(self.evaluator.config)
 
-                        self.rules_eval_list.append(rules_eval_class)
+                        self.strategies_eval_list.append(strategies_eval_class)
 
-        return self.rules_eval_list
+        return self.strategies_eval_list

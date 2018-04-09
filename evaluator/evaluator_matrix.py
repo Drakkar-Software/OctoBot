@@ -7,7 +7,7 @@ class EvaluatorMatrix:
             EvaluatorMatrixTypes.TA: {},
             EvaluatorMatrixTypes.SOCIAL: {},
             EvaluatorMatrixTypes.REAL_TIME: {},
-            EvaluatorMatrixTypes.RULES: {}
+            EvaluatorMatrixTypes.STRATEGIES: {}
         }
 
     # ---- getters and setters----

@@ -7,6 +7,7 @@ from bot import Crypto_Bot
 def test_create_bot():
     # launch a bot
     bot = Crypto_Bot()
+    bot.create_exchange_traders()
     bot.stop_threads()
 
 
