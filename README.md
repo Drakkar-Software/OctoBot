@@ -12,6 +12,9 @@ sudo pip install -r requirements.txt
 Create a **config.json** file in the **config folder** with the following example :
 ```
 {
+  "crypto_currencies": {
+    "Bitcoin": ["BTC/USDT"]
+  },
   "exchanges": {
     "Binance": {
       "api-key": "YOUR_BINANCE_API_KEY",
@@ -24,7 +27,15 @@ Create a **config.json** file in the **config folder** with the following exampl
   },
   "trader":{
     "enabled": false,
-    "risk": 2
+    "risk": 1
+  },
+  "simulator":{
+    "enabled": true,
+    "risk": 1,
+    "starting_portfolio": {
+      "BTC": 10,
+      "USDT": 1000
+    }
   }
 }
 ```
