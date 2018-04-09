@@ -108,7 +108,7 @@ class Crypto_Bot:
             thread.stop()
 
         for trader in self.exchange_traders:
-            trader.stop_order_listenners()
+            self.exchange_traders[trader].stop_order_listeners()
 
         for trader_simulator in self.exchange_trader_simulators:
-            trader_simulator.stop_order_listenners()
+            self.exchange_trader_simulators[trader_simulator].stop_order_listeners()

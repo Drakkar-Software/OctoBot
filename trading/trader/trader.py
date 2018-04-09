@@ -52,6 +52,6 @@ class Trader:
     def update_open_orders(self):
         pass
 
-    def stop_order_listenners(self):
+    def stop_order_listeners(self):
         for order in self.open_orders:
             order.stop()
