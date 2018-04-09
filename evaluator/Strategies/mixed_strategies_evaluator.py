@@ -36,16 +36,19 @@ class TempFullMixedstrategiesEvaluator(MixedstrategiesEvaluator):
         self.rt_evaluation = 0
 
         for rt in self.matrix[EvaluatorMatrixTypes.REAL_TIME]:
-            self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]
-            self.inc_rt_counter()
+            if self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]:
+                self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]
+                self.inc_rt_counter()
 
         for ta in self.matrix[EvaluatorMatrixTypes.TA]:
-            self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta]
-            self.inc_ta_counter()
+            if self.matrix[EvaluatorMatrixTypes.TA][ta]:
+                self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta]
+                self.inc_ta_counter()
 
         for social in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
-            self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
-            self.inc_social_counter()
+            if self.matrix[EvaluatorMatrixTypes.SOCIAL][social]:
+                self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
+                self.inc_social_counter()
 
         self.finalize()
 
