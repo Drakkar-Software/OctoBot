@@ -1,113 +1,104 @@
-from abc import *
+import ccxt
+import pandas
 
-from config.cst import MARKET_SEPARATOR
+from config.cst import PriceStrings, MARKET_SEPARATOR
 
 
 class Exchange:
-    __metaclass__ = ABCMeta
-
-    def __init__(self, config):
-        self.name = None
+    def __init__(self, config, exchange_type):
+        self.exchange_type = exchange_type
         self.client = None
-        self.connected = False
         self.config = config
-        self.symbol_list = []
-        self.balance = {}
-        self.open_orders = []
-        self.pending_orders = []
+        self.name = self.exchange_type.__name__
+        self.create_client()
+        self.client.load_markets()
 
-    @abstractmethod
+        # time.sleep (exchange.rateLimit / 1000) # time.sleep wants seconds
+
+    def enabled(self):
+        # if we can get candlestick data
+        if self.name in self.config["exchanges"] and self.client.has['fetchOHLCV']:
+            return True
+        else:
+            return False
+
     def create_client(self):
-        raise NotImplementedError("Create_client not implemented")
+        if self.check_config():
+            self.client = self.exchange_type({
+                'apiKey': self.config["exchanges"][self.name]["api-key"],
+                'secret': self.config["exchanges"][self.name]["api-secret"],
+            })
+        else:
+            self.client = self.exchange_type()
 
-    @abstractmethod
     def check_config(self):
-        raise NotImplementedError("Check_config not implemented")
+        if not self.config["exchanges"][self.name]["api-key"] \
+                and not self.config["exchanges"][self.name]["api-secret"]:
+            return False
+        else:
+            return True
 
-    # @return DataFrame of prices
-    @abstractmethod
     def get_symbol_prices(self, symbol, time_frame):
-        raise NotImplementedError("Get_symbol_prices not implemented")
+        candles = self.client.fetch_ohlcv(symbol, time_frame.value)
 
-    @abstractmethod
-    def get_symbol_list(self):
-        raise NotImplementedError("Get_symbol_list not implemented")
+        prices = {PriceStrings.STR_PRICE_HIGH.value: [],
+                  PriceStrings.STR_PRICE_LOW.value: [],
+                  PriceStrings.STR_PRICE_OPEN.value: [],
+                  PriceStrings.STR_PRICE_CLOSE.value: [],
+                  PriceStrings.STR_PRICE_VOL.value: [],
+                  PriceStrings.STR_PRICE_TIME.value: []}
 
-    @abstractmethod
+        for c in candles:
+            prices[PriceStrings.STR_PRICE_TIME.value].append(float(c[0]))
+            prices[PriceStrings.STR_PRICE_OPEN.value].append(float(c[1]))
+            prices[PriceStrings.STR_PRICE_HIGH.value].append(float(c[2]))
+            prices[PriceStrings.STR_PRICE_LOW.value].append(float(c[3]))
+            prices[PriceStrings.STR_PRICE_CLOSE.value].append(float(c[4]))
+            prices[PriceStrings.STR_PRICE_VOL.value].append(float(c[5]))
+
+        return pandas.DataFrame(data=prices)
+
     def update_balance(self, symbol):
         raise NotImplementedError("Update_balance not implemented")
 
-    @abstractmethod
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         raise NotImplementedError("Update_balance not implemented")
 
-    @abstractmethod
     def get_all_orders(self):
         raise NotImplementedError("Get_all_orders not implemented")
 
-    # Check order status
-    @abstractmethod
     def get_order(self, order_id):
         raise NotImplementedError("Get_order not implemented")
 
-    @abstractmethod
     def get_open_orders(self):
         raise NotImplementedError("Get_open_orders not implemented")
 
-    @abstractmethod
     def cancel_order(self, order_id):
         raise NotImplementedError("Cancel_order not implemented")
 
-    @staticmethod
-    @abstractmethod
-    def get_time_frame_enum():
-        raise NotImplementedError("Get_time_frame_enum not implemented")
-
-    @staticmethod
-    @abstractmethod
-    def get_order_type_enum():
-        raise NotImplementedError("Get_order_type_enum not implemented")
-
-    @abstractmethod
     def get_trade_history(self):
         raise NotImplementedError("Get_trade_history not implemented")
 
-    # {"price": X, "quantity": X, "time": X, "buyer": bool}
-    @abstractmethod
     def get_recent_trades(self, symbol):
-        raise NotImplementedError("Get_recent_trades not implemented")
-
-    @staticmethod
-    @abstractmethod
-    def parse_symbol(symbol):
-        raise NotImplementedError("Parse_symbol not implemented")
-
-    @abstractmethod
-    def unparse_symbol(self, symbol):
-        raise NotImplementedError("Unparse_symbol not implemented")
-
-    # Return currency, market
-    def split_symbol(self, symbol):
-        splitted = symbol.split(MARKET_SEPARATOR)
-        return splitted[0], splitted[1]
+        return self.client.fetch_trades(symbol)
 
     def get_name(self):
         return self.name
 
-    def enabled(self):
-        if self.name in self.config["exchanges"]:
-            return True
-        else:
-            return False
-
-    def get_balance(self):
-        return self.balance
-
     def symbol_exists(self, symbol):
-        if symbol in self.symbol_list:
+        if symbol in self.client.symbols:
             return True
         else:
             return False
 
-    def set_balance(self, symbol, value):
-        self.balance[symbol] = value
+    def time_frame_exists(self, time_frame):
+        if time_frame in self.client.timeframes:
+            return True
+        else:
+            return False
+
+    # Return currency, market
+    @staticmethod
+    def split_symbol(symbol):
+        splitted = symbol.split(MARKET_SEPARATOR)
+        return splitted[0], splitted[1]
