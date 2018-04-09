@@ -1,5 +1,5 @@
-# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://travis-ci.org/Trading-Bot/CryptoBot.svg?branch=master)](https://travis-ci.org/Trading-Bot/CryptoBot)
-#### Version 0.0.3-alpha 
+# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=master)](https://travis-ci.org/Trading-Bot/CryptoBot)
+#### Version 0.0.4-alpha 
 ## Install
 ```
 git clone https://github.com/Trading-Bot/CryptoBot
@@ -12,6 +12,9 @@ sudo pip install -r requirements.txt
 Create a **config.json** file in the **config folder** with the following example :
 ```
 {
+  "crypto_currencies": {
+    "Bitcoin": ["BTC/USDT"]
+  },
   "exchanges": {
     "Binance": {
       "api-key": "YOUR_BINANCE_API_KEY",
@@ -24,7 +27,15 @@ Create a **config.json** file in the **config folder** with the following exampl
   },
   "trader":{
     "enabled": false,
-    "risk": 2
+    "risk": 1
+  },
+  "simulator":{
+    "enabled": true,
+    "risk": 1,
+    "starting_portfolio": {
+      "BTC": 10,
+      "USDT": 1000
+    }
   }
 }
 ```
