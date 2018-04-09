@@ -3,7 +3,7 @@ from abc import *
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
-class strategiesEvaluator(AbstractEvaluator):
+class StrategiesEvaluator(AbstractEvaluator):
     __metaclass__ = ABCMeta
 
     def __init__(self):
@@ -21,7 +21,7 @@ class strategiesEvaluator(AbstractEvaluator):
         raise NotImplementedError("Eval_impl not implemented")
 
 
-class MixedstrategiesEvaluator(strategiesEvaluator):
+class MixedStrategiesEvaluator(StrategiesEvaluator):
     __metaclass__ = ABCMeta
 
     def __init__(self):

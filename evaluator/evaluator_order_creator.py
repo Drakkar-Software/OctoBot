@@ -33,7 +33,7 @@ class EvaluatorOrderCreator:
                 trader.create_order(TraderOrderType.SELL_LIMIT,
                                     self.evaluator.symbol,
                                     current_portfolio / 2,
-                                    reference * 0.9)
+                                    reference * 1.1)
 
         elif state == EvaluatorStates.NEUTRAL:
             pass
@@ -43,7 +43,7 @@ class EvaluatorOrderCreator:
                 trader.create_order(TraderOrderType.BUY_LIMIT,
                                     self.evaluator.symbol,
                                     current_market_quantity / (reference * 2),
-                                    reference * 1.1)
+                                    reference * 0.9)
 
         elif state == EvaluatorStates.VERY_LONG:
             if current_market_quantity > 0:

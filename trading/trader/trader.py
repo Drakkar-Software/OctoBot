@@ -38,7 +38,7 @@ class Trader:
     def get_portfolio(self):
         return self.portfolio
 
-    def create_order(self, order_type, symbol, quantity, price=None, limit_price=None):
+    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         pass
 
     def notify_order_close(self, order):

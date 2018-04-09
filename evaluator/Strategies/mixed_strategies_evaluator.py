@@ -1,11 +1,11 @@
 from config.cst import *
 from evaluator.RealTime import InstantFluctuationsEvaluator
-from evaluator.Strategies import MixedstrategiesEvaluator
+from evaluator.Strategies import MixedStrategiesEvaluator
 from evaluator.Social import MediumNewsEvaluator, RedditForumEvaluator
 
 
 # TEMP strategy
-class TempFullMixedstrategiesEvaluator(MixedstrategiesEvaluator):
+class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def __init__(self):
         super().__init__()
         self.enabled = True
@@ -73,7 +73,7 @@ class TempFullMixedstrategiesEvaluator(MixedstrategiesEvaluator):
             self.eval_note = eval_temp / category
 
 
-class InstantSocialReactionMixedstrategiesEvaluator(MixedstrategiesEvaluator):
+class InstantSocialReactionMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def __init__(self):
         super().__init__()
 
