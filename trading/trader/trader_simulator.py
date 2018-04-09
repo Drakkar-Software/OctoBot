@@ -21,7 +21,7 @@ class TraderSimulator(Trader):
     def create_order(self, order_type, symbol, quantity, price=None, limit_price=None):
         self.logger.debug("Order creation : " + str(symbol) + " | " + str(order_type))
 
-        order_class = TraderOrderTypeClasses(TraderOrderType.BUY_MARKET).value
+        order_class = TraderOrderTypeClasses(order_type).value
         order = order_class(self)
         order.new(order_type, symbol, quantity, price, limit_price)
         order.start()
