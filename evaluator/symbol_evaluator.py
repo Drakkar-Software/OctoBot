@@ -2,7 +2,7 @@ from config.cst import EvaluatorMatrixTypes
 from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
 from evaluator.Updaters.social_global_updater import SocialGlobalUpdaterThread
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_final import FinalEvaluator
+from evaluator.evaluator_final import FinalEvaluatorThread
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 
@@ -25,11 +25,12 @@ class Symbol_Evaluator:
         self.social_evaluator_refresh = SocialEvaluatorNotThreadedUpdateThread(self.social_not_threaded_list)
         self.global_social_updater = SocialGlobalUpdaterThread(self)
         self.evaluator_order_creator = EvaluatorOrderCreator()
-        self.final = FinalEvaluator(self)
+        self.final_thread = FinalEvaluatorThread(self)
 
     def start_threads(self):
         self.social_evaluator_refresh.start()
         self.global_social_updater.start()
+        self.final_thread.start()
 
     def stop_threads(self):
         for thread in self.social_eval_list:
@@ -37,6 +38,7 @@ class Symbol_Evaluator:
 
         self.social_evaluator_refresh.stop()
         self.global_social_updater.stop()
+        self.final_thread.stop()
 
     def join_threads(self):
         for thread in self.social_eval_list:
@@ -44,6 +46,7 @@ class Symbol_Evaluator:
 
         self.social_evaluator_refresh.join()
         self.global_social_updater.join()
+        self.final_thread.join()
 
     def set_notifier(self, notifier):
         self.notifier = notifier
@@ -65,9 +68,9 @@ class Symbol_Evaluator:
                                  strategies_evaluator.get_eval_note())
 
     def finalize(self, exchange, symbol):
-        self.final.prepare()
-        self.final.calculate_final()
-        self.final.create_state(exchange, symbol)
+        self.final_thread.prepare()
+        self.final_thread.calculate_final()
+        self.final_thread.create_state(exchange, symbol)
 
     def get_notifier(self):
         return self.notifier
@@ -79,7 +82,7 @@ class Symbol_Evaluator:
         return self.trader_simulators[exchange.get_name()]
 
     def get_final(self):
-        return self.final
+        return self.final_thread
 
     def get_matrix(self):
         return self.matrix
