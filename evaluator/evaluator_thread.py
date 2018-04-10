@@ -1,12 +1,11 @@
 import logging
-import pprint
 import threading
 
 from config.cst import *
-from evaluator.evaluator import Evaluator
-from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
 from evaluator.Updaters.time_frame_update import TimeFrameUpdateDataThread
+from evaluator.evaluator import Evaluator
+from evaluator.evaluator_matrix import EvaluatorMatrix
 
 
 class EvaluatorThread(threading.Thread):
@@ -89,7 +88,7 @@ class EvaluatorThread(threading.Thread):
         # calculate the final result
         self.evaluator.finalize()
         self.logger.debug("--> " + str(self.evaluator.get_final().get_state()))
-        self.logger.debug("MATRIX : " + pprint.pformat(self.matrix.get_matrix()))
+        self.logger.debug("MATRIX : " + str(self.matrix.get_matrix()))
 
     def refresh_matrix(self):
         for ta_eval in self.evaluator.get_creator().get_ta_eval_list():
