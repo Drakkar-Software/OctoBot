@@ -1,4 +1,5 @@
 import logging
+import pprint
 import threading
 from queue import Queue
 
@@ -22,7 +23,9 @@ class FinalEvaluatorThread(threading.Thread):
             self.state = state
             self.logger.debug(" ** NEW STATE ** --> " + str(self.state))
             if self.symbol_evaluator.notifier.enabled():
-                self.symbol_evaluator.get_notifier().notify(self.symbol_evaluator.crypto_currency, state)
+                self.symbol_evaluator.get_notifier().notify(self.symbol_evaluator.crypto_currency,
+                                                            state,
+                                                            pprint.pformat(self.symbol_evaluator.get_matrix().get_matrix()))
 
             elif self.symbol_evaluator.get_trader(self.exchange).enabled():
                 self.symbol_evaluator.get_evaluator_creator().create_order(

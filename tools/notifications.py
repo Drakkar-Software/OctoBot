@@ -22,14 +22,14 @@ class Notification:
         else:
             return False
 
-    def notify(self, symbol, result):
+    def notify(self, symbol, result, matrix):
         if self.notification_type == NotificationTypes.MAIL.value:
             # if config contains enough data for mailing
             if self.mail_enabled():
                 mail = GmailMailSendFactory(self.config)
                 mail.set_to(self.config["service"]["mail"]["mail_dest"])
                 mail.set_subject("CRYPTO BOT ALERT : " + symbol + " / " + str(result))
-                mail.set_content("CRYPTO BOT ALERT : " + symbol + " / " + str(result))
+                mail.set_content("CRYPTO BOT ALERT : " + symbol + " / " + str(result) + "\n MATRIX : " + str(matrix))
                 mail.send()
                 self.logger.info("Mail sent")
             else:
