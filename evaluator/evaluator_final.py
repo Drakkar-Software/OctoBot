@@ -1,21 +1,42 @@
+import logging
+import threading
+from queue import Queue
+
 from config.cst import START_EVAL_NOTE, EvaluatorStates
 
 
-class FinalEvaluator:
-    def __init__(self, evaluator):
-        self.evaluator = evaluator
+class FinalEvaluatorThread(threading.Thread):
+    def __init__(self, symbol_evaluator):
+        super().__init__()
+        self.symbol_evaluator = symbol_evaluator
         self.final_eval = START_EVAL_NOTE
-        self.state = EvaluatorStates.NEUTRAL
+        self.state = None
+        self.keep_running = True
+        self.exchange = None
+        self.symbol = None
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.queue = Queue()
 
     def set_state(self, state):
         if state != self.state:
             self.state = state
-            if self.evaluator.notifier.enabled():
-                self.evaluator.get_notifier().notify(self.evaluator.time_frame, self.evaluator.symbol, state)
-            elif self.evaluator.trader.enabled():
-                self.evaluator.get_evaluator_creator().create_order(self.evaluator.get_trader(), state)
-            elif self.evaluator.trader_simulator.enabled():
-                self.evaluator.get_evaluator_creator().create_order(self.evaluator.get_trader_simulator(), state)
+            self.logger.debug(" ** NEW STATE ** --> " + str(self.state))
+            if self.symbol_evaluator.notifier.enabled():
+                self.symbol_evaluator.get_notifier().notify(self.symbol_evaluator.crypto_currency, state)
+
+            elif self.symbol_evaluator.get_trader(self.exchange).enabled():
+                self.symbol_evaluator.get_evaluator_creator().create_order(
+                    self.symbol,
+                    self.exchange,
+                    self.symbol_evaluator.get_trader(self.exchange),
+                    state)
+
+            elif self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
+                self.symbol_evaluator.get_evaluator_creator().create_order(
+                    self.symbol,
+                    self.exchange,
+                    self.symbol_evaluator.get_trader_simulator(self.exchange),
+                    state)
 
     def get_state(self):
         return self.state
@@ -26,7 +47,7 @@ class FinalEvaluator:
     def prepare(self):
         strategies_analysis_note_counter = 0
         # Strategies analysis
-        for evaluated_strategies in self.evaluator.get_creator().get_strategies_eval_list():
+        for evaluated_strategies in self.symbol_evaluator.get_strategies_eval_list():
             self.final_eval += evaluated_strategies.get_eval_note() * evaluated_strategies.get_pertinence()
             strategies_analysis_note_counter += evaluated_strategies.get_pertinence()
 
@@ -54,3 +75,24 @@ class FinalEvaluator:
             self.set_state(EvaluatorStates.SHORT)
         else:
             self.set_state(EvaluatorStates.VERY_SHORT)
+
+    def finalize(self, exchange, symbol):
+        # reset previous note
+        self.final_eval = START_EVAL_NOTE
+        self.exchange = exchange
+        self.symbol = symbol
+        self.prepare()
+        self.calculate_final()
+        self.create_state()
+        self.logger.debug("--> " + str(self.state))
+
+    def add_to_queue(self, exchange, symbol):
+        self.queue.put(self.finalize(exchange, symbol))
+
+    def run(self):
+        while self.keep_running:
+            if not self.queue.empty():
+                self.queue.get()
+
+    def stop(self):
+        self.keep_running = False

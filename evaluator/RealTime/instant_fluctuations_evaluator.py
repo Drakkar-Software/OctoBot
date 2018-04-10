@@ -8,7 +8,7 @@ from config.cst import *
 class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
     def __init__(self, exchange_inst, symbol):
         super().__init__(exchange_inst, symbol)
-        self.enabled = True
+        self.enabled = False
 
     def refresh_data(self):
         self.exchange.get_symbol_prices(

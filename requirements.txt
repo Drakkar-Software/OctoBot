@@ -6,3 +6,4 @@ HerklosBotsCore
 TA-Lib
 pytest
 numpy
+colorlog

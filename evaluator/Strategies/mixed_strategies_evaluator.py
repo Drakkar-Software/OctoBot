@@ -1,11 +1,11 @@
 from config.cst import *
 from evaluator.RealTime import InstantFluctuationsEvaluator
-from evaluator.Strategies import MixedstrategiesEvaluator
+from evaluator.Strategies import MixedStrategiesEvaluator
 from evaluator.Social import MediumNewsEvaluator, RedditForumEvaluator
 
 
 # TEMP strategy
-class TempFullMixedstrategiesEvaluator(MixedstrategiesEvaluator):
+class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def __init__(self):
         super().__init__()
         self.enabled = True
@@ -42,12 +42,14 @@ class TempFullMixedstrategiesEvaluator(MixedstrategiesEvaluator):
 
         for ta in self.matrix[EvaluatorMatrixTypes.TA]:
             if self.matrix[EvaluatorMatrixTypes.TA][ta]:
-                self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta]
-                self.inc_ta_counter()
+                for ta_time_frame in self.matrix[EvaluatorMatrixTypes.TA][ta]:
+                    if self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]:
+                        self.ta_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]
+                        self.inc_ta_counter()
 
         for social in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
             if self.matrix[EvaluatorMatrixTypes.SOCIAL][social]:
-                self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
+                self.social_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
                 self.inc_social_counter()
 
         self.finalize()
@@ -73,7 +75,7 @@ class TempFullMixedstrategiesEvaluator(MixedstrategiesEvaluator):
             self.eval_note = eval_temp / category
 
 
-class InstantSocialReactionMixedstrategiesEvaluator(MixedstrategiesEvaluator):
+class InstantSocialReactionMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def __init__(self):
         super().__init__()
 

@@ -14,7 +14,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
     def __init__(self):
         super().__init__()
         threading.Thread.__init__(self)
-        self.social_config = None
+        self.social_config = {}
         self.need_to_notify = False
         self.is_threaded = False
         self.keep_running = True
