@@ -26,7 +26,7 @@ class RedditForumEvaluator(ForumSocialEvaluator):
 class BTCTalkForumEvaluator(ForumSocialEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = True
+        self.enabled = False
         self.is_threaded = False
 
     def get_data(self):
