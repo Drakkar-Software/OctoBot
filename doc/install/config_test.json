@@ -1,6 +1,9 @@
 {
   "crypto_currencies":{
-    "Bitcoin": ["BTC/USDT"]
+    "Bitcoin": {
+      "pairs" : ["BTC/USDT"],
+      "twitters" : ["GuillaGjum","RedditBTC","BTCFoundation"]
+    }
   },
   "exchanges": {
     "binance": {

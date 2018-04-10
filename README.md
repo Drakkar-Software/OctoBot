@@ -13,7 +13,10 @@ Create a **config.json** file in the **config folder** with the following exampl
 ```
 {
   "crypto_currencies": {
-    "Bitcoin": ["BTC/USDT"]
+    "Bitcoin": {
+      "pairs" : ["BTC/USDT"],
+      "twitters" : ["GuillaGjum","RedditBTC","BTCFoundation"]
+    }
   },
   "exchanges": {
     "binance": {
