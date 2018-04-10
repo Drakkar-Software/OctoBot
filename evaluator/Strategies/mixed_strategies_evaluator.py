@@ -42,8 +42,10 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
 
         for ta in self.matrix[EvaluatorMatrixTypes.TA]:
             if self.matrix[EvaluatorMatrixTypes.TA][ta]:
-                self.ta_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta]
-                self.inc_ta_counter()
+                for ta_time_frame in self.matrix[EvaluatorMatrixTypes.TA][ta]:
+                    if self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]:
+                        self.ta_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]
+                        self.inc_ta_counter()
 
         for social in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
             if self.matrix[EvaluatorMatrixTypes.SOCIAL][social]:
