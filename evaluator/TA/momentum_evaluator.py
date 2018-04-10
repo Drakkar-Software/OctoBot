@@ -33,9 +33,9 @@ class RSIMomentumEvaluator(MomentumEvaluator):
         # use RSI current value
         last_rsi_value = rsi_v.tail(1).values[0]
         if last_rsi_value > 50:
-            self.set_eval_note(rsi_v.tail(1).values[0] / 100)
+            self.set_eval_note(rsi_v.tail(1).values[0] / 200)
         else:
-            self.set_eval_note((rsi_v.tail(1).values[0] - 100) / 100)
+            self.set_eval_note((rsi_v.tail(1).values[0] - 100) / 200)
 
 
 # ADX --> trend_strength
