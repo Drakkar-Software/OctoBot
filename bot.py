@@ -66,7 +66,7 @@ class Crypto_Bot:
         self.logger.info("Evaluation threads creation...")
 
         # create Social and TA evaluators
-        for crypto_currency, symbol_list in self.config[CONFIG_CRYPTO_CURRENCIES].items():
+        for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
             # create symbol evaluator
             symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency)
@@ -76,7 +76,7 @@ class Crypto_Bot:
             self.symbol_evaluator_list.append(symbol_evaluator)
 
             # create TA evaluators
-            for symbol in symbol_list:
+            for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
 
                 for exchange_type in self.exchanges:
                     exchange = self.exchanges_list[exchange_type.__name__]
