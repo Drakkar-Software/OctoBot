@@ -1,18 +1,17 @@
 import logging
-import pprint
 import threading
 
 from config.cst import *
-from evaluator.evaluator import Evaluator
-from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
 from evaluator.Updaters.time_frame_update import TimeFrameUpdateDataThread
+from evaluator.evaluator import Evaluator
 
 
 class EvaluatorThread(threading.Thread):
     def __init__(self, config,
                  symbol,
                  time_frame,
+                 matrix,
                  exchange,
                  notifier,
                  social_eval_list,
@@ -26,9 +25,7 @@ class EvaluatorThread(threading.Thread):
 
         # Exchange
         self.exchange = exchange
-        self.exchange_time_frame = self.exchange.get_time_frame_enum()
-        self.exchange_order_type = self.exchange.get_order_type_enum()
-        self.exchange.update_balance(self.symbol)
+        # self.exchange.update_balance(self.symbol)
 
         # Notifer
         self.notifier = notifier
@@ -37,7 +34,7 @@ class EvaluatorThread(threading.Thread):
         self.trader = trader
         self.simulator = simulator
 
-        self.matrix = EvaluatorMatrix()
+        self.matrix = matrix
 
         self.thread_name = "TA THREAD - " + self.symbol \
                            + " - " + self.exchange.__class__.__name__ \
@@ -91,12 +88,12 @@ class EvaluatorThread(threading.Thread):
         # calculate the final result
         self.evaluator.finalize()
         self.logger.debug("--> " + str(self.evaluator.get_final().get_state()))
-        self.logger.debug("MATRIX : " + pprint.pformat(self.matrix.get_matrix()))
+        self.logger.debug("MATRIX : " + str(self.matrix.get_matrix()))
 
     def refresh_matrix(self):
         for ta_eval in self.evaluator.get_creator().get_ta_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
-                                 ta_eval.get_eval_note())
+                                 ta_eval.get_eval_note(), self.time_frame)
 
         for social_eval in self.evaluator.get_creator().get_social_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),

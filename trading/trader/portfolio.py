@@ -1,5 +1,4 @@
 import logging
-import pprint
 
 from config.cst import *
 
@@ -50,4 +49,4 @@ class Portfolio:
 
         self.logger.debug("Portfolio updated | " + currency + " " + currency_portfolio_num
                           + " | " + market + " " + market_portfolio_num
-                          + " | " + "Current Portfolio : " + pprint.pformat(self.portfolio))
+                          + " | " + "Current Portfolio : " + str(self.portfolio))
