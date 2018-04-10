@@ -11,9 +11,7 @@ class FinalEvaluator:
         if state != self.state:
             self.state = state
             if self.symbol_evaluator.notifier.enabled():
-                self.symbol_evaluator.get_notifier().notify(self.symbol_evaluator.time_frame,
-                                                            self.symbol_evaluator.crypto_currency,
-                                                            state)
+                self.symbol_evaluator.get_notifier().notify(self.symbol_evaluator.crypto_currency, state)
 
             elif self.symbol_evaluator.get_trader(exchange).enabled():
                 self.symbol_evaluator.get_evaluator_creator().create_order(
