@@ -7,3 +7,4 @@ TA-Lib
 pytest
 numpy
 colorlog
+Python-Twitter
