@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import pandas
 from ccxt import OrderNotFound
@@ -30,9 +31,11 @@ class Exchange:
             self.client = self.exchange_type({
                 'apiKey': self.config["exchanges"][self.name]["api-key"],
                 'secret': self.config["exchanges"][self.name]["api-secret"],
+                'verbose': False
             })
         else:
-            self.client = self.exchange_type()
+            self.client = self.exchange_type({'verbose': False})
+        self.client.logger.setLevel(logging.INFO)
 
     def check_config(self):
         if not self.config["exchanges"][self.name]["api-key"] \
