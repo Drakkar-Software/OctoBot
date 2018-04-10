@@ -1,13 +1,13 @@
 {
   "crypto_currencies":{
-    "Bitcoin": ["BTCUSDT"]
+    "Bitcoin": ["BTC/USDT"]
   },
   "exchanges": {
-    "Binance": {
+    "binance": {
       "api-key": "",
       "api-secret": ""
     },
-    "Bitfinex": {
+    "bitfinex": {
       "api-key": "",
       "api-secret": ""
     }
