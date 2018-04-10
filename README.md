@@ -39,6 +39,14 @@ Create a **config.json** file in the **config folder** with the following exampl
       "BTC": 10,
       "USDT": 1000
     }
+  },
+  "additional_resources": {
+    "twitter": {
+      "api-key": "YOUR_TWITTER_API_KEY",
+      "api-secret": "YOUR_TWITTER_API_SECRET",
+      "access-token": "YOUR_TWITTER_ACCESS_TOKEN",
+      "access-token-secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
+    }
   }
 }
 ```
