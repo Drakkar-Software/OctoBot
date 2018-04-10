@@ -1,6 +1,4 @@
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_final import FinalEvaluator
-from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 
 
 class Evaluator:
@@ -11,18 +9,11 @@ class Evaluator:
         self.history_time = None
         self.data = None
         self.symbol = None
-        self.notifier = None
-        self.trader = None
-        self.trader_simulator = None
         self.exchange = None
-
+        self.symbol_evaluator = None
         self.data_changed = False
 
-        self.evaluator_order_creator = EvaluatorOrderCreator(self.config, self)
-
         self.creator = EvaluatorCreator(self)
-
-        self.final = FinalEvaluator(self)
 
     def set_config(self, config):
         self.config = config
@@ -30,15 +21,6 @@ class Evaluator:
     def set_data(self, data):
         self.data = data
         self.data_changed = True
-
-    def set_notifier(self, notifier):
-        self.notifier = notifier
-
-    def set_trader(self, trader):
-        self.trader = trader
-
-    def set_trader_simulator(self, simulator):
-        self.trader_simulator = simulator
 
     def set_symbol(self, symbol):
         self.symbol = symbol
@@ -53,6 +35,9 @@ class Evaluator:
     def set_exchange(self, exchange):
         self.exchange = exchange
 
+    def set_symbol_evaluator(self, symbol_evaluator):
+        self.symbol_evaluator = symbol_evaluator
+
     def update_ta_eval(self, ignored_evaluator=None):
         # update only with new data
         if self.data_changed:
@@ -64,40 +49,17 @@ class Evaluator:
             # reset data changed after update
             self.data_changed = False
 
-    def update_strategies_eval(self, new_matrix, ignored_evaluator=None):
-        for strategies_evaluator in self.creator.get_strategies_eval_list():
-            strategies_evaluator.set_matrix(new_matrix)
-            if not strategies_evaluator.get_name() == ignored_evaluator and strategies_evaluator.get_is_evaluable():
-                strategies_evaluator.eval()
-
-    def finalize(self):
-        self.final.prepare()
-        self.final.calculate_final()
-        self.final.create_state()
-
-    def get_notifier(self):
-        return self.notifier
-
-    def get_trader(self):
-        return self.trader
-
-    def get_trader_simulator(self):
-        return self.trader_simulator
-
-    def get_evaluator_creator(self):
-        return self.evaluator_order_creator
-
-    def get_final(self):
-        return self.final
-
-    def get_creator(self):
-        return self.creator
-
     def get_data(self):
         return self.data
+
+    def get_symbol_evaluator(self):
+        return self.symbol_evaluator
 
     def get_exchange(self):
         return self.exchange
 
     def get_symbol(self):
         return self.symbol
+
+    def get_creator(self):
+        return self.creator

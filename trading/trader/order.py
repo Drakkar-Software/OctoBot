@@ -5,7 +5,7 @@ from time import sleep
 
 from aenum import MultiValueEnum
 
-from config.cst import TradeOrderSide, OrderStatus, TraderOrderType
+from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, ORDER_REFRESHER_TIME
 
 
 class Order(threading.Thread):
@@ -82,7 +82,7 @@ class Order(threading.Thread):
             self.update_order_status()
             if self.status == OrderStatus.FILLED:
                 self.close_order()
-            sleep(1)
+            sleep(ORDER_REFRESHER_TIME)
 
 
 class BuyMarketOrder(Order):

@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 
@@ -5,11 +6,11 @@ from config.cst import *
 
 
 class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
-    def __init__(self, parent):
+    def __init__(self, social_evaluator_list):
         super().__init__()
-        self.parent = parent
-        self.social_evaluator_list = self.parent.evaluator.get_creator().create_social_not_threaded_list()
+        self.social_evaluator_list = social_evaluator_list
         self.social_evaluator_list_timers = []
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.create_eval_timers()
         self.keep_running = True
 
@@ -29,8 +30,8 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                         "last_refresh_time": time.time()
                     })
             else:
-                self.parent.logger.warn("Social evaluator " + social_eval.__class__.__name__
-                                        + " doesn't have a valid social config refresh rate.")
+                self.logger.warning("Social evaluator " + social_eval.__class__.__name__
+                                    + " doesn't have a valid social config refresh rate.")
 
     def run(self):
         while self.keep_running:

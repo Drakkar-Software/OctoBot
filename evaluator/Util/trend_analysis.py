@@ -1,6 +1,6 @@
 import talib
 import numpy
-
+import math
 
 class TrendAnalysis:
 
@@ -20,6 +20,7 @@ class TrendAnalysis:
         delta_up = current_up - current_middle
         delta_low = current_middle - current_low
         delta = delta_function(numpy.mean([delta_up, delta_low]))
+        exp_one = math.exp(1)
 
         # best case: up the upper band
         if current_interest > current_up:
@@ -30,17 +31,21 @@ class TrendAnalysis:
             return 1
 
         # average case: approximately on middle band
-        elif current_middle + delta > current_interest and current_middle - delta < current_interest:
-            micro_change = delta_function(current_interest / current_middle) - 1
+        elif current_middle + delta >= current_interest and current_middle - delta <= current_interest:
+            micro_change = ((current_interest / current_middle) - 1)/2
             return -1 * micro_change
 
         # good case: up the middle band
         elif current_middle + delta < current_interest:
-            return -1 * (current_interest / delta_up)
+            return -1 * math.exp((current_interest-current_middle)/delta_up)/exp_one
 
         # bad case: down the lower band
-        elif current_middle + delta < current_interest:
-            return current_interest / delta_low
+        elif current_middle - delta > current_interest:
+            return math.exp((current_middle-current_interest)/delta_low)/exp_one
+
+        # should not happen
+        else:
+            return 0
 
     # trend < 0 --> Down trend
     # trend > 0 --> Up trend
