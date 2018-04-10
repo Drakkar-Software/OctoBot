@@ -17,6 +17,9 @@ class EvaluatorThreadManager:
         self.time_frame = time_frame
         self.symbol_evaluator = symbol_evaluator
 
+        # notify symbol evaluator
+        self.symbol_evaluator.add_evaluator_thread(self)
+
         self.matrix = self.symbol_evaluator.get_matrix()
 
         # Exchange
@@ -65,7 +68,6 @@ class EvaluatorThreadManager:
 
         # calculate the final result
         self.symbol_evaluator.finalize(self.exchange, self.symbol)
-        self.logger.debug("--> " + str(self.symbol_evaluator.get_final().get_state()))
         self.logger.debug("MATRIX : " + str(self.matrix.get_matrix()))
 
     def refresh_matrix(self):
@@ -95,3 +97,6 @@ class EvaluatorThreadManager:
         for thread in self.evaluator.get_creator().get_real_time_eval_list():
             thread.join()
         self.data_refresher.join()
+
+    def get_data_refresher(self):
+        return self.data_refresher
