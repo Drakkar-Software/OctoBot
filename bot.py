@@ -1,18 +1,29 @@
 import logging
 from logging.config import fileConfig
 
+import ccxt
 from botcore.config.config import load_config
 
 from config.cst import *
 from evaluator.evaluator_creator import EvaluatorCreator
+from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.evaluator_thread import EvaluatorThread
-from trading import BinanceExchange
-from trading.trader.trader_simulator import TraderSimulator
-from trading.trader.trader import Trader
 from tools import Notification
+from trading import Exchange
+from trading.trader.trader import Trader
+from trading.trader.trader_simulator import TraderSimulator
+
+"""
+Main CryptoBot class:
+- Create all indicators and thread for each cryptocurrencies in config
+"""
 
 
 class Crypto_Bot:
+    """
+    Constructor :
+    - Load configs
+    """
     def __init__(self):
         # Logger
         fileConfig('config/logging_config.ini')
@@ -23,8 +34,8 @@ class Crypto_Bot:
         self.config = load_config()
 
         # TODO : CONFIG TEMP LOCATION
-        self.time_frames = [TimeFrames.ONE_MINUTE]
-        self.exchanges = [BinanceExchange]
+        self.time_frames = [TimeFrames.FIVE_MINUTES, TimeFrames.ONE_HOUR]
+        self.exchanges = [ccxt.binance]
 
         # Notifier
         self.notifier = Notification(self.config)
@@ -34,12 +45,13 @@ class Crypto_Bot:
         self.exchange_trader_simulators = {}
         self.exchanges_list = {}
 
+    # TODO : remove ? only for test purpose
     def set_time_frames(self, time_frames):
         self.time_frames = time_frames
 
     def create_exchange_traders(self):
         for exchange_type in self.exchanges:
-            exchange_inst = exchange_type(self.config)
+            exchange_inst = Exchange(self.config, exchange_type)
 
             # create trader instance for this exchange
             exchange_trader = Trader(self.config, exchange_inst)
@@ -58,25 +70,28 @@ class Crypto_Bot:
             # create Social evaluators
             social_eval_list = EvaluatorCreator.create_social_eval(self.config, crypto_currency)
 
+            # create symbol matrix
+            matrix = EvaluatorMatrix()
+
             # create TA evaluators
             for symbol in symbol_list:
 
                 for exchange_type in self.exchanges:
-                    exchange_inst = self.exchanges_list[exchange_type.__name__]
+                    exchange = self.exchanges_list[exchange_type.__name__]
 
-                    if exchange_inst.enabled():
-                        exchange_inst.get_symbol_list()
+                    if exchange.enabled():
 
                         # Verify that symbol exists on this exchange
-                        if exchange_inst.symbol_exists(symbol):
+                        if exchange.symbol_exists(symbol):
 
                             # Create real time TA evaluators
                             real_time_TA_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config,
-                                                                                                exchange_inst,
+                                                                                                exchange,
                                                                                                 symbol)
 
                             self.create_evaluator_threads(symbol,
-                                                          exchange_inst,
+                                                          matrix,
+                                                          exchange,
                                                           social_eval_list,
                                                           real_time_TA_eval_list,
                                                           exchange_type)
@@ -85,18 +100,20 @@ class Crypto_Bot:
                         else:
                             self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
 
-    def create_evaluator_threads(self, symbol, exchange_inst, social_eval_list, real_time_TA_eval_list, exchange_type):
+    def create_evaluator_threads(self, symbol, matrix, exchange, social_eval_list, real_time_TA_eval_list, exchange_type):
         for time_frame in self.time_frames:
-            self.symbols_threads.append(EvaluatorThread(self.config,
-                                                        symbol,
-                                                        time_frame,
-                                                        exchange_inst,
-                                                        self.notifier,
-                                                        social_eval_list,
-                                                        real_time_TA_eval_list,
-                                                        self.exchange_traders[exchange_type.__name__],
-                                                        self.exchange_trader_simulators[exchange_type.__name__]
-                                                        ))
+            if exchange.time_frame_exists(time_frame.value):
+                self.symbols_threads.append(EvaluatorThread(self.config,
+                                                            symbol,
+                                                            time_frame,
+                                                            matrix,
+                                                            exchange,
+                                                            self.notifier,
+                                                            social_eval_list,
+                                                            real_time_TA_eval_list,
+                                                            self.exchange_traders[exchange_type.__name__],
+                                                            self.exchange_trader_simulators[exchange_type.__name__]
+                                                            ))
 
     def start_threads(self):
         for thread in self.symbols_threads:
