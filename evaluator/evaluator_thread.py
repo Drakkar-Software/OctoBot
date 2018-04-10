@@ -5,13 +5,13 @@ from config.cst import *
 from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
 from evaluator.Updaters.time_frame_update import TimeFrameUpdateDataThread
 from evaluator.evaluator import Evaluator
-from evaluator.evaluator_matrix import EvaluatorMatrix
 
 
 class EvaluatorThread(threading.Thread):
     def __init__(self, config,
                  symbol,
                  time_frame,
+                 matrix,
                  exchange,
                  notifier,
                  social_eval_list,
@@ -34,7 +34,7 @@ class EvaluatorThread(threading.Thread):
         self.trader = trader
         self.simulator = simulator
 
-        self.matrix = EvaluatorMatrix()
+        self.matrix = matrix
 
         self.thread_name = "TA THREAD - " + self.symbol \
                            + " - " + self.exchange.__class__.__name__ \
@@ -93,7 +93,7 @@ class EvaluatorThread(threading.Thread):
     def refresh_matrix(self):
         for ta_eval in self.evaluator.get_creator().get_ta_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
-                                 ta_eval.get_eval_note())
+                                 ta_eval.get_eval_note(), self.time_frame)
 
         for social_eval in self.evaluator.get_creator().get_social_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
