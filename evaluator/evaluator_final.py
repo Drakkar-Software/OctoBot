@@ -1,11 +1,17 @@
+import threading
+from queue import Queue
+
 from config.cst import START_EVAL_NOTE, EvaluatorStates
 
 
-class FinalEvaluator:
+class FinalEvaluatorThread(threading.Thread):
     def __init__(self, symbol_evaluator):
+        super().__init__()
         self.symbol_evaluator = symbol_evaluator
         self.final_eval = START_EVAL_NOTE
         self.state = EvaluatorStates.NEUTRAL
+        self.keep_running = True
+        self.queue = Queue()
 
     def set_state(self, exchange, symbol, state):
         if state != self.state:
@@ -64,3 +70,14 @@ class FinalEvaluator:
             self.set_state(exchange, symbol, EvaluatorStates.SHORT)
         else:
             self.set_state(exchange, symbol, EvaluatorStates.VERY_SHORT)
+
+    def add_to_queue(self, exchange, symbol):
+        self.queue.put(self.create_state(exchange, symbol))
+
+    def run(self):
+        while self.keep_running:
+            if not self.queue.empty():
+                self.queue.get()
+
+    def stop(self):
+        self.keep_running = False

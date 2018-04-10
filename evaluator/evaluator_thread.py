@@ -1,19 +1,17 @@
 import logging
-import threading
 
 from config.cst import *
 from evaluator.Updaters.time_frame_update import TimeFrameUpdateDataThread
 from evaluator.evaluator import Evaluator
 
 
-class EvaluatorThread(threading.Thread):
+class EvaluatorThreadManager:
     def __init__(self, config,
                  symbol,
                  time_frame,
                  symbol_evaluator,
                  exchange,
                  real_time_ta_eval_list):
-        threading.Thread.__init__(self)
         self.config = config
         self.symbol = symbol
         self.time_frame = time_frame
@@ -85,12 +83,15 @@ class EvaluatorThread(threading.Thread):
             self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
                                  real_time_eval.get_eval_note())
 
-    def run(self):
-        # Start refresh threads
+    def start(self):
         self.data_refresher.start()
-        self.data_refresher.join()
 
     def stop(self):
         for thread in self.evaluator.get_creator().get_real_time_eval_list():
             thread.stop()
         self.data_refresher.stop()
+
+    def join(self):
+        for thread in self.evaluator.get_creator().get_real_time_eval_list():
+            thread.join()
+        self.data_refresher.join()

@@ -6,7 +6,7 @@ from botcore.config.config import load_config
 
 from config.cst import *
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_thread import EvaluatorThread
+from evaluator.evaluator_thread import EvaluatorThreadManager
 from evaluator.symbol_evaluator import Symbol_Evaluator
 from tools import Notification
 from trading import Exchange
@@ -34,7 +34,7 @@ class Crypto_Bot:
         self.config = load_config()
 
         # TODO : CONFIG TEMP LOCATION
-        self.time_frames = [TimeFrames.ONE_MINUTE, TimeFrames.FIVE_MINUTES, TimeFrames.ONE_HOUR]
+        self.time_frames = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
         self.exchanges = [ccxt.binance]
 
         # Notifier
@@ -103,12 +103,12 @@ class Crypto_Bot:
     def create_evaluator_threads(self, symbol, exchange, real_time_ta_eval_list, symbol_evaluator):
         for time_frame in self.time_frames:
             if exchange.time_frame_exists(time_frame.value):
-                self.symbols_threads.append(EvaluatorThread(self.config,
-                                                            symbol,
-                                                            time_frame,
-                                                            symbol_evaluator,
-                                                            exchange,
-                                                            real_time_ta_eval_list))
+                self.symbols_threads.append(EvaluatorThreadManager(self.config,
+                                                                   symbol,
+                                                                   time_frame,
+                                                                   symbol_evaluator,
+                                                                   exchange,
+                                                                   real_time_ta_eval_list))
 
     def start_threads(self):
         for symbol_evaluator in self.symbol_evaluator_list:
@@ -116,6 +116,7 @@ class Crypto_Bot:
 
         for thread in self.symbols_threads:
             thread.start()
+
         self.logger.info("Evaluation threads started...")
 
     def join_threads(self):
