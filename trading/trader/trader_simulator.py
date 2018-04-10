@@ -1,6 +1,5 @@
 import logging
 
-from config.cst import TraderOrderType
 from trading.trader.order import TraderOrderTypeClasses
 from trading.trader.trader import Trader
 

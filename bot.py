@@ -6,8 +6,8 @@ from botcore.config.config import load_config
 
 from config.cst import *
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.evaluator_thread import EvaluatorThread
+from evaluator.symbol_evaluator import Symbol_Evaluator
 from tools import Notification
 from trading import Exchange
 from trading.trader.trader import Trader
@@ -34,7 +34,7 @@ class Crypto_Bot:
         self.config = load_config()
 
         # TODO : CONFIG TEMP LOCATION
-        self.time_frames = [TimeFrames.FIVE_MINUTES, TimeFrames.ONE_HOUR]
+        self.time_frames = [TimeFrames.ONE_MINUTE, TimeFrames.FIVE_MINUTES, TimeFrames.ONE_HOUR]
         self.exchanges = [ccxt.binance]
 
         # Notifier
@@ -44,6 +44,7 @@ class Crypto_Bot:
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.exchanges_list = {}
+        self.symbol_evaluator_list = []
 
     # TODO : remove ? only for test purpose
     def set_time_frames(self, time_frames):
@@ -67,11 +68,12 @@ class Crypto_Bot:
         # create Social and TA evaluators
         for crypto_currency, symbol_list in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
-            # create Social evaluators
-            social_eval_list = EvaluatorCreator.create_social_eval(self.config, crypto_currency)
-
-            # create symbol matrix
-            matrix = EvaluatorMatrix()
+            # create symbol evaluator
+            symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency)
+            symbol_evaluator.set_notifier(self.notifier)
+            symbol_evaluator.set_traders(self.exchange_traders)
+            symbol_evaluator.set_trader_simulators(self.exchange_trader_simulators)
+            self.symbol_evaluator_list.append(symbol_evaluator)
 
             # create TA evaluators
             for symbol in symbol_list:
@@ -85,37 +87,33 @@ class Crypto_Bot:
                         if exchange.symbol_exists(symbol):
 
                             # Create real time TA evaluators
-                            real_time_TA_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config,
+                            real_time_ta_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config,
                                                                                                 exchange,
                                                                                                 symbol)
 
                             self.create_evaluator_threads(symbol,
-                                                          matrix,
                                                           exchange,
-                                                          social_eval_list,
-                                                          real_time_TA_eval_list,
-                                                          exchange_type)
+                                                          real_time_ta_eval_list,
+                                                          symbol_evaluator)
 
                         # notify that exchange doesn't support this symbol
                         else:
                             self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
 
-    def create_evaluator_threads(self, symbol, matrix, exchange, social_eval_list, real_time_TA_eval_list, exchange_type):
+    def create_evaluator_threads(self, symbol, exchange, real_time_ta_eval_list, symbol_evaluator):
         for time_frame in self.time_frames:
             if exchange.time_frame_exists(time_frame.value):
                 self.symbols_threads.append(EvaluatorThread(self.config,
                                                             symbol,
                                                             time_frame,
-                                                            matrix,
+                                                            symbol_evaluator,
                                                             exchange,
-                                                            self.notifier,
-                                                            social_eval_list,
-                                                            real_time_TA_eval_list,
-                                                            self.exchange_traders[exchange_type.__name__],
-                                                            self.exchange_trader_simulators[exchange_type.__name__]
-                                                            ))
+                                                            real_time_ta_eval_list))
 
     def start_threads(self):
+        for symbol_evaluator in self.symbol_evaluator_list:
+            symbol_evaluator.start_threads()
+
         for thread in self.symbols_threads:
             thread.start()
         self.logger.info("Evaluation threads started...")
@@ -123,6 +121,9 @@ class Crypto_Bot:
     def join_threads(self):
         for thread in self.symbols_threads:
             thread.join()
+
+        for symbol_evaluator in self.symbol_evaluator_list:
+            symbol_evaluator.join_threads()
 
         for trader in self.exchange_traders:
             self.exchange_traders[trader].stop_order_listeners()
@@ -134,6 +135,9 @@ class Crypto_Bot:
         self.logger.info("Stopping threads ...")
         for thread in self.symbols_threads:
             thread.stop()
+
+        for symbol_evaluator in self.symbol_evaluator_list:
+            symbol_evaluator.stop_threads()
 
         for trader in self.exchange_traders:
             self.exchange_traders[trader].stop_order_listeners()
