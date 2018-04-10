@@ -15,6 +15,9 @@ class Symbol_Evaluator:
         self.notifier = None
         self.traders = None
         self.trader_simulators = None
+        self.finalize_enabled = False
+
+        self.evaluator_threads = []
 
         self.matrix = EvaluatorMatrix()
 
@@ -57,6 +60,9 @@ class Symbol_Evaluator:
     def set_trader_simulators(self, simulator):
         self.trader_simulators = simulator
 
+    def add_evaluator_thread(self, evaluator_thread):
+        self.evaluator_threads.append(evaluator_thread)
+
     def update_strategies_eval(self, new_matrix, ignored_evaluator=None):
         for strategies_evaluator in self.strategies_eval_list:
             strategies_evaluator.set_matrix(new_matrix)
@@ -68,9 +74,17 @@ class Symbol_Evaluator:
                                  strategies_evaluator.get_eval_note())
 
     def finalize(self, exchange, symbol):
-        self.final_thread.prepare()
-        self.final_thread.calculate_final()
-        self.final_thread.create_state(exchange, symbol)
+        if not self.finalize_enabled:
+            self.check_finalize()
+
+        if self.finalize_enabled:
+            self.final_thread.add_to_queue(exchange, symbol)
+
+    def check_finalize(self):
+        self.finalize_enabled = True
+        for evaluator_thread in self.evaluator_threads:
+            if evaluator_thread.get_data_refresher().get_refreshed_times() == 0:
+                self.finalize_enabled = False
 
     def get_notifier(self):
         return self.notifier
