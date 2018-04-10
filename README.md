@@ -16,7 +16,7 @@ Create a **config.json** file in the **config folder** with the following exampl
     "Bitcoin": ["BTC/USDT"]
   },
   "exchanges": {
-    "Binance": {
+    "binance": {
       "api-key": "YOUR_BINANCE_API_KEY",
       "api-secret": "YOUR_BINANCE_API_SECRET"
     }

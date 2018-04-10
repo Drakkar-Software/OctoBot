@@ -20,7 +20,7 @@ class TrendAnalysis:
         delta_up = current_up - current_middle
         delta_low = current_middle - current_low
         delta = delta_function(numpy.mean([delta_up, delta_low]))
-        expOne = math.exp(1)
+        exp_one = math.exp(1)
 
         # best case: up the upper band
         if current_interest > current_up:
@@ -37,11 +37,11 @@ class TrendAnalysis:
 
         # good case: up the middle band
         elif current_middle + delta < current_interest:
-            return -1 * math.exp((current_interest-current_middle)/delta_up)/expOne
+            return -1 * math.exp((current_interest-current_middle)/delta_up)/exp_one
 
         # bad case: down the lower band
         elif current_middle - delta > current_interest:
-            return math.exp((current_middle-current_interest)/delta_low)/expOne
+            return math.exp((current_middle-current_interest)/delta_low)/exp_one
 
         # should not happen
         else:
