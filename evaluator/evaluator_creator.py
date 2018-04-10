@@ -11,9 +11,7 @@ class EvaluatorCreator:
         self.evaluator = evaluator
         self.social_eval_list = []
         self.ta_eval_list = []
-        self.social_eval_not_threaded_list = []
         self.real_time_eval_list = []
-        self.strategies_eval_list = []
 
     def get_social_eval_list(self):
         return self.social_eval_list
@@ -24,12 +22,6 @@ class EvaluatorCreator:
     def get_ta_eval_list(self):
         return self.ta_eval_list
 
-    def get_strategies_eval_list(self):
-        return self.strategies_eval_list
-
-    def get_social_eval_not_threaded_list(self):
-        return self.social_eval_not_threaded_list
-
     def set_social_eval(self, new_social_list, evaluator_thread):
         self.social_eval_list = new_social_list
         for social_eval in self.social_eval_list:
@@ -39,6 +31,20 @@ class EvaluatorCreator:
         self.real_time_eval_list = new_real_time_list
         for real_time_eval in self.real_time_eval_list:
             real_time_eval.add_evaluator_thread(evaluator_thread)
+
+    def create_ta_eval_list(self):
+        if not self.ta_eval_list:
+            for ta_type in TAEvaluator.__subclasses__():
+                for ta_eval_class_type in ta_type.__subclasses__():
+                    ta_eval_class = ta_eval_class_type()
+                    if ta_eval_class.get_is_enabled():
+                        ta_eval_class.set_logger(logging.getLogger(ta_eval_class_type.get_name()))
+                        ta_eval_class.set_config(self.evaluator.config)
+                        ta_eval_class.set_data(self.evaluator.data)
+
+                        self.ta_eval_list.append(ta_eval_class)
+
+        return self.ta_eval_list
 
     @staticmethod
     def create_social_eval(config, symbol):
@@ -75,38 +81,26 @@ class EvaluatorCreator:
 
         return real_time_TA_eval_list
 
-    def create_social_not_threaded_list(self):
-        for social_eval in self.get_social_eval_list():
+    @staticmethod
+    def create_social_not_threaded_list(social_eval_list):
+        social_eval_not_threaded_list = []
+        for social_eval in social_eval_list:
 
             # if not threaded --> ask him to refresh with generic thread
             if not social_eval.get_is_threaded():
-                self.social_eval_not_threaded_list.append(social_eval)
+                social_eval_not_threaded_list.append(social_eval)
 
-        return self.social_eval_not_threaded_list
+        return social_eval_not_threaded_list
 
-    def create_ta_eval_list(self):
-        if not self.ta_eval_list:
-            for ta_type in TAEvaluator.__subclasses__():
-                for ta_eval_class_type in ta_type.__subclasses__():
-                    ta_eval_class = ta_eval_class_type()
-                    if ta_eval_class.get_is_enabled():
-                        ta_eval_class.set_logger(logging.getLogger(ta_eval_class_type.get_name()))
-                        ta_eval_class.set_config(self.evaluator.config)
-                        ta_eval_class.set_data(self.evaluator.data)
+    @staticmethod
+    def create_strategies_eval_list():
+        strategies_eval_list = []
+        for strategies_type in StrategiesEvaluator.__subclasses__():
+            for strategies_eval_class_type in strategies_type.__subclasses__():
+                strategies_eval_class = strategies_eval_class_type()
+                if strategies_eval_class.get_is_enabled():
+                    strategies_eval_class.set_logger(logging.getLogger(strategies_eval_class.get_name()))
 
-                        self.ta_eval_list.append(ta_eval_class)
+                    strategies_eval_list.append(strategies_eval_class)
 
-        return self.ta_eval_list
-
-    def create_strategies_eval_list(self):
-        if not self.strategies_eval_list:
-            for strategies_type in StrategiesEvaluator.__subclasses__():
-                for strategies_eval_class_type in strategies_type.__subclasses__():
-                    strategies_eval_class = strategies_eval_class_type()
-                    if strategies_eval_class.get_is_enabled():
-                        strategies_eval_class.set_logger(logging.getLogger(strategies_eval_class.get_name()))
-                        strategies_eval_class.set_config(self.evaluator.config)
-
-                        self.strategies_eval_list.append(strategies_eval_class)
-
-        return self.strategies_eval_list
+        return strategies_eval_list
