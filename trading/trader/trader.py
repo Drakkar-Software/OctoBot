@@ -9,7 +9,7 @@ class Trader:
         self.exchange = exchange
         self.config = config
         self.risk = self.config["trader"]["risk"]
-        self.logger = logging.getLogger("Trader")
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = False
 
         self.open_orders = []
