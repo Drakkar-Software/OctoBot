@@ -2,7 +2,7 @@ from config.cst import EvaluatorMatrixTypes
 from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
 from evaluator.Updaters.social_global_updater import SocialGlobalUpdaterThread
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_final import FinalEvaluatorThread
+from evaluator.evaluator_final import FinalEvaluator
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 
@@ -28,7 +28,7 @@ class Symbol_Evaluator:
         self.social_evaluator_refresh = SocialEvaluatorNotThreadedUpdateThread(self.social_not_threaded_list)
         self.global_social_updater = SocialGlobalUpdaterThread(self)
         self.evaluator_order_creator = EvaluatorOrderCreator()
-        self.final_evaluator = FinalEvaluatorThread(self)
+        self.final_evaluator = FinalEvaluator(self)
 
     def start_threads(self):
         self.social_evaluator_refresh.start()
