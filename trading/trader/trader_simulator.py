@@ -8,7 +8,7 @@ class TraderSimulator(Trader):
     def __init__(self, config, exchange):
         super().__init__(config, exchange)
         self.risk = self.config["simulator"]["risk"]
-        self.logger = logging.getLogger("TraderSimulator")
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = True
 
     def enabled(self):

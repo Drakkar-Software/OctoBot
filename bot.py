@@ -27,7 +27,7 @@ class Crypto_Bot:
     def __init__(self):
         # Logger
         fileConfig('config/logging_config.ini')
-        self.logger = logging.getLogger("CryptoBot")
+        self.logger = logging.getLogger(self.__class__.__name__)
 
         # Config
         self.logger.info("Load config file...")

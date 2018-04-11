@@ -9,7 +9,7 @@ class Notification:
     def __init__(self, config):
         self.config = config
         self.notification_type = self.config["notification"]["type"]
-        self.logger = logging.getLogger("Notifier")
+        self.logger = logging.getLogger(self.__class__.__name__)
 
         # Debug
         if self.enabled():
