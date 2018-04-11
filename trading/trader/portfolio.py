@@ -7,7 +7,7 @@ class Portfolio:
     def __init__(self, config, trader):
         self.config = config
         self.portfolio = self.config["simulator"]["starting_portfolio"]
-        self.logger = logging.getLogger("Portfolio")
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.trader = trader
         self.exchange = self.trader.get_exchange()
 
