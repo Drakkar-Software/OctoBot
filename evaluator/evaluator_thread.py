@@ -40,8 +40,8 @@ class EvaluatorThreadManager:
         self.evaluator.set_symbol_evaluator(self.symbol_evaluator)
 
         # Add threaded evaluators that can notify the current thread
-        self.evaluator.get_creator().set_social_eval(self.symbol_evaluator.get_social_eval_list(), self)
-        self.evaluator.get_creator().set_real_time_eval(real_time_ta_eval_list, self)
+        self.evaluator.set_social_eval(self.symbol_evaluator.get_social_eval_list(), self)
+        self.evaluator.set_real_time_eval(real_time_ta_eval_list, self)
 
         # Create refreshing threads
         self.data_refresher = TimeFrameUpdateDataThread(self)
@@ -55,7 +55,7 @@ class EvaluatorThreadManager:
 
     def refresh_eval(self, ignored_evaluator=None):
         # Instances will be created only if they don't already exist
-        self.evaluator.get_creator().create_ta_eval_list()
+        self.evaluator.get_creator().create_ta_eval_list(self.evaluator)
 
         # update eval
         self.evaluator.update_ta_eval(ignored_evaluator)
@@ -73,15 +73,15 @@ class EvaluatorThreadManager:
     def refresh_matrix(self):
         self.matrix = self.symbol_evaluator.get_matrix()
 
-        for ta_eval in self.evaluator.get_creator().get_ta_eval_list():
+        for ta_eval in self.evaluator.get_ta_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
                                  ta_eval.get_eval_note(), self.time_frame)
 
-        for social_eval in self.evaluator.get_creator().get_social_eval_list():
+        for social_eval in self.evaluator.get_social_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
                                  social_eval.get_eval_note())
 
-        for real_time_eval in self.evaluator.get_creator().get_real_time_eval_list():
+        for real_time_eval in self.evaluator.get_real_time_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
                                  real_time_eval.get_eval_note())
 
@@ -89,12 +89,12 @@ class EvaluatorThreadManager:
         self.data_refresher.start()
 
     def stop(self):
-        for thread in self.evaluator.get_creator().get_real_time_eval_list():
+        for thread in self.evaluator.get_real_time_eval_list():
             thread.stop()
         self.data_refresher.stop()
 
     def join(self):
-        for thread in self.evaluator.get_creator().get_real_time_eval_list():
+        for thread in self.evaluator.get_real_time_eval_list():
             thread.join()
         self.data_refresher.join()
 
