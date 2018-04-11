@@ -42,6 +42,9 @@ class Evaluator:
     def set_symbol_evaluator(self, symbol_evaluator):
         self.symbol_evaluator = symbol_evaluator
 
+    def set_ta_eval_list(self, new_ta_list):
+        self.ta_eval_list = new_ta_list
+
     def set_social_eval(self, new_social_list, evaluator_thread):
         self.social_eval_list = new_social_list
         for social_eval in self.social_eval_list:

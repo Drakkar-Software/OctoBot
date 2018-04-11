@@ -23,7 +23,8 @@ class FinalEvaluatorThread(threading.Thread):
             self.state = state
             self.logger.debug(" ** NEW STATE ** --> " + str(self.state))
             if self.symbol_evaluator.notifier.enabled():
-                self.symbol_evaluator.get_notifier().notify(self.symbol_evaluator.crypto_currency,
+                self.symbol_evaluator.get_notifier().notify(self.final_eval,
+                                                            self.symbol_evaluator,
                                                             state,
                                                             pprint.pformat(self.symbol_evaluator.get_matrix().get_matrix()))
 
