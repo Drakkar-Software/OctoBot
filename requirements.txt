@@ -1,5 +1,4 @@
 pandas
-aenum
 pytrends
 ccxt
 HerklosBotsCore

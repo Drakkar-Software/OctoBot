@@ -29,14 +29,14 @@ class FinalEvaluator:
                                                             state,
                                                             pprint.pformat(self.symbol_evaluator.get_matrix().get_matrix()))
 
-            elif self.symbol_evaluator.get_trader(self.exchange).enabled():
+            if self.symbol_evaluator.get_trader(self.exchange).enabled():
                 self.symbol_evaluator.get_evaluator_creator().create_order(
                     self.symbol,
                     self.exchange,
                     self.symbol_evaluator.get_trader(self.exchange),
                     state)
 
-            elif self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
+            if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
                 self.symbol_evaluator.get_evaluator_creator().create_order(
                     self.symbol,
                     self.exchange,

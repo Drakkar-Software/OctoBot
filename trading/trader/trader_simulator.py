@@ -1,7 +1,7 @@
 import logging
 
 from config.cst import CONFIG_ENABLED_OPTION
-from trading.trader.order import TraderOrderTypeClasses
+from trading.trader.order import OrderConstants
 from trading.trader.trader import Trader
 
 
@@ -22,7 +22,7 @@ class TraderSimulator(Trader):
         self.logger.debug("Order creation : " + str(symbol) + " | " + str(order_type)
                           + " | Price : " + str(price))
 
-        order_class = TraderOrderTypeClasses(order_type).value
+        order_class = OrderConstants.TraderOrderTypeClasses[order_type]
         order = order_class(self)
         order.new(order_type, symbol, quantity, price, stop_price)
         order.start()
