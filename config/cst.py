@@ -1,7 +1,5 @@
 from enum import Enum
 
-from aenum import MultiValueEnum
-
 MINUTE_TO_SECONDS = 60
 START_PENDING_EVAL_NOTE = "0"  # force exception
 INIT_EVAL_NOTE = 0
@@ -87,21 +85,41 @@ class TimeFrames(Enum):
     ONE_MONTH = "1M"
 
 
-class TimeFramesMinutes(MultiValueEnum):
-    ONE_MINUTE = 1, TimeFrames.ONE_MINUTE
-    THREE_MINUTES = 3, TimeFrames.THREE_MINUTES
-    FIVE_MINUTES = 5, TimeFrames.FIVE_MINUTES
-    FIFTEEN_MINUTES = 15, TimeFrames.FIFTEEN_MINUTES
-    THIRTY_MINUTES = 30, TimeFrames.THIRTY_MINUTES
-    ONE_HOUR = 60, TimeFrames.ONE_HOUR
-    TWO_HOURS = 120, TimeFrames.TWO_HOURS
-    FOUR_HOURS = 240, TimeFrames.FOUR_HOURS
-    HEIGHT_HOURS = 480, TimeFrames.HEIGHT_HOURS
-    TWELVE_HOURS = 720, TimeFrames.TWELVE_HOURS
-    ONE_DAY = 1440, TimeFrames.ONE_DAY
-    THREE_DAYS = 4320, TimeFrames.THREE_DAYS
-    ONE_WEEK = 10080, TimeFrames.ONE_WEEK
-    ONE_MONTH = 43200, TimeFrames.ONE_MONTH
+TimeFramesMinutes = {
+    TimeFrames.ONE_MINUTE: 1,
+    TimeFrames.THREE_MINUTES: 3,
+    TimeFrames.FIVE_MINUTES: 5,
+    TimeFrames.FIFTEEN_MINUTES: 15,
+    TimeFrames.THIRTY_MINUTES: 30,
+    TimeFrames.ONE_HOUR: 60,
+    TimeFrames.TWO_HOURS: 120,
+    TimeFrames.FOUR_HOURS: 240,
+    TimeFrames.HEIGHT_HOURS: 480,
+    TimeFrames.TWELVE_HOURS: 720,
+    TimeFrames.ONE_DAY: 1440,
+    TimeFrames.THREE_DAYS: 4320,
+    TimeFrames.ONE_WEEK: 10080,
+    TimeFrames.ONE_MONTH: 43200,
+}
+
+
+# ladder : 1-100
+TimeFramesRelevance = {
+    TimeFrames.ONE_MINUTE: 5,
+    TimeFrames.THREE_MINUTES: 5,
+    TimeFrames.FIVE_MINUTES: 5,
+    TimeFrames.FIFTEEN_MINUTES: 15,
+    TimeFrames.THIRTY_MINUTES: 30,
+    TimeFrames.ONE_HOUR: 50,
+    TimeFrames.TWO_HOURS: 50,
+    TimeFrames.FOUR_HOURS: 50,
+    TimeFrames.HEIGHT_HOURS: 30,
+    TimeFrames.TWELVE_HOURS: 30,
+    TimeFrames.ONE_DAY: 30,
+    TimeFrames.THREE_DAYS: 15,
+    TimeFrames.ONE_WEEK: 15,
+    TimeFrames.ONE_MONTH: 5,
+}
 
 
 class TradeOrderSide(Enum):
