@@ -62,7 +62,7 @@ class AbstractEvaluator:
         try:
             self.eval_impl()
         except Exception as e:
-            if self.config["DEBUG"]:
+            if CONFIG_DEBUG_OPTION in self.config and self.config[CONFIG_DEBUG_OPTION]:
                 raise e
             else:
                 self.logger.error(" Exception in eval_impl(): " + str(e))

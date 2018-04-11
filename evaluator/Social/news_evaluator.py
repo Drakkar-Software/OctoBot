@@ -15,10 +15,10 @@ class TwitterNewsEvaluator(NewsSocialEvaluator):
         self.user_ids = []
 
     def init_api(self):
-        self.twitter_api = twitter.Api(self.config["services"]["twitter"]["api-key"],
-                                       self.config["services"]["twitter"]["api-secret"],
-                                       self.config["services"]["twitter"]["access-token"],
-                                       self.config["services"]["twitter"]["access-token-secret"])
+        self.twitter_api = twitter.Api(self.config[CONFIG_CATEGORY_SERVICES]["twitter"]["api-key"],
+                                       self.config[CONFIG_CATEGORY_SERVICES]["twitter"]["api-secret"],
+                                       self.config[CONFIG_CATEGORY_SERVICES]["twitter"]["access-token"],
+                                       self.config[CONFIG_CATEGORY_SERVICES]["twitter"]["access-token-secret"])
         for account in self.config[CONFIG_CRYPTO_CURRENCIES][self.symbol][CONFIG_CRYPTO_TWITTERS]:
             try:
                 user = self.twitter_api.GetUser(screen_name=account)

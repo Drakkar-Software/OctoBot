@@ -1,5 +1,6 @@
 import logging
 
+from config.cst import CONFIG_ENABLED_OPTION
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
 
@@ -24,7 +25,7 @@ class Trader:
             self.logger.debug("Disabled on " + self.exchange.get_name())
 
     def enabled(self):
-        if self.config["trader"]["enabled"]:
+        if self.config["trader"][CONFIG_ENABLED_OPTION]:
             return True
         else:
             return False
