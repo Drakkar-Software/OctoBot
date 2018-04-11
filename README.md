@@ -1,5 +1,5 @@
 # CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot)
-#### Version 0.0.4-alpha 
+#### Version 0.0.5-alpha
 ## Install
 ```
 git clone https://github.com/Trading-Bot/CryptoBot
@@ -13,7 +13,10 @@ Create a **config.json** file in the **config folder** with the following exampl
 ```
 {
   "crypto_currencies": {
-    "Bitcoin": ["BTC/USDT"]
+    "Bitcoin": {
+      "pairs" : ["BTC/USDT"],
+      "twitters" : ["GuillaGjum","RedditBTC","BTCFoundation"]
+    }
   },
   "exchanges": {
     "binance": {
@@ -23,7 +26,7 @@ Create a **config.json** file in the **config folder** with the following exampl
   },
   "notification":{
     "enabled": true,
-    "type": 1
+    "type": [1, 2]
   },
   "trader":{
     "enabled": false,
@@ -36,6 +39,20 @@ Create a **config.json** file in the **config folder** with the following exampl
       "BTC": 10,
       "USDT": 1000
     }
+  },
+  "services": {
+    "mail": {
+      "gmail_user": "YOUR_GMAIL_USERNAME",
+      "gmail_password": "YOUR_GMAIL_PASSWORD",
+      "mail_dest": "YOUR_DESTINATION_MAIL"
+    },
+    "twitter": {
+      "api-key": "YOUR_TWITTER_API_KEY",
+      "api-secret": "YOUR_TWITTER_API_SECRET",
+      "access-token": "YOUR_TWITTER_ACCESS_TOKEN",
+      "access-token-secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
+    }
+  },
   }
 }
 ```

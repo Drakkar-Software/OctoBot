@@ -1,6 +1,9 @@
 {
   "crypto_currencies":{
-    "Bitcoin": ["BTC/USDT"]
+    "Bitcoin": {
+      "pairs" : ["BTC/USDT"],
+      "twitters" : ["GuillaGjum","RedditBTC","BTCFoundation"]
+    }
   },
   "exchanges": {
     "binance": {
@@ -12,11 +15,17 @@
       "api-secret": ""
     }
   },
-  "service": {
+  "services": {
     "mail": {
       "gmail_user": "",
       "gmail_password": "",
       "mail_dest": ""
+    },
+    "twitter": {
+      "api-key": "YOUR_TWITTER_API_KEY",
+      "api-secret": "YOUR_TWITTER_API_SECRET",
+      "access-token": "YOUR_TWITTER_ACCESS_TOKEN",
+      "access-token-secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
     }
   },
   "notification":{

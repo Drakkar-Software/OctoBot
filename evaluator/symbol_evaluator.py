@@ -2,7 +2,7 @@ from config.cst import EvaluatorMatrixTypes
 from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
 from evaluator.Updaters.social_global_updater import SocialGlobalUpdaterThread
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_final import FinalEvaluatorThread
+from evaluator.evaluator_final import FinalEvaluator
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 
@@ -28,12 +28,11 @@ class Symbol_Evaluator:
         self.social_evaluator_refresh = SocialEvaluatorNotThreadedUpdateThread(self.social_not_threaded_list)
         self.global_social_updater = SocialGlobalUpdaterThread(self)
         self.evaluator_order_creator = EvaluatorOrderCreator()
-        self.final_thread = FinalEvaluatorThread(self)
+        self.final_evaluator = FinalEvaluator(self)
 
     def start_threads(self):
         self.social_evaluator_refresh.start()
         self.global_social_updater.start()
-        self.final_thread.start()
 
     def stop_threads(self):
         for thread in self.social_eval_list:
@@ -41,7 +40,6 @@ class Symbol_Evaluator:
 
         self.social_evaluator_refresh.stop()
         self.global_social_updater.stop()
-        self.final_thread.stop()
 
     def join_threads(self):
         for thread in self.social_eval_list:
@@ -49,7 +47,6 @@ class Symbol_Evaluator:
 
         self.social_evaluator_refresh.join()
         self.global_social_updater.join()
-        self.final_thread.join()
 
     def set_notifier(self, notifier):
         self.notifier = notifier
@@ -78,7 +75,7 @@ class Symbol_Evaluator:
             self.check_finalize()
 
         if self.finalize_enabled:
-            self.final_thread.add_to_queue(exchange, symbol)
+            self.final_evaluator.add_to_queue(exchange, symbol)
 
     def check_finalize(self):
         self.finalize_enabled = True
@@ -96,7 +93,7 @@ class Symbol_Evaluator:
         return self.trader_simulators[exchange.get_name()]
 
     def get_final(self):
-        return self.final_thread
+        return self.final_evaluator
 
     def get_matrix(self):
         return self.matrix
@@ -112,3 +109,6 @@ class Symbol_Evaluator:
 
     def get_social_not_threaded_list(self):
         return self.social_not_threaded_list
+
+    def get_symbol_pairs(self):
+        return self.config["crypto_currencies"][self.crypto_currency]["pairs"]

@@ -10,7 +10,7 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
         super().__init__()
         self.enabled = True
         self.social_counter = 0
-        self.ta_counter = 0
+        self.ta_relevance_counter = 0
         self.rt_counter = 0
 
         self.ta_evaluation = 0
@@ -21,34 +21,46 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
         self.social_counter += inc
 
     def inc_ta_counter(self, inc=1):
-        self.ta_counter += inc
+        self.ta_relevance_counter += inc
 
     def inc_rt_counter(self, inc=1):
         self.rt_counter += inc
 
+    @staticmethod
+    def check_valid_eval_note(eval_note):
+        if eval_note and eval_note is not START_PENDING_EVAL_NOTE:
+            return True
+        else:
+            return False
+
     def eval_impl(self) -> None:
+        # TODO : temp counter without relevance
         self.social_counter = 0
-        self.ta_counter = 0
         self.rt_counter = 0
 
+        # relevance counters
+        self.ta_relevance_counter = 0
+
+        # eval note total with relevance factor
         self.ta_evaluation = 0
         self.social_evaluation = 0
         self.rt_evaluation = 0
 
         for rt in self.matrix[EvaluatorMatrixTypes.REAL_TIME]:
-            if self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]:
-                self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]
-                self.inc_rt_counter()
+            if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]):
+                    self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]
+                    self.inc_rt_counter()
 
         for ta in self.matrix[EvaluatorMatrixTypes.TA]:
             if self.matrix[EvaluatorMatrixTypes.TA][ta]:
                 for ta_time_frame in self.matrix[EvaluatorMatrixTypes.TA][ta]:
-                    if self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]:
-                        self.ta_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]
-                        self.inc_ta_counter()
+                    if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]):
+                        time_frame_relevance = TimeFramesRelevance[ta_time_frame]
+                        self.ta_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame] * time_frame_relevance
+                        self.inc_ta_counter(time_frame_relevance)
 
         for social in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
-            if self.matrix[EvaluatorMatrixTypes.SOCIAL][social]:
+            if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][social]):
                 self.social_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
                 self.inc_social_counter()
 
@@ -59,8 +71,8 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
         eval_temp = 0
         category = 0
 
-        if self.ta_counter > 0:
-            eval_temp += self.ta_evaluation / self.ta_counter
+        if self.ta_relevance_counter > 0:
+            eval_temp += self.ta_evaluation / self.ta_relevance_counter
             category += 1
 
         if self.social_counter > 0:

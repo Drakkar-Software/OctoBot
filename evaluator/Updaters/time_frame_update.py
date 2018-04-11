@@ -30,4 +30,4 @@ class TimeFrameUpdateDataThread(threading.Thread):
         while self.keep_running:
             now = time.time()
             self.refresh_data()
-            time.sleep(TimeFramesMinutes(self.parent.time_frame).value * MINUTE_TO_SECONDS - (time.time() - now))
+            time.sleep(TimeFramesMinutes[self.parent.time_frame] * MINUTE_TO_SECONDS - (time.time() - now))
