@@ -20,7 +20,8 @@ class Order(threading.Thread):
         self.origin_price = 0
         self.origin_stop_price = 0
         self.origin_quantity = 0
-        self.total_fees = 0
+        self.market_total_fees = 0
+        self.currency_total_fees = 0
         self.filled_quantity = 0
         self.filled_price = 0
         self.currency, self.market = None, None
@@ -38,8 +39,8 @@ class Order(threading.Thread):
         self.order_type = order_type
         self.currency, self.market = self.exchange.split_symbol(symbol)
         if not self.trader.simulate:
-            self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.ex_time = self.exchange.create_order(
-                order_type, symbol, quantity, price, stop_price)
+            # self.status, self.order_id, self.filled_price, self.filled_quantity, self.ex_time
+            self.exchange.create_order(order_type, symbol, quantity, price, stop_price)
         else:
             self.status = OrderStatus.PENDING
             self.filled_quantity = quantity
@@ -61,8 +62,11 @@ class Order(threading.Thread):
     def get_side(self):
         return self.side
 
-    def get_total_fees(self):
-        return self.total_fees
+    def get_market_total_fees(self):
+        return self.market_total_fees
+
+    def get_currency_total_fees(self):
+        return self.currency_total_fees
 
     def get_filled_quantity(self):
         return self.filled_quantity
