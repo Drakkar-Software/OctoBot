@@ -5,7 +5,7 @@ from evaluator.Updaters.time_frame_update import TimeFrameUpdateDataThread
 from evaluator.evaluator import Evaluator
 
 
-class EvaluatorThreadManager:
+class EvaluatorThreadsManager:
     def __init__(self, config,
                  symbol,
                  time_frame,
@@ -83,15 +83,15 @@ class EvaluatorThreadManager:
             self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
                                  real_time_eval.get_eval_note())
 
-    def start(self):
+    def start_threads(self):
         self.data_refresher.start()
 
-    def stop(self):
+    def stop_threads(self):
         for thread in self.evaluator.get_real_time_eval_list():
             thread.stop()
         self.data_refresher.stop()
 
-    def join(self):
+    def join_threads(self):
         for thread in self.evaluator.get_real_time_eval_list():
             thread.join()
         self.data_refresher.join()
