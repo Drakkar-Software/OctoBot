@@ -4,11 +4,13 @@ from enum import Enum
 from botcore.services.mail.send_gmail import GmailMailSendFactory
 from botcore.social.twitter.post import TwitterPostFactory
 
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES
+
 
 class Notification:
     def __init__(self, config):
         self.config = config
-        self.notification_type = self.config["notification"]["type"]
+        self.notification_type = self.config[CONFIG_CATEGORY_NOTIFICATION]["type"]
         self.logger = logging.getLogger(self.__class__.__name__)
 
         # Debug
@@ -18,7 +20,7 @@ class Notification:
             self.logger.debug("Disabled")
 
     def enabled(self):
-        if self.config["notification"]["enabled"]:
+        if self.config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION]:
             return True
         else:
             return False
@@ -28,7 +30,7 @@ class Notification:
             # if config contains enough data for mailing
             if self.mail_enabled():
                 mail = GmailMailSendFactory(self.config)
-                mail.set_to(self.config["services"]["mail"]["mail_dest"])
+                mail.set_to(self.config[CONFIG_CATEGORY_SERVICES]["mail"]["mail_dest"])
                 mail.set_subject("CRYPTO BOT ALERT : " + symbol_evaluator.crypto_currency + " / " + str(result))
                 mail.set_content("CRYPTO BOT ALERT : " + symbol_evaluator.crypto_currency + " / " + str(result)
                                  + "\n MATRIX : " + str(matrix))
@@ -54,13 +56,13 @@ class Notification:
                 self.logger.debug("Twitter notification disabled")
 
     def twitter_enabled(self):
-        if self.services_enabled() and "twitter" in self.config["services"]:
+        if self.services_enabled() and "twitter" in self.config[CONFIG_CATEGORY_SERVICES]:
             return True
         else:
             return False
 
     def mail_enabled(self):
-        if self.services_enabled() and "mail" in self.config["services"]:
+        if self.services_enabled() and "mail" in self.config[CONFIG_CATEGORY_SERVICES]:
             return True
         else:
             return False
