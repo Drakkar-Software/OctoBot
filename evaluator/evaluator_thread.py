@@ -42,6 +42,7 @@ class EvaluatorThreadManager:
         # Add threaded evaluators that can notify the current thread
         self.evaluator.set_social_eval(self.symbol_evaluator.get_social_eval_list(), self)
         self.evaluator.set_real_time_eval(real_time_ta_eval_list, self)
+        self.evaluator.set_ta_eval_list(self.evaluator.get_creator().create_ta_eval_list(self.evaluator))
 
         # Create refreshing threads
         self.data_refresher = TimeFrameUpdateDataThread(self)
@@ -54,9 +55,6 @@ class EvaluatorThreadManager:
             self.logger.debug("Notification by " + notifier_name + " ignored")
 
     def refresh_eval(self, ignored_evaluator=None):
-        # Instances will be created only if they don't already exist
-        self.evaluator.get_creator().create_ta_eval_list(self.evaluator)
-
         # update eval
         self.evaluator.update_ta_eval(ignored_evaluator)
 

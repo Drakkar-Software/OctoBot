@@ -112,3 +112,6 @@ class Symbol_Evaluator:
 
     def get_social_not_threaded_list(self):
         return self.social_not_threaded_list
+
+    def get_symbol_pairs(self):
+        return self.config["crypto_currencies"][self.crypto_currency]["pairs"]

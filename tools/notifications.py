@@ -23,14 +23,15 @@ class Notification:
         else:
             return False
 
-    def notify(self, symbol, result, matrix):
+    def notify(self, final_eval, symbol_evaluator, result, matrix):
         if NotificationTypes.MAIL.value in self.notification_type:
             # if config contains enough data for mailing
             if self.mail_enabled():
                 mail = GmailMailSendFactory(self.config)
                 mail.set_to(self.config["services"]["mail"]["mail_dest"])
-                mail.set_subject("CRYPTO BOT ALERT : " + symbol + " / " + str(result))
-                mail.set_content("CRYPTO BOT ALERT : " + symbol + " / " + str(result) + "\n MATRIX : " + str(matrix))
+                mail.set_subject("CRYPTO BOT ALERT : " + symbol_evaluator.crypto_currency + " / " + str(result))
+                mail.set_content("CRYPTO BOT ALERT : " + symbol_evaluator.crypto_currency + " / " + str(result)
+                                 + "\n MATRIX : " + str(matrix))
                 mail.send()
                 self.logger.info("Mail sent")
             else:
@@ -40,7 +41,13 @@ class Notification:
             # if config contains enough data for twitting
             if self.twitter_enabled():
                 twitter = TwitterPostFactory(self.config)
-                twitter.set_content("CRYPTO BOT ALERT : " + symbol + " / " + str(result))
+
+                # + "\n see more at https://github.com/Trading-Bot/CryptoBot"
+                formatted_pairs = [p.replace("/", "") for p in symbol_evaluator.get_symbol_pairs()]
+                twitter.set_content("CryptoBot ALERT : #" + symbol_evaluator.crypto_currency
+                                    + "\n Cryptocurrency : #" + " #".join(formatted_pairs)
+                                    + "\n Result : " + str(result).split(".")[1]
+                                    + "\n Evaluation : " + str(final_eval))
                 twitter.upload_post()
                 self.logger.info("Twitter sent")
             else:
