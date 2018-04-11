@@ -9,6 +9,7 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import Symbol_Evaluator
 from tools import Notification
+from tools.performance_analyser import PerformanceAnalyser
 from trading import Exchange
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
@@ -31,6 +32,11 @@ class Crypto_Bot:
         # Config
         self.logger.info("Load config file...")
         self.config = load_config()
+
+        # Debug tools
+        self.performance_analyser = None
+        if CONFIG_DEBUG_OPTION_PERF in self.config and self.config[CONFIG_DEBUG_OPTION_PERF]:
+            self.performance_analyser = PerformanceAnalyser()
 
         # TODO : CONFIG TEMP LOCATION
         self.time_frames = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
@@ -103,6 +109,9 @@ class Crypto_Bot:
                                                                             real_time_ta_eval_list))
 
     def start_threads(self):
+        if self.performance_analyser:
+            self.performance_analyser.start()
+
         for symbol_evaluator in self.symbol_evaluator_list:
             symbol_evaluator.start_threads()
 
@@ -124,6 +133,9 @@ class Crypto_Bot:
         for trader_simulator in self.exchange_trader_simulators:
             self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
 
+        if self.performance_analyser:
+            self.performance_analyser.join()
+
     def stop_threads(self):
         self.logger.info("Stopping threads ...")
         for manager in self.symbols_threads_manager:
@@ -137,3 +149,6 @@ class Crypto_Bot:
 
         for trader_simulator in self.exchange_trader_simulators:
             self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
+
+        if self.performance_analyser:
+            self.performance_analyser.stop()
