@@ -57,5 +57,10 @@ Create a **config.json** file in the **config folder** with the following exampl
 }
 ```
 ## Changelog
+See last pull request details : [#62](https://github.com/Trading-Bot/CryptoBot/pull/62)
 
+## Demo
+See live demo [here](https://twitter.com/HerklosBotCrypt)
+
+## More
 For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).
