@@ -1,5 +1,4 @@
 pandas
-aenum
 pytrends
 ccxt
 HerklosBotsCore
@@ -7,3 +6,5 @@ TA-Lib
 pytest
 numpy
 colorlog
+Python-Twitter
+psutil

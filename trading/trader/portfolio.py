@@ -7,7 +7,7 @@ class Portfolio:
     def __init__(self, config, trader):
         self.config = config
         self.portfolio = self.config["simulator"]["starting_portfolio"]
-        self.logger = logging.getLogger("Portfolio")
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.trader = trader
         self.exchange = self.trader.get_exchange()
 
@@ -24,20 +24,23 @@ class Portfolio:
         # update currency
         if currency in self.portfolio:
             if order.get_side() == TradeOrderSide.BUY:
-                self.portfolio[currency] += order.get_filled_quantity()
+                self.portfolio[currency] += order.get_filled_quantity() - order.get_currency_total_fees()
             else:
-                self.portfolio[currency] -= order.get_filled_quantity()
+                self.portfolio[currency] -= order.get_filled_quantity() - order.get_currency_total_fees()
         else:
-            self.portfolio[currency] = order.get_filled_quantity()
+            self.portfolio[currency] = order.get_filled_quantity() - order.get_currency_total_fees()
 
         # update market
         if market in self.portfolio:
             if order.get_side() == TradeOrderSide.BUY:
-                self.portfolio[market] -= (order.get_filled_quantity() * order.get_filled_price()) - order.get_total_fees()
+                self.portfolio[market] -= (order.get_filled_quantity() * order.get_filled_price()) \
+                                          - order.get_market_total_fees()
             else:
-                self.portfolio[market] += (order.get_filled_quantity() * order.get_filled_price()) - order.get_total_fees()
+                self.portfolio[market] += (order.get_filled_quantity() * order.get_filled_price()) \
+                                          - order.get_market_total_fees()
         else:
-            self.portfolio[market] = (-order.get_filled_quantity() * order.get_filled_price()) - order.get_total_fees()
+            self.portfolio[market] = (-order.get_filled_quantity() * order.get_filled_price()) \
+                                     - order.get_market_total_fees()
 
         # Only for log purpose
         if order.get_side() == TradeOrderSide.BUY:

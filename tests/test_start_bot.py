@@ -14,7 +14,7 @@ def test_create_bot():
 def test_run_bot():
     # launch a bot
     bot = Crypto_Bot()
-    bot.set_time_frames([TimeFrames.ONE_MINUTE])
+    bot.time_frames = [TimeFrames.ONE_MINUTE]
     bot.create_exchange_traders()
     bot.create_evaluation_threads()
     bot.start_threads()
