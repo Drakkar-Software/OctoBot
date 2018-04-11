@@ -5,7 +5,8 @@ class Trade:
         self.price = order.get_filled_price()
         self.order_type = order.get_order_type()
         self.final_status = order.get_status()
-        self.fees = order.get_total_fees()
+        self.market_fees = order.get_market_total_fees()
+        self.currency_fees = order.get_currency_total_fees()
 
         self.exchange = exchange
 
@@ -24,8 +25,11 @@ class Trade:
     def get_market(self):
         return self.market
 
-    def get_fees(self):
-        return self.fees
+    def get_market_fees(self):
+        return self.market_fees
+
+    def get_currency_fees(self):
+        return self.currency_fees
 
     def get_final_status(self):
         return self.final_status
