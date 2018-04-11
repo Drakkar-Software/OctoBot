@@ -1,5 +1,6 @@
 import logging
 
+from config.cst import CONFIG_ENABLED_OPTION
 from trading.trader.order import TraderOrderTypeClasses
 from trading.trader.trader import Trader
 
@@ -12,7 +13,7 @@ class TraderSimulator(Trader):
         self.simulate = True
 
     def enabled(self):
-        if self.config["simulator"]["enabled"]:
+        if self.config["simulator"][CONFIG_ENABLED_OPTION]:
             return True
         else:
             return False
