@@ -6,7 +6,7 @@ from queue import Queue
 from config.cst import START_EVAL_NOTE, EvaluatorStates
 
 
-class FinalEvaluatorThread:
+class FinalEvaluator:
     def __init__(self, symbol_evaluator):
         super().__init__()
         self.symbol_evaluator = symbol_evaluator
