@@ -6,7 +6,7 @@ from botcore.config.config import load_config
 
 from config.cst import *
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_thread import EvaluatorThreadManager
+from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import Symbol_Evaluator
 from tools import Notification
 from tools.performance_analyser import PerformanceAnalyser
@@ -28,7 +28,7 @@ class Crypto_Bot:
     def __init__(self):
         # Logger
         fileConfig('config/logging_config.ini')
-        self.logger = logging.getLogger("CryptoBot")
+        self.logger = logging.getLogger(self.__class__.__name__)
 
         # Config
         self.logger.info("Load config file...")
@@ -46,15 +46,11 @@ class Crypto_Bot:
         # Notifier
         self.notifier = Notification(self.config)
 
-        self.symbols_threads = []
+        self.symbols_threads_manager = []
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.exchanges_list = {}
         self.symbol_evaluator_list = []
-
-    # TODO : remove ? only for test purpose
-    def set_time_frames(self, time_frames):
-        self.time_frames = time_frames
 
     def create_exchange_traders(self):
         for exchange_type in self.exchanges:
@@ -91,30 +87,27 @@ class Crypto_Bot:
 
                         # Verify that symbol exists on this exchange
                         if exchange.symbol_exists(symbol):
-
-                            # Create real time TA evaluators
-                            real_time_ta_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config,
-                                                                                                exchange,
-                                                                                                symbol)
-
-                            self.create_evaluator_threads(symbol,
-                                                          exchange,
-                                                          real_time_ta_eval_list,
-                                                          symbol_evaluator)
+                            self.create_symbol_threads_managers(symbol,
+                                                                exchange,
+                                                                symbol_evaluator)
 
                         # notify that exchange doesn't support this symbol
                         else:
                             self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
 
-    def create_evaluator_threads(self, symbol, exchange, real_time_ta_eval_list, symbol_evaluator):
+    def create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
+        # Create real time TA evaluators
+        real_time_ta_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config,
+                                                                            exchange,
+                                                                            symbol)
         for time_frame in self.time_frames:
             if exchange.time_frame_exists(time_frame.value):
-                self.symbols_threads.append(EvaluatorThreadManager(self.config,
-                                                                   symbol,
-                                                                   time_frame,
-                                                                   symbol_evaluator,
-                                                                   exchange,
-                                                                   real_time_ta_eval_list))
+                self.symbols_threads_manager.append(EvaluatorThreadsManager(self.config,
+                                                                            symbol,
+                                                                            time_frame,
+                                                                            symbol_evaluator,
+                                                                            exchange,
+                                                                            real_time_ta_eval_list))
 
     def start_threads(self):
         if self.performance_analyser:
@@ -123,14 +116,14 @@ class Crypto_Bot:
         for symbol_evaluator in self.symbol_evaluator_list:
             symbol_evaluator.start_threads()
 
-        for thread in self.symbols_threads:
-            thread.start()
+        for manager in self.symbols_threads_manager:
+            manager.start_threads()
 
         self.logger.info("Evaluation threads started...")
 
     def join_threads(self):
-        for thread in self.symbols_threads:
-            thread.join()
+        for manager in self.symbols_threads_manager:
+            manager.join_threads()
 
         for symbol_evaluator in self.symbol_evaluator_list:
             symbol_evaluator.join_threads()
@@ -146,8 +139,8 @@ class Crypto_Bot:
 
     def stop_threads(self):
         self.logger.info("Stopping threads ...")
-        for thread in self.symbols_threads:
-            thread.stop()
+        for manager in self.symbols_threads_manager:
+            manager.stop_threads()
 
         for symbol_evaluator in self.symbol_evaluator_list:
             symbol_evaluator.stop_threads()
