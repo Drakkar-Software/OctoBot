@@ -16,7 +16,7 @@ class AbstractEvaluator:
         self.symbol = None
         self.history_time = None
 
-        self.eval_note = START_EVAL_NOTE
+        self.eval_note = START_PENDING_EVAL_NOTE
         self.pertinence = START_EVAL_PERTINENCE
 
     @classmethod

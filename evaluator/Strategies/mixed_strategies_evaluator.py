@@ -26,6 +26,13 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def inc_rt_counter(self, inc=1):
         self.rt_counter += inc
 
+    @staticmethod
+    def check_valid_eval_note(eval_note):
+        if eval_note and eval_note is not START_PENDING_EVAL_NOTE:
+            return True
+        else:
+            return False
+
     def eval_impl(self) -> None:
         self.social_counter = 0
         self.ta_counter = 0
@@ -36,19 +43,19 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
         self.rt_evaluation = 0
 
         for rt in self.matrix[EvaluatorMatrixTypes.REAL_TIME]:
-            if self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]:
-                self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]
-                self.inc_rt_counter()
+            if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]):
+                    self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]
+                    self.inc_rt_counter()
 
         for ta in self.matrix[EvaluatorMatrixTypes.TA]:
             if self.matrix[EvaluatorMatrixTypes.TA][ta]:
                 for ta_time_frame in self.matrix[EvaluatorMatrixTypes.TA][ta]:
-                    if self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]:
+                    if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]):
                         self.ta_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]
                         self.inc_ta_counter()
 
         for social in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
-            if self.matrix[EvaluatorMatrixTypes.SOCIAL][social]:
+            if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][social]):
                 self.social_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
                 self.inc_social_counter()
 

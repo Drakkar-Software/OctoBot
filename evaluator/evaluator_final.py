@@ -3,14 +3,14 @@ import pprint
 import threading
 from queue import Queue
 
-from config.cst import START_EVAL_NOTE, EvaluatorStates
+from config.cst import EvaluatorStates, INIT_EVAL_NOTE
 
 
 class FinalEvaluatorThread:
     def __init__(self, symbol_evaluator):
         super().__init__()
         self.symbol_evaluator = symbol_evaluator
-        self.final_eval = START_EVAL_NOTE
+        self.final_eval = INIT_EVAL_NOTE
         self.state = None
         self.keep_running = True
         self.exchange = None
@@ -59,7 +59,7 @@ class FinalEvaluatorThread:
         if strategies_analysis_note_counter > 0:
             self.final_eval /= strategies_analysis_note_counter
         else:
-            self.final_eval = START_EVAL_NOTE
+            self.final_eval = START_INIT_EVAL_NOTE
 
     def calculate_final(self):
         # TODO : improve
@@ -83,7 +83,7 @@ class FinalEvaluatorThread:
 
     def finalize(self, exchange, symbol):
         # reset previous note
-        self.final_eval = START_EVAL_NOTE
+        self.final_eval = INIT_EVAL_NOTE
         self.exchange = exchange
         self.symbol = symbol
         self.prepare()
