@@ -26,7 +26,7 @@ Create a **config.json** file in the **config folder** with the following exampl
   },
   "notification":{
     "enabled": true,
-    "type": 1
+    "type": [1, 2]
   },
   "trader":{
     "enabled": false,
@@ -40,13 +40,19 @@ Create a **config.json** file in the **config folder** with the following exampl
       "USDT": 1000
     }
   },
-  "additional_resources": {
+  "services": {
+    "mail": {
+      "gmail_user": "YOUR_GMAIL_USERNAME",
+      "gmail_password": "YOUR_GMAIL_PASSWORD",
+      "mail_dest": "YOUR_DESTINATION_MAIL"
+    },
     "twitter": {
       "api-key": "YOUR_TWITTER_API_KEY",
       "api-secret": "YOUR_TWITTER_API_SECRET",
       "access-token": "YOUR_TWITTER_ACCESS_TOKEN",
       "access-token-secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
     }
+  },
   }
 }
 ```
