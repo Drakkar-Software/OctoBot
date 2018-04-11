@@ -22,7 +22,7 @@ class FinalEvaluatorThread:
     def set_state(self, state):
         if state != self.state:
             self.state = state
-            self.logger.debug(" ** NEW STATE ** --> " + str(self.state))
+            self.logger.info(" ** NEW FINAL STATE ** : " + str(self.state))
             if self.symbol_evaluator.notifier.enabled():
                 self.symbol_evaluator.get_notifier().notify(self.final_eval,
                                                             self.symbol_evaluator,
