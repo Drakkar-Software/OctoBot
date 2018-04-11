@@ -1,5 +1,6 @@
 from abc import *
 
+from config.cst import START_PENDING_EVAL_NOTE, INIT_EVAL_NOTE
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
@@ -16,6 +17,9 @@ class TAEvaluator(AbstractEvaluator):
         self.data = data
 
     def set_eval_note(self, new_eval_note):
+        if self.eval_note == START_PENDING_EVAL_NOTE:
+            self.eval_note = INIT_EVAL_NOTE
+
         if self.eval_note + new_eval_note > 1:
             self.eval_note = 1
         elif self.eval_note + new_eval_note < -1:
