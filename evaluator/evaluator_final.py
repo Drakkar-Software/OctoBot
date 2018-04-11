@@ -6,7 +6,7 @@ from queue import Queue
 from config.cst import START_EVAL_NOTE, EvaluatorStates
 
 
-class FinalEvaluatorThread(threading.Thread):
+class FinalEvaluatorThread:
     def __init__(self, symbol_evaluator):
         super().__init__()
         self.symbol_evaluator = symbol_evaluator
@@ -15,6 +15,7 @@ class FinalEvaluatorThread(threading.Thread):
         self.keep_running = True
         self.exchange = None
         self.symbol = None
+        self.is_computing = False
         self.logger = logging.getLogger(self.__class__.__name__)
         self.queue = Queue()
 
@@ -91,12 +92,20 @@ class FinalEvaluatorThread(threading.Thread):
         self.logger.debug("--> " + str(self.state))
 
     def add_to_queue(self, exchange, symbol):
-        self.queue.put(self.finalize(exchange, symbol))
+        self.queue.put((exchange, symbol))
+        self.notify()
 
-    def run(self):
-        while self.keep_running:
-            if not self.queue.empty():
-                self.queue.get()
+    def notify(self):
+        if not self.is_computing:
+            self.is_computing = True
+            threading.Thread(target=self.process_queue).start()
+
+    def process_queue(self):
+        try:
+            while not self.queue.empty():
+                self.finalize(*self.queue.get())
+        finally:
+            self.is_computing = False
 
     def stop(self):
         self.keep_running = False
