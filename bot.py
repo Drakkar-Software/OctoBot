@@ -46,10 +46,6 @@ class Crypto_Bot:
         self.exchanges_list = {}
         self.symbol_evaluator_list = []
 
-    # TODO : remove ? only for test purpose
-    def set_time_frames(self, time_frames):
-        self.time_frames = time_frames
-
     def create_exchange_traders(self):
         for exchange_type in self.exchanges:
             exchange_inst = Exchange(self.config, exchange_type)
