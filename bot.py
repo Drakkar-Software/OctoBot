@@ -13,8 +13,7 @@ from trading import Exchange
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 
-"""
-Main CryptoBot class:
+"""Main CryptoBot class:
 - Create all indicators and thread for each cryptocurrencies in config
 """
 
