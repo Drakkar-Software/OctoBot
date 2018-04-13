@@ -1,4 +1,14 @@
 {
   "refresh_rate_seconds" : 3600,
-  "relevant_history_months" : 3
+  "relevant_history_months" : 3,
+  "accounts" : {
+    "Bitcoin": ["GuillaGjum","RedditBTC","BTCFoundation"],
+    "Ethereum": ["ethereum"],
+    "Neo": ["NEO_Blockchain"]
+  },
+  "hashtags" : {
+    "Bitcoin": ["bitcoin","btc","cz","binance","kucoin","reddit","tether","bitfinex","bitmex","cryptopia","xtrabytes","nano","cryptocurrencies","gold","ripple","xrb","bch","bitconnect","vitalik","suppoman","blockchain","bublle","inverst","medium"],
+    "Ethereum": ["Ethereum"],
+    "Neo": ["neo"]
+  }
 }

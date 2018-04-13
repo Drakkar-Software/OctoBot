@@ -14,8 +14,7 @@ Create a **config.json** file in the **config folder** with the following exampl
 {
   "crypto_currencies": {
     "Bitcoin": {
-      "pairs" : ["BTC/USDT"],
-      "twitters" : ["GuillaGjum","RedditBTC","BTCFoundation"]
+      "pairs" : ["BTC/USDT"]
     }
   },
   "exchanges": {
