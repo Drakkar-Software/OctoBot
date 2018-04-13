@@ -1,6 +1,5 @@
 from evaluator.evaluator_creator import EvaluatorCreator
 
-
 class Evaluator:
     def __init__(self):
         self.config = None
@@ -15,6 +14,7 @@ class Evaluator:
 
         self.social_eval_list = []
         self.ta_eval_list = []
+        self.unique_eval_list = []
         self.real_time_eval_list = []
 
         self.creator = EvaluatorCreator()
@@ -41,6 +41,9 @@ class Evaluator:
 
     def set_symbol_evaluator(self, symbol_evaluator):
         self.symbol_evaluator = symbol_evaluator
+
+    def set_unique_eval_list(self, unique_eval_list):
+        self.unique_eval_list = unique_eval_list
 
     def set_ta_eval_list(self, new_ta_list):
         self.ta_eval_list = new_ta_list
@@ -71,6 +74,9 @@ class Evaluator:
 
     def get_real_time_eval_list(self):
         return self.real_time_eval_list
+
+    def get_unique_eval_list(self):
+        return self.unique_eval_list
 
     def get_ta_eval_list(self):
         return self.ta_eval_list

@@ -7,13 +7,18 @@ START_EVAL_PERTINENCE = 1
 
 MARKET_SEPARATOR = "/"
 
+CONFIG_GLOBAL_UTILS = "global_utils"
 SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
 CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
 CONFIG_CRYPTO_PAIRS = "pairs"
-CONFIG_CRYPTO_TWITTERS = "twitters"
+CONFIG_TWITTERS_ACCOUNTS = "accounts"
+CONFIG_TWITTERS_HASHTAGS = "hashtags"
+CONFIG_TWITTER = "twitter"
+CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
+CONFIG_ADDITIONAL_RESOURCES = "additional_resources"
 
 # DEBUG
 CONFIG_DEBUG_OPTION_PERF = "PERF"

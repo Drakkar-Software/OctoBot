@@ -1,4 +1,5 @@
 from abc import *
+from evaluator.unique_evaluator import UniqueEvaluator
 
 from config.cst import *
 
@@ -81,3 +82,7 @@ class AbstractEvaluator:
     @abstractmethod
     def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
+
+    @classmethod
+    def get_is_unique(cls):
+        return UniqueEvaluator in cls.__bases__

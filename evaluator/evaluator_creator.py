@@ -23,8 +23,27 @@ class EvaluatorCreator:
 
         return ta_eval_list
 
+
     @staticmethod
-    def create_social_eval(config, symbol):
+    def create_unique_eval(config):
+        unique_eval_list = []
+        for social_type in SocialEvaluator.__subclasses__():
+            for social_eval_class_type in social_type.__subclasses__():
+                unique_eval_class = social_eval_class_type()
+                if unique_eval_class.get_is_enabled() and social_eval_class_type.get_is_unique():
+                    unique_eval_class.set_logger(logging.getLogger(social_eval_class_type.get_name()))
+                    unique_eval_class.set_config(config)
+                    unique_eval_class.prepare()
+
+                    # start refreshing thread
+                    if unique_eval_class.get_is_threaded():
+                        unique_eval_class.start()
+
+                    unique_eval_list.append(unique_eval_class)
+        return unique_eval_list
+
+    @staticmethod
+    def create_social_eval(config, symbol, unique_eval_list):
         social_eval_list = []
         for social_type in SocialEvaluator.__subclasses__():
             for social_eval_class_type in social_type.__subclasses__():
@@ -33,9 +52,15 @@ class EvaluatorCreator:
                     social_eval_class.set_logger(logging.getLogger(social_eval_class_type.get_name()))
                     social_eval_class.set_config(config)
                     social_eval_class.set_symbol(symbol)
+                    social_eval_class.prepare()
 
-                    # start refreshing thread
-                    if social_eval_class.get_is_threaded():
+                    if social_eval_class_type.get_is_unique():
+                        for unique_evaluator in unique_eval_list:
+                            if unique_evaluator.__class__ == social_eval_class.__class__:
+                                unique_evaluator.register_client(symbol, social_eval_class)
+
+                    # start refreshing thread if the thread is not unique
+                    elif social_eval_class.get_is_threaded():
                         social_eval_class.start()
 
                     social_eval_list.append(social_eval_class)

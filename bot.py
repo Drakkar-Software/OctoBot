@@ -66,11 +66,14 @@ class Crypto_Bot:
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
 
+        # create unique evaluators
+        unique_eval_list = EvaluatorCreator.create_unique_eval(self.config)
+
         # create Social and TA evaluators
         for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
             # create symbol evaluator
-            symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency)
+            symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency, unique_eval_list)
             symbol_evaluator.set_notifier(self.notifier)
             symbol_evaluator.set_traders(self.exchange_traders)
             symbol_evaluator.set_trader_simulators(self.exchange_trader_simulators)
