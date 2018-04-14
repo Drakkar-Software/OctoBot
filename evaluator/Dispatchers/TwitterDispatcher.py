@@ -59,11 +59,20 @@ class TwitterDispatcher(EvaluatorDispatcher):
             if key.lower() in string_tweet.lower():
                 self.notify_registered_evaluator_clients(key, {CONFIG_TWEET: data})
 
+    def something_to_watch(self):
+        return (CONFIG_TWITTERS_HASHTAGS in self.social_config
+                and self.social_config[CONFIG_TWITTERS_HASHTAGS]) \
+                or (CONFIG_TWITTERS_ACCOUNTS in self.social_config
+                    and self.social_config[CONFIG_TWITTERS_ACCOUNTS])
+
     def run(self):
-        self.get_data()
-        try:
-            for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids, track=self.hashtags):
-                self.counter += 1
-                self.dispatch_notification_to_clients(tweet)
-        except twitter.error.TwitterError as e:
-            self.logger.error("Error when receiving Twitter feed: " + str(e.message))
+        if self.something_to_watch():
+            self.get_data()
+            try:
+                for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids, track=self.hashtags):
+                    self.counter += 1
+                    self.dispatch_notification_to_clients(tweet)
+            except twitter.error.TwitterError as e:
+                self.logger.error("Error when receiving Twitter feed: " + str(e.message))
+        else:
+            self.logger.warning("Nothing to monitor, dispatcher is going to sleep.")
