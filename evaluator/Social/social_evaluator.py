@@ -79,7 +79,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
     #         time.sleep(own_time * MINUTE_TO_SECONDS)  --> use its own refresh time (near real time)
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("Run not implemented")
 
 
 class StatsSocialEvaluator(SocialEvaluator):
