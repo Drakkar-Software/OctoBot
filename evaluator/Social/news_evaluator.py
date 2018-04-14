@@ -97,6 +97,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluatorDispatcher, Uniqu
             if key.lower() in string_tweet.lower():
                 self.notify_registered_evaluator_clients(key, {CONFIG_TWEET: data})
 
+    # to be called by dispatcher only
     def run(self):
         self.get_data()
         for tweet in self.twitter_api.GetStreamFilter(follow=self.user_ids, track=self.hashtags):
