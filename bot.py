@@ -8,6 +8,7 @@ from config.cst import *
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import Symbol_Evaluator
+from interfaces.web.app import WebApp
 from tools import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from trading import Exchange
@@ -32,6 +33,11 @@ class Crypto_Bot:
         # Config
         self.logger.info("Load config file...")
         self.config = load_config()
+
+        # Interfaces
+        self.web_app = WebApp(self.config)
+        if self.web_app.enabled():
+            self.web_app.start()
 
         # Debug tools
         self.performance_analyser = None
@@ -152,3 +158,6 @@ class Crypto_Bot:
 
         if self.performance_analyser:
             self.performance_analyser.stop()
+
+        if self.web_app.enabled():
+            self.web_app.stop()
