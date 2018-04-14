@@ -23,7 +23,6 @@ class EvaluatorCreator:
 
         return ta_eval_list
 
-
     @staticmethod
     def create_unique_eval(config):
         unique_eval_list = []
