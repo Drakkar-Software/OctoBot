@@ -60,7 +60,7 @@ class Crypto_Bot:
         self.exchange_trader_simulators = {}
         self.exchanges_list = {}
         self.symbol_evaluator_list = []
-        self.unique_eval_list = []
+        self.dispatchers_list = []
 
     def create_exchange_traders(self):
         for exchange_type in self.exchanges:
@@ -78,13 +78,13 @@ class Crypto_Bot:
         self.logger.info("Evaluation threads creation...")
 
         # create unique evaluators
-        self.unique_eval_list = EvaluatorCreator.create_unique_eval(self.config)
+        self.dispatchers_list = EvaluatorCreator.create_dispatchers(self.config)
 
         # create Social and TA evaluators
         for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
             # create symbol evaluator
-            symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency, self.unique_eval_list)
+            symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency, self.dispatchers_list)
             symbol_evaluator.set_notifier(self.notifier)
             symbol_evaluator.set_traders(self.exchange_traders)
             symbol_evaluator.set_trader_simulators(self.exchange_trader_simulators)
@@ -132,6 +132,9 @@ class Crypto_Bot:
         for manager in self.symbols_threads_manager:
             manager.start_threads()
 
+        for thread in self.dispatchers_list:
+            thread.start()
+
         self.logger.info("Evaluation threads started...")
 
     def join_threads(self):
@@ -147,7 +150,7 @@ class Crypto_Bot:
         for trader_simulator in self.exchange_trader_simulators:
             self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
 
-        for thread in self.unique_eval_list:
+        for thread in self.dispatchers_list:
             thread.join()
 
         if self.performance_analyser:
@@ -167,7 +170,7 @@ class Crypto_Bot:
         for trader_simulator in self.exchange_trader_simulators:
             self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
 
-        for thread in self.unique_eval_list:
+        for thread in self.dispatchers_list:
             thread.stop()
 
         if self.performance_analyser:
