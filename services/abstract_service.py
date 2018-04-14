@@ -26,6 +26,11 @@ class AbstractService:
     def get_is_enabled(self):
         return self.enabled
 
+    # Returns true if all the configuration is available
+    @abstractmethod
+    def has_required_configuration(self):
+        raise NotImplementedError("has_required_configuration not implemented")
+
     # Returns the service's endpoint
     @abstractmethod
     def get_endpoint(self) -> None:
