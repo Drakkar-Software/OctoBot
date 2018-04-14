@@ -14,32 +14,17 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluatorDispatcher, Uniqu
         UniqueEvaluatorDispatcher.__init__(self)
         self.enabled = False
         self.is_threaded = True
-        self.twitter_api = None
+        self.twitter_service = None
         self.user_ids = []
         self.hashtags = []
         self.count = 0
         self.symbol = ""
 
-    def init_api(self):
-        if (CONFIG_GLOBAL_UTILS in self.config
-                and CONFIG_TWITTER_API_INSTANCE in self.config[CONFIG_GLOBAL_UTILS]
-                and self.config[CONFIG_GLOBAL_UTILS][CONFIG_TWITTER_API_INSTANCE]):
-            self.twitter_api = self.config[CONFIG_GLOBAL_UTILS][CONFIG_TWITTER_API_INSTANCE]
-        else:
-            self.twitter_api = twitter.Api(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-key"],
-                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-secret"],
-                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["access-token"],
-                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["access-token-secret"])
-            if CONFIG_GLOBAL_UTILS not in self.config:
-                self.config[CONFIG_GLOBAL_UTILS] = {}
-            self.config[CONFIG_GLOBAL_UTILS][CONFIG_TWITTER_API_INSTANCE] = self.twitter_api
-
     def init_users_accounts(self):
         for symbol in self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
             for account in self.social_config[CONFIG_TWITTERS_ACCOUNTS][symbol]:
                 try:
-                    user = self.twitter_api.GetUser(screen_name=account)
-                    self.user_ids.append(str(user.id))
+                    self.user_ids.append(str(self.twitter_service.get_user_id(account)))
                 except twitter.TwitterError as e:
                     self.logger.error(account + " : " + str(e))
 
@@ -47,11 +32,6 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluatorDispatcher, Uniqu
         for symbol in self.social_config[CONFIG_TWITTERS_HASHTAGS]:
             for hashtag in self.social_config[CONFIG_TWITTERS_HASHTAGS][symbol]:
                 self.hashtags.append(hashtag)
-
-    def get_history(self):
-        user = self.twitter_api.GetUser(screen_name="GuillaGjum")
-        user_id = str(user.id)
-        history = self.twitter_api.GetUserTimeline(user_id=user_id)
 
     def get_data(self):
         if not self.user_ids:
@@ -61,7 +41,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluatorDispatcher, Uniqu
 
     def prepare(self):
         super(TwitterNewsEvaluator, self).prepare()
-        self.init_api()
+        self.twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
     def eval(self):
         v = randint(0, 100)
@@ -100,7 +80,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluatorDispatcher, Uniqu
     # to be called by dispatcher only
     def run(self):
         self.get_data()
-        for tweet in self.twitter_api.GetStreamFilter(follow=self.user_ids, track=self.hashtags):
+        for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids, track=self.hashtags):
             self.count += 1
             self.dispatch_notification_to_clients(tweet)
 
