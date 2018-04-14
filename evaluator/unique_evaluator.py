@@ -31,7 +31,6 @@ class UniqueEvaluatorClient:
 
     def __init__(self):
         self.is_computing = False
-        self.process_queue
         self.queue = Queue()
 
     @abstractmethod
