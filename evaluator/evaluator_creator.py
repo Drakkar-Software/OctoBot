@@ -1,9 +1,10 @@
 import logging
 
-from evaluator.Strategies import StrategiesEvaluator
-from evaluator.Social import SocialEvaluator
 from evaluator.RealTime import RealTimeTAEvaluator
+from evaluator.Social import SocialEvaluator
+from evaluator.Strategies import StrategiesEvaluator
 from evaluator.TA import TAEvaluator
+from evaluator.evaluator_dispatcher import EvaluatorDispatcher
 
 
 class EvaluatorCreator:
@@ -24,25 +25,15 @@ class EvaluatorCreator:
         return ta_eval_list
 
     @staticmethod
-    def create_unique_eval(config):
-        unique_eval_list = []
-        for social_type in SocialEvaluator.__subclasses__():
-            for social_eval_class_type in social_type.__subclasses__():
-                unique_eval_class = social_eval_class_type()
-                if unique_eval_class.get_is_enabled() and social_eval_class_type.get_is_unique_evaluator_dispatcher():
-                    unique_eval_class.set_logger(logging.getLogger(social_eval_class_type.get_name()))
-                    unique_eval_class.set_config(config)
-                    unique_eval_class.prepare()
-
-                    # start refreshing thread
-                    if unique_eval_class.get_is_threaded():
-                        unique_eval_class.start()
-
-                    unique_eval_list.append(unique_eval_class)
-        return unique_eval_list
+    def create_dispatchers(config):
+        dispatchers_list = []
+        for dispatcher_type in EvaluatorDispatcher.__subclasses__():
+            dispatcher_class = dispatcher_type(config)
+            dispatchers_list.append(dispatcher_class)
+        return dispatchers_list
 
     @staticmethod
-    def create_social_eval(config, symbol, unique_eval_list):
+    def create_social_eval(config, symbol, dispatchers_list):
         social_eval_list = []
         for social_type in SocialEvaluator.__subclasses__():
             for social_eval_class_type in social_type.__subclasses__():
@@ -53,10 +44,11 @@ class EvaluatorCreator:
                     social_eval_class.set_symbol(symbol)
                     social_eval_class.prepare()
 
-                    if social_eval_class_type.get_is_client_to_unique_evaluator():
-                        for unique_evaluator_dispatcher in unique_eval_list:
-                            if social_eval_class.is_client_to_this_dispatcher(unique_evaluator_dispatcher):
-                                unique_evaluator_dispatcher.register_client(symbol, social_eval_class)
+                    if social_eval_class_type.get_is_dispatcher_client():
+                        for evaluator_dispatcher in dispatchers_list:
+                            if social_eval_class.is_client_to_this_dispatcher(evaluator_dispatcher):
+                                social_eval_class.set_dispatcher(evaluator_dispatcher)
+                                evaluator_dispatcher.register_client(symbol, social_eval_class)
 
                     # start refreshing thread if the thread is not unique
                     elif social_eval_class.get_is_threaded():

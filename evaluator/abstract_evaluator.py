@@ -1,6 +1,5 @@
-from evaluator.unique_evaluator import *
-
 from config.cst import *
+from evaluator.evaluator_dispatcher import *
 
 
 class AbstractEvaluator:
@@ -82,9 +81,5 @@ class AbstractEvaluator:
         raise NotImplementedError("Eval_impl not implemented")
 
     @classmethod
-    def get_is_client_to_unique_evaluator(cls):
-        return UniqueEvaluatorClient in cls.__bases__
-
-    @classmethod
-    def get_is_unique_evaluator_dispatcher(cls):
-        return UniqueEvaluatorDispatcher in cls.__bases__
+    def get_is_dispatcher_client(cls):
+        return EvaluatorDispatcherClient in cls.__bases__

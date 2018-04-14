@@ -4,11 +4,14 @@ from queue import Queue
 
 
 # ****** Unique dispatcher side ******
-class UniqueEvaluatorDispatcher:
+class EvaluatorDispatcher(threading.Thread):
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, config):
+        super().__init__()
         self.registered_list = {}
+        self.config = config
+        self.keep_running = True
 
     def notify_registered_evaluator_clients(self, symbol, data):
         for target_evaluator in self.registered_list[symbol]:
@@ -24,12 +27,20 @@ class UniqueEvaluatorDispatcher:
     def dispatch_notification_to_clients(self, data):
         raise NotImplementedError("dispatch_notification_to_clients not implemented")
 
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError("run not implemented")
+
+    def stop(self):
+        self.keep_running = False
+
 
 # ****** Implementation side ******
-class UniqueEvaluatorClient:
+class EvaluatorDispatcherClient:
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        self.dispatcher = None
         self.is_computing = False
         self.queue = Queue()
 
@@ -37,9 +48,13 @@ class UniqueEvaluatorClient:
     def receive_notification_data(self, data) -> None:
         raise NotImplementedError("receive_notification_data not implemented")
 
+    @staticmethod
     @abstractmethod
-    def get_dispatcher_class(self) -> None:
+    def get_dispatcher_class():
         raise NotImplementedError("get_dispatcher_class not implemented")
+
+    def set_dispatcher(self, dispatcher):
+        self.dispatcher = dispatcher
 
     def add_to_queue(self, data):
         self.queue.put(data)
