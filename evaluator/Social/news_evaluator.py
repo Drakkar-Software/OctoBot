@@ -16,7 +16,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         self.symbol = ""
 
     def set_dispatcher(self, dispatcher):
-        self.dispatcher = dispatcher
+        super().set_dispatcher(dispatcher)
         self.dispatcher.set_social_config(self.social_config)
 
     def get_data(self):
