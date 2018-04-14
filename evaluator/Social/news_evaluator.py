@@ -1,16 +1,17 @@
 from random import randint
 import twitter
 import unicodedata
-from evaluator.unique_evaluator import UniqueEvaluator
+from evaluator.unique_evaluator import *
 
 from config.cst import *
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
 
 
-class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluator):
+class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluatorDispatcher, UniqueEvaluatorClient):
     def __init__(self):
         NewsSocialEvaluator.__init__(self)
-        UniqueEvaluator.__init__(self)
+        UniqueEvaluatorClient.__init__(self)
+        UniqueEvaluatorDispatcher.__init__(self)
         self.enabled = False
         self.is_threaded = True
         self.twitter_api = None
@@ -83,21 +84,25 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluator):
     def print_tweet(self, tweet, count):
         self.logger.debug(self.tweet_to_string(tweet, count))
 
+    def get_dispatcher_class(self):
+        return TwitterNewsEvaluator
+
     def receive_notification_data(self, data):
         self.count += 1
-        self.print_tweet(data, self.count)
+        self.print_tweet(data[CONFIG_TWEET], self.count)
 
-    def process_tweet(self, tweet):
-        string_tweet = self.tweet_to_string(tweet, 0)
+    def dispatch_notification_to_clients(self, data):
+        string_tweet = self.tweet_to_string(data, 0)
         for key in self.registered_list:
             if key.lower() in string_tweet.lower():
-                self.notify_registered_evaluators(key, tweet)
+                self.notify_registered_evaluator_clients(key, {CONFIG_TWEET: data})
 
+    # to be called by dispatcher only
     def run(self):
         self.get_data()
         for tweet in self.twitter_api.GetStreamFilter(follow=self.user_ids, track=self.hashtags):
             self.count += 1
-            self.process_tweet(tweet)
+            self.dispatch_notification_to_clients(tweet)
 
 
 class MediumNewsEvaluator(NewsSocialEvaluator):

@@ -29,7 +29,7 @@ class EvaluatorCreator:
         for social_type in SocialEvaluator.__subclasses__():
             for social_eval_class_type in social_type.__subclasses__():
                 unique_eval_class = social_eval_class_type()
-                if unique_eval_class.get_is_enabled() and social_eval_class_type.get_is_unique():
+                if unique_eval_class.get_is_enabled() and social_eval_class_type.get_is_unique_evaluator_dispatcher():
                     unique_eval_class.set_logger(logging.getLogger(social_eval_class_type.get_name()))
                     unique_eval_class.set_config(config)
                     unique_eval_class.prepare()
@@ -53,10 +53,10 @@ class EvaluatorCreator:
                     social_eval_class.set_symbol(symbol)
                     social_eval_class.prepare()
 
-                    if social_eval_class_type.get_is_unique():
-                        for unique_evaluator in unique_eval_list:
-                            if unique_evaluator.__class__ == social_eval_class.__class__:
-                                unique_evaluator.register_client(symbol, social_eval_class)
+                    if social_eval_class_type.get_is_client_to_unique_evaluator():
+                        for unique_evaluator_dispatcher in unique_eval_list:
+                            if social_eval_class.is_client_to_this_dispatcher(unique_evaluator_dispatcher):
+                                unique_evaluator_dispatcher.register_client(symbol, social_eval_class)
 
                     # start refreshing thread if the thread is not unique
                     elif social_eval_class.get_is_threaded():
