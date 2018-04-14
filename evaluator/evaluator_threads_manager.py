@@ -41,7 +41,6 @@ class EvaluatorThreadsManager:
 
         # Add threaded evaluators that can notify the current thread
         self.evaluator.set_social_eval(self.symbol_evaluator.get_social_eval_list(), self)
-        self.evaluator.set_unique_eval_list(self.symbol_evaluator.get_unique_eval_list())
         self.evaluator.set_real_time_eval(real_time_ta_eval_list, self)
         self.evaluator.set_ta_eval_list(self.evaluator.get_creator().create_ta_eval_list(self.evaluator))
 
