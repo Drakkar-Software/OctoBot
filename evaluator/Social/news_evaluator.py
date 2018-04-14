@@ -17,7 +17,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
 
     def set_dispatcher(self, dispatcher):
         self.dispatcher = dispatcher
-        self.dispatcher.set_social_config(self.social_config)
+        self.dispatcher.update_social_config(self.social_config)
 
     def get_data(self):
         pass
@@ -28,7 +28,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
 
     def print_tweet(self, tweet, count):
         twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
-        self.logger.debug(twitter_service.tweet_to_string(tweet, count))
+        self.logger.debug(twitter_service.tweet_to_string(tweet, count, self.symbol))
 
     def receive_notification_data(self, data):
         self.count += 1
@@ -42,6 +42,21 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
     def run(self):
         pass
 
+    def purify_config(self):
+        #remove other symbols data to avoid unnecessary tweets
+        if self.symbol in self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
+            self.social_config[CONFIG_TWITTERS_ACCOUNTS] = \
+                {self.symbol: self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol]}
+        else:
+            self.social_config[CONFIG_TWITTERS_ACCOUNTS] = {}
+        if self.symbol in self.social_config[CONFIG_TWITTERS_HASHTAGS]:
+            self.social_config[CONFIG_TWITTERS_HASHTAGS] = \
+                {self.symbol: self.social_config[CONFIG_TWITTERS_HASHTAGS][self.symbol]}
+        else:
+            self.social_config[CONFIG_TWITTERS_HASHTAGS] = {}
+
+    def prepare(self):
+        self.purify_config()
 
 class MediumNewsEvaluator(NewsSocialEvaluator):
     def __init__(self):

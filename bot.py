@@ -77,7 +77,7 @@ class Crypto_Bot:
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
 
-        # create unique evaluators
+        # create dispatchers
         self.dispatchers_list = EvaluatorCreator.create_dispatchers(self.config)
 
         # create Social and TA evaluators
