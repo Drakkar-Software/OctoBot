@@ -29,3 +29,11 @@ class TwitterService(AbstractService):
 
     def get_endpoint(self):
         return self.twitter_api
+
+    def has_required_configuration(self):
+        return CONFIG_CATEGORY_SERVICES in self.config \
+               and CONFIG_TWITTER in self.config[CONFIG_CATEGORY_SERVICES] \
+               and "api-key" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER] \
+               and "api-secret" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER] \
+               and "access-token" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER] \
+               and "access-token-secret" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]
