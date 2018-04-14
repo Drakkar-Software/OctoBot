@@ -21,15 +21,15 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluatorDispatcher, Uniqu
         self.symbol = ""
 
     def init_api(self):
-        if(CONFIG_GLOBAL_UTILS in self.config
+        if (CONFIG_GLOBAL_UTILS in self.config
                 and CONFIG_TWITTER_API_INSTANCE in self.config[CONFIG_GLOBAL_UTILS]
                 and self.config[CONFIG_GLOBAL_UTILS][CONFIG_TWITTER_API_INSTANCE]):
             self.twitter_api = self.config[CONFIG_GLOBAL_UTILS][CONFIG_TWITTER_API_INSTANCE]
         else:
-            self.twitter_api = twitter.Api(self.config[CONFIG_ADDITIONAL_RESOURCES][CONFIG_TWITTER]["api-key"],
-                                           self.config[CONFIG_ADDITIONAL_RESOURCES][CONFIG_TWITTER]["api-secret"],
-                                           self.config[CONFIG_ADDITIONAL_RESOURCES][CONFIG_TWITTER]["access-token"],
-                                           self.config[CONFIG_ADDITIONAL_RESOURCES][CONFIG_TWITTER]["access-token-secret"])
+            self.twitter_api = twitter.Api(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-key"],
+                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-secret"],
+                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["access-token"],
+                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["access-token-secret"])
             if CONFIG_GLOBAL_UTILS not in self.config:
                 self.config[CONFIG_GLOBAL_UTILS] = {}
             self.config[CONFIG_GLOBAL_UTILS][CONFIG_TWITTER_API_INSTANCE] = self.twitter_api
@@ -69,7 +69,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluatorDispatcher, Uniqu
             self.notify_evaluator_threads(self.__class__.__name__)
 
     def tweet_to_string(self, tweet, count):
-        string=""
+        string = ""
         try:
             string = str(count) + ": [extended] " + self.symbol + " " + str(
                 unicodedata.normalize('NFKD', str(tweet["extended_tweet"]["full_text"])).encode('ascii', 'ignore'))
@@ -99,10 +99,10 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, UniqueEvaluatorDispatcher, Uniqu
 
     def run(self):
         self.get_data()
-        for tweet in self.twitter_api.GetStreamFilter(follow=self.user_ids
-                , track=self.hashtags):
+        for tweet in self.twitter_api.GetStreamFilter(follow=self.user_ids, track=self.hashtags):
             self.count += 1
             self.dispatch_notification_to_clients(tweet)
+
 
 class MediumNewsEvaluator(NewsSocialEvaluator):
     def __init__(self):

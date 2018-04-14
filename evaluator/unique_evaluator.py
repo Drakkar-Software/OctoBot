@@ -20,6 +20,7 @@ class UniqueEvaluatorDispatcher:
         else:
             self.registered_list[symbol] = [client]
 
+
     @abstractmethod
     def dispatch_notification_to_clients(self, data):
         raise NotImplementedError("dispatch_notification_to_clients not implemented")
