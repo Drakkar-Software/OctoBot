@@ -12,6 +12,7 @@ class EvaluatorDispatcher(threading.Thread):
         self.registered_list = {}
         self.config = config
         self.keep_running = True
+        self.is_setup_correctly = False
 
     def notify_registered_evaluator_clients(self, symbol, data):
         for target_evaluator in self.registered_list[symbol]:
@@ -30,6 +31,10 @@ class EvaluatorDispatcher(threading.Thread):
     @abstractmethod
     def run(self):
         raise NotImplementedError("run not implemented")
+
+    @abstractmethod
+    def get_is_setup_correctly(self):
+        return self.is_setup_correctly
 
     def stop(self):
         self.keep_running = False
