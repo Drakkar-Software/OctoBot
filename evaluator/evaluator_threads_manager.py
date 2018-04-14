@@ -90,14 +90,10 @@ class EvaluatorThreadsManager:
     def stop_threads(self):
         for thread in self.evaluator.get_real_time_eval_list():
             thread.stop()
-        for thread in self.evaluator.get_unique_eval_list():
-            thread.stop()
         self.data_refresher.stop()
 
     def join_threads(self):
         for thread in self.evaluator.get_real_time_eval_list():
-            thread.join()
-        for thread in self.evaluator.get_unique_eval_list():
             thread.join()
         self.data_refresher.join()
 

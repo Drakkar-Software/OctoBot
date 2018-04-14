@@ -1,3 +1,5 @@
+vaderSentiment
+flask
 pandas
 pytrends
 ccxt
