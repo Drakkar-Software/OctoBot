@@ -19,6 +19,7 @@ CONFIG_TWITTERS_HASHTAGS = "hashtags"
 CONFIG_TWITTER = "twitter"
 CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
 CONFIG_ADDITIONAL_RESOURCES = "additional_resources"
+CONFIG_TWEET = "tweet"
 
 # DEBUG
 CONFIG_DEBUG_OPTION_PERF = "PERF"
