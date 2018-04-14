@@ -59,9 +59,11 @@ class TwitterDispatcher(EvaluatorDispatcher):
             if key.lower() in string_tweet.lower():
                 self.notify_registered_evaluator_clients(key, {CONFIG_TWEET: data})
 
-
     def run(self):
         self.get_data()
-        for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids, track=self.hashtags):
-            self.counter += 1
-            self.dispatch_notification_to_clients(tweet)
+        try:
+            for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids, track=self.hashtags):
+                self.counter += 1
+                self.dispatch_notification_to_clients(tweet)
+        except twitter.error.TwitterError as e:
+            self.logger.error("Error when receiving Twitter feed: " + str(e.message))
