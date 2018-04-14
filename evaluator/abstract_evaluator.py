@@ -1,4 +1,3 @@
-from abc import *
 from evaluator.unique_evaluator import *
 
 from config.cst import *
