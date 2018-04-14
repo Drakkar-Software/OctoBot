@@ -5,7 +5,8 @@ from evaluator.TA.TA_evaluator import MomentumEvaluator
 
 
 # https://mrjbq7.github.io/ta-lib/func_groups/momentum_indicators.html
-from evaluator.Util.trend_analysis import TrendAnalysis
+from evaluator.Util.divergence_analyser import DivergenceAnalyser
+from evaluator.Util.trend_analyser import TrendAnalyser
 
 
 class RSIMomentumEvaluator(MomentumEvaluator):
@@ -18,8 +19,8 @@ class RSIMomentumEvaluator(MomentumEvaluator):
     def eval_impl(self):
         rsi_v = talib.RSI(self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
-        long_trend = TrendAnalysis.get_trend(rsi_v, self.long_term_averages)
-        short_trend = TrendAnalysis.get_trend(rsi_v, self.short_term_averages)
+        long_trend = TrendAnalyser.get_trend(rsi_v, self.long_term_averages)
+        short_trend = TrendAnalyser.get_trend(rsi_v, self.short_term_averages)
 
         # check if trend change
         if short_trend > 0 > long_trend:
@@ -29,6 +30,9 @@ class RSIMomentumEvaluator(MomentumEvaluator):
         elif long_trend > 0 > short_trend:
             # trend changed to down
             self.set_eval_note(short_trend)
+
+        # check divergence
+        # divergence = DivergenceAnalyser.detect(self.data[PriceStrings.STR_PRICE_CLOSE.value], rsi_v, 10)
 
         # use RSI current value
         last_rsi_value = rsi_v.tail(1).values[0]
