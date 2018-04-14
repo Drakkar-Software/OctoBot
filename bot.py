@@ -14,6 +14,7 @@ from tools.performance_analyser import PerformanceAnalyser
 from trading import Exchange
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
+from services import ServiceCreator
 
 """Main CryptoBot class:
 - Create all indicators and thread for each cryptocurrencies in config
@@ -50,6 +51,9 @@ class Crypto_Bot:
 
         # Notifier
         self.notifier = Notification(self.config)
+
+        # Add services to self.config[CONFIG_CATEGORY_SERVICES]
+        ServiceCreator.create_services(self.config)
 
         self.symbols_threads_manager = []
         self.exchange_traders = {}
