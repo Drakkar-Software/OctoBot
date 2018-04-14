@@ -23,6 +23,10 @@ class TrendAnalyser:
         delta = delta_function(numpy.mean([delta_up, delta_low]))
         exp_one = math.exp(1)
 
+        # stupid case: its exactly on all bands
+        if delta == 0:
+            return 0
+
         # best case: up the upper band
         if current_value > current_up:
             return -1
