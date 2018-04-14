@@ -11,7 +11,6 @@ class AbstractEvaluator:
         super().__init__()
         self.logger = None
         self.config = None
-        self.logger = None
         self.enabled = True
         self.is_updating = False
         self.symbol = None
