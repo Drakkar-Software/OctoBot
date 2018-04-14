@@ -15,7 +15,8 @@ class TwitterDispatcher(EvaluatorDispatcher):
         self.social_config = {}
 
         #check presence of twitter instance
-        if CONFIG_SERVICE_INSTANCE in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]:
+        if CONFIG_TWITTER in self.config[CONFIG_CATEGORY_SERVICES] \
+            and CONFIG_SERVICE_INSTANCE in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]:
             self.twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
             self.is_setup_correctly = True
         else:
