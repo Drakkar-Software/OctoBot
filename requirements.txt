@@ -1,5 +1,4 @@
 vaderSentiment
-flask
 pandas
 pytrends
 ccxt
@@ -10,3 +9,9 @@ numpy
 colorlog
 Python-Twitter
 psutil
+dash
+flask
+dash-renderer
+dash-html-components
+dash-core-components
+plotly

@@ -32,7 +32,7 @@ class RSIMomentumEvaluator(MomentumEvaluator):
             self.set_eval_note(short_trend)
 
         # check divergence
-        # divergence = DivergenceAnalyser.detect(self.data[PriceStrings.STR_PRICE_CLOSE.value], rsi_v, 10)
+        divergence = DivergenceAnalyser.detect(self.data[PriceStrings.STR_PRICE_CLOSE.value], rsi_v)
 
         # use RSI current value
         last_rsi_value = rsi_v.tail(1).values[0]

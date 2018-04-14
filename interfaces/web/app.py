@@ -1,8 +1,10 @@
 import logging
 import threading
 
-from flask import request, Flask
-
+import dash_core_components as dcc
+import dash_html_components as html
+from dash import dash
+from flask import request
 from config.cst import CONFIG_ENABLED_OPTION
 
 
@@ -22,9 +24,36 @@ class WebApp(threading.Thread):
             return False
 
     def run(self):
-        self.app = Flask(__name__)
+        self.app = dash.Dash()
+        # temp
+        self.app.css.append_css({
+            "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
+        })
+        self.app.layout = html.Div([
+            # Page Header
+            html.Div([
+                html.H1('CryptoBot')
+            ]),
+
+            # Dropdown Grid
+            html.Div([
+                html.Div([
+                    # Select Symbol Dropdown
+                    html.Div([
+                        html.Div('Select Symbol', className='three columns'),
+                        html.Div(dcc.Dropdown(id='division-selector'),
+                                 className='nine columns')
+                    ]),
+                ], className='six columns'),
+
+                # Empty
+                html.Div(className='six columns'),
+            ], className='twleve columns'),
+
+        ])
+
         self.app.use_reloader = False
-        self.app.run(host='localhost', port=5000, debug=False, threaded=True)
+        self.app.run_server(host="127.0.0.1", port=8050, debug=False)
 
     def stop(self):
         func = request.environ.get('werkzeug.server.shutdown')
