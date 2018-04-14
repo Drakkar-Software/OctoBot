@@ -1,8 +1,10 @@
+import numpy
+
 from pytrends.exceptions import ResponseError
 from pytrends.request import TrendReq
 
 from config.cst import *
-from evaluator.Util.trend_analyser import *
+from evaluator.Util.trend_analyser import TrendAnalyser
 from evaluator.Social.social_evaluator import StatsSocialEvaluator, TimeFrames
 
 
