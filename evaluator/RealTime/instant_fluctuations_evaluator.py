@@ -8,7 +8,7 @@ from config.cst import *
 class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
     def __init__(self, exchange_inst, symbol):
         super().__init__(exchange_inst, symbol)
-        self.enabled = False
+        self.enabled = True
 
     def refresh_data(self):
         self.exchange.get_symbol_prices(
@@ -19,7 +19,7 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
         # example !
         # check last candle
         self.eval_note = 0.42
-        something_is_happening = False
+        something_is_happening = True
         if something_is_happening:
             self.notify_evaluator_threads(self.__class__.__name__)
 
