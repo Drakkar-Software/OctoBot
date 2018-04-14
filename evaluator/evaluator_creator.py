@@ -23,6 +23,7 @@ class EvaluatorCreator:
                     ta_eval_class.set_logger(logging.getLogger(ta_eval_class_type.get_name()))
                     ta_eval_class.set_config(evaluator.config)
                     ta_eval_class.set_data(evaluator.data)
+                    ta_eval_class.set_symbol(evaluator.get_symbol())
 
                     ta_eval_list.append(ta_eval_class)
 

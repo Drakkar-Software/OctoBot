@@ -14,9 +14,9 @@ class TrendAnalyser:
         # finally if up the middle one or even close to the upper band => very good
 
         current_value = data_frame.iloc[-1]
-        current_up = upper_band[-1]
-        current_middle = middle_band[-1]
-        current_low = lower_band[-1]
+        current_up = upper_band.tail(1).values[0]
+        current_middle = middle_band.tail(1).values[0]
+        current_low = lower_band.tail(1).values[0]
 
         delta_up = current_up - current_middle
         delta_low = current_middle - current_low
