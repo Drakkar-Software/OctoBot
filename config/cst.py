@@ -43,6 +43,7 @@ ORDER_REFRESHER_TIME = 30
 
 DIVERGENCE_USED_VALUE = 30
 
+
 class EvaluatorRisk(Enum):
     LOW = 1
     MEDIUM = 2
@@ -111,7 +112,6 @@ TimeFramesMinutes = {
     TimeFrames.ONE_WEEK: 10080,
     TimeFrames.ONE_MONTH: 43200,
 }
-
 
 # ladder : 1-100
 TimeFramesRelevance = {

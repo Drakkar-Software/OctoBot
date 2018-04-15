@@ -1,8 +1,6 @@
-====================
 Changelog for 0.0.5
 ====================
-:version: 0.0.5-alpha
-:released: Apr 12 2018
+*Released date : Apr 12 2018*
 
 # Concerned issues :
     #54 initialized loggers with only class names
