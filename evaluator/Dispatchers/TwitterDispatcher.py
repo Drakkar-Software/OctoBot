@@ -64,7 +64,7 @@ class TwitterDispatcher(EvaluatorDispatcher):
     @staticmethod
     def tweet_is_valid(string_tweet):
         # TODO : take RT of followed users
-        if not string_tweet.startswith("RT"):
+        if not string_tweet.startswith("rt"):
             return True
         return False
 
