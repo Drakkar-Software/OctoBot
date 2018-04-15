@@ -1,8 +1,8 @@
 import twitter
-import unicodedata
 
 from config.cst import *
 from services.abstract_service import *
+from tools.decoding_encoding import DecoderEncoder
 
 
 class TwitterService(AbstractService):
@@ -39,13 +39,16 @@ class TwitterService(AbstractService):
                and "access-token" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER] \
                and "access-token-secret" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]
 
-    def tweet_to_string(self, tweet):
-        string = ""
+    @staticmethod
+    def decode_tweet(tweet):
         try:
-            string = unicodedata.normalize('NFKD', str(tweet["extended_tweet"]["full_text"]))
+            return DecoderEncoder.decode_text(str(tweet["extended_tweet"]["full_text"]))
         except KeyError:
-            try:
-                string = unicodedata.normalize('NFKD', str(tweet["text"]))
-            except Exception as e2:
-                self.logger.error(e2)
-        return string
+            return DecoderEncoder.decode_text(str(tweet["text"]))
+
+    def tweet_to_string(self, tweet):
+        try:
+            return TwitterService.decode_tweet(tweet)
+        except Exception as e2:
+            self.logger.error(e2)
+        return ""
