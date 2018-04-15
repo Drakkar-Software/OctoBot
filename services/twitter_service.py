@@ -39,15 +39,13 @@ class TwitterService(AbstractService):
                and "access-token" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER] \
                and "access-token-secret" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]
 
-    def tweet_to_string(self, tweet, counter, symbol=""):
+    def tweet_to_string(self, tweet):
         string = ""
         try:
-            string = str(counter) + ": [extended] " + symbol + " " + str(
-                unicodedata.normalize('NFKD', str(tweet["extended_tweet"]["full_text"])).encode('ascii', 'ignore'))
-        except KeyError as e:
+            string = unicodedata.normalize('NFKD', str(tweet["extended_tweet"]["full_text"]))
+        except KeyError:
             try:
-                string = str(counter) + ": [shorted] " + symbol + " " + str(
-                    unicodedata.normalize('NFKD', str(tweet["text"])).encode('ascii', 'ignore'))
+                string = unicodedata.normalize('NFKD', str(tweet["text"]))
             except Exception as e2:
                 self.logger.error(e2)
         return string
