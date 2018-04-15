@@ -23,7 +23,7 @@ class FinalEvaluator:
         if state != self.state:
             self.state = state
             self.logger.info(" ** NEW FINAL STATE ** : " + str(self.state))
-            if self.symbol_evaluator.notifier.enabled():
+            if self.symbol_evaluator.notifier.enabled() and state is not EvaluatorStates.NEUTRAL:
                 self.symbol_evaluator.get_notifier().notify(self.final_eval,
                                                             self.symbol_evaluator,
                                                             state,
