@@ -120,6 +120,10 @@ class CandlePatternMomentumEvaluator(MomentumEvaluator):
         # new gains.
         self.update_note(CDLPIERCING(open_values, high_values, low_values, close_values))
 
+        # if neutral
+        if self.eval_note == 0:
+            self.eval_note = START_PENDING_EVAL_NOTE
+
 
 # ADX --> trend_strength
 class ADXMomentumEvaluator(MomentumEvaluator):
