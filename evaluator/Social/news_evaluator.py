@@ -1,10 +1,9 @@
-from random import randint
-
 from config.cst import *
 from evaluator.Dispatchers.TwitterDispatcher import TwitterDispatcher
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
 from evaluator.Util.sentiment_analyser import SentimentAnalyser
 from evaluator.evaluator_dispatcher import *
+from tools.decoding_encoding import DecoderEncoder
 
 
 class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
@@ -37,7 +36,8 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         # https://github.com/cjhutto/vaderSentiment
         self.set_eval_note(-1*self.sentiment_analyser.analyse(tweet)["compound"])
         self.logger.debug("Current note : " + str(self.eval_note) + "|"
-                          + str(count) + " : " + str(self.symbol) + " : " + "Text : " + tweet)
+                          + str(count) + " : " + str(self.symbol) + " : " + "Text : "
+                          + DecoderEncoder.encode_into_bytes(tweet))
 
     def receive_notification_data(self, data):
         self.count += 1
