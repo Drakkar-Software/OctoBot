@@ -16,17 +16,6 @@ class TAEvaluator(AbstractEvaluator):
     def set_data(self, data):
         self.data = data
 
-    def set_eval_note(self, new_eval_note):
-        if self.eval_note == START_PENDING_EVAL_NOTE:
-            self.eval_note = INIT_EVAL_NOTE
-
-        if self.eval_note + new_eval_note > 1:
-            self.eval_note = 1
-        elif self.eval_note + new_eval_note < -1:
-            self.eval_note = -1
-        else:
-            self.eval_note += new_eval_note
-
     def get_is_evaluable(self):
         return not (self.get_is_updating() or self.data is None)
 
