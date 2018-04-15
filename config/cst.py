@@ -1,5 +1,7 @@
 from enum import Enum
 
+VERSION = "0.0.5-alpha"
+
 MINUTE_TO_SECONDS = 60
 START_PENDING_EVAL_NOTE = "0"  # force exception
 INIT_EVAL_NOTE = 0
@@ -40,6 +42,7 @@ STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 ORDER_REFRESHER_TIME = 30
 
 DIVERGENCE_USED_VALUE = 30
+
 
 class EvaluatorRisk(Enum):
     LOW = 1
@@ -109,7 +112,6 @@ TimeFramesMinutes = {
     TimeFrames.ONE_WEEK: 10080,
     TimeFrames.ONE_MONTH: 43200,
 }
-
 
 # ladder : 1-100
 TimeFramesRelevance = {

@@ -31,6 +31,9 @@ class Crypto_Bot:
         fileConfig('config/logging_config.ini')
         self.logger = logging.getLogger(self.__class__.__name__)
 
+        # Version
+        self.logger.info("Version : " + VERSION)
+
         # Config
         self.logger.info("Load config file...")
         self.config = load_config()
