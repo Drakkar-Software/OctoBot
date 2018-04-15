@@ -22,6 +22,7 @@ CONFIG_TWITTER = "twitter"
 CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
 CONFIG_ADDITIONAL_RESOURCES = "additional_resources"
 CONFIG_TWEET = "tweet"
+CONFIG_TWEET_DESCRIPTION = "tweet_description"
 
 # DEBUG
 CONFIG_DEBUG_OPTION_PERF = "PERF"

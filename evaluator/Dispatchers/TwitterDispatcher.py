@@ -14,9 +14,9 @@ class TwitterDispatcher(EvaluatorDispatcher):
         self.counter = 0
         self.social_config = {}
 
-        #check presence of twitter instance
+        # check presence of twitter instance
         if CONFIG_TWITTER in self.config[CONFIG_CATEGORY_SERVICES] \
-            and CONFIG_SERVICE_INSTANCE in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]:
+                and CONFIG_SERVICE_INSTANCE in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]:
             self.twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
             self.is_setup_correctly = True
         else:
@@ -25,13 +25,14 @@ class TwitterDispatcher(EvaluatorDispatcher):
     # merge new config into existing config
     def update_social_config(self, config):
         if CONFIG_TWITTERS_ACCOUNTS in self.social_config:
-            self.social_config[CONFIG_TWITTERS_ACCOUNTS] = {**self.social_config[CONFIG_TWITTERS_ACCOUNTS]
-                                                            , **config[CONFIG_TWITTERS_ACCOUNTS]}
+            self.social_config[CONFIG_TWITTERS_ACCOUNTS] = {**self.social_config[CONFIG_TWITTERS_ACCOUNTS],
+                                                            **config[CONFIG_TWITTERS_ACCOUNTS]}
         else:
             self.social_config[CONFIG_TWITTERS_ACCOUNTS] = config[CONFIG_TWITTERS_ACCOUNTS]
+
         if CONFIG_TWITTERS_HASHTAGS in self.social_config:
-            self.social_config[CONFIG_TWITTERS_HASHTAGS] = {**self.social_config[CONFIG_TWITTERS_HASHTAGS]
-                                                            , **config[CONFIG_TWITTERS_HASHTAGS]}
+            self.social_config[CONFIG_TWITTERS_HASHTAGS] = {**self.social_config[CONFIG_TWITTERS_HASHTAGS],
+                                                            **config[CONFIG_TWITTERS_HASHTAGS]}
         else:
             self.social_config[CONFIG_TWITTERS_HASHTAGS] = config[CONFIG_TWITTERS_HASHTAGS]
 
@@ -57,18 +58,28 @@ class TwitterDispatcher(EvaluatorDispatcher):
     def something_to_watch(self):
         return (CONFIG_TWITTERS_HASHTAGS in self.social_config
                 and self.social_config[CONFIG_TWITTERS_HASHTAGS]) \
-                or (CONFIG_TWITTERS_ACCOUNTS in self.social_config
-                    and self.social_config[CONFIG_TWITTERS_ACCOUNTS])
+               or (CONFIG_TWITTERS_ACCOUNTS in self.social_config
+                   and self.social_config[CONFIG_TWITTERS_ACCOUNTS])
+
+    @staticmethod
+    def tweet_is_valid(string_tweet):
+        # TODO : take RT of followed users
+        if not string_tweet.startswith("RT"):
+            return True
+        return False
 
     def run(self):
         if self.something_to_watch():
             self.get_data()
             try:
-                for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids
-                                                                                 , track=self.hashtags):
+                for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids,
+                                                                                 track=self.hashtags):
                     self.counter += 1
-                    string_tweet = self.twitter_service.tweet_to_string(tweet, 0).lower()
-                    self.notify_registered_clients_if_interested(string_tweet, {CONFIG_TWEET: tweet})
+                    string_tweet = self.twitter_service.tweet_to_string(tweet)
+                    if self.tweet_is_valid(string_tweet):
+                        self.notify_registered_clients_if_interested(string_tweet,
+                                                                     {CONFIG_TWEET: tweet,
+                                                                      CONFIG_TWEET_DESCRIPTION: string_tweet})
             except twitter.error.TwitterError as e:
                 self.logger.error("Error when receiving Twitter feed: " + str(e.message))
         else:
