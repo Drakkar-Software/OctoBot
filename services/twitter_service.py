@@ -42,9 +42,9 @@ class TwitterService(AbstractService):
     @staticmethod
     def decode_tweet(tweet):
         try:
-            return DecoderEncoder.decode_text(tweet["extended_tweet"]["full_text"])
+            return tweet["extended_tweet"]["full_text"]
         except KeyError:
-            return DecoderEncoder.decode_text(tweet["text"])
+            return tweet["text"]
 
     def tweet_to_string(self, tweet):
         try:
