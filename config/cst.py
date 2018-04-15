@@ -1,6 +1,6 @@
 from enum import Enum
 
-VERSION = "0.0.5-alpha"
+VERSION = "0.0.6-alpha"
 
 MINUTE_TO_SECONDS = 60
 START_PENDING_EVAL_NOTE = "0"  # force exception
