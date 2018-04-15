@@ -1,8 +1,8 @@
 import talib
+from talib._ta_lib import CDLINVERTEDHAMMER, CDLDOJI, CDLSHOOTINGSTAR, CDLHAMMER, CDLHARAMI, CDLPIERCING
 
 from config.cst import *
 from evaluator.TA.TA_evaluator import MomentumEvaluator
-
 
 # https://mrjbq7.github.io/ta-lib/func_groups/momentum_indicators.html
 from evaluator.Util.divergence_analyser import DivergenceAnalyser
@@ -40,6 +40,85 @@ class RSIMomentumEvaluator(MomentumEvaluator):
             self.set_eval_note(rsi_v.tail(1).values[0] / 200)
         else:
             self.set_eval_note((rsi_v.tail(1).values[0] - 100) / 200)
+
+
+class CandlePatternMomentumEvaluator(MomentumEvaluator):
+    def __init__(self):
+        super().__init__()
+        self.pertinence = 1
+        self.factor = 0.5
+        self.enabled = True
+
+    def update_note(self, pattern_bool):
+        last_value = pattern_bool.tail(1).values[0]
+
+        # bullish
+        if last_value >= 100:
+
+            # confirmation
+            if last_value > 200:
+                self.set_eval_note(-2 * self.factor)
+            else:
+                self.set_eval_note(-1 * self.factor)
+
+        # bearish
+        elif last_value <= -100:
+
+            # confirmation
+            if last_value > 200:
+                self.set_eval_note(2 * self.factor)
+            else:
+                self.set_eval_note(1 * self.factor)
+
+    def eval_impl(self):
+        open_values = self.data[PriceStrings.STR_PRICE_OPEN.value]
+        high_values = self.data[PriceStrings.STR_PRICE_HIGH.value]
+        low_values = self.data[PriceStrings.STR_PRICE_LOW.value]
+        close_values = self.data[PriceStrings.STR_PRICE_CLOSE.value]
+
+        # Inverted Hammer
+        # When the low and the open are the same, a bullish Inverted Hammer candlestick is formed and
+        # it is considered a stronger bullish sign than when the low and close are the same, forming a bearish
+        # Hanging Man (the bearish Hanging Man is still considered bullish, just not as much because the day ended by
+        # closing with losses).
+        self.update_note(CDLINVERTEDHAMMER(open_values, high_values, low_values, close_values))
+
+        # Hammer
+        # The long lower shadow of the Hammer implies that the market tested to find where support and
+        # demand was located. When the market found the area of support, the lows of the day, bulls began to push
+        # prices higher, near the opening price. Thus, the bearish advance downward was rejected by the bulls.
+        self.update_note(CDLHAMMER(open_values, high_values, low_values, close_values))
+
+        # Doji
+        # It is important to emphasize that the Doji pattern does not mean reversal, it means indecision.Doji's
+        # are often found during periods of resting after a significant move higher or lower; the market,
+        # after resting, then continues on its way. Nevertheless, a Doji pattern could be interpreted as a sign that
+        # a prior trend is losing its strength, and taking some profits might be well advised.
+        self.update_note(CDLDOJI(open_values, high_values, low_values, close_values))
+
+        # Shooting star
+        # The Shooting Star formation is considered less bearish, but nevertheless bearish when the
+        # open and low are roughly the same. The bears were able to counteract the bulls, but were not able to bring
+        # the price back to the price at the open.
+        # The long upper shadow of the Shooting Star implies that the market tested to find where resistance and
+        # supply was located. When the market found the area of resistance, the highs of the day, bears began to push
+        #  prices lower, ending the day near the opening price. Thus, the bullish advance upward was rejected by the
+        # bears.
+        self.update_note(CDLSHOOTINGSTAR(open_values, high_values, low_values, close_values))
+
+        # Harami A buy signal could be triggered when the day after the bullish Harami occured, price rose higher,
+        # closing above the downward resistance trendline. A bullish Harami pattern and a trendline break is a
+        # combination that potentially could resulst in a buy signal. A sell signal could be triggered when the day
+        # after the bearish Harami occured, price fell even further down, closing below the upward support trendline.
+        #  When combined, a bearish Harami pattern and a trendline break might be interpreted as a potential sell
+        # signal.
+        self.update_note(CDLHARAMI(open_values, high_values, low_values, close_values))
+
+        # Piercing Line
+        # Pattern Bullish Engulfing Pattern (see: Bullish Engulfing Pattern) is typically viewed as
+        # being more bullish than the Piercing Pattern because it completely reverses the losses of Day 1 and adds
+        # new gains.
+        self.update_note(CDLPIERCING(open_values, high_values, low_values, close_values))
 
 
 # ADX --> trend_strength
