@@ -1,5 +1,4 @@
 import talib
-import numpy
 
 from config.cst import *
 from evaluator.Util.trend_analyser import TrendAnalyser
@@ -33,8 +32,7 @@ class BBTrendEvaluator(TrendEvaluator):
         self.enabled = True
 
     def eval_impl(self):
-        self.eval_note = TrendAnalyser.bollinger_trend_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value]
-                                                                , numpy.sqrt)
+        self.eval_note = TrendAnalyser.bollinger_trend_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
 
 # ease_of_movement --> ease to change trend --> trend strength
