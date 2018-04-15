@@ -1,12 +1,17 @@
 import logging
 
-from evaluator.Strategies import StrategiesEvaluator
-from evaluator.Social import SocialEvaluator
 from evaluator.RealTime import RealTimeTAEvaluator
+from evaluator.Social import SocialEvaluator
+from evaluator.Strategies import StrategiesEvaluator
 from evaluator.TA import TAEvaluator
+from evaluator.evaluator_dispatcher import EvaluatorDispatcher
 
 
 class EvaluatorCreator:
+
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
 
     @staticmethod
     def create_ta_eval_list(evaluator):
@@ -18,27 +23,52 @@ class EvaluatorCreator:
                     ta_eval_class.set_logger(logging.getLogger(ta_eval_class_type.get_name()))
                     ta_eval_class.set_config(evaluator.config)
                     ta_eval_class.set_data(evaluator.data)
+                    ta_eval_class.set_symbol(evaluator.get_symbol())
 
                     ta_eval_list.append(ta_eval_class)
 
         return ta_eval_list
 
     @staticmethod
-    def create_social_eval(config, symbol):
+    def create_dispatchers(config):
+        dispatchers_list = []
+        for dispatcher_class in EvaluatorDispatcher.__subclasses__():
+            dispatcher_instance = dispatcher_class(config)
+            if dispatcher_instance.get_is_setup_correctly():
+                dispatchers_list.append(dispatcher_instance)
+        return dispatchers_list
+
+    @staticmethod
+    def create_social_eval(config, symbol, dispatchers_list):
+        logger = logging.getLogger(EvaluatorCreator.get_name())
         social_eval_list = []
         for social_type in SocialEvaluator.__subclasses__():
             for social_eval_class_type in social_type.__subclasses__():
                 social_eval_class = social_eval_class_type()
                 if social_eval_class.get_is_enabled():
+                    is_evaluator_to_be_used = True
                     social_eval_class.set_logger(logging.getLogger(social_eval_class_type.get_name()))
                     social_eval_class.set_config(config)
                     social_eval_class.set_symbol(symbol)
+                    social_eval_class.prepare()
 
-                    # start refreshing thread
-                    if social_eval_class.get_is_threaded():
+                    if social_eval_class_type.get_is_dispatcher_client():
+                        client_found_dispatcher = False
+                        for evaluator_dispatcher in dispatchers_list:
+                            if social_eval_class.is_client_to_this_dispatcher(evaluator_dispatcher):
+                                social_eval_class.set_dispatcher(evaluator_dispatcher)
+                                evaluator_dispatcher.register_client(social_eval_class)
+                                client_found_dispatcher = True
+                        if not client_found_dispatcher:
+                            is_evaluator_to_be_used = False
+                            logger.warning("No dispatcher found for evaluator: " + social_eval_class.get_name() +" for symbol: " + symbol + ", evaluator has been disabled.")
+
+                    # start refreshing thread if the thread is not unique
+                    elif is_evaluator_to_be_used and social_eval_class.get_is_threaded():
                         social_eval_class.start()
 
-                    social_eval_list.append(social_eval_class)
+                    if is_evaluator_to_be_used:
+                        social_eval_list.append(social_eval_class)
 
         return social_eval_list
 

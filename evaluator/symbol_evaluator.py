@@ -8,7 +8,7 @@ from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 
 
 class Symbol_Evaluator:
-    def __init__(self, config, crypto_currency):
+    def __init__(self, config, crypto_currency, dispatchers_list):
         self.crypto_currency = crypto_currency
         self.trader_simulator = None
         self.config = config
@@ -16,12 +16,13 @@ class Symbol_Evaluator:
         self.traders = None
         self.trader_simulators = None
         self.finalize_enabled = False
+        self.dispatchers_list = dispatchers_list
 
         self.evaluator_threads = []
 
         self.matrix = EvaluatorMatrix()
 
-        self.social_eval_list = EvaluatorCreator.create_social_eval(self.config, self.crypto_currency)
+        self.social_eval_list = EvaluatorCreator.create_social_eval(self.config, self.crypto_currency, self.dispatchers_list)
         self.social_not_threaded_list = EvaluatorCreator.create_social_not_threaded_list(self.social_eval_list)
         self.strategies_eval_list = EvaluatorCreator.create_strategies_eval_list()
 
@@ -107,8 +108,12 @@ class Symbol_Evaluator:
     def get_social_eval_list(self):
         return self.social_eval_list
 
+    def get_dispatchers_list(self):
+        return self.dispatchers_list
+
     def get_social_not_threaded_list(self):
         return self.social_not_threaded_list
 
     def get_symbol_pairs(self):
         return self.config["crypto_currencies"][self.crypto_currency]["pairs"]
+

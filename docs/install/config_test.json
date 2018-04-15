@@ -1,8 +1,13 @@
 {
   "crypto_currencies":{
     "Bitcoin": {
-      "pairs" : ["BTC/USDT"],
-      "twitters" : ["GuillaGjum","RedditBTC","BTCFoundation"]
+      "pairs" : ["BTC/USDT"]
+    },
+    "Neo": {
+      "pairs" : ["NEO/BTC"]
+    },
+    "Ethereum": {
+      "pairs" : ["ETH/USDT"]
     }
   },
   "exchanges": {

@@ -1,6 +1,5 @@
 from evaluator.evaluator_creator import EvaluatorCreator
 
-
 class Evaluator:
     def __init__(self):
         self.config = None

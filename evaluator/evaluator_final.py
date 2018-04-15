@@ -59,7 +59,7 @@ class FinalEvaluator:
         if strategies_analysis_note_counter > 0:
             self.final_eval /= strategies_analysis_note_counter
         else:
-            self.final_eval = START_INIT_EVAL_NOTE
+            self.final_eval = INIT_EVAL_NOTE
 
     def calculate_final(self):
         # TODO : improve

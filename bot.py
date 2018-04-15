@@ -8,11 +8,13 @@ from config.cst import *
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import Symbol_Evaluator
+from interfaces.web.app import WebApp
 from tools import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from trading import Exchange
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
+from services import ServiceCreator
 
 """Main CryptoBot class:
 - Create all indicators and thread for each cryptocurrencies in config
@@ -29,9 +31,17 @@ class Crypto_Bot:
         fileConfig('config/logging_config.ini')
         self.logger = logging.getLogger(self.__class__.__name__)
 
+        # Version
+        self.logger.info("Version : " + VERSION)
+
         # Config
         self.logger.info("Load config file...")
         self.config = load_config()
+
+        # Interfaces
+        self.web_app = WebApp(self.config)
+        if self.web_app.enabled():
+            self.web_app.start()
 
         # Debug tools
         self.performance_analyser = None
@@ -45,11 +55,15 @@ class Crypto_Bot:
         # Notifier
         self.notifier = Notification(self.config)
 
+        # Add services to self.config[CONFIG_CATEGORY_SERVICES]
+        ServiceCreator.create_services(self.config)
+
         self.symbols_threads_manager = []
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.exchanges_list = {}
         self.symbol_evaluator_list = []
+        self.dispatchers_list = []
 
     def create_exchange_traders(self):
         for exchange_type in self.exchanges:
@@ -66,11 +80,14 @@ class Crypto_Bot:
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
 
+        # create dispatchers
+        self.dispatchers_list = EvaluatorCreator.create_dispatchers(self.config)
+
         # create Social and TA evaluators
         for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
             # create symbol evaluator
-            symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency)
+            symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency, self.dispatchers_list)
             symbol_evaluator.set_notifier(self.notifier)
             symbol_evaluator.set_traders(self.exchange_traders)
             symbol_evaluator.set_trader_simulators(self.exchange_trader_simulators)
@@ -118,6 +135,9 @@ class Crypto_Bot:
         for manager in self.symbols_threads_manager:
             manager.start_threads()
 
+        for thread in self.dispatchers_list:
+            thread.start()
+
         self.logger.info("Evaluation threads started...")
 
     def join_threads(self):
@@ -132,6 +152,9 @@ class Crypto_Bot:
 
         for trader_simulator in self.exchange_trader_simulators:
             self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
+
+        for thread in self.dispatchers_list:
+            thread.join()
 
         if self.performance_analyser:
             self.performance_analyser.join()
@@ -150,5 +173,11 @@ class Crypto_Bot:
         for trader_simulator in self.exchange_trader_simulators:
             self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
 
+        for thread in self.dispatchers_list:
+            thread.stop()
+
         if self.performance_analyser:
             self.performance_analyser.stop()
+
+        if self.web_app.enabled():
+            self.web_app.stop()

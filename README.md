@@ -1,5 +1,5 @@
 # CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot)
-#### Version 0.0.5-alpha
+#### Version 0.0.6-alpha
 ## Install
 ```
 git clone https://github.com/Trading-Bot/CryptoBot
@@ -14,8 +14,7 @@ Create a **config.json** file in the **config folder** with the following exampl
 {
   "crypto_currencies": {
     "Bitcoin": {
-      "pairs" : ["BTC/USDT"],
-      "twitters" : ["GuillaGjum","RedditBTC","BTCFoundation"]
+      "pairs" : ["BTC/USDT"]
     }
   },
   "exchanges": {
@@ -56,11 +55,19 @@ Create a **config.json** file in the **config folder** with the following exampl
   }
 }
 ```
+## Usage
+```
+python main.py
+```
+
 ## Changelog
-See last pull request details : [#62](https://github.com/Trading-Bot/CryptoBot/pull/62)
+See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/doc/CHANGELOG.md)
 
 ## Demo
 See live demo [here](https://twitter.com/HerklosBotCrypt)
+
+## Testing
+...
 
 ## More
 For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).
