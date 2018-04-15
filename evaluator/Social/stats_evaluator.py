@@ -35,6 +35,8 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
 
         # compute bollinger bands
         self.eval_note = TrendAnalyser.bollinger_trend_analysis(interest_over_time_df[self.symbol], numpy.sqrt)
+        if self.eval_note != 0:
+            self.eval_note = -1*self.eval_note
 
     def run(self):
         pass
