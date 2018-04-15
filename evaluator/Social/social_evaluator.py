@@ -53,6 +53,10 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
     def get_social_config(self):
         return self.social_config
 
+    # is called just before start(), implement if necessary
+    def prepare(self):
+        pass
+
     @abstractmethod
     def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
@@ -75,7 +79,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
     #         time.sleep(own_time * MINUTE_TO_SECONDS)  --> use its own refresh time (near real time)
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("Run not implemented")
 
 
 class StatsSocialEvaluator(SocialEvaluator):

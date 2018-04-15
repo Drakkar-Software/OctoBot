@@ -1,5 +1,7 @@
 import talib
 
+from config.cst import *
+from evaluator.Util.trend_analyser import TrendAnalyser
 from evaluator.TA.TA_evaluator import TrendEvaluator
 
 
@@ -27,10 +29,10 @@ class DMITrendEvaluator(TrendEvaluator):
 class BBTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
+        self.enabled = True
 
     def eval_impl(self):
-        upperband, middleband, lowerband = talib.BBANDS(self.data[PriceStrings.STR_PRICE_CLOSE.value])
+        self.eval_note = TrendAnalyser.bollinger_trend_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
 
 # ease_of_movement --> ease to change trend --> trend strength

@@ -1,5 +1,7 @@
 from enum import Enum
 
+VERSION = "0.0.6-alpha"
+
 MINUTE_TO_SECONDS = 60
 START_PENDING_EVAL_NOTE = "0"  # force exception
 INIT_EVAL_NOTE = 0
@@ -7,13 +9,20 @@ START_EVAL_PERTINENCE = 1
 
 MARKET_SEPARATOR = "/"
 
+CONFIG_GLOBAL_UTILS = "global_utils"
 SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
 CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
 CONFIG_CRYPTO_PAIRS = "pairs"
-CONFIG_CRYPTO_TWITTERS = "twitters"
+CONFIG_TWITTERS_ACCOUNTS = "accounts"
+CONFIG_TWITTERS_HASHTAGS = "hashtags"
+CONFIG_TWITTER = "twitter"
+CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
+CONFIG_ADDITIONAL_RESOURCES = "additional_resources"
+CONFIG_TWEET = "tweet"
+CONFIG_TWEET_DESCRIPTION = "tweet_description"
 
 # DEBUG
 CONFIG_DEBUG_OPTION_PERF = "PERF"
@@ -24,6 +33,7 @@ CONFIG_ENABLED_OPTION = "enabled"
 
 CONFIG_CATEGORY_NOTIFICATION = "notification"
 CONFIG_CATEGORY_SERVICES = "services"
+CONFIG_SERVICE_INSTANCE = "service_instance"
 
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
 
@@ -31,6 +41,8 @@ STATS_EVALUATOR_HISTORY_TIME = "relevant_history_months"
 STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 
 ORDER_REFRESHER_TIME = 30
+
+DIVERGENCE_USED_VALUE = 30
 
 
 class EvaluatorRisk(Enum):
@@ -101,7 +113,6 @@ TimeFramesMinutes = {
     TimeFrames.ONE_WEEK: 10080,
     TimeFrames.ONE_MONTH: 43200,
 }
-
 
 # ladder : 1-100
 TimeFramesRelevance = {

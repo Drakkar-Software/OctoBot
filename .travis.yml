@@ -6,8 +6,8 @@ notifications:
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
   email: false
 install:
-  - ./doc/install/install-ta-lib.sh
-  - cp ./doc/install/config_test.json ./config/config.json
+  - ./docs/install/install-ta-lib.sh
+  - cp ./docs/install/config_test.json ./config/config.json
   - pip install git+https://github.com/Herklos-Bots/BotCore
   - python -m pip install -r requirements.txt
 script: pytest tests/

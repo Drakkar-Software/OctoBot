@@ -1,6 +1,5 @@
-from abc import *
-
 from config.cst import *
+from evaluator.evaluator_dispatcher import *
 
 
 class AbstractEvaluator:
@@ -10,7 +9,6 @@ class AbstractEvaluator:
         super().__init__()
         self.logger = None
         self.config = None
-        self.logger = None
         self.enabled = True
         self.is_updating = False
         self.symbol = None
@@ -81,3 +79,18 @@ class AbstractEvaluator:
     @abstractmethod
     def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
+
+    @classmethod
+    def get_is_dispatcher_client(cls):
+        return EvaluatorDispatcherClient in cls.__bases__
+
+    def set_eval_note(self, new_eval_note):
+        if self.eval_note == START_PENDING_EVAL_NOTE:
+            self.eval_note = INIT_EVAL_NOTE
+
+        if self.eval_note + new_eval_note > 1:
+            self.eval_note = 1
+        elif self.eval_note + new_eval_note < -1:
+            self.eval_note = -1
+        else:
+            self.eval_note += new_eval_note
