@@ -61,7 +61,7 @@ python main.py
 ```
 
 ## Changelog
-See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/doc/CHANGELOG.md)
+See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md)
 
 ## Demo
 See live demo [here](https://twitter.com/HerklosBotCrypt)
