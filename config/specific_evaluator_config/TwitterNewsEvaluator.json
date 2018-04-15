@@ -7,7 +7,7 @@
     "Neo": ["NEO_Blockchain"]
   },
   "hashtags" : {
-    "Bitcoin": ["bitcoin","btc","cz","binance","kucoin","reddit","tether","bitfinex","bitmex","cryptopia","xtrabytes","nano","cryptocurrencies","gold","ripple","xrb","bch","bitconnect","vitalik","suppoman","blockchain","bublle","inverst","medium"],
+    "Bitcoin": ["bitcoin","btc","binance","kucoin","tether","bitfinex","bitmex","cryptopia","cryptocurrencies","blockchain"],
     "Ethereum": ["Ethereum"],
     "Neo": ["neo"]
   }
