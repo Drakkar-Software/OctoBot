@@ -1,11 +1,10 @@
 import time
 
-from evaluator.RealTime.realtime_evaluator import RealTimeTAEvaluator
+from config.cst import CONFIG_TIME_FRAME, TimeFrames, CONFIG_REFRESH_RATE
+from evaluator.RealTime import RealTimeTAEvaluator
 
-from config.cst import *
 
-
-class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
+class WhalesOrderBookEvaluator(RealTimeTAEvaluator):
     def __init__(self, exchange_inst, symbol):
         super().__init__(exchange_inst, symbol)
         self.enabled = False
@@ -16,9 +15,8 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
             self.specific_config[CONFIG_TIME_FRAME])
 
     def eval_impl(self):
-        # Can use CDLLONGLINE - Long Line Candle & CDLSHORTLINE - Short Line Candle
         # example !
-        # check last candle
+        # check orderbook whales
         self.eval_note = 0.42
         something_is_happening = True
         if something_is_happening:
