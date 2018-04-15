@@ -44,13 +44,18 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         pass
 
     def is_interested_by_this_notification(self, notification_description):
-        # true if contains symbol
-        if self.symbol.lower() in notification_description:
-            return True
         # true if in twitter accounts
         for account in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol]:
             if account.lower() in notification_description:
                 return True
+
+        if notification_description.startswith("rt"):
+            return False
+
+        # true if contains symbol
+        if self.symbol.lower() in notification_description:
+            return True
+
         # true if in hashtags
         for hashtags in self.social_config[CONFIG_TWITTERS_HASHTAGS][self.symbol]:
             if hashtags.lower() in notification_description:
