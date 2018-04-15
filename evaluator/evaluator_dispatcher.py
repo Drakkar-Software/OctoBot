@@ -9,20 +9,18 @@ class EvaluatorDispatcher(threading.Thread):
 
     def __init__(self, config):
         super().__init__()
-        self.registered_list = {}
+        self.registered_list = []
         self.config = config
         self.keep_running = True
         self.is_setup_correctly = False
 
-    def notify_registered_evaluator_clients(self, symbol, data):
-        for target_evaluator in self.registered_list[symbol]:
-            target_evaluator.add_to_queue(data)
+    def notify_registered_clients_if_interested(self, notification_description, notification):
+        for client in self.registered_list:
+            if client.is_interested_by_this_notification(notification_description):
+                client.add_to_queue(notification)
 
-    def register_client(self, symbol, client):
-        if symbol in self.registered_list:
-            self.registered_list[symbol].append(client)
-        else:
-            self.registered_list[symbol] = [client]
+    def register_client(self, client):
+        self.registered_list.append(client)
 
     @abstractmethod
     def dispatch_notification_to_clients(self, data):
@@ -60,6 +58,11 @@ class EvaluatorDispatcherClient:
 
     def set_dispatcher(self, dispatcher):
         self.dispatcher = dispatcher
+
+    # return true if the given notification is relevant for this client
+    @abstractmethod
+    def is_interested_by_this_notification(self, notification_description):
+        raise NotImplementedError("is_interested_by_this_notification not implemented")
 
     def add_to_queue(self, data):
         self.queue.put(data)

@@ -54,12 +54,6 @@ class TwitterDispatcher(EvaluatorDispatcher):
         if not self.hashtags:
             self.init_hashtags()
 
-    def dispatch_notification_to_clients(self, data):
-        string_tweet = self.twitter_service.tweet_to_string(data, 0)
-        for key in self.registered_list:
-            if key.lower() in string_tweet.lower():
-                self.notify_registered_evaluator_clients(key, {CONFIG_TWEET: data})
-
     def something_to_watch(self):
         return (CONFIG_TWITTERS_HASHTAGS in self.social_config
                 and self.social_config[CONFIG_TWITTERS_HASHTAGS]) \
@@ -70,9 +64,11 @@ class TwitterDispatcher(EvaluatorDispatcher):
         if self.something_to_watch():
             self.get_data()
             try:
-                for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids, track=self.hashtags):
+                for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids
+                                                                                 , track=self.hashtags):
                     self.counter += 1
-                    self.dispatch_notification_to_clients(tweet)
+                    string_tweet = self.twitter_service.tweet_to_string(tweet, 0).lower()
+                    self.notify_registered_clients_if_interested(string_tweet, {CONFIG_TWEET: tweet})
             except twitter.error.TwitterError as e:
                 self.logger.error("Error when receiving Twitter feed: " + str(e.message))
         else:

@@ -10,7 +10,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
     def __init__(self):
         NewsSocialEvaluator.__init__(self)
         EvaluatorDispatcherClient.__init__(self)
-        self.enabled = True
+        self.enabled = False
         self.is_threaded = False
         self.count = 0
         self.symbol = ""
@@ -26,9 +26,11 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
     def get_dispatcher_class():
         return TwitterDispatcher
 
+    def get_twitter_service(self):
+        return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
+
     def print_tweet(self, tweet, count):
-        twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
-        self.logger.debug(twitter_service.tweet_to_string(tweet, count, self.symbol))
+        self.logger.debug(self.get_twitter_service().tweet_to_string(tweet, count, self.symbol))
 
     def receive_notification_data(self, data):
         self.count += 1
@@ -41,6 +43,17 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
 
     def run(self):
         pass
+
+    def is_interested_by_this_notification(self, notification_description):
+        # true if in twitter accounts
+        for account in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol]:
+            if account.lower() in notification_description:
+                return True
+        # true if in hashtags
+        for hashtags in self.social_config[CONFIG_TWITTERS_HASHTAGS][self.symbol]:
+            if hashtags.lower() in notification_description:
+                return True
+        return False
 
     def purify_config(self):
         #remove other symbols data to avoid unnecessary tweets
