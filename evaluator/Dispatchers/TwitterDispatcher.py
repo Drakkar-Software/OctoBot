@@ -61,13 +61,6 @@ class TwitterDispatcher(EvaluatorDispatcher):
                or (CONFIG_TWITTERS_ACCOUNTS in self.social_config
                    and self.social_config[CONFIG_TWITTERS_ACCOUNTS])
 
-    @staticmethod
-    def tweet_is_valid(string_tweet):
-        # TODO : take RT of followed users
-        if not string_tweet.startswith("rt"):
-            return True
-        return False
-
     def run(self):
         if self.something_to_watch():
             self.get_data()
@@ -76,10 +69,9 @@ class TwitterDispatcher(EvaluatorDispatcher):
                                                                                  track=self.hashtags):
                     self.counter += 1
                     string_tweet = self.twitter_service.tweet_to_string(tweet).lower()
-                    if self.tweet_is_valid(string_tweet):
-                        self.notify_registered_clients_if_interested(string_tweet,
-                                                                     {CONFIG_TWEET: tweet,
-                                                                      CONFIG_TWEET_DESCRIPTION: string_tweet})
+                    self.notify_registered_clients_if_interested(string_tweet,
+                                                                 {CONFIG_TWEET: tweet,
+                                                                  CONFIG_TWEET_DESCRIPTION: string_tweet})
             except twitter.error.TwitterError as e:
                 self.logger.error("Error when receiving Twitter feed: " + str(e.message))
         else:
