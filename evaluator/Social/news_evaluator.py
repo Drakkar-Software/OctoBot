@@ -32,7 +32,10 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
     def print_tweet(self, tweet, count):
-        self.set_eval_note(self.sentiment_analyser.analyse(tweet)["compound"])
+        # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
+        # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
+        # https://github.com/cjhutto/vaderSentiment
+        self.set_eval_note(-1*self.sentiment_analyser.analyse(tweet)["compound"])
         self.logger.debug("Current note : " + str(self.eval_note) + "|"
                           + str(count) + " : " + str(self.symbol) + " : " + "Text : " + tweet)
 
