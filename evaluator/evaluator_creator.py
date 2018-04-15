@@ -57,7 +57,7 @@ class EvaluatorCreator:
                         for evaluator_dispatcher in dispatchers_list:
                             if social_eval_class.is_client_to_this_dispatcher(evaluator_dispatcher):
                                 social_eval_class.set_dispatcher(evaluator_dispatcher)
-                                evaluator_dispatcher.register_client(symbol, social_eval_class)
+                                evaluator_dispatcher.register_client(social_eval_class)
                                 client_found_dispatcher = True
                         if not client_found_dispatcher:
                             is_evaluator_to_be_used = False
