@@ -32,8 +32,9 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
     def print_tweet(self, tweet, count):
-        self.logger.debug(str(count) + " : " + str(self.symbol) + " : " + str(self.sentiment_analyser.analyse(tweet))
-                          + "Text : " + tweet)
+        self.set_eval_note(self.sentiment_analyser.analyse(tweet)["compound"])
+        self.logger.debug("Current note : " + str(self.eval_note) + "|"
+                          + str(count) + " : " + str(self.symbol) + " : " + "Text : " + tweet)
 
     def receive_notification_data(self, data):
         self.count += 1
