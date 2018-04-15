@@ -3,6 +3,7 @@ from random import randint
 from config.cst import *
 from evaluator.Dispatchers.TwitterDispatcher import TwitterDispatcher
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
+from evaluator.Util.sentiment_analyser import SentimentAnalyser
 from evaluator.evaluator_dispatcher import *
 
 
@@ -14,6 +15,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         self.is_threaded = False
         self.count = 0
         self.symbol = ""
+        self.sentiment_analyser = SentimentAnalyser()
 
     def set_dispatcher(self, dispatcher):
         super().set_dispatcher(dispatcher)
@@ -30,7 +32,8 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
     def print_tweet(self, tweet, count):
-        self.logger.debug(str(count) + " : " + str(self.symbol) + " : " + tweet)
+        self.logger.debug(str(count) + " : " + str(self.symbol) + " : " + str(self.sentiment_analyser.analyse(tweet))
+                          + "Text : " + tweet)
 
     def receive_notification_data(self, data):
         self.count += 1
@@ -49,6 +52,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
             if account.lower() in notification_description:
                 return True
 
+        # false if it's a RT of an unfollowed account
         if notification_description.startswith("rt"):
             return False
 
