@@ -34,17 +34,21 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
         # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
         # https://github.com/cjhutto/vaderSentiment
-        self.set_eval_note(-1*self.sentiment_analyser.analyse(tweet)["compound"])
+        self.set_eval_note(-0.1*self.sentiment_analyser.analyse(tweet)["compound"])
+        self.check_eval_note()
         self.logger.debug("Current note : " + str(self.eval_note) + "|"
                           + str(count) + " : " + str(self.symbol) + " : " + "Text : "
-                          + DecoderEncoder.encode_into_bytes(tweet))
+                          + str(DecoderEncoder.encode_into_bytes(tweet)))
 
     def receive_notification_data(self, data):
         self.count += 1
         self.print_tweet(data[CONFIG_TWEET_DESCRIPTION], self.count)
 
+    def check_eval_note(self):
+        if self.eval_note > 0.8 or self.eval_note < -0.8:
+            self.notify_evaluator_threads(self.__class__.__name__)
+
     def eval_impl(self):
-        # self.notify_evaluator_threads(self.__class__.__name__)
         pass
 
     def run(self):
