@@ -75,7 +75,7 @@ class TwitterDispatcher(EvaluatorDispatcher):
                 for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids,
                                                                                  track=self.hashtags):
                     self.counter += 1
-                    string_tweet = self.twitter_service.tweet_to_string(tweet)
+                    string_tweet = self.twitter_service.tweet_to_string(tweet).lower()
                     if self.tweet_is_valid(string_tweet):
                         self.notify_registered_clients_if_interested(string_tweet,
                                                                      {CONFIG_TWEET: tweet,
