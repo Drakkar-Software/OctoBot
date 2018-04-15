@@ -61,7 +61,7 @@ python main.py
 ```
 
 ## Changelog
-See last pull request details : [#62](https://github.com/Trading-Bot/CryptoBot/pull/62)
+See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/doc/CHANGELOG.md)
 
 ## Demo
 See live demo [here](https://twitter.com/HerklosBotCrypt)
