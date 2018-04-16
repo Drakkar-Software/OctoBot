@@ -1,6 +1,5 @@
 from abc import *
 
-from config.cst import START_PENDING_EVAL_NOTE, INIT_EVAL_NOTE
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
