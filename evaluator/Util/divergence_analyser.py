@@ -1,7 +1,8 @@
 from config.cst import DIVERGENCE_USED_VALUE
+from evaluator.Util.abstract_util import AbstractUtil
 
 
-class DivergenceAnalyser:
+class DivergenceAnalyser(AbstractUtil):
 
     @staticmethod
     # TODO
