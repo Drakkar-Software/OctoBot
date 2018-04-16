@@ -103,6 +103,10 @@ ENV/
 # mypy
 .mypy_cache/
 
-
+# config
 config.json
+
+# modules
+evaluator/.gitignore
+*advanced/
 \.gitmodules
