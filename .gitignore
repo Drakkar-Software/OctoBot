@@ -109,5 +109,5 @@ config.json
 # modules
 /.gitmodules
 evaluator/.gitignore
-**/Advanced/**
+**/Advanced/*.*
 
