@@ -107,6 +107,8 @@ ENV/
 config.json
 
 # modules
+/.gitmodules
 evaluator/.gitignore
-*advanced/
-\.gitmodules
+**Advanced/**
+!**/Advanced/__init__.py
+
