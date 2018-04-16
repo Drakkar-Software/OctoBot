@@ -1,6 +1,7 @@
 import talib
 import numpy
 import math
+from config.cst import START_PENDING_EVAL_NOTE
 
 from evaluator.Util.abstract_util import AbstractUtil
 
@@ -26,7 +27,7 @@ class TrendAnalyser(AbstractUtil):
 
         # its exactly on all bands
         if current_up == current_low:
-            return 0
+            return START_PENDING_EVAL_NOTE
 
         # exactly on the middle
         elif current_value == current_middle:
