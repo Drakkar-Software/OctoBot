@@ -105,3 +105,4 @@ ENV/
 
 
 config.json
+\.gitmodules
