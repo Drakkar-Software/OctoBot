@@ -110,5 +110,4 @@ config.json
 /.gitmodules
 evaluator/.gitignore
 **/Advanced/**
-!**/Advanced/__init__.py
 
