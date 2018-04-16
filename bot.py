@@ -5,6 +5,7 @@ import ccxt
 from botcore.config.config import load_config
 
 from config.cst import *
+from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import Symbol_Evaluator
@@ -37,6 +38,9 @@ class Crypto_Bot:
         # Config
         self.logger.info("Load config file...")
         self.config = load_config()
+
+        # Advanced
+        AdvancedManager.create_class_list(self.config)
 
         # Interfaces
         self.web_app = WebApp(self.config)

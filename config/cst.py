@@ -10,6 +10,7 @@ START_EVAL_PERTINENCE = 1
 MARKET_SEPARATOR = "/"
 
 CONFIG_GLOBAL_UTILS = "global_utils"
+CONFIG_ADVANCED = "advanced"
 SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 CONFIG_TIME_FRAME = "time_frame"

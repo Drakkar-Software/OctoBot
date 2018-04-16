@@ -2,8 +2,10 @@ import talib
 import numpy
 import math
 
+from evaluator.Util.abstract_util import AbstractUtil
 
-class TrendAnalyser:
+
+class TrendAnalyser(AbstractUtil):
 
     # Return parabolic proximity to the lower or the upper band relatively to the middle band.
     # If delta function given (threshold fct): linearly compute proximity between middle and delta before parabolic:
