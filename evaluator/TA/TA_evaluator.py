@@ -4,7 +4,7 @@ from evaluator.abstract_evaluator import AbstractEvaluator
 
 
 class TAEvaluator(AbstractEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = AbstractEvaluator
 
     def __init__(self):
         super().__init__()
@@ -24,7 +24,7 @@ class TAEvaluator(AbstractEvaluator):
 
 
 class MomentumEvaluator(TAEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = TAEvaluator
 
     def __init__(self):
         super().__init__()
@@ -35,7 +35,7 @@ class MomentumEvaluator(TAEvaluator):
 
 
 class OrderBookEvaluator(TAEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = TAEvaluator
 
     def __init__(self):
         super().__init__()
@@ -46,7 +46,7 @@ class OrderBookEvaluator(TAEvaluator):
 
 
 class VolatilityEvaluator(TAEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = TAEvaluator
 
     def __init__(self):
         super().__init__()
@@ -57,7 +57,7 @@ class VolatilityEvaluator(TAEvaluator):
 
 
 class TrendEvaluator(TAEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = TAEvaluator
 
     def __init__(self):
         super().__init__()

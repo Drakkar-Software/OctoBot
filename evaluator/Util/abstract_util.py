@@ -1,4 +1,8 @@
+from abc import ABCMeta
+
+
 class AbstractUtil:
+    __metaclass__ = ABCMeta
 
     @classmethod
     def get_name(cls):

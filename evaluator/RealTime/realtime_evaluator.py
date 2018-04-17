@@ -1,15 +1,15 @@
-import threading, os
-
+import os
+import threading
 from abc import *
 
-from config.cst import *
 from botcore.config.config import load_config
 
+from config.cst import *
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
 class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
-    __metaclass__ = ABCMeta
+    __metaclass__ = AbstractEvaluator
 
     def __init__(self):
         super().__init__()
@@ -54,7 +54,7 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
 
 
 class RealTimeTAEvaluator(RealTimeEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = RealTimeEvaluator
 
     def __init__(self, exchange_inst, symbol):
         super().__init__()
