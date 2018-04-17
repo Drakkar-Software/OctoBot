@@ -117,7 +117,7 @@ class Crypto_Bot:
 
     def create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
         # Create real time TA evaluators
-        real_time_ta_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config,
+        real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
                                                                             exchange,
                                                                             symbol)
         for time_frame in self.time_frames:
