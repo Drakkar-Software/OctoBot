@@ -80,8 +80,8 @@ class AdvancedManager:
             AdvancedManager.get_advanced_list(config)[class_name].append(class_type)
 
     @staticmethod
-    def get_class(config, class_name):
-        if class_name in AdvancedManager.get_advanced_list(config):
-            return AdvancedManager.get_advanced_list(config)[class_name]
+    def get_class(config, class_type):
+        if class_type.get_name() in AdvancedManager.get_advanced_list(config):
+            return AdvancedManager.get_advanced_list(config)[class_type.get_name()]
         else:
-            return None
+            return [class_type]

@@ -4,8 +4,6 @@ from talib._ta_lib import CDLINVERTEDHAMMER, CDLDOJI, CDLSHOOTINGSTAR, CDLHAMMER
 from config.cst import *
 from evaluator.TA.TA_evaluator import MomentumEvaluator
 
-# https://mrjbq7.github.io/ta-lib/func_groups/momentum_indicators.html
-from evaluator.Util.divergence_analyser import DivergenceAnalyser
 from evaluator.Util.trend_analyser import TrendAnalyser
 
 
@@ -30,9 +28,6 @@ class RSIMomentumEvaluator(MomentumEvaluator):
         elif long_trend > 0 > short_trend:
             # trend changed to down
             self.set_eval_note(short_trend)
-
-        # check divergence
-        divergence = DivergenceAnalyser.detect(self.data[PriceStrings.STR_PRICE_CLOSE.value], rsi_v)
 
         # use RSI current value
         last_rsi_value = rsi_v.tail(1).values[0]

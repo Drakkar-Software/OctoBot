@@ -22,13 +22,20 @@ class Symbol_Evaluator:
 
         self.matrix = EvaluatorMatrix()
 
-        self.social_eval_list = EvaluatorCreator.create_social_eval(self.config, self.crypto_currency, self.dispatchers_list)
+        self.social_eval_list = EvaluatorCreator.create_social_eval(self.config,
+                                                                    self.crypto_currency,
+                                                                    self.dispatchers_list)
+
         self.social_not_threaded_list = EvaluatorCreator.create_social_not_threaded_list(self.social_eval_list)
-        self.strategies_eval_list = EvaluatorCreator.create_strategies_eval_list()
+
+        self.strategies_eval_list = EvaluatorCreator.create_strategies_eval_list(self.config)
 
         self.social_evaluator_refresh = SocialEvaluatorNotThreadedUpdateThread(self.social_not_threaded_list)
+
         self.global_social_updater = SocialGlobalUpdaterThread(self)
+
         self.evaluator_order_creator = EvaluatorOrderCreator()
+
         self.final_evaluator = FinalEvaluator(self)
 
     def start_threads(self):

@@ -88,3 +88,6 @@ class Evaluator:
 
     def get_creator(self):
         return self.creator
+
+    def get_config(self):
+        return self.config
