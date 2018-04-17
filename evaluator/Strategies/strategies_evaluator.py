@@ -4,7 +4,7 @@ from evaluator.abstract_evaluator import AbstractEvaluator
 
 
 class StrategiesEvaluator(AbstractEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = AbstractEvaluator
 
     def __init__(self):
         super().__init__()
@@ -22,7 +22,7 @@ class StrategiesEvaluator(AbstractEvaluator):
 
 
 class MixedStrategiesEvaluator(StrategiesEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = StrategiesEvaluator
 
     def __init__(self):
         super().__init__()
