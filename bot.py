@@ -1,4 +1,6 @@
 import logging
+import sys
+import traceback
 from logging.config import fileConfig
 
 import ccxt
@@ -31,6 +33,7 @@ class Crypto_Bot:
         # Logger
         fileConfig('config/logging_config.ini')
         self.logger = logging.getLogger(self.__class__.__name__)
+        sys.excepthook = self.log_uncaught_exceptions
 
         # Version
         self.logger.info("Version : " + VERSION)
@@ -185,3 +188,8 @@ class Crypto_Bot:
 
         if self.web_app.enabled():
             self.web_app.stop()
+
+    @staticmethod
+    def log_uncaught_exceptions(ex_cls, ex, tb):
+        logging.exception(''.join(traceback.format_tb(tb)))
+        logging.exception('{0}: {1}'.format(ex_cls, ex))
