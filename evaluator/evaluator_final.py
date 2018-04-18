@@ -30,14 +30,14 @@ class FinalEvaluator:
                                                             pprint.pformat(self.symbol_evaluator.get_matrix().get_matrix()))
 
             if self.symbol_evaluator.get_trader(self.exchange).enabled():
-                self.symbol_evaluator.get_evaluator_creator().create_order(
+                self.symbol_evaluator.get_evaluator_order_creator().create_order(
                     self.symbol,
                     self.exchange,
                     self.symbol_evaluator.get_trader(self.exchange),
                     state)
 
             if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
-                self.symbol_evaluator.get_evaluator_creator().create_order(
+                self.symbol_evaluator.get_evaluator_order_creator().create_order(
                     self.symbol,
                     self.exchange,
                     self.symbol_evaluator.get_trader_simulator(self.exchange),

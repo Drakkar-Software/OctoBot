@@ -19,12 +19,10 @@ class TraderSimulator(Trader):
             return False
 
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
-        self.logger.debug("Order creation : " + str(symbol) + " | " + str(order_type)
-                          + " | Price : " + str(price))
+        self.logger.info("Order creation : {0} | {1} | Price : {2}".format(symbol, order_type, price))
 
         order_class = OrderConstants.TraderOrderTypeClasses[order_type]
         order = order_class(self)
         order.new(order_type, symbol, quantity, price, stop_price)
-        order.start()
-        self.open_orders.append(order)
+        self.order_manager.add_order_to_list(order)
 
