@@ -66,9 +66,8 @@ class EvaluatorCreator:
                     if not client_found_dispatcher:
                         is_evaluator_to_be_used = False
                         logging.getLogger(EvaluatorCreator.get_name()).warning(
-                            "No dispatcher found for evaluator: " + social_eval_class_instance.get_name()
-                            + " for symbol: " + symbol
-                            + ", evaluator has been disabled.")
+                            "No dispatcher found for evaluator: {0} for symbol: {1}, evaluator has been disabled."
+                                .format(social_eval_class_instance.get_name(), symbol))
 
                 # start refreshing thread if the thread is not manage by dispatcher
                 elif is_evaluator_to_be_used and social_eval_class_instance.get_is_threaded():
