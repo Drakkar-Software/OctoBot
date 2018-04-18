@@ -28,20 +28,30 @@ class EvaluatorOrderCreator:
 
         elif state == EvaluatorStates.SHORT:
             if current_portfolio > 0:
-                trader.create_order(TraderOrderType.SELL_LIMIT,
+                limit = trader.create_order(TraderOrderType.SELL_LIMIT,
+                                            symbol,
+                                            current_portfolio / 2,
+                                            reference * 1.0005)
+                trader.create_order(TraderOrderType.STOP_LOSS,
                                     symbol,
-                                    current_portfolio / 2,
-                                    reference * 1.005)
+                                    current_market_quantity / (reference * 2),
+                                    reference * 0.9985,
+                                    linked_to=limit)
 
         elif state == EvaluatorStates.NEUTRAL:
             pass
 
         elif state == EvaluatorStates.LONG:
             if current_market_quantity > 0:
-                trader.create_order(TraderOrderType.BUY_LIMIT,
+                limit = trader.create_order(TraderOrderType.BUY_LIMIT,
+                                            symbol,
+                                            current_market_quantity / (reference * 2),
+                                            reference * 0.9995)
+                trader.create_order(TraderOrderType.STOP_LOSS,
                                     symbol,
                                     current_market_quantity / (reference * 2),
-                                    reference * 0.999)
+                                    reference * 0.9985,
+                                    linked_to=limit)
 
         elif state == EvaluatorStates.VERY_LONG:
             if current_market_quantity > 0:
