@@ -25,6 +25,7 @@ class TraderSimulator(Trader):
         order = order_class(self)
         order.new(order_type, symbol, quantity, price, stop_price)
         self.order_manager.add_order_to_list(order)
+        self.portfolio.update_portfolio_available(order, True)
 
         if linked_to is not None:
             linked_to.add_linked_order(order)

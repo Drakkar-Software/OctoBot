@@ -35,7 +35,7 @@ class EvaluatorOrderCreator:
                 trader.create_order(TraderOrderType.STOP_LOSS,
                                     symbol,
                                     current_market_quantity / (reference * 2),
-                                    reference * 0.9985,
+                                    reference * STOP_LOSS_ORDER_PERCENT,
                                     linked_to=limit)
 
         elif state == EvaluatorStates.NEUTRAL:
@@ -46,7 +46,7 @@ class EvaluatorOrderCreator:
                 limit = trader.create_order(TraderOrderType.BUY_LIMIT,
                                             symbol,
                                             current_market_quantity / (reference * 2),
-                                            reference * 0.9995)
+                                            reference * STOP_LOSS_ORDER_PERCENT)
                 trader.create_order(TraderOrderType.STOP_LOSS,
                                     symbol,
                                     current_market_quantity / (reference * 2),

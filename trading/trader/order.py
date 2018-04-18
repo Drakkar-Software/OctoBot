@@ -64,8 +64,8 @@ class Order:
                 return False
 
     def cancel_order(self):
-        # TODO
-        pass
+        # TODO exchange
+        self.trader.notify_order_cancel(self)
 
     def close_order(self):
         self.trader.notify_order_close(self)
@@ -105,6 +105,12 @@ class Order:
 
     def get_order_symbol(self):
         return self.symbol
+
+    def get_origin_quantity(self):
+        return self.origin_quantity
+
+    def get_origin_price(self):
+        return self.origin_price
 
     def set_last_prices(self, last_prices):
         self.last_prices = last_prices
