@@ -43,7 +43,17 @@ class Trader:
         return self.portfolio
 
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
+        # update_portfolio_available
+        #
+        # if linked_to is not None:
+        #     linked_to.add_linked_order(order)
+        #     order.add_linked_order(linked_to)
+
         pass
+
+    def notify_order_cancel(self, order):
+        # update portfolio with ended order
+        self.portfolio.update_portfolio_available(order, False)
 
     def notify_order_close(self, order):
         # Cancel linked orders
