@@ -46,6 +46,11 @@ class Trader:
         pass
 
     def notify_order_close(self, order):
+        # Cancel linked orders
+        for linked_order in order.get_linked_orders():
+            linked_order.cancel_order()
+            self.order_manager.remove_order_from_list(linked_order)
+
         # update portfolio with ended order
         self.portfolio.update_portfolio(order)
 
