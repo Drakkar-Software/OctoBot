@@ -155,10 +155,10 @@ class Crypto_Bot:
             symbol_evaluator.join_threads()
 
         for trader in self.exchange_traders:
-            self.exchange_traders[trader].stop_order_listeners()
+            self.exchange_traders[trader].join_order_manager()
 
         for trader_simulator in self.exchange_trader_simulators:
-            self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
+            self.exchange_trader_simulators[trader_simulator].join_order_manager()
 
         for thread in self.dispatchers_list:
             thread.join()
@@ -175,10 +175,10 @@ class Crypto_Bot:
             symbol_evaluator.stop_threads()
 
         for trader in self.exchange_traders:
-            self.exchange_traders[trader].stop_order_listeners()
+            self.exchange_traders[trader].stop_order_manager()
 
         for trader_simulator in self.exchange_trader_simulators:
-            self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
+            self.exchange_trader_simulators[trader_simulator].stop_order_manager()
 
         for thread in self.dispatchers_list:
             thread.stop()

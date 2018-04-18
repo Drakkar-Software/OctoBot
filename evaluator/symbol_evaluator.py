@@ -106,7 +106,7 @@ class Symbol_Evaluator:
     def get_matrix(self):
         return self.matrix
 
-    def get_evaluator_creator(self):
+    def get_evaluator_order_creator(self):
         return self.evaluator_order_creator
 
     def get_strategies_eval_list(self):

@@ -50,6 +50,8 @@ class Portfolio:
             currency_portfolio_num = "-" + str(order.get_filled_quantity())
             market_portfolio_num = "+" + str(self.portfolio[market])
 
-        self.logger.debug("Portfolio updated | " + currency + " " + currency_portfolio_num
-                          + " | " + market + " " + market_portfolio_num
-                          + " | " + "Current Portfolio : " + str(self.portfolio))
+        self.logger.info("Portfolio updated | {0} {1} | {2} {3} | Current Portfolio : {4}".format(currency,
+                                                                                                  currency_portfolio_num,
+                                                                                                  market,
+                                                                                                  market_portfolio_num,
+                                                                                                  self.portfolio))

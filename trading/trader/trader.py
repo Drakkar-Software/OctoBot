@@ -1,6 +1,7 @@
 import logging
 
 from config.cst import CONFIG_ENABLED_OPTION
+from trading.trader.order_manager import OrderManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
 
@@ -13,10 +14,12 @@ class Trader:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = False
 
-        self.open_orders = []
         self.trades = []
 
         self.portfolio = Portfolio(self.config, self)
+
+        self.order_manager = OrderManager(config, self)
+        self.order_manager.start()
 
         # Debug
         if self.enabled():
@@ -50,21 +53,24 @@ class Trader:
         self.trades.append(Trade(self.exchange, order))
 
         # remove order to open_orders
-        self.open_orders.remove(order)
+        self.order_manager.remove_order_from_list(order)
 
     def get_open_orders(self):
-        return self.open_orders
+        return self.order_manager.get_open_orders()
 
     def close_open_orders(self):
         pass
 
     def update_open_orders(self):
+        # see exchange
+        # -> update order manager
         pass
 
-    def stop_order_listeners(self):
-        for order in self.open_orders:
-            order.stop()
+    def get_order_manager(self):
+        return self.order_manager
+
+    def stop_order_manager(self):
+        self.order_manager.stop()
 
     def join_order_listeners(self):
-        for order in self.open_orders:
-            order.join()
+        self.order_manager.join()
