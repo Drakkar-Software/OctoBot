@@ -31,11 +31,11 @@ class Portfolio:
             }
             return self.portfolio[currency][portfolio_type]
 
-    def update_portfolio_data(self, currency, value, total=True):
+    def update_portfolio_data(self, currency, value, total=True, available=False):
         if currency in self.portfolio:
             if total:
                 self.portfolio[currency][Portfolio.TOTAL] += value
-            else:
+            if available:
                 self.portfolio[currency][Portfolio.AVAILABLE] += value
         else:
             self.portfolio[currency] = {Portfolio.AVAILABLE: value, Portfolio.TOTAL: value}
@@ -48,14 +48,14 @@ class Portfolio:
             new_quantity = order.get_filled_quantity() - order.get_currency_total_fees()
         else:
             new_quantity = -(order.get_filled_quantity() - order.get_currency_total_fees())
-        self.update_portfolio_data(currency, new_quantity, True)
+        self.update_portfolio_data(currency, new_quantity, True, True)
 
         # update market
         if order.get_side() == TradeOrderSide.BUY:
             new_quantity = -((order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees())
         else:
             new_quantity = (order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees()
-        self.update_portfolio_data(market, new_quantity, True)
+        self.update_portfolio_data(market, new_quantity, True, True)
 
         # Only for log purpose
         if order.get_side() == TradeOrderSide.BUY:
@@ -87,10 +87,10 @@ class Portfolio:
 
             if order.get_side() == TradeOrderSide.BUY:
                 new_quantity = -order.get_origin_quantity() * order.get_origin_price() * inverse
-                self.update_portfolio_data(market, new_quantity, False)
+                self.update_portfolio_data(market, new_quantity, False, True)
             else:
                 new_quantity = -order.get_origin_quantity() * inverse
-                self.update_portfolio_data(currency, new_quantity, False)
+                self.update_portfolio_data(currency, new_quantity, False, True)
 
             self.logger.debug("Portfolio available updated | Current Portfolio : {1}".format(order.get_order_symbol(),
                                                                                              self.portfolio))
