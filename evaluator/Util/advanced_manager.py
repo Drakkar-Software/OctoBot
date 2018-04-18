@@ -88,6 +88,10 @@ class AdvancedManager:
             return [class_type]
 
     @staticmethod
+    def get_class_instances(config, class_type):
+        return [class_type() for class_type in AdvancedManager.get_class(config,class_type)]
+
+    @staticmethod
     def compute_using_util(config, class_type, method, *args):
         results = []
         if class_type.__name__ in AdvancedManager.get_advanced_list(config):
