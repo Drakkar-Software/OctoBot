@@ -3,8 +3,11 @@ from talib._ta_lib import CDLINVERTEDHAMMER, CDLDOJI, CDLSHOOTINGSTAR, CDLHAMMER
 
 from config.cst import *
 from evaluator.TA.TA_evaluator import MomentumEvaluator
+from evaluator.Util.advanced_manager import AdvancedManager
 
 from evaluator.Util.trend_analyser import TrendAnalyser
+
+from evaluator.Util.momentum_analyser import MomentumAnalyser
 
 
 class RSIMomentumEvaluator(MomentumEvaluator):
@@ -36,6 +39,16 @@ class RSIMomentumEvaluator(MomentumEvaluator):
         else:
             self.set_eval_note((rsi_v.tail(1).values[0] - 100) / 200)
 
+# bollinger_bands
+class BBMomentumEvaluator(MomentumEvaluator):
+    def __init__(self):
+        super().__init__()
+        self.enabled = True
+
+    def eval_impl(self):
+        self.eval_note = AdvancedManager.compute_using_util(self.config, MomentumAnalyser,
+                                                            MomentumAnalyser.bollinger_momentum_analysis,
+                                                            self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
 class CandlePatternMomentumEvaluator(MomentumEvaluator):
     def __init__(self):

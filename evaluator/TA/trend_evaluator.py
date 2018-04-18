@@ -29,10 +29,10 @@ class DMITrendEvaluator(TrendEvaluator):
 class BBTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = True
+        self.enabled = False
 
     def eval_impl(self):
-        self.eval_note = TrendAnalyser.bollinger_trend_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value])
+        pass
 
 
 # ease_of_movement --> ease to change trend --> trend strength
