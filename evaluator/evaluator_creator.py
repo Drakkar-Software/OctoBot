@@ -18,9 +18,13 @@ class EvaluatorCreator:
     def create_advanced_evaluators(evaluator_class, config):
         evaluator_advanced_eval_class_list = []
         for evaluator_subclass in evaluator_class.__subclasses__():
-            for eval_class in evaluator_subclass.__subclasses__():
-                for eval_class_type in AdvancedManager.get_class(config, eval_class):
-                    evaluator_advanced_eval_class_list.append(eval_class_type)
+            if AdvancedManager.is_abstract(evaluator_subclass):
+                for eval_class in evaluator_subclass.__subclasses__():
+                    evaluator_advanced_eval_class_list = evaluator_advanced_eval_class_list + \
+                                                         AdvancedManager.get_class(config, eval_class)
+            else:
+                evaluator_advanced_eval_class_list = evaluator_advanced_eval_class_list + \
+                                                     AdvancedManager.get_class(config, evaluator_subclass)
         return evaluator_advanced_eval_class_list
 
     @staticmethod

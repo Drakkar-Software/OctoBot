@@ -1,14 +1,14 @@
 import logging
 import pprint
-import threading
 from queue import Queue
 
 from config.cst import EvaluatorStates, INIT_EVAL_NOTE
+from tools.asynchronous_client import AsynchronousClient
 
 
-class FinalEvaluator:
+class FinalEvaluator(AsynchronousClient):
     def __init__(self, symbol_evaluator):
-        super().__init__()
+        super().__init__(self.finalize)
         self.symbol_evaluator = symbol_evaluator
         self.final_eval = INIT_EVAL_NOTE
         self.state = None
@@ -90,22 +90,6 @@ class FinalEvaluator:
         self.calculate_final()
         self.create_state()
         self.logger.debug("--> {0}".format(self.state))
-
-    def add_to_queue(self, exchange, symbol):
-        self.queue.put((exchange, symbol))
-        self.notify()
-
-    def notify(self):
-        if not self.is_computing:
-            self.is_computing = True
-            threading.Thread(target=self.process_queue).start()
-
-    def process_queue(self):
-        try:
-            while not self.queue.empty():
-                self.finalize(*self.queue.get())
-        finally:
-            self.is_computing = False
 
     def stop(self):
         self.keep_running = False

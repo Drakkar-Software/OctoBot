@@ -1,6 +1,7 @@
-from abc import *
 import threading
-from queue import Queue
+from abc import *
+
+from tools.asynchronous_client import AsynchronousClient
 
 
 # ****** Unique dispatcher side ******
@@ -39,13 +40,12 @@ class EvaluatorDispatcher(threading.Thread):
 
 
 # ****** Implementation side ******
-class EvaluatorDispatcherClient:
+class EvaluatorDispatcherClient(AsynchronousClient):
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        super().__init__(self.receive_notification_data)
         self.dispatcher = None
-        self.is_computing = False
-        self.queue = Queue()
 
     @abstractmethod
     def receive_notification_data(self, data) -> None:
@@ -63,22 +63,6 @@ class EvaluatorDispatcherClient:
     @abstractmethod
     def is_interested_by_this_notification(self, notification_description):
         raise NotImplementedError("is_interested_by_this_notification not implemented")
-
-    def add_to_queue(self, data):
-        self.queue.put(data)
-        self.notify_received_data()
-
-    def notify_received_data(self):
-        if not self.is_computing:
-            self.is_computing = True
-            threading.Thread(target=self.process_queue).start()
-
-    def process_queue(self):
-        try:
-            while not self.queue.empty():
-                self.receive_notification_data(self.queue.get())
-        finally:
-            self.is_computing = False
 
     def is_client_to_this_dispatcher(self, dispatcher_instance):
         return self.get_dispatcher_class() == dispatcher_instance.__class__
