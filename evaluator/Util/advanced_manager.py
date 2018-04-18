@@ -1,6 +1,7 @@
 from config.cst import CONFIG_ADVANCED
 from evaluator.Util.abstract_util import AbstractUtil
 from evaluator.abstract_evaluator import AbstractEvaluator
+import numpy
 
 
 class AdvancedManager:
@@ -85,3 +86,12 @@ class AdvancedManager:
             return AdvancedManager.get_advanced_list(config)[class_type.get_name()]
         else:
             return [class_type]
+
+    @staticmethod
+    def compute_using_util(config, class_type, method, *args):
+        results = []
+        if class_type.__name__ in AdvancedManager.get_advanced_list(config):
+            for available_class_type in AdvancedManager.get_advanced_list(config)[class_type.__name__]:
+                method_impl = getattr(available_class_type, method.__name__)
+                results.append(method_impl(*args))
+        return numpy.mean(results)
