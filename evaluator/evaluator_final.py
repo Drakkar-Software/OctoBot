@@ -22,7 +22,7 @@ class FinalEvaluator:
     def set_state(self, state):
         if state != self.state:
             self.state = state
-            self.logger.info(" ** NEW FINAL STATE ** : " + str(self.state))
+            self.logger.info(" ** NEW FINAL STATE ** : {0}".format(self.state))
             if self.symbol_evaluator.notifier.enabled() and state is not EvaluatorStates.NEUTRAL:
                 self.symbol_evaluator.get_notifier().notify(self.final_eval,
                                                             self.symbol_evaluator,
@@ -89,7 +89,7 @@ class FinalEvaluator:
         self.prepare()
         self.calculate_final()
         self.create_state()
-        self.logger.debug("--> " + str(self.state))
+        self.logger.debug("--> {0}".format(self.state))
 
     def add_to_queue(self, exchange, symbol):
         self.queue.put((exchange, symbol))

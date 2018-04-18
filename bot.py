@@ -36,7 +36,7 @@ class Crypto_Bot:
         sys.excepthook = self.log_uncaught_exceptions
 
         # Version
-        self.logger.info("Version : " + VERSION)
+        self.logger.info("Version : {0}".format(VERSION))
 
         # Config
         self.logger.info("Load config file...")
@@ -116,7 +116,7 @@ class Crypto_Bot:
 
                         # notify that exchange doesn't support this symbol
                         else:
-                            self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
+                            self.logger.warning("{0} doesn't support {1}".format(exchange_type.__name__, symbol))
 
     def create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
         # Create real time TA evaluators
