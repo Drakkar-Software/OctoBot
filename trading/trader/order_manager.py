@@ -2,6 +2,8 @@ import logging
 import threading
 from time import sleep
 
+import ccxt
+
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus
 
 
@@ -20,6 +22,10 @@ class OrderManager(threading.Thread):
 
     def remove_order_from_list(self, order):
         self.order_list.remove(order)
+        self.logger.debug("{0} {1} (ID : {2}) removed on {3}".format(order.get_order_symbol(),
+                                                                     order.get_name(),
+                                                                     order.get_id(),
+                                                                     self.trader.get_exchange().get_name()))
 
     def stop(self):
         self.keep_running = False
@@ -28,7 +34,10 @@ class OrderManager(threading.Thread):
         updated = []
         for order in self.order_list:
             if order.get_order_symbol() not in updated:
-                self.update_last_symbol_prices(order.get_order_symbol())
+                try:
+                    self.update_last_symbol_prices(order.get_order_symbol())
+                except ccxt.base.errors.RequestTimeout as e:
+                    self.logger.error(str(e))
                 updated.append(order.get_order_symbol())
 
     def update_last_symbol_prices(self, symbol):
@@ -51,9 +60,11 @@ class OrderManager(threading.Thread):
                 # ask orders to update their status
                 order.update_order_status()
                 if order.get_status() == OrderStatus.FILLED:
-                    self.logger.info("Order {0} in {1} filled on {2}".format(order.get_id(),
-                                                                             order.get_order_symbol(),
-                                                                             self.trader.get_exchange().get_name()))
+                    self.logger.info("{0} {1} (ID : {2}) filled on {3} at {4}".format(order.get_order_symbol(),
+                                                                                      order.get_name(),
+                                                                                      order.get_id(),
+                                                                                      self.trader.get_exchange().get_name(),
+                                                                                      order.get_filled_price()))
                     order.close_order()
 
             sleep(ORDER_REFRESHER_TIME)
