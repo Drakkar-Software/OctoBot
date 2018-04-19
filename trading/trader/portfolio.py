@@ -74,6 +74,12 @@ class Portfolio:
                                                                                                   market_portfolio_num,
                                                                                                   self.portfolio))
 
+        # debug purpose
+        profitability, profitability_percent = self.trader.get_trades_manager().get_profitability()
+        self.logger.debug("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
+                                                                                    self.trader.get_trades_manager().get_reference_market(),
+                                                                                    round(profitability_percent, 2)))
+
     def update_portfolio_available(self, order, is_new_order=True):
         # stop losses and take profits aren't using available portfolio
         if order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
@@ -98,9 +104,3 @@ class Portfolio:
             # debug purpose
             self.logger.debug("Portfolio available updated | Current Portfolio : {1}".format(order.get_order_symbol(),
                                                                                              self.portfolio))
-
-            # debug purpose
-            profitability, profitability_percent = self.trader.get_trades_manager().get_profitability()
-            self.logger.debug("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
-                                                                                        self.trader.get_trades_manager().get_reference_market(),
-                                                                                        round(profitability_percent, 2)))
