@@ -6,6 +6,13 @@ import ccxt
 
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus
 
+""" OrdersManager class will perform the supervision of each open order of the exchange trader
+Data updating process is generic but a specific implementation is called for each type of order (TraderOrderTypeClasses)
+The thread will perform this data update and the open orders status check each ORDER_REFRESHER_TIME seconds
+This class is particularly needed when exchanges doesn't offer stop loss orders
+This class has an essential role for the trader simulator
+"""
+
 
 class OrdersManager(threading.Thread):
     def __init__(self, config, trader):
@@ -20,6 +27,7 @@ class OrdersManager(threading.Thread):
     def add_order_to_list(self, order):
         self.order_list.append(order)
 
+    # Remove the specified order of the current open_order list (when the order is filled or canceled)
     def remove_order_from_list(self, order):
         self.order_list.remove(order)
         self.logger.debug("{0} {1} (ID : {2}) removed on {3}".format(order.get_order_symbol(),
@@ -30,6 +38,7 @@ class OrdersManager(threading.Thread):
     def stop(self):
         self.keep_running = False
 
+    # Update each open order symbol with exchange data
     def update_last_symbol_list(self):
         updated = []
         for order in self.order_list:
@@ -40,12 +49,17 @@ class OrdersManager(threading.Thread):
                     self.logger.error(str(e))
                 updated.append(order.get_order_symbol())
 
+    # Ask to update a specific symbol with exchange data
     def update_last_symbol_prices(self, symbol):
         self.last_symbol_prices[symbol] = self.trader.get_exchange().get_recent_trades(symbol)
 
     def get_open_orders(self):
         return self.order_list
 
+    """ Threading method that will periodically update the data with update_last_symbol_list
+    Then ask orders to check their status
+    Finally ask cancellation and filling process if it is required 
+    """
     def run(self):
         while self.keep_running:
             # update all prices only if simulate

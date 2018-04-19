@@ -3,6 +3,14 @@ import logging
 from config.cst import *
 from trading.trader.order import OrderConstants
 
+""" The Portfolio class manage an exchange portfolio
+This will begin by loading current exchange portfolio (by pulling user data)
+In case of simulation this will load the CONFIG_STARTING_PORTFOLIO
+This class also manage the availability of each currency in the portfolio : 
+- When an order is created it will subtract the quantity of the total
+- When an order is filled or canceled restore the availability with the real quantity
+"""
+
 
 class Portfolio:
     AVAILABLE = "available"
@@ -16,6 +24,7 @@ class Portfolio:
         self.trader = trader
         self.exchange = self.trader.get_exchange()
 
+    # Load exchange portfolio / simulated portfolio from config
     def load_portfolio(self):
         if CONFIG_SIMULATOR in self.config and CONFIG_STARTING_PORTFOLIO in self.config[CONFIG_SIMULATOR]:
             for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
@@ -24,6 +33,7 @@ class Portfolio:
     def get_portfolio(self):
         return self.portfolio
 
+    # Get specified currency quantity in the portfolio
     def get_currency_portfolio(self, currency, portfolio_type=AVAILABLE):
         if currency in self.portfolio:
             return self.portfolio[currency][portfolio_type]
@@ -34,6 +44,7 @@ class Portfolio:
             }
             return self.portfolio[currency][portfolio_type]
 
+    # Set new currency quantity in the portfolio
     def update_portfolio_data(self, currency, value, total=True, available=False):
         if currency in self.portfolio:
             if total:
@@ -43,6 +54,9 @@ class Portfolio:
         else:
             self.portfolio[currency] = {Portfolio.AVAILABLE: value, Portfolio.TOTAL: value}
 
+    """ update_portfolio performs the update of the total / available quantity of a currency
+    It is called only when an order is filled to update the real quantity of the currency to be set in "total" field
+    """
     def update_portfolio(self, order):
         currency, market = order.get_currency_and_market()
 
@@ -80,6 +94,9 @@ class Portfolio:
                                                                                     self.trader.get_trades_manager().get_reference_market(),
                                                                                     round(profitability_percent, 2)))
 
+    """ update_portfolio_available performs the availability update of the concerned currency in the current portfolio
+    It is called when an order is filled, created or canceled to update the "available" filed of the portfolio
+    """
     def update_portfolio_available(self, order, is_new_order=True):
         # stop losses and take profits aren't using available portfolio
         if order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
