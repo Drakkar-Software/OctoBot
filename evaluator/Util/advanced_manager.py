@@ -13,7 +13,7 @@ class AdvancedManager:
     Returns True if it is an abstract one else False."""
     @staticmethod
     def is_abstract(class_type):
-        # Get class heritance description
+        # Get class parental description
         mro = class_type.mro()
 
         # if class has parent get its metaclass
@@ -97,8 +97,8 @@ class AdvancedManager:
     def get_class(config, class_type):
         classes = AdvancedManager.get_classes(config, class_type)
         if classes and len(classes) > 1:
-            logging.getLogger(AdvancedManager.__name__) \
-                .warning("More than one instance of %s available, using %s." % (class_type, classes[0]))
+            logging.getLogger(AdvancedManager.__name__).warning("More than one instance of {0} available, using {1}.".
+                                                                format(class_type, classes[0]))
         return classes[0]
 
     @staticmethod
