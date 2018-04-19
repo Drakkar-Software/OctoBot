@@ -95,5 +95,12 @@ class Portfolio:
                 new_quantity = -order.get_origin_quantity() * inverse
                 self.update_portfolio_data(currency, new_quantity, False, True)
 
+            # debug purpose
             self.logger.debug("Portfolio available updated | Current Portfolio : {1}".format(order.get_order_symbol(),
                                                                                              self.portfolio))
+
+            # debug purpose
+            profitability, profitability_percent = self.trader.get_trades_manager().get_profitability()
+            self.logger.debug("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
+                                                                                        self.trader.get_trades_manager().get_reference_market(),
+                                                                                        round(profitability_percent, 2)))
