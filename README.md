@@ -60,7 +60,7 @@ Create a **config.json** file in the **config folder** with the following exampl
 python main.py
 ```
 ## Advanced evaluators and analysis tools
-###Adding implementations of any evaluator
+### Adding implementations of any evaluator
 
 To add another implementation of an existing evaluator, 3 simple steps:
 1. Create a class **inheriting** the evaluator to improve
@@ -69,7 +69,7 @@ To add another implementation of an existing evaluator, 3 simple steps:
 ```
 from .file_containing_new_implementation_name.py import *
 ```
-###Adding implementations of any analysis tool
+### Adding implementations of any analysis tool
 
 To add another implementation of an existing analysis tool, 3 simple steps:
 1. Create a class inheriting the analyser to improve
@@ -79,7 +79,7 @@ To add another implementation of an existing analysis tool, 3 simple steps:
 from .file_containing_new_implementation_name.py import *
 ```
 
-More information and examples in the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Modularity)
+More information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Modularity)
 
 ## Changelog
 See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md)
