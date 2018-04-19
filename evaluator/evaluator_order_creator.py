@@ -5,7 +5,7 @@ class EvaluatorOrderCreator:
     def __init__(self):
         self.last_values_count = 10
 
-    def create_order(self, symbol, exchange, trader, state):
+    def create_order(self, eval_note, symbol, exchange, trader, state):
         last_prices = exchange.get_recent_trades(symbol)
         reference_sum = 0
 
@@ -28,20 +28,27 @@ class EvaluatorOrderCreator:
 
         elif state == EvaluatorStates.SHORT:
             if current_portfolio > 0:
-                trader.create_order(TraderOrderType.SELL_LIMIT,
+                quantity = current_portfolio / 2
+                limit = trader.create_order(TraderOrderType.SELL_LIMIT,
+                                            symbol,
+                                            quantity,
+                                            reference * (1 + eval_note*0.1))
+                trader.create_order(TraderOrderType.STOP_LOSS,
                                     symbol,
-                                    current_portfolio / 2,
-                                    reference * 1.1)
+                                    quantity,
+                                    reference * STOP_LOSS_ORDER_PERCENT,
+                                    linked_to=limit)
 
         elif state == EvaluatorStates.NEUTRAL:
             pass
 
+        # TODO : stop loss
         elif state == EvaluatorStates.LONG:
             if current_market_quantity > 0:
                 trader.create_order(TraderOrderType.BUY_LIMIT,
                                     symbol,
                                     current_market_quantity / (reference * 2),
-                                    reference * 0.9)
+                                    reference * (1 + eval_note*0.1))
 
         elif state == EvaluatorStates.VERY_LONG:
             if current_market_quantity > 0:

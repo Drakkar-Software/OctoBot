@@ -3,10 +3,11 @@ from talib._ta_lib import CDLINVERTEDHAMMER, CDLDOJI, CDLSHOOTINGSTAR, CDLHAMMER
 
 from config.cst import *
 from evaluator.TA.TA_evaluator import MomentumEvaluator
+from evaluator.Util.advanced_manager import AdvancedManager
 
-# https://mrjbq7.github.io/ta-lib/func_groups/momentum_indicators.html
-from evaluator.Util.divergence_analyser import DivergenceAnalyser
 from evaluator.Util.trend_analyser import TrendAnalyser
+
+from evaluator.Util.momentum_analyser import MomentumAnalyser
 
 
 class RSIMomentumEvaluator(MomentumEvaluator):
@@ -31,9 +32,6 @@ class RSIMomentumEvaluator(MomentumEvaluator):
             # trend changed to down
             self.set_eval_note(short_trend)
 
-        # check divergence
-        divergence = DivergenceAnalyser.detect(self.data[PriceStrings.STR_PRICE_CLOSE.value], rsi_v)
-
         # use RSI current value
         last_rsi_value = rsi_v.tail(1).values[0]
         if last_rsi_value > 50:
@@ -41,6 +39,15 @@ class RSIMomentumEvaluator(MomentumEvaluator):
         else:
             self.set_eval_note((rsi_v.tail(1).values[0] - 100) / 200)
 
+# bollinger_bands
+class BBMomentumEvaluator(MomentumEvaluator):
+    def __init__(self):
+        super().__init__()
+        self.enabled = True
+
+    def eval_impl(self):
+        self.eval_note = AdvancedManager.get_class(self.config, MomentumAnalyser).bollinger_momentum_analysis(
+            self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
 class CandlePatternMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
@@ -119,6 +126,10 @@ class CandlePatternMomentumEvaluator(MomentumEvaluator):
         # being more bullish than the Piercing Pattern because it completely reverses the losses of Day 1 and adds
         # new gains.
         self.update_note(CDLPIERCING(open_values, high_values, low_values, close_values))
+
+        # if neutral
+        if self.eval_note == 0:
+            self.eval_note = START_PENDING_EVAL_NOTE
 
 
 # ADX --> trend_strength

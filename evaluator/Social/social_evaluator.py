@@ -2,14 +2,13 @@ import os
 import threading
 from abc import *
 
-from botcore.config.config import load_config
-
+from config.config import load_config
 from config.cst import *
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
 class SocialEvaluator(AbstractEvaluator, threading.Thread):
-    __metaclass__ = ABCMeta
+    __metaclass__ = AbstractEvaluator
 
     def __init__(self):
         super().__init__()
@@ -83,7 +82,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
 
 
 class StatsSocialEvaluator(SocialEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = SocialEvaluator
 
     def __init__(self):
         super().__init__()
@@ -102,7 +101,7 @@ class StatsSocialEvaluator(SocialEvaluator):
 
 
 class ForumSocialEvaluator(SocialEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = SocialEvaluator
 
     def __init__(self):
         super().__init__()
@@ -121,7 +120,7 @@ class ForumSocialEvaluator(SocialEvaluator):
 
 
 class NewsSocialEvaluator(SocialEvaluator):
-    __metaclass__ = ABCMeta
+    __metaclass__ = SocialEvaluator
 
     def __init__(self):
         super().__init__()

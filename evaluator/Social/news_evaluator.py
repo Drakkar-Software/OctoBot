@@ -1,6 +1,7 @@
 from config.cst import *
 from evaluator.Dispatchers.TwitterDispatcher import TwitterDispatcher
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
+from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.Util.sentiment_analyser import SentimentAnalyser
 from evaluator.evaluator_dispatcher import *
 from tools.decoding_encoding import DecoderEncoder
@@ -14,7 +15,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         self.is_threaded = False
         self.count = 0
         self.symbol = ""
-        self.sentiment_analyser = SentimentAnalyser()
+        self.sentiment_analyser = None
 
     def set_dispatcher(self, dispatcher):
         super().set_dispatcher(dispatcher)
@@ -31,10 +32,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
     def print_tweet(self, tweet, count):
-        # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
-        # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
-        # https://github.com/cjhutto/vaderSentiment
-        self.set_eval_note(-0.1*self.sentiment_analyser.analyse(tweet)["compound"])
+        self.set_eval_note(self.get_sentiment(tweet))
         self.check_eval_note()
         self.logger.debug("Current note : " + str(self.eval_note) + "|"
                           + str(count) + " : " + str(self.symbol) + " : " + "Text : "
@@ -47,6 +45,12 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
     def check_eval_note(self):
         if self.eval_note > 0.8 or self.eval_note < -0.8:
             self.notify_evaluator_threads(self.__class__.__name__)
+
+    def get_sentiment(self, tweet):
+        # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
+        # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
+        # https://github.com/cjhutto/vaderSentiment
+        return -0.1*self.sentiment_analyser.analyse(tweet)["compound"]
 
     def eval_impl(self):
         pass
@@ -89,6 +93,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
 
     def prepare(self):
         self.purify_config()
+        self.sentiment_analyser = AdvancedManager.get_util_instance(self.config, SentimentAnalyser)
 
 
 class MediumNewsEvaluator(NewsSocialEvaluator):

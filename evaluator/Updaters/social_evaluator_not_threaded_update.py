@@ -30,8 +30,8 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                         "last_refresh_time": time.time()
                     })
             else:
-                self.logger.warning("Social evaluator " + social_eval.__class__.__name__
-                                    + " doesn't have a valid social config refresh rate.")
+                self.logger.warning("Social evaluator {0} doesn't have a valid social config refresh rate."
+                                    .format(social_eval.__class__.__name__))
 
     def run(self):
         while self.keep_running:

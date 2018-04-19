@@ -1,12 +1,15 @@
-import threading
 import time
 from abc import *
-from time import sleep
 
-from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, ORDER_REFRESHER_TIME
+from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK
+
+""" Order class will represent an open order in the specified exchange
+In simulation it will also define rules to be filled / canceled
+It is also use to store creation & fill values of the order
+"""
 
 
-class Order(threading.Thread):
+class Order:
     __metaclass__ = ABCMeta
 
     def __init__(self, trader):
@@ -24,13 +27,17 @@ class Order(threading.Thread):
         self.filled_price = 0
         self.currency, self.market = None, None
         self.order_id = None
-        self.keep_running = True
         self.status = None
         self.order_type = None
-        self.ex_time = 0
+        self.executed_time = 0
+        self.last_prices = None
 
+        self.linked_orders = []
+
+    # create the order by setting all the required values
     def new(self, order_type, symbol, quantity, price=None, stop_price=None):
         self.origin_price = price
+        self.last_prices = price
         self.origin_quantity = quantity
         self.origin_stop_price = stop_price
         self.symbol = symbol
@@ -43,22 +50,48 @@ class Order(threading.Thread):
             self.status = OrderStatus.PENDING
             self.filled_quantity = quantity
 
+    # update_order_status will define the rules for a simulated order to be filled / canceled
     @abstractmethod
     def update_order_status(self):
         raise NotImplementedError("Update_order_status not implemented")
 
+    # check_last_prices is used to collect data to perform the order update_order_status process
+    def check_last_prices(self, price, inferior):
+        # TODO : use timestamp
+        prices = [p["price"] for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]]
+
+        if inferior:
+            if float(min(prices)) < price:
+                return True
+            else:
+                return False
+        else:
+            if float(max(prices)) > price:
+                return True
+            else:
+                return False
+
+    def cancel_order(self):
+        # TODO exchange
+        self.trader.notify_order_cancel(self)
+
     def close_order(self):
-        self.stop()
         self.trader.notify_order_close(self)
 
-    def stop(self):
-        self.keep_running = False
+    def add_linked_order(self, order):
+        self.linked_orders.append(order)
+
+    def get_linked_orders(self):
+        return self.linked_orders
 
     def get_currency_and_market(self):
         return self.currency, self.market
 
     def get_side(self):
         return self.side
+
+    def get_id(self):
+        return self.order_id
 
     def get_market_total_fees(self):
         return self.market_total_fees
@@ -78,13 +111,21 @@ class Order(threading.Thread):
     def get_order_type(self):
         return self.order_type
 
-    # wait for order status to change
-    def run(self):
-        while self.keep_running:
-            self.update_order_status()
-            if self.status == OrderStatus.FILLED:
-                self.close_order()
-            sleep(ORDER_REFRESHER_TIME)
+    def get_order_symbol(self):
+        return self.symbol
+
+    def get_origin_quantity(self):
+        return self.origin_quantity
+
+    def get_origin_price(self):
+        return self.origin_price
+
+    def set_last_prices(self, last_prices):
+        self.last_prices = last_prices
+
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
 
 
 class BuyMarketOrder(Order):
@@ -94,14 +135,13 @@ class BuyMarketOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.ex_time =
+            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.executed_time =
             self.exchange.get_order(self.order_id)
         else:
             # ONLY FOR SIMULATION
-            last_prices = self.exchange.get_recent_trades(self.symbol)
             self.status = OrderStatus.FILLED
-            self.filled_price = float(last_prices[-1]["price"])
-            self.ex_time = time.time()
+            self.filled_price = float(self.last_prices[-1]["price"])
+            self.executed_time = time.time()
 
 
 class BuyLimitOrder(Order):
@@ -111,33 +151,14 @@ class BuyLimitOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.ex_time = \
+            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.executed_time =
             self.exchange.get_order(self.order_id)
         else:
             # ONLY FOR SIMULATION
-            last_prices = self.exchange.get_recent_trades(self.symbol)
-            if float(last_prices[-1]["price"]) < self.origin_price:
+            if self.check_last_prices(self.origin_price, True):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
-                self.ex_time = time.time()
-
-
-class TakeProfitOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
-        self.side = TradeOrderSide.SELL
-
-    def update_order_status(self):
-        pass
-
-
-class TakeProfitLimitOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
-        self.side = TradeOrderSide.SELL
-
-    def update_order_status(self):
-        pass
+                self.executed_time = time.time()
 
 
 class SellMarketOrder(Order):
@@ -147,14 +168,13 @@ class SellMarketOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.ex_time = \
+            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.executed_time =
             self.exchange.get_order(self.order_id)
         else:
             # ONLY FOR SIMULATION
-            last_prices = self.exchange.get_recent_trades(self.symbol)
             self.status = OrderStatus.FILLED
-            self.filled_price = float(last_prices[-1]["price"])
-            self.ex_time = time.time()
+            self.filled_price = float(self.last_prices[-1]["price"])
+            self.executed_time = time.time()
 
 
 class SellLimitOrder(Order):
@@ -164,15 +184,14 @@ class SellLimitOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.ex_time = \
+            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.executed_time =
             self.exchange.get_order(self.order_id)
         else:
             # ONLY FOR SIMULATION
-            last_prices = self.exchange.get_recent_trades(self.symbol)
-            if float(last_prices[-1]["price"]) > self.origin_price:
+            if self.check_last_prices(self.origin_price, False):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
-                self.ex_time = time.time()
+                self.executed_time = time.time()
 
 
 class StopLossOrder(Order):
@@ -181,10 +200,39 @@ class StopLossOrder(Order):
         self.side = TradeOrderSide.SELL
 
     def update_order_status(self):
+        if not self.trader.simulate:
+            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.executed_time =
+            self.exchange.get_order(self.order_id)
+        else:
+            # ONLY FOR SIMULATION
+            if self.check_last_prices(self.origin_price, True):
+                self.status = OrderStatus.FILLED
+                self.filled_price = self.origin_price
+                self.executed_time = time.time()
+
+
+# TODO
+class StopLossLimitOrder(Order):
+    def __init__(self, exchange):
+        super().__init__(exchange)
+        self.side = TradeOrderSide.SELL
+
+    def update_order_status(self):
         pass
 
 
-class StopLossLimitOrder(Order):
+# TODO
+class TakeProfitOrder(Order):
+    def __init__(self, exchange):
+        super().__init__(exchange)
+        self.side = TradeOrderSide.SELL
+
+    def update_order_status(self):
+        pass
+
+
+# TODO
+class TakeProfitLimitOrder(Order):
     def __init__(self, exchange):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
@@ -195,12 +243,12 @@ class StopLossLimitOrder(Order):
 
 class OrderConstants:
     TraderOrderTypeClasses = {
-            TraderOrderType.BUY_MARKET: BuyMarketOrder,
-            TraderOrderType.BUY_LIMIT: BuyLimitOrder,
-            TraderOrderType.TAKE_PROFIT: TakeProfitOrder,
-            TraderOrderType.TAKE_PROFIT_LIMIT: TakeProfitLimitOrder,
-            TraderOrderType.STOP_LOSS: StopLossOrder,
-            TraderOrderType.STOP_LOSS_LIMIT: StopLossLimitOrder,
-            TraderOrderType.SELL_MARKET: SellMarketOrder,
-            TraderOrderType.SELL_LIMIT: SellLimitOrder,
-        }
+        TraderOrderType.BUY_MARKET: BuyMarketOrder,
+        TraderOrderType.BUY_LIMIT: BuyLimitOrder,
+        TraderOrderType.TAKE_PROFIT: TakeProfitOrder,
+        TraderOrderType.TAKE_PROFIT_LIMIT: TakeProfitLimitOrder,
+        TraderOrderType.STOP_LOSS: StopLossOrder,
+        TraderOrderType.STOP_LOSS_LIMIT: StopLossLimitOrder,
+        TraderOrderType.SELL_MARKET: SellMarketOrder,
+        TraderOrderType.SELL_LIMIT: SellLimitOrder,
+    }
