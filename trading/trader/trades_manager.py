@@ -1,8 +1,10 @@
+from config.cst import CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 
 
 class TradesManager:
-    def __init__(self, trader):
+    def __init__(self, config, trader):
+        self.config = config
         self.trader = trader
         self.portfolio = trader.get_portfolio()
         self.exchange = trader.get_exchange()
@@ -10,8 +12,10 @@ class TradesManager:
         self.profitability = 0
         self.profitability_percent = 0
 
-        # TODO : market value
-        self.reference_market = "BTC"
+        if CONFIG_TRADER_REFERENCE_MARKET in self.config[CONFIG_TRADER]:
+            self.reference_market = self.config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET]
+        else:
+            self.reference_market = DEFAULT_REFERENCE_MARKET
 
         self.currencies_prices = None
         self.origin_portfolio = None
