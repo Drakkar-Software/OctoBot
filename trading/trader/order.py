@@ -3,6 +3,11 @@ from abc import *
 
 from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK
 
+""" Order class will represent an open order in the specified exchange
+In simulation it will also define rules to be filled / canceled
+It is also use to store creation & fill values of the order
+"""
+
 
 class Order:
     __metaclass__ = ABCMeta
@@ -29,6 +34,7 @@ class Order:
 
         self.linked_orders = []
 
+    # create the order by setting all the required values
     def new(self, order_type, symbol, quantity, price=None, stop_price=None):
         self.origin_price = price
         self.last_prices = price
@@ -44,10 +50,12 @@ class Order:
             self.status = OrderStatus.PENDING
             self.filled_quantity = quantity
 
+    # update_order_status will define the rules for a simulated order to be filled / canceled
     @abstractmethod
     def update_order_status(self):
         raise NotImplementedError("Update_order_status not implemented")
 
+    # check_last_prices is used to collect data to perform the order update_order_status process
     def check_last_prices(self, price, inferior):
         # TODO : use timestamp
         prices = [p["price"] for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]]
