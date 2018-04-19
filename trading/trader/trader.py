@@ -63,6 +63,7 @@ class Trader:
             self.order_manager.remove_order_from_list(linked_order)
 
         # update portfolio with ended order
+        self.portfolio.update_portfolio_available(order, False)
         self.portfolio.update_portfolio(order)
 
         # add to trade history
