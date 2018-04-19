@@ -1,6 +1,6 @@
 import logging
 
-from evaluator.RealTime import RealTimeTAEvaluator
+from evaluator.RealTime import RealTimeEvaluator
 from evaluator.Social import SocialEvaluator
 from evaluator.Strategies import StrategiesEvaluator
 from evaluator.TA import TAEvaluator
@@ -90,7 +90,7 @@ class EvaluatorCreator:
     @staticmethod
     def create_real_time_ta_evals(config, exchange_inst, symbol):
         real_time_ta_eval_list = []
-        for real_time_eval_class in EvaluatorCreator.create_advanced_evaluators(RealTimeTAEvaluator, config):
+        for real_time_eval_class in EvaluatorCreator.create_advanced_evaluators(RealTimeEvaluator, config):
             real_time_eval_class_instance = real_time_eval_class(exchange_inst, symbol)
             if real_time_eval_class_instance.get_is_enabled():
                 real_time_eval_class_instance.set_logger(logging.getLogger(real_time_eval_class.get_name()))
