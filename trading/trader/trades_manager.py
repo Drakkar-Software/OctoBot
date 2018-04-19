@@ -11,7 +11,7 @@ class TradesManager:
         self.profitability_percent = 0
 
         # TODO : market value
-        self.reported_market = "BTC"
+        self.reference_market = "BTC"
 
         self.currencies_prices = None
         self.origin_portfolio = None
@@ -26,6 +26,9 @@ class TradesManager:
     def add_new_trade(self, trade):
         if trade not in self.trades:
             self.trades.append(trade)
+
+    def get_reference_market(self):
+        return self.reference_market
 
     """ get currencies prices update currencies data by polling tickers from exchange
     and set currencies_prices attribute
@@ -60,14 +63,14 @@ class TradesManager:
         self.origin_portfolio = self.portfolio.get_portfolio()
         self.portfolio_origin_value += self.evaluate_portfolio_value(self.origin_portfolio)
 
-    """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reported currency
+    """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reference currency
     It will try to create the symbol that fit with the exchange logic
     Returns the value found of this currency quantity, if not found returns 0     
     """
     # TODO : manage if currency/market does not exist
     def try_get_value_of_currency(self, currency, quantity):
-        symbol = self.exchange.merge_currencies(currency, self.reported_market)
-        symbol_inversed = self.exchange.merge_currencies(self.reported_market, currency)
+        symbol = self.exchange.merge_currencies(currency, self.reference_market)
+        symbol_inversed = self.exchange.merge_currencies(self.reference_market, currency)
         if symbol in self.currencies_prices:
             return self.currencies_prices[symbol][ExchangeConstantsTickersColumns.BID.value] * quantity
         elif symbol_inversed in self.currencies_prices:
@@ -81,10 +84,10 @@ class TradesManager:
             value += self.evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
         return value
 
-    # Evaluate value returns the currency quantity value in the reported (attribute) currency
+    # Evaluate value returns the currency quantity value in the reference (attribute) currency
     def evaluate_value(self, currency, quantity):
-        # easy case --> the current currency is the reported currency
-        if currency == self.reported_market:
+        # easy case --> the current currency is the reference currency
+        if currency == self.reference_market:
             return quantity
         else:
             return self.try_get_value_of_currency(currency, quantity)

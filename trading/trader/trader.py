@@ -85,6 +85,9 @@ class Trader:
     def get_order_manager(self):
         return self.order_manager
 
+    def get_trades_manager(self):
+        return self.trades_manager
+
     def stop_order_manager(self):
         self.order_manager.stop()
 
