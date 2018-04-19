@@ -4,8 +4,8 @@ import traceback
 from logging.config import fileConfig
 
 import ccxt
-from botcore.config.config import load_config
 
+from config.config import load_config
 from config.cst import *
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.evaluator_creator import EvaluatorCreator

@@ -2,7 +2,6 @@ import twitter
 
 from config.cst import *
 from services.abstract_service import *
-from tools.decoding_encoding import DecoderEncoder
 
 
 class TwitterService(AbstractService):
@@ -10,6 +9,14 @@ class TwitterService(AbstractService):
     def __init__(self):
         super().__init__()
         self.twitter_api = None
+
+    @staticmethod
+    def is_setup_correctly(config):
+        if CONFIG_TWITTER in config[CONFIG_CATEGORY_SERVICES] \
+                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]:
+            return True
+        else:
+            return False
 
     def get_user_id(self, user_account):
         user = self.twitter_api.GetUser(screen_name=user_account)
@@ -45,6 +52,9 @@ class TwitterService(AbstractService):
             return tweet["extended_tweet"]["full_text"]
         except KeyError:
             return tweet["text"]
+
+    def post(self, content):
+        self.twitter_api.PostUpdate(status=content)
 
     def tweet_to_string(self, tweet):
         try:
