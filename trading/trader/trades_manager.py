@@ -64,7 +64,7 @@ class TradesManager:
             self.get_currencies_prices()
             self.get_portfolio_current_value()
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
-            self.profitability_percent = 100 * self.portfolio_current_value / self.portfolio_origin_value
+            self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
         except Exception as e:
             self.logger.error(str(e))
 
@@ -97,7 +97,7 @@ class TradesManager:
         if symbol in self.currencies_prices:
             return self.currencies_prices[symbol][ExchangeConstantsTickersColumns.BID.value] * quantity
         elif symbol_inverted in self.currencies_prices:
-            return self.currencies_prices[symbol_inverted][ExchangeConstantsTickersColumns.BID.value] * 1 / quantity
+            return quantity / self.currencies_prices[symbol_inverted][ExchangeConstantsTickersColumns.BID.value]
         else:
             # TODO : manage if currency/market does not exist
             return 0

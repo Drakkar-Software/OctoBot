@@ -26,11 +26,13 @@ class FinalEvaluator(AsynchronousClient):
             if self.symbol_evaluator.notifier.enabled() and state is not EvaluatorStates.NEUTRAL:
                 self.symbol_evaluator.get_notifier().notify(self.final_eval,
                                                             self.symbol_evaluator,
+                                                            self.symbol_evaluator.get_trader(self.exchange),
                                                             state,
                                                             pprint.pformat(self.symbol_evaluator.get_matrix().get_matrix()))
 
             if self.symbol_evaluator.get_trader(self.exchange).enabled():
                 self.symbol_evaluator.get_evaluator_order_creator().create_order(
+                    self.final_eval,
                     self.symbol,
                     self.exchange,
                     self.symbol_evaluator.get_trader(self.exchange),
@@ -38,6 +40,7 @@ class FinalEvaluator(AsynchronousClient):
 
             if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
                 self.symbol_evaluator.get_evaluator_order_creator().create_order(
+                    self.final_eval,
                     self.symbol,
                     self.exchange,
                     self.symbol_evaluator.get_trader_simulator(self.exchange),

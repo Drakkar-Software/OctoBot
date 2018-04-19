@@ -25,15 +25,24 @@ class Notification:
         else:
             return False
 
-    def notify(self, final_eval, symbol_evaluator, result, matrix):
+    def notify(self, final_eval, symbol_evaluator, trader, result, matrix):
         if NotificationTypes.MAIL.value in self.notification_type:
             if GmailService.is_setup_correctly(self.config):
                 gmail_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL][CONFIG_SERVICE_INSTANCE]
+
+                profitability, profitability_percent = trader.get_trades_manager().get_profitability()
+
                 gmail_service.send_mail("CRYPTO BOT ALERT : {0} / {1}".format(symbol_evaluator.crypto_currency,
                                                                               result),
-                                        "CRYPTO BOT ALERT : {0} / {1} \n {2}".format(symbol_evaluator.crypto_currency,
-                                                                                     result,
-                                                                                     matrix))
+                                        "CRYPTO BOT ALERT : {0} / {1} \n {2} \n Current portfolio profitability : {3} "
+                                        "{4} ({5}%)".format(
+                                            symbol_evaluator.crypto_currency,
+                                            result,
+                                            matrix,
+                                            round(profitability, 2),
+                                            trader.get_trades_manager().get_reference_market(),
+                                            round(profitability_percent, 2)))
+
                 self.logger.info("Mail sent")
             else:
                 self.logger.debug("Mail disabled")
@@ -48,10 +57,10 @@ class Notification:
                                      "\n Cryptocurrency : #{1}"
                                      "\n Result : {2}"
                                      "\n Evaluation : {3}".format(
-                                                                symbol_evaluator.crypto_currency,
-                                                                " #".join(formatted_pairs),
-                                                                str(result).split(".")[1],
-                                                                final_eval))
+                    symbol_evaluator.crypto_currency,
+                    " #".join(formatted_pairs),
+                    str(result).split(".")[1],
+                    final_eval))
 
                 self.logger.info("Twitter sent")
             else:
