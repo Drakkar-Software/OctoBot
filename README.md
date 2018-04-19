@@ -59,6 +59,25 @@ Create a **config.json** file in the **config folder** with the following exampl
 ```
 python main.py
 ```
+## Advanced evaluators and analysis tools
+**Adding implementations of any evaluator**
+
+To add another implementation of an existing evaluator, 3 simple step:
+1. Create a class **inheriting** the evaluator to improve
+2. Store it in the evaluator's **Advanced** folder (in CryptoBot/evaluator/**_evaluator_type_**/Advanced).
+3. In this Advanced folder, create or update the **__init__.py** file to add the following line:
+```
+from .**_file_containing_new_implementation_name_**.py import *
+```
+**Adding implementations of any analysis tool**
+
+To add another implementation of an existing analysis tool, 3 simple step:
+1. Create a class inheriting the analyser to improve
+2. Store it in the **Advanced** folder (in CryptoBot/evaluator/Util/Advanced).
+3. In this Advanced folder, create or update the **__init__.py** file to add the following line:
+```
+from .**_file_containing_new_implementation_name_**.py import *
+```
 
 ## Changelog
 See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md)
