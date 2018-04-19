@@ -21,6 +21,9 @@ class Portfolio:
             for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
                 self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
 
+    def get_portfolio(self):
+        return self.portfolio
+
     def get_currency_portfolio(self, currency, portfolio_type=AVAILABLE):
         if currency in self.portfolio:
             return self.portfolio[currency][portfolio_type]

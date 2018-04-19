@@ -157,3 +157,50 @@ class TraderOrderType(Enum):
     STOP_LOSS_LIMIT = 6
     SELL_MARKET = 7
     SELL_LIMIT = 8
+
+
+class ExchangeConstantsTickersColumns(Enum):
+    SYMBOL = "symbol"
+    TIMESTAMP = "timestamp"
+    DATETIME = "datetime"
+    HIGH = "high"
+    LOW = "low"
+    BID = "bid"
+    BID_VOLUME = "bidVolume"
+    ASK = "ask"
+    ASK_VOLUME = "askVolume"
+    VWAP = "vwap"
+    OPEN = "open"
+    CLOSE = "close"
+    LAST = "last"
+    PREVIOUS_CLOSE = "previousClose"
+    CHANGE = "change"
+    PERCENTAGE = "percentage"
+    AVERAGE = "average"
+    BASE_VOLUME = "baseVolume"
+    QUOTE_VOLUME = "quoteVolume"
+    INFO = "info"
+
+
+class ExchangeConstantsTickersInfoColumns(Enum):
+    SYMBOL = "symbol"
+    PRICE_CHANGE = "priceChange"
+    PRICE_CHANGE_PERCENT = "priceChangePercent"
+    WEIGHTED_AVERAGE_PRICE =  "weightedAvgPrice"
+    PREVIOUS_CLOSE_PRICE = "prevClosePrice"
+    LAST_PRICE = "lastPrice"
+    LAST_QUANTITY = "lastQty"
+    BID_PRICE = "bidPrice"
+    BID_QUANTITY = "bidQty"
+    ASK_PRICE = "askPrice"
+    ASK_QUANTITY = "askQty"
+    OPEN_PRICE = "openPrice"
+    HIGH_PRICE = "highPrice"
+    LOW_PRICE = "lowPrice"
+    VOLUME = "volume"
+    QUOTE_VOLUME = "quoteVolume"
+    OPEN_TIME = "openTime"
+    CLOSE_TIME = "closeTime"
+    FIRST_ID = "firstId"
+    LAST_ID = "lastId"
+    COUNT = "count"

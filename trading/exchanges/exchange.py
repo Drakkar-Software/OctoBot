@@ -17,6 +17,8 @@ class Exchange:
         self.create_client()
         self.client.load_markets()
 
+        self.all_currencies_price_ticker = None
+
         # time.sleep (exchange.rateLimit / 1000) # time.sleep wants seconds
 
     def enabled(self):
@@ -96,6 +98,10 @@ class Exchange:
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     def get_price_ticker(self, symbol):
         return self.client.fetch_ticker(symbol)
+
+    def get_all_currencies_price_ticker(self):
+        self.all_currencies_price_ticker = self.client.fetch_tickers()
+        return self.all_currencies_price_ticker
 
     # ORDERS
     # {
@@ -182,3 +188,8 @@ class Exchange:
     def split_symbol(symbol):
         splitted = symbol.split(MARKET_SEPARATOR)
         return splitted[0], splitted[1]
+
+    # Merge currency and market
+    @staticmethod
+    def merge_currencies(currency, market):
+        return "{0}/{1}".format(currency, market)
