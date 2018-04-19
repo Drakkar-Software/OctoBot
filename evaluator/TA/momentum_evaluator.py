@@ -46,9 +46,8 @@ class BBMomentumEvaluator(MomentumEvaluator):
         self.enabled = True
 
     def eval_impl(self):
-        self.eval_note = AdvancedManager.compute_using_util(self.config, MomentumAnalyser,
-                                                            MomentumAnalyser.bollinger_momentum_analysis,
-                                                            self.data[PriceStrings.STR_PRICE_CLOSE.value])
+        self.eval_note = AdvancedManager.get_class(self.config, MomentumAnalyser).bollinger_momentum_analysis(
+            self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
 class CandlePatternMomentumEvaluator(MomentumEvaluator):
     def __init__(self):

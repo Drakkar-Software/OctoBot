@@ -13,11 +13,11 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
     def __init__(self):
         NewsSocialEvaluator.__init__(self)
         EvaluatorDispatcherClient.__init__(self)
-        self.enabled = False
+        self.enabled = True
         self.is_threaded = False
         self.count = 0
         self.symbol = ""
-        self.sentiment_analysers = []
+        self.sentiment_analyser = None
 
     def set_dispatcher(self, dispatcher):
         super().set_dispatcher(dispatcher)
@@ -49,15 +49,10 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
             self.notify_evaluator_threads(self.__class__.__name__)
 
     def get_sentiment(self, tweet):
-        evaluations = []
-        for analyser in self.sentiment_analysers:
-            # to improve with next analysers
-
-            # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
-            # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
-            # https://github.com/cjhutto/vaderSentiment
-            evaluations.append(-0.1*analyser.analyse(tweet)["compound"])
-        return numpy.mean(evaluations)
+        # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
+        # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
+        # https://github.com/cjhutto/vaderSentiment
+        return -0.1*self.sentiment_analyser.analyse(tweet)["compound"]
 
     def eval_impl(self):
         pass
@@ -100,7 +95,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
 
     def prepare(self):
         self.purify_config()
-        self.sentiment_analysers = AdvancedManager.get_class_instances(self.config, SentimentAnalyser)
+        self.sentiment_analyser = AdvancedManager.get_util_instance(self.config, SentimentAnalyser)
 
 
 class MediumNewsEvaluator(NewsSocialEvaluator):

@@ -19,7 +19,7 @@ class EvaluatorCreator:
         evaluator_advanced_eval_class_list = []
         for evaluator_subclass in evaluator_class.__subclasses__():
             for eval_class in evaluator_subclass.__subclasses__():
-                for eval_class_type in AdvancedManager.get_class(config, eval_class):
+                for eval_class_type in AdvancedManager.get_classes(config, eval_class):
                     evaluator_advanced_eval_class_list.append(eval_class_type)
         return evaluator_advanced_eval_class_list
 

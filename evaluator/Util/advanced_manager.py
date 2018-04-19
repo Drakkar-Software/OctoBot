@@ -1,7 +1,8 @@
-from config.cst import CONFIG_ADVANCED
+from config.cst import CONFIG_ADVANCED_CLASSES, CONFIG_ADVANCED_INSTANCES
 from evaluator.Util.abstract_util import AbstractUtil
 from evaluator.abstract_evaluator import AbstractEvaluator
 import numpy
+import logging
 
 
 class AdvancedManager:
@@ -61,7 +62,8 @@ class AdvancedManager:
     """
     @staticmethod
     def create_class_list(config):
-        config[CONFIG_ADVANCED] = {}
+        config[CONFIG_ADVANCED_CLASSES] = {}
+        config[CONFIG_ADVANCED_INSTANCES] = {}
 
         # Evaluators
         AdvancedManager.get_advanced(config, AbstractEvaluator)
@@ -70,32 +72,42 @@ class AdvancedManager:
         AdvancedManager.get_advanced(config, AbstractUtil)
 
     @staticmethod
-    def get_advanced_list(config):
-        return config[CONFIG_ADVANCED]
+    def get_advanced_classes_list(config):
+        return config[CONFIG_ADVANCED_CLASSES]
+
+    @staticmethod
+    def get_advanced_instances_list(config):
+        return config[CONFIG_ADVANCED_INSTANCES]
 
     @staticmethod
     def append_to_class_list(config, class_name, class_type):
-        if class_name not in AdvancedManager.get_advanced_list(config):
-            AdvancedManager.get_advanced_list(config)[class_name] = [class_type]
+        if class_name not in AdvancedManager.get_advanced_classes_list(config):
+            AdvancedManager.get_advanced_classes_list(config)[class_name] = [class_type]
         else:
-            AdvancedManager.get_advanced_list(config)[class_name].append(class_type)
+            AdvancedManager.get_advanced_classes_list(config)[class_name].append(class_type)
 
     @staticmethod
-    def get_class(config, class_type):
-        if class_type.get_name() in AdvancedManager.get_advanced_list(config):
-            return AdvancedManager.get_advanced_list(config)[class_type.get_name()]
+    def get_classes(config, class_type):
+        if class_type.get_name() in AdvancedManager.get_advanced_classes_list(config):
+            return AdvancedManager.get_advanced_classes_list(config)[class_type.get_name()]
         else:
             return [class_type]
 
     @staticmethod
-    def get_class_instances(config, class_type):
-        return [class_type() for class_type in AdvancedManager.get_class(config,class_type)]
+    def get_class(config, class_type):
+        classes = AdvancedManager.get_classes(config, class_type)
+        if classes and len(classes) > 1:
+            logging.getLogger(AdvancedManager.__name__) \
+                .warning("More than one instance of %s available, using %s." % (class_type, classes[0]))
+        return classes[0]
 
     @staticmethod
-    def compute_using_util(config, class_type, method, *args):
-        results = []
-        if class_type.__name__ in AdvancedManager.get_advanced_list(config):
-            for available_class_type in AdvancedManager.get_advanced_list(config)[class_type.__name__]:
-                method_impl = getattr(available_class_type, method.__name__)
-                results.append(method_impl(*args))
-        return numpy.mean(results)
+    def get_util_instance(config, class_type, *args):
+        advanced_class_type = AdvancedManager.get_class(config, class_type)
+        if class_type in AdvancedManager.get_advanced_instances_list(config):
+            return AdvancedManager.get_advanced_instances_list(config)[class_type]
+        elif advanced_class_type:
+            instance = advanced_class_type(*args)
+            AdvancedManager.get_advanced_instances_list(config)[class_type] = instance
+            return instance
+        return None
