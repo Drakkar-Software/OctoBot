@@ -1,3 +1,5 @@
+import logging
+
 from config.cst import CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 
@@ -8,6 +10,8 @@ class TradesManager:
         self.trader = trader
         self.portfolio = trader.get_portfolio()
         self.exchange = trader.get_exchange()
+        self.logger = logging.getLogger(self.__class__.__name__)
+
         self.trades = []
         self.profitability = 0
         self.profitability_percent = 0
@@ -46,10 +50,16 @@ class TradesManager:
     """
     def get_profitability(self):
         self.profitability = 0
-        self.get_currencies_prices()
-        self.get_portfolio_current_value()
-        self.profitability = self.portfolio_current_value - self.portfolio_origin_value
-        self.profitability_percent = 100 * self.portfolio_current_value / self.portfolio_origin_value
+        self.profitability_percent = 0
+
+        try:
+            self.get_currencies_prices()
+            self.get_portfolio_current_value()
+            self.profitability = self.portfolio_current_value - self.portfolio_origin_value
+            self.profitability_percent = 100 * self.portfolio_current_value / self.portfolio_origin_value
+        except Exception as e:
+            self.logger.error(str(e))
+
         return self.profitability, self.profitability_percent
 
     def get_trades_value(self):
@@ -71,7 +81,6 @@ class TradesManager:
     It will try to create the symbol that fit with the exchange logic
     Returns the value found of this currency quantity, if not found returns 0     
     """
-    # TODO : manage if currency/market does not exist
     def try_get_value_of_currency(self, currency, quantity):
         symbol = self.exchange.merge_currencies(currency, self.reference_market)
         symbol_inversed = self.exchange.merge_currencies(self.reference_market, currency)
@@ -80,6 +89,7 @@ class TradesManager:
         elif symbol_inversed in self.currencies_prices:
             return self.currencies_prices[symbol_inversed][ExchangeConstantsTickersColumns.BID.value] * 1 / quantity
         else:
+            # TODO : manage if currency/market does not exist
             return 0
 
     def evaluate_portfolio_value(self, portfolio):
