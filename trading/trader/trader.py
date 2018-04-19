@@ -1,9 +1,10 @@
 import logging
 
 from config.cst import CONFIG_ENABLED_OPTION
-from trading.trader.order_manager import OrderManager
+from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
+from trading.trader.trades_manager import TradesManager
 
 
 class Trader:
@@ -14,11 +15,11 @@ class Trader:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = False
 
-        self.trades = []
-
         self.portfolio = Portfolio(self.config, self)
 
-        self.order_manager = OrderManager(config, self)
+        self.trades_manager = TradesManager(self)
+
+        self.order_manager = OrdersManager(config, self)
         self.order_manager.start()
 
         # Debug
@@ -65,7 +66,7 @@ class Trader:
         self.portfolio.update_portfolio(order)
 
         # add to trade history
-        self.trades.append(Trade(self.exchange, order))
+        self.trades_manager.add_new_trade(Trade(self.exchange, order))
 
         # remove order to open_orders
         self.order_manager.remove_order_from_list(order)

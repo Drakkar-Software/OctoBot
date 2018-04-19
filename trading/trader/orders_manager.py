@@ -7,7 +7,7 @@ import ccxt
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus
 
 
-class OrderManager(threading.Thread):
+class OrdersManager(threading.Thread):
     def __init__(self, config, trader):
         super().__init__()
         self.config = config
