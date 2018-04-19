@@ -1,12 +1,10 @@
-import numpy
-
 from config.cst import *
 from evaluator.Dispatchers.TwitterDispatcher import TwitterDispatcher
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
+from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.Util.sentiment_analyser import SentimentAnalyser
 from evaluator.evaluator_dispatcher import *
 from tools.decoding_encoding import DecoderEncoder
-from evaluator.Util.advanced_manager import AdvancedManager
 
 
 class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):

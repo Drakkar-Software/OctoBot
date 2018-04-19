@@ -1,8 +1,8 @@
+twitter
 vaderSentiment
 pandas
 pytrends
 ccxt
-HerklosBotsCore
 TA-Lib
 pytest
 numpy

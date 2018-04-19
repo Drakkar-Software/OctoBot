@@ -9,6 +9,7 @@ START_EVAL_PERTINENCE = 1
 
 MARKET_SEPARATOR = "/"
 
+CONFIG_FILE = "config/config.json"
 CONFIG_GLOBAL_UTILS = "global_utils"
 CONFIG_ADVANCED_CLASSES = "advanced_classes"
 CONFIG_ADVANCED_INSTANCES = "advanced_instances"
@@ -18,6 +19,11 @@ CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
 CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
 CONFIG_CRYPTO_PAIRS = "pairs"
+
+# gmail
+CONFIG_GMAIL = "gmail"
+
+# twitter
 CONFIG_TWITTERS_ACCOUNTS = "accounts"
 CONFIG_TWITTERS_HASHTAGS = "hashtags"
 CONFIG_TWITTER = "twitter"

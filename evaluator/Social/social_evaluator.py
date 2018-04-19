@@ -2,8 +2,7 @@ import os
 import threading
 from abc import *
 
-from botcore.config.config import load_config
-
+from config.config import load_config
 from config.cst import *
 from evaluator.abstract_evaluator import AbstractEvaluator
 

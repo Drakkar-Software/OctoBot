@@ -4,7 +4,6 @@
 ```
 git clone https://github.com/Trading-Bot/CryptoBot
 cd CryptoBot
-sudo pip install git+https://github.com/Herklos-Bots/BotCore
 sudo pip install -r requirements.txt
 ```
 
