@@ -1,4 +1,3 @@
-twitter
 vaderSentiment
 pandas
 pytrends
