@@ -13,7 +13,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
     def __init__(self):
         super().__init__()
         self.pytrends = None
-        self.enabled = False
+        self.enabled = True
         self.is_threaded = False
 
     # Use pytrends lib (https://github.com/GeneralMills/pytrends)
@@ -35,9 +35,8 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
         interest_over_time_df = self.pytrends.interest_over_time()
 
         # compute bollinger bands
-        self.eval_note = AdvancedManager.compute_using_util(self.config, MomentumAnalyser,
-                                                            MomentumAnalyser.bollinger_momentum_analysis,
-                                                            interest_over_time_df[self.symbol], numpy.sqrt)
+        self.eval_note = AdvancedManager.get_class(self.config, MomentumAnalyser).bollinger_momentum_analysis(
+            interest_over_time_df[self.symbol], numpy.sqrt)
         if self.eval_note != START_PENDING_EVAL_NOTE and self.eval_note != 0:
             self.eval_note = -1*self.eval_note
 
