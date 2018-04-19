@@ -14,6 +14,12 @@ class AbstractService:
     def get_name(cls):
         return cls.__name__
 
+    # Returns true if all the service has an instance in config
+    @staticmethod
+    @abstractmethod
+    def is_setup_correctly(config):
+        raise NotImplementedError("is_setup_correctly not implemented")
+
     # Used to provide a new logger for this particular indicator
     def set_logger(self, logger):
         self.logger = logger

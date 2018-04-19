@@ -1,7 +1,9 @@
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
+from evaluator.Util.abstract_util import AbstractUtil
 
-class SentimentAnalyser:
+
+class SentimentAnalyser(AbstractUtil):
     def __init__(self):
         self.analyzer = SentimentIntensityAnalyzer()
 

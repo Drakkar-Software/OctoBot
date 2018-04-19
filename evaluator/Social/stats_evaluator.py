@@ -4,8 +4,9 @@ from pytrends.exceptions import ResponseError
 from pytrends.request import TrendReq
 
 from config.cst import *
-from evaluator.Util.trend_analyser import TrendAnalyser
-from evaluator.Social.social_evaluator import StatsSocialEvaluator, TimeFrames
+from evaluator.Util.momentum_analyser import MomentumAnalyser
+from evaluator.Social.social_evaluator import StatsSocialEvaluator
+from evaluator.Util.advanced_manager import AdvancedManager
 
 
 class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
@@ -34,8 +35,9 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
         interest_over_time_df = self.pytrends.interest_over_time()
 
         # compute bollinger bands
-        self.eval_note = TrendAnalyser.bollinger_trend_analysis(interest_over_time_df[self.symbol], numpy.sqrt)
-        if self.eval_note != 0:
+        self.eval_note = AdvancedManager.get_class(self.config, MomentumAnalyser).bollinger_momentum_analysis(
+            interest_over_time_df[self.symbol], numpy.sqrt)
+        if self.eval_note != START_PENDING_EVAL_NOTE and self.eval_note != 0:
             self.eval_note = -1*self.eval_note
 
     def run(self):

@@ -1,10 +1,13 @@
 import logging
+import sys
+import traceback
 from logging.config import fileConfig
 
 import ccxt
-from botcore.config.config import load_config
 
+from config.config import load_config
 from config.cst import *
+from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import Symbol_Evaluator
@@ -30,13 +33,17 @@ class Crypto_Bot:
         # Logger
         fileConfig('config/logging_config.ini')
         self.logger = logging.getLogger(self.__class__.__name__)
+        sys.excepthook = self.log_uncaught_exceptions
 
         # Version
-        self.logger.info("Version : " + VERSION)
+        self.logger.info("Version : {0}".format(VERSION))
 
         # Config
         self.logger.info("Load config file...")
         self.config = load_config()
+
+        # Advanced
+        AdvancedManager.create_class_list(self.config)
 
         # Interfaces
         self.web_app = WebApp(self.config)
@@ -109,11 +116,11 @@ class Crypto_Bot:
 
                         # notify that exchange doesn't support this symbol
                         else:
-                            self.logger.warning(exchange_type.__name__ + " doesn't support " + symbol)
+                            self.logger.warning("{0} doesn't support {1}".format(exchange_type.__name__, symbol))
 
     def create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
         # Create real time TA evaluators
-        real_time_ta_eval_list = EvaluatorCreator.create_real_time_TA_evals(self.config,
+        real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
                                                                             exchange,
                                                                             symbol)
         for time_frame in self.time_frames:
@@ -148,10 +155,10 @@ class Crypto_Bot:
             symbol_evaluator.join_threads()
 
         for trader in self.exchange_traders:
-            self.exchange_traders[trader].stop_order_listeners()
+            self.exchange_traders[trader].join_order_manager()
 
         for trader_simulator in self.exchange_trader_simulators:
-            self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
+            self.exchange_trader_simulators[trader_simulator].join_order_manager()
 
         for thread in self.dispatchers_list:
             thread.join()
@@ -168,10 +175,10 @@ class Crypto_Bot:
             symbol_evaluator.stop_threads()
 
         for trader in self.exchange_traders:
-            self.exchange_traders[trader].stop_order_listeners()
+            self.exchange_traders[trader].stop_order_manager()
 
         for trader_simulator in self.exchange_trader_simulators:
-            self.exchange_trader_simulators[trader_simulator].stop_order_listeners()
+            self.exchange_trader_simulators[trader_simulator].stop_order_manager()
 
         for thread in self.dispatchers_list:
             thread.stop()
@@ -181,3 +188,8 @@ class Crypto_Bot:
 
         if self.web_app.enabled():
             self.web_app.stop()
+
+    @staticmethod
+    def log_uncaught_exceptions(ex_cls, ex, tb):
+        logging.exception(''.join(traceback.format_tb(tb)))
+        logging.exception('{0}: {1}'.format(ex_cls, ex))

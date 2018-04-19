@@ -1,8 +1,10 @@
 import logging
 
-from config.cst import CONFIG_ENABLED_OPTION
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER
+from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
+from trading.trader.trades_manager import TradesManager
 
 
 class Trader:
@@ -13,10 +15,12 @@ class Trader:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = False
 
-        self.open_orders = []
-        self.trades = []
-
         self.portfolio = Portfolio(self.config, self)
+
+        self.trades_manager = TradesManager(config, self)
+
+        self.order_manager = OrdersManager(config, self)
+        self.order_manager.start()
 
         # Debug
         if self.enabled():
@@ -25,7 +29,7 @@ class Trader:
             self.logger.debug("Disabled on " + self.exchange.get_name())
 
     def enabled(self):
-        if self.config["trader"][CONFIG_ENABLED_OPTION]:
+        if self.config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]:
             return True
         else:
             return False
@@ -40,31 +44,53 @@ class Trader:
         return self.portfolio
 
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
+        # update_portfolio_available
+        #
+        # if linked_to is not None:
+        #     linked_to.add_linked_order(order)
+        #     order.add_linked_order(linked_to)
+
         pass
 
-    def notify_order_close(self, order):
+    def notify_order_cancel(self, order):
         # update portfolio with ended order
+        self.portfolio.update_portfolio_available(order, False)
+
+    def notify_order_close(self, order):
+        # Cancel linked orders
+        for linked_order in order.get_linked_orders():
+            linked_order.cancel_order()
+            self.order_manager.remove_order_from_list(linked_order)
+
+        # update portfolio with ended order
+        self.portfolio.update_portfolio_available(order, False)
         self.portfolio.update_portfolio(order)
 
         # add to trade history
-        self.trades.append(Trade(self.exchange, order))
+        self.trades_manager.add_new_trade(Trade(self.exchange, order))
 
         # remove order to open_orders
-        self.open_orders.remove(order)
+        self.order_manager.remove_order_from_list(order)
 
     def get_open_orders(self):
-        return self.open_orders
+        return self.order_manager.get_open_orders()
 
     def close_open_orders(self):
         pass
 
     def update_open_orders(self):
+        # see exchange
+        # -> update order manager
         pass
 
-    def stop_order_listeners(self):
-        for order in self.open_orders:
-            order.stop()
+    def get_order_manager(self):
+        return self.order_manager
+
+    def get_trades_manager(self):
+        return self.trades_manager
+
+    def stop_order_manager(self):
+        self.order_manager.stop()
 
     def join_order_listeners(self):
-        for order in self.open_orders:
-            order.join()
+        self.order_manager.join()
