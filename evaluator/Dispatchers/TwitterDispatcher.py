@@ -38,17 +38,21 @@ class TwitterDispatcher(EvaluatorDispatcher):
             self.social_config[CONFIG_TWITTERS_HASHTAGS] = config[CONFIG_TWITTERS_HASHTAGS]
 
     def init_users_accounts(self):
+        tempo_added_accounts = []
         for symbol in self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
             for account in self.social_config[CONFIG_TWITTERS_ACCOUNTS][symbol]:
-                try:
-                    self.user_ids.append(str(self.twitter_service.get_user_id(account)))
-                except twitter.TwitterError as e:
-                    self.logger.error(account + " : " + str(e))
+                if account not in tempo_added_accounts:
+                    tempo_added_accounts.append(account)
+                    try:
+                        self.user_ids.append(str(self.twitter_service.get_user_id(account)))
+                    except twitter.TwitterError as e:
+                        self.logger.error(account + " : " + str(e))
 
     def init_hashtags(self):
         for symbol in self.social_config[CONFIG_TWITTERS_HASHTAGS]:
             for hashtag in self.social_config[CONFIG_TWITTERS_HASHTAGS][symbol]:
-                self.hashtags.append(hashtag)
+                if hashtag not in self.hashtags:
+                    self.hashtags.append(hashtag)
 
     def get_data(self):
         if not self.user_ids:
