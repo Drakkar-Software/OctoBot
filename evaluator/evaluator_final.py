@@ -1,8 +1,8 @@
 import logging
-import pprint
 from queue import Queue
 
 from config.cst import EvaluatorStates, INIT_EVAL_NOTE, CONFIG_NOTIFICATION_INSTANCE
+from tools import EvaluatorNotification
 from tools.asynchronous_client import AsynchronousClient
 
 
@@ -18,19 +18,20 @@ class FinalEvaluator(AsynchronousClient):
         self.symbol = None
         self.is_computing = False
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.notifier = EvaluatorNotification(self.config)
         self.queue = Queue()
 
     def set_state(self, state):
         if state != self.state:
             self.state = state
             self.logger.info(" ** NEW FINAL STATE ** : {0}".format(self.state))
-            if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled() and state is not EvaluatorStates.VERY_SHORT:
-                self.config[CONFIG_NOTIFICATION_INSTANCE].notify(self.final_eval,
-                                                                 self.symbol_evaluator,
-                                                                 self.symbol_evaluator.get_trader(self.exchange),
-                                                                 state,
-                                                                 pprint.pformat(
-                                                                     self.symbol_evaluator.get_matrix().get_matrix()))
+            if self.notifier.enabled() and state is not EvaluatorStates.VERY_SHORT:
+                self.notifier.notify_state_changed(
+                    self.final_eval,
+                    self.symbol_evaluator,
+                    self.symbol_evaluator.get_trader(self.exchange),
+                    state,
+                    self.symbol_evaluator.get_matrix().get_matrix())
 
             if self.symbol_evaluator.get_trader(self.exchange).enabled():
                 self.symbol_evaluator.get_evaluator_order_creator().create_order(
