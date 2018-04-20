@@ -22,8 +22,10 @@ class Notification:
 
         # Debug
         if self.enabled():
+            self.enable = True
             self.logger.debug("Enabled")
         else:
+            self.enable = False
             self.logger.debug("Disabled")
 
     def enabled(self):
@@ -33,7 +35,7 @@ class Notification:
             return False
 
     def gmail_notification_available(self):
-        if NotificationTypes.MAIL.value in self.notification_type:
+        if NotificationTypes.MAIL.value in self.notification_type and self.enable:
             if GmailService.is_setup_correctly(self.config):
                 return True
         return False
@@ -48,7 +50,7 @@ class Notification:
             self.logger.debug("Mail disabled")
 
     def twitter_notification_available(self):
-        if NotificationTypes.TWITTER.value in self.notification_type:
+        if NotificationTypes.TWITTER.value in self.notification_type and self.enable:
             if TwitterService.is_setup_correctly(self.config):
                 return True
         return False
