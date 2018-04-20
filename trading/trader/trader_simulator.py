@@ -32,7 +32,7 @@ class TraderSimulator(Trader):
 
         # manage order notifier
         if linked_to is None:
-            order_notifier = OrderNotifier(order)
+            order_notifier = OrderNotifier(self.config, order)
         else:
             order_notifier = linked_to.get_order_notifier()
 

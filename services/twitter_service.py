@@ -54,7 +54,18 @@ class TwitterService(AbstractService):
             return tweet["text"]
 
     def post(self, content):
-        self.twitter_api.PostUpdate(status=content)
+        try:
+            return self.twitter_api.PostUpdate(status=content)
+        except Exception as e:
+            self.logger.error("Failed to send tweet : {0}".format(e))
+            return None
+
+    def respond(self, tweet_id, content):
+        try:
+            return self.twitter_api.PostUpdate(status=content, in_reply_to_status_id=tweet_id)
+        except Exception as e:
+            self.logger.error("Failed to send tweet : {0}".format(e))
+            return None
 
     def tweet_to_string(self, tweet):
         try:

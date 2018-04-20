@@ -25,8 +25,9 @@ class FinalEvaluator(AsynchronousClient):
         if state != self.state:
             self.state = state
             self.logger.info(" ** NEW FINAL STATE ** : {0}".format(self.state))
+            evaluator_notification = None
             if self.notifier.enabled() and state is not EvaluatorStates.VERY_SHORT:
-                self.notifier.notify_state_changed(
+                evaluator_notification = self.notifier.notify_state_changed(
                     self.final_eval,
                     self.symbol_evaluator,
                     self.symbol_evaluator.get_trader(self.exchange),
@@ -39,7 +40,7 @@ class FinalEvaluator(AsynchronousClient):
                     self.symbol,
                     self.exchange,
                     self.symbol_evaluator.get_trader(self.exchange),
-                    state)
+                    state).get_order_notifier().notify(evaluator_notification)
 
             if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
                 self.symbol_evaluator.get_evaluator_order_creator().create_order(
@@ -47,7 +48,7 @@ class FinalEvaluator(AsynchronousClient):
                     self.symbol,
                     self.exchange,
                     self.symbol_evaluator.get_trader_simulator(self.exchange),
-                    state)
+                    state).get_order_notifier().notify(evaluator_notification)
 
     def get_state(self):
         return self.state
