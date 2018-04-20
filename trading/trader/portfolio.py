@@ -56,6 +56,7 @@ class Portfolio:
 
     """ update_portfolio performs the update of the total / available quantity of a currency
     It is called only when an order is filled to update the real quantity of the currency to be set in "total" field
+    Returns get_profitability() return
     """
     def update_portfolio(self, order):
         currency, market = order.get_currency_and_market()
@@ -89,10 +90,13 @@ class Portfolio:
                                                                                                   self.portfolio))
 
         # debug purpose
-        profitability, profitability_percent = self.trader.get_trades_manager().get_profitability()
+        profitability, profitability_percent, profitability_diff = self.trader.get_trades_manager().get_profitability()
+
         self.logger.debug("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
-                                                                                    self.trader.get_trades_manager().get_reference_market(),
+                                                                                    self.trader.get_trades_manager().get_reference(),
                                                                                     round(profitability_percent, 2)))
+
+        return profitability, profitability_percent, profitability_diff
 
     """ update_portfolio_available performs the availability update of the concerned currency in the current portfolio
     It is called when an order is filled, created or canceled to update the "available" filed of the portfolio

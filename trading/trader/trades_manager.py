@@ -21,12 +21,6 @@ class TradesManager:
         self.profitability = 0
         self.profitability_percent = 0
 
-        # The reference market is the currency unit of the calculated quantity value
-        if CONFIG_TRADER_REFERENCE_MARKET in self.config[CONFIG_TRADER]:
-            self.reference_market = self.config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET]
-        else:
-            self.reference_market = DEFAULT_REFERENCE_MARKET
-
         self.currencies_prices = None
         self.origin_portfolio = None
         self.last_portfolio = None
@@ -35,14 +29,24 @@ class TradesManager:
         self.portfolio_current_value = 0
         self.trades_value = 0
 
+        self.reference_market = TradesManager.get_reference_market(self.config)
+
         self.get_portfolio_origin_value()
+
+    @staticmethod
+    def get_reference_market(config):
+        # The reference market is the currency unit of the calculated quantity value
+        if CONFIG_TRADER_REFERENCE_MARKET in config[CONFIG_TRADER]:
+            return config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET]
+        else:
+            return DEFAULT_REFERENCE_MARKET
+
+    def get_reference(self):
+        return self.reference_market
 
     def add_new_trade(self, trade):
         if trade not in self.trades:
             self.trades.append(trade)
-
-    def get_reference_market(self):
-        return self.reference_market
 
     """ get currencies prices update currencies data by polling tickers from exchange
     and set currencies_prices attribute
@@ -53,10 +57,11 @@ class TradesManager:
 
     """ Get profitability calls get_currencies_prices to update required data
     Then calls get_portfolio_current_value to set the current value of portfolio_current_value attribute
-    Returns the profitability and the profitability percentage
+    Returns the profitability, the profitability percentage and the difference with the last portfolio profitability
     """
 
     def get_profitability(self):
+        profitability_diff = self.profitability
         self.profitability = 0
         self.profitability_percent = 0
 
@@ -65,10 +70,13 @@ class TradesManager:
             self.get_portfolio_current_value()
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
             self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
+
+            # calculate difference with the last current portfolio
+            profitability_diff -= self.profitability
         except Exception as e:
             self.logger.error(str(e))
 
-        return self.profitability, self.profitability_percent
+        return self.profitability, self.profitability_percent, profitability_diff
 
     # Currently unused method
     def get_trades_value(self):

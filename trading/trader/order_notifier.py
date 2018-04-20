@@ -14,5 +14,9 @@ class OrderNotifier:
         orders.append(self.order)
         self.notifier.notify_create(evaluator_notification, orders, self.order.get_order_symbol())
 
-    def end(self):
-        self.notifier.notify_end()
+    def end(self, order_filled, orders_canceled, trade_profitability, portfolio_profitability):
+        self.notifier.notify_end(order_filled,
+                                 orders_canceled,
+                                 self.order.get_order_symbol(),
+                                 trade_profitability,
+                                 portfolio_profitability)

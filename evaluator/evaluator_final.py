@@ -26,7 +26,7 @@ class FinalEvaluator(AsynchronousClient):
             self.state = state
             self.logger.info(" ** NEW FINAL STATE ** : {0}".format(self.state))
             evaluator_notification = None
-            if self.notifier.enabled() and state is not EvaluatorStates.VERY_SHORT:
+            if self.notifier.enabled() and state is not EvaluatorStates.NEUTRAL:
                 evaluator_notification = self.notifier.notify_state_changed(
                     self.final_eval,
                     self.symbol_evaluator,

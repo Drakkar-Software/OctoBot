@@ -64,13 +64,16 @@ class Trader:
 
         # update portfolio with ended order
         self.portfolio.update_portfolio_available(order, False)
-        self.portfolio.update_portfolio(order)
+        _, profitability_percent, profitability_diff = self.portfolio.update_portfolio(order)
 
         # add to trade history
         self.trades_manager.add_new_trade(Trade(self.exchange, order))
 
         # remove order to open_orders
         self.order_manager.remove_order_from_list(order)
+
+        # notification
+        order.get_order_notifier().end(order, order.get_linked_orders(), profitability_diff, profitability_percent)
 
     def get_open_orders(self):
         return self.order_manager.get_open_orders()
