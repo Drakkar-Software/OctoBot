@@ -2,6 +2,7 @@ import logging
 
 from config.cst import CONFIG_ENABLED_OPTION
 from trading.trader.order import OrderConstants
+from trading.trader.order_notifier import OrderNotifier
 from trading.trader.trader import Trader
 
 """ TraderSimulator has a role of exchange response simulator
@@ -28,7 +29,14 @@ class TraderSimulator(Trader):
         # create new order instance
         order_class = OrderConstants.TraderOrderTypeClasses[order_type]
         order = order_class(self)
-        order.new(order_type, symbol, quantity, price, stop_price)
+
+        # manage order notifier
+        if linked_to is None:
+            order_notifier = OrderNotifier(order)
+        else:
+            order_notifier = linked_to.get_order_notifier()
+
+        order.new(order_type, symbol, quantity, price, stop_price, order_notifier)
 
         # notify order manager of a new open order
         self.order_manager.add_order_to_list(order)

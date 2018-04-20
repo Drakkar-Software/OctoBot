@@ -32,17 +32,21 @@ class Order:
         self.executed_time = 0
         self.last_prices = None
 
+        self.order_notifier = None
+
         self.linked_orders = []
 
     # create the order by setting all the required values
-    def new(self, order_type, symbol, quantity, price=None, stop_price=None):
+    def new(self, order_type, symbol, quantity, price=None, stop_price=None, order_notifier=None):
         self.origin_price = price
         self.last_prices = price
         self.origin_quantity = quantity
         self.origin_stop_price = stop_price
         self.symbol = symbol
         self.order_type = order_type
+        self.order_notifier = order_notifier
         self.currency, self.market = self.exchange.split_symbol(symbol)
+
         if not self.trader.simulate:
             # self.status, self.order_id, self.filled_price, self.filled_quantity, self.ex_time
             self.exchange.create_order(order_type, symbol, quantity, price, stop_price)
@@ -119,6 +123,9 @@ class Order:
 
     def get_origin_price(self):
         return self.origin_price
+
+    def get_order_notifier(self):
+        return self.order_notifier
 
     def set_last_prices(self, last_prices):
         self.last_prices = last_prices

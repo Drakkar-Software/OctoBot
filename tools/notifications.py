@@ -32,18 +32,19 @@ class Notification:
 
                 profitability, profitability_percent = trader.get_trades_manager().get_profitability()
 
-                gmail_service.send_mail("CRYPTO BOT ALERT : {0} / {1}".format(symbol_evaluator.crypto_currency,
-                                                                              result),
-                                        "CRYPTO BOT ALERT : {0} / {1} \n {2} \n Current portfolio profitability : {3} "
-                                        "{4} ({5}%)".format(
-                                            symbol_evaluator.crypto_currency,
-                                            result,
-                                            matrix,
-                                            round(profitability, 2),
-                                            trader.get_trades_manager().get_reference_market(),
-                                            round(profitability_percent, 2)))
-
-                self.logger.info("Mail sent")
+                result = gmail_service.send_mail("CRYPTO BOT ALERT : {0} / {1}".format(symbol_evaluator.crypto_currency,
+                                                                                       result),
+                                                 "CRYPTO BOT ALERT : {0} / {1} \n {2} \n Current portfolio "
+                                                 "profitability : {3} "
+                                                 "{4} ({5}%)".format(
+                                                     symbol_evaluator.crypto_currency,
+                                                     result,
+                                                     matrix,
+                                                     round(profitability, 2),
+                                                     trader.get_trades_manager().get_reference_market(),
+                                                     round(profitability_percent, 2)))
+                if result:
+                    self.logger.info("Mail sent")
             else:
                 self.logger.debug("Mail disabled")
 
@@ -53,16 +54,17 @@ class Notification:
 
                 # + "\n see more at https://github.com/Trading-Bot/CryptoBot"
                 formatted_pairs = [p.replace("/", "") for p in symbol_evaluator.get_symbol_pairs()]
-                twitter_service.post("CryptoBot ALERT : #{0} "
-                                     "\n Cryptocurrency : #{1}"
-                                     "\n Result : {2}"
-                                     "\n Evaluation : {3}".format(
-                    symbol_evaluator.crypto_currency,
-                    " #".join(formatted_pairs),
-                    str(result).split(".")[1],
-                    final_eval))
+                result = twitter_service.post("CryptoBot ALERT : #{0} "
+                                              "\n Cryptocurrency : #{1}"
+                                              "\n Result : {2}"
+                                              "\n Evaluation : {3}".format(
+                                                symbol_evaluator.crypto_currency,
+                                                " #".join(formatted_pairs),
+                                                str(result).split(".")[1],
+                                                final_eval))
 
-                self.logger.info("Twitter sent")
+                if result:
+                    self.logger.info("Twitter sent")
             else:
                 self.logger.debug("Twitter notification disabled")
 
