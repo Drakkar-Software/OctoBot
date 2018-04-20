@@ -8,6 +8,8 @@ from config.cst import CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_NOTIFICATION, CONF
 from services import TwitterService
 from services.gmail_service import GmailService
 from trading import Exchange
+from trading.trader.order import OrderConstants
+from trading.trader.trades_manager import TradesManager
 
 
 class Notification:
@@ -92,7 +94,7 @@ class EvaluatorNotification(Notification):
                                                 result,
                                                 pprint.pformat(matrix),
                                                 round(profitability, 2),
-                                                trader.get_trades_manager().get_reference_market(),
+                                                TradesManager.get_reference_market(self.config),
                                                 round(profitability_percent, 2)))
 
         if self.twitter_notification_available():
@@ -118,26 +120,67 @@ class OrdersNotification(Notification):
         super().__init__(config)
         self.evaluator_notification = None
 
+    @staticmethod
+    def twitter_order_description(order_type, quantity, currency, price, market):
+        return "{0} : {1} {2} at {3} {4}".format(
+            OrderConstants.TraderOrderTypeClasses[order_type].__name__,
+            round(quantity, 7),
+            currency,
+            round(price, 7),
+            market)
+
     def notify_create(self, evaluator_notification, orders, symbol):
         if evaluator_notification is not None:
             self.evaluator_notification = evaluator_notification
 
         if self.twitter_notification_available() \
-                and evaluator_notification is not None \
-                and evaluator_notification.get_tweet_instance() is not None:
-            tweet_instance = evaluator_notification.get_tweet_instance()
-            market, currency = Exchange.split_symbol(symbol)
+                and self.evaluator_notification is not None \
+                and self.evaluator_notification.get_tweet_instance() is not None:
+
+            tweet_instance = self.evaluator_notification.get_tweet_instance()
+            currency, market = Exchange.split_symbol(symbol)
             content = "Order creation "
             for order in orders:
-                content += "\n {0} : {1} {2} at {3} {4}".format(order.get_order_type(),
-                                                                round(order.get_origin_quantity(), 7),
-                                                                currency,
-                                                                round(order.get_origin_price(), 7),
-                                                                market)
+                content += "\n {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
+                                                                                        order.get_origin_quantity(),
+                                                                                        currency,
+                                                                                        order.get_origin_price(),
+                                                                                        market))
             self.twitter_response_factory(tweet_instance, content)
 
-    def notify_end(self):
-        pass
+    def notify_end(self, order_filled, orders_canceled, symbol, trade_profitability, portfolio_profitability):
+        if self.twitter_notification_available() \
+                and self.evaluator_notification is not None \
+                and self.evaluator_notification.get_tweet_instance() is not None:
+            currency, market = Exchange.split_symbol(symbol)
+            tweet_instance = self.evaluator_notification.get_tweet_instance()
+            content = ""
+
+            if order_filled is not None:
+                content += "Order filled \n {0}".format(
+                    OrdersNotification.twitter_order_description(order_filled.get_order_type(),
+                                                                 order_filled.get_origin_quantity(),
+                                                                 currency,
+                                                                 order_filled.get_origin_price(),
+                                                                 market))
+
+            if orders_canceled is not None and len(orders_canceled) > 0:
+                content += "\n Order canceled "
+                for order in orders_canceled:
+                    content += "\n {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
+                                                                                            order.get_origin_quantity(),
+                                                                                            currency,
+                                                                                            order.get_origin_price(),
+                                                                                            market))
+
+            if trade_profitability is not None:
+                content += "\n Trade profitability : {0} {1}".format(trade_profitability,
+                                                                     TradesManager.get_reference_market(self.config))
+
+            if portfolio_profitability is not None:
+                content += "\n Portfolio profitability : {0}%".format(portfolio_profitability)
+
+            self.twitter_response_factory(tweet_instance, content)
 
 
 class NotificationTypes(Enum):
