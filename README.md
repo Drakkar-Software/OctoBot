@@ -39,7 +39,7 @@ Create a **config.json** file in the **config folder** with the following exampl
     }
   },
   "services": {
-    "mail": {
+    "gmail": {
       "gmail_user": "YOUR_GMAIL_USERNAME",
       "gmail_password": "YOUR_GMAIL_PASSWORD",
       "mail_dest": "YOUR_DESTINATION_MAIL"
