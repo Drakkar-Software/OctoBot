@@ -12,25 +12,26 @@ Create a **config.json** file in the **config folder** with the following exampl
 ```
 {
   "crypto_currencies": {
+    # See Configuration Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Configuration
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
     }
   },
   "exchanges": {
-    "binance": {
-      "api-key": "YOUR_BINANCE_API_KEY",
-      "api-secret": "YOUR_BINANCE_API_SECRET"
-    }
+    # See Exchanges Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Exchanges
   },
   "notification":{
+    # See Notifications Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Notifications
     "enabled": true,
     "type": [1, 2]
   },
   "trader":{
+    # See Trader Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Trader
     "enabled": false,
     "risk": 1
   },
   "simulator":{
+    # See Simulator Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator
     "enabled": true,
     "risk": 1,
     "starting_portfolio": {
@@ -39,18 +40,7 @@ Create a **config.json** file in the **config folder** with the following exampl
     }
   },
   "services": {
-    "gmail": {
-      "gmail_user": "YOUR_GMAIL_USERNAME",
-      "gmail_password": "YOUR_GMAIL_PASSWORD",
-      "mail_dest": "YOUR_DESTINATION_MAIL"
-    },
-    "twitter": {
-      "api-key": "YOUR_TWITTER_API_KEY",
-      "api-secret": "YOUR_TWITTER_API_SECRET",
-      "access-token": "YOUR_TWITTER_ACCESS_TOKEN",
-      "access-token-secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
-    }
-  },
+    # See Services Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Services
   }
 }
 ```
