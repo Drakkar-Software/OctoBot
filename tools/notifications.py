@@ -7,6 +7,7 @@ from config.cst import CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_NOTIFICATION, CONF
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER
 from services import TwitterService
 from services.gmail_service import GmailService
+from trading import Exchange
 
 
 class Notification:
@@ -54,15 +55,29 @@ class Notification:
         if self.twitter_notification_available():
             twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
             result = twitter_service.post(tweet)
-            if result:
+            if result is not None:
                 self.logger.info("Twitter sent")
+            return result
         else:
             self.logger.debug("Twitter notification disabled")
+        return None
+
+    def twitter_response_factory(self, tweet_instance, tweet):
+        if self.twitter_notification_available():
+            twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
+            result = twitter_service.respond(tweet_instance.id, tweet)
+            if result is not None:
+                self.logger.info("Twitter sent")
+            return result
+        else:
+            self.logger.debug("Twitter notification disabled")
+        return None
 
 
 class EvaluatorNotification(Notification):
     def __init__(self, config):
         super().__init__(config)
+        self.tweet_instance = None
 
     def notify_state_changed(self, final_eval, symbol_evaluator, trader, result, matrix):
         if self.gmail_notification_available():
@@ -83,22 +98,43 @@ class EvaluatorNotification(Notification):
         if self.twitter_notification_available():
             # + "\n see more at https://github.com/Trading-Bot/CryptoBot"
             formatted_pairs = [p.replace("/", "") for p in symbol_evaluator.get_symbol_pairs()]
-            self.twitter_notification_factory("CryptoBot ALERT : #{0} "
-                                              "\n Cryptocurrency : #{1}"
-                                              "\n Result : {2}"
-                                              "\n Evaluation : {3}".format(
+            self.tweet_instance = self.twitter_notification_factory("CryptoBot ALERT : #{0} "
+                                                                    "\n Cryptocurrency : #{1}"
+                                                                    "\n Result : {2}"
+                                                                    "\n Evaluation : {3}".format(
                 symbol_evaluator.crypto_currency,
                 " #".join(formatted_pairs),
                 str(result).split(".")[1],
                 final_eval))
 
+        return self
+
+    def get_tweet_instance(self):
+        return self.tweet_instance
+
 
 class OrdersNotification(Notification):
     def __init__(self, config):
         super().__init__(config)
+        self.evaluator_notification = None
 
-    def notify_create(self):
-        pass
+    def notify_create(self, evaluator_notification, orders, symbol):
+        if evaluator_notification is not None:
+            self.evaluator_notification = evaluator_notification
+
+        if self.twitter_notification_available() \
+                and evaluator_notification is not None \
+                and evaluator_notification.get_tweet_instance() is not None:
+            tweet_instance = evaluator_notification.get_tweet_instance()
+            market, currency = Exchange.split_symbol(symbol)
+            content = "Order creation "
+            for order in orders:
+                content += "\n {0} : {1} {2} at {3} {4}".format(order.get_order_type(),
+                                                                round(order.get_origin_quantity(), 7),
+                                                                currency,
+                                                                round(order.get_origin_price(), 7),
+                                                                market)
+            self.twitter_response_factory(tweet_instance, content)
 
     def notify_end(self):
         pass
