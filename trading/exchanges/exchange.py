@@ -19,6 +19,8 @@ class Exchange:
 
         self.all_currencies_price_ticker = None
 
+        self.logger = logging.getLogger(self.name)
+
         # time.sleep (exchange.rateLimit / 1000) # time.sleep wants seconds
 
     def enabled(self):
@@ -86,7 +88,11 @@ class Exchange:
         return self.client.fetchOrderBook(symbol, limit)
 
     def get_recent_trades(self, symbol):
-        return self.client.fetch_trades(symbol)
+        try:
+            return self.client.fetch_trades(symbol)
+        except Exception as e:
+            self.logger.error("Failed to get recent trade {0}".format(e))
+            return None
 
     def get_market_price(self, symbol):
         order_book = self.get_order_book(symbol)
