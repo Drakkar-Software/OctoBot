@@ -1,7 +1,7 @@
 import logging
 from queue import Queue
 
-from config.cst import EvaluatorStates, INIT_EVAL_NOTE, CONFIG_NOTIFICATION_INSTANCE
+from config.cst import EvaluatorStates, INIT_EVAL_NOTE
 from tools import EvaluatorNotification
 from tools.asynchronous_client import AsynchronousClient
 

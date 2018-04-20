@@ -178,7 +178,7 @@ class OrdersNotification(Notification):
                                                                      TradesManager.get_reference_market(self.config))
 
             if portfolio_profitability is not None:
-                content += "\n Portfolio profitability : {0}%".format(round(portfolio_profitability, 2))
+                content += "\n Portfolio profitability : {0}%".format(round(portfolio_profitability, 5))
 
             self.twitter_response_factory(tweet_instance, content)
 
