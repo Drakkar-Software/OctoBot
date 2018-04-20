@@ -10,40 +10,52 @@ sudo pip install -r requirements.txt
 ## Configuration
 Create a **config.json** file in the **config folder** with the following example :
 ```
-{
-  // See Configuration Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Configuration
-  "crypto_currencies": {
+Rename config/default_config.json to config/config.json
+```
+
+### More configuration
+See [Configuration Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Configuration)
+```
+"crypto_currencies": {
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
     }
-  },
-  // See Exchanges Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Exchanges
-  "exchanges": {
-  },
-  // See Notifications Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Notifications
-  "notification":{
+}
+```
+See [Exchanges Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Exchanges)
+```
+"exchanges": {}
+```
+See [Notifications Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Notifications)
+```
+"notification":{
     "enabled": true,
     "type": [1, 2]
-  },
-  // See Trader Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Trader
-  "trader":{
+}
+```
+See [Trader Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Trader)
+```
+"trader":{
     "enabled": false,
     "risk": 1
-  },
-  // See Simulator Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator
-  "simulator":{
+}
+```
+See [Simulator Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator)
+```
+"simulator":{
     "enabled": true,
     "risk": 1,
     "starting_portfolio": {
       "BTC": 10,
       "USDT": 1000
     }
-  },
-  // See Services Wiki at https://github.com/Herklos-Bots/CryptoBot/wiki/Services
-  "services": {
-  }
 }
 ```
+See [Services Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Services)
+```
+"services": {}
+```
+  
 ## Usage
 ```
 python main.py
