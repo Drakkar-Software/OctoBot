@@ -25,6 +25,10 @@ class FinalEvaluator(AsynchronousClient):
         if state != self.state:
             self.state = state
             self.logger.info(" ** NEW FINAL STATE ** : {0}".format(self.state))
+
+            # cancel open orders
+            self.symbol_evaluator.get_trader(self.exchange).cancel_open_orders(self.symbol)
+
             evaluator_notification = None
             if self.notifier.enabled() and state is not EvaluatorStates.NEUTRAL:
                 evaluator_notification = self.notifier.notify_state_changed(
