@@ -4,9 +4,8 @@ from config.cst import CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_RE
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 
 """ TradesManager will store all trades performed by the exchange trader
-Another feature of TradesManager is the profitability calculation 
-by subtracting portfolio_current_value and portfolio_origin_value
-"""
+Another feature of TradesManager is the profitability calculation
+by subtracting portfolio_current_value and portfolio_origin_value"""
 
 
 class TradesManager:
