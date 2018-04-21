@@ -10,7 +10,7 @@ from config.cst import *
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
-from evaluator.symbol_evaluator import Symbol_Evaluator
+from evaluator.symbol_evaluator import SymbolEvaluator
 from interfaces.web.app import WebApp
 from tools import Notification
 from tools.performance_analyser import PerformanceAnalyser
@@ -32,7 +32,7 @@ class Crypto_Bot:
         # Logger
         fileConfig('config/logging_config.ini')
         self.logger = logging.getLogger(self.__class__.__name__)
-        sys.excepthook = self.log_uncaught_exceptions
+        sys.excepthook = self._log_uncaught_exceptions
 
         # Version
         self.logger.info("Version : {0}".format(VERSION))
@@ -93,7 +93,7 @@ class Crypto_Bot:
         for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
             # create symbol evaluator
-            symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency, self.dispatchers_list)
+            symbol_evaluator = SymbolEvaluator(self.config, crypto_currency, self.dispatchers_list)
             symbol_evaluator.set_traders(self.exchange_traders)
             symbol_evaluator.set_trader_simulators(self.exchange_trader_simulators)
             self.symbol_evaluator_list.append(symbol_evaluator)
@@ -108,15 +108,15 @@ class Crypto_Bot:
 
                         # Verify that symbol exists on this exchange
                         if exchange.symbol_exists(symbol):
-                            self.create_symbol_threads_managers(symbol,
-                                                                exchange,
-                                                                symbol_evaluator)
+                            self._create_symbol_threads_managers(symbol,
+                                                                 exchange,
+                                                                 symbol_evaluator)
 
                         # notify that exchange doesn't support this symbol
                         else:
                             self.logger.warning("{0} doesn't support {1}".format(exchange_type.__name__, symbol))
 
-    def create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
+    def _create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
         # Create real time TA evaluators
         real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
                                                                             exchange,
@@ -188,6 +188,6 @@ class Crypto_Bot:
             self.web_app.stop()
 
     @staticmethod
-    def log_uncaught_exceptions(ex_cls, ex, tb):
+    def _log_uncaught_exceptions(ex_cls, ex, tb):
         logging.exception(''.join(traceback.format_tb(tb)))
         logging.exception('{0}: {1}'.format(ex_cls, ex))

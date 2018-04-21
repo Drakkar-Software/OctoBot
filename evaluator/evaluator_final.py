@@ -21,7 +21,7 @@ class FinalEvaluator(AsynchronousClient):
         self.notifier = EvaluatorNotification(self.config)
         self.queue = Queue()
 
-    def set_state(self, state):
+    def _set_state(self, state):
         if state != self.state:
             self.state = state
             self.logger.info(" ** NEW FINAL STATE ** : {0}".format(self.state))
@@ -39,7 +39,7 @@ class FinalEvaluator(AsynchronousClient):
                     self.symbol_evaluator.get_matrix().get_matrix())
 
             if self.symbol_evaluator.get_trader(self.exchange).enabled():
-                FinalEvaluator.push_order_notification_if_possible(
+                FinalEvaluator._push_order_notification_if_possible(
                     self.symbol_evaluator.get_evaluator_order_creator().create_order(
                         self.final_eval,
                         self.symbol,
@@ -49,7 +49,7 @@ class FinalEvaluator(AsynchronousClient):
                     evaluator_notification)
 
             if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
-                FinalEvaluator.push_order_notification_if_possible(
+                FinalEvaluator._push_order_notification_if_possible(
                     self.symbol_evaluator.get_evaluator_order_creator().create_order(
                         self.final_eval,
                         self.symbol,
@@ -59,7 +59,7 @@ class FinalEvaluator(AsynchronousClient):
                     evaluator_notification)
 
     @staticmethod
-    def push_order_notification_if_possible(order, notification):
+    def _push_order_notification_if_possible(order, notification):
         if order:
             order.get_order_notifier().notify(notification)
 
@@ -69,7 +69,7 @@ class FinalEvaluator(AsynchronousClient):
     def get_final_eval(self):
         return self.final_eval
 
-    def prepare(self):
+    def _prepare(self):
         strategies_analysis_note_counter = 0
         # Strategies analysis
         for evaluated_strategies in self.symbol_evaluator.get_strategies_eval_list():
@@ -81,34 +81,34 @@ class FinalEvaluator(AsynchronousClient):
         else:
             self.final_eval = INIT_EVAL_NOTE
 
-    def calculate_final(self):
+    def _calculate_final(self):
         # TODO : improve
         # self.final_eval = (self.ta_final_eval * EvaluatorsPertinence.TAEvaluator.value
         #                    + self.social_final_eval * EvaluatorsPertinence.SocialEvaluator.value)
         # self.final_eval /= (EvaluatorsPertinence.TAEvaluator.value + EvaluatorsPertinence.SocialEvaluator.value)
         pass
 
-    def create_state(self):
+    def _create_state(self):
         # TODO : improve
         if self.final_eval < -0.6:
-            self.set_state(EvaluatorStates.VERY_LONG)
+            self._set_state(EvaluatorStates.VERY_LONG)
         elif self.final_eval < -0.2:
-            self.set_state(EvaluatorStates.LONG)
+            self._set_state(EvaluatorStates.LONG)
         elif self.final_eval < 0.2:
-            self.set_state(EvaluatorStates.NEUTRAL)
+            self._set_state(EvaluatorStates.NEUTRAL)
         elif self.final_eval < 0.6:
-            self.set_state(EvaluatorStates.SHORT)
+            self._set_state(EvaluatorStates.SHORT)
         else:
-            self.set_state(EvaluatorStates.VERY_SHORT)
+            self._set_state(EvaluatorStates.VERY_SHORT)
 
     def finalize(self, exchange, symbol):
         # reset previous note
         self.final_eval = INIT_EVAL_NOTE
         self.exchange = exchange
         self.symbol = symbol
-        self.prepare()
-        self.calculate_final()
-        self.create_state()
+        self._prepare()
+        self._calculate_final()
+        self._create_state()
         self.logger.debug("--> {0}".format(self.state))
 
     def stop(self):

@@ -38,18 +38,18 @@ class OrdersManager(threading.Thread):
         self.keep_running = False
 
     # Update each open order symbol with exchange data
-    def update_last_symbol_list(self):
+    def _update_last_symbol_list(self):
         updated = []
         for order in self.order_list:
             if order.get_order_symbol() not in updated:
                 try:
-                    self.update_last_symbol_prices(order.get_order_symbol())
+                    self._update_last_symbol_prices(order.get_order_symbol())
                 except ccxt.base.errors.RequestTimeout as e:
                     self.logger.error(str(e))
                 updated.append(order.get_order_symbol())
 
     # Ask to update a specific symbol with exchange data
-    def update_last_symbol_prices(self, symbol):
+    def _update_last_symbol_prices(self, symbol):
         self.last_symbol_prices[symbol] = self.trader.get_exchange().get_recent_trades(symbol)
 
     def get_open_orders(self):
@@ -63,7 +63,7 @@ class OrdersManager(threading.Thread):
         while self.keep_running:
             # update all prices only if simulate
             if self.trader.simulate:
-                self.update_last_symbol_list()
+                self._update_last_symbol_list()
 
             for order in self.order_list:
                 # update symbol prices from exchange only if simulate

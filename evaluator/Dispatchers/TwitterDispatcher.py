@@ -37,7 +37,7 @@ class TwitterDispatcher(EvaluatorDispatcher):
         else:
             self.social_config[CONFIG_TWITTERS_HASHTAGS] = config[CONFIG_TWITTERS_HASHTAGS]
 
-    def init_users_accounts(self):
+    def _init_users_accounts(self):
         tempo_added_accounts = []
         for symbol in self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
             for account in self.social_config[CONFIG_TWITTERS_ACCOUNTS][symbol]:
@@ -48,19 +48,19 @@ class TwitterDispatcher(EvaluatorDispatcher):
                     except twitter.TwitterError as e:
                         self.logger.error(account + " : " + str(e))
 
-    def init_hashtags(self):
+    def _init_hashtags(self):
         for symbol in self.social_config[CONFIG_TWITTERS_HASHTAGS]:
             for hashtag in self.social_config[CONFIG_TWITTERS_HASHTAGS][symbol]:
                 if hashtag not in self.hashtags:
                     self.hashtags.append(hashtag)
 
-    def get_data(self):
+    def _get_data(self):
         if not self.user_ids:
-            self.init_users_accounts()
+            self._init_users_accounts()
         if not self.hashtags:
-            self.init_hashtags()
+            self._init_hashtags()
 
-    def something_to_watch(self):
+    def _something_to_watch(self):
         return (CONFIG_TWITTERS_HASHTAGS in self.social_config
                 and self.social_config[CONFIG_TWITTERS_HASHTAGS]) \
                or (CONFIG_TWITTERS_ACCOUNTS in self.social_config
@@ -68,8 +68,8 @@ class TwitterDispatcher(EvaluatorDispatcher):
 
     def run(self):
         if self.is_setup_correctly:
-            if self.something_to_watch():
-                self.get_data()
+            if self._something_to_watch():
+                self._get_data()
                 try:
                     for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids,
                                                                                      track=self.hashtags):
