@@ -6,8 +6,7 @@ from trading.trader.order_notifier import OrderNotifier
 from trading.trader.trader import Trader
 
 """ TraderSimulator has a role of exchange response simulator
-- During order creation / filling / canceling process
-"""
+- During order creation / filling / canceling process"""
 
 
 class TraderSimulator(Trader):
