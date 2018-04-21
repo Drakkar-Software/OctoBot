@@ -5,6 +5,18 @@ class EvaluatorOrderCreator:
     def __init__(self):
         self.last_values_count = 10
 
+        self.STOP_LOSS_ORDER_MAX_PERCENT = 0.99
+        self.STOP_LOSS_ORDER_MIN_PERCENT = 0.90
+        self.STOP_LOSS_ORDER_ATTENUATION = 0.1
+
+        self.QUANTITY_MIN_PERCENT = 0.1
+        self.QUANTITY_MAX_PERCENT = 0.9
+        self.QUANTITY_ATTENUATION = 0.3
+
+        self.LIMIT_ORDER_MAX_PERCENT = 0.99
+        self.LIMIT_ORDER_MIN_PERCENT = 0.90
+        self.LIMIT_ORDER_ATTENUATION = 0.1
+
     @staticmethod
     def _check_factor(min_val, max_val, factor):
         if factor > max_val:
@@ -14,28 +26,26 @@ class EvaluatorOrderCreator:
         else:
             return factor
 
-    @staticmethod
-    def _get_limit_price_from_risk(eval_note, trader):
+    def _get_limit_price_from_risk(self, eval_note, trader):
         if eval_note > 0:
             attenuate = 0.2
             factor = 1 + (1 - eval_note) * trader.get_risk() * attenuate
-            return EvaluatorOrderCreator._check_factor(1.01, 1.25, factor)
+            return EvaluatorOrderCreator._check_factor(1.01, 1.20, factor)
         else:
             attenuate = 0.2
             factor = (1 + eval_note) * trader.get_risk() * attenuate
             return EvaluatorOrderCreator._check_factor(0.75, 0.99, factor)
 
-    @staticmethod
-    def _get_limit_quantity_from_risk(eval_note, trader, quantity):
-        multi = 1.5
-        factor = abs(eval_note) * trader.get_risk() * multi
-        return EvaluatorOrderCreator._check_factor(0.1, 0.9, factor) * quantity
+    def _get_limit_quantity_from_risk(self, eval_note, trader, quantity):
+        factor = self.QUANTITY_MIN_PERCENT + ((abs(eval_note) + trader.get_risk()) * self.QUANTITY_ATTENUATION)
+        return EvaluatorOrderCreator._check_factor(self.QUANTITY_MIN_PERCENT,
+                                                   self.QUANTITY_MAX_PERCENT,
+                                                   factor) * quantity
 
-    @staticmethod
-    def _get_stop_price_from_risk(eval_note, trader):
-        attenuate = 0.5
-        factor = 0.99 - (abs(eval_note) * trader.get_risk() * attenuate)
-        return EvaluatorOrderCreator._check_factor(0.75, 0.99, factor)
+    def _get_stop_price_from_risk(self, eval_note, trader):
+        factor = self.STOP_LOSS_ORDER_MAX_PERCENT - \
+                 ((abs(eval_note) + trader.get_risk()) * self.STOP_LOSS_ORDER_ATTENUATION)
+        return EvaluatorOrderCreator._check_factor(self.STOP_LOSS_ORDER_MIN_PERCENT, self.STOP_LOSS_ORDER_MAX_PERCENT, factor)
 
     def create_order(self, eval_note, symbol, exchange, trader, state):
         last_prices = exchange.get_recent_trades(symbol)

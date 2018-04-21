@@ -29,34 +29,35 @@ class FinalEvaluator(AsynchronousClient):
             # cancel open orders
             self.symbol_evaluator.get_trader(self.exchange).cancel_open_orders(self.symbol)
 
-            evaluator_notification = None
-            if self.notifier.enabled() and state is not EvaluatorStates.NEUTRAL:
-                evaluator_notification = self.notifier.notify_state_changed(
-                    self.final_eval,
-                    self.symbol_evaluator,
-                    self.symbol_evaluator.get_trader(self.exchange),
-                    state,
-                    self.symbol_evaluator.get_matrix().get_matrix())
-
-            if self.symbol_evaluator.get_trader(self.exchange).enabled():
-                FinalEvaluator._push_order_notification_if_possible(
-                    self.symbol_evaluator.get_evaluator_order_creator().create_order(
+            if state is not EvaluatorStates.NEUTRAL:
+                evaluator_notification = None
+                if self.notifier.enabled():
+                    evaluator_notification = self.notifier.notify_state_changed(
                         self.final_eval,
-                        self.symbol,
-                        self.exchange,
+                        self.symbol_evaluator,
                         self.symbol_evaluator.get_trader(self.exchange),
-                        state),
-                    evaluator_notification)
+                        state,
+                        self.symbol_evaluator.get_matrix().get_matrix())
 
-            if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
-                FinalEvaluator._push_order_notification_if_possible(
-                    self.symbol_evaluator.get_evaluator_order_creator().create_order(
-                        self.final_eval,
-                        self.symbol,
-                        self.exchange,
-                        self.symbol_evaluator.get_trader_simulator(self.exchange),
-                        state),
-                    evaluator_notification)
+                if self.symbol_evaluator.get_trader(self.exchange).enabled():
+                    FinalEvaluator._push_order_notification_if_possible(
+                        self.symbol_evaluator.get_evaluator_order_creator().create_order(
+                            self.final_eval,
+                            self.symbol,
+                            self.exchange,
+                            self.symbol_evaluator.get_trader(self.exchange),
+                            state),
+                        evaluator_notification)
+
+                if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
+                    FinalEvaluator._push_order_notification_if_possible(
+                        self.symbol_evaluator.get_evaluator_order_creator().create_order(
+                            self.final_eval,
+                            self.symbol,
+                            self.exchange,
+                            self.symbol_evaluator.get_trader_simulator(self.exchange),
+                            state),
+                        evaluator_notification)
 
     @staticmethod
     def _push_order_notification_if_possible(order, notification):
@@ -89,6 +90,7 @@ class FinalEvaluator(AsynchronousClient):
 
     def _create_state(self):
         # TODO : improve
+        self.final_eval *= -2
         if self.final_eval < -0.6:
             self._set_state(EvaluatorStates.VERY_LONG)
         elif self.final_eval < -0.2:

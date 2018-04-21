@@ -200,7 +200,7 @@ class ExchangeConstantsTickersInfoColumns(Enum):
     SYMBOL = "symbol"
     PRICE_CHANGE = "priceChange"
     PRICE_CHANGE_PERCENT = "priceChangePercent"
-    WEIGHTED_AVERAGE_PRICE =  "weightedAvgPrice"
+    WEIGHTED_AVERAGE_PRICE = "weightedAvgPrice"
     PREVIOUS_CLOSE_PRICE = "prevClosePrice"
     LAST_PRICE = "lastPrice"
     LAST_QUANTITY = "lastQty"
