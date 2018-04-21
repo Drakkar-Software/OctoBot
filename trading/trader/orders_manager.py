@@ -10,7 +10,7 @@ from config.cst import ORDER_REFRESHER_TIME, OrderStatus
 Data updating process is generic but a specific implementation is called for each type of order (TraderOrderTypeClasses)
 The thread will perform this data update and the open orders status check each ORDER_REFRESHER_TIME seconds
 This class is particularly needed when exchanges doesn't offer stop loss orders
-This class has an essential role for the trader simulator"""
+This class has an essential role for the trader simulator """
 
 
 class OrdersManager(threading.Thread):
