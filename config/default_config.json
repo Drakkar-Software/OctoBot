@@ -11,11 +11,11 @@
   },
   "trader":{
     "enabled": false,
-    "risk": 1
+    "risk": 0.5
   },
   "simulator":{
     "enabled": true,
-    "risk": 1,
+    "risk": 0.5,
     "starting_portfolio": {
       "BTC": 10,
       "USDT": 1000

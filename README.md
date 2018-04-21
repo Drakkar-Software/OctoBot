@@ -37,14 +37,14 @@ See [Trader Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Trader)
 ```
 "trader":{
     "enabled": false,
-    "risk": 1
+    "risk": 0.5
 }
 ```
 See [Simulator Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator)
 ```
 "simulator":{
     "enabled": true,
-    "risk": 1,
+    "risk": 0.5,
     "starting_portfolio": {
       "BTC": 10,
       "USDT": 1000
