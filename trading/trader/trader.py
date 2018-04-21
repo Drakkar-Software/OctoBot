@@ -56,7 +56,7 @@ class Trader:
 
     def cancel_order(self, order):
         order.cancel_order()
-        self.order_manager.remove_order_from_list(linked_order)
+        self.order_manager.remove_order_from_list(order)
 
     def cancel_open_orders(self, symbol):
         for order in self.get_open_orders():
