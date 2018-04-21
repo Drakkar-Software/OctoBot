@@ -60,7 +60,7 @@ class FinalEvaluator(AsynchronousClient):
 
     @staticmethod
     def push_order_notification_if_possible(order, notification):
-        if order and notification:
+        if order:
             order.get_order_notifier().notify(notification)
 
     def get_state(self):
