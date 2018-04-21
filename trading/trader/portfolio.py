@@ -122,5 +122,6 @@ class Portfolio:
                 self.update_portfolio_data(currency, new_quantity, False, True)
 
             # debug purpose
-            self.logger.debug("Portfolio available updated | Current Portfolio : {1}".format(order.get_order_symbol(),
-                                                                                             self.portfolio))
+            self.logger.debug("Portfolio available updated after order on {0} | Current Portfolio : {1}".format(
+                                 order.get_order_symbol(),
+                                 self.portfolio))
