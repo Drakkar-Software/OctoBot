@@ -5,7 +5,7 @@ from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 
 """ TradesManager will store all trades performed by the exchange trader
 Another feature of TradesManager is the profitability calculation
-by subtracting portfolio_current_value and portfolio_origin_value"""
+by subtracting portfolio_current_value and portfolio_origin_value """
 
 
 class TradesManager:

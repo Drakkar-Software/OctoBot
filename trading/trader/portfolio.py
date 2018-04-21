@@ -8,7 +8,7 @@ This will begin by loading current exchange portfolio (by pulling user data)
 In case of simulation this will load the CONFIG_STARTING_PORTFOLIO
 This class also manage the availability of each currency in the portfolio:
 - When an order is created it will subtract the quantity of the total
-- When an order is filled or canceled restore the availability with the real quantity"""
+- When an order is filled or canceled restore the availability with the real quantity """
 
 
 class Portfolio:

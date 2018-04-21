@@ -9,7 +9,7 @@ class AdvancedManager:
     """ is_abstract will test if the class in an abstract one or not
     by checking if __metaclass__ attribute is inherited or not we will know if the class is an abstract one
 
-    Returns True if it is an abstract one else False."""
+    Returns True if it is an abstract one else False. """
     @staticmethod
     def is_abstract(class_type):
         # Get class parental description
@@ -34,7 +34,8 @@ class AdvancedManager:
     For each abstract subclasses it will call itself with the reference abstract_class not set
     If the current child is not abstract it will be set as the reference only if abstract_class is None
     If there is not subclasses to class_type it will add class_type into the config advanced list 
-    with its name as a key or the reference class name --> abstract_class"""
+    with its name as a key or the reference class name --> abstract_class
+    """
     @staticmethod
     def get_advanced(config, class_type, abstract_class=None):
         if len(class_type.__subclasses__()) > 0:
