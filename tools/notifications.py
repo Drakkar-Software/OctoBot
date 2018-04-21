@@ -85,7 +85,7 @@ class EvaluatorNotification(Notification):
 
     def notify_state_changed(self, final_eval, symbol_evaluator, trader, result, matrix):
         if self.gmail_notification_available():
-            profitability, profitability_percent = trader.get_trades_manager().get_profitability()
+            profitability, profitability_percent, _ = trader.get_trades_manager().get_profitability()
 
             self.gmail_notification_factory("CRYPTO BOT ALERT : {0} / {1}".format(symbol_evaluator.crypto_currency,
                                                                                   result),
@@ -106,10 +106,10 @@ class EvaluatorNotification(Notification):
                                                                     "\n Cryptocurrency : #{1}"
                                                                     "\n Result : {2}"
                                                                     "\n Evaluation : {3}".format(
-                symbol_evaluator.crypto_currency,
-                " #".join(formatted_pairs),
-                str(result).split(".")[1],
-                final_eval))
+                                                                        symbol_evaluator.crypto_currency,
+                                                                        " #".join(formatted_pairs),
+                                                                        str(result).split(".")[1],
+                                                                        final_eval))
 
         return self
 
