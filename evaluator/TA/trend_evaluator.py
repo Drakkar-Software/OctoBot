@@ -1,6 +1,5 @@
 from config.cst import *
 import numpy
-import time
 
 from evaluator.TA.TA_evaluator import TrendEvaluator
 from evaluator.Util.trend_analyser import TrendAnalyser
