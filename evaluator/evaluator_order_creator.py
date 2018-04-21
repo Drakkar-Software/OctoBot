@@ -51,9 +51,27 @@ class EvaluatorOrderCreator:
     def _get_stop_price_from_risk(self, eval_note, trader):
         factor = self.STOP_LOSS_ORDER_MAX_PERCENT - \
                  ((abs(eval_note) + trader.get_risk()) * self.STOP_LOSS_ORDER_ATTENUATION)
-        return EvaluatorOrderCreator._check_factor(self.STOP_LOSS_ORDER_MIN_PERCENT, self.STOP_LOSS_ORDER_MAX_PERCENT, factor)
+        return EvaluatorOrderCreator._check_factor(self.STOP_LOSS_ORDER_MIN_PERCENT,
+                                                   self.STOP_LOSS_ORDER_MAX_PERCENT,
+                                                   factor)
 
-    def create_order(self, eval_note, symbol, exchange, trader, state):
+    @staticmethod
+    def can_create_order(symbol, exchange, trader, state):
+        currency, market = exchange.split_symbol(symbol)
+
+        # short cases => sell => need this currency
+        if state == EvaluatorStates.VERY_SHORT or state == EvaluatorStates.SHORT:
+            return trader.get_portfolio().get_currency_portfolio(currency) > 0
+
+        # long cases => buy => need money(aka other currency in the pair) to buy this currency
+        elif state == EvaluatorStates.LONG or state == EvaluatorStates.VERY_LONG:
+            return trader.get_portfolio().get_currency_portfolio(market) > 0
+
+        # other cases like neutral state or unfulfilled previous conditions
+        return False
+
+    # creates a new order, always check EvaluatorOrderCreator.can_create_order() first.
+    def create_new_order(self, eval_note, symbol, exchange, trader, state):
         last_prices = exchange.get_recent_trades(symbol)
         reference_sum = 0
 
@@ -69,7 +87,6 @@ class EvaluatorOrderCreator:
 
         # TODO : temp
         if state == EvaluatorStates.VERY_SHORT:
-            if current_portfolio > 0:
                 market = trader.create_order(TraderOrderType.SELL_MARKET,
                                              symbol,
                                              current_portfolio,
@@ -77,7 +94,6 @@ class EvaluatorOrderCreator:
                 return market
 
         elif state == EvaluatorStates.SHORT:
-            if current_portfolio > 0:
                 limit = trader.create_order(TraderOrderType.SELL_LIMIT,
                                             symbol,
                                             self._get_limit_quantity_from_risk(eval_note,
@@ -100,7 +116,6 @@ class EvaluatorOrderCreator:
 
         # TODO : stop loss
         elif state == EvaluatorStates.LONG:
-            if current_market_quantity > 0:
                 limit = trader.create_order(TraderOrderType.BUY_LIMIT,
                                             symbol,
                                             self._get_limit_quantity_from_risk(eval_note,
@@ -111,7 +126,6 @@ class EvaluatorOrderCreator:
                 return limit
 
         elif state == EvaluatorStates.VERY_LONG:
-            if current_market_quantity > 0:
                 market = trader.create_order(TraderOrderType.BUY_MARKET,
                                              symbol,
                                              market_quantity,

@@ -4,6 +4,7 @@ from queue import Queue
 from config.cst import EvaluatorStates, INIT_EVAL_NOTE
 from tools import EvaluatorNotification
 from tools.asynchronous_client import AsynchronousClient
+from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 
 
 class FinalEvaluator(AsynchronousClient):
@@ -29,7 +30,11 @@ class FinalEvaluator(AsynchronousClient):
             # cancel open orders
             self.symbol_evaluator.get_trader(self.exchange).cancel_open_orders(self.symbol)
 
-            if state is not EvaluatorStates.NEUTRAL:
+            if EvaluatorOrderCreator.can_create_order(self.symbol,
+                                                      self.exchange,
+                                                      self.symbol_evaluator.get_trader(
+                                                        self.exchange),
+                                                      state):
                 evaluator_notification = None
                 if self.notifier.enabled():
                     evaluator_notification = self.notifier.notify_state_changed(
@@ -41,7 +46,7 @@ class FinalEvaluator(AsynchronousClient):
 
                 if self.symbol_evaluator.get_trader(self.exchange).enabled():
                     FinalEvaluator._push_order_notification_if_possible(
-                        self.symbol_evaluator.get_evaluator_order_creator().create_order(
+                        self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
                             self.final_eval,
                             self.symbol,
                             self.exchange,
@@ -51,7 +56,7 @@ class FinalEvaluator(AsynchronousClient):
 
                 if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
                     FinalEvaluator._push_order_notification_if_possible(
-                        self.symbol_evaluator.get_evaluator_order_creator().create_order(
+                        self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
                             self.final_eval,
                             self.symbol,
                             self.exchange,
