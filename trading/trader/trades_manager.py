@@ -51,7 +51,7 @@ class TradesManager:
     and set currencies_prices attribute
     """
 
-    def _get_currencies_prices(self):
+    def _update_currencies_prices(self):
         self.currencies_prices = self.exchange.get_all_currencies_price_ticker()
 
     """ Get profitability calls get_currencies_prices to update required data
@@ -65,8 +65,8 @@ class TradesManager:
         self.profitability_percent = 0
 
         try:
-            self._get_currencies_prices()
-            self._get_portfolio_current_value()
+            self._update_currencies_prices()
+            self._update_portfolio_current_value()
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
             self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
 
@@ -84,12 +84,12 @@ class TradesManager:
             self.trades_value += self._evaluate_value(trade.get_currency(), trade.get_quantity())
         return self.trades_value
 
-    def _get_portfolio_current_value(self):
+    def _update_portfolio_current_value(self):
         self.last_portfolio = self.portfolio.get_portfolio()
         self.portfolio_current_value = self._evaluate_portfolio_value(self.last_portfolio)
 
     def _get_portfolio_origin_value(self):
-        self._get_currencies_prices()
+        self._update_currencies_prices()
         self.origin_portfolio = self.portfolio.get_portfolio()
         self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio)
 
