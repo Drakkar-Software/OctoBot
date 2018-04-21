@@ -54,14 +54,10 @@ class Trader:
 
         pass
 
-    def cancel_order(self, order):
-        order.cancel_order()
-        self.order_manager.remove_order_from_list(linked_order)
-
     def cancel_open_orders(self, symbol):
         for order in self.get_open_orders():
             if order.get_order_symbol() == symbol:
-                self.cancel_order(order)
+                order.cancel_order()
 
     def notify_order_cancel(self, order):
         # update portfolio with ended order
@@ -70,14 +66,14 @@ class Trader:
     def notify_order_close(self, order):
         # Cancel linked orders
         for linked_order in order.get_linked_orders():
-            self.cancel_order(linked_order)
+            linked_order.cancel_order()
 
         # update portfolio with ended order
         self.portfolio.update_portfolio_available(order, False)
         _, profitability_percent, profitability_diff = self.portfolio.update_portfolio(order)
 
         # add to trade history
-        self.trades_manager.add_new_trade(Trade(self.exchange, order))
+        self.trades_manager.add_new_trade_in_history(Trade(self.exchange, order))
 
         # remove order to open_orders
         self.order_manager.remove_order_from_list(order)
