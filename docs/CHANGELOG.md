@@ -1,3 +1,33 @@
+Changelog for 0.0.7
+====================
+*Released date : Apr 21 2018*
+
+# Concerned issues :
+    #26 added bollinger momentum and advanced util management
+    #48 [Portfolio] Manage availability of currencies
+    #51 [Trade / Trade Simulator] Implement profitability
+    #68 Create Advanced list manager
+    #69 fix availability and create mail notification profitability
+    #70 [Trading Simulator] Manage stop loss order / Create limit + stop loss 
+    #72 add OrderManager per exchange 
+    #73 Write exception into log file
+    #76 refactor advanced util classes management 
+    #83 Create CONTRIBUTING.md
+    #85 issue templates 
+
+
+# New features :
+    - Advanced Manager
+    - Order Manager
+    - Portfolio currencies availability
+    - Portfolio profitability measurement
+
+# Bug fix :
+    - Fix twitter notifications
+    - Fix gmail notifications
+    - Fix candle evaluator when no pattern is detected
+    - Fix RealTime Evaluators creation
+    
 Changelog for 0.0.6
 ====================
 *Released date : Apr 16 2018*

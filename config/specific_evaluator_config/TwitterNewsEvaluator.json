@@ -8,7 +8,7 @@
   },
   "hashtags" : {
     "Bitcoin": ["bitcoin","btc","binance","kucoin","tether","bitfinex","bitmex","cryptopia","cryptocurrencies","blockchain"],
-    "Ethereum": ["Ethereum"],
-    "Neo": ["neo"]
+    "Ethereum": ["Ethereum", "blockchain"],
+    "Neo": ["neo","blockchain"]
   }
 }

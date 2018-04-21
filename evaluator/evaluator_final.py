@@ -1,8 +1,8 @@
 import logging
-import pprint
 from queue import Queue
 
 from config.cst import EvaluatorStates, INIT_EVAL_NOTE
+from tools import EvaluatorNotification
 from tools.asynchronous_client import AsynchronousClient
 
 
@@ -10,6 +10,7 @@ class FinalEvaluator(AsynchronousClient):
     def __init__(self, symbol_evaluator):
         super().__init__(self.finalize)
         self.symbol_evaluator = symbol_evaluator
+        self.config = symbol_evaluator.get_config()
         self.final_eval = INIT_EVAL_NOTE
         self.state = None
         self.keep_running = True
@@ -17,18 +18,21 @@ class FinalEvaluator(AsynchronousClient):
         self.symbol = None
         self.is_computing = False
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.notifier = EvaluatorNotification(self.config)
         self.queue = Queue()
 
     def set_state(self, state):
         if state != self.state:
             self.state = state
             self.logger.info(" ** NEW FINAL STATE ** : {0}".format(self.state))
-            if self.symbol_evaluator.notifier.enabled() and state is not EvaluatorStates.NEUTRAL:
-                self.symbol_evaluator.get_notifier().notify(self.final_eval,
-                                                            self.symbol_evaluator,
-                                                            self.symbol_evaluator.get_trader(self.exchange),
-                                                            state,
-                                                            pprint.pformat(self.symbol_evaluator.get_matrix().get_matrix()))
+            evaluator_notification = None
+            if self.notifier.enabled() and state is not EvaluatorStates.NEUTRAL:
+                evaluator_notification = self.notifier.notify_state_changed(
+                    self.final_eval,
+                    self.symbol_evaluator,
+                    self.symbol_evaluator.get_trader(self.exchange),
+                    state,
+                    self.symbol_evaluator.get_matrix().get_matrix())
 
             if self.symbol_evaluator.get_trader(self.exchange).enabled():
                 self.symbol_evaluator.get_evaluator_order_creator().create_order(
@@ -36,7 +40,7 @@ class FinalEvaluator(AsynchronousClient):
                     self.symbol,
                     self.exchange,
                     self.symbol_evaluator.get_trader(self.exchange),
-                    state)
+                    state).get_order_notifier().notify(evaluator_notification)
 
             if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
                 self.symbol_evaluator.get_evaluator_order_creator().create_order(
@@ -44,7 +48,7 @@ class FinalEvaluator(AsynchronousClient):
                     self.symbol,
                     self.exchange,
                     self.symbol_evaluator.get_trader_simulator(self.exchange),
-                    state)
+                    state).get_order_notifier().notify(evaluator_notification)
 
     def get_state(self):
         return self.state

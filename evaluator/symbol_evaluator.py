@@ -12,7 +12,6 @@ class Symbol_Evaluator:
         self.crypto_currency = crypto_currency
         self.trader_simulator = None
         self.config = config
-        self.notifier = None
         self.traders = None
         self.trader_simulators = None
         self.finalize_enabled = False
@@ -56,9 +55,6 @@ class Symbol_Evaluator:
         self.social_evaluator_refresh.join()
         self.global_social_updater.join()
 
-    def set_notifier(self, notifier):
-        self.notifier = notifier
-
     def set_traders(self, trader):
         self.traders = trader
 
@@ -91,9 +87,6 @@ class Symbol_Evaluator:
             if evaluator_thread.get_data_refresher().get_refreshed_times() == 0:
                 self.finalize_enabled = False
 
-    def get_notifier(self):
-        return self.notifier
-
     def get_trader(self, exchange):
         return self.traders[exchange.get_name()]
 
@@ -105,6 +98,9 @@ class Symbol_Evaluator:
 
     def get_matrix(self):
         return self.matrix
+
+    def get_config(self):
+        return self.config
 
     def get_evaluator_order_creator(self):
         return self.evaluator_order_creator

@@ -1,6 +1,6 @@
 import logging
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN
 from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
@@ -11,7 +11,7 @@ class Trader:
     def __init__(self, config, exchange):
         self.exchange = exchange
         self.config = config
-        self.risk = self.config["trader"]["risk"]
+        self.risk = self.config[CONFIG_TRADER][CONFIG_TRADER_RISK]
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = False
 
@@ -35,6 +35,8 @@ class Trader:
             return False
 
     def get_risk(self):
+        if self.risk < CONFIG_TRADER_RISK_MIN:
+            self.risk = CONFIG_TRADER_RISK_MIN
         return self.risk
 
     def get_exchange(self):
@@ -64,13 +66,16 @@ class Trader:
 
         # update portfolio with ended order
         self.portfolio.update_portfolio_available(order, False)
-        self.portfolio.update_portfolio(order)
+        _, profitability_percent, profitability_diff = self.portfolio.update_portfolio(order)
 
         # add to trade history
         self.trades_manager.add_new_trade(Trade(self.exchange, order))
 
         # remove order to open_orders
         self.order_manager.remove_order_from_list(order)
+
+        # notification
+        order.get_order_notifier().end(order, order.get_linked_orders(), profitability_diff, profitability_percent)
 
     def get_open_orders(self):
         return self.order_manager.get_open_orders()
