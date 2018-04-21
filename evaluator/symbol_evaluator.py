@@ -7,7 +7,7 @@ from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 
 
-class Symbol_Evaluator:
+class SymbolEvaluator:
     def __init__(self, config, crypto_currency, dispatchers_list):
         self.crypto_currency = crypto_currency
         self.trader_simulator = None
@@ -76,12 +76,12 @@ class Symbol_Evaluator:
 
     def finalize(self, exchange, symbol):
         if not self.finalize_enabled:
-            self.check_finalize()
+            self._check_finalize()
 
         if self.finalize_enabled:
             self.final_evaluator.add_to_queue(exchange, symbol)
 
-    def check_finalize(self):
+    def _check_finalize(self):
         self.finalize_enabled = True
         for evaluator_thread in self.evaluator_threads:
             if evaluator_thread.get_data_refresher().get_refreshed_times() == 0:

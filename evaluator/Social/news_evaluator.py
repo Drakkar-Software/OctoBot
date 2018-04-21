@@ -11,7 +11,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
     def __init__(self):
         NewsSocialEvaluator.__init__(self)
         EvaluatorDispatcherClient.__init__(self)
-        self.enabled = False
+        self.enabled = True
         self.is_threaded = False
         self.count = 0
         self.symbol = ""
@@ -31,22 +31,22 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
     def get_twitter_service(self):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
-    def print_tweet(self, tweet, count):
-        self.set_eval_note(self.get_sentiment(tweet))
-        self.check_eval_note()
+    def _print_tweet(self, tweet, count):
+        self.set_eval_note(self._get_sentiment(tweet))
+        self._check_eval_note()
         self.logger.debug("Current note : " + str(self.eval_note) + "|"
                           + str(count) + " : " + str(self.symbol) + " : " + "Text : "
                           + str(DecoderEncoder.encode_into_bytes(tweet)))
 
     def receive_notification_data(self, data):
         self.count += 1
-        self.print_tweet(data[CONFIG_TWEET_DESCRIPTION], self.count)
+        self._print_tweet(data[CONFIG_TWEET_DESCRIPTION], self.count)
 
-    def check_eval_note(self):
+    def _check_eval_note(self):
         if self.eval_note > 0.8 or self.eval_note < -0.8:
             self.notify_evaluator_threads(self.__class__.__name__)
 
-    def get_sentiment(self, tweet):
+    def _get_sentiment(self, tweet):
         # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
         # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
         # https://github.com/cjhutto/vaderSentiment
@@ -78,7 +78,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
                 return True
         return False
 
-    def purify_config(self):
+    def _purify_config(self):
         # remove other symbols data to avoid unnecessary tweets
         if self.symbol in self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
             self.social_config[CONFIG_TWITTERS_ACCOUNTS] = \
@@ -92,7 +92,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
             self.social_config[CONFIG_TWITTERS_HASHTAGS] = {}
 
     def prepare(self):
-        self.purify_config()
+        self._purify_config()
         self.sentiment_analyser = AdvancedManager.get_util_instance(self.config, SentimentAnalyser)
 
 

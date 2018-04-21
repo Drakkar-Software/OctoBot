@@ -18,7 +18,7 @@ class TimeFrameUpdateDataThread(threading.Thread):
     def get_refreshed_times(self):
         return self.refreshed_times
 
-    def refresh_data(self):
+    def _refresh_data(self):
         self.parent.evaluator.set_data(
             self.parent.exchange.get_symbol_prices(
                 self.parent.symbol,
@@ -29,5 +29,5 @@ class TimeFrameUpdateDataThread(threading.Thread):
     def run(self):
         while self.keep_running:
             now = time.time()
-            self.refresh_data()
+            self._refresh_data()
             time.sleep(TimeFramesMinutes[self.parent.time_frame] * MINUTE_TO_SECONDS - (time.time() - now))

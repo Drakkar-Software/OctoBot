@@ -50,16 +50,16 @@ class EvaluatorThreadsManager:
     def notify(self, notifier_name):
         if self.data_refresher.get_refreshed_times() > 0:
             self.logger.debug("** Notified by {0} **".format(notifier_name))
-            self.refresh_eval(notifier_name)
+            self._refresh_eval(notifier_name)
         else:
             self.logger.debug("Notification by {0} ignored".format(notifier_name))
 
-    def refresh_eval(self, ignored_evaluator=None):
+    def _refresh_eval(self, ignored_evaluator=None):
         # update eval
         self.evaluator.update_ta_eval(ignored_evaluator)
 
         # update matrix
-        self.refresh_matrix()
+        self._refresh_matrix()
 
         # update strategies matrix
         self.symbol_evaluator.update_strategies_eval(self.matrix, ignored_evaluator)
@@ -68,7 +68,7 @@ class EvaluatorThreadsManager:
         self.symbol_evaluator.finalize(self.exchange, self.symbol)
         self.logger.debug("MATRIX : {0}".format(self.matrix.get_matrix()))
 
-    def refresh_matrix(self):
+    def _refresh_matrix(self):
         self.matrix = self.symbol_evaluator.get_matrix()
 
         for ta_eval in self.evaluator.get_ta_eval_list():

@@ -81,24 +81,24 @@ class TradesManager:
     def get_trades_value(self):
         self.trades_value = 0
         for trade in self.trade_history:
-            self.trades_value += self.evaluate_value(trade.get_currency(), trade.get_quantity())
+            self.trades_value += self._evaluate_value(trade.get_currency(), trade.get_quantity())
         return self.trades_value
 
     def get_portfolio_current_value(self):
         self.last_portfolio = self.portfolio.get_portfolio()
-        self.portfolio_current_value = self.evaluate_portfolio_value(self.last_portfolio)
+        self.portfolio_current_value = self._evaluate_portfolio_value(self.last_portfolio)
 
     def get_portfolio_origin_value(self):
         self.get_currencies_prices()
         self.origin_portfolio = self.portfolio.get_portfolio()
-        self.portfolio_origin_value += self.evaluate_portfolio_value(self.origin_portfolio)
+        self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio)
 
     """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reference currency
     It will try to create the symbol that fit with the exchange logic
     Returns the value found of this currency quantity, if not found returns 0     
     """
 
-    def try_get_value_of_currency(self, currency, quantity):
+    def _try_get_value_of_currency(self, currency, quantity):
         symbol = self.exchange.merge_currencies(currency, self.reference_market)
         symbol_inverted = self.exchange.merge_currencies(self.reference_market, currency)
         if symbol in self.currencies_prices:
@@ -113,16 +113,16 @@ class TradesManager:
     Returns the calculated quantity value in reference (attribute) currency
     """
 
-    def evaluate_portfolio_value(self, portfolio):
+    def _evaluate_portfolio_value(self, portfolio):
         value = 0
         for currency in portfolio:
-            value += self.evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
+            value += self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
         return value
 
     # Evaluate value returns the currency quantity value in the reference (attribute) currency
-    def evaluate_value(self, currency, quantity):
+    def _evaluate_value(self, currency, quantity):
         # easy case --> the current currency is the reference currency
         if currency == self.reference_market:
             return quantity
         else:
-            return self.try_get_value_of_currency(currency, quantity)
+            return self._try_get_value_of_currency(currency, quantity)
