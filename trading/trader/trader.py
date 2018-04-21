@@ -1,6 +1,6 @@
 import logging
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN
 from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
@@ -11,7 +11,7 @@ class Trader:
     def __init__(self, config, exchange):
         self.exchange = exchange
         self.config = config
-        self.risk = self.config["trader"]["risk"]
+        self.risk = self.config[CONFIG_TRADER][CONFIG_TRADER_RISK]
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = False
 
@@ -35,6 +35,8 @@ class Trader:
             return False
 
     def get_risk(self):
+        if self.risk < CONFIG_TRADER_RISK_MIN:
+            self.risk = CONFIG_TRADER_RISK_MIN
         return self.risk
 
     def get_exchange(self):

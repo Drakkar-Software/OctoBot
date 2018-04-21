@@ -1,6 +1,6 @@
 import logging
 
-from config.cst import CONFIG_ENABLED_OPTION
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
 from trading.trader.order import OrderConstants
 from trading.trader.order_notifier import OrderNotifier
 from trading.trader.trader import Trader
@@ -13,7 +13,7 @@ from trading.trader.trader import Trader
 class TraderSimulator(Trader):
     def __init__(self, config, exchange):
         super().__init__(config, exchange)
-        self.risk = self.config["simulator"]["risk"]
+        self.risk = self.config[CONFIG_SIMULATOR][CONFIG_TRADER_RISK]
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = True
 
