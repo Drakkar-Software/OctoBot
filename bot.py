@@ -59,11 +59,11 @@ class Crypto_Bot:
         self.time_frames = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
         self.exchanges = [ccxt.binance]
 
-        # Notifier
-        self.notifier = Notification(self.config)
-
         # Add services to self.config[CONFIG_CATEGORY_SERVICES]
         ServiceCreator.create_services(self.config)
+
+        # Notifier
+        self.config[CONFIG_NOTIFICATION_INSTANCE] = Notification(self.config)
 
         self.symbols_threads_manager = []
         self.exchange_traders = {}
@@ -95,7 +95,6 @@ class Crypto_Bot:
 
             # create symbol evaluator
             symbol_evaluator = Symbol_Evaluator(self.config, crypto_currency, self.dispatchers_list)
-            symbol_evaluator.set_notifier(self.notifier)
             symbol_evaluator.set_traders(self.exchange_traders)
             symbol_evaluator.set_trader_simulators(self.exchange_trader_simulators)
             self.symbol_evaluator_list.append(symbol_evaluator)
