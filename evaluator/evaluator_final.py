@@ -39,20 +39,29 @@ class FinalEvaluator(AsynchronousClient):
                     self.symbol_evaluator.get_matrix().get_matrix())
 
             if self.symbol_evaluator.get_trader(self.exchange).enabled():
-                self.symbol_evaluator.get_evaluator_order_creator().create_order(
-                    self.final_eval,
-                    self.symbol,
-                    self.exchange,
-                    self.symbol_evaluator.get_trader(self.exchange),
-                    state).get_order_notifier().notify(evaluator_notification)
+                FinalEvaluator.push_order_notification_if_possible(
+                    self.symbol_evaluator.get_evaluator_order_creator().create_order(
+                        self.final_eval,
+                        self.symbol,
+                        self.exchange,
+                        self.symbol_evaluator.get_trader(self.exchange),
+                        state),
+                    evaluator_notification)
 
             if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
-                self.symbol_evaluator.get_evaluator_order_creator().create_order(
-                    self.final_eval,
-                    self.symbol,
-                    self.exchange,
-                    self.symbol_evaluator.get_trader_simulator(self.exchange),
-                    state).get_order_notifier().notify(evaluator_notification)
+                FinalEvaluator.push_order_notification_if_possible(
+                    self.symbol_evaluator.get_evaluator_order_creator().create_order(
+                        self.final_eval,
+                        self.symbol,
+                        self.exchange,
+                        self.symbol_evaluator.get_trader_simulator(self.exchange),
+                        state),
+                    evaluator_notification)
+
+    @staticmethod
+    def push_order_notification_if_possible(order, notification):
+        if order and notification:
+            order.get_order_notifier().notify(notification)
 
     def get_state(self):
         return self.state
