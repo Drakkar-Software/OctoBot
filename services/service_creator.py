@@ -21,4 +21,4 @@ class ServiceCreator:
                     service_instance.prepare()
                     config[CONFIG_CATEGORY_SERVICES][service_instance.get_type()][CONFIG_SERVICE_INSTANCE] = service_instance
                 else:
-                    logger.error(service_class.get_name()+" can't be initialized: configuration is missing !")
+                    logger.warning(service_class.get_name()+" can't be initialized: configuration is missing !")
