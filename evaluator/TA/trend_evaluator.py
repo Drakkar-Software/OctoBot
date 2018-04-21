@@ -1,5 +1,6 @@
 from config.cst import *
 import numpy
+import talib
 
 from evaluator.TA.TA_evaluator import TrendEvaluator
 from evaluator.Util.trend_analyser import TrendAnalyser
@@ -13,8 +14,10 @@ class TripleMovingAverageTrendEvaluator(TrendEvaluator):
 
     def eval_impl(self):
         time_units = [5, 10, 20]
-        TrendAnalyser.get_moving_average_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value], 20)
-        results = [TrendAnalyser.get_moving_average_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value], i)
+        current_moving_average = talib.MA(self.data[PriceStrings.STR_PRICE_CLOSE.value], timeperiod=2, matype=0)
+        results = [TrendAnalyser.get_moving_average_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value],
+                                                             current_moving_average,
+                                                             i)
                    for i in time_units]
         self.eval_note = numpy.mean(results)
 

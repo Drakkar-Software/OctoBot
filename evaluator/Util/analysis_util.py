@@ -22,10 +22,10 @@ class AnalysisUtil:
             return time_averages[-1] / (time_average/2)
 
     @staticmethod
-    def get_sign_change_indexes(dataframe):
+    def get_sign_change_indexes(data_frame):
 
         # get zero and negative values
-        sub_zero_indexes = dataframe.index[dataframe <= 0]
+        sub_zero_indexes = data_frame.index[data_frame <= 0]
 
         # remove consecutive sub-zero values because they are not crosses
         zero_crossing_indexes = []
