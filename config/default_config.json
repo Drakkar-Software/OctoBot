@@ -7,7 +7,7 @@
   "exchanges": {},
   "services": {},
   "notification":{
-    "enabled": false,
+    "enabled": false
   },
   "trader":{
     "enabled": false,
