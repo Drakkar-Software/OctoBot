@@ -90,7 +90,7 @@ class FinalEvaluator(AsynchronousClient):
 
     def _create_state(self):
         # TODO : improve
-        self.final_eval *= -2
+        self.final_eval *= -3
         if self.final_eval < -0.6:
             self._set_state(EvaluatorStates.VERY_LONG)
         elif self.final_eval < -0.2:

@@ -13,9 +13,11 @@ class EvaluatorOrderCreator:
         self.QUANTITY_MAX_PERCENT = 0.9
         self.QUANTITY_ATTENUATION = 0.3
 
-        self.LIMIT_ORDER_MAX_PERCENT = 0.99
-        self.LIMIT_ORDER_MIN_PERCENT = 0.90
-        self.LIMIT_ORDER_ATTENUATION = 0.1
+        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.99
+        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.80
+        self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
+        self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
+        self.LIMIT_ORDER_ATTENUATION = 0.02
 
     @staticmethod
     def _check_factor(min_val, max_val, factor):
@@ -28,13 +30,17 @@ class EvaluatorOrderCreator:
 
     def _get_limit_price_from_risk(self, eval_note, trader):
         if eval_note > 0:
-            attenuate = 0.2
-            factor = 1 + (1 - eval_note) * trader.get_risk() * attenuate
-            return EvaluatorOrderCreator._check_factor(1.01, 1.20, factor)
+            factor = self.SELL_LIMIT_ORDER_MIN_PERCENT + \
+                     ((abs(eval_note) + trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
+            return EvaluatorOrderCreator._check_factor(self.SELL_LIMIT_ORDER_MIN_PERCENT,
+                                                       self.SELL_LIMIT_ORDER_MAX_PERCENT,
+                                                       factor)
         else:
-            attenuate = 0.2
-            factor = (1 + eval_note) * trader.get_risk() * attenuate
-            return EvaluatorOrderCreator._check_factor(0.75, 0.99, factor)
+            factor = self.BUY_LIMIT_ORDER_MAX_PERCENT - \
+                     ((abs(eval_note) + trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
+            return EvaluatorOrderCreator._check_factor(self.BUY_LIMIT_ORDER_MIN_PERCENT,
+                                                       self.BUY_LIMIT_ORDER_MAX_PERCENT,
+                                                       factor)
 
     def _get_limit_quantity_from_risk(self, eval_note, trader, quantity):
         factor = self.QUANTITY_MIN_PERCENT + ((abs(eval_note) + trader.get_risk()) * self.QUANTITY_ATTENUATION)
