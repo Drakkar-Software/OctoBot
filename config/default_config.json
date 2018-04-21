@@ -2,7 +2,7 @@
   "crypto_currencies":{
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
-    },
+    }
   },
   "exchanges": {},
   "services": {},

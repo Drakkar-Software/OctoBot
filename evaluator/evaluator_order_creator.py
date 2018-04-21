@@ -6,11 +6,11 @@ class EvaluatorOrderCreator:
         self.last_values_count = 10
 
     @staticmethod
-    def check_factor(min, max, factor):
-        if factor > max:
-            return max
-        elif factor < min:
-            return min
+    def check_factor(min_val, max_val, factor):
+        if factor > max_val:
+            return max_val
+        elif factor < min_val:
+            return min_val
         else:
             return factor
 

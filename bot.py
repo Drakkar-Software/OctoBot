@@ -20,8 +20,7 @@ from trading.trader.trader_simulator import TraderSimulator
 from services import ServiceCreator
 
 """Main CryptoBot class:
-- Create all indicators and thread for each cryptocurrencies in config
-"""
+- Create all indicators and thread for each cryptocurrencies in config"""
 
 
 class Crypto_Bot:

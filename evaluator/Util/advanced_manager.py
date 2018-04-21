@@ -1,7 +1,6 @@
 from config.cst import CONFIG_ADVANCED_CLASSES, CONFIG_ADVANCED_INSTANCES
 from evaluator.Util.abstract_util import AbstractUtil
 from evaluator.abstract_evaluator import AbstractEvaluator
-import numpy
 import logging
 
 
@@ -35,8 +34,7 @@ class AdvancedManager:
     For each abstract subclasses it will call itself with the reference abstract_class not set
     If the current child is not abstract it will be set as the reference only if abstract_class is None
     If there is not subclasses to class_type it will add class_type into the config advanced list 
-    with its name as a key or the reference class name --> abstract_class
-    """
+    with its name as a key or the reference class name --> abstract_class"""
     @staticmethod
     def get_advanced(config, class_type, abstract_class=None):
         if len(class_type.__subclasses__()) > 0:

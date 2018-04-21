@@ -1,7 +1,3 @@
-import talib
-
-from config.cst import *
-from evaluator.Util.trend_analyser import TrendAnalyser
 from evaluator.TA.TA_evaluator import TrendEvaluator
 
 
