@@ -16,7 +16,7 @@ class TradesManager:
         self.exchange = trader.get_exchange()
         self.logger = logging.getLogger(self.__class__.__name__)
 
-        self.trades = []
+        self.trade_history = []
         self.profitability = 0
         self.profitability_percent = 0
 
@@ -43,9 +43,9 @@ class TradesManager:
     def get_reference(self):
         return self.reference_market
 
-    def add_new_trade(self, trade):
-        if trade not in self.trades:
-            self.trades.append(trade)
+    def add_new_trade_in_history(self, trade):
+        if trade not in self.trade_history:
+            self.trade_history.append(trade)
 
     """ get currencies prices update currencies data by polling tickers from exchange
     and set currencies_prices attribute
@@ -80,7 +80,7 @@ class TradesManager:
     # Currently unused method
     def get_trades_value(self):
         self.trades_value = 0
-        for trade in self.trades:
+        for trade in self.trade_history:
             self.trades_value += self.evaluate_value(trade.get_currency(), trade.get_quantity())
         return self.trades_value
 
