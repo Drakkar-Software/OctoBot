@@ -10,7 +10,7 @@ from evaluator.Util.trend_analyser import TrendAnalyser
 class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = True
+        self.enabled = False
 
     def eval_impl(self):
         time_units = [5, 10]

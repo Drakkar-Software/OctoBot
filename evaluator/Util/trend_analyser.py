@@ -34,7 +34,7 @@ class TrendAnalyser(AbstractUtil):
         time_period_unit_moving_average = talib.MA(data_frame, timeperiod=time_period, matype=0)
 
         # compute difference between 1 unit values and others ( >0 means currently up the other one)
-        values_difference = (current_moving_average - time_period_unit_moving_average).dropna()
+        values_difference = (current_moving_average - time_period_unit_moving_average)
 
         # indexes where current_unit_moving_average crosses time_period_unit_moving_average
         crossing_indexes = AnalysisUtil.get_threshold_change_indexes(values_difference, 0)
@@ -42,7 +42,7 @@ class TrendAnalyser(AbstractUtil):
         multiplier = 1 if values_difference.iloc[-1] else -1
 
         # check enough data in the frame (at least 2) => did not just crossed the other curve
-        if len(crossing_indexes) > 0 and crossing_indexes[-1] < values_difference.count()-2:
+        if len(crossing_indexes) > 0 and crossing_indexes[-1] < len(values_difference.index)-2:
             current_divergence_data = values_difference[crossing_indexes[-1]+1:]
             normalized_data = AnalysisUtil.normalize_data_frame(current_divergence_data)
             current_value = (normalized_data.iloc[-1]+1)/2
