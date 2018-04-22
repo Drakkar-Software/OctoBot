@@ -131,7 +131,9 @@ class EvaluatorOrderCreator:
             elif state == EvaluatorStates.VERY_LONG:
                     market = trader.create_order(TraderOrderType.BUY_MARKET,
                                                  symbol,
-                                                 market_quantity,
+                                                 self._get_limit_quantity_from_risk(eval_note,
+                                                                                    trader,
+                                                                                    market_quantity),
                                                  reference)
                     return market
         except Exception as e:
