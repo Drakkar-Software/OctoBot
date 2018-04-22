@@ -41,6 +41,7 @@ class RSIMomentumEvaluator(MomentumEvaluator):
         else:
             self.set_eval_note((rsi_v.tail(1).values[0] - 100) / 200)
 
+
 # bollinger_bands
 class BBMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
@@ -50,6 +51,7 @@ class BBMomentumEvaluator(MomentumEvaluator):
     def eval_impl(self):
         self.eval_note = AdvancedManager.get_class(self.config, MomentumAnalyser).bollinger_momentum_analysis(
             self.data[PriceStrings.STR_PRICE_CLOSE.value])
+
 
 class CandlePatternMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
@@ -170,19 +172,19 @@ class ADXMomentumEvaluator(MomentumEvaluator):
             # max already reached => trend will slow down
             if adx_last_value < adx_last_values.max():
 
-                self.eval_note = multiplier*(1-((max_adx-current_adx)/(max_adx-neutral_adx)))
+                self.eval_note = multiplier * (1 - ((max_adx - current_adx) / (max_adx - neutral_adx)))
 
             # max not reached => trend will continue, return chances to be max now
             else:
                 crossing_indexes = AnalysisUtil.get_threshold_change_indexes(adx, neutral_adx)
                 chances_to_be_max = AnalysisUtil.get_estimation_of_move_state_relatively_to_previous_moves_length(
-                                                                                                crossing_indexes)
-                proximity_to_max = min(1, current_adx/max_adx)
-                self.eval_note = multiplier*proximity_to_max*chances_to_be_max
+                    crossing_indexes)
+                proximity_to_max = min(1, current_adx / max_adx)
+                self.eval_note = multiplier * proximity_to_max * chances_to_be_max
 
         # weak adx => change to come
         else:
-            self.eval_note = multiplier*min(1, ((neutral_adx-current_adx) / (neutral_adx-min_adx)))
+            self.eval_note = multiplier * min(1, ((neutral_adx - current_adx) / (neutral_adx - min_adx)))
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):
