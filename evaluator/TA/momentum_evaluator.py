@@ -8,6 +8,7 @@ from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.Util.trend_analyser import TrendAnalyser
 
 from evaluator.Util.momentum_analyser import MomentumAnalyser
+from evaluator.Util.analysis_util import AnalysisUtil
 
 
 class RSIMomentumEvaluator(MomentumEvaluator):
@@ -136,23 +137,51 @@ class CandlePatternMomentumEvaluator(MomentumEvaluator):
 class ADXMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
+        self.enabled = True
 
-    # TODO : temp analysis
+    # implementation according to: https://www.investopedia.com/articles/technical/02/041002.asp => length = 14 and
+    # exponential moving average = 20 in a uptrend market
+    # idea: adx > 30 => strong trend, < 20 => trend change to come
     def eval_impl(self):
-        adx_v = talib.ADX(self.data[PriceStrings.STR_PRICE_HIGH.value],
-                          self.data[PriceStrings.STR_PRICE_LOW.value],
-                          self.data[PriceStrings.STR_PRICE_CLOSE.value])
+        min_adx = 7.5
+        max_adx = 50
+        neutral_adx = 25
+        adx = talib.ADX(self.data[PriceStrings.STR_PRICE_HIGH.value],
+                        self.data[PriceStrings.STR_PRICE_LOW.value],
+                        self.data[PriceStrings.STR_PRICE_CLOSE.value],
+                        timeperiod=14)
+        instant_ema = talib.EMA(self.data[PriceStrings.STR_PRICE_CLOSE.value], timeperiod=2)
+        slow_ema = talib.EMA(self.data[PriceStrings.STR_PRICE_CLOSE.value], timeperiod=20)
 
-        last = adx_v.tail(1).values
+        current_adx = adx.iloc[-1]
+        current_slows_ema = slow_ema.iloc[-1]
+        current_instant_ema = instant_ema.iloc[-1]
 
-        # An ADX above 30 on the scale indicates there is a strong trend
-        if last > 30:
-            pass
+        multiplier = -1 if current_instant_ema < current_slows_ema else 1
 
-        # When ADX drops below 18, it often leads to a sideways or horizontal trading pattern
-        elif last < 18:
-            pass
+        # strong adx => strong trend
+        if current_adx > neutral_adx:
+            # if max adx already reached => when ADX forms a top and begins to turn down, you should look for a
+            # retracement that causes the price to move toward its 20-day exponential moving average (EMA).
+            adx_last_values = adx.tail(20)
+            adx_last_value = adx_last_values.iloc[-1]
+
+            # max already reached => trend will slow down
+            if adx_last_value < adx_last_values.max():
+
+                self.eval_note = multiplier*(1-((max_adx-current_adx)/(max_adx-neutral_adx)))
+
+            # max not reached => trend will continue, return chances to be max now
+            else:
+                crossing_indexes = AnalysisUtil.get_threshold_change_indexes(adx, neutral_adx)
+                chances_to_be_max = AnalysisUtil.get_estimation_of_move_state_relatively_to_previous_moves_length(
+                                                                                                crossing_indexes)
+                proximity_to_max = min(1, current_adx/max_adx)
+                self.eval_note = multiplier*proximity_to_max*chances_to_be_max
+
+        # weak adx => change to come
+        else:
+            self.eval_note = multiplier*min(1, ((neutral_adx-current_adx) / (neutral_adx-min_adx)))
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):

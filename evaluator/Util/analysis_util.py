@@ -22,21 +22,21 @@ class AnalysisUtil:
             return time_averages[-1] / (time_average/2)
 
     @staticmethod
-    def get_sign_change_indexes(data_frame):
+    def get_threshold_change_indexes(data_frame, threshold):
 
-        # get zero and negative values
-        sub_zero_indexes = data_frame.index[data_frame <= 0]
+        # sub threshold values
+        sub_threshold_indexes = data_frame.index[data_frame <= threshold]
 
-        # remove consecutive sub-zero values because they are not crosses
-        zero_crossing_indexes = []
+        # remove consecutive sub-threshold values because they are not crosses
+        threshold_crossing_indexes = []
         current_move_size = 1
-        for index in sub_zero_indexes:
-            if not len(zero_crossing_indexes):
-                zero_crossing_indexes.append(index)
+        for index in sub_threshold_indexes:
+            if not len(threshold_crossing_indexes):
+                threshold_crossing_indexes.append(index)
             else:
-                if zero_crossing_indexes[-1] == index - current_move_size:
+                if threshold_crossing_indexes[-1] == index - current_move_size:
                     current_move_size += 1
                 else:
-                    zero_crossing_indexes.append(index)
+                    threshold_crossing_indexes.append(index)
                     current_move_size = 1
-        return zero_crossing_indexes
+        return threshold_crossing_indexes
