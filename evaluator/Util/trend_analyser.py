@@ -34,7 +34,7 @@ class TrendAnalyser(AbstractUtil):
         time_period_unit_moving_average = talib.MA(data_frame, timeperiod=time_period, matype=0)
 
         # compute difference between 1 unit values and others ( >0 means currently up the other one)
-        values_difference = (current_moving_average - time_period_unit_moving_average).dropna()
+        values_difference = (current_moving_average - time_period_unit_moving_average)
 
         # indexes where current_unit_moving_average crosses time_period_unit_moving_average
         crossing_indexes = AnalysisUtil.get_threshold_change_indexes(values_difference, 0)
