@@ -8,7 +8,6 @@ notifications:
 install:
   - ./docs/install/install-ta-lib.sh
   - cp ./docs/install/config_test.json ./config/config.json
-  - pip install git+https://github.com/Herklos-Bots/BotCore
   - python -m pip install -r requirements.txt
 script: pytest tests/
 
