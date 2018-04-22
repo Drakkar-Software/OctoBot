@@ -37,11 +37,9 @@ class TrendAnalyser(AbstractUtil):
         values_difference = (current_moving_average - time_period_unit_moving_average).dropna()
 
         # indexes where current_unit_moving_average crosses time_period_unit_moving_average
-        crossing_indexes = AnalysisUtil.get_sign_change_indexes(values_difference)
+        crossing_indexes = AnalysisUtil.get_threshold_change_indexes(values_difference, 0)
 
-        multiplier = 1
-        if not values_difference.iloc[-1] > 0:
-            multiplier = -1
+        multiplier = 1 if values_difference.iloc[-1] else -1
 
         # check enough data in the frame (at least 2) => did not just crossed the other curve
         if len(crossing_indexes) > 0 and crossing_indexes[-1] < values_difference.count()-2:
