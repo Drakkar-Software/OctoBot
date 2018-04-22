@@ -1,5 +1,6 @@
+import time
 from abc import *
-
+from config.cst import MAX_TA_EVAL_TIME_SECONDS
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
@@ -21,6 +22,17 @@ class TAEvaluator(AbstractEvaluator):
     @abstractmethod
     def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
+
+    def eval(self) -> None:
+        self.is_updating = True
+        start_time = time.time()
+        super().eval()
+        execution_time = time.time()-start_time
+        if execution_time > MAX_TA_EVAL_TIME_SECONDS:
+            self.logger.warning("for {0} took longer than expected: {1} seconds.".format(self.symbol,
+                                                                                         execution_time))
+
+
 
 
 class MomentumEvaluator(TAEvaluator):

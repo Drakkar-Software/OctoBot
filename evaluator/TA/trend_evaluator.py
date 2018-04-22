@@ -6,14 +6,14 @@ from evaluator.TA.TA_evaluator import TrendEvaluator
 from evaluator.Util.trend_analyser import TrendAnalyser
 
 
-# evaluates position of the current (1 unit) average trend relatively to the 5 units average and 10 units average trend
-class TripleMovingAverageTrendEvaluator(TrendEvaluator):
+# evaluates position of the current (2 unit) average trend relatively to the 5 units average and 10 units average trend
+class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
         self.enabled = True
 
     def eval_impl(self):
-        time_units = [5, 10, 20]
+        time_units = [5, 10]
         current_moving_average = talib.MA(self.data[PriceStrings.STR_PRICE_CLOSE.value], timeperiod=2, matype=0)
         results = [TrendAnalyser.get_moving_average_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value],
                                                              current_moving_average,
