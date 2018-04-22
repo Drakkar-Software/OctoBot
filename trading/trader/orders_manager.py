@@ -50,7 +50,11 @@ class OrdersManager(threading.Thread):
 
     # Ask to update a specific symbol with exchange data
     def _update_last_symbol_prices(self, symbol):
-        self.last_symbol_prices[symbol] = self.trader.get_exchange().get_recent_trades(symbol)
+        last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+
+        # Check if exchange request failed
+        if last_symbol_price is not None:
+            self.last_symbol_prices[symbol] = last_symbol_price
 
     def get_open_orders(self):
         return self.order_list
@@ -59,6 +63,7 @@ class OrdersManager(threading.Thread):
     Then ask orders to check their status
     Finally ask cancellation and filling process if it is required 
     """
+
     def run(self):
         while self.keep_running:
             # update all prices only if simulate
