@@ -73,7 +73,8 @@ class OrdersManager(threading.Thread):
             for order in self.order_list:
                 # update symbol prices from exchange only if simulate
                 if self.trader.simulate:
-                    order.set_last_prices(self.last_symbol_prices[order.get_order_symbol()])
+                    if order.get_order_symbol() in self.last_symbol_prices:
+                        order.set_last_prices(self.last_symbol_prices[order.get_order_symbol()])
 
                 # ask orders to update their status
                 order.update_order_status()
