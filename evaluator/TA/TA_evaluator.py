@@ -33,8 +33,6 @@ class TAEvaluator(AbstractEvaluator):
                                                                                          execution_time))
 
 
-
-
 class MomentumEvaluator(TAEvaluator):
     __metaclass__ = TAEvaluator
 
