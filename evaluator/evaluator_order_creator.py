@@ -16,10 +16,10 @@ class EvaluatorOrderCreator:
         self.QUANTITY_ATTENUATION = 0.3
 
         self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.99
-        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.80
+        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.90
         self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
         self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
-        self.LIMIT_ORDER_ATTENUATION = 0.02
+        self.LIMIT_ORDER_ATTENUATION = 0.01
 
     @staticmethod
     def _check_factor(min_val, max_val, factor):
