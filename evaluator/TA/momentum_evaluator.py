@@ -9,6 +9,7 @@ from evaluator.Util.trend_analyser import TrendAnalyser
 
 from evaluator.Util.momentum_analyser import MomentumAnalyser
 from evaluator.Util.analysis_util import AnalysisUtil
+from evaluator.Util.pattern_analyser import PatternAnalyser
 
 
 class RSIMomentumEvaluator(MomentumEvaluator):
@@ -139,7 +140,7 @@ class CandlePatternMomentumEvaluator(MomentumEvaluator):
 class ADXMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = True
+        self.enabled = False
 
     # implementation according to: https://www.investopedia.com/articles/technical/02/041002.asp => length = 14 and
     # exponential moving average = 20 in a uptrend market
@@ -221,10 +222,45 @@ class TRIXMomentumEvaluator(MomentumEvaluator):
 class MACDMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
+        self.enabled = True
 
     def eval_impl(self):
-        macd_v = talib.MACD(self.data[PriceStrings.STR_PRICE_CLOSE.value])
+        macd, macd_signal, macd_hist = talib.MACD(self.data[PriceStrings.STR_PRICE_CLOSE.value],
+                                                  fastperiod=12,
+                                                  slowperiod=26,
+                                                  signalperiod=9)
+
+        # on macd hist => M pattern: bearish movement, W pattern: bullish movement
+        #                 max on hist: optimal sell or buy
+
+        zero_crossing_indexes = AnalysisUtil.get_threshold_change_indexes(macd_hist, 0)
+        last_index = len(macd_hist.index)-1
+        pattern, start_index, end_index = PatternAnalyser.find_pattern(macd_hist, zero_crossing_indexes, last_index)
+
+        if pattern != PatternAnalyser.UNKNOWN_PATTERN:
+
+            # set sign (-1 buy or 1 sell)
+            signe_multiplier = -1 if pattern == "W" or pattern == "V" else 1
+
+            # set pattern time frame => W and M are on 2 time frames, others 1
+            pattern_move_time = 2 if (pattern == "W" or pattern == "M") and end_index == last_index else 1
+
+            # set weight according to the max value of the pattern and the current value
+            current_pattern_start = start_index
+            weight = macd_hist.iloc[-1] / macd_hist[current_pattern_start:].max() if signe_multiplier == 1 \
+                else macd_hist.iloc[-1] / macd_hist[current_pattern_start:].min()
+
+            # finally, add pattern's strength
+            weight = weight*PatternAnalyser.get_pattern_strength(pattern)
+
+            # check if currently
+            self.eval_note = signe_multiplier * \
+                weight * \
+                AnalysisUtil.get_estimation_of_move_state_relatively_to_previous_moves_length(
+                    zero_crossing_indexes,
+                    pattern_move_time)
+        else:
+            self.eval_note = START_PENDING_EVAL_NOTE
 
 
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
