@@ -21,6 +21,9 @@ class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
                    for i in time_units]
         self.eval_note = numpy.mean(results)
 
+        if self.eval_note == 0:
+            self.eval_note = START_PENDING_EVAL_NOTE
+
 
 # https://mrjbq7.github.io/ta-lib/func_groups/overlap_studies.html
 class CandleAnalysisTrendEvaluator(TrendEvaluator):
