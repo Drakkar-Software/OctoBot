@@ -1,4 +1,5 @@
 import talib
+import math
 from talib._ta_lib import CDLINVERTEDHAMMER, CDLDOJI, CDLSHOOTINGSTAR, CDLHAMMER, CDLHARAMI, CDLPIERCING
 
 from config.cst import *
@@ -80,11 +81,11 @@ class BBMomentumEvaluator(MomentumEvaluator):
 
             # up the middle band
             if current_middle < current_value:
-                self.eval_note = (current_value - current_middle) / delta_up
+                self.eval_note = math.pow((current_value - current_middle) / delta_up, 2)
 
             # down the middle band
             elif current_middle > current_value:
-                self.eval_note = -1 * (current_middle - current_value) / delta_low
+                self.eval_note = -1 * math.pow((current_middle - current_value) / delta_low, 2)
 
 
 class CandlePatternMomentumEvaluator(MomentumEvaluator):
