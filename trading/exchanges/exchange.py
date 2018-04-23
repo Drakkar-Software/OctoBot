@@ -103,11 +103,19 @@ class Exchange:
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     def get_price_ticker(self, symbol):
-        return self.client.fetch_ticker(symbol)
+        try:
+            return self.client.fetch_ticker(symbol)
+        except Exception as e:
+            self.logger.error("Failed to get_price_ticker {0}".format(e))
+            return None
 
     def get_all_currencies_price_ticker(self):
-        self.all_currencies_price_ticker = self.client.fetch_tickers()
-        return self.all_currencies_price_ticker
+        try:
+            self.all_currencies_price_ticker = self.client.fetch_tickers()
+            return self.all_currencies_price_ticker
+        except Exception as e:
+            self.logger.error("Failed to get_all_currencies_price_ticker {0}".format(e))
+            return None
 
     # ORDERS
     # {

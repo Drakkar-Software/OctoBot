@@ -8,7 +8,7 @@ from services import AbstractService
 class GmailService(AbstractService):
     def __init__(self):
         super().__init__()
-        self.gmail_api = None
+        self.gmail_con = None
 
     @staticmethod
     def is_setup_correctly(config):
@@ -26,36 +26,35 @@ class GmailService(AbstractService):
                and "mail_dest" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]
 
     def get_endpoint(self):
-        return self.gmail_api
+        return self.gmail_con
 
     def get_type(self):
         return CONFIG_GMAIL
 
     def prepare(self):
-        if not self.gmail_api:
-            try:
-                self.gmail_api = smtplib.SMTP("smtp.gmail.com", 587)
-                self.gmail_api.starttls()
-                self.gmail_api.login(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail_user"],
-                                     self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail_password"])
-            except Exception as e:
-                self.logger.error("Failed to prepare mail service : {0}".format(e))
+        try:
+            self.gmail_con = smtplib.SMTP()
+            self.gmail_con.connect("smtp.gmail.com", 587)
+            self.gmail_con.ehlo()
+            self.gmail_con.starttls()
+            self.gmail_con.ehlo()
+            self.gmail_con.login(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail_user"],
+                                 self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail_password"])
+        except Exception as e:
+            self.logger.error("Failed to connect to gmail service : {0}".format(e))
 
     def send_mail(self, subject, content):
         try:
+            self.prepare()
             msg = email.message.Message()
             msg.add_header('Content-Type', 'text/plain')
             msg['From'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail_user"] + "@gmail.com"
             msg.set_payload(content)
             msg['Subject'] = subject
             msg['To'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["mail_dest"]
-            self.gmail_api.sendmail(msg['From'], msg['To'], msg.as_string())
+            self.gmail_con.sendmail(msg['From'], msg['To'], msg.as_string())
+            self.gmail_con.close()
             return True
         except Exception as e:
             self.logger.error("Failed to send mail : {0}".format(e))
-            self.stop()
-            self.prepare()
             return False
-
-    def stop(self):
-        self.gmail_api = None
