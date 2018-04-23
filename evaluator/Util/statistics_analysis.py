@@ -34,11 +34,11 @@ class StatisticAnalysis(AbstractUtil):
 
         # up the upper band
         elif current_value > current_up:
-            return 1
+            return -1
 
         # down the lower band
         elif current_value < current_low:
-            return -1
+            return 1
 
         # delta given: use parabolic factor after delta, linear before
         delta = delta_function(numpy.mean([delta_up, delta_low]))
@@ -51,11 +51,11 @@ class StatisticAnalysis(AbstractUtil):
 
         # up the middle area
         elif current_middle + delta < current_value:
-            return max(micro_change, (current_value - current_middle) / delta_up)
+            return -1 * max(micro_change, (current_value - current_middle) / delta_up)
 
         # down the middle area
         elif current_middle - delta > current_value:
-            return -1 * max(micro_change, (current_middle - current_value) / delta_low)
+            return max(micro_change, (current_middle - current_value) / delta_low)
 
         # should not happen
         return 0
