@@ -88,13 +88,6 @@ class FinalEvaluator(AsynchronousClient):
         else:
             self.final_eval = INIT_EVAL_NOTE
 
-    def _calculate_final(self):
-        # TODO : improve
-        # self.final_eval = (self.ta_final_eval * EvaluatorsPertinence.TAEvaluator.value
-        #                    + self.social_final_eval * EvaluatorsPertinence.SocialEvaluator.value)
-        # self.final_eval /= (EvaluatorsPertinence.TAEvaluator.value + EvaluatorsPertinence.SocialEvaluator.value)
-        pass
-
     def _create_state(self):
         # TODO : improve
         if self.final_eval < -0.8:
@@ -114,7 +107,6 @@ class FinalEvaluator(AsynchronousClient):
         self.exchange = exchange
         self.symbol = symbol
         self._prepare()
-        self._calculate_final()
         self._create_state()
         self.logger.debug("--> {0}".format(self.state))
 
