@@ -42,7 +42,7 @@ class FinalEvaluator(AsynchronousClient):
             if EvaluatorOrderCreator.can_create_order(self.symbol,
                                                       self.exchange,
                                                       self.symbol_evaluator.get_trader(
-                                                        self.exchange),
+                                                          self.exchange),
                                                       state):
 
                 if self.symbol_evaluator.get_trader(self.exchange).enabled():
@@ -97,13 +97,13 @@ class FinalEvaluator(AsynchronousClient):
 
     def _create_state(self):
         # TODO : improve
-        if self.final_eval < -0.6:
+        if self.final_eval < -0.8:
             self._set_state(EvaluatorStates.VERY_LONG)
-        elif self.final_eval < -0.2:
+        elif self.final_eval < -0.25:
             self._set_state(EvaluatorStates.LONG)
-        elif self.final_eval < 0.2:
+        elif self.final_eval < 0.25:
             self._set_state(EvaluatorStates.NEUTRAL)
-        elif self.final_eval < 0.6:
+        elif self.final_eval < 0.8:
             self._set_state(EvaluatorStates.SHORT)
         else:
             self._set_state(EvaluatorStates.VERY_SHORT)

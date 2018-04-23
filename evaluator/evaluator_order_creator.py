@@ -7,19 +7,19 @@ class EvaluatorOrderCreator:
     def __init__(self):
         self.last_values_count = 10
 
-        self.STOP_LOSS_ORDER_MAX_PERCENT = 0.99
-        self.STOP_LOSS_ORDER_MIN_PERCENT = 0.95
-        self.STOP_LOSS_ORDER_ATTENUATION = 0.1
+        self.STOP_LOSS_ORDER_MAX_PERCENT = 0.999
+        self.STOP_LOSS_ORDER_MIN_PERCENT = 0.949
+        self.STOP_LOSS_ORDER_ATTENUATION = 0.02
 
         self.QUANTITY_MIN_PERCENT = 0.1
         self.QUANTITY_MAX_PERCENT = 0.9
-        self.QUANTITY_ATTENUATION = 0.3
+        self.QUANTITY_ATTENUATION = 0.2
 
-        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.99
-        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.95
+        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.999
+        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.949
         self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
         self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
-        self.LIMIT_ORDER_ATTENUATION = 0.01
+        self.LIMIT_ORDER_ATTENUATION = 0.02
 
     @staticmethod
     def _check_factor(min_val, max_val, factor):
@@ -33,13 +33,13 @@ class EvaluatorOrderCreator:
     def _get_limit_price_from_risk(self, eval_note, trader):
         if eval_note > 0:
             factor = self.SELL_LIMIT_ORDER_MIN_PERCENT + \
-                     ((abs(eval_note) + trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
+                     ((1-abs(eval_note) + trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
             return EvaluatorOrderCreator._check_factor(self.SELL_LIMIT_ORDER_MIN_PERCENT,
                                                        self.SELL_LIMIT_ORDER_MAX_PERCENT,
                                                        factor)
         else:
             factor = self.BUY_LIMIT_ORDER_MAX_PERCENT - \
-                     ((abs(eval_note) + trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
+                     ((1-abs(eval_note) + trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
             return EvaluatorOrderCreator._check_factor(self.BUY_LIMIT_ORDER_MIN_PERCENT,
                                                        self.BUY_LIMIT_ORDER_MAX_PERCENT,
                                                        factor)

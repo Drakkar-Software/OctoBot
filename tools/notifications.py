@@ -19,14 +19,7 @@ class Notification:
         self.config = config
         self.notification_type = self.config[CONFIG_CATEGORY_NOTIFICATION]["type"]
         self.logger = logging.getLogger(self.__class__.__name__)
-
-        # Debug
-        if self.enabled():
-            self.enable = True
-            self.logger.debug("Enabled")
-        else:
-            self.enable = False
-            self.logger.debug("Disabled")
+        self.enable = self.enabled()
 
     def enabled(self):
         if self.config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION]:
