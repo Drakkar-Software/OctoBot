@@ -5,7 +5,7 @@ from tools.asynchronous_client import AsynchronousClient
 
 
 # ****** Unique dispatcher side ******
-class EvaluatorDispatcher(threading.Thread):
+class AbstractDispatcher(threading.Thread):
     __metaclass__ = ABCMeta
 
     def __init__(self, config):
@@ -24,14 +24,9 @@ class EvaluatorDispatcher(threading.Thread):
         self.registered_list.append(client)
 
     @abstractmethod
-    def dispatch_notification_to_clients(self, data):
-        raise NotImplementedError("dispatch_notification_to_clients not implemented")
-
-    @abstractmethod
     def run(self):
         raise NotImplementedError("run not implemented")
 
-    @abstractmethod
     def get_is_setup_correctly(self):
         return self.is_setup_correctly
 
@@ -40,7 +35,7 @@ class EvaluatorDispatcher(threading.Thread):
 
 
 # ****** Implementation side ******
-class EvaluatorDispatcherClient(AsynchronousClient):
+class DispatcherAbstractClient(AsynchronousClient):
     __metaclass__ = ABCMeta
 
     def __init__(self):

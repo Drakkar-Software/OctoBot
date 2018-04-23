@@ -5,7 +5,7 @@ from evaluator.Social import SocialEvaluator
 from evaluator.Strategies import StrategiesEvaluator
 from evaluator.TA import TAEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
-from evaluator.evaluator_dispatcher import EvaluatorDispatcher
+from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
 
 
 class EvaluatorCreator:
@@ -40,7 +40,7 @@ class EvaluatorCreator:
     @staticmethod
     def create_dispatchers(config):
         dispatchers_list = []
-        for dispatcher_class in EvaluatorDispatcher.__subclasses__():
+        for dispatcher_class in AbstractDispatcher.__subclasses__():
             dispatcher_instance = dispatcher_class(config)
             if dispatcher_instance.get_is_setup_correctly():
                 dispatchers_list.append(dispatcher_instance)
