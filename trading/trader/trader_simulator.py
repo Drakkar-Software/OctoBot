@@ -12,7 +12,6 @@ from trading.trader.trader import Trader
 class TraderSimulator(Trader):
     def __init__(self, config, exchange):
         super().__init__(config, exchange)
-        self.risk = self.config[CONFIG_SIMULATOR][CONFIG_TRADER_RISK]
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = True
 

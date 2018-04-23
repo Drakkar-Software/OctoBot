@@ -176,11 +176,11 @@ class OrdersNotification(Notification):
                                                                                             market))
 
             if trade_profitability is not None:
-                content += "\nTrade profitability : {0} {1}".format(round(trade_profitability, 7),
+                content += "\n\nTrade profitability : {0} {1}".format(round(trade_profitability, 7),
                                                                      TradesManager.get_reference_market(self.config))
 
             if portfolio_profitability is not None:
-                content += "\nPortfolio profitability : {0}%".format(round(portfolio_profitability, 5))
+                content += "\nGlobal Portfolio profitability : {0}%".format(round(portfolio_profitability, 5))
 
             self.twitter_response_factory(tweet_instance, content)
 
