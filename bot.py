@@ -64,6 +64,9 @@ class Crypto_Bot:
         # Notifier
         self.config[CONFIG_NOTIFICATION_INSTANCE] = Notification(self.config)
 
+        # Notify starting
+        self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
+
         self.symbols_threads_manager = []
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
@@ -165,6 +168,9 @@ class Crypto_Bot:
             self.performance_analyser.join()
 
     def stop_threads(self):
+        # Notify stopping
+        self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE)
+
         self.logger.info("Stopping threads ...")
         for manager in self.symbols_threads_manager:
             manager.stop_threads()

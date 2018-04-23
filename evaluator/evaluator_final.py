@@ -30,19 +30,20 @@ class FinalEvaluator(AsynchronousClient):
             # cancel open orders
             self.symbol_evaluator.get_trader(self.exchange).cancel_open_orders(self.symbol)
 
+            evaluator_notification = None
+            if self.notifier.enabled():
+                evaluator_notification = self.notifier.notify_state_changed(
+                    self.final_eval,
+                    self.symbol_evaluator,
+                    self.symbol_evaluator.get_trader(self.exchange),
+                    state,
+                    self.symbol_evaluator.get_matrix().get_matrix())
+
             if EvaluatorOrderCreator.can_create_order(self.symbol,
                                                       self.exchange,
                                                       self.symbol_evaluator.get_trader(
                                                         self.exchange),
                                                       state):
-                evaluator_notification = None
-                if self.notifier.enabled():
-                    evaluator_notification = self.notifier.notify_state_changed(
-                        self.final_eval,
-                        self.symbol_evaluator,
-                        self.symbol_evaluator.get_trader(self.exchange),
-                        state,
-                        self.symbol_evaluator.get_matrix().get_matrix())
 
                 if self.symbol_evaluator.get_trader(self.exchange).enabled():
                     FinalEvaluator._push_order_notification_if_possible(

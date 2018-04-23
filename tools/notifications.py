@@ -34,6 +34,13 @@ class Notification:
         else:
             return False
 
+    def notify_with_all(self, message):
+        # gmail
+        self.gmail_notification_factory(message, message)
+
+        # twitter
+        self.twitter_notification_factory(message)
+
     def gmail_notification_available(self):
         if NotificationTypes.MAIL.value in self.notification_type and self.enable:
             if GmailService.is_setup_correctly(self.config):
@@ -106,10 +113,10 @@ class EvaluatorNotification(Notification):
                                                                     "\n Cryptocurrency : #{1}"
                                                                     "\n Result : {2}"
                                                                     "\n Evaluation : {3}".format(
-                                                                        symbol_evaluator.crypto_currency,
-                                                                        " #".join(formatted_pairs),
-                                                                        str(result).split(".")[1],
-                                                                        final_eval))
+                symbol_evaluator.crypto_currency,
+                " #".join(formatted_pairs),
+                str(result).split(".")[1],
+                final_eval))
 
         return self
 
