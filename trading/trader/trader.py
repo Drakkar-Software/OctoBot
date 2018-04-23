@@ -58,32 +58,44 @@ class Trader:
         order.cancel_order()
         self.order_manager.remove_order_from_list(order)
 
+    # Should be called only if we want to cancel all symbol open orders (no filled)
     def cancel_open_orders(self, symbol):
         for order in self.get_open_orders():
             if order.get_order_symbol() == symbol:
-                self.cancel_order(order)
+                self.notify_order_close(order, True)
 
     def notify_order_cancel(self, order):
         # update portfolio with ended order
         self.portfolio.update_portfolio_available(order, False)
 
-    def notify_order_close(self, order):
+    def notify_order_close(self, order, cancel=False):
         # Cancel linked orders
         for linked_order in order.get_linked_orders():
             self.cancel_order(linked_order)
 
-        # update portfolio with ended order
-        self.portfolio.update_portfolio_available(order, False)
-        _, profitability_percent, profitability_diff = self.portfolio.update_portfolio(order)
+        # If need to cancel the order call the method and no need to update the portfolio (only availability)
+        if cancel:
+            order_closed = None
+            orders_canceled = order.get_linked_orders() + order
 
-        # add to trade history
-        self.trades_manager.add_new_trade_in_history(Trade(self.exchange, order))
+            self.cancel_order(order)
+            _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
+        else:
+            order_closed = order
+            orders_canceled = order.get_linked_orders()
+
+            # update portfolio with ended order
+            self.portfolio.update_portfolio_available(order, False)
+            _, profitability_percent, profitability_diff = self.portfolio.update_portfolio(order)
+
+            # add to trade history
+            self.trades_manager.add_new_trade_in_history(Trade(self.exchange, order))
+
+            # remove order to open_orders
+            self.order_manager.remove_order_from_list(order)
 
         # notification
-        order.get_order_notifier().end(order, order.get_linked_orders(), profitability_diff, profitability_percent)
-
-        # remove order to open_orders
-        self.order_manager.remove_order_from_list(order)
+        order.get_order_notifier().end(order_closed, orders_canceled, profitability_diff, profitability_percent)
 
     def get_open_orders(self):
         return self.order_manager.get_open_orders()
