@@ -159,7 +159,7 @@ class OrdersNotification(Notification):
             content = ""
 
             if order_filled is not None:
-                content += "Order filled \n {0}".format(
+                content += "\nOrder(s) filled : \n- {0}".format(
                     OrdersNotification.twitter_order_description(order_filled.get_order_type(),
                                                                  order_filled.get_origin_quantity(),
                                                                  currency,
@@ -167,20 +167,20 @@ class OrdersNotification(Notification):
                                                                  market))
 
             if orders_canceled is not None and len(orders_canceled) > 0:
-                content += "\n Order canceled "
+                content += "\nOrder(s) canceled :"
                 for order in orders_canceled:
-                    content += "\n {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
+                    content += "\n- {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
                                                                                             order.get_origin_quantity(),
                                                                                             currency,
                                                                                             order.get_origin_price(),
                                                                                             market))
 
             if trade_profitability is not None:
-                content += "\n Trade profitability : {0} {1}".format(round(trade_profitability, 7),
+                content += "\nTrade profitability : {0} {1}".format(round(trade_profitability, 7),
                                                                      TradesManager.get_reference_market(self.config))
 
             if portfolio_profitability is not None:
-                content += "\n Portfolio profitability : {0}%".format(round(portfolio_profitability, 5))
+                content += "\nPortfolio profitability : {0}%".format(round(portfolio_profitability, 5))
 
             self.twitter_response_factory(tweet_instance, content)
 

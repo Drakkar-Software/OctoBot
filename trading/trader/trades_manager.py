@@ -19,6 +19,7 @@ class TradesManager:
         self.trade_history = []
         self.profitability = 0
         self.profitability_percent = 0
+        self.profitability_diff = 0
 
         self.currencies_prices = None
         self.origin_portfolio = None
@@ -60,7 +61,7 @@ class TradesManager:
     """
 
     def get_profitability(self):
-        profitability_diff = self.profitability
+        self.profitability_diff = self.profitability
         self.profitability = 0
         self.profitability_percent = 0
 
@@ -71,11 +72,14 @@ class TradesManager:
             self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
 
             # calculate difference with the last current portfolio
-            profitability_diff -= self.profitability
+            self.profitability_diff -= self.profitability
         except Exception as e:
             self.logger.error(str(e))
 
-        return self.profitability, self.profitability_percent, profitability_diff
+        return self.get_profitability_without_update()
+
+    def get_profitability_without_update(self):
+        return self.profitability, self.profitability_percent, self.profitability_diff
 
     # Currently unused method
     def get_trades_value(self):
