@@ -42,7 +42,7 @@ class Notification:
         self.twitter_notification_factory(message)
 
     def gmail_notification_available(self):
-        if NotificationTypes.MAIL.value in self.notification_type and self.enable:
+        if self.enable and NotificationTypes.MAIL.value in self.notification_type:
             if GmailService.is_setup_correctly(self.config):
                 return True
         return False
@@ -57,7 +57,7 @@ class Notification:
             self.logger.debug("Mail disabled")
 
     def twitter_notification_available(self):
-        if NotificationTypes.TWITTER.value in self.notification_type and self.enable:
+        if self.enable and NotificationTypes.TWITTER.value in self.notification_type:
             if TwitterService.is_setup_correctly(self.config):
                 return True
         return False
