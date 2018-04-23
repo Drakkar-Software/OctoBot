@@ -1,6 +1,7 @@
 import logging
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
+    CONFIG_TRADER_RISK_MAX
 from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
@@ -37,6 +38,8 @@ class Trader:
     def get_risk(self):
         if self.risk < CONFIG_TRADER_RISK_MIN:
             self.risk = CONFIG_TRADER_RISK_MIN
+        elif self.risk > CONFIG_TRADER_RISK_MAX:
+            self.risk = CONFIG_TRADER_RISK_MAX
         return self.risk
 
     def get_exchange(self):
