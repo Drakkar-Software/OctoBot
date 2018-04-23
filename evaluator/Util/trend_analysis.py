@@ -1,11 +1,43 @@
 import numpy
 
+from evaluator.Util.abstract_util import AbstractUtil
+from config.cst import DIVERGENCE_USED_VALUE
 
-class AnalysisUtil:
+
+class TrendAnalysis(AbstractUtil):
+
+    # trend < 0 --> Down trend
+    # trend > 0 --> Up trend
+    @staticmethod
+    def get_trend(data_frame, averages_to_use):
+        trend = 0
+        inc = round(1 / len(averages_to_use), 2)
+        averages = []
+
+        # Get averages
+        for average_to_use in averages_to_use:
+            averages.append(data_frame.tail(average_to_use).values.mean())
+
+        for a in range(0, len(averages) - 1):
+            if averages[a] - averages[a + 1] > 0:
+                trend -= inc
+            else:
+                trend += inc
+
+        return trend
 
     @staticmethod
-    def normalize_data_frame(data_frame):
-        return (data_frame - data_frame.mean()) / (data_frame.max() - data_frame.min())
+    # TODO
+    def detect_divergence(data_frame, indicator_data_frame):
+        candle_data = data_frame.tail(DIVERGENCE_USED_VALUE)
+        indicator_data = indicator_data_frame.tail(DIVERGENCE_USED_VALUE)
+
+        total_delta = []
+
+        for i in range(0, DIVERGENCE_USED_VALUE - 1):
+            candle_delta = candle_data.values[i] - candle_data.values[i + 1]
+            indicator_delta = indicator_data.values[i] - indicator_data.values[i + 1]
+            total_delta.append(candle_delta - indicator_delta)
 
     @staticmethod
     def get_estimation_of_move_state_relatively_to_previous_moves_length(mean_crossing_indexes, pattern_move_size=1):
