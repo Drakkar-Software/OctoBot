@@ -19,6 +19,13 @@ class FinalEvaluator(AsynchronousClient):
         self.symbol = None
         self.is_computing = False
         self.logger = logging.getLogger(self.__class__.__name__)
+
+        # If final_eval not is < X_THRESHOLD --> state = X
+        self.VERY_LONG_THRESHOLD = -0.8
+        self.LONG_THRESHOLD = -0.25
+        self.NEUTRAL_THRESHOLD = 0.25
+        self.SHORT_THRESHOLD = 0.8
+
         self.notifier = EvaluatorNotification(self.config)
         self.queue = Queue()
 
@@ -89,15 +96,21 @@ class FinalEvaluator(AsynchronousClient):
             self.final_eval = INIT_EVAL_NOTE
 
     def _create_state(self):
-        # TODO : improve
-        if self.final_eval < -0.8:
+        risk = self.symbol_evaluator.get_trader(self.exchange).get_risk()
+
+        self.final_eval *= 10
+        if self.final_eval < self.VERY_LONG_THRESHOLD:
             self._set_state(EvaluatorStates.VERY_LONG)
-        elif self.final_eval < -0.25:
+
+        elif self.final_eval < self.LONG_THRESHOLD:
             self._set_state(EvaluatorStates.LONG)
-        elif self.final_eval < 0.25:
+
+        elif self.final_eval < self.NEUTRAL_THRESHOLD:
             self._set_state(EvaluatorStates.NEUTRAL)
-        elif self.final_eval < 0.8:
+
+        elif self.final_eval < self.SHORT_THRESHOLD:
             self._set_state(EvaluatorStates.SHORT)
+
         else:
             self._set_state(EvaluatorStates.VERY_SHORT)
 
