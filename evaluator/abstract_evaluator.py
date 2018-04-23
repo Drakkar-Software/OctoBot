@@ -1,5 +1,5 @@
 from config.cst import *
-from evaluator.evaluator_dispatcher import *
+from evaluator.Dispatchers.abstract_dispatcher import *
 
 
 class AbstractEvaluator:
@@ -82,7 +82,7 @@ class AbstractEvaluator:
 
     @classmethod
     def get_is_dispatcher_client(cls):
-        return EvaluatorDispatcherClient in cls.__bases__
+        return DispatcherAbstractClient in cls.__bases__
 
     def set_eval_note(self, new_eval_note):
         if self.eval_note == START_PENDING_EVAL_NOTE:

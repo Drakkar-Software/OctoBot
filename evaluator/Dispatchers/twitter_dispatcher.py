@@ -2,11 +2,11 @@ import logging
 import twitter
 
 from config.cst import *
-from evaluator.evaluator_dispatcher import EvaluatorDispatcher
+from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
 from services import TwitterService
 
 
-class TwitterDispatcher(EvaluatorDispatcher):
+class TwitterDispatcher(AbstractDispatcher):
     def __init__(self, config):
         super().__init__(config)
         self.logger = logging.getLogger(self.__class__.__name__)

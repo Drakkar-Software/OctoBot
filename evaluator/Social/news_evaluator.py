@@ -1,17 +1,17 @@
 from config.cst import *
-from evaluator.Dispatchers.TwitterDispatcher import TwitterDispatcher
+from evaluator.Dispatchers.twitter_dispatcher import TwitterDispatcher
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.Util.text_analysis import TextAnalysis
-from evaluator.evaluator_dispatcher import *
+from evaluator.Dispatchers.abstract_dispatcher import *
 from tools.decoding_encoding import DecoderEncoder
 
 
-class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
+class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def __init__(self):
         NewsSocialEvaluator.__init__(self)
-        EvaluatorDispatcherClient.__init__(self)
-        self.enabled = False
+        DispatcherAbstractClient.__init__(self)
+        self.enabled = True
         self.is_threaded = False
         self.count = 0
         self.symbol = ""
