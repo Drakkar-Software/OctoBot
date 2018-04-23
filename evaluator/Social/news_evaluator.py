@@ -2,7 +2,7 @@ from config.cst import *
 from evaluator.Dispatchers.TwitterDispatcher import TwitterDispatcher
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
-from evaluator.Util.sentiment_analyser import SentimentAnalyser
+from evaluator.Util.text_analysis import TextAnalysis
 from evaluator.evaluator_dispatcher import *
 from tools.decoding_encoding import DecoderEncoder
 
@@ -93,7 +93,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, EvaluatorDispatcherClient):
 
     def prepare(self):
         self._purify_config()
-        self.sentiment_analyser = AdvancedManager.get_util_instance(self.config, SentimentAnalyser)
+        self.sentiment_analyser = AdvancedManager.get_util_instance(self.config, TextAnalysis)
 
 
 class MediumNewsEvaluator(NewsSocialEvaluator):

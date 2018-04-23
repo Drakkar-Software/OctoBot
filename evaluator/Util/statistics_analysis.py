@@ -5,12 +5,12 @@ from config.cst import START_PENDING_EVAL_NOTE
 from evaluator.Util.abstract_util import AbstractUtil
 
 
-class MomentumAnalyser(AbstractUtil):
+class StatisticAnalysis(AbstractUtil):
 
     # Return linear proximity to the lower or the upper band relatively to the middle band.
-    # If delta function given (threshold fct): linearly compute proximity between middle and delta before linear:
+    # Linearly compute proximity between middle and delta before linear:
     @staticmethod
-    def bollinger_momentum_analysis(data_frame, delta_function=None):
+    def analyse_recent_trend_changes(data_frame, delta_function):
         # compute bollinger bands
         upper_band, middle_band, lower_band = talib.BBANDS(data_frame, 20, 2, 2)
         # if close to lower band => low value => bad,
@@ -41,34 +41,21 @@ class MomentumAnalyser(AbstractUtil):
             return -1
 
         # delta given: use parabolic factor after delta, linear before
-        if delta_function:
-            delta = delta_function(numpy.mean([delta_up, delta_low]))
+        delta = delta_function(numpy.mean([delta_up, delta_low]))
 
-            micro_change = ((current_value / current_middle) - 1) / 2
+        micro_change = ((current_value / current_middle) - 1) / 2
 
-            # approximately on middle band
-            if current_middle + delta >= current_value >= current_middle - delta:
-                return micro_change
+        # approximately on middle band
+        if current_middle + delta >= current_value >= current_middle - delta:
+            return micro_change
 
-            # up the middle area
-            elif current_middle + delta < current_value:
-                return max(micro_change, (current_value - current_middle) / delta_up)
+        # up the middle area
+        elif current_middle + delta < current_value:
+            return max(micro_change, (current_value - current_middle) / delta_up)
 
-            # down the middle area
-            elif current_middle - delta > current_value:
-                return -1 * max(micro_change, (current_middle - current_value) / delta_low)
-
-        # regular values case: use parabolic factor all the time
-        else:
-
-            # up the middle band
-            if current_middle < current_value:
-                return (current_value - current_middle) / delta_up
-
-            # down the middle band
-            elif current_middle > current_value:
-                return -1 * (current_middle - current_value) / delta_low
-
+        # down the middle area
+        elif current_middle - delta > current_value:
+            return -1 * max(micro_change, (current_middle - current_value) / delta_low)
 
         # should not happen
         return 0
