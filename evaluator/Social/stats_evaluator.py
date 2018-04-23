@@ -13,7 +13,7 @@ class GoogleTrendStatsEvaluator(StatsSocialEvaluator):
     def __init__(self):
         super().__init__()
         self.pytrends = None
-        self.enabled = True
+        self.enabled = False
         self.is_threaded = False
 
     # Use pytrends lib (https://github.com/GeneralMills/pytrends)
