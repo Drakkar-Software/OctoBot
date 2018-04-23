@@ -21,6 +21,10 @@ CONFIG_FILE_EXT = ".json"
 CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
 CONFIG_CRYPTO_PAIRS = "pairs"
 
+# notification
+NOTIFICATION_STARTING_MESSAGE = "CryptoBot v{0} starting...".format(VERSION)
+NOTIFICATION_STOPPING_MESSAGE = "CryptoBot v{0} stopping...".format(VERSION)
+
 # gmail
 CONFIG_GMAIL = "gmail"
 
