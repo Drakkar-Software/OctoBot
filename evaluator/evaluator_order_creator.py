@@ -7,19 +7,21 @@ class EvaluatorOrderCreator:
     def __init__(self):
         self.last_values_count = 10
 
-        self.STOP_LOSS_ORDER_MAX_PERCENT = 0.999
-        self.STOP_LOSS_ORDER_MIN_PERCENT = 0.949
-        self.STOP_LOSS_ORDER_ATTENUATION = 0.02
+        self.MAX_SUM_RESULT = 2
+
+        self.STOP_LOSS_ORDER_MAX_PERCENT = 0.985
+        self.STOP_LOSS_ORDER_MIN_PERCENT = 0.96
+        self.STOP_LOSS_ORDER_ATTENUATION = (self.STOP_LOSS_ORDER_MAX_PERCENT - self.STOP_LOSS_ORDER_MIN_PERCENT)
 
         self.QUANTITY_MIN_PERCENT = 0.1
         self.QUANTITY_MAX_PERCENT = 0.9
-        self.QUANTITY_ATTENUATION = 0.2
+        self.QUANTITY_ATTENUATION = (self.QUANTITY_MAX_PERCENT - self.QUANTITY_MIN_PERCENT) / self.MAX_SUM_RESULT
 
-        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.999
-        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.949
+        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.995
+        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.965
         self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
         self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
-        self.LIMIT_ORDER_ATTENUATION = 0.02
+        self.LIMIT_ORDER_ATTENUATION = (self.BUY_LIMIT_ORDER_MAX_PERCENT - self.BUY_LIMIT_ORDER_MIN_PERCENT) / self.MAX_SUM_RESULT
 
     @staticmethod
     def _check_factor(min_val, max_val, factor):
@@ -30,29 +32,47 @@ class EvaluatorOrderCreator:
         else:
             return factor
 
+    """
+     Starting point : self.SELL_LIMIT_ORDER_MIN_PERCENT or self.BUY_LIMIT_ORDER_MAX_PERCENT
+     1 - abs(eval_note) --> confirmation level --> high : sell less expensive / buy more expensive
+     1 - trader.get_risk() --> high risk : sell / buy closer to the current price
+     1 - abs(eval_note) + 1 - trader.get_risk() --> result between 0 and 2 --> self.MAX_SUM_RESULT
+     self.QUANTITY_ATTENUATION --> try to contains the result between self.XXX_MIN_PERCENT and self.XXX_MAX_PERCENT
+     """
     def _get_limit_price_from_risk(self, eval_note, trader):
         if eval_note > 0:
             factor = self.SELL_LIMIT_ORDER_MIN_PERCENT + \
-                     ((1-abs(eval_note) + trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
+                     ((1-abs(eval_note) + 1-trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
             return EvaluatorOrderCreator._check_factor(self.SELL_LIMIT_ORDER_MIN_PERCENT,
                                                        self.SELL_LIMIT_ORDER_MAX_PERCENT,
                                                        factor)
         else:
             factor = self.BUY_LIMIT_ORDER_MAX_PERCENT - \
-                     ((1-abs(eval_note) + trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
+                     ((1-abs(eval_note) + 1-trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
             return EvaluatorOrderCreator._check_factor(self.BUY_LIMIT_ORDER_MIN_PERCENT,
                                                        self.BUY_LIMIT_ORDER_MAX_PERCENT,
                                                        factor)
 
+    """
+    Starting point : self.QUANTITY_MIN_PERCENT
+    abs(eval_note) --> confirmation level --> high : sell/buy more quantity
+    trader.get_risk() --> high risk : sell / buy more quantity
+    abs(eval_note) + trader.get_risk() --> result between 0 and 2 --> self.MAX_SUM_RESULT
+    self.QUANTITY_ATTENUATION --> try to contains the result between self.QUANTITY_MIN_PERCENT and self.QUANTITY_MAX_PERCENT
+    """
     def _get_limit_quantity_from_risk(self, eval_note, trader, quantity):
         factor = self.QUANTITY_MIN_PERCENT + ((abs(eval_note) + trader.get_risk()) * self.QUANTITY_ATTENUATION)
         return EvaluatorOrderCreator._check_factor(self.QUANTITY_MIN_PERCENT,
                                                    self.QUANTITY_MAX_PERCENT,
                                                    factor) * quantity
 
-    def _get_stop_price_from_risk(self, eval_note, trader):
-        factor = self.STOP_LOSS_ORDER_MAX_PERCENT - \
-                 ((abs(eval_note) + trader.get_risk()) * self.STOP_LOSS_ORDER_ATTENUATION)
+    """
+     Starting point : self.STOP_LOSS_ORDER_MAX_PERCENT
+     trader.get_risk() --> low risk : stop level close to the current price
+     self.STOP_LOSS_ORDER_ATTENUATION --> try to contains the result between self.STOP_LOSS_ORDER_MIN_PERCENT and self.STOP_LOSS_ORDER_MAX_PERCENT
+     """
+    def _get_stop_price_from_risk(self, trader):
+        factor = self.STOP_LOSS_ORDER_MAX_PERCENT - (trader.get_risk() * self.STOP_LOSS_ORDER_ATTENUATION)
         return EvaluatorOrderCreator._check_factor(self.STOP_LOSS_ORDER_MIN_PERCENT,
                                                    self.STOP_LOSS_ORDER_MAX_PERCENT,
                                                    factor)
@@ -109,8 +129,7 @@ class EvaluatorOrderCreator:
                                         self._get_limit_quantity_from_risk(eval_note,
                                                                            trader,
                                                                            current_portfolio),
-                                        reference * self._get_stop_price_from_risk(eval_note,
-                                                                                   trader),
+                                        reference * self._get_stop_price_from_risk(trader),
                                         linked_to=limit)
                     return limit
 
