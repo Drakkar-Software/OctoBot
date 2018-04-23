@@ -11,7 +11,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def __init__(self):
         NewsSocialEvaluator.__init__(self)
         DispatcherAbstractClient.__init__(self)
-        self.enabled = False
+        self.enabled = True
         self.is_threaded = False
         self.count = 0
         self.symbol = ""
@@ -31,26 +31,40 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def get_twitter_service(self):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
-    def _print_tweet(self, tweet, count):
-        self.set_eval_note(self._get_sentiment(tweet))
-        self._check_eval_note()
+    def _print_tweet(self, tweet_text, count=""):
         self.logger.debug("Current note : " + str(self.eval_note) + "|"
                           + str(count) + " : " + str(self.symbol) + " : " + "Text : "
-                          + str(DecoderEncoder.encode_into_bytes(tweet)))
+                          + str(DecoderEncoder.encode_into_bytes(tweet_text)))
 
     def receive_notification_data(self, data):
         self.count += 1
-        self._print_tweet(data[CONFIG_TWEET_DESCRIPTION], self.count)
+        self.eval_note = self._get_sentiment(data[CONFIG_TWEET], data[CONFIG_TWEET_DESCRIPTION])
+        if self.eval_note != START_PENDING_EVAL_NOTE:
+            self._print_tweet(data[CONFIG_TWEET_DESCRIPTION], self.count)
+        self._check_eval_note()
 
     def _check_eval_note(self):
-        if self.eval_note > 0.8 or self.eval_note < -0.8:
-            self.notify_evaluator_threads(self.__class__.__name__)
+        if self.eval_note != START_PENDING_EVAL_NOTE:
+            if self.eval_note > 0.6 or self.eval_note < -0.6:
+                self.notify_evaluator_threads(self.__class__.__name__)
 
-    def _get_sentiment(self, tweet):
+    def _get_sentiment(self, tweet, tweet_text):
         # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
         # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
         # https://github.com/cjhutto/vaderSentiment
-        return -0.1*self.sentiment_analyser.analyse(tweet)["compound"]
+        try:
+            stupid_useless_name = "########"
+            author_screen_name = tweet['user']['screen_name'] if "screen_name" in tweet['user'] else stupid_useless_name
+            author_name = tweet['user']['name'] if "name" in tweet['user'] else stupid_useless_name
+            if self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
+                if author_screen_name in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol] \
+                   or author_name in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol]:
+                    return -1 * self.sentiment_analyser.analyse(tweet_text)
+        except KeyError:
+            pass
+
+        # ignore # for the moment (too much of bullshit)
+        return START_PENDING_EVAL_NOTE
 
     def eval_impl(self):
         pass
@@ -60,9 +74,10 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
 
     def is_interested_by_this_notification(self, notification_description):
         # true if in twitter accounts
-        for account in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol]:
-            if account.lower() in notification_description:
-                return True
+        if self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
+            for account in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol]:
+                if account.lower() in notification_description:
+                    return True
 
         # false if it's a RT of an unfollowed account
         if notification_description.startswith("rt"):
@@ -73,10 +88,11 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
             return True
 
         # true if in hashtags
-        for hashtags in self.social_config[CONFIG_TWITTERS_HASHTAGS][self.symbol]:
-            if hashtags.lower() in notification_description:
-                return True
-        return False
+        if self.social_config[CONFIG_TWITTERS_HASHTAGS]:
+            for hashtags in self.social_config[CONFIG_TWITTERS_HASHTAGS][self.symbol]:
+                if hashtags.lower() in notification_description:
+                    return True
+            return False
 
     def _purify_config(self):
         # remove other symbols data to avoid unnecessary tweets

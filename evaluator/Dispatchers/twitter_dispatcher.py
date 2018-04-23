@@ -75,7 +75,8 @@ class TwitterDispatcher(AbstractDispatcher):
                                                                                      track=self.hashtags):
                         self.counter += 1
                         string_tweet = self.twitter_service.tweet_to_string(tweet).lower()
-                        self.notify_registered_clients_if_interested(string_tweet,
+                        tweet_desc = str(tweet).lower()
+                        self.notify_registered_clients_if_interested(tweet_desc,
                                                                      {CONFIG_TWEET: tweet,
                                                                       CONFIG_TWEET_DESCRIPTION: string_tweet})
                 except twitter.error.TwitterError as e:
