@@ -8,7 +8,7 @@ class EvaluatorOrderCreator:
         self.last_values_count = 10
 
         self.STOP_LOSS_ORDER_MAX_PERCENT = 0.99
-        self.STOP_LOSS_ORDER_MIN_PERCENT = 0.90
+        self.STOP_LOSS_ORDER_MIN_PERCENT = 0.95
         self.STOP_LOSS_ORDER_ATTENUATION = 0.1
 
         self.QUANTITY_MIN_PERCENT = 0.1
@@ -16,7 +16,7 @@ class EvaluatorOrderCreator:
         self.QUANTITY_ATTENUATION = 0.3
 
         self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.99
-        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.90
+        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.95
         self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
         self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
         self.LIMIT_ORDER_ATTENUATION = 0.01
