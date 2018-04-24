@@ -46,7 +46,7 @@ class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
             normalized_data = DataFrameUtil.normalize_data_frame(current_divergence_data)
             current_value = (normalized_data.iloc[-1]+1)/2
             if current_value == "nan":
-                return START_PENDING_EVAL_NOTE
+                return 0
             # check <= values_difference.count()-1if current value is max/min
             if current_value == 0 or current_value == 1:
                 chances_to_be_max = TrendAnalysis.get_estimation_of_move_state_relatively_to_previous_moves_length(
