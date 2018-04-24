@@ -14,11 +14,15 @@ hesitate to read the source code and understand the mechanism of this bot.
 
 Moreover, we are in the **alpha** phase so you should not expect the bot to be stable.
 
+## Demo
+See live demo [here](https://twitter.com/HerklosBotCrypt)
+
 ## Install
+See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)
 ```
 git clone https://github.com/Trading-Bot/CryptoBot
 cd CryptoBot
-sudo pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Configuration
@@ -96,17 +100,14 @@ from .file_containing_new_implementation_name.py import *
 
 More information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
 
-## Changelog
-See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md)
-
-## Demo
-See live demo [here](https://twitter.com/HerklosBotCrypt)
-
 ## Testing
 Use *pytest* command in the root folder : 
 ```
 pytest
 ```
+
+## Changelog
+See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md)
 
 ## More
 For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).
