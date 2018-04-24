@@ -44,6 +44,7 @@ CONFIG_DEBUG_OPTION = "DEBUG"
 
 CONFIG_ENABLED_OPTION = "enabled"
 
+CONFIG_EXCHANGES = "exchanges"
 CONFIG_TRADER = "trader"
 CONFIG_SIMULATOR = "simulator"
 CONFIG_STARTING_PORTFOLIO = "starting_portfolio"

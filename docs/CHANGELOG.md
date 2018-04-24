@@ -9,6 +9,7 @@ Changelog for 0.0.8
     #93 [Profitability] Fix calculation error
     #97 [Order] Fix order cancel when state change
     #99 [Symbol evaluator] Symbol evaluator fail to manage multi exchanges
+    #100 [Exchanges] Implement automatic instanciation of exchange when keys are in config.json
 
 
 # New features :
