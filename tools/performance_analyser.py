@@ -19,14 +19,14 @@ class PerformanceAnalyser(threading.Thread):
 
     def run(self):
         while self.keep_running:
-            self.logger.info("CPU : " + str(self.get_cpu()) + "% RAM : " + str(self.get_ram_go()) + " Go")
+            self.logger.info("CPU : " + str(self._get_cpu()) + "% RAM : " + str(self._get_ram_go()) + " Go")
             time.sleep(self.interval)
 
     def stop(self):
         self.keep_running = False
 
-    def get_cpu(self):
+    def _get_cpu(self):
         return self.py.cpu_percent()
 
-    def get_ram_go(self):
+    def _get_ram_go(self):
         return self.py.memory_info()[0]/2.**30

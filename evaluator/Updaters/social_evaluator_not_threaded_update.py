@@ -11,13 +11,13 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
         self.social_evaluator_list = social_evaluator_list
         self.social_evaluator_list_timers = []
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.create_eval_timers()
+        self._create_eval_timers()
         self.keep_running = True
 
     def stop(self):
         self.keep_running = False
 
-    def create_eval_timers(self):
+    def _create_eval_timers(self):
         for social_eval in self.social_evaluator_list:
             # if key exists --> else this social eval will not be refreshed
             if CONFIG_REFRESH_RATE in social_eval.get_social_config():

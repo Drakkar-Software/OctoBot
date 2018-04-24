@@ -13,21 +13,21 @@ class EvaluatorThreadsManager:
                  exchange,
                  real_time_ta_eval_list):
         self.config = config
+        self.exchange = exchange
         self.symbol = symbol
         self.time_frame = time_frame
         self.symbol_evaluator = symbol_evaluator
 
         # notify symbol evaluator
-        self.symbol_evaluator.add_evaluator_thread(self)
+        self.symbol_evaluator.add_evaluator_thread(self.exchange, self.symbol, self)
 
-        self.matrix = self.symbol_evaluator.get_matrix()
+        self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 
         # Exchange
-        self.exchange = exchange
         # TODO : self.exchange.update_balance(self.symbol)
 
         self.thread_name = "TA THREAD - {0} - {1} - {2}".format(self.symbol,
-                                                                self.exchange.__class__.__name__,
+                                                                self.exchange.get_name(),
                                                                 self.time_frame)
         self.logger = logging.getLogger(self.thread_name)
 
@@ -42,6 +42,8 @@ class EvaluatorThreadsManager:
         # Add threaded evaluators that can notify the current thread
         self.evaluator.set_social_eval(self.symbol_evaluator.get_social_eval_list(), self)
         self.evaluator.set_real_time_eval(real_time_ta_eval_list, self)
+
+        # Create static evaluators
         self.evaluator.set_ta_eval_list(self.evaluator.get_creator().create_ta_eval_list(self.evaluator))
 
         # Create refreshing threads
@@ -50,26 +52,26 @@ class EvaluatorThreadsManager:
     def notify(self, notifier_name):
         if self.data_refresher.get_refreshed_times() > 0:
             self.logger.debug("** Notified by {0} **".format(notifier_name))
-            self.refresh_eval(notifier_name)
+            self._refresh_eval(notifier_name)
         else:
             self.logger.debug("Notification by {0} ignored".format(notifier_name))
 
-    def refresh_eval(self, ignored_evaluator=None):
+    def _refresh_eval(self, ignored_evaluator=None):
         # update eval
         self.evaluator.update_ta_eval(ignored_evaluator)
 
         # update matrix
-        self.refresh_matrix()
+        self._refresh_matrix()
 
         # update strategies matrix
-        self.symbol_evaluator.update_strategies_eval(self.matrix, ignored_evaluator)
+        self.symbol_evaluator.update_strategies_eval(self.matrix, self.exchange, ignored_evaluator)
 
         # calculate the final result
-        self.symbol_evaluator.finalize(self.exchange, self.symbol)
+        self.symbol_evaluator.finalize(self.exchange)
         self.logger.debug("MATRIX : {0}".format(self.matrix.get_matrix()))
 
-    def refresh_matrix(self):
-        self.matrix = self.symbol_evaluator.get_matrix()
+    def _refresh_matrix(self):
+        self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 
         for ta_eval in self.evaluator.get_ta_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),

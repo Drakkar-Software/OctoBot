@@ -6,10 +6,9 @@ from trading.trader.order import OrderConstants
 """ The Portfolio class manage an exchange portfolio
 This will begin by loading current exchange portfolio (by pulling user data)
 In case of simulation this will load the CONFIG_STARTING_PORTFOLIO
-This class also manage the availability of each currency in the portfolio : 
+This class also manage the availability of each currency in the portfolio:
 - When an order is created it will subtract the quantity of the total
-- When an order is filled or canceled restore the availability with the real quantity
-"""
+- When an order is filled or canceled restore the availability with the real quantity """
 
 
 class Portfolio:
@@ -19,13 +18,13 @@ class Portfolio:
     def __init__(self, config, trader):
         self.config = config
         self.portfolio = {}
-        self.load_portfolio()
+        self._load_portfolio()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.trader = trader
         self.exchange = self.trader.get_exchange()
 
     # Load exchange portfolio / simulated portfolio from config
-    def load_portfolio(self):
+    def _load_portfolio(self):
         if CONFIG_SIMULATOR in self.config and CONFIG_STARTING_PORTFOLIO in self.config[CONFIG_SIMULATOR]:
             for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
                 self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
@@ -45,7 +44,7 @@ class Portfolio:
             return self.portfolio[currency][portfolio_type]
 
     # Set new currency quantity in the portfolio
-    def update_portfolio_data(self, currency, value, total=True, available=False):
+    def _update_portfolio_data(self, currency, value, total=True, available=False):
         if currency in self.portfolio:
             if total:
                 self.portfolio[currency][Portfolio.TOTAL] += value
@@ -66,14 +65,14 @@ class Portfolio:
             new_quantity = order.get_filled_quantity() - order.get_currency_total_fees()
         else:
             new_quantity = -(order.get_filled_quantity() - order.get_currency_total_fees())
-        self.update_portfolio_data(currency, new_quantity, True, True)
+        self._update_portfolio_data(currency, new_quantity, True, True)
 
         # update market
         if order.get_side() == TradeOrderSide.BUY:
             new_quantity = -((order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees())
         else:
             new_quantity = (order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees()
-        self.update_portfolio_data(market, new_quantity, True, True)
+        self._update_portfolio_data(market, new_quantity, True, True)
 
         # Only for log purpose
         if order.get_side() == TradeOrderSide.BUY:
@@ -117,11 +116,12 @@ class Portfolio:
 
             if order.get_side() == TradeOrderSide.BUY:
                 new_quantity = -order.get_origin_quantity() * order.get_origin_price() * inverse
-                self.update_portfolio_data(market, new_quantity, False, True)
+                self._update_portfolio_data(market, new_quantity, False, True)
             else:
                 new_quantity = -order.get_origin_quantity() * inverse
-                self.update_portfolio_data(currency, new_quantity, False, True)
+                self._update_portfolio_data(currency, new_quantity, False, True)
 
             # debug purpose
-            self.logger.debug("Portfolio available updated | Current Portfolio : {1}".format(order.get_order_symbol(),
-                                                                                             self.portfolio))
+            self.logger.debug("Portfolio available updated after order on {0} | Current Portfolio : {1}".format(
+                                 order.get_order_symbol(),
+                                 self.portfolio))

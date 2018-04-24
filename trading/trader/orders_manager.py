@@ -10,8 +10,7 @@ from config.cst import ORDER_REFRESHER_TIME, OrderStatus
 Data updating process is generic but a specific implementation is called for each type of order (TraderOrderTypeClasses)
 The thread will perform this data update and the open orders status check each ORDER_REFRESHER_TIME seconds
 This class is particularly needed when exchanges doesn't offer stop loss orders
-This class has an essential role for the trader simulator
-"""
+This class has an essential role for the trader simulator """
 
 
 class OrdersManager(threading.Thread):
@@ -39,19 +38,23 @@ class OrdersManager(threading.Thread):
         self.keep_running = False
 
     # Update each open order symbol with exchange data
-    def update_last_symbol_list(self):
+    def _update_last_symbol_list(self):
         updated = []
         for order in self.order_list:
             if order.get_order_symbol() not in updated:
                 try:
-                    self.update_last_symbol_prices(order.get_order_symbol())
+                    self._update_last_symbol_prices(order.get_order_symbol())
                 except ccxt.base.errors.RequestTimeout as e:
                     self.logger.error(str(e))
                 updated.append(order.get_order_symbol())
 
     # Ask to update a specific symbol with exchange data
-    def update_last_symbol_prices(self, symbol):
-        self.last_symbol_prices[symbol] = self.trader.get_exchange().get_recent_trades(symbol)
+    def _update_last_symbol_prices(self, symbol):
+        last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+
+        # Check if exchange request failed
+        if last_symbol_price is not None:
+            self.last_symbol_prices[symbol] = last_symbol_price
 
     def get_open_orders(self):
         return self.order_list
@@ -60,16 +63,18 @@ class OrdersManager(threading.Thread):
     Then ask orders to check their status
     Finally ask cancellation and filling process if it is required 
     """
+
     def run(self):
         while self.keep_running:
             # update all prices only if simulate
             if self.trader.simulate:
-                self.update_last_symbol_list()
+                self._update_last_symbol_list()
 
             for order in self.order_list:
                 # update symbol prices from exchange only if simulate
                 if self.trader.simulate:
-                    order.set_last_prices(self.last_symbol_prices[order.get_order_symbol()])
+                    if order.get_order_symbol() in self.last_symbol_prices:
+                        order.set_last_prices(self.last_symbol_prices[order.get_order_symbol()])
 
                 # ask orders to update their status
                 order.update_order_status()

@@ -6,14 +6,12 @@ from trading.trader.order_notifier import OrderNotifier
 from trading.trader.trader import Trader
 
 """ TraderSimulator has a role of exchange response simulator
-- During order creation / filling / canceling process
-"""
+- During order creation / filling / canceling process"""
 
 
 class TraderSimulator(Trader):
     def __init__(self, config, exchange):
         super().__init__(config, exchange)
-        self.risk = self.config[CONFIG_SIMULATOR][CONFIG_TRADER_RISK]
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = True
 
