@@ -63,8 +63,11 @@ class AbstractEvaluator:
             if CONFIG_DEBUG_OPTION in self.config and self.config[CONFIG_DEBUG_OPTION]:
                 raise e
             else:
-                self.logger.error(" Exception in eval_impl(): " + str(e))
+                self.logger.error("Exception in eval_impl(): " + str(e))
         finally:
+            if self.eval_note == "nan":
+                self.eval_note = START_PENDING_EVAL_NOTE
+                self.logger.warning(str(self.symbol)+" evaluator returned 'nan' as eval_note, ignoring this value.")
             self.is_updating = False
 
     # eval new data
