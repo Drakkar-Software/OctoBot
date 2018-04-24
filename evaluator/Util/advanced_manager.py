@@ -1,7 +1,6 @@
 from config.cst import CONFIG_ADVANCED_CLASSES, CONFIG_ADVANCED_INSTANCES
 from evaluator.Util.abstract_util import AbstractUtil
 from evaluator.abstract_evaluator import AbstractEvaluator
-import numpy
 import logging
 
 
@@ -10,7 +9,7 @@ class AdvancedManager:
     """ is_abstract will test if the class in an abstract one or not
     by checking if __metaclass__ attribute is inherited or not we will know if the class is an abstract one
 
-    Returns True if it is an abstract one else False."""
+    Returns True if it is an abstract one else False. """
     @staticmethod
     def is_abstract(class_type):
         # Get class parental description
@@ -38,23 +37,23 @@ class AdvancedManager:
     with its name as a key or the reference class name --> abstract_class
     """
     @staticmethod
-    def get_advanced(config, class_type, abstract_class=None):
+    def _get_advanced(config, class_type, abstract_class=None):
         if len(class_type.__subclasses__()) > 0:
             for child in class_type.__subclasses__():
                 if AdvancedManager.is_abstract(child):
-                    AdvancedManager.get_advanced(config, child)
+                    AdvancedManager._get_advanced(config, child)
                 else:
                     # If abstract class is not defined --> current non abstract_class is the reference
                     # else keep the first non abstract class as the reference
                     if abstract_class is None:
-                        AdvancedManager.get_advanced(config, child, child.get_name())
+                        AdvancedManager._get_advanced(config, child, child.get_name())
                     else:
-                        AdvancedManager.get_advanced(config, child, abstract_class)
+                        AdvancedManager._get_advanced(config, child, abstract_class)
         else:
             if abstract_class is not None:
-                AdvancedManager.append_to_class_list(config, abstract_class, class_type)
+                AdvancedManager._append_to_class_list(config, abstract_class, class_type)
             else:
-                AdvancedManager.append_to_class_list(config, class_type.get_name(), class_type)
+                AdvancedManager._append_to_class_list(config, class_type.get_name(), class_type)
 
     """ create_class_list will create a list with the best class available
     Advanced class are declared into advanced folders of each packages
@@ -66,30 +65,30 @@ class AdvancedManager:
         config[CONFIG_ADVANCED_INSTANCES] = {}
 
         # Evaluators
-        AdvancedManager.get_advanced(config, AbstractEvaluator)
+        AdvancedManager._get_advanced(config, AbstractEvaluator)
 
         # Util
-        AdvancedManager.get_advanced(config, AbstractUtil)
+        AdvancedManager._get_advanced(config, AbstractUtil)
 
     @staticmethod
-    def get_advanced_classes_list(config):
+    def _get_advanced_classes_list(config):
         return config[CONFIG_ADVANCED_CLASSES]
 
     @staticmethod
-    def get_advanced_instances_list(config):
+    def _get_advanced_instances_list(config):
         return config[CONFIG_ADVANCED_INSTANCES]
 
     @staticmethod
-    def append_to_class_list(config, class_name, class_type):
-        if class_name not in AdvancedManager.get_advanced_classes_list(config):
-            AdvancedManager.get_advanced_classes_list(config)[class_name] = [class_type]
+    def _append_to_class_list(config, class_name, class_type):
+        if class_name not in AdvancedManager._get_advanced_classes_list(config):
+            AdvancedManager._get_advanced_classes_list(config)[class_name] = [class_type]
         else:
-            AdvancedManager.get_advanced_classes_list(config)[class_name].append(class_type)
+            AdvancedManager._get_advanced_classes_list(config)[class_name].append(class_type)
 
     @staticmethod
     def get_classes(config, class_type):
-        if class_type.get_name() in AdvancedManager.get_advanced_classes_list(config):
-            return AdvancedManager.get_advanced_classes_list(config)[class_type.get_name()]
+        if class_type.get_name() in AdvancedManager._get_advanced_classes_list(config):
+            return AdvancedManager._get_advanced_classes_list(config)[class_type.get_name()]
         else:
             return [class_type]
 
@@ -104,10 +103,10 @@ class AdvancedManager:
     @staticmethod
     def get_util_instance(config, class_type, *args):
         advanced_class_type = AdvancedManager.get_class(config, class_type)
-        if class_type in AdvancedManager.get_advanced_instances_list(config):
-            return AdvancedManager.get_advanced_instances_list(config)[class_type]
+        if class_type in AdvancedManager._get_advanced_instances_list(config):
+            return AdvancedManager._get_advanced_instances_list(config)[class_type]
         elif advanced_class_type:
             instance = advanced_class_type(*args)
-            AdvancedManager.get_advanced_instances_list(config)[class_type] = instance
+            AdvancedManager._get_advanced_instances_list(config)[class_type] = instance
             return instance
         return None

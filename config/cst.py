@@ -1,11 +1,12 @@
 from enum import Enum
 
-VERSION = "0.0.7-alpha"
+VERSION = "0.0.8-alpha"
 
 MINUTE_TO_SECONDS = 60
 START_PENDING_EVAL_NOTE = "0"  # force exception
 INIT_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
+MAX_TA_EVAL_TIME_SECONDS = 0.03
 
 MARKET_SEPARATOR = "/"
 
@@ -19,6 +20,10 @@ CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
 CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
 CONFIG_CRYPTO_PAIRS = "pairs"
+
+# notification
+NOTIFICATION_STARTING_MESSAGE = "CryptoBot v{0} starting...".format(VERSION)
+NOTIFICATION_STOPPING_MESSAGE = "CryptoBot v{0} stopping...".format(VERSION)
 
 # gmail
 CONFIG_GMAIL = "gmail"
@@ -39,6 +44,7 @@ CONFIG_DEBUG_OPTION = "DEBUG"
 
 CONFIG_ENABLED_OPTION = "enabled"
 
+CONFIG_EXCHANGES = "exchanges"
 CONFIG_TRADER = "trader"
 CONFIG_SIMULATOR = "simulator"
 CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
@@ -49,6 +55,7 @@ CONFIG_SERVICE_INSTANCE = "service_instance"
 
 CONFIG_TRADER_RISK = "risk"
 CONFIG_TRADER_RISK_MIN = 0.05
+CONFIG_TRADER_RISK_MAX = 1
 
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
 
@@ -62,6 +69,10 @@ CONFIG_TRADER_REFERENCE_MARKET = "reference_market"
 DEFAULT_REFERENCE_MARKET = "BTC"
 
 DIVERGENCE_USED_VALUE = 30
+
+# e-7
+MARKET_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
+CURRENCY_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
 
 
 class EvaluatorRisk(Enum):
@@ -200,7 +211,7 @@ class ExchangeConstantsTickersInfoColumns(Enum):
     SYMBOL = "symbol"
     PRICE_CHANGE = "priceChange"
     PRICE_CHANGE_PERCENT = "priceChangePercent"
-    WEIGHTED_AVERAGE_PRICE =  "weightedAvgPrice"
+    WEIGHTED_AVERAGE_PRICE = "weightedAvgPrice"
     PREVIOUS_CLOSE_PRICE = "prevClosePrice"
     LAST_PRICE = "lastPrice"
     LAST_QUANTITY = "lastQty"

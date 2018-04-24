@@ -2,9 +2,9 @@ import asyncio
 import logging
 
 import pandas
-from ccxt import OrderNotFound
+from ccxt import OrderNotFound, BaseError
 
-from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType
+from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES
 
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
@@ -21,13 +21,12 @@ class Exchange:
 
         self.logger = logging.getLogger(self.name)
 
-        # time.sleep (exchange.rateLimit / 1000) # time.sleep wants seconds
-
     def enabled(self):
         # if we can get candlestick data
-        if self.name in self.config["exchanges"] and self.client.has['fetchOHLCV']:
+        if self.name in self.config[CONFIG_EXCHANGES] and self.client.has['fetchOHLCV']:
             return True
         else:
+            self.logger.warning("Exchange {0} is currently disabled".format(self.name))
             return False
 
     def create_client(self):
@@ -35,7 +34,8 @@ class Exchange:
             self.client = self.exchange_type({
                 'apiKey': self.config["exchanges"][self.name]["api-key"],
                 'secret': self.config["exchanges"][self.name]["api-secret"],
-                'verbose': False
+                'verbose': False,
+                'enableRateLimit': True
             })
         else:
             self.client = self.exchange_type({'verbose': False})
@@ -90,7 +90,7 @@ class Exchange:
     def get_recent_trades(self, symbol):
         try:
             return self.client.fetch_trades(symbol)
-        except Exception as e:
+        except BaseError as e:
             self.logger.error("Failed to get recent trade {0}".format(e))
             return None
 
@@ -103,11 +103,19 @@ class Exchange:
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     def get_price_ticker(self, symbol):
-        return self.client.fetch_ticker(symbol)
+        try:
+            return self.client.fetch_ticker(symbol)
+        except BaseError as e:
+            self.logger.error("Failed to get_price_ticker {0}".format(e))
+            return None
 
     def get_all_currencies_price_ticker(self):
-        self.all_currencies_price_ticker = self.client.fetch_tickers()
-        return self.all_currencies_price_ticker
+        try:
+            self.all_currencies_price_ticker = self.client.fetch_tickers()
+            return self.all_currencies_price_ticker
+        except BaseError as e:
+            self.logger.error("Failed to get_all_currencies_price_ticker {0}".format(e))
+            return None
 
     # ORDERS
     # {

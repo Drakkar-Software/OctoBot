@@ -19,14 +19,7 @@ class Notification:
         self.config = config
         self.notification_type = self.config[CONFIG_CATEGORY_NOTIFICATION]["type"]
         self.logger = logging.getLogger(self.__class__.__name__)
-
-        # Debug
-        if self.enabled():
-            self.enable = True
-            self.logger.debug("Enabled")
-        else:
-            self.enable = False
-            self.logger.debug("Disabled")
+        self.enable = self.enabled()
 
     def enabled(self):
         if self.config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION]:
@@ -34,8 +27,15 @@ class Notification:
         else:
             return False
 
+    def notify_with_all(self, message):
+        # gmail
+        self.gmail_notification_factory(message, message)
+
+        # twitter
+        self.twitter_notification_factory(message)
+
     def gmail_notification_available(self):
-        if NotificationTypes.MAIL.value in self.notification_type and self.enable:
+        if self.enable and NotificationTypes.MAIL.value in self.notification_type:
             if GmailService.is_setup_correctly(self.config):
                 return True
         return False
@@ -50,7 +50,7 @@ class Notification:
             self.logger.debug("Mail disabled")
 
     def twitter_notification_available(self):
-        if NotificationTypes.TWITTER.value in self.notification_type and self.enable:
+        if self.enable and NotificationTypes.TWITTER.value in self.notification_type:
             if TwitterService.is_setup_correctly(self.config):
                 return True
         return False
@@ -85,7 +85,7 @@ class EvaluatorNotification(Notification):
 
     def notify_state_changed(self, final_eval, symbol_evaluator, trader, result, matrix):
         if self.gmail_notification_available():
-            profitability, profitability_percent = trader.get_trades_manager().get_profitability()
+            profitability, profitability_percent, _ = trader.get_trades_manager().get_profitability()
 
             self.gmail_notification_factory("CRYPTO BOT ALERT : {0} / {1}".format(symbol_evaluator.crypto_currency,
                                                                                   result),
@@ -159,7 +159,7 @@ class OrdersNotification(Notification):
             content = ""
 
             if order_filled is not None:
-                content += "Order filled \n {0}".format(
+                content += "\nOrder(s) filled : \n- {0}".format(
                     OrdersNotification.twitter_order_description(order_filled.get_order_type(),
                                                                  order_filled.get_origin_quantity(),
                                                                  currency,
@@ -167,20 +167,20 @@ class OrdersNotification(Notification):
                                                                  market))
 
             if orders_canceled is not None and len(orders_canceled) > 0:
-                content += "\n Order canceled "
+                content += "\nOrder(s) canceled :"
                 for order in orders_canceled:
-                    content += "\n {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
+                    content += "\n- {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
                                                                                             order.get_origin_quantity(),
                                                                                             currency,
                                                                                             order.get_origin_price(),
                                                                                             market))
 
             if trade_profitability is not None:
-                content += "\n Trade profitability : {0} {1}".format(round(trade_profitability, 7),
+                content += "\n\nTrade profitability : {0} {1}".format(round(trade_profitability, 7),
                                                                      TradesManager.get_reference_market(self.config))
 
             if portfolio_profitability is not None:
-                content += "\n Portfolio profitability : {0}%".format(round(portfolio_profitability, 5))
+                content += "\nGlobal Portfolio profitability : {0}%".format(round(portfolio_profitability, 5))
 
             self.twitter_response_factory(tweet_instance, content)
 

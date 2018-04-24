@@ -1,5 +1,7 @@
 # CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot)
-### Version 0.0.7-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md))
+
+#### Version 0.0.8-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md))
+
 ## Disclaimer
 This software is for educational purposes only. Do not risk money which 
 you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
@@ -42,7 +44,12 @@ See [Configuration Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Configur
 ```
 See [Exchanges Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Exchanges)
 ```
-"exchanges": {}
+"exchanges": {
+    "binance": {
+      "api-key": "",
+      "api-secret": ""
+    }
+}
 ```
 See [Notifications Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Notifications)
 ```
