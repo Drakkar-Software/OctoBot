@@ -4,7 +4,7 @@ import logging
 import pandas
 from ccxt import OrderNotFound, BaseError
 
-from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType
+from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES
 
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
@@ -23,7 +23,7 @@ class Exchange:
 
     def enabled(self):
         # if we can get candlestick data
-        if self.name in self.config["exchanges"] and self.client.has['fetchOHLCV']:
+        if self.name in self.config[CONFIG_EXCHANGES] and self.client.has['fetchOHLCV']:
             return True
         else:
             self.logger.warning("Exchange {0} is currently disabled".format(self.name))

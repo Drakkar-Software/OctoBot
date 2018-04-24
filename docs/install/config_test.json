@@ -14,10 +14,6 @@
     "binance": {
       "api-key": "",
       "api-secret": ""
-    },
-    "bitfinex": {
-      "api-key": "",
-      "api-secret": ""
     }
   },
   "services": {

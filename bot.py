@@ -56,7 +56,6 @@ class Crypto_Bot:
 
         # TODO : CONFIG TEMP LOCATION
         self.time_frames = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
-        self.exchanges = [ccxt.binance]
 
         # Add services to self.config[CONFIG_CATEGORY_SERVICES]
         ServiceCreator.create_services(self.config)
@@ -75,16 +74,22 @@ class Crypto_Bot:
         self.dispatchers_list = []
 
     def create_exchange_traders(self):
-        for exchange_type in self.exchanges:
-            exchange_inst = Exchange(self.config, exchange_type)
+        available_exchanges = ccxt.exchanges
+        for exchange_class_string in self.config[CONFIG_EXCHANGES]:
+            if exchange_class_string in available_exchanges:
+                exchange_type = getattr(ccxt, exchange_class_string)
 
-            # create trader instance for this exchange
-            exchange_trader = Trader(self.config, exchange_inst)
-            exchange_trader_simulator = TraderSimulator(self.config, exchange_inst)
+                exchange_inst = Exchange(self.config, exchange_type)
 
-            self.exchanges_list[exchange_type.__name__] = exchange_inst
-            self.exchange_traders[exchange_type.__name__] = exchange_trader
-            self.exchange_trader_simulators[exchange_type.__name__] = exchange_trader_simulator
+                # create trader instance for this exchange
+                exchange_trader = Trader(self.config, exchange_inst)
+                exchange_trader_simulator = TraderSimulator(self.config, exchange_inst)
+
+                self.exchanges_list[exchange_inst.get_name()] = exchange_inst
+                self.exchange_traders[exchange_inst.get_name()] = exchange_trader
+                self.exchange_trader_simulators[exchange_inst.get_name()] = exchange_trader_simulator
+            else:
+                self.logger.error("{0} exchange not found".format(exchange_class_string))
 
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
@@ -104,9 +109,7 @@ class Crypto_Bot:
             # create TA evaluators
             for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
 
-                for exchange_type in self.exchanges:
-                    exchange = self.exchanges_list[exchange_type.__name__]
-
+                for exchange in self.exchanges_list.values():
                     if exchange.enabled():
 
                         # Verify that symbol exists on this exchange
@@ -117,7 +120,7 @@ class Crypto_Bot:
 
                         # notify that exchange doesn't support this symbol
                         else:
-                            self.logger.warning("{0} doesn't support {1}".format(exchange_type.__name__, symbol))
+                            self.logger.warning("{0} doesn't support {1}".format(exchange.get_name(), symbol))
 
     def _create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
         # Create real time TA evaluators

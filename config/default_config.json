@@ -4,7 +4,12 @@
       "pairs" : ["BTC/USDT"]
     }
   },
-  "exchanges": {},
+  "exchanges": {
+    "binance": {
+      "api-key": "",
+      "api-secret": ""
+    }
+  },
   "services": {},
   "notification":{
     "enabled": false
