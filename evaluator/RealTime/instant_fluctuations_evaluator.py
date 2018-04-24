@@ -30,6 +30,8 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
         if self.something_is_happening:
             self.something_is_happening = False
             self.notify_evaluator_threads(self.__class__.__name__)
+        else:
+            self.eval_note = START_PENDING_EVAL_NOTE
 
     def evaluate_volume_fluctuations(self):
         # TEMP
