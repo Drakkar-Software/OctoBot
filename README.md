@@ -1,10 +1,30 @@
 # CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot)
-#### Version 0.0.8-alpha
+
+#### Version 0.0.8-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md))
+
+## Disclaimer
+This software is for educational purposes only. Do not risk money which 
+you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
+AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS. 
+
+Always start by running a trading bot in simulation mode and do not engage money
+before you understand how it works and what profit/loss you should
+expect.
+
+We strongly recommend you to have coding and Python knowledge. Do not 
+hesitate to read the source code and understand the mechanism of this bot.
+
+Moreover, we are in the **alpha** phase so you should not expect the bot to be stable.
+
+## Demo
+See live demo [here](https://twitter.com/HerklosBotCrypt)
+
 ## Install
+See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)
 ```
 git clone https://github.com/Trading-Bot/CryptoBot
 cd CryptoBot
-sudo pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Configuration
@@ -87,14 +107,14 @@ from .file_containing_new_implementation_name.py import *
 
 More information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
 
+## Testing
+Use *pytest* command in the root folder : 
+```
+pytest
+```
+
 ## Changelog
 See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md)
-
-## Demo
-See live demo [here](https://twitter.com/HerklosBotCrypt)
-
-## Testing
-...
 
 ## More
 For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).
