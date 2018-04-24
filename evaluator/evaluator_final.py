@@ -41,40 +41,49 @@ class FinalEvaluator(AsynchronousClient):
             if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
                 self.symbol_evaluator.get_trader_simulator(self.exchange).cancel_open_orders(self.symbol)
 
+            # create notification
             evaluator_notification = None
             if self.notifier.enabled() and self.state is not EvaluatorStates.NEUTRAL:
                 evaluator_notification = self.notifier.notify_state_changed(
                     self.final_eval,
                     self.symbol_evaluator,
                     self.symbol_evaluator.get_trader(self.exchange),
-                    state,
+                    self.state,
                     self.symbol_evaluator.get_matrix().get_matrix())
 
-            if EvaluatorOrderCreator.can_create_order(self.symbol,
-                                                      self.exchange,
-                                                      self.symbol_evaluator.get_trader(
-                                                          self.exchange),
-                                                      state):
+            # call orders creation method
+            self.on_state_changing_create_orders(evaluator_notification)
 
-                if self.symbol_evaluator.get_trader(self.exchange).enabled():
-                    FinalEvaluator._push_order_notification_if_possible(
-                        self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
-                            self.final_eval,
-                            self.symbol,
-                            self.exchange,
-                            self.symbol_evaluator.get_trader(self.exchange),
-                            state),
-                        evaluator_notification)
+    # create real and/or simulating orders in trader instances
+    def on_state_changing_create_orders(self, evaluator_notification):
+        # create orders
+        if EvaluatorOrderCreator.can_create_order(self.symbol,
+                                                  self.exchange,
+                                                  self.symbol_evaluator.get_trader(
+                                                      self.exchange),
+                                                  self.state):
 
-                if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
-                    FinalEvaluator._push_order_notification_if_possible(
-                        self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
-                            self.final_eval,
-                            self.symbol,
-                            self.exchange,
-                            self.symbol_evaluator.get_trader_simulator(self.exchange),
-                            state),
-                        evaluator_notification)
+            # create real exchange order
+            if self.symbol_evaluator.get_trader(self.exchange).enabled():
+                FinalEvaluator._push_order_notification_if_possible(
+                    self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
+                        self.final_eval,
+                        self.symbol,
+                        self.exchange,
+                        self.symbol_evaluator.get_trader(self.exchange),
+                        self.state),
+                    evaluator_notification)
+
+            # create trader simulator order
+            if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
+                FinalEvaluator._push_order_notification_if_possible(
+                    self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
+                        self.final_eval,
+                        self.symbol,
+                        self.exchange,
+                        self.symbol_evaluator.get_trader_simulator(self.exchange),
+                        self.state),
+                    evaluator_notification)
 
     @staticmethod
     def _push_order_notification_if_possible(order, notification):
