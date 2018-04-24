@@ -21,6 +21,7 @@ See live demo [here](https://twitter.com/HerklosBotCrypt)
 
 ## Install
 See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)
+<br>With python3 : 
 ```
 git clone https://github.com/Trading-Bot/CryptoBot
 cd CryptoBot
