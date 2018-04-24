@@ -1,3 +1,30 @@
+Changelog for 0.0.8
+====================
+*Released date : Apr 24 2018*
+
+# Concerned issues :
+    #26 optimized moving average evaluator 
+    #90 added can_create_order() method to check if an order is issuable
+    #91 refactored dispatchers
+    #93 [Profitability] Fix calculation error
+    #97 [Order] Fix order cancel when state change
+    #99 [Symbol evaluator] Symbol evaluator fail to manage multi exchanges
+
+
+# New features :
+    - New TA evaluators : DoubleMA, BollingerBand, ADX, MACD
+    - Risk trading management (order price, order quantity, final state thresholds)
+    - Order end notification and manage recreation (limit orders)
+
+# Bug fix :
+    - Fix constants in order creation
+    - Fix order end notification
+    - Fix Limit price 10% to 5% max
+    - Fix gmail notifications
+    - Fix evaluator final & add startup notification
+    - Fix portfolio profitability
+    - Fix order cancel when state change
+    
 Changelog for 0.0.7
 ====================
 *Released date : Apr 21 2018*
