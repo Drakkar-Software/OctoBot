@@ -15,7 +15,6 @@ Changelog for 0.0.8
 # New features :
     - New TA evaluators : DoubleMA, BollingerBand, ADX, MACD
     - Risk trading management (order price, order quantity, final state thresholds)
-    - Order end notification and manage recreation (limit orders)
 
 # Bug fix :
     - Fix constants in order creation
