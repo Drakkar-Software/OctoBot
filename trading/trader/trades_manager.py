@@ -101,14 +101,14 @@ class TradesManager:
     It will try to create the symbol that fit with the exchange logic
     Returns the value found of this currency quantity, if not found returns 0     
     """
-
+    # TODO : use ccxt method
     def _try_get_value_of_currency(self, currency, quantity):
         symbol = self.exchange.merge_currencies(currency, self.reference_market)
         symbol_inverted = self.exchange.merge_currencies(self.reference_market, currency)
         if symbol in self.currencies_prices:
-            return self.currencies_prices[symbol][ExchangeConstantsTickersColumns.BID.value] * quantity
+            return self.currencies_prices[symbol][ExchangeConstantsTickersColumns.LAST.value] * quantity
         elif symbol_inverted in self.currencies_prices:
-            return quantity / self.currencies_prices[symbol_inverted][ExchangeConstantsTickersColumns.BID.value]
+            return quantity / self.currencies_prices[symbol_inverted][ExchangeConstantsTickersColumns.LAST.value]
         else:
             # TODO : manage if currency/market does not exist
             return 0
