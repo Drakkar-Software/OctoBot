@@ -63,8 +63,11 @@ class Exchange:
     def get_balance(self):
         return self.client.fetchBalance()
 
-    def get_symbol_prices(self, symbol, time_frame):
-        candles = self.client.fetch_ohlcv(symbol, time_frame.value)
+    def get_symbol_prices(self, symbol, time_frame, limit=None):
+        if limit:
+            candles = self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
+        else:
+            candles = self.client.fetch_ohlcv(symbol, time_frame.value)
 
         prices = {PriceStrings.STR_PRICE_HIGH.value: [],
                   PriceStrings.STR_PRICE_LOW.value: [],
@@ -207,3 +210,7 @@ class Exchange:
     @staticmethod
     def merge_currencies(currency, market):
         return "{0}/{1}".format(currency, market)
+
+    def get_rate_limit(self):
+        return self.exchange_type.rateLimit
+
