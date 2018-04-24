@@ -14,3 +14,4 @@ dash-renderer
 dash-html-components
 dash-core-components
 plotly
+newspaper3k

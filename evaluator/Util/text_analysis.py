@@ -2,6 +2,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from tools.decoding_encoding import DecoderEncoder
 
 from evaluator.Util.abstract_util import AbstractUtil
+from newspaper import Article
 
 
 class TextAnalysis(AbstractUtil):
@@ -11,6 +12,13 @@ class TextAnalysis(AbstractUtil):
 
     def analyse(self,  text):
         return self.analyzer.polarity_scores(text)["compound"]
+
+    # returns the article object and the analysis result
+    def analyse_web_page_article(self, url):
+        article = Article(url)
+        article.download()
+        article.parse()
+        return article, self.analyse(article.text)
 
     # official account tweets that can be used for testing purposes
     def test(self):
