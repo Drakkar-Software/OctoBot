@@ -79,7 +79,7 @@ class Trader:
         # If need to cancel the order call the method and no need to update the portfolio (only availability)
         if cancel:
             order_closed = None
-            orders_canceled = order.get_linked_orders() + order
+            orders_canceled = order.get_linked_orders() + [order]
 
             self.cancel_order(order)
             _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
