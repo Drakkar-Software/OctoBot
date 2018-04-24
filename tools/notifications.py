@@ -109,7 +109,8 @@ class EvaluatorNotification(Notification):
                 symbol_evaluator.crypto_currency,
                 " #".join(formatted_pairs),
                 str(result).split(".")[1],
-                final_eval))
+                final_eval)
+            )
 
         return self
 
@@ -170,14 +171,16 @@ class OrdersNotification(Notification):
                 content += "\nOrder(s) canceled :"
                 for order in orders_canceled:
                     content += "\n- {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
-                                                                                            order.get_origin_quantity(),
-                                                                                            currency,
-                                                                                            order.get_origin_price(),
-                                                                                            market))
+                                                                                             order.get_origin_quantity(),
+                                                                                             currency,
+                                                                                             order.get_origin_price(),
+                                                                                             market))
 
             if trade_profitability is not None:
-                content += "\n\nTrade profitability : {0} {1}".format(round(trade_profitability, 7),
-                                                                     TradesManager.get_reference_market(self.config))
+                content += "\n\nTrade profitability : {0}{1} {2}".format("+" if trade_profitability >= 0 else "",
+                                                                         round(trade_profitability, 7),
+                                                                         TradesManager.get_reference_market(
+                                                                             self.config))
 
             if portfolio_profitability is not None:
                 content += "\nGlobal Portfolio profitability : {0}%".format(round(portfolio_profitability, 5))
