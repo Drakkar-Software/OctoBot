@@ -26,6 +26,7 @@ class Exchange:
         if self.name in self.config["exchanges"] and self.client.has['fetchOHLCV']:
             return True
         else:
+            self.logger.warning("Exchange {0} is currently disabled".format(self.name))
             return False
 
     def create_client(self):

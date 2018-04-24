@@ -8,15 +8,15 @@ from tools.asynchronous_client import AsynchronousClient
 
 
 class FinalEvaluator(AsynchronousClient):
-    def __init__(self, symbol_evaluator):
+    def __init__(self, symbol_evaluator, exchange, symbol):
         super().__init__(self.finalize)
         self.symbol_evaluator = symbol_evaluator
         self.config = symbol_evaluator.get_config()
         self.final_eval = INIT_EVAL_NOTE
         self.state = None
         self.keep_running = True
-        self.exchange = None
-        self.symbol = None
+        self.exchange = exchange
+        self.symbol = symbol
         self.is_computing = False
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -49,13 +49,13 @@ class FinalEvaluator(AsynchronousClient):
                     self.symbol_evaluator,
                     self.symbol_evaluator.get_trader(self.exchange),
                     self.state,
-                    self.symbol_evaluator.get_matrix().get_matrix())
+                    self.symbol_evaluator.get_matrix(self.exchange).get_matrix())
 
             # call orders creation method
-            self.on_state_changing_create_orders(evaluator_notification)
+            self.create_final_state_orders(evaluator_notification)
 
     # create real and/or simulating orders in trader instances
-    def on_state_changing_create_orders(self, evaluator_notification):
+    def create_final_state_orders(self, evaluator_notification):
         # create orders
         if EvaluatorOrderCreator.can_create_order(self.symbol,
                                                   self.exchange,
@@ -99,7 +99,7 @@ class FinalEvaluator(AsynchronousClient):
     def _prepare(self):
         strategies_analysis_note_counter = 0
         # Strategies analysis
-        for evaluated_strategies in self.symbol_evaluator.get_strategies_eval_list():
+        for evaluated_strategies in self.symbol_evaluator.get_strategies_eval_list(self.exchange):
             self.final_eval += evaluated_strategies.get_eval_note() * evaluated_strategies.get_pertinence()
             strategies_analysis_note_counter += evaluated_strategies.get_pertinence()
 
@@ -126,14 +126,11 @@ class FinalEvaluator(AsynchronousClient):
         else:
             self._set_state(EvaluatorStates.VERY_SHORT)
 
-    def finalize(self, exchange, symbol):
+    def finalize(self):
         # reset previous note
         self.final_eval = INIT_EVAL_NOTE
-        self.exchange = exchange
-        self.symbol = symbol
         self._prepare()
         self._create_state()
-        self.logger.debug("--> {0}".format(self.state))
 
     def stop(self):
         self.keep_running = False
