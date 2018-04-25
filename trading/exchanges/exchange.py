@@ -212,5 +212,5 @@ class Exchange:
         return "{0}/{1}".format(currency, market)
 
     def get_rate_limit(self):
-        return self.exchange_type.rateLimit
+        return self.exchange_type.rateLimit / 1000
 

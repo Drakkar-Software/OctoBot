@@ -71,3 +71,9 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
     @abstractmethod
     def run(self):
         raise NotImplementedError("Eval_impl not implemented")
+
+    def valid_refresh_time(self, config_refresh_time):
+        if config_refresh_time > self.exchange.get_rate_limit():
+            return config_refresh_time
+        else:
+            return self.exchange.get_rate_limit()
