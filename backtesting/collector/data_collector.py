@@ -5,10 +5,11 @@ import time
 from logging.config import fileConfig
 
 import ccxt
+import pandas
 
 from config.config import load_config
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_DATA_COLLECTOR, CONFIG_EXCHANGES, CONFIG_DATA_PATH, \
-    DATA_COLLECTOR_REFRESHER_TIME, TimeFrames, TimeFramesMinutes, MINUTE_TO_SECONDS
+    DATA_COLLECTOR_REFRESHER_TIME, TimeFrames, TimeFramesMinutes, MINUTE_TO_SECONDS, PriceStrings
 from trading import Exchange
 
 
@@ -69,7 +70,7 @@ class ExchangeDataCollector(threading.Thread):
     def update_file(self):
         file_content_json = {}
         for time_frame in self.file_content:
-            file_content_json[time_frame] = self.file_content[time_frame].to_json()
+            file_content_json[time_frame] = self.file_content[time_frame].set_index(PriceStrings.STR_PRICE_TIME.value).to_json()
 
         json.dump(file_content_json, self.file)
 
@@ -100,11 +101,13 @@ class ExchangeDataCollector(threading.Thread):
 
             for time_frame in TimeFrames:
                 if self.exchange.time_frame_exists(time_frame.value):
-                    if (time.time() - now) >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                        self.file_content[time_frame.value].concat(self.exchange.get_symbol_prices(self.symbol,
-                                                                                                   time_frame,
-                                                                                                   1))
-                        self.time_frame_update[time_frame] = time.time()
+                    if now - self.time_frame_update[time_frame] >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
+                        result_df = self.exchange.get_symbol_prices(self.symbol, time_frame, 1)
+
+                        self.file_content[time_frame.value] = pandas.concat([self.file_content[time_frame.value],
+                                                                             result_df])
+
+                        self.time_frame_update[time_frame] = now
                         self.logger.info("{0} : {1} updated".format(self.exchange.get_name(), time_frame))
 
             self.update_file()
