@@ -66,12 +66,12 @@ class ExchangeDataCollector(threading.Thread):
         super().__init__()
         self.config = config
         self.exchange = exchange
-        self.symbol = self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL].replace("/", "_")
+        self.symbol = self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL]
         self.keep_running = True
         self.file = None
         self.file_content = None
         self.file_name = "{0}_{1}_{2}.data".format(self.exchange.get_name(),
-                                                   self.symbol,
+                                                   self.symbol.replace("/", "_"),
                                                    time.strftime("%Y%m%d_%H%M%S"))
         self.time_frame_update = {}
         self.logger = logging.getLogger(self.__class__.__name__)
