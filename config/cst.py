@@ -6,6 +6,7 @@ MINUTE_TO_SECONDS = 60
 
 CONFIG_GLOBAL_UTILS = "global_utils"
 CONFIG_ENABLED_OPTION = "enabled"
+CONFIG_SYMBOL = "symbol"
 
 # Files
 CONFIG_FILE = "config/config.json"
@@ -17,10 +18,12 @@ CONFIG_ADVANCED_INSTANCES = "advanced_instances"
 
 # Backtesting
 CONFIG_BACKTESTING = "backtesting"
+CONFIG_BACKTESTING_DATA_FILE = "file"
 
 # Data collector
 CONFIG_DATA_COLLECTOR = "data_collector"
 DATA_COLLECTOR_REFRESHER_TIME = 10
+CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
