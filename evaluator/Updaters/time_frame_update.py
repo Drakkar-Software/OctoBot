@@ -18,11 +18,12 @@ class TimeFrameUpdateDataThread(threading.Thread):
     def get_refreshed_times(self):
         return self.refreshed_times
 
-    def _refresh_data(self):
+    def _refresh_data(self, limit=None):
         self.parent.evaluator.set_data(
             self.parent.exchange.get_symbol_prices(
                 self.parent.symbol,
-                self.parent.time_frame))
+                self.parent.time_frame,
+                limit=limit))
         self.refreshed_times += 1
         self.parent.notify(self.__class__.__name__)
 
