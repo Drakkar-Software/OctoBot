@@ -9,38 +9,41 @@ class ExchangeManager(AsynchronousServer):
         super().__init__(self.perform_exchange_call)
         self.exchange = exchange
         self.keep_running = True
-        self.queue = Queue()
         self.call_id = 0
         self.calls = []
-        self.calls_result = []
         self.last_call_time = 0
 
     def exchange_call(self, exchange_method, **data):
         self.call_id += 1
         self.calls.insert(self.call_id, {
             "exchange_method": exchange_method,
-            "data": data
+            "data": data,
+            "result": Queue()
         })
-        self.calls_result.insert(self.call_id, Queue())
         return self.add_to_queue(self.call_id)
 
     def add_to_queue(self, *data):
         self.queue.put(data)
         self.notify_received_data()
-        result = self.calls_result[self.call_id].get()
+        result = self.calls[data]["result"].get()
+        self.calls.remove(data)
         return result
 
     def perform_exchange_call(self, call_id):
-        # start_time = time.time()
 
-        while True:
+        while self.keep_running:
             # if time.time() - start_time > timeout:
             #     break
-
-            if time.time() - self.last_call_time < self.exchange.get_rate_limit():
-                time.sleep(self.exchange.get_rate_limit()-time.time() - self.last_call_time)
+            
+            now_time = time.time()
+            if now_time - self.last_call_time < self.exchange.get_rate_limit():
+                time.sleep(self.exchange.get_rate_limit() - now_time - self.last_call_time)
             else:
-                result = self.calls[call_id]["exchange_method"](**self.calls[call_id]["data"])
-                self.calls_result[call_id].put(result)
+                call_data = self.calls[call_id]
+                result = call_data["exchange_method"](**call_data["data"])
+                call_data["result"].put(result)
                 self.last_call_time = time.time()
                 break
+                  
+    def stop(self):
+        self.keep_running = False
