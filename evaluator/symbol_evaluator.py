@@ -19,6 +19,7 @@ class SymbolEvaluator:
         self.final_evaluators = {}
         self.matrices = {}
         self.strategies_eval_lists = {}
+        self.finalize_enabled_list = {}
 
         self.social_eval_list = EvaluatorCreator.create_social_eval(self.config,
                                                                     self.crypto_currency,
@@ -52,10 +53,14 @@ class SymbolEvaluator:
         self.trader_simulators = simulator
 
     def add_evaluator_thread(self, exchange, symbol, evaluator_thread):
-        self.evaluator_threads[exchange.get_name()] = evaluator_thread
-        self.final_evaluators[exchange.get_name()] = FinalEvaluator(self, exchange, symbol)
-        self.matrices[exchange.get_name()] = EvaluatorMatrix()
-        self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
+        if exchange.get_name() in self.evaluator_threads:
+            self.evaluator_threads[exchange.get_name()].append(evaluator_thread)
+        else:
+            self.evaluator_threads[exchange.get_name()] = [evaluator_thread]
+            self.final_evaluators[exchange.get_name()] = FinalEvaluator(self, exchange, symbol)
+            self.matrices[exchange.get_name()] = EvaluatorMatrix()
+            self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
+            self.finalize_enabled_list[exchange.get_name()] = False
 
     def update_strategies_eval(self, new_matrix, exchange, ignored_evaluator=None):
         for strategies_evaluator in self.get_strategies_eval_list(exchange):
@@ -67,8 +72,17 @@ class SymbolEvaluator:
                                 strategies_evaluator.get_eval_note())
 
     def finalize(self, exchange):
-        if self.evaluator_threads[exchange.get_name()].get_data_refresher().get_refreshed_times() > 0:
+        if not self.finalize_enabled_list[exchange.get_name()]:
+            self._check_finalize(exchange)
+
+        if self.finalize_enabled_list[exchange.get_name()]:
             self.final_evaluators[exchange.get_name()].add_to_queue()
+
+    def _check_finalize(self, exchange):
+        self.finalize_enabled_list[exchange.get_name()] = True
+        for evaluator_thread in self.evaluator_threads[exchange.get_name()]:
+            if evaluator_thread.get_data_refresher().get_refreshed_times() == 0:
+                self.finalize_enabled_list[exchange.get_name()] = False
 
     def get_trader(self, exchange):
         return self.traders[exchange.get_name()]
