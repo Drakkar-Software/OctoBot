@@ -8,7 +8,6 @@ from evaluator.Social import MediumNewsEvaluator, RedditForumEvaluator
 class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = True
         self.social_counter = 0
         self.ta_relevance_counter = 0
         self.rt_counter = 0
@@ -90,9 +89,6 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
 class InstantSocialReactionMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def __init__(self):
         super().__init__()
-
-        self.enabled = False
-
         self.social_counter = 0
         self.instant_counter = 0
 

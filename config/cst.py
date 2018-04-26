@@ -10,7 +10,14 @@ MAX_TA_EVAL_TIME_SECONDS = 0.03
 
 MARKET_SEPARATOR = "/"
 
+# Files
 CONFIG_FILE = "config/config.json"
+CONFIG_EVALUATOR_FILE = "config/evaluator_config.json"
+CONFIG_TRADING_FILE = "config/trading_config.json"
+
+# Keys
+CONFIG_EVALUATOR = "evaluator"
+CONFIG_TRADING = "trading"
 CONFIG_GLOBAL_UTILS = "global_utils"
 CONFIG_ADVANCED_CLASSES = "advanced_classes"
 CONFIG_ADVANCED_INSTANCES = "advanced_instances"

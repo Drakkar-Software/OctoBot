@@ -28,9 +28,9 @@ class EvaluatorCreator:
         ta_eval_instance_list = []
         for ta_eval_class in EvaluatorCreator.create_advanced_evaluators(TAEvaluator, evaluator.get_config()):
             ta_eval_class_instance = ta_eval_class()
+            ta_eval_class_instance.set_config(evaluator.config)
             if ta_eval_class_instance.get_is_enabled():
                 ta_eval_class_instance.set_logger(logging.getLogger(ta_eval_class.get_name()))
-                ta_eval_class_instance.set_config(evaluator.config)
                 ta_eval_class_instance.set_data(evaluator.data)
                 ta_eval_class_instance.set_symbol(evaluator.get_symbol())
                 ta_eval_instance_list.append(ta_eval_class_instance)
@@ -51,10 +51,10 @@ class EvaluatorCreator:
         social_eval_list = []
         for social_eval_class in EvaluatorCreator.create_advanced_evaluators(SocialEvaluator, config):
             social_eval_class_instance = social_eval_class()
+            social_eval_class_instance.set_config(config)
             if social_eval_class_instance.get_is_enabled():
                 is_evaluator_to_be_used = True
                 social_eval_class_instance.set_logger(logging.getLogger(social_eval_class.get_name()))
-                social_eval_class_instance.set_config(config)
                 social_eval_class_instance.set_symbol(symbol)
                 social_eval_class_instance.prepare()
 
@@ -92,9 +92,9 @@ class EvaluatorCreator:
         real_time_ta_eval_list = []
         for real_time_eval_class in EvaluatorCreator.create_advanced_evaluators(RealTimeEvaluator, config):
             real_time_eval_class_instance = real_time_eval_class(exchange_inst, symbol)
+            real_time_eval_class_instance.set_config(config)
             if real_time_eval_class_instance.get_is_enabled():
                 real_time_eval_class_instance.set_logger(logging.getLogger(real_time_eval_class.get_name()))
-                real_time_eval_class_instance.set_config(config)
 
                 # start refreshing thread
                 real_time_eval_class_instance.start()
@@ -119,6 +119,7 @@ class EvaluatorCreator:
         strategies_eval_list = []
         for strategies_eval_class in EvaluatorCreator.create_advanced_evaluators(StrategiesEvaluator, config):
             strategies_eval_class_instance = strategies_eval_class()
+            strategies_eval_class_instance.set_config(config)
             if strategies_eval_class_instance.get_is_enabled():
                 strategies_eval_class_instance.set_logger(
                     logging.getLogger(strategies_eval_class_instance.get_name()))

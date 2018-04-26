@@ -8,7 +8,6 @@ from config.cst import *
 class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
     def __init__(self, exchange, symbol):
         super().__init__(exchange, symbol)
-        self.enabled = True
         self.something_is_happening = False
         self.refresh_time = 0
 

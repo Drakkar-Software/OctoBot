@@ -1,0 +1,11 @@
+{
+  "RSIMomentumEvaluator": true,
+  "DoubleMovingAverageTrendEvaluator": true,
+  "BBMomentumEvaluator": true,
+  "CandlePatternMomentumEvaluator": true,
+  "ADXMomentumEvaluator": true,
+
+  "InstantFluctuationsEvaluator": true,
+
+  "TempFullMixedStrategiesEvaluator": true
+}

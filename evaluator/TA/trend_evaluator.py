@@ -11,7 +11,6 @@ from evaluator.Util.data_frame_util import DataFrameUtil
 class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = True
 
     def eval_impl(self):
         time_units = [5, 10]
@@ -63,7 +62,6 @@ class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
 class CandleAnalysisTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
 
     def eval_impl(self):
         pass
@@ -73,7 +71,6 @@ class CandleAnalysisTrendEvaluator(TrendEvaluator):
 class DMITrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
 
     def eval_impl(self):
         pass
@@ -83,7 +80,6 @@ class DMITrendEvaluator(TrendEvaluator):
 class BBTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
 
     def eval_impl(self):
         pass
@@ -93,7 +89,6 @@ class BBTrendEvaluator(TrendEvaluator):
 class EOMTrendEvaluator(TrendEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
 
     def eval_impl(self):
         pass

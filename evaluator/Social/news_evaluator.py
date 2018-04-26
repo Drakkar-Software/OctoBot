@@ -11,7 +11,6 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def __init__(self):
         NewsSocialEvaluator.__init__(self)
         DispatcherAbstractClient.__init__(self)
-        self.enabled = False
         self.is_threaded = False
         self.count = 0
         self.symbol = ""
@@ -117,7 +116,6 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
 class MediumNewsEvaluator(NewsSocialEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
         self.is_threaded = False
 
     def get_data(self):
