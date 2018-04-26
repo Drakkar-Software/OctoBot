@@ -142,9 +142,9 @@ class OrdersNotification(Notification):
 
             tweet_instance = self.evaluator_notification.get_tweet_instance()
             currency, market = Exchange.split_symbol(symbol)
-            content = "Order creation "
+            content = "Order(s) creation "
             for order in orders:
-                content += "\n {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
+                content += "\n- {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
                                                                                         order.get_origin_quantity(),
                                                                                         currency,
                                                                                         order.get_origin_price(),
@@ -177,10 +177,8 @@ class OrdersNotification(Notification):
                                                                                              market))
 
             if trade_profitability is not None:
-                content += "\n\nTrade profitability : {0}{1} {2}".format("+" if trade_profitability >= 0 else "",
-                                                                         round(trade_profitability, 7),
-                                                                         TradesManager.get_reference_market(
-                                                                             self.config))
+                content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
+                                                                         round(trade_profitability, 7))
 
             if portfolio_profitability is not None:
                 content += "\nGlobal Portfolio profitability : {0}% (1}{2}%".format(round(portfolio_profitability, 5),
