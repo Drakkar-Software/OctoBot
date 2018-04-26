@@ -5,6 +5,7 @@ VERSION = "0.0.8-alpha"
 MINUTE_TO_SECONDS = 60
 
 CONFIG_GLOBAL_UTILS = "global_utils"
+CONFIG_ENABLED_OPTION = "enabled"
 
 # Files
 CONFIG_FILE = "config/config.json"
@@ -13,6 +14,12 @@ CONFIG_EVALUATOR_FILE = "config/evaluator_config.json"
 # Advanced
 CONFIG_ADVANCED_CLASSES = "advanced_classes"
 CONFIG_ADVANCED_INSTANCES = "advanced_instances"
+
+# Backtesting
+CONFIG_BACKTESTING = "backtesting"
+
+# Data collector
+CONFIG_DATA_COLLECTOR = "data_collector"
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
@@ -38,7 +45,7 @@ NOTIFICATION_STARTING_MESSAGE = "CryptoBot v{0} starting...".format(VERSION)
 NOTIFICATION_STOPPING_MESSAGE = "CryptoBot v{0} stopping...".format(VERSION)
 
 # DEBUG options
-CONFIG_DEBUG_OPTION_PERF = "PERF"
+CONFIG_DEBUG_OPTION_PERF = "Performance_analyser"
 CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN = 5
 CONFIG_DEBUG_OPTION = "DEBUG"
 
@@ -59,7 +66,6 @@ CONFIG_TWEET_DESCRIPTION = "tweet_description"
 
 # Evaluator
 CONFIG_EVALUATOR = "evaluator"
-CONFIG_ENABLED_OPTION = "enabled"
 SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
 START_PENDING_EVAL_NOTE = "0"  # force exception
 INIT_EVAL_NOTE = 0

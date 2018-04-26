@@ -49,6 +49,9 @@ class EvaluatorThreadsManager:
         # Create refreshing threads
         self.data_refresher = TimeFrameUpdateDataThread(self)
 
+    def get_evaluator(self):
+        return self.evaluator
+
     def notify(self, notifier_name):
         if self.data_refresher.get_refreshed_times() > 0:
             self.logger.debug("** Notified by {0} **".format(notifier_name))
