@@ -71,7 +71,7 @@ class ExchangeDataCollector(threading.Thread):
         self.file = None
         self.file_content = None
         self.file_name = "{0}_{1}_{2}.data".format(self.exchange.get_name(),
-                                                   self.symbol,
+                                                   self.symbol.replace("/", "_"),
                                                    time.strftime("%Y%m%d_%H%M%S"))
         self.time_frame_update = {}
         self.logger = logging.getLogger(self.__class__.__name__)
