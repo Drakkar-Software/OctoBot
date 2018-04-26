@@ -1,11 +1,13 @@
 import logging
 import threading
+import time
 from logging.config import fileConfig
 
 import ccxt
 
 from config.config import load_config
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_DATA_COLLECTOR, CONFIG_EXCHANGES
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_DATA_COLLECTOR, CONFIG_EXCHANGES, CONFIG_DATA_PATH, \
+    DATA_COLLECTOR_REFRESHER_TIME, TimeFrames, TimeFramesMinutes, MINUTE_TO_SECONDS
 from trading import Exchange
 
 
@@ -51,13 +53,39 @@ class ExchangeDataCollector(threading.Thread):
         self.config = config
         self.exchange = exchange
         self.keep_running = True
+        self.file_name = "{0}_{1}.data".format(self.exchange.get_name(), time.strftime("%Y%m%d_%H%M%S"))
+        self.file = open(CONFIG_DATA_PATH + self.file_name, 'a')
+        self.time_frame_update = {}
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+        # TEMP
+        self.symbol = "BTC/USDT"
 
     def stop(self):
         self.keep_running = False
 
+    def prepare(self):
+        self.logger.info("{0} prepare...".format(self.exchange.get_name()))
+        for time_frame in TimeFrames:
+            if self.exchange.time_frame_exists(time_frame.value):
+                # write all available data for this time frame
+                self.file.write(self.exchange.get_symbol_prices(self.symbol, time_frame, None).to_json())
+
+                self.time_frame_update[time_frame] = time.time()
+
     def run(self):
+        self.prepare()
+        self.logger.info("{0} updating...".format(self.exchange.get_name()))
         while self.keep_running:
-            pass
+            now = time.time()
+
+            for time_frame in TimeFrames:
+                if self.exchange.time_frame_exists(time_frame.value):
+                    if (time.time() - now) >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
+                        self.file.write(self.exchange.get_symbol_prices(self.symbol, time_frame, 1).to_json())
+                        self.time_frame_update[time_frame] = time.time()
+
+            time.sleep(DATA_COLLECTOR_REFRESHER_TIME)
 
 
 if __name__ == '__main__':
