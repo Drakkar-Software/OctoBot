@@ -1,3 +1,4 @@
+import json
 import logging
 import threading
 import time
@@ -53,8 +54,9 @@ class ExchangeDataCollector(threading.Thread):
         self.config = config
         self.exchange = exchange
         self.keep_running = True
+        self.file = None
+        self.file_content = None
         self.file_name = "{0}_{1}.data".format(self.exchange.get_name(), time.strftime("%Y%m%d_%H%M%S"))
-        self.file = open(CONFIG_DATA_PATH + self.file_name, 'a')
         self.time_frame_update = {}
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -64,14 +66,31 @@ class ExchangeDataCollector(threading.Thread):
     def stop(self):
         self.keep_running = False
 
+    def update_file(self):
+        file_content_json = {}
+        for time_frame in self.file_content:
+            file_content_json[time_frame] = self.file_content[time_frame].to_json()
+
+        json.dump(file_content_json, self.file)
+
+    def prepare_file(self):
+        self.file = open(CONFIG_DATA_PATH + self.file_name, 'w')
+        self.file_content = {}
+        for time_frame in TimeFrames:
+            self.file_content[time_frame.value] = None
+
     def prepare(self):
         self.logger.info("{0} prepare...".format(self.exchange.get_name()))
+        self.prepare_file()
         for time_frame in TimeFrames:
             if self.exchange.time_frame_exists(time_frame.value):
                 # write all available data for this time frame
-                self.file.write(self.exchange.get_symbol_prices(self.symbol, time_frame, None).to_json())
+                self.file_content[time_frame.value] = self.exchange.get_symbol_prices(self.symbol,
+                                                                                      time_frame,
+                                                                                      None)
 
                 self.time_frame_update[time_frame] = time.time()
+        self.update_file()
 
     def run(self):
         self.prepare()
@@ -82,9 +101,13 @@ class ExchangeDataCollector(threading.Thread):
             for time_frame in TimeFrames:
                 if self.exchange.time_frame_exists(time_frame.value):
                     if (time.time() - now) >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                        self.file.write(self.exchange.get_symbol_prices(self.symbol, time_frame, 1).to_json())
+                        self.file_content[time_frame.value].concat(self.exchange.get_symbol_prices(self.symbol,
+                                                                                                   time_frame,
+                                                                                                   1))
                         self.time_frame_update[time_frame] = time.time()
+                        self.logger.info("{0} : {1} updated".format(self.exchange.get_name(), time_frame))
 
+            self.update_file()
             time.sleep(DATA_COLLECTOR_REFRESHER_TIME)
 
 
