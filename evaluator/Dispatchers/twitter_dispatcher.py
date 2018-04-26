@@ -74,11 +74,12 @@ class TwitterDispatcher(AbstractDispatcher):
                     for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids,
                                                                                      track=self.hashtags):
                         self.counter += 1
-                        string_tweet = self.twitter_service.tweet_to_string(tweet).lower()
-                        tweet_desc = str(tweet).lower()
-                        self.notify_registered_clients_if_interested(tweet_desc,
-                                                                     {CONFIG_TWEET: tweet,
-                                                                      CONFIG_TWEET_DESCRIPTION: string_tweet})
+                        string_tweet = self.twitter_service.get_tweet_text(tweet)
+                        if string_tweet:
+                            tweet_desc = str(tweet).lower()
+                            self.notify_registered_clients_if_interested(tweet_desc,
+                                                                         {CONFIG_TWEET: tweet,
+                                                                          CONFIG_TWEET_DESCRIPTION: string_tweet.lower()})
                 except twitter.error.TwitterError as e:
                     self.logger.error("Error when receiving Twitter feed: " + str(e.message))
             else:
