@@ -20,6 +20,7 @@ CONFIG_BACKTESTING = "backtesting"
 
 # Data collector
 CONFIG_DATA_COLLECTOR = "data_collector"
+DATA_COLLECTOR_REFRESHER_TIME = 10
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
