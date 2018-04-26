@@ -1,4 +1,4 @@
-from config.cst import CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION
+from config.cst import *
 
 
 class Backtesting:
