@@ -68,14 +68,15 @@ class ExchangeDataCollector(threading.Thread):
         self.keep_running = False
 
     def update_file(self):
+        self.file = open(CONFIG_DATA_PATH + self.file_name, 'w')
         file_content_json = {}
         for time_frame in self.file_content:
             file_content_json[time_frame] = self.file_content[time_frame].set_index(PriceStrings.STR_PRICE_TIME.value).to_json()
 
         json.dump(file_content_json, self.file)
+        self.file.close()
 
     def prepare_file(self):
-        self.file = open(CONFIG_DATA_PATH + self.file_name, 'w')
         self.file_content = {}
         for time_frame in TimeFrames:
             self.file_content[time_frame.value] = None
