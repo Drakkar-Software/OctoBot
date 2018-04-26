@@ -15,6 +15,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
         self.count = 0
         self.symbol = ""
         self.sentiment_analyser = None
+        self.is_self_refreshing = True
 
     def set_dispatcher(self, dispatcher):
         super().set_dispatcher(dispatcher)
@@ -97,12 +98,14 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
 
     def _purify_config(self):
         # remove other symbols data to avoid unnecessary tweets
-        if self.symbol in self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
+        if CONFIG_TWITTERS_ACCOUNTS in self.social_config \
+                and self.symbol in self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
             self.social_config[CONFIG_TWITTERS_ACCOUNTS] = \
                 {self.symbol: self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol]}
         else:
             self.social_config[CONFIG_TWITTERS_ACCOUNTS] = {}
-        if self.symbol in self.social_config[CONFIG_TWITTERS_HASHTAGS]:
+        if CONFIG_TWITTERS_HASHTAGS in self.social_config \
+                and self.symbol in self.social_config[CONFIG_TWITTERS_HASHTAGS]:
             self.social_config[CONFIG_TWITTERS_HASHTAGS] = \
                 {self.symbol: self.social_config[CONFIG_TWITTERS_HASHTAGS][self.symbol]}
         else:
