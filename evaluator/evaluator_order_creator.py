@@ -137,6 +137,7 @@ class EvaluatorOrderCreator:
             if state == EvaluatorStates.VERY_SHORT:
                 market = trader.create_order(TraderOrderType.SELL_MARKET,
                                              symbol,
+                                             reference,
                                              self._get_market_quantity_from_risk(eval_note,
                                                                                  trader,
                                                                                  current_portfolio),
@@ -146,6 +147,7 @@ class EvaluatorOrderCreator:
             elif state == EvaluatorStates.SHORT:
                 limit = trader.create_order(TraderOrderType.SELL_LIMIT,
                                             symbol,
+                                            reference,
                                             self._get_limit_quantity_from_risk(eval_note,
                                                                                trader,
                                                                                current_portfolio),
@@ -153,6 +155,7 @@ class EvaluatorOrderCreator:
                                                                                         trader))
                 trader.create_order(TraderOrderType.STOP_LOSS,
                                     symbol,
+                                    reference,
                                     self._get_limit_quantity_from_risk(eval_note,
                                                                        trader,
                                                                        current_portfolio),
@@ -167,6 +170,7 @@ class EvaluatorOrderCreator:
             elif state == EvaluatorStates.LONG:
                 limit = trader.create_order(TraderOrderType.BUY_LIMIT,
                                             symbol,
+                                            reference,
                                             self._get_limit_quantity_from_risk(eval_note,
                                                                                trader,
                                                                                market_quantity),
@@ -177,6 +181,7 @@ class EvaluatorOrderCreator:
             elif state == EvaluatorStates.VERY_LONG:
                 market = trader.create_order(TraderOrderType.BUY_MARKET,
                                              symbol,
+                                             reference,
                                              self._get_market_quantity_from_risk(eval_note,
                                                                                  trader,
                                                                                  market_quantity,

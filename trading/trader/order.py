@@ -37,10 +37,10 @@ class Order:
         self.linked_orders = []
 
     # create the order by setting all the required values
-    def new(self, order_type, symbol, quantity, price=None, stop_price=None, order_notifier=None):
+    def new(self, order_type, symbol, current_price, quantity, price=None, stop_price=None, order_notifier=None):
         self.origin_price = price
         self.last_prices = price
-        self.created_last_price = self.last_prices[-1]["price"]
+        self.created_last_price = current_price
         self.origin_quantity = quantity
         self.origin_stop_price = stop_price
         self.symbol = symbol

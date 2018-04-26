@@ -48,7 +48,7 @@ class Trader:
     def get_portfolio(self):
         return self.portfolio
 
-    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None, linked_to=None):
+    def create_order(self, order_type, symbol, current_price, quantity, price=None, stop_price=None, linked_to=None):
         # update_portfolio_available
         #
         # if linked_to is not None:
