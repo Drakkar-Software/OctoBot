@@ -16,6 +16,7 @@ class ExchangeManager(AsynchronousServer):
         self.last_call_time = 0
 
     def exchange_call(self, exchange_method, **data):
+        self.call_id += 1
         self.calls.insert(self.call_id, {
             "exchange_method": exchange_method,
             "data": data
@@ -27,7 +28,6 @@ class ExchangeManager(AsynchronousServer):
         self.queue.put(data)
         self.notify_received_data()
         result = self.calls_result[self.call_id].get()
-        self.call_id += 1
         return result
 
     def perform_exchange_call(self, call_id):
@@ -38,8 +38,9 @@ class ExchangeManager(AsynchronousServer):
             #     break
 
             if time.time() - self.last_call_time < self.exchange.get_rate_limit():
-                time.sleep(self.exchange.get_rate_limit())
+                time.sleep(self.exchange.get_rate_limit()-time.time() - self.last_call_time)
             else:
                 result = self.calls[call_id]["exchange_method"](**self.calls[call_id]["data"])
                 self.calls_result[call_id].put(result)
                 self.last_call_time = time.time()
+                break
