@@ -25,7 +25,7 @@ from services import ServiceCreator
 - Create all indicators and thread for each cryptocurrencies in config """
 
 
-class Crypto_Bot:
+class CryptoBot:
     """
     Constructor :
     - Load configs
