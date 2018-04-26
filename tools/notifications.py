@@ -151,7 +151,7 @@ class OrdersNotification(Notification):
                                                                                         market))
             self.twitter_response_factory(tweet_instance, content)
 
-    def notify_end(self, order_filled, orders_canceled, symbol, trade_profitability, portfolio_profitability):
+    def notify_end(self, order_filled, orders_canceled, symbol, trade_profitability, portfolio_profitability, portfolio_diff):
         if self.twitter_notification_available() \
                 and self.evaluator_notification is not None \
                 and self.evaluator_notification.get_tweet_instance() is not None:
@@ -183,7 +183,9 @@ class OrdersNotification(Notification):
                                                                              self.config))
 
             if portfolio_profitability is not None:
-                content += "\nGlobal Portfolio profitability : {0}%".format(round(portfolio_profitability, 5))
+                content += "\nGlobal Portfolio profitability : {0}% (1}{2}%".format(round(portfolio_profitability, 5),
+                                                                                    "+" if portfolio_diff >= 0 else "",
+                                                                                    round(portfolio_diff, 7))
 
             self.twitter_response_factory(tweet_instance, content)
 

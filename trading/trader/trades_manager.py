@@ -61,7 +61,7 @@ class TradesManager:
     """
 
     def get_profitability(self):
-        self.profitability_diff = self.profitability
+        self.profitability_diff = self.profitability_percent
         self.profitability = 0
         self.profitability_percent = 0
 
@@ -72,7 +72,7 @@ class TradesManager:
             self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
 
             # calculate difference with the last current portfolio
-            self.profitability_diff -= self.profitability
+            self.profitability_diff -= self.profitability_percent
         except Exception as e:
             self.logger.error(str(e))
 
