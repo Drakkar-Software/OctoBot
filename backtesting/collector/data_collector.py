@@ -66,7 +66,7 @@ class ExchangeDataCollector(threading.Thread):
         super().__init__()
         self.config = config
         self.exchange = exchange
-        self.symbol = self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL]
+        self.symbol = self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL].replace("/", "_")
         self.keep_running = True
         self.file = None
         self.file_content = None
