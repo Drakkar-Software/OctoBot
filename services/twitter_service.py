@@ -51,7 +51,10 @@ class TwitterService(AbstractService):
         try:
             return tweet["extended_tweet"]["full_text"]
         except KeyError:
-            return tweet["text"]
+            text = "text"
+            if text in tweet:
+                return tweet["text"]
+            return ""
 
     def post(self, content):
         try:
@@ -67,7 +70,7 @@ class TwitterService(AbstractService):
             self.logger.error("Failed to send tweet : {0}".format(e))
             return None
 
-    def tweet_to_string(self, tweet):
+    def get_tweet_text(self, tweet):
         try:
             return TwitterService.decode_tweet(tweet)
         except Exception as e2:
