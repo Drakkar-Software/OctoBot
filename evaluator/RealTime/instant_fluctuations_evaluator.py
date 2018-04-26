@@ -9,7 +9,6 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
     def __init__(self, exchange, symbol):
         super().__init__(exchange, symbol)
         self.something_is_happening = False
-        self.refresh_time = 0
 
         self.average_price = 0
         self.last_price = 0
@@ -24,7 +23,7 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
         self.VOLUME_HAPPENING_THRESHOLD = 5
         self.PRICE_HAPPENING_THRESHOLD = 1.01
 
-    def refresh_data(self):
+    def _refresh_data(self):
         self.update()
 
     def eval_impl(self):
@@ -51,10 +50,10 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
             self.eval_note = -self.MIN_EVAL_NOTE
             self.something_is_happening = True
 
-    def update(self, force=False):
+    def update(self):
         self.volume_updated += 1
 
-        if (self.refresh_time * self.volume_updated) > TimeFramesMinutes[self.specific_config[CONFIG_TIME_FRAME]] or force:
+        if (self.refresh_time * self.volume_updated) > TimeFramesMinutes[self.specific_config[CONFIG_TIME_FRAME]]:
             volume_data = self.exchange.get_symbol_prices(self.symbol, self.specific_config[CONFIG_TIME_FRAME], 10)
             self.average_volume = volume_data[PriceStrings.STR_PRICE_VOL.value].mean()
             self.average_price = volume_data[PriceStrings.STR_PRICE_CLOSE.value].mean()
@@ -71,13 +70,3 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
             CONFIG_REFRESH_RATE: 10,
             CONFIG_TIME_FRAME: TimeFrames.ONE_MINUTE
         }
-
-    def run(self):
-        self.refresh_time = self.valid_refresh_time(self.specific_config[CONFIG_REFRESH_RATE])
-
-        self.update(force=True)
-
-        while self.keep_running:
-            self.refresh_data()
-            self.eval()
-            time.sleep(self.refresh_time)

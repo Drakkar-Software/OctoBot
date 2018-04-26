@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 from abc import *
 
 from config.config import load_config
@@ -59,17 +60,14 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
         super().__init__()
         self.symbol = symbol
         self.exchange = exchange_inst
+        self.refresh_time = 0
 
     @abstractmethod
-    def refresh_data(self):
+    def _refresh_data(self):
         raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
     def eval_impl(self):
-        raise NotImplementedError("Eval_impl not implemented")
-
-    @abstractmethod
-    def run(self):
         raise NotImplementedError("Eval_impl not implemented")
 
     def valid_refresh_time(self, config_refresh_time):
@@ -77,3 +75,12 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
             return config_refresh_time
         else:
             return self.exchange.get_rate_limit()
+
+    def run(self):
+        self.refresh_time = self.valid_refresh_time(self.specific_config[CONFIG_REFRESH_RATE])
+
+        while self.keep_running:
+            now = time.time()
+            self._refresh_data()
+            self.eval()
+            time.sleep(self.refresh_time - (time.time() - now))
