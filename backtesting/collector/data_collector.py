@@ -6,6 +6,7 @@ from logging.config import fileConfig
 
 import ccxt
 import pandas
+from pandas.io.json import json_normalize
 
 from config.config import load_config
 from config.cst import *
@@ -56,7 +57,7 @@ class DataCollectorParser:
             file_content = json.loads(file_to_parse.read())
 
         for content in file_content:
-            result[content] = json.loads(file_content[content])
+            result[content] = json_normalize(json.loads(file_content[content]))
         return result
 
 
@@ -69,7 +70,9 @@ class ExchangeDataCollector(threading.Thread):
         self.keep_running = True
         self.file = None
         self.file_content = None
-        self.file_name = "{0}_{1}.data".format(self.exchange.get_name(), time.strftime("%Y%m%d_%H%M%S"))
+        self.file_name = "{0}_{1}_{2}.data".format(self.exchange.get_name(),
+                                                   self.symbol,
+                                                   time.strftime("%Y%m%d_%H%M%S"))
         self.time_frame_update = {}
         self.logger = logging.getLogger(self.__class__.__name__)
 
