@@ -38,8 +38,10 @@ class Crypto_Bot:
         self.logger.info("Version : {0}".format(VERSION))
 
         # Config
-        self.logger.info("Load config file...")
+        self.logger.info("Load config files...")
         self.config = load_config()
+        self.config[CONFIG_TRADING] = load_config(CONFIG_TRADING_FILE)
+        self.config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
         # Advanced
         AdvancedManager.create_class_list(self.config)

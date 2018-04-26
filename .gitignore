@@ -111,3 +111,5 @@ config.json
 evaluator/.gitignore
 **/Advanced/*.*
 
+
+config/evaluator_config\.json

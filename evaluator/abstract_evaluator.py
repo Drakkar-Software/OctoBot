@@ -28,6 +28,7 @@ class AbstractEvaluator:
     # Used to provide the global config
     def set_config(self, config):
         self.config = config
+        self.enabled = self.is_enabled(False)
 
     # Symbol is the cryptocurrency symbol
     def set_symbol(self, symbol):
@@ -97,3 +98,12 @@ class AbstractEvaluator:
             self.eval_note = -1
         else:
             self.eval_note += new_eval_note
+
+    def is_enabled(self, default):
+        if self.get_name() in self.config[CONFIG_EVALUATOR]:
+            return self.config[CONFIG_EVALUATOR][self.get_name()]
+        else:
+            for parent in self.__class__.mro():
+                if parent.__name__ in self.config[CONFIG_EVALUATOR]:
+                    return self.config[CONFIG_EVALUATOR][parent.__name__]
+            return default
