@@ -16,6 +16,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
         self.social_config = {}
         self.need_to_notify = False
         self.is_threaded = False
+        self.is_self_refreshing = False
         self.keep_running = True
         self.evaluator_threads = []
         self.load_config()
@@ -36,13 +37,25 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
 
     def load_config(self):
         config_file = self.get_config_file_name()
+        # try with this class name
         if os.path.isfile(config_file):
             self.social_config = load_config(config_file)
         else:
+            # if it's not possible, try with any super-class' config file
+            for super_class in self.__class__.__bases__:
+                super_class_config_file = super_class.get_config_file_name()
+                if os.path.isfile(super_class_config_file):
+                    self.social_config = load_config(super_class_config_file)
+                    return
+        # set default config if nothing found
+        if not self.social_config:
             self.set_default_config()
 
     def get_is_threaded(self):
         return self.is_threaded
+
+    def get_is_self_refreshing(self):
+        return self.is_self_refreshing
 
     # to implement in subclasses if config necessary
     # required if is_threaded = False --> provide evaluator refreshing time
