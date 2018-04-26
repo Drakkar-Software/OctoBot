@@ -84,9 +84,16 @@ class AbstractEvaluator:
     def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
 
+    # explore up to the 1st parent
     @classmethod
     def get_is_dispatcher_client(cls):
-        return DispatcherAbstractClient in cls.__bases__
+        if DispatcherAbstractClient in cls.__bases__:
+            return True
+        else:
+            for base in cls.__bases__:
+                if DispatcherAbstractClient in base.__bases__:
+                    return True
+        return False
 
     def set_eval_note(self, new_eval_note):
         if self.eval_note == START_PENDING_EVAL_NOTE:
