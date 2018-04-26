@@ -21,8 +21,8 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
 
         # Constants
         self.MIN_EVAL_NOTE = 0.5
-        self.VOLUME_HAPPENING_THRESHOLD = 3
-        self.PRICE_HAPPENING_THRESHOLD = 1.005
+        self.VOLUME_HAPPENING_THRESHOLD = 5
+        self.PRICE_HAPPENING_THRESHOLD = 1.01
 
     def refresh_data(self):
         self.update()
