@@ -8,8 +8,7 @@ import ccxt
 import pandas
 
 from config.config import load_config
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_DATA_COLLECTOR, CONFIG_EXCHANGES, CONFIG_DATA_PATH, \
-    DATA_COLLECTOR_REFRESHER_TIME, TimeFrames, TimeFramesMinutes, MINUTE_TO_SECONDS, PriceStrings
+from config.cst import *
 from trading import Exchange
 
 
@@ -61,9 +60,6 @@ class ExchangeDataCollector(threading.Thread):
         self.time_frame_update = {}
         self.logger = logging.getLogger(self.__class__.__name__)
 
-        # TEMP
-        self.symbol = "BTC/USDT"
-
     def stop(self):
         self.keep_running = False
 
@@ -87,7 +83,7 @@ class ExchangeDataCollector(threading.Thread):
         for time_frame in TimeFrames:
             if self.exchange.time_frame_exists(time_frame.value):
                 # write all available data for this time frame
-                self.file_content[time_frame.value] = self.exchange.get_symbol_prices(self.symbol,
+                self.file_content[time_frame.value] = self.exchange.get_symbol_prices(CONFIG_DATA_COLLECTOR_SYMBOL,
                                                                                       time_frame,
                                                                                       None)
 
@@ -103,7 +99,7 @@ class ExchangeDataCollector(threading.Thread):
             for time_frame in TimeFrames:
                 if self.exchange.time_frame_exists(time_frame.value):
                     if now - self.time_frame_update[time_frame] >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                        result_df = self.exchange.get_symbol_prices(self.symbol, time_frame, 1)
+                        result_df = self.exchange.get_symbol_prices(CONFIG_DATA_COLLECTOR_SYMBOL, time_frame, 1)
 
                         self.file_content[time_frame.value] = pandas.concat([self.file_content[time_frame.value],
                                                                              result_df])
@@ -112,7 +108,9 @@ class ExchangeDataCollector(threading.Thread):
                         self.logger.info("{0} : {1} updated".format(self.exchange.get_name(), time_frame))
 
             self.update_file()
-            time.sleep(DATA_COLLECTOR_REFRESHER_TIME)
+
+            final_sleep = DATA_COLLECTOR_REFRESHER_TIME - (time.time() - now)
+            time.sleep(final_sleep if final_sleep >= 0 else 0)
 
 
 if __name__ == '__main__':
