@@ -21,7 +21,7 @@ class TraderSimulator(Trader):
         else:
             return False
 
-    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None, linked_to=None):
+    def create_order(self, order_type, symbol, current_price, quantity, price=None, stop_price=None, linked_to=None):
         self.logger.info("Order creation : {0} | {1} | Price : {2}".format(symbol, order_type, price))
 
         # create new order instance
@@ -34,7 +34,7 @@ class TraderSimulator(Trader):
         else:
             order_notifier = linked_to.get_order_notifier()
 
-        order.new(order_type, symbol, quantity, price, stop_price, order_notifier)
+        order.new(order_type, symbol, quantity, current_price, price, stop_price, order_notifier)
 
         # notify order manager of a new open order
         self.order_manager.add_order_to_list(order)
