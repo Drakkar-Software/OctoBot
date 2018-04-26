@@ -20,6 +20,13 @@ class TextAnalysis(AbstractUtil):
         article.parse()
         return article, self.analyse(article.text)
 
+    # return a list of high influential value websites
+    @staticmethod
+    def get_high_value_websites():
+        return [
+            "https://www.youtube.com"
+                ]
+
     # official account tweets that can be used for testing purposes
     def test(self):
         texts = [
