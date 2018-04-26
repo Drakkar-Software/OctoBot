@@ -1,19 +1,19 @@
 import time
 
 from config.cst import *
-from bot import Crypto_Bot
+from bot import CryptoBot
 
 
 def test_create_bot():
     # launch a bot
-    bot = Crypto_Bot()
+    bot = CryptoBot()
     bot.create_exchange_traders()
     bot.stop_threads()
 
 
 def test_run_bot():
     # launch a bot
-    bot = Crypto_Bot()
+    bot = CryptoBot()
     bot.time_frames = [TimeFrames.ONE_MINUTE]
     bot.create_exchange_traders()
     bot.create_evaluation_threads()
