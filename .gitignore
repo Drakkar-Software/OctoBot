@@ -111,5 +111,8 @@ config.json
 evaluator/.gitignore
 **/Advanced/*.*
 
+# Specific config
+config/evaluator_config.json
 
-config/evaluator_config\.json
+# Data
+backtesting/collector/data/**
