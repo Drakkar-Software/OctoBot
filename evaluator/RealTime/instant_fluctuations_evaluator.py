@@ -1,8 +1,5 @@
-import time
-
-from evaluator.RealTime.realtime_evaluator import RealTimeTAEvaluator
-
 from config.cst import *
+from evaluator.RealTime.realtime_evaluator import RealTimeTAEvaluator
 
 
 class InstantFluctuationsEvaluator(RealTimeTAEvaluator):

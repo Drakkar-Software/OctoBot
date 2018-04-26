@@ -5,6 +5,8 @@ from logging.config import fileConfig
 
 import ccxt
 
+from backtesting.backtesting import Backtesting
+from backtesting.exchange_simulator import ExchangeSimulator
 from config.config import load_config
 from config.cst import *
 from evaluator.Util.advanced_manager import AdvancedManager
@@ -28,6 +30,7 @@ class Crypto_Bot:
     Constructor :
     - Load configs
     """
+
     def __init__(self):
         # Logger
         fileConfig('config/logging_config.ini')
@@ -80,7 +83,12 @@ class Crypto_Bot:
             if exchange_class_string in available_exchanges:
                 exchange_type = getattr(ccxt, exchange_class_string)
 
-                exchange_inst = Exchange(self.config, exchange_type)
+                # Backtesting Exchange
+                if Backtesting.enabled(self.config):
+                    exchange_inst = ExchangeSimulator(self.config, exchange_type)
+                else:
+                    # True Exchange
+                    exchange_inst = Exchange(self.config, exchange_type)
 
                 # create trader instance for this exchange
                 exchange_trader = Trader(self.config, exchange_inst)

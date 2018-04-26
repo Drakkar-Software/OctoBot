@@ -1,6 +1,7 @@
 import threading
 import time
 
+from backtesting.backtesting import Backtesting
 from config.cst import *
 
 
@@ -31,4 +32,6 @@ class TimeFrameUpdateDataThread(threading.Thread):
         while self.keep_running:
             now = time.time()
             self._refresh_data()
-            time.sleep(TimeFramesMinutes[self.parent.time_frame] * MINUTE_TO_SECONDS - (time.time() - now))
+            if not Backtesting.enabled(self.parent.get_evaluator().get_config()):
+                time.sleep(TimeFramesMinutes[self.parent.time_frame] * MINUTE_TO_SECONDS - (time.time() - now))
+
