@@ -65,6 +65,7 @@ class ExchangeDataCollector(threading.Thread):
         self.keep_running = True
         self.file = None
         self.file_content = None
+        self._data_updated = False
         self.file_name = "{0}_{1}_{2}.data".format(self.exchange.get_name(),
                                                    self.symbol.replace("/", "_"),
                                                    time.strftime("%Y%m%d_%H%M%S"))
@@ -111,11 +112,13 @@ class ExchangeDataCollector(threading.Thread):
                                                                     data_frame=False)
 
                         self.file_content[time_frame.value].append(result_df)
-
+                        self._data_updated = True
                         self.time_frame_update[time_frame] = now
                         self.logger.info("{0} : {1} updated".format(self.exchange.get_name(), time_frame))
 
-            self.update_file()
+            if self._data_updated:
+                self.update_file()
+                self._data_updated = False
 
             final_sleep = DATA_COLLECTOR_REFRESHER_TIME - (time.time() - now)
             time.sleep(final_sleep if final_sleep >= 0 else 0)

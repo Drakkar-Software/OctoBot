@@ -4,6 +4,7 @@ from time import sleep
 
 import ccxt
 
+from backtesting.backtesting import Backtesting
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus
 
 """ OrdersManager class will perform the supervision of each open order of the exchange trader
@@ -86,4 +87,5 @@ class OrdersManager(threading.Thread):
                                                                                       order.get_filled_price()))
                     order.close_order()
 
-            sleep(ORDER_REFRESHER_TIME)
+            if not Backtesting.enabled(self.config):
+                sleep(ORDER_REFRESHER_TIME)
