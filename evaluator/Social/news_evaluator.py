@@ -48,7 +48,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def _check_eval_note(self):
         if self.eval_note != START_PENDING_EVAL_NOTE:
             if self.eval_note > 0.6 or self.eval_note < -0.6:
-                self.notify_evaluator_threads(self.__class__.__name__)
+                self.notify_evaluator_thread_managers(self.__class__.__name__)
 
     def _get_sentiment(self, tweet, tweet_text):
         # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
@@ -125,7 +125,7 @@ class MediumNewsEvaluator(NewsSocialEvaluator):
         pass
 
     def eval_impl(self):
-        self.notify_evaluator_threads(self.__class__.__name__)
+        self.notify_evaluator_thread_managers(self.__class__.__name__)
 
     def run(self):
         pass
