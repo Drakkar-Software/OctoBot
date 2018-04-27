@@ -5,8 +5,6 @@ import time
 from logging.config import fileConfig
 
 import ccxt
-import pandas
-from pandas.io.json import json_normalize
 
 from config.config import load_config
 from config.cst import *
@@ -52,13 +50,10 @@ class DataCollector:
 class DataCollectorParser:
     @staticmethod
     def parse(file):
-        result = {}
         with open(CONFIG_DATA_COLLECTOR_PATH + file) as file_to_parse:
             file_content = json.loads(file_to_parse.read())
 
-        for content in file_content:
-            result[content] = json_normalize(json.loads(file_content[content]))
-        return result
+        return file_content
 
 
 class ExchangeDataCollector(threading.Thread):
@@ -80,14 +75,8 @@ class ExchangeDataCollector(threading.Thread):
         self.keep_running = False
 
     def update_file(self):
-        self.file = open(CONFIG_DATA_COLLECTOR_PATH + self.file_name, 'w')
-        file_content_json = {}
-        for time_frame in self.file_content:
-            file_content_json[time_frame] = self.file_content[time_frame].set_index(
-                PriceStrings.STR_PRICE_TIME.value).to_json()
-
-        json.dump(file_content_json, self.file)
-        self.file.close()
+        with open(CONFIG_DATA_COLLECTOR_PATH + self.file_name, 'w') as json_file:
+            json.dump(self.file_content, json_file)
 
     def prepare_file(self):
         self.file_content = {}
@@ -102,8 +91,8 @@ class ExchangeDataCollector(threading.Thread):
                 # write all available data for this time frame
                 self.file_content[time_frame.value] = self.exchange.get_symbol_prices(self.symbol,
                                                                                       time_frame,
-                                                                                      None)
-
+                                                                                      limit=None,
+                                                                                      data_frame=False)
                 self.time_frame_update[time_frame] = time.time()
         self.update_file()
 
@@ -116,10 +105,12 @@ class ExchangeDataCollector(threading.Thread):
             for time_frame in TimeFrames:
                 if self.exchange.time_frame_exists(time_frame.value):
                     if now - self.time_frame_update[time_frame] >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                        result_df = self.exchange.get_symbol_prices(self.symbol, time_frame, 1)
+                        result_df = self.exchange.get_symbol_prices(self.symbol,
+                                                                    time_frame,
+                                                                    limit=1,
+                                                                    data_frame=False)
 
-                        self.file_content[time_frame.value] = pandas.concat([self.file_content[time_frame.value],
-                                                                             result_df])
+                        self.file_content[time_frame.value].append(result_df)
 
                         self.time_frame_update[time_frame] = now
                         self.logger.info("{0} : {1} updated".format(self.exchange.get_name(), time_frame))
