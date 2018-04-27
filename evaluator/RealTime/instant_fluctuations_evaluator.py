@@ -46,7 +46,6 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
         elif self.last_price < (1 - self.PRICE_HAPPENING_THRESHOLD) * self.average_price:
             self.eval_note = -self.MIN_EVAL_NOTE
             self.something_is_happening = True
-        self.something_is_happening = True
 
     def update(self):
         self.volume_updated += 1
