@@ -81,7 +81,7 @@ class SymbolEvaluator:
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
         for evaluator_thread in self.evaluator_threads[exchange.get_name()]:
-            if evaluator_thread.get_data_refresher().get_refreshed_times() == 0:
+            if evaluator_thread.get_refreshed_times() == 0:
                 self.finalize_enabled_list[exchange.get_name()] = False
 
     def get_trader(self, exchange):

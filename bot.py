@@ -13,6 +13,7 @@ from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import SymbolEvaluator
+from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from interfaces.web.app import WebApp
 from tools import Notification
 from tools.performance_analyser import PerformanceAnalyser
@@ -76,6 +77,7 @@ class CryptoBot:
         self.exchanges_list = {}
         self.symbol_evaluator_list = []
         self.dispatchers_list = []
+        self.symbol_time_frame_updater_threads = []
 
     def create_exchange_traders(self):
         available_exchanges = ccxt.exchanges
@@ -136,14 +138,17 @@ class CryptoBot:
         real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
                                                                             exchange,
                                                                             symbol)
+        symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
             if exchange.time_frame_exists(time_frame.value):
                 self.symbols_threads_manager.append(EvaluatorThreadsManager(self.config,
                                                                             symbol,
                                                                             time_frame,
+                                                                            symbol_time_frame_updater_thread,
                                                                             symbol_evaluator,
                                                                             exchange,
                                                                             real_time_ta_eval_list))
+        self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
 
     def start_threads(self):
         if self.performance_analyser:
@@ -155,6 +160,9 @@ class CryptoBot:
         for manager in self.symbols_threads_manager:
             manager.start_threads()
 
+        for thread in self.symbol_time_frame_updater_threads:
+            thread.start()
+
         for thread in self.dispatchers_list:
             thread.start()
 
@@ -163,6 +171,9 @@ class CryptoBot:
     def join_threads(self):
         for manager in self.symbols_threads_manager:
             manager.join_threads()
+
+        for thread in self.symbol_time_frame_updater_threads:
+            thread.join()
 
         for symbol_evaluator in self.symbol_evaluator_list:
             symbol_evaluator.join_threads()
@@ -184,6 +195,10 @@ class CryptoBot:
         self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE)
 
         self.logger.info("Stopping threads ...")
+
+        for thread in self.symbol_time_frame_updater_threads:
+            thread.stop()
+
         for manager in self.symbols_threads_manager:
             manager.stop_threads()
 
