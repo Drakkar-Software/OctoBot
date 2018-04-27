@@ -58,7 +58,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                 for time_frame in time_frames:
                     # if data from this time frame needs an update
                     if now - self.time_frame_last_update[time_frame] >= \
-                            TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
+                            TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS or back_testing_enabled:
                         self._refresh_data(time_frame)
                         self.time_frame_last_update[time_frame] = time.time()
 
