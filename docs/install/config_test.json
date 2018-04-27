@@ -27,6 +27,12 @@
       "api-secret": "YOUR_TWITTER_API_SECRET",
       "access-token": "YOUR_TWITTER_ACCESS_TOKEN",
       "access-token-secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
+    },
+    "reddit":{
+      "client_id": "The client ID is the 14 character string listed just under “personal use script” for the desired developed application",
+      "client_secret": "The client secret is the 27 character string listed adjacent to secret for the application",
+      "password":"The password for the Reddit account used to register the script application",
+      "username":"The username of the Reddit account used to register the script application"
     }
   },
   "notification":{
