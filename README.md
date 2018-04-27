@@ -21,7 +21,7 @@ See live demo [here](https://twitter.com/HerklosBotCrypt)
 
 ## Install
 See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)
-```
+```bash
 git clone https://github.com/Trading-Bot/CryptoBot
 cd CryptoBot
 pip install -r requirements.txt
@@ -35,7 +35,7 @@ Rename config/default_config.json to config/config.json
 
 ### More configuration
 See [Configuration Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Configuration)
-```
+```json
 "crypto_currencies": {
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
@@ -43,7 +43,7 @@ See [Configuration Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Configur
 }
 ```
 See [Exchanges Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Exchanges)
-```
+```json
 "exchanges": {
     "binance": {
       "api-key": "",
@@ -52,21 +52,21 @@ See [Exchanges Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Exchanges)
 }
 ```
 See [Notifications Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Notifications)
-```
+```json
 "notification":{
     "enabled": true,
     "type": [1, 2]
 }
 ```
 See [Trader Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Trader)
-```
+```json
 "trader":{
     "enabled": false,
     "risk": 0.5
 }
 ```
 See [Simulator Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator)
-```
+```json
 "simulator":{
     "enabled": true,
     "risk": 0.5,
@@ -77,12 +77,12 @@ See [Simulator Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator)
 }
 ```
 See [Services Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Services)
-```
+```json
 "services": {}
 ```
   
 ## Usage
-```
+```bash
 python main.py
 ```
 ## Customize you CryptoBot !
@@ -109,7 +109,7 @@ More information and examples on the [wiki](https://github.com/Trading-Bot/Crypt
 
 ## Testing
 Use *pytest* command in the root folder : 
-```
+```bash
 pytest
 ```
 
