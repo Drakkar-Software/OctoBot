@@ -2,15 +2,20 @@ from config.cst import *
 from evaluator.Social.social_evaluator import ForumSocialEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.Util.text_analysis import TextAnalysis
+from evaluator.Util.overall_state_analysis import OverallStateAnalyser
 from evaluator.Dispatchers.reddit_dispatcher import RedditDispatcher
 from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 from tools.decoding_encoding import DecoderEncoder
+import time
 
 
+# RedditForumEvaluator is used to get an overall state of a market, it will not trigger a trade
+# (notify its evaluators) but is used to measure hype and trend of a market.
 class RedditForumEvaluator(ForumSocialEvaluator, DispatcherAbstractClient):
     def __init__(self):
         ForumSocialEvaluator.__init__(self)
         DispatcherAbstractClient.__init__(self)
+        self.overall_state_analyser = OverallStateAnalyser()
         self.is_threaded = False
         self.count = 0
         self.symbol = ""
@@ -25,8 +30,8 @@ class RedditForumEvaluator(ForumSocialEvaluator, DispatcherAbstractClient):
     def get_dispatcher_class():
         return RedditDispatcher
 
-    def _print_entry(self, entry_text, count=""):
-        self.logger.debug("Current note : {0} | {1} : {2} : Text : {3}".format(self.eval_note,
+    def _print_entry(self, entry_text, entry_note, count=""):
+        self.logger.debug("New reddit entry ! : {0} | {1} : {2} : Text : {3}".format(entry_note,
                                                                                count,
                                                                                self.symbol,
                                                                                DecoderEncoder.encode_into_bytes(
@@ -34,19 +39,22 @@ class RedditForumEvaluator(ForumSocialEvaluator, DispatcherAbstractClient):
 
     def receive_notification_data(self, data):
         self.count += 1
-        self.eval_note = self._get_sentiment(data[CONFIG_REDDIT_ENTRY])
-        if self.eval_note != START_PENDING_EVAL_NOTE:
-            self._print_entry(data[CONFIG_REDDIT_ENTRY].selftext, str(self.count))
-        self._check_eval_note()
+        entry_note = self._get_sentiment(data[CONFIG_REDDIT_ENTRY])
+        if entry_note != START_PENDING_EVAL_NOTE:
+            self.overall_state_analyser.add_evaluation(entry_note, data[CONFIG_REDDIT_ENTRY_WEIGHT], False)
+            if data[CONFIG_REDDIT_ENTRY_WEIGHT] > 4:
+                self._print_entry(data[CONFIG_REDDIT_ENTRY].selftext, entry_note, str(self.count))
 
-    def _check_eval_note(self):
-        if self.eval_note != START_PENDING_EVAL_NOTE:
-            if self.eval_note > 0.85 or self.eval_note < -0.85:
-                self.notify_evaluator_thread_managers(self.__class__.__name__)
+    # overwrite get_eval_note from abstract evaluator to recompute OverallStateAnalyser evaluation
+    def get_eval_note(self):
+        self.eval_note = self.overall_state_analyser.get_overall_state_after_refresh()
+        return self.eval_note
 
     def _get_sentiment(self, entry):
-        reddit_entry_min_length = 1
-        if entry.selftext and len(entry.selftext) > reddit_entry_min_length:
+        # analysis entry text and gives overall sentiment
+        reddit_entry_min_length = 50
+        # ignore usless (very short) entries
+        if entry.selftext and len(entry.selftext) >= reddit_entry_min_length:
             return -1 * self.sentiment_analyser.analyse(entry.selftext)
         return START_PENDING_EVAL_NOTE
 
