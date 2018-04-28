@@ -43,16 +43,19 @@ class TrendAnalysis(AbstractUtil):
     @staticmethod
     def get_estimation_of_move_state_relatively_to_previous_moves_length(mean_crossing_indexes, pattern_move_size=1):
 
-        # compute average move size
-        time_averages = [(lambda a: mean_crossing_indexes[a+1]-mean_crossing_indexes[a])(a)
-                         for a in range(len(mean_crossing_indexes)-1)]
-        time_average = numpy.mean(time_averages)*pattern_move_size
+        if mean_crossing_indexes:
+            # compute average move size
+            time_averages = [(lambda a: mean_crossing_indexes[a+1]-mean_crossing_indexes[a])(a)
+                             for a in range(len(mean_crossing_indexes)-1)]
+            time_average = numpy.mean(time_averages)*pattern_move_size
 
-        # higher than time_average => high chances to be at half of the move already
-        if time_averages[-1] > time_average/2:
-            return 1
+            # higher than time_average => high chances to be at half of the move already
+            if time_averages[-1] > time_average/2:
+                return 1
+            else:
+                return time_averages[-1] / (time_average/2)
         else:
-            return time_averages[-1] / (time_average/2)
+            return 0
 
     @staticmethod
     def get_threshold_change_indexes(data_frame, threshold):
