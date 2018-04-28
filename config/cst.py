@@ -198,6 +198,9 @@ TimeFramesRelevance = {
     TimeFrames.ONE_MONTH: 5,
 }
 
+IMAGE_ENDINGS = ["png", "jpg", "jpeg", "gif", "jfif", "tiff", "bmp", "ppm", "pgm", "pbm", "pnm", "webp", "hdr", "heif",
+                 "bat", "bpg", "svg", "cgm"]
+
 
 class TradeOrderSide(Enum):
     BUY = 1
@@ -265,3 +268,4 @@ class ExchangeConstantsTickersInfoColumns(Enum):
     FIRST_ID = "firstId"
     LAST_ID = "lastId"
     COUNT = "count"
+

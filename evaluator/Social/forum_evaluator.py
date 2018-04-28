@@ -34,8 +34,7 @@ class RedditForumEvaluator(ForumSocialEvaluator, DispatcherAbstractClient):
         self.logger.debug("New reddit entry ! : {0} | {1} : {2} : Text : {3}".format(entry_note,
                                                                                count,
                                                                                self.symbol,
-                                                                               DecoderEncoder.encode_into_bytes(
-                                                                                   entry_text)))
+                                                                               entry_text))
 
     def receive_notification_data(self, data):
         self.count += 1
@@ -43,7 +42,7 @@ class RedditForumEvaluator(ForumSocialEvaluator, DispatcherAbstractClient):
         if entry_note != START_PENDING_EVAL_NOTE:
             self.overall_state_analyser.add_evaluation(entry_note, data[CONFIG_REDDIT_ENTRY_WEIGHT], False)
             if data[CONFIG_REDDIT_ENTRY_WEIGHT] > 4:
-                self._print_entry(data[CONFIG_REDDIT_ENTRY].selftext, entry_note, str(self.count))
+                self._print_entry(data[CONFIG_REDDIT_ENTRY].permalink, entry_note, str(self.count))
 
     # overwrite get_eval_note from abstract evaluator to recompute OverallStateAnalyser evaluation
     def get_eval_note(self):
