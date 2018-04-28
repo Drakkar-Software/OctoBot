@@ -115,14 +115,14 @@ class ExchangeSimulator(Exchange):
         max_count = max_value if max_value is not None else self.DEFAULT_LIMIT
         min_count = max_value if max_value is not None else self.MIN_LIMIT
 
-        if max_limit - index <= min_count:
+        if max_limit - (index + max_count) <= min_count:
             # TODO : temp
             raise Exception("End of simulation")
 
-        elif max_limit - index < max_count:
+        elif index + max_count >= max_limit:
             return array[index::]
         else:
-            return array[index:max_count]
+            return array[index:index + max_count]
 
     def extract_data_with_limit(self, time_frame):
         return self.extract_indexes(self.data[time_frame.value], self.time_frame_get_times[time_frame.value])
