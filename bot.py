@@ -59,8 +59,7 @@ class CryptoBot:
         if CONFIG_DEBUG_OPTION_PERF in self.config and self.config[CONFIG_DEBUG_OPTION_PERF]:
             self.performance_analyser = PerformanceAnalyser()
 
-        # TODO : CONFIG TEMP LOCATION
-        self.time_frames = TimeFrames
+        self.time_frames = Exchange.get_config_time_frame(self.config)
 
         # Add services to self.config[CONFIG_CATEGORY_SERVICES]
         ServiceCreator.create_services(self.config)
