@@ -60,7 +60,7 @@ class CryptoBot:
             self.performance_analyser = PerformanceAnalyser()
 
         # TODO : CONFIG TEMP LOCATION
-        self.time_frames = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
+        self.time_frames = TimeFrames
 
         # Add services to self.config[CONFIG_CATEGORY_SERVICES]
         ServiceCreator.create_services(self.config)

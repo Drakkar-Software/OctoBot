@@ -1,7 +1,5 @@
 import random
 
-from ccxt import BaseError
-
 from backtesting.collector.data_collector import DataCollectorParser
 from config.cst import *
 from trading import Exchange
@@ -20,7 +18,7 @@ class ExchangeSimulator(Exchange):
         self.fetched_trades = {}
 
         self.DEFAULT_LIMIT = 100
-        self.MIN_LIMIT = 30
+        self.MIN_LIMIT = 1
 
         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = TimeFrames.ONE_MINUTE
         self.CREATED_TRADES_BY_TIME_FRAME = 10
@@ -36,20 +34,37 @@ class ExchangeSimulator(Exchange):
         # create symbol last trades
         self.fetched_trades[self.symbol] = self.create_recent_trades()
 
+        # create get times
+        for time_frame in TimeFrames:
+            self.time_frame_get_times[time_frame.value] = 0
+
+    def should_update_data(self, time_frame):
+        current_time_frame_index = TimeFramesRank.index(time_frame)
+
+        # todo check if last time_frame configured
+        if current_time_frame_index > 0:
+            previous_time_frame = TimeFramesRank[current_time_frame_index - 1]
+        else:
+            previous_time_frame = time_frame
+
+        previous_time_frame_sec = TimeFramesMinutes[previous_time_frame]
+        previous_time_frame_updated_times = self.time_frame_get_times[previous_time_frame.value]
+        current_time_frame_sec = TimeFramesMinutes[time_frame]
+        current_time_frame_updated_times = self.time_frame_get_times[time_frame.value]
+
+        if previous_time_frame_updated_times - (current_time_frame_updated_times * (current_time_frame_sec / previous_time_frame_sec)) >= 0:
+            return True
+        else:
+            return False
+
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        self.increase_time_frame_get_times(time_frame)
         result = self.extract_data_with_limit(time_frame)
+        self.time_frame_get_times[time_frame.value] += 1
 
         if data_frame:
             return self.candles_array_to_data_frame(result)
         else:
             return result
-
-    def increase_time_frame_get_times(self, time_frame):
-        if time_frame.value not in self.time_frame_get_times:
-            self.time_frame_get_times[time_frame.value] = 0
-        else:
-            self.time_frame_get_times[time_frame.value] += 1
 
     # Will use the One Minute time frame
     def create_tickers(self):
@@ -69,7 +84,11 @@ class ExchangeSimulator(Exchange):
             max_price = max(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
             min_price = min(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
             for i in range(0, self.CREATED_TRADES_BY_TIME_FRAME):
-                created_trades.append(random.uniform(min_price, max_price))
+                created_trades.append(
+                    {
+                        "price": random.uniform(min_price, max_price)
+                    }
+                )
         return created_trades
 
     def extract_indexes(self, array, index, factor=1, max_value=None):
