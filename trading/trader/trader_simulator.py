@@ -34,7 +34,7 @@ class TraderSimulator(Trader):
         else:
             order_notifier = linked_to.get_order_notifier()
 
-        order.new(order_type, symbol, quantity, current_price, price, stop_price, order_notifier)
+        order.new(order_type, symbol, current_price, quantity, price, stop_price, order_notifier)
 
         # notify order manager of a new open order
         self.order_manager.add_order_to_list(order)
