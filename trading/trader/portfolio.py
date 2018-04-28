@@ -111,19 +111,20 @@ class Portfolio:
 
             currency, market = order.get_currency_and_market()
 
-            if is_new_order:
-                inverse = 1
-            else:
-                inverse = -1
+            inverse = 1 if is_new_order else -1
 
             if order.get_side() == TradeOrderSide.BUY:
-                new_quantity = -order.get_origin_quantity() * order.get_origin_price() * inverse
+                new_quantity = - order.get_origin_quantity() * order.get_origin_price() * inverse
                 self._update_portfolio_data(market, new_quantity, False, True)
             else:
-                new_quantity = -order.get_origin_quantity() * inverse
+                new_quantity = - order.get_origin_quantity() * inverse
                 self._update_portfolio_data(currency, new_quantity, False, True)
 
             # debug purpose
             self.logger.debug("Portfolio available updated after order on {0} | Current Portfolio : {1}".format(
                 order.get_order_symbol(),
                 self.portfolio))
+
+    def reset_availability(self):
+        for currency in self.portfolio:
+            self.portfolio[currency][Portfolio.AVAILABLE] = self.portfolio[currency][Portfolio.TOTAL]

@@ -210,4 +210,3 @@ class CryptoBot:
 
         if self.web_app.enabled():
             self.web_app.stop()
-
