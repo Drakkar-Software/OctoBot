@@ -63,6 +63,8 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                         self.time_frame_last_update[time_frame] = time.time()
 
                 if not back_testing_enabled:
-                    time.sleep(abs(max_sleeping_time - (time.time() - now)))
+                    sleeping_time = max_sleeping_time - (time.time() - now)
+                    if sleeping_time > 0:
+                        time.sleep(sleeping_time)
         else:
             logging.getLogger(self.__class__.__name__).warning("no time frames to monitor, going to sleep.")
