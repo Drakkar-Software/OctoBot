@@ -29,15 +29,16 @@ class TrendAnalysis(AbstractUtil):
     @staticmethod
     # TODO
     def detect_divergence(data_frame, indicator_data_frame):
-        candle_data = data_frame.tail(DIVERGENCE_USED_VALUE)
-        indicator_data = indicator_data_frame.tail(DIVERGENCE_USED_VALUE)
-
-        total_delta = []
-
-        for i in range(0, DIVERGENCE_USED_VALUE - 1):
-            candle_delta = candle_data.values[i] - candle_data.values[i + 1]
-            indicator_delta = indicator_data.values[i] - indicator_data.values[i + 1]
-            total_delta.append(candle_delta - indicator_delta)
+        pass
+        # candle_data = data_frame.tail(DIVERGENCE_USED_VALUE)
+        # indicator_data = indicator_data_frame.tail(DIVERGENCE_USED_VALUE)
+        #
+        # total_delta = []
+        #
+        # for i in range(0, DIVERGENCE_USED_VALUE - 1):
+        #     candle_delta = candle_data.values[i] - candle_data.values[i + 1]
+        #     indicator_delta = indicator_data.values[i] - indicator_data.values[i + 1]
+        #     total_delta.append(candle_delta - indicator_delta)
 
     @staticmethod
     def get_estimation_of_move_state_relatively_to_previous_moves_length(mean_crossing_indexes, pattern_move_size=1):
@@ -75,7 +76,9 @@ class TrendAnalysis(AbstractUtil):
                     current_move_size = 1
         # add last index if data_frame ends above threshold and last threshold_crossing_indexes inferior
         # to data_frame size
-        if sub_threshold_indexes[-1] < len(data_frame.index) and data_frame.iloc[-1] > threshold:
+        if len(sub_threshold_indexes) > 0 \
+                and sub_threshold_indexes[-1] < len(data_frame.index) \
+                and data_frame.iloc[-1] > threshold:
             threshold_crossing_indexes.append(sub_threshold_indexes[-1]+1)
 
         return threshold_crossing_indexes

@@ -14,6 +14,7 @@ class ExchangeSimulator(Exchange):
         self.fetched_trades = {}
 
         self.DEFAULT_LIMIT = 100
+        self.MIN_LIMIT = 30
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         self.increase_time_frame_get_times(time_frame)
@@ -35,7 +36,11 @@ class ExchangeSimulator(Exchange):
         index = self.time_frame_get_times[time_frame.value]
         max_limit = len(full)
 
-        if max_limit - index < self.DEFAULT_LIMIT:
+        if max_limit - index <= self.MIN_LIMIT:
+            # TODO : temp
+            raise Exception("End of simulation")
+
+        elif max_limit - index < self.DEFAULT_LIMIT:
             return full[index::]
         else:
             return full[index:self.DEFAULT_LIMIT]
