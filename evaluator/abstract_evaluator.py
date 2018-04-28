@@ -94,6 +94,15 @@ class AbstractEvaluator:
                 if DispatcherAbstractClient in base.__bases__:
                     return True
         return False
+    
+    @classmethod
+    def get_parent_evaluator_classes(cls, higher_parent_class_limit = None):
+        classes = []
+        limit_class = higher_parent_class_limit if higher_parent_class_limit else AbstractEvaluator
+        for class_type in cls.mro():
+            if limit_class in class_type.mro():
+                classes.append(class_type)
+        return classes
 
     def set_eval_note(self, new_eval_note):
         if self.eval_note == START_PENDING_EVAL_NOTE:

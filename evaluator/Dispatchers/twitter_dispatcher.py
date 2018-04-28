@@ -79,8 +79,8 @@ class TwitterDispatcher(AbstractDispatcher):
                             tweet_desc = str(tweet).lower()
                             self.notify_registered_clients_if_interested(tweet_desc,
                                                                          {CONFIG_TWEET: tweet,
-                                                                          CONFIG_TWEET_DESCRIPTION: string_tweet.lower()})
+                                                                          CONFIG_TWEET_DESCRIPTION: string_tweet.lower()
+                                                                          })
                 except twitter.error.TwitterError as e:
                     self.logger.error("Error when receiving Twitter feed: " + str(e.message))
-            else:
-                self.logger.warning("Nothing to monitor, dispatcher is going to sleep.")
+        self.logger.warning("Nothing to monitor, dispatcher is going to sleep.")
