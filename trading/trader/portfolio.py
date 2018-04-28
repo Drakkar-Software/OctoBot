@@ -57,6 +57,7 @@ class Portfolio:
     It is called only when an order is filled to update the real quantity of the currency to be set in "total" field
     Returns get_profitability() return
     """
+
     def update_portfolio(self, order):
         currency, market = order.get_currency_and_market()
 
@@ -91,15 +92,16 @@ class Portfolio:
         # debug purpose
         profitability, profitability_percent, profitability_diff = self.trader.get_trades_manager().get_profitability()
 
-        self.logger.debug("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
-                                                                                    self.trader.get_trades_manager().get_reference(),
-                                                                                    round(profitability_percent, 2)))
+        self.logger.info("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
+                                                                                   self.trader.get_trades_manager().get_reference(),
+                                                                                   round(profitability_percent, 2)))
 
         return profitability, profitability_percent, profitability_diff
 
     """ update_portfolio_available performs the availability update of the concerned currency in the current portfolio
     It is called when an order is filled, created or canceled to update the "available" filed of the portfolio
     """
+
     def update_portfolio_available(self, order, is_new_order=True):
         # stop losses and take profits aren't using available portfolio
         if order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
@@ -123,5 +125,5 @@ class Portfolio:
 
             # debug purpose
             self.logger.debug("Portfolio available updated after order on {0} | Current Portfolio : {1}".format(
-                                 order.get_order_symbol(),
-                                 self.portfolio))
+                order.get_order_symbol(),
+                self.portfolio))
