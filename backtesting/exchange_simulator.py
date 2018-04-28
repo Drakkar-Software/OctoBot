@@ -46,7 +46,8 @@ class ExchangeSimulator(Exchange):
         current_time_frame_sec = TimeFramesMinutes[time_frame]
         current_time_frame_updated_times = self.time_frame_get_times[time_frame.value]
 
-        if previous_time_frame_updated_times - (current_time_frame_updated_times * (current_time_frame_sec / previous_time_frame_sec)) >= 0:
+        if previous_time_frame_updated_times - (
+                current_time_frame_updated_times * (current_time_frame_sec / previous_time_frame_sec)) >= 0:
             return True
         else:
             return False
@@ -135,11 +136,13 @@ class ExchangeSimulator(Exchange):
 
     def get_all_currencies_price_ticker(self):
         return {
-            "symbol": self.symbol,
-            ExchangeConstantsTickersColumns.LAST.value:
-                self.extract_indexes(self.tickers[self.symbol],
-                                     self.time_frame_get_times[
-                                         self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value],
-                                     factor=self.CREATED_TICKER_BY_TIME_FRAME,
-                                     max_value=1)
+            self.symbol: {
+                "symbol": self.symbol,
+                ExchangeConstantsTickersColumns.LAST.value:
+                    self.extract_indexes(self.tickers[self.symbol],
+                                         self.time_frame_get_times[
+                                             self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value],
+                                         factor=self.CREATED_TICKER_BY_TIME_FRAME,
+                                         max_value=1)[0]
+            }
         }
