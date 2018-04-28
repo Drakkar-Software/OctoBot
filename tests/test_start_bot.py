@@ -9,7 +9,6 @@ def test_create_bot():
     # launch a bot
     config = load_config()
     bot = CryptoBot(config)
-    bot.create_exchange_traders()
     bot.stop_threads()
 
 
