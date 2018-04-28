@@ -3,6 +3,7 @@ from tools.decoding_encoding import DecoderEncoder
 
 from evaluator.Util.abstract_util import AbstractUtil
 from newspaper import Article
+from config.cst import IMAGE_ENDINGS
 
 
 class TextAnalysis(AbstractUtil):
@@ -29,6 +30,11 @@ class TextAnalysis(AbstractUtil):
         return [
             "https://www.youtube.com"
                 ]
+
+    @staticmethod
+    def is_analysable_url(url):
+        url_ending = str(url).split(".")[-1]
+        return url_ending.lower() not in IMAGE_ENDINGS
 
     # official account tweets that can be used for testing purposes
     def test(self):

@@ -25,7 +25,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def get_dispatcher_class():
         return TwitterDispatcher
 
-    def get_reddit_service(self):
+    def get_twitter_service(self):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
     def _print_tweet(self, tweet_text, count=""):
@@ -37,7 +37,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
 
     def receive_notification_data(self, data):
         self.count += 1
-        self.eval_note = self._get_sentiment(data[CONFIG_TWEET], data[CONFIG_TWEET_DESCRIPTION])
+        self.eval_note = self.get_tweet_sentiment(data[CONFIG_TWEET], data[CONFIG_TWEET_DESCRIPTION])
         if self.eval_note != START_PENDING_EVAL_NOTE:
             self._print_tweet(data[CONFIG_TWEET_DESCRIPTION], str(self.count))
         self._check_eval_note()
@@ -47,15 +47,18 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
             if self.eval_note > 0.6 or self.eval_note < -0.6:
                 self.notify_evaluator_thread_managers(self.__class__.__name__)
 
-    def _get_sentiment(self, tweet, tweet_text):
+    def get_tweet_sentiment(self, tweet, tweet_text, is_a_quote=False):
         try:
-            stupid_useless_name = "########"
-            author_screen_name = tweet['user']['screen_name'] if "screen_name" in tweet['user'] else stupid_useless_name
-            author_name = tweet['user']['name'] if "name" in tweet['user'] else stupid_useless_name
-            if self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
-                if author_screen_name in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol] \
-                   or author_name in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol]:
-                    return -1 * self.sentiment_analyser.analyse(tweet_text)
+            if is_a_quote:
+                return -1 * self.sentiment_analyser.analyse(tweet_text)
+            else:
+                stupid_useless_name = "########"
+                author_screen_name = tweet['user']['screen_name'] if "screen_name" in tweet['user'] else stupid_useless_name
+                author_name = tweet['user']['name'] if "name" in tweet['user'] else stupid_useless_name
+                if self.social_config[CONFIG_TWITTERS_ACCOUNTS]:
+                    if author_screen_name in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol] \
+                       or author_name in self.social_config[CONFIG_TWITTERS_ACCOUNTS][self.symbol]:
+                        return -1 * self.sentiment_analyser.analyse(tweet_text)
         except KeyError:
             pass
 

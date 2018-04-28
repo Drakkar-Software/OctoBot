@@ -96,7 +96,7 @@ class AbstractEvaluator:
         return False
     
     @classmethod
-    def get_parent_evaluator_classes(cls, higher_parent_class_limit = None):
+    def get_parent_evaluator_classes(cls, higher_parent_class_limit=None):
         classes = []
         limit_class = higher_parent_class_limit if higher_parent_class_limit else AbstractEvaluator
         for class_type in cls.mro():
