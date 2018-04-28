@@ -135,14 +135,16 @@ class EvaluatorOrderCreator:
 
             # TODO : temp
             if state == EvaluatorStates.VERY_SHORT:
-                market = trader.create_order(TraderOrderType.SELL_MARKET,
-                                             symbol,
-                                             reference,
-                                             self._get_market_quantity_from_risk(eval_note,
-                                                                                 trader,
-                                                                                 current_portfolio),
-                                             reference)
-                return market
+                # todo : > min exchange
+                if current_portfolio > 0:
+                    market = trader.create_order(TraderOrderType.SELL_MARKET,
+                                                 symbol,
+                                                 reference,
+                                                 self._get_market_quantity_from_risk(eval_note,
+                                                                                     trader,
+                                                                                     current_portfolio),
+                                                 reference)
+                    return market
 
             elif state == EvaluatorStates.SHORT:
                 limit = trader.create_order(TraderOrderType.SELL_LIMIT,
@@ -179,15 +181,16 @@ class EvaluatorOrderCreator:
                 return limit
 
             elif state == EvaluatorStates.VERY_LONG:
-                market = trader.create_order(TraderOrderType.BUY_MARKET,
-                                             symbol,
-                                             reference,
-                                             self._get_market_quantity_from_risk(eval_note,
-                                                                                 trader,
-                                                                                 market_quantity,
-                                                                                 True),
-                                             reference)
-                return market
+                if market_quantity > 0:
+                    market = trader.create_order(TraderOrderType.BUY_MARKET,
+                                                 symbol,
+                                                 reference,
+                                                 self._get_market_quantity_from_risk(eval_note,
+                                                                                     trader,
+                                                                                     market_quantity,
+                                                                                     True),
+                                                 reference)
+                    return market
         except Exception as e:
             logging.getLogger(self.__class__.__name__).error("Failed to create order : {0}".format(e))
             return None

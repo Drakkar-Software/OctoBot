@@ -1,5 +1,6 @@
 import random
 
+from backtesting.backtesting import Backtesting
 from backtesting.collector.data_collector import DataCollectorParser
 from config.cst import *
 from trading import Exchange
@@ -9,6 +10,7 @@ class ExchangeSimulator(Exchange):
     def __init__(self, config, exchange_type):
         super().__init__(config, exchange_type)
         self.data = DataCollectorParser.parse(self.config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILE])
+        self.backtesting = Backtesting(config)
 
         # todo temp
         self.symbol = self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL]
@@ -117,8 +119,7 @@ class ExchangeSimulator(Exchange):
         min_count = max_value if max_value is not None else self.MIN_LIMIT
 
         if max_limit - (index + max_count) <= min_count:
-            # TODO : temp
-            raise Exception("End of simulation")
+            self.backtesting.end()
 
         elif index + max_count >= max_limit:
             return array[index::]
