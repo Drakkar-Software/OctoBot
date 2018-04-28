@@ -1,3 +1,4 @@
+import operator
 from enum import Enum
 
 VERSION = "0.0.8-alpha"
@@ -172,6 +173,9 @@ TimeFramesMinutes = {
     TimeFrames.ONE_WEEK: 10080,
     TimeFrames.ONE_MONTH: 43200,
 }
+
+
+TimeFramesRank = sorted(TimeFramesMinutes, key=TimeFramesMinutes.__getitem__)
 
 # ladder : 1-100
 TimeFramesRelevance = {
