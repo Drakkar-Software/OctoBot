@@ -109,7 +109,7 @@ class ExchangeDataCollector(threading.Thread):
                         result_df = self.exchange.get_symbol_prices(self.symbol,
                                                                     time_frame,
                                                                     limit=1,
-                                                                    data_frame=False)
+                                                                    data_frame=False)[0]
 
                         self.file_content[time_frame.value].append(result_df)
                         self._data_updated = True
