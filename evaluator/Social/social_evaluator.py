@@ -42,7 +42,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
             self.social_config = load_config(config_file)
         else:
             # if it's not possible, try with any super-class' config file
-            for super_class in self.__class__.__bases__:
+            for super_class in self.get_parent_evaluator_classes(SocialEvaluator):
                 super_class_config_file = super_class.get_config_file_name()
                 if os.path.isfile(super_class_config_file):
                     self.social_config = load_config(super_class_config_file)
