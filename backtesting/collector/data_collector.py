@@ -2,11 +2,9 @@ import json
 import logging
 import threading
 import time
-from logging.config import fileConfig
 
 import ccxt
 
-from config.config import load_config
 from config.cst import *
 from trading import Exchange
 
@@ -122,13 +120,3 @@ class ExchangeDataCollector(threading.Thread):
 
             final_sleep = DATA_COLLECTOR_REFRESHER_TIME - (time.time() - now)
             time.sleep(final_sleep if final_sleep >= 0 else 0)
-
-
-if __name__ == '__main__':
-    fileConfig('config/logging_config.ini')
-    global_config = load_config()
-
-    if DataCollector.enabled(global_config):
-        data_collector_inst = DataCollector(global_config)
-        # data_collector_inst.stop()
-        data_collector_inst.join()

@@ -32,18 +32,14 @@ class CryptoBot:
     - Load configs
     """
 
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
+
         # Logger
-        fileConfig('config/logging_config.ini')
         self.logger = logging.getLogger(self.__class__.__name__)
         sys.excepthook = self._log_uncaught_exceptions
 
-        # Version
-        self.logger.info("Version : {0}".format(VERSION))
-
         # Config
-        self.logger.info("Load config files...")
-        self.config = load_config()
         self.config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
         # Advanced
