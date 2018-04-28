@@ -110,7 +110,7 @@ class TradesManager:
         elif symbol_inverted in self.currencies_prices:
             return quantity / self.currencies_prices[symbol_inverted][ExchangeConstantsTickersColumns.LAST.value]
         else:
-            # TODO : manage if currency/market does not exist
+            # TODO : manage if currency/market doesn't exist
             return 0
 
     """ evaluate_portfolio_value performs evaluate_value with a portfolio configuration
