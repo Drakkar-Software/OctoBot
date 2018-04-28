@@ -129,6 +129,15 @@ class PriceStrings(Enum):
     STR_PRICE_VOL = "vol"
 
 
+class PriceIndexes(Enum):
+    IND_PRICE_TIME = 0
+    IND_PRICE_CLOSE = 4
+    IND_PRICE_OPEN = 1
+    IND_PRICE_HIGH = 2
+    IND_PRICE_LOW = 3
+    IND_PRICE_VOL = 5
+
+
 class TimeFrames(Enum):
     ONE_MINUTE = "1m"
     THREE_MINUTES = "3m"

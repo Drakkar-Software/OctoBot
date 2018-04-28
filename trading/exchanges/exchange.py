@@ -4,7 +4,7 @@ import logging
 import pandas
 from ccxt import OrderNotFound, BaseError
 
-from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES
+from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES, PriceIndexes
 
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
@@ -84,12 +84,12 @@ class Exchange:
                   PriceStrings.STR_PRICE_TIME.value: []}
 
         for c in candles_array:
-            prices[PriceStrings.STR_PRICE_TIME.value].append(float(c[0]))
-            prices[PriceStrings.STR_PRICE_OPEN.value].append(float(c[1]))
-            prices[PriceStrings.STR_PRICE_HIGH.value].append(float(c[2]))
-            prices[PriceStrings.STR_PRICE_LOW.value].append(float(c[3]))
-            prices[PriceStrings.STR_PRICE_CLOSE.value].append(float(c[4]))
-            prices[PriceStrings.STR_PRICE_VOL.value].append(float(c[5]))
+            prices[PriceStrings.STR_PRICE_TIME.value].append(float(c[PriceIndexes.IND_PRICE_TIME.value]))
+            prices[PriceStrings.STR_PRICE_OPEN.value].append(float(c[PriceIndexes.IND_PRICE_OPEN.value]))
+            prices[PriceStrings.STR_PRICE_HIGH.value].append(float(c[PriceIndexes.IND_PRICE_HIGH.value]))
+            prices[PriceStrings.STR_PRICE_LOW.value].append(float(c[PriceIndexes.IND_PRICE_LOW.value]))
+            prices[PriceStrings.STR_PRICE_CLOSE.value].append(float(c[PriceIndexes.IND_PRICE_CLOSE.value]))
+            prices[PriceStrings.STR_PRICE_VOL.value].append(float(c[PriceIndexes.IND_PRICE_VOL.value]))
 
         return pandas.DataFrame(data=prices)
 
