@@ -4,6 +4,8 @@ from enum import Enum
 VERSION = "0.0.8-alpha"
 
 MINUTE_TO_SECONDS = 60
+HOURS_TO_SECONDS = MINUTE_TO_SECONDS*60
+DAYS_TO_SECONDS = HOURS_TO_SECONDS*24
 
 CONFIG_GLOBAL_UTILS = "global_utils"
 CONFIG_ENABLED_OPTION = "enabled"
@@ -68,6 +70,7 @@ CONFIG_TWITTER = "twitter"
 CONFIG_REDDIT = "reddit"
 CONFIG_REDDIT_SUBREDDITS = "subreddits"
 CONFIG_REDDIT_ENTRY = "entry"
+CONFIG_REDDIT_ENTRY_WEIGHT = "entry_weight"
 CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
 CONFIG_TWEET = "tweet"
 CONFIG_TWEET_DESCRIPTION = "tweet_description"
