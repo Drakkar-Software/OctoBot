@@ -1,7 +1,4 @@
 import logging
-import sys
-import traceback
-from logging.config import fileConfig
 
 import ccxt
 
@@ -9,18 +6,18 @@ from backtesting.backtesting import Backtesting
 from backtesting.exchange_simulator import ExchangeSimulator
 from config.config import load_config
 from config.cst import *
+from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import SymbolEvaluator
-from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from interfaces.web.app import WebApp
+from services import ServiceCreator
 from tools import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from trading import Exchange
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
-from services import ServiceCreator
 
 """Main CryptoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
@@ -37,7 +34,6 @@ class CryptoBot:
 
         # Logger
         self.logger = logging.getLogger(self.__class__.__name__)
-        sys.excepthook = self._log_uncaught_exceptions
 
         # Config
         self.config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
@@ -215,7 +211,3 @@ class CryptoBot:
         if self.web_app.enabled():
             self.web_app.stop()
 
-    @staticmethod
-    def _log_uncaught_exceptions(ex_cls, ex, tb):
-        logging.exception(''.join(traceback.format_tb(tb)))
-        logging.exception('{0}: {1}'.format(ex_cls, ex))

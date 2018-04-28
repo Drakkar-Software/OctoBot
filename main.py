@@ -1,12 +1,20 @@
 import logging
+import sys
+import traceback
 from logging.config import fileConfig
 
 from backtesting.collector.data_collector import DataCollector
-from bot import CryptoBot
+from cryptobot import CryptoBot
 import argparse
 
 from config.config import load_config
 from config.cst import VERSION
+
+
+def _log_uncaught_exceptions(ex_cls, ex, tb):
+    logging.exception(''.join(traceback.format_tb(tb)))
+    logging.exception('{0}: {1}'.format(ex_cls, ex))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CryptoBot')
@@ -20,6 +28,7 @@ if __name__ == '__main__':
     fileConfig('config/logging_config.ini')
 
     logger = logging.getLogger("MAIN")
+    sys.excepthook = _log_uncaught_exceptions
 
     # Version
     logger.info("Version : {0}".format(VERSION))
