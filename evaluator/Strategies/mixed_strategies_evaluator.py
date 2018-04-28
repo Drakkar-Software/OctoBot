@@ -1,3 +1,5 @@
+import math
+
 from config.cst import *
 from evaluator.RealTime import InstantFluctuationsEvaluator
 from evaluator.Strategies import MixedStrategiesEvaluator
@@ -27,7 +29,7 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
 
     @staticmethod
     def check_valid_eval_note(eval_note):
-        if eval_note and eval_note is not START_PENDING_EVAL_NOTE:
+        if eval_note and eval_note is not START_PENDING_EVAL_NOTE and not math.isnan(eval_note):
             return True
         else:
             return False
