@@ -23,7 +23,7 @@ class RedditDispatcher(AbstractDispatcher):
             self.is_setup_correctly = False
 
     # merge new config into existing config
-    def update_subreddits(self, config):
+    def update_social_config(self, config):
         if CONFIG_REDDIT_SUBREDDITS in self.social_config:
             self.social_config[CONFIG_REDDIT_SUBREDDITS] = {**self.social_config[CONFIG_REDDIT_SUBREDDITS],
                                                             **config[CONFIG_REDDIT_SUBREDDITS]}
@@ -35,7 +35,10 @@ class RedditDispatcher(AbstractDispatcher):
         for symbol in self.social_config[CONFIG_REDDIT_SUBREDDITS]:
             for subreddit in self.social_config[CONFIG_REDDIT_SUBREDDITS][symbol]:
                 if subreddit not in self.subreddits:
-                    self.subreddits = self.subreddits + "+" + subreddit
+                    if self.subreddits:
+                        self.subreddits = self.subreddits + "+" + subreddit
+                    else:
+                        self.subreddits = self.subreddits + subreddit
 
     def _get_data(self):
         if not self.subreddits:
@@ -47,15 +50,16 @@ class RedditDispatcher(AbstractDispatcher):
     def run(self):
         if self.is_setup_correctly:
             if self._something_to_watch():
+                self._get_data()
                 subreddit = self.reddit_service.get_endpoint().subreddit(self.subreddits)
                 try:
                     for entry in subreddit.stream.submissions():
                         self.counter += 1
-                        title = entry.title
-                        url = entry.url
-                        selftext = entry.selftext
-                        print(title)
-                except praw.PrawcoreException as e:
-                    self.logger.error("Error when receiving Reddit feed: " + str(e.message))
-            else:
-                self.logger.warning("Nothing to monitor, dispatcher is going to sleep.")
+                        subreddit_name = entry.subreddit.display_name.lower()
+                        self.notify_registered_clients_if_interested(subreddit_name,
+                                                                     {CONFIG_REDDIT_ENTRY: entry
+                                                                      })
+                except Exception as e:
+                    self.logger.error("Error when receiving Reddit feed: '" + str(e) + \
+                                      "' this may mean that reddit login info in config.json are wrong.")
+        self.logger.warning("Nothing to monitor, dispatcher is going to sleep.")

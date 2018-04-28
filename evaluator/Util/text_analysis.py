@@ -11,6 +11,9 @@ class TextAnalysis(AbstractUtil):
         # self.test()
 
     def analyse(self,  text):
+        # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
+        # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
+        # https://github.com/cjhutto/vaderSentiment
         return self.analyzer.polarity_scores(text)["compound"]
 
     # returns the article object and the analysis result
