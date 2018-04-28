@@ -127,5 +127,5 @@ class Trader:
     def stop_order_manager(self):
         self.order_manager.stop()
 
-    def join_order_listeners(self):
+    def join_order_manager(self):
         self.order_manager.join()
