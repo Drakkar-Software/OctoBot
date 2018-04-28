@@ -48,13 +48,11 @@ class TwitterService(AbstractService):
 
     @staticmethod
     def decode_tweet(tweet):
-        try:
+        if "extended_tweet" in tweet and "full_text" in tweet:
             return tweet["extended_tweet"]["full_text"]
-        except KeyError:
-            text = "text"
-            if text in tweet:
-                return tweet["text"]
-            return ""
+        elif "text" in tweet:
+            return tweet["text"]
+        return ""
 
     def post(self, content):
         try:
@@ -76,3 +74,10 @@ class TwitterService(AbstractService):
         except Exception as e2:
             self.logger.error(e2)
         return ""
+
+    @staticmethod
+    def get_twitter_id_from_url(url):
+        return str(url).split("/")[-1]
+
+    def get_tweet(self, tweet_id):
+        return self.twitter_api.GetStatus(tweet_id)
