@@ -58,7 +58,6 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                     if back_testing_enabled:
                         if evaluator_thread_manager_r.exchange.should_update_data(time_frame):
                             self._refresh_data(time_frame)
-                            self.time_frame_last_update[time_frame] = time.time()
 
                     # if data from this time frame needs an update
                     elif now - self.time_frame_last_update[time_frame] >= \
