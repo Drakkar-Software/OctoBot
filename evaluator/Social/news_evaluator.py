@@ -1,9 +1,9 @@
 from config.cst import *
-from evaluator.Dispatchers.twitter_dispatcher import TwitterDispatcher
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.Util.text_analysis import TextAnalysis
-from evaluator.Dispatchers.abstract_dispatcher import *
+from evaluator.Dispatchers.twitter_dispatcher import TwitterDispatcher
+from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 from tools.decoding_encoding import DecoderEncoder
 
 
@@ -21,14 +21,11 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
         super().set_dispatcher(dispatcher)
         self.dispatcher.update_social_config(self.social_config)
 
-    def get_data(self):
-        pass
-
     @staticmethod
     def get_dispatcher_class():
         return TwitterDispatcher
 
-    def get_twitter_service(self):
+    def get_reddit_service(self):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
     def _print_tweet(self, tweet_text, count=""):
@@ -51,9 +48,6 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
                 self.notify_evaluator_thread_managers(self.__class__.__name__)
 
     def _get_sentiment(self, tweet, tweet_text):
-        # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
-        # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
-        # https://github.com/cjhutto/vaderSentiment
         try:
             stupid_useless_name = "########"
             author_screen_name = tweet['user']['screen_name'] if "screen_name" in tweet['user'] else stupid_useless_name
@@ -67,12 +61,6 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
 
         # ignore # for the moment (too much of bullshit)
         return START_PENDING_EVAL_NOTE
-
-    def eval_impl(self):
-        pass
-
-    def run(self):
-        pass
 
     def is_interested_by_this_notification(self, notification_description):
         # true if in twitter accounts
@@ -114,6 +102,15 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def prepare(self):
         self._purify_config()
         self.sentiment_analyser = AdvancedManager.get_util_instance(self.config, TextAnalysis)
+
+    def get_data(self):
+        pass
+
+    def eval_impl(self):
+        pass
+
+    def run(self):
+        pass
 
 
 class MediumNewsEvaluator(NewsSocialEvaluator):
