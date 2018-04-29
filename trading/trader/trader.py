@@ -94,7 +94,6 @@ class Trader:
 
             # update portfolio with ended order
             with self.portfolio as pf:
-                pf.update_portfolio_available(order, False)
                 pf.update_portfolio(order)
 
                 # debug purpose
