@@ -10,12 +10,15 @@ from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_E
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
 class Exchange:
-    def __init__(self, config, exchange_type):
+    def __init__(self, config, exchange_type, connect=True):
         self.exchange_type = exchange_type
+        self.connect = connect
         self.client = None
         self.config = config
         self.name = self.exchange_type.__name__
+
         self.create_client()
+
         self.client.load_markets()
 
         self.all_currencies_price_ticker = None
@@ -32,12 +35,15 @@ class Exchange:
 
     def create_client(self):
         if self.check_config():
-            self.client = self.exchange_type({
-                'apiKey': self.config["exchanges"][self.name]["api-key"],
-                'secret': self.config["exchanges"][self.name]["api-secret"],
-                'verbose': False,
-                'enableRateLimit': True
-            })
+            if self.connect:
+                self.client = self.exchange_type({
+                    'apiKey': self.config["exchanges"][self.name]["api-key"],
+                    'secret': self.config["exchanges"][self.name]["api-secret"],
+                    'verbose': False,
+                    'enableRateLimit': True
+                })
+            else:
+                self.client = self.exchange_type({'verbose': False})
         else:
             self.client = self.exchange_type({'verbose': False})
         self.client.logger.setLevel(logging.INFO)
