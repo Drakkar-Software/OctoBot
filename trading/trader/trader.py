@@ -63,6 +63,7 @@ class Trader:
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
     def cancel_open_orders(self, symbol):
+        self.logger.info("Cancelling open orders...")
         for order in self.get_open_orders():
             if order.get_order_symbol() == symbol:
                 self.notify_order_close(order, True)

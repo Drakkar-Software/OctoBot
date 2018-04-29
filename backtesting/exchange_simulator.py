@@ -19,13 +19,15 @@ class ExchangeSimulator(Exchange):
         self.time_frame_get_times = {}
         self.tickers = {}
         self.fetched_trades = {}
+        self.fetched_trades_counter = {}
 
         self.DEFAULT_LIMIT = 100
         self.MIN_LIMIT = 20
 
-        self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = self.find_config_min_time_frame()
+        self.MIN_TIME_FRAME_ENABLED = self.find_config_min_time_frame()
+        self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = self.MIN_TIME_FRAME_ENABLED
         self.CREATED_TRADES_BY_TIME_FRAME = 10
-        self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR
+        self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_TIME_FRAME_ENABLED
         self.CREATED_TICKER_BY_TIME_FRAME = 1
 
         self.prepare()
@@ -36,6 +38,7 @@ class ExchangeSimulator(Exchange):
 
         # create symbol last trades
         self.fetched_trades[self.symbol] = self.create_recent_trades()
+        self.fetched_trades_counter[self.symbol] = 0
 
         # create get times
         for time_frame in TimeFrames:
@@ -53,6 +56,13 @@ class ExchangeSimulator(Exchange):
             return True
         else:
             return False
+
+    def should_update_recent_trades(self, symbol):
+        if symbol in self.fetched_trades_counter:
+            if self.fetched_trades_counter[symbol] < self.time_frame_get_times[self.MIN_TIME_FRAME_ENABLED.value]:
+                self.fetched_trades_counter[symbol] += 1
+                return True
+        return False
 
     def get_previous_time_frame(self, time_frame, origin_time_frame):
         current_time_frame_index = TimeFramesRank.index(time_frame)
