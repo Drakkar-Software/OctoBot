@@ -1,14 +1,14 @@
 import ccxt
 
 from backtesting.exchange_simulator import ExchangeSimulator
-from config.config import load_config
+from tests.test_utils.config import load_test_config
 from trading.trader.portfolio import Portfolio
 from trading.trader.trader_simulator import TraderSimulator
 
 
 class TestPortfolio(object):
     def init_default(self):
-        config = load_config("tests/static/config.json")
+        config = load_test_config
         exchange_inst = ExchangeSimulator(config, ccxt.binance)
         trader_inst = TraderSimulator(config, exchange_inst)
         portfolio_inst = Portfolio(config, trader_inst)
