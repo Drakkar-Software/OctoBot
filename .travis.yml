@@ -7,8 +7,6 @@ notifications:
   email: false
 install:
   - ./docs/install/install-ta-lib.sh
-  - cp ./docs/install/config_test.json ./config/config.json
-  - cp ./docs/install/evaluator_config_test.json ./config/evaluator_config.json
   - python -m pip install -r requirements.txt
 script: pytest tests/
 
