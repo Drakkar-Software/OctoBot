@@ -94,9 +94,10 @@ class Trader:
 
             # update portfolio with ended order
             with self.portfolio as pf:
+                pf.update_portfolio_available(order, False)
                 pf.update_portfolio(order)
 
-            # debug purpose
+                # debug purpose
             profitability, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability()
 
             self.logger.info("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
