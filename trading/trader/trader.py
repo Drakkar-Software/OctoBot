@@ -16,7 +16,7 @@ class Trader:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = False
 
-        self.portfolio = Portfolio(self.config, self)
+        self.portfolio = Portfolio(self.config)
 
         self.trades_manager = TradesManager(config, self)
 
@@ -66,11 +66,14 @@ class Trader:
         for order in self.get_open_orders():
             if order.get_order_symbol() == symbol:
                 self.notify_order_close(order, True)
-        self.logger.info("Open orders cancelled | Current Portfolio : {0}".format(self.portfolio.get_portfolio()))
+
+        with self.portfolio as pf:
+            self.logger.info("Open orders cancelled | Current Portfolio : {0}".format(pf.get_portfolio()))
 
     def notify_order_cancel(self, order):
         # update portfolio with ended order
-        self.portfolio.update_portfolio_available(order)
+        with self.portfolio as pf:
+            pf.update_portfolio_available(order)
 
     def notify_order_close(self, order, cancel=False):
         # Cancel linked orders
@@ -90,7 +93,16 @@ class Trader:
             orders_canceled = order.get_linked_orders()
 
             # update portfolio with ended order
-            _, profitability_percent, profitability_diff = self.portfolio.update_portfolio(order)
+            with self.portfolio as pf:
+                pf.update_portfolio(order)
+
+            # debug purpose
+            profitability, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability()
+
+            self.logger.info("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
+                                                                                       self.get_trades_manager().get_reference(),
+                                                                                       round(profitability_percent,
+                                                                                             2)))
 
             # add to trade history
             self.trades_manager.add_new_trade_in_history(Trade(self.exchange, order))
