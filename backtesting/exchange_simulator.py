@@ -8,7 +8,7 @@ from trading import Exchange
 
 class ExchangeSimulator(Exchange):
     def __init__(self, config, exchange_type):
-        super().__init__(config, exchange_type)
+        super().__init__(config, exchange_type, connect=False)
 
         if CONFIG_BACKTESTING not in self.config:
             raise Exception("Backtesting config not found")
