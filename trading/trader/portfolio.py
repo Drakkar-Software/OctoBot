@@ -103,7 +103,7 @@ class Portfolio:
     It is called when an order is filled, created or canceled to update the "available" filed of the portfolio
     """
 
-    def update_portfolio_available(self, order, is_new_order=True):
+    def update_portfolio_available(self, order, is_new_order=False):
         # stop losses and take profits aren't using available portfolio
         if order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
                                    OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],
@@ -112,13 +112,16 @@ class Portfolio:
 
             currency, market = order.get_currency_and_market()
 
-            inverse = 1 if is_new_order else -1
+            inverse_new = 1 if is_new_order else -1
 
+            # when buy order
             if order.get_side() == TradeOrderSide.BUY:
-                new_quantity = - order.get_origin_quantity() * order.get_origin_price() * inverse
+                new_quantity = - order.get_origin_quantity() * order.get_origin_price() * inverse_new
                 self._update_portfolio_data(market, new_quantity, False, True)
+
+            # when sell order
             else:
-                new_quantity = - order.get_origin_quantity() * inverse
+                new_quantity = - order.get_origin_quantity() * inverse_new
                 self._update_portfolio_data(currency, new_quantity, False, True)
 
             # debug purpose

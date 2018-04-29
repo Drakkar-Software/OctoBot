@@ -62,22 +62,19 @@ class Order:
 
     # check_last_prices is used to collect data to perform the order update_order_status process
     def check_last_prices(self, price, inferior):
-        # if called before refresh
-        if self.last_prices is not None:
-            # TODO : use timestamp
-            prices = [p["price"] for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]]
+        # TODO : use timestamp
+        prices = [p["price"] for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]]
 
-            if inferior:
-                if float(min(prices)) < price:
-                    return True
-                else:
-                    return False
+        if inferior:
+            if float(min(prices)) < price:
+                return True
             else:
-                if float(max(prices)) > price:
-                    return True
-                else:
-                    return False
-        return False
+                return False
+        else:
+            if float(max(prices)) > price:
+                return True
+            else:
+                return False
 
     def cancel_order(self):
         # TODO exchange

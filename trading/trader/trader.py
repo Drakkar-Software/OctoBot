@@ -63,14 +63,14 @@ class Trader:
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
     def cancel_open_orders(self, symbol):
-        self.logger.info("Cancelling open orders...")
         for order in self.get_open_orders():
             if order.get_order_symbol() == symbol:
                 self.notify_order_close(order, True)
+        self.logger.info("Open orders cancelled | Current Portfolio : {0}".format(self.portfolio.get_portfolio()))
 
     def notify_order_cancel(self, order):
         # update portfolio with ended order
-        self.portfolio.update_portfolio_available(order, False)
+        self.portfolio.update_portfolio_available(order)
 
     def notify_order_close(self, order, cancel=False):
         # Cancel linked orders
@@ -90,7 +90,6 @@ class Trader:
             orders_canceled = order.get_linked_orders()
 
             # update portfolio with ended order
-            self.portfolio.update_portfolio_available(order, False)
             _, profitability_percent, profitability_diff = self.portfolio.update_portfolio(order)
 
             # add to trade history
