@@ -35,9 +35,6 @@ class CryptoBot:
         # Logger
         self.logger = logging.getLogger(self.__class__.__name__)
 
-        # Config
-        self.config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
-
         # Advanced
         AdvancedManager.create_class_list(self.config)
 
