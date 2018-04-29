@@ -8,7 +8,7 @@ from cryptobot import CryptoBot
 import argparse
 
 from config.config import load_config
-from config.cst import VERSION, CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION
+from config.cst import VERSION, CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION, CONFIG_EVALUATOR, CONFIG_EVALUATOR_FILE
 
 
 def _log_uncaught_exceptions(ex_cls, ex, tb):
@@ -45,6 +45,7 @@ if __name__ == '__main__':
 
     logger.info("Load config files...")
     config = load_config()
+    config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
     if args.data_collector:
         data_collector_inst = DataCollector(config)

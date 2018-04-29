@@ -129,6 +129,3 @@ class Portfolio:
                 order.get_order_symbol(),
                 self.portfolio))
 
-    def reset_availability(self):
-        for currency in self.portfolio:
-            self.portfolio[currency][Portfolio.AVAILABLE] = self.portfolio[currency][Portfolio.TOTAL]
