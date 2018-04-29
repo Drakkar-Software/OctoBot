@@ -2,8 +2,6 @@ import logging
 import threading
 from time import sleep
 
-import ccxt
-
 from backtesting.backtesting import Backtesting
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus
 
@@ -46,15 +44,22 @@ class OrdersManager(threading.Thread):
         updated = []
         for order in self.order_list:
             if order.get_order_symbol() not in updated:
-                try:
-                    self._update_last_symbol_prices(order.get_order_symbol())
-                except ccxt.base.errors.RequestTimeout as e:
-                    self.logger.error(str(e))
+                self._update_last_symbol_prices(order.get_order_symbol())
+
                 updated.append(order.get_order_symbol())
 
     # Ask to update a specific symbol with exchange data
     def _update_last_symbol_prices(self, symbol):
-        last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+        # optimize exchange simulator calls when backtesting
+        if Backtesting.enabled(self.config):
+            if self.trader.get_exchange().should_update_recent_trades(symbol):
+                last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+            else:
+                last_symbol_price = None
+
+        # Exchange call when not backtesting
+        else:
+            last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
 
         # Check if exchange request failed
         if last_symbol_price is not None:

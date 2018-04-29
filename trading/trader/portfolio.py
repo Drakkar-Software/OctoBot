@@ -59,6 +59,7 @@ class Portfolio:
     """
 
     def update_portfolio(self, order):
+        # stop losses and take profits aren't using available portfolio
         currency, market = order.get_currency_and_market()
 
         # update currency
