@@ -50,5 +50,13 @@
       "BTC": 10,
       "USDT": 1000
     }
+  },
+  "backtesting": {
+    "enabled": false,
+    "file": "../../../docs/backtesting/data/binance_BTC_USDT_20180428_121156.data"
+  },
+  "data_collector":{
+    "enabled": true,
+    "symbol": "BTC/USDT"
   }
 }

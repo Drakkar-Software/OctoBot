@@ -9,6 +9,13 @@ from trading import Exchange
 class ExchangeSimulator(Exchange):
     def __init__(self, config, exchange_type):
         super().__init__(config, exchange_type)
+
+        if CONFIG_BACKTESTING not in self.config:
+            raise Exception("Backtesting config not found")
+
+        if CONFIG_DATA_COLLECTOR not in self.config:
+            raise Exception("Data collector config not found")
+
         self.data = DataCollectorParser.parse(self.config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILE])
         self.backtesting = Backtesting(config)
 
