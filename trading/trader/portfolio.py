@@ -1,4 +1,5 @@
 import logging
+from threading import Lock
 
 from config.cst import *
 from trading.trader.order import OrderConstants
@@ -15,13 +16,23 @@ class Portfolio:
     AVAILABLE = "available"
     TOTAL = "total"
 
-    def __init__(self, config, trader):
+    def __init__(self, config):
         self.config = config
         self.portfolio = {}
         self._load_portfolio()
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.trader = trader
-        self.exchange = self.trader.get_exchange()
+        self.lock = Lock()
+
+    # Disposable design pattern
+    def __enter__(self):
+        self.lock.acquire()
+        self.logger.warning("Enter")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.lock.release()
+        self.logger.warning("EXIT")
+        pass
 
     # Load exchange portfolio / simulated portfolio from config
     def _load_portfolio(self):
@@ -30,10 +41,12 @@ class Portfolio:
                 self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
 
     def get_portfolio(self):
+        self.logger.debug("get_portfolio")
         return self.portfolio
 
     # Get specified currency quantity in the portfolio
     def get_currency_portfolio(self, currency, portfolio_type=AVAILABLE):
+        self.logger.debug("get_currency_portfolio")
         if currency in self.portfolio:
             return self.portfolio[currency][portfolio_type]
         else:
@@ -45,6 +58,7 @@ class Portfolio:
 
     # Set new currency quantity in the portfolio
     def _update_portfolio_data(self, currency, value, total=True, available=False):
+        self.logger.debug("_update_portfolio_data")
         if currency in self.portfolio:
             if total:
                 self.portfolio[currency][Portfolio.TOTAL] += value
@@ -59,6 +73,7 @@ class Portfolio:
     """
 
     def update_portfolio(self, order):
+        self.logger.debug("update_portfolio")
         # stop losses and take profits aren't using available portfolio
         currency, market = order.get_currency_and_market()
 
@@ -90,20 +105,12 @@ class Portfolio:
                                                                                                   market_portfolio_num,
                                                                                                   self.portfolio))
 
-        # debug purpose
-        profitability, profitability_percent, profitability_diff = self.trader.get_trades_manager().get_profitability()
-
-        self.logger.info("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
-                                                                                   self.trader.get_trades_manager().get_reference(),
-                                                                                   round(profitability_percent, 2)))
-
-        return profitability, profitability_percent, profitability_diff
-
     """ update_portfolio_available performs the availability update of the concerned currency in the current portfolio
     It is called when an order is filled, created or canceled to update the "available" filed of the portfolio
     """
 
     def update_portfolio_available(self, order, is_new_order=False):
+        self.logger.debug("update_portfolio_available")
         # stop losses and take profits aren't using available portfolio
         if order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
                                    OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],

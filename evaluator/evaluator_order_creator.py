@@ -22,8 +22,8 @@ class EvaluatorOrderCreator:
         self.QUANTITY_BUY_MARKET_ATTENUATION = 0.2
         self.QUANTITY_MARKET_ATTENUATION = (self.QUANTITY_MARKET_MAX_PERCENT - self.QUANTITY_MARKET_MIN_PERCENT) / self.MAX_SUM_RESULT
 
-        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.99
-        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.96
+        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.9999
+        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.997
         self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
         self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
         self.LIMIT_ORDER_ATTENUATION = (
@@ -105,14 +105,17 @@ class EvaluatorOrderCreator:
     @staticmethod
     def can_create_order(symbol, exchange, trader, state):
         currency, market = exchange.split_symbol(symbol)
+        portfolio = trader.get_portfolio()
 
         # short cases => sell => need this currency
         if state == EvaluatorStates.VERY_SHORT or state == EvaluatorStates.SHORT:
-            return trader.get_portfolio().get_currency_portfolio(currency) > MARKET_MIN_PORTFOLIO_CREATE_ORDER
+            with portfolio as pf:
+                return pf.get_currency_portfolio(currency) > MARKET_MIN_PORTFOLIO_CREATE_ORDER
 
         # long cases => buy => need money(aka other currency in the pair) to buy this currency
         elif state == EvaluatorStates.LONG or state == EvaluatorStates.VERY_LONG:
-            return trader.get_portfolio().get_currency_portfolio(market) > CURRENCY_MIN_PORTFOLIO_CREATE_ORDER
+            with portfolio as pf:
+                return pf.get_currency_portfolio(market) > CURRENCY_MIN_PORTFOLIO_CREATE_ORDER
 
         # other cases like neutral state or unfulfilled previous conditions
         return False
@@ -121,6 +124,7 @@ class EvaluatorOrderCreator:
     def create_new_order(self, eval_note, symbol, exchange, trader, state):
         try:
             last_prices = exchange.get_recent_trades(symbol)
+            portfolio = trader.get_portfolio()
             reference_sum = 0
 
             for last_price in last_prices[-self.last_values_count:]:
@@ -129,8 +133,11 @@ class EvaluatorOrderCreator:
             reference = reference_sum / self.last_values_count
 
             currency, market = exchange.split_symbol(symbol)
-            current_portfolio = trader.get_portfolio().get_currency_portfolio(currency)
-            current_market_quantity = trader.get_portfolio().get_currency_portfolio(market)
+
+            with portfolio as pf:
+                current_portfolio = pf.get_currency_portfolio(currency)
+                current_market_quantity = pf.get_currency_portfolio(market)
+
             market_quantity = current_market_quantity / reference
 
             # TODO : temp

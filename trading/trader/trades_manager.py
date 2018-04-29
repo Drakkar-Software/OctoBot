@@ -89,12 +89,14 @@ class TradesManager:
         return self.trades_value
 
     def _update_portfolio_current_value(self):
-        self.last_portfolio = self.portfolio.get_portfolio()
+        with self.portfolio as pf:
+            self.last_portfolio = pf.get_portfolio()
         self.portfolio_current_value = self._evaluate_portfolio_value(self.last_portfolio)
 
     def _get_portfolio_origin_value(self):
         self._update_currencies_prices()
-        self.origin_portfolio = self.portfolio.get_portfolio()
+        with self.portfolio as pf:
+            self.origin_portfolio = pf.get_portfolio()
         self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio)
 
     """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reference currency

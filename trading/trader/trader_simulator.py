@@ -40,7 +40,8 @@ class TraderSimulator(Trader):
         order.new(order_type, symbol, current_price, quantity, price, stop_price, order_notifier)
 
         # update the availability of the currency in the portfolio
-        self.portfolio.update_portfolio_available(order, is_new_order=True)
+        with self.portfolio as pf:
+            pf.update_portfolio_available(order, is_new_order=True)
 
         # notify order manager of a new open order
         self.order_manager.add_order_to_list(order)
