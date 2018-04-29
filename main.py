@@ -8,7 +8,8 @@ from cryptobot import CryptoBot
 import argparse
 
 from config.config import load_config
-from config.cst import VERSION, CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION, CONFIG_EVALUATOR, CONFIG_EVALUATOR_FILE
+from config.cst import VERSION, CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION, CONFIG_EVALUATOR, CONFIG_EVALUATOR_FILE, \
+    CONFIG_CATEGORY_NOTIFICATION
 
 
 def _log_uncaught_exceptions(ex_cls, ex, tb):
@@ -20,8 +21,13 @@ def start_crypto_bot(config):
     bot = CryptoBot(config)
     bot.create_exchange_traders()
     bot.create_evaluation_threads()
-    bot.start_threads()
-    bot.join_threads()
+    try:
+        bot.start_threads()
+        bot.join_threads()
+    except Exception as e:
+        logging.exception("CryptBot Exception : {0}".format(e))
+        bot.stop_threads()
+        raise e
 
 
 if __name__ == '__main__':
@@ -54,6 +60,7 @@ if __name__ == '__main__':
 
     elif args.backtesting:
         config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
+        config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
         start_crypto_bot(config)
 
     elif args.start:
