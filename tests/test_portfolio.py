@@ -1,7 +1,9 @@
 import ccxt
 
 from backtesting.exchange_simulator import ExchangeSimulator
+from config.cst import TraderOrderType
 from tests.test_utils.config import load_test_config
+from trading.trader.order import BuyMarketOrder, OrderConstants
 from trading.trader.portfolio import Portfolio
 from trading.trader.trader_simulator import TraderSimulator
 
@@ -16,10 +18,10 @@ class TestPortfolio:
         return config, exchange_inst, trader_inst, portfolio_inst
 
     def test_load_portfolio(self):
-        config, exchange_inst, trader_inst, portfolio_inst = self.init_default()
+        _, _, _, portfolio_inst = self.init_default()
         portfolio_inst._load_portfolio()
         assert portfolio_inst.portfolio == {'BTC': {'available': 10, 'total': 10},
-                                            'USDT': {'available': 1000, 'total': 1000}
+                                            'USD': {'available': 1000, 'total': 1000}
                                             }
 
     def test_get_currency_portfolio(self):
@@ -37,5 +39,26 @@ class TestPortfolio:
         portfolio_inst._update_portfolio_data("XRP", 4.5, total=True, available=True)
         assert portfolio_inst.get_currency_portfolio("XRP", Portfolio.AVAILABLE) == 4.5
 
-    def update_portfolio_available(self):
-        _, _, _, portfolio_inst = self.init_default()
+    def test_update_portfolio_available(self):
+        _, _, trader_inst, portfolio_inst = self.init_default()
+
+        # Test buy order
+        market_buy = BuyMarketOrder(trader_inst)
+        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+                       "BTC/USD",
+                       70,
+                       10,
+                       70)
+        # test buy order creation
+        portfolio_inst.update_portfolio_available(market_buy, True)
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 300
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
+
+        # test buy order filled --> return to init state and the update_portfolio will sync TOTAL with AVAILABLE
+        portfolio_inst.update_portfolio_available(market_buy, False)
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000

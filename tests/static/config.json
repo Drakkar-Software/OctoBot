@@ -48,7 +48,7 @@
     "risk": 1,
     "starting_portfolio": {
       "BTC": 10,
-      "USDT": 1000
+      "USD": 1000
     }
   },
   "backtesting": {

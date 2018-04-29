@@ -116,10 +116,11 @@ class AbstractEvaluator:
             self.eval_note += new_eval_note
 
     def is_enabled(self, default):
-        if CONFIG_EVALUATOR in self.config and self.get_name() in self.config[CONFIG_EVALUATOR]:
-            return self.config[CONFIG_EVALUATOR][self.get_name()]
-        else:
-            for parent in self.__class__.mro():
-                if parent.__name__ in self.config[CONFIG_EVALUATOR]:
-                    return self.config[CONFIG_EVALUATOR][parent.__name__]
-            return default
+        if self.config[CONFIG_EVALUATOR] is not None:
+            if self.get_name() in self.config[CONFIG_EVALUATOR]:
+                return self.config[CONFIG_EVALUATOR][self.get_name()]
+            else:
+                for parent in self.__class__.mro():
+                    if parent.__name__ in self.config[CONFIG_EVALUATOR]:
+                        return self.config[CONFIG_EVALUATOR][parent.__name__]
+                return default
