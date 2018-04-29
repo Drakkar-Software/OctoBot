@@ -26,12 +26,10 @@ class Portfolio:
     # Disposable design pattern
     def __enter__(self):
         self.lock.acquire()
-        self.logger.warning("Enter")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.lock.release()
-        self.logger.warning("EXIT")
         pass
 
     # Load exchange portfolio / simulated portfolio from config
@@ -41,12 +39,10 @@ class Portfolio:
                 self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
 
     def get_portfolio(self):
-        self.logger.debug("get_portfolio")
         return self.portfolio
 
     # Get specified currency quantity in the portfolio
     def get_currency_portfolio(self, currency, portfolio_type=AVAILABLE):
-        self.logger.debug("get_currency_portfolio")
         if currency in self.portfolio:
             return self.portfolio[currency][portfolio_type]
         else:
@@ -58,7 +54,6 @@ class Portfolio:
 
     # Set new currency quantity in the portfolio
     def _update_portfolio_data(self, currency, value, total=True, available=False):
-        self.logger.debug("_update_portfolio_data")
         if currency in self.portfolio:
             if total:
                 self.portfolio[currency][Portfolio.TOTAL] += value
@@ -73,7 +68,6 @@ class Portfolio:
     """
 
     def update_portfolio(self, order):
-        self.logger.debug("update_portfolio")
         # stop losses and take profits aren't using available portfolio
         currency, market = order.get_currency_and_market()
 
@@ -110,7 +104,6 @@ class Portfolio:
     """
 
     def update_portfolio_available(self, order, is_new_order=False):
-        self.logger.debug("update_portfolio_available")
         # stop losses and take profits aren't using available portfolio
         if order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
                                    OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],
