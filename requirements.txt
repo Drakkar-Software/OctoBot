@@ -1,9 +1,10 @@
+pytest
+pytest-cov
 vaderSentiment
 pandas
 pytrends
 ccxt
 TA-Lib
-pytest
 numpy
 colorlog
 Python-Twitter
