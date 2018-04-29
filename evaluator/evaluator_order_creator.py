@@ -22,8 +22,8 @@ class EvaluatorOrderCreator:
         self.QUANTITY_BUY_MARKET_ATTENUATION = 0.2
         self.QUANTITY_MARKET_ATTENUATION = (self.QUANTITY_MARKET_MAX_PERCENT - self.QUANTITY_MARKET_MIN_PERCENT) / self.MAX_SUM_RESULT
 
-        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.999
-        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.99
+        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.99
+        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.96
         self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
         self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
         self.LIMIT_ORDER_ATTENUATION = (
@@ -193,6 +193,7 @@ class EvaluatorOrderCreator:
                                                                                      True),
                                                  reference)
                     return market
+
         except Exception as e:
             logging.getLogger(self.__class__.__name__).error("Failed to create order : {0}".format(e))
             return None
