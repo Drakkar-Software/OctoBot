@@ -31,20 +31,20 @@ class ExchangeSimulator(Exchange):
         self.DEFAULT_LIMIT = 100
         self.MIN_LIMIT = 20
 
-        self.MIN_TIME_FRAME_ENABLED = self.find_config_min_time_frame()
-        self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = self.MIN_TIME_FRAME_ENABLED
+        self.MIN_ENABLED_TIME_FRAME = self._find_config_min_time_frame()
+        self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.CREATED_TRADES_BY_TIME_FRAME = 10
-        self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_TIME_FRAME_ENABLED
+        self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.CREATED_TICKER_BY_TIME_FRAME = 1
 
-        self.prepare()
+        self._prepare()
 
-    def prepare(self):
+    def _prepare(self):
         # create symbol tickers
-        self.tickers[self.symbol] = self.create_tickers()
+        self.tickers[self.symbol] = self._create_tickers()
 
         # create symbol last trades
-        self.fetched_trades[self.symbol] = self.create_recent_trades()
+        self.fetched_trades[self.symbol] = self._create_recent_trades()
         self.fetched_trades_counter[self.symbol] = 0
 
         # create get times
@@ -52,7 +52,7 @@ class ExchangeSimulator(Exchange):
             self.time_frame_get_times[time_frame.value] = 0
 
     def should_update_data(self, time_frame):
-        previous_time_frame = self.get_previous_time_frame(time_frame, time_frame)
+        previous_time_frame = self._get_previous_time_frame(time_frame, time_frame)
         previous_time_frame_sec = TimeFramesMinutes[previous_time_frame]
         previous_time_frame_updated_times = self.time_frame_get_times[previous_time_frame.value]
         current_time_frame_sec = TimeFramesMinutes[time_frame]
@@ -66,12 +66,12 @@ class ExchangeSimulator(Exchange):
 
     def should_update_recent_trades(self, symbol):
         if symbol in self.fetched_trades_counter:
-            if self.fetched_trades_counter[symbol] < self.time_frame_get_times[self.MIN_TIME_FRAME_ENABLED.value]:
+            if self.fetched_trades_counter[symbol] < self.time_frame_get_times[self.MIN_ENABLED_TIME_FRAME.value]:
                 self.fetched_trades_counter[symbol] += 1
                 return True
         return False
 
-    def get_previous_time_frame(self, time_frame, origin_time_frame):
+    def _get_previous_time_frame(self, time_frame, origin_time_frame):
         current_time_frame_index = TimeFramesRank.index(time_frame)
 
         if current_time_frame_index > 0:
@@ -79,14 +79,15 @@ class ExchangeSimulator(Exchange):
             if previous in self.config_time_frames:
                 return previous
             else:
-                return self.get_previous_time_frame(previous, origin_time_frame)
+                return self._get_previous_time_frame(previous, origin_time_frame)
         else:
             if time_frame in self.config_time_frames:
                 return time_frame
             else:
                 return origin_time_frame
 
-    def find_config_min_time_frame(self):
+    def _find_config_min_time_frame(self):
+        # TimeFramesRank is the ordered list of timeframes
         for tf in TimeFramesRank:
             if tf in self.config_time_frames:
                 try:
@@ -96,7 +97,7 @@ class ExchangeSimulator(Exchange):
         return TimeFrames.ONE_MINUTE
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        result = self.extract_data_with_limit(time_frame)
+        result = self._extract_data_with_limit(time_frame)
         self.time_frame_get_times[time_frame.value] += 1
 
         if data_frame:
@@ -105,7 +106,7 @@ class ExchangeSimulator(Exchange):
             return result
 
     # Will use the One Minute time frame
-    def create_tickers(self):
+    def _create_tickers(self):
         full = self.data[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value]
         created_tickers = []
         for tf in full:
@@ -115,7 +116,7 @@ class ExchangeSimulator(Exchange):
                 created_tickers.append(random.uniform(min_price, max_price))
         return created_tickers
 
-    def create_recent_trades(self):
+    def _create_recent_trades(self):
         full = self.data[self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value]
         created_trades = []
         for tf in full:
@@ -129,7 +130,7 @@ class ExchangeSimulator(Exchange):
                 )
         return created_trades
 
-    def extract_indexes(self, array, index, factor=1, max_value=None):
+    def _extract_indexes(self, array, index, factor=1, max_value=None):
         max_limit = len(array)
         index *= factor
         max_count = max_value if max_value is not None else self.DEFAULT_LIMIT
@@ -143,24 +144,24 @@ class ExchangeSimulator(Exchange):
         else:
             return array[index:index + max_count]
 
-    def extract_data_with_limit(self, time_frame):
-        return self.extract_indexes(self.data[time_frame.value], self.time_frame_get_times[time_frame.value])
+    def _extract_data_with_limit(self, time_frame):
+        return self._extract_indexes(self.data[time_frame.value], self.time_frame_get_times[time_frame.value])
 
     def get_recent_trades(self, symbol):
-        return self.extract_indexes(self.fetched_trades[symbol],
-                                    self.time_frame_get_times[
+        return self._extract_indexes(self.fetched_trades[symbol],
+                                     self.time_frame_get_times[
                                         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value],
-                                    factor=self.CREATED_TRADES_BY_TIME_FRAME)
+                                     factor=self.CREATED_TRADES_BY_TIME_FRAME)
 
     def get_all_currencies_price_ticker(self):
         return {
             self.symbol: {
                 "symbol": self.symbol,
                 ExchangeConstantsTickersColumns.LAST.value:
-                    self.extract_indexes(self.tickers[self.symbol],
-                                         self.time_frame_get_times[
+                    self._extract_indexes(self.tickers[self.symbol],
+                                          self.time_frame_get_times[
                                              self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value],
-                                         factor=self.CREATED_TICKER_BY_TIME_FRAME,
-                                         max_value=1)[0]
+                                          factor=self.CREATED_TICKER_BY_TIME_FRAME,
+                                          max_value=1)[0]
             }
         }

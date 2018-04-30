@@ -105,6 +105,8 @@ class Portfolio:
 
     """ update_portfolio_available performs the availability update of the concerned currency in the current portfolio
     It is called when an order is filled, created or canceled to update the "available" filed of the portfolio
+    is_new_order is True when portfolio needs an update after a new order and False when portfolio needs a rollback 
+    after an order is cancelled
     """
 
     def update_portfolio_available(self, order, is_new_order=False):
