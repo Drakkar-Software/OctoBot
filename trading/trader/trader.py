@@ -1,7 +1,7 @@
 import logging
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
-    CONFIG_TRADER_RISK_MAX
+    CONFIG_TRADER_RISK_MAX, OrderStatus
 from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
@@ -57,8 +57,9 @@ class Trader:
 
         pass
 
-    def cancel_order(self, order, notify=True):
-        order.cancel_order(notify)
+    def cancel_order(self, order):
+        with order as odr:
+            odr.cancel_order()
         self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
@@ -72,7 +73,7 @@ class Trader:
     def notify_order_cancel(self, order):
         # update portfolio with ended order
         with self.portfolio as pf:
-            pf.update_portfolio_available(order)
+            pf.update_portfolio_available(order, is_new_order=False)
 
     def notify_order_close(self, order, cancel=False):
         # Cancel linked orders
@@ -87,6 +88,11 @@ class Trader:
 
             self.cancel_order(order)
             _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
+
+            with self.portfolio as pf:
+                # ensure availability reset
+                pf.reset_portfolio_available()
+
         else:
             order_closed = order
             orders_canceled = order.get_linked_orders()
@@ -95,7 +101,7 @@ class Trader:
             with self.portfolio as pf:
                 pf.update_portfolio(order)
 
-                # debug purpose
+            # debug purpose
             profitability, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability()
 
             self.logger.info("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),

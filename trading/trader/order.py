@@ -1,5 +1,6 @@
 import time
 from abc import *
+from threading import Lock
 
 from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK
 
@@ -35,6 +36,15 @@ class Order:
         self.order_notifier = None
 
         self.linked_orders = []
+        self.lock = Lock()
+
+    # Disposable design pattern
+    def __enter__(self):
+        self.lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.lock.release()
 
     # create the order by setting all the required values
     def new(self, order_type, symbol, current_price, quantity, price=None, stop_price=None, order_notifier=None):
@@ -76,10 +86,9 @@ class Order:
             else:
                 return False
 
-    def cancel_order(self, notify=True):
+    def cancel_order(self):
         # TODO exchange
-        if notify:
-            self.trader.notify_order_cancel(self)
+        self.trader.notify_order_cancel(self)
 
     def close_order(self):
         self.trader.notify_order_close(self)

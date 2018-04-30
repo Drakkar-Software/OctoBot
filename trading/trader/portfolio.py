@@ -30,7 +30,6 @@ class Portfolio:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.lock.release()
-        pass
 
     # Load exchange portfolio / simulated portfolio from config
     def _load_portfolio(self):
@@ -142,3 +141,7 @@ class Portfolio:
         else:
             new_quantity = - order.get_origin_quantity() * factor
             self._update_portfolio_data(currency, new_quantity, False, True)
+
+    def reset_portfolio_available(self):
+        for currency in self.portfolio:
+            self.portfolio[currency][Portfolio.AVAILABLE] = self.portfolio[currency][Portfolio.TOTAL]
