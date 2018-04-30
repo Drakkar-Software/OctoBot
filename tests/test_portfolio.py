@@ -24,6 +24,10 @@ class TestPortfolio:
         trader_inst = TraderSimulator(config, exchange_inst)
         return exchange_inst, trader_inst
 
+    @staticmethod
+    def stop(trader):
+        trader.stop_order_manager()
+
     def test_load_portfolio(self):
         _, portfolio_inst = self.init_default()
         portfolio_inst._load_portfolio()
@@ -92,6 +96,8 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
 
+        self.stop(trader_inst)
+
     def test_update_portfolio(self):
         config, portfolio_inst = self.init_default()
         _, trader_inst = self.create_trader_and_exchanges(config)
@@ -149,6 +155,8 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 940
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 12
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 940
+
+        self.stop(trader_inst)
 
     def test_update_portfolio_with_filled_orders(self):
         config, portfolio_inst = self.init_default()
@@ -220,6 +228,8 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 7
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1210
 
+        self.stop(trader_inst)
+
     def test_update_portfolio_with_cancelled_orders(self):
         config, portfolio_inst = self.init_default()
         _, trader_inst = self.create_trader_and_exchanges(config)
@@ -276,3 +286,5 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
+
+        self.stop(trader_inst)
