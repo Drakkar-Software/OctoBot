@@ -43,8 +43,8 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
             max_sleeping_time = 2
 
             # figure out from an evaluator if back testing is running for this symbol
-            evaluator_thread_manager_r = next(iter(self.evaluator_threads_manager_by_time_frame.values()))
-            back_testing_enabled = Backtesting.enabled(evaluator_thread_manager_r.get_evaluator().get_config())
+            evaluator_thread_manager = next(iter(self.evaluator_threads_manager_by_time_frame.values()))
+            back_testing_enabled = Backtesting.enabled(evaluator_thread_manager.get_evaluator().get_config())
 
             # init refreshed_times at 0 for each time frame
             self.refreshed_times = {key: 0 for key in time_frames}
@@ -56,7 +56,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
                 for time_frame in time_frames:
                     if back_testing_enabled:
-                        if evaluator_thread_manager_r.exchange.should_update_data(time_frame):
+                        if evaluator_thread_manager.exchange.should_update_data(time_frame):
                             self._refresh_data(time_frame)
 
                     # if data from this time frame needs an update
