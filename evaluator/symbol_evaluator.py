@@ -4,6 +4,7 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_final import FinalEvaluator
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
+from backtesting.backtesting import Backtesting
 
 
 class SymbolEvaluator:
@@ -21,11 +22,15 @@ class SymbolEvaluator:
         self.strategies_eval_lists = {}
         self.finalize_enabled_list = {}
 
-        self.social_eval_list = EvaluatorCreator.create_social_eval(self.config,
-                                                                    self.crypto_currency,
-                                                                    self.dispatchers_list)
+        if Backtesting.enabled(self.config):
+            self.social_eval_list = []
+            self.social_not_threaded_list = []
+        else:
+            self.social_eval_list = EvaluatorCreator.create_social_eval(self.config,
+                                                                        self.crypto_currency,
+                                                                        self.dispatchers_list)
 
-        self.social_not_threaded_list = EvaluatorCreator.create_social_not_threaded_list(self.social_eval_list)
+            self.social_not_threaded_list = EvaluatorCreator.create_social_not_threaded_list(self.social_eval_list)
 
         self.social_evaluator_refresh = SocialEvaluatorNotThreadedUpdateThread(self.social_not_threaded_list)
 
