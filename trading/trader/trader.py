@@ -68,8 +68,6 @@ class Trader:
             if order.get_order_symbol() == symbol:
                 self.notify_order_close(order, True)
 
-        self.logger.debug("Open orders cancelled")
-
     def notify_order_cancel(self, order):
         # update portfolio with ended order
         with self.portfolio as pf:
