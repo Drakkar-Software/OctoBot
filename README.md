@@ -84,7 +84,7 @@ See [Services Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Services)
   
 ## Usage
 ```bash
-python main.py
+python start.py
 ```
 ## Customize you CryptoBot !
 ### Adding implementations of any evaluator
