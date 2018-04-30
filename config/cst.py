@@ -1,7 +1,7 @@
 import operator
 from enum import Enum
 
-VERSION = "0.0.8-alpha"
+VERSION = "0.0.9-alpha"
 
 MINUTE_TO_SECONDS = 60
 HOURS_TO_SECONDS = MINUTE_TO_SECONDS * 60
