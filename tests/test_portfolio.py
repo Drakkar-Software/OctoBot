@@ -68,7 +68,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
 
-        # test buy order filled --> return to init state and the update_portfolio will sync TOTAL with AVAILABLE
+        # test buy order canceled --> return to init state and the update_portfolio will sync TOTAL with AVAILABLE
         portfolio_inst.update_portfolio_available(market_buy, False)
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
@@ -89,7 +89,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
 
-        # test sell order filled --> return to init state and the update_portfolio will sync TOTAL with AVAILABLE
+        # test sell order canceled --> return to init state and the update_portfolio will sync TOTAL with AVAILABLE
         portfolio_inst.update_portfolio_available(limit_sell, False)
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
