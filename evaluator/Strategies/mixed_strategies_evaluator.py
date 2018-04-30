@@ -1,9 +1,7 @@
-import math
-
 from config.cst import *
 from evaluator.RealTime import InstantFluctuationsEvaluator
-from evaluator.Strategies import MixedStrategiesEvaluator
 from evaluator.Social import MediumNewsEvaluator, RedditForumEvaluator
+from evaluator.Strategies import MixedStrategiesEvaluator
 
 
 # TEMP strategy
@@ -26,13 +24,6 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
 
     def inc_rt_counter(self, inc=1):
         self.rt_counter += inc
-
-    @staticmethod
-    def check_valid_eval_note(eval_note):
-        if eval_note and eval_note is not START_PENDING_EVAL_NOTE and not math.isnan(eval_note):
-            return True
-        else:
-            return False
 
     def eval_impl(self) -> None:
         # TODO : temp counter without relevance

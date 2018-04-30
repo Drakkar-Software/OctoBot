@@ -1,5 +1,8 @@
 from abc import *
 
+import math
+
+from config.cst import START_PENDING_EVAL_NOTE
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
@@ -15,6 +18,13 @@ class StrategiesEvaluator(AbstractEvaluator):
 
     def get_is_evaluable(self):
         return not (self.get_is_updating() or self.matrix is None)
+
+    @staticmethod
+    def check_valid_eval_note(eval_note):
+        if eval_note and eval_note is not START_PENDING_EVAL_NOTE and not math.isnan(eval_note):
+            return True
+        else:
+            return False
 
     @abstractmethod
     def eval_impl(self) -> None:

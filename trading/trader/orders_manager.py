@@ -83,17 +83,20 @@ class OrdersManager(threading.Thread):
                 # update symbol prices from exchange only if simulate
                 if self.trader.simulate:
                     if order.get_order_symbol() in self.last_symbol_prices:
-                        order.set_last_prices(self.last_symbol_prices[order.get_order_symbol()])
+                        with order as odr:
+                            odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
 
-                # ask orders to update their status
-                order.update_order_status()
-                if order.get_status() == OrderStatus.FILLED:
-                    self.logger.info("{0} {1} (ID : {2}) filled on {3} at {4}".format(order.get_order_symbol(),
-                                                                                      order.get_name(),
-                                                                                      order.get_id(),
-                                                                                      self.trader.get_exchange().get_name(),
-                                                                                      order.get_filled_price()))
-                    order.close_order()
+                    # ask orders to update their status
+                    with order as odr:
+                        odr.update_order_status()
+
+                        if odr.get_status() == OrderStatus.FILLED:
+                            self.logger.info("{0} {1} (ID : {2}) filled on {3} at {4}".format(odr.get_order_symbol(),
+                                                                                              odr.get_name(),
+                                                                                              odr.get_id(),
+                                                                                              self.trader.get_exchange().get_name(),
+                                                                                              odr.get_filled_price()))
+                            odr.close_order()
 
             if not Backtesting.enabled(self.config):
                 sleep(ORDER_REFRESHER_TIME)
