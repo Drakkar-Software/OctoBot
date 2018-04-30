@@ -1,9 +1,10 @@
+pytest
+pytest-cov
 vaderSentiment
 pandas
 pytrends
 ccxt
 TA-Lib
-pytest
 numpy
 colorlog
 Python-Twitter
@@ -14,3 +15,5 @@ dash-renderer
 dash-html-components
 dash-core-components
 plotly
+newspaper3k
+praw

@@ -7,8 +7,7 @@ notifications:
   email: false
 install:
   - ./docs/install/install-ta-lib.sh
-  - cp ./docs/install/config_test.json ./config/config.json
   - python -m pip install -r requirements.txt
-script: pytest tests/
+script: pytest --cov-report term --cov=. tests/
 
 

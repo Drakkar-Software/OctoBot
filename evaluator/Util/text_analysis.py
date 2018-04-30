@@ -2,6 +2,8 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from tools.decoding_encoding import DecoderEncoder
 
 from evaluator.Util.abstract_util import AbstractUtil
+from newspaper import Article
+from config.cst import IMAGE_ENDINGS
 
 
 class TextAnalysis(AbstractUtil):
@@ -10,7 +12,29 @@ class TextAnalysis(AbstractUtil):
         # self.test()
 
     def analyse(self,  text):
+        # The compound score is computed by summing the valence scores of each word in the lexicon, adjusted according
+        # to the rules, and then normalized to be between -1 (most extreme negative) and +1 (most extreme positive).
+        # https://github.com/cjhutto/vaderSentiment
         return self.analyzer.polarity_scores(text)["compound"]
+
+    # returns the article object and the analysis result
+    def analyse_web_page_article(self, url):
+        article = Article(url)
+        article.download()
+        article.parse()
+        return article, self.analyse(article.text)
+
+    # return a list of high influential value websites
+    @staticmethod
+    def get_high_value_websites():
+        return [
+            "https://www.youtube.com"
+                ]
+
+    @staticmethod
+    def is_analysable_url(url):
+        url_ending = str(url).split(".")[-1]
+        return url_ending.lower() not in IMAGE_ENDINGS
 
     # official account tweets that can be used for testing purposes
     def test(self):

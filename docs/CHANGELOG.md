@@ -1,3 +1,40 @@
+Changelog for 0.0.9
+====================
+*Released date : Apr 30 2018*
+
+# Concerned issues :
+    #20 added reddit service and started reddit dispatcher 
+    #22 added webpage news retreiver 
+    #47 backtesting 
+    #76 data collector
+    #92 [Evaluators] Enable / disable with config file
+    #102 added advanced evaluator in dispatcher handler
+    #103 [Portfolio] Implement pytests last 
+    #104 Exchange Manager
+    #105 fix cancel notification
+    #107 factorized refresher threads into one per symbol
+    #113 Fix portfolio bug management
+
+# New features :
+    - Backtesting
+    - Data Collector
+    - Data Collector Parser
+    - Exchange Manager
+    - New social evaluator (reddit, twitter posted media & websites)
+    - Tests implementation and coverage
+    
+# Bug fix :
+    - Fix Portfolio management
+    - Fix critical bug on symbol evaluator
+    - Fix critical bug in order creation
+    - Fix trader join
+    - Fix tests
+    - Fix real time constants
+    - Fix new dependency raspberry install
+    - Fix realtime instant fluctuation evaluator pending note
+    - Fix notification style end order
+    - Fix portfolio concurrency access
+    
 Changelog for 0.0.8
 ====================
 *Released date : Apr 24 2018*

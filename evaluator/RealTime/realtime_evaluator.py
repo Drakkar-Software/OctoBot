@@ -1,7 +1,9 @@
 import os
 import threading
+import time
 from abc import *
 
+from backtesting.backtesting import Backtesting
 from config.config import load_config
 from config.cst import *
 from evaluator.abstract_evaluator import AbstractEvaluator
@@ -13,8 +15,9 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
     def __init__(self):
         super().__init__()
         self.specific_config = None
+        self.refresh_time = 0
         self.data = None
-        self.evaluator_threads = []
+        self.evaluator_thread_managers = []
         self.keep_running = True
         self.load_config()
 
@@ -32,11 +35,11 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
         else:
             self.set_default_config()
 
-    def add_evaluator_thread(self, evaluator_thread):
-        self.evaluator_threads.append(evaluator_thread)
+    def add_evaluator_thread_manager(self, evaluator_thread):
+        self.evaluator_thread_managers.append(evaluator_thread)
 
-    def notify_evaluator_threads(self, notifier_name):
-        for thread in self.evaluator_threads:
+    def notify_evaluator_thread_managers(self, notifier_name):
+        for thread in self.evaluator_thread_managers:
             thread.notify(notifier_name)
 
     # to implement in subclasses if config necessary
@@ -44,12 +47,25 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
         pass
 
     @abstractmethod
-    def eval_impl(self) -> None:
+    def _refresh_data(self):
         raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
+    def _define_refresh_time(self):
+        raise NotImplementedError("Eval_impl not implemented")
+
+    @abstractmethod
+    def eval_impl(self) -> None:
+        raise NotImplementedError("Eval_impl not implemented")
+
     def run(self):
-        raise NotImplementedError("Run not implemented")
+        while self.keep_running:
+            now = time.time()
+            self._refresh_data()
+            self.eval()
+
+            if not Backtesting.enabled(self.config):
+                time.sleep(self.refresh_time - (time.time() - now))
 
 
 class RealTimeTAEvaluator(RealTimeEvaluator):
@@ -59,15 +75,21 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
         super().__init__()
         self.symbol = symbol
         self.exchange = exchange_inst
+        self._define_refresh_time()
 
     @abstractmethod
-    def refresh_data(self):
+    def _refresh_data(self):
         raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
     def eval_impl(self):
         raise NotImplementedError("Eval_impl not implemented")
 
-    @abstractmethod
-    def run(self):
-        raise NotImplementedError("Eval_impl not implemented")
+    def valid_refresh_time(self, config_refresh_time):
+        if config_refresh_time > self.exchange.get_rate_limit():
+            return config_refresh_time
+        else:
+            return self.exchange.get_rate_limit()
+
+    def _define_refresh_time(self):
+        self.refresh_time = self.valid_refresh_time(self.specific_config[CONFIG_REFRESH_RATE])

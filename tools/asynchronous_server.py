@@ -2,7 +2,7 @@ import threading
 from queue import Queue
 
 
-class AsynchronousClient:
+class AsynchronousServer:
 
     def __init__(self, callback_method):
         self.is_computing = False

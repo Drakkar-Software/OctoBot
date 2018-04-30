@@ -4,10 +4,10 @@ from queue import Queue
 from config.cst import EvaluatorStates, INIT_EVAL_NOTE
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 from tools import EvaluatorNotification
-from tools.asynchronous_client import AsynchronousClient
+from tools.asynchronous_server import AsynchronousServer
 
 
-class FinalEvaluator(AsynchronousClient):
+class FinalEvaluator(AsynchronousServer):
     def __init__(self, symbol_evaluator, exchange, symbol):
         super().__init__(self.finalize)
         self.symbol_evaluator = symbol_evaluator

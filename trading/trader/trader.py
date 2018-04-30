@@ -16,7 +16,7 @@ class Trader:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = False
 
-        self.portfolio = Portfolio(self.config, self)
+        self.portfolio = Portfolio(self.config)
 
         self.trades_manager = TradesManager(config, self)
 
@@ -48,7 +48,7 @@ class Trader:
     def get_portfolio(self):
         return self.portfolio
 
-    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None, linked_to=None):
+    def create_order(self, order_type, symbol, current_price, quantity, price=None, stop_price=None, linked_to=None):
         # update_portfolio_available
         #
         # if linked_to is not None:
@@ -67,9 +67,13 @@ class Trader:
             if order.get_order_symbol() == symbol:
                 self.notify_order_close(order, True)
 
+        with self.portfolio as pf:
+            self.logger.info("Open orders cancelled | Current Portfolio : {0}".format(pf.get_portfolio()))
+
     def notify_order_cancel(self, order):
         # update portfolio with ended order
-        self.portfolio.update_portfolio_available(order, False)
+        with self.portfolio as pf:
+            pf.update_portfolio_available(order)
 
     def notify_order_close(self, order, cancel=False):
         # Cancel linked orders
@@ -79,6 +83,7 @@ class Trader:
         # If need to cancel the order call the method and no need to update the portfolio (only availability)
         if cancel:
             order_closed = None
+            order_profitability = None
             orders_canceled = order.get_linked_orders() + [order]
 
             self.cancel_order(order)
@@ -88,8 +93,16 @@ class Trader:
             orders_canceled = order.get_linked_orders()
 
             # update portfolio with ended order
-            self.portfolio.update_portfolio_available(order, False)
-            _, profitability_percent, profitability_diff = self.portfolio.update_portfolio(order)
+            with self.portfolio as pf:
+                pf.update_portfolio(order)
+
+                # debug purpose
+            profitability, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability()
+
+            self.logger.info("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
+                                                                                       self.get_trades_manager().get_reference(),
+                                                                                       round(profitability_percent,
+                                                                                             2)))
 
             # add to trade history
             self.trades_manager.add_new_trade_in_history(Trade(self.exchange, order))
@@ -97,8 +110,14 @@ class Trader:
             # remove order to open_orders
             self.order_manager.remove_order_from_list(order)
 
+            order_profitability = order.get_create_last_price() - order.get_filled_price()
+
         # notification
-        order.get_order_notifier().end(order_closed, orders_canceled, profitability_diff, profitability_percent)
+        order.get_order_notifier().end(order_closed,
+                                       orders_canceled,
+                                       order_profitability,
+                                       profitability_percent,
+                                       profitability_diff)
 
     def get_open_orders(self):
         return self.order_manager.get_open_orders()
@@ -120,5 +139,5 @@ class Trader:
     def stop_order_manager(self):
         self.order_manager.stop()
 
-    def join_order_listeners(self):
+    def join_order_manager(self):
         self.order_manager.join()

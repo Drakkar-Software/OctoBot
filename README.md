@@ -1,6 +1,6 @@
 # CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot)
 
-#### Version 0.0.8-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md))
+#### Version 0.0.9-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md))
 
 ## Disclaimer
 This software is for educational purposes only. Do not risk money which 
@@ -21,7 +21,8 @@ See live demo [here](https://twitter.com/HerklosBotCrypt)
 
 ## Install
 See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)
-```bash
+<br>With python3 : 
+```
 git clone https://github.com/Trading-Bot/CryptoBot
 cd CryptoBot
 pip install -r requirements.txt

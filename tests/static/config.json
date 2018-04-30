@@ -23,10 +23,16 @@
       "mail_dest": ""
     },
     "twitter": {
-      "api-key": "YOUR_TWITTER_API_KEY",
-      "api-secret": "YOUR_TWITTER_API_SECRET",
-      "access-token": "YOUR_TWITTER_ACCESS_TOKEN",
-      "access-token-secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
+      "api-key": "",
+      "api-secret": "",
+      "access-token": "",
+      "access-token-secret": ""
+    },
+    "reddit":{
+      "client_id": "",
+      "client_secret": "",
+      "password":"",
+      "username":""
     }
   },
   "notification":{
@@ -42,7 +48,15 @@
     "risk": 1,
     "starting_portfolio": {
       "BTC": 10,
-      "USDT": 1000
+      "USD": 1000
     }
+  },
+  "backtesting": {
+    "enabled": false,
+    "file": "../../../docs/backtesting/data/binance_BTC_USDT_20180428_121156.data"
+  },
+  "data_collector":{
+    "enabled": true,
+    "symbol": "BTC/USDT"
   }
 }

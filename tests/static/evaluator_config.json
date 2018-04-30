@@ -1,0 +1,18 @@
+{
+  "RSIMomentumEvaluator": true,
+  "DoubleMovingAverageTrendEvaluator": true,
+  "BBMomentumEvaluator": true,
+  "CandlePatternMomentumEvaluator": true,
+  "ADXMomentumEvaluator": true,
+
+
+  "InstantFluctuationsEvaluator": true,
+
+
+  "TwitterNewsEvaluator": false,
+  "RedditForumEvaluator": false,
+  "GoogleTrendStatsEvaluator": false,
+
+  
+  "TempFullMixedStrategiesEvaluator": true
+}
