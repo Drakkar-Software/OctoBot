@@ -76,9 +76,10 @@ class Order:
             else:
                 return False
 
-    def cancel_order(self):
+    def cancel_order(self, notify=True):
         # TODO exchange
-        self.trader.notify_order_cancel(self)
+        if notify:
+            self.trader.notify_order_cancel(self)
 
     def close_order(self):
         self.trader.notify_order_close(self)

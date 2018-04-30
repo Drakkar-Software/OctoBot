@@ -57,8 +57,8 @@ class Trader:
 
         pass
 
-    def cancel_order(self, order):
-        order.cancel_order()
+    def cancel_order(self, order, notify=True):
+        order.cancel_order(notify)
         self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
@@ -67,8 +67,7 @@ class Trader:
             if order.get_order_symbol() == symbol:
                 self.notify_order_close(order, True)
 
-        with self.portfolio as pf:
-            self.logger.info("Open orders cancelled | Current Portfolio : {0}".format(pf.get_portfolio()))
+        self.logger.debug("Open orders cancelled")
 
     def notify_order_cancel(self, order):
         # update portfolio with ended order
