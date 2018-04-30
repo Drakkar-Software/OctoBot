@@ -187,23 +187,33 @@ class TestPortfolio:
         limit_sell.add_linked_order(stop_loss)
         stop_loss.add_linked_order(limit_sell)
 
+        # Test buy order
+        limit_buy = BuyLimitOrder(trader_inst)
+        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+                      "BTC/USD",
+                      50,
+                      2,
+                      50)
+
         # update portfolio with creations
         portfolio_inst.update_portfolio_available(market_sell, True)
         portfolio_inst.update_portfolio_available(limit_sell, True)
         portfolio_inst.update_portfolio_available(stop_loss, True)
+        portfolio_inst.update_portfolio_available(limit_buy, True)
 
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 2.8
-        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 900
 
         # when cancelling limit and stop orders
         portfolio_inst.update_portfolio_available(stop_loss, False)
         portfolio_inst.update_portfolio_available(limit_sell, False)
+        portfolio_inst.update_portfolio_available(limit_buy, False)
 
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 7
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
 
         # when filling market sell
-        portfolio_inst.update_portfolio_available(market_sell, False)
+        portfolio_inst.update_portfolio(market_sell)
 
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 7
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1210
