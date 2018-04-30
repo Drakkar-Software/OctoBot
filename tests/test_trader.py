@@ -186,12 +186,94 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    # TODO
     def test_notify_order_close(self):
         config, _, trader_inst = self.init_default()
+
+        # Test buy order
+        market_buy = BuyMarketOrder(trader_inst)
+        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+                       "BTC/EUR",
+                       70,
+                       10,
+                       70)
+
+        # Test buy order
+        limit_sell = SellLimitOrder(trader_inst)
+        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                       "NANO/USDT",
+                       70,
+                       10,
+                       70)
+
+        # Test stop loss order
+        stop_loss = StopLossOrder(trader_inst)
+        stop_loss.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+                      "BTC/USD",
+                      60,
+                      10,
+                      60)
+
+        # create order notifier to prevent None call
+        market_buy.order_notifier = OrderNotifier(config, market_buy)
+        limit_sell.order_notifier = OrderNotifier(config, limit_sell)
+        stop_loss.order_notifier = OrderNotifier(config, stop_loss)
+
+        trader_inst.get_order_manager().add_order_to_list(market_buy)
+        trader_inst.get_order_manager().add_order_to_list(stop_loss)
+        trader_inst.get_order_manager().add_order_to_list(limit_sell)
+
+        trader_inst.notify_order_close(limit_sell, True)
+        trader_inst.notify_order_close(market_buy, True)
+
+        assert market_buy not in trader_inst.get_open_orders()
+        assert limit_sell not in trader_inst.get_open_orders()
+        assert stop_loss in trader_inst.get_open_orders()
+
         self.stop(trader_inst)
 
-    # TODO
     def test_notify_order_close_with_linked_orders(self):
         config, _, trader_inst = self.init_default()
+
+        # Test buy order
+        market_buy = BuyMarketOrder(trader_inst)
+        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+                       "BTC/EUR",
+                       70,
+                       10,
+                       70)
+
+        # Test buy order
+        limit_sell = SellLimitOrder(trader_inst)
+        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                       "NANO/USDT",
+                       70,
+                       10,
+                       70)
+
+        # Test stop loss order
+        stop_loss = StopLossOrder(trader_inst)
+        stop_loss.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+                      "BTC/USD",
+                      60,
+                      10,
+                      60)
+
+        stop_loss.add_linked_order(limit_sell)
+        limit_sell.add_linked_order(stop_loss)
+
+        # create order notifier to prevent None call
+        market_buy.order_notifier = OrderNotifier(config, market_buy)
+        stop_loss.order_notifier = OrderNotifier(config, stop_loss)
+        limit_sell.order_notifier = OrderNotifier(config, limit_sell)
+
+        trader_inst.get_order_manager().add_order_to_list(market_buy)
+        trader_inst.get_order_manager().add_order_to_list(stop_loss)
+        trader_inst.get_order_manager().add_order_to_list(limit_sell)
+
+        trader_inst.notify_order_close(limit_sell)
+
+        assert market_buy in trader_inst.get_open_orders()
+        assert stop_loss not in trader_inst.get_open_orders()
+        assert limit_sell not in trader_inst.get_open_orders()
+
         self.stop(trader_inst)
