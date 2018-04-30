@@ -363,3 +363,25 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1240
 
         self.stop(trader_inst)
+
+    def test_reset_portfolio_available(self):
+        config, portfolio_inst = self.init_default()
+        _, trader_inst = self.create_trader_and_exchanges(config)
+
+        # Test buy order
+        limit_sell = SellLimitOrder(trader_inst)
+        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                       "BTC/USD",
+                       90,
+                       4,
+                       90)
+
+        portfolio_inst.update_portfolio_available(limit_sell, True)
+        portfolio_inst.reset_portfolio_available()
+
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
+
+        self.stop(trader_inst)
