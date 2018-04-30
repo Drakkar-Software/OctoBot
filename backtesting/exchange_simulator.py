@@ -8,7 +8,7 @@ from trading import Exchange
 
 class ExchangeSimulator(Exchange):
     def __init__(self, config, exchange_type):
-        super().__init__(config, exchange_type, connect=False)
+        super().__init__(config, exchange_type, connect_to_online_exchange=False)
 
         if CONFIG_BACKTESTING not in self.config:
             raise Exception("Backtesting config not found")
@@ -52,6 +52,9 @@ class ExchangeSimulator(Exchange):
 
     def symbol_exists(self, symbol):
         return symbol in self.symbols
+
+    def time_frame_exists(self, time_frame):
+        return time_frame in self.time_frame_get_times
 
     def get_name(self):
         return self.__class__.__name__+str(self.symbols)
