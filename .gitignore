@@ -104,7 +104,7 @@ ENV/
 .mypy_cache/
 
 # config
-config.json
+config/config.json
 
 # modules
 /.gitmodules

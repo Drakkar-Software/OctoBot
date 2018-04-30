@@ -18,7 +18,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
         self.is_threaded = False
         self.is_self_refreshing = False
         self.keep_running = True
-        self.evaluator_threads = []
+        self.evaluator_thread_managers = []
         self.load_config()
 
     @classmethod
@@ -28,11 +28,11 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
     def stop(self):
         self.keep_running = False
 
-    def add_evaluator_thread(self, evaluator_thread):
-        self.evaluator_threads.append(evaluator_thread)
+    def add_evaluator_thread_manager(self, evaluator_thread):
+        self.evaluator_thread_managers.append(evaluator_thread)
 
-    def notify_evaluator_threads(self, notifier_name):
-        for thread in self.evaluator_threads:
+    def notify_evaluator_thread_managers(self, notifier_name):
+        for thread in self.evaluator_thread_managers:
             thread.notify(notifier_name)
 
     def load_config(self):
@@ -42,7 +42,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
             self.social_config = load_config(config_file)
         else:
             # if it's not possible, try with any super-class' config file
-            for super_class in self.__class__.__bases__:
+            for super_class in self.get_parent_evaluator_classes(SocialEvaluator):
                 super_class_config_file = super_class.get_config_file_name()
                 if os.path.isfile(super_class_config_file):
                     self.social_config = load_config(super_class_config_file)

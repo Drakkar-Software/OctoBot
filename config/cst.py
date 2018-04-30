@@ -1,11 +1,15 @@
+import operator
 from enum import Enum
 
-VERSION = "0.0.8-alpha"
+VERSION = "0.0.9-alpha"
 
 MINUTE_TO_SECONDS = 60
+HOURS_TO_SECONDS = MINUTE_TO_SECONDS * 60
+DAYS_TO_SECONDS = HOURS_TO_SECONDS * 24
 
 CONFIG_GLOBAL_UTILS = "global_utils"
 CONFIG_ENABLED_OPTION = "enabled"
+CONFIG_SYMBOL = "symbol"
 
 # Files
 CONFIG_FILE = "config/config.json"
@@ -17,11 +21,12 @@ CONFIG_ADVANCED_INSTANCES = "advanced_instances"
 
 # Backtesting
 CONFIG_BACKTESTING = "backtesting"
+CONFIG_BACKTESTING_DATA_FILE = "file"
 
 # Data collector
 CONFIG_DATA_COLLECTOR = "data_collector"
 DATA_COLLECTOR_REFRESHER_TIME = 10
-CONFIG_DATA_PATH = "backtesting/collector/data/"
+CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
@@ -62,6 +67,10 @@ CONFIG_GMAIL = "gmail"
 CONFIG_TWITTERS_ACCOUNTS = "accounts"
 CONFIG_TWITTERS_HASHTAGS = "hashtags"
 CONFIG_TWITTER = "twitter"
+CONFIG_REDDIT = "reddit"
+CONFIG_REDDIT_SUBREDDITS = "subreddits"
+CONFIG_REDDIT_ENTRY = "entry"
+CONFIG_REDDIT_ENTRY_WEIGHT = "entry_weight"
 CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
 CONFIG_TWEET = "tweet"
 CONFIG_TWEET_DESCRIPTION = "tweet_description"
@@ -72,7 +81,7 @@ SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
 START_PENDING_EVAL_NOTE = "0"  # force exception
 INIT_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
-MAX_TA_EVAL_TIME_SECONDS = 0.03
+MAX_TA_EVAL_TIME_SECONDS = 0.1
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
@@ -88,12 +97,6 @@ STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 
 # Tools
 DIVERGENCE_USED_VALUE = 30
-
-
-class EvaluatorRisk(Enum):
-    LOW = 1
-    MEDIUM = 2
-    HIGH = 3
 
 
 class EvaluatorMatrixTypes(Enum):
@@ -123,6 +126,15 @@ class PriceStrings(Enum):
     STR_PRICE_HIGH = "high"
     STR_PRICE_LOW = "low"
     STR_PRICE_VOL = "vol"
+
+
+class PriceIndexes(Enum):
+    IND_PRICE_TIME = 0
+    IND_PRICE_CLOSE = 4
+    IND_PRICE_OPEN = 1
+    IND_PRICE_HIGH = 2
+    IND_PRICE_LOW = 3
+    IND_PRICE_VOL = 5
 
 
 class TimeFrames(Enum):
@@ -159,6 +171,8 @@ TimeFramesMinutes = {
     TimeFrames.ONE_MONTH: 43200,
 }
 
+TimeFramesRank = sorted(TimeFramesMinutes, key=TimeFramesMinutes.__getitem__)
+
 # ladder : 1-100
 TimeFramesRelevance = {
     TimeFrames.ONE_MINUTE: 5,
@@ -176,6 +190,9 @@ TimeFramesRelevance = {
     TimeFrames.ONE_WEEK: 15,
     TimeFrames.ONE_MONTH: 5,
 }
+
+IMAGE_ENDINGS = ["png", "jpg", "jpeg", "gif", "jfif", "tiff", "bmp", "ppm", "pgm", "pbm", "pnm", "webp", "hdr", "heif",
+                 "bat", "bpg", "svg", "cgm"]
 
 
 class TradeOrderSide(Enum):

@@ -1,7 +1,6 @@
 import logging
 
 from config.cst import *
-from evaluator.Updaters.time_frame_update import TimeFrameUpdateDataThread
 from evaluator.evaluator import Evaluator
 
 
@@ -9,6 +8,7 @@ class EvaluatorThreadsManager:
     def __init__(self, config,
                  symbol,
                  time_frame,
+                 symbol_time_frame_updater_thread,
                  symbol_evaluator,
                  exchange,
                  real_time_ta_eval_list):
@@ -16,17 +16,18 @@ class EvaluatorThreadsManager:
         self.exchange = exchange
         self.symbol = symbol
         self.time_frame = time_frame
+        self.symbol_time_frame_updater_thread = symbol_time_frame_updater_thread
         self.symbol_evaluator = symbol_evaluator
 
         # notify symbol evaluator
-        self.symbol_evaluator.add_evaluator_thread(self.exchange, self.symbol, self)
+        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.symbol, self)
 
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 
         # Exchange
         # TODO : self.exchange.update_balance(self.symbol)
 
-        self.thread_name = "TA THREAD - {0} - {1} - {2}".format(self.symbol,
+        self.thread_name = "TA THREAD MANAGER - {0} - {1} - {2}".format(self.symbol,
                                                                 self.exchange.get_name(),
                                                                 self.time_frame)
         self.logger = logging.getLogger(self.thread_name)
@@ -46,14 +47,17 @@ class EvaluatorThreadsManager:
         # Create static evaluators
         self.evaluator.set_ta_eval_list(self.evaluator.get_creator().create_ta_eval_list(self.evaluator))
 
-        # Create refreshing threads
-        self.data_refresher = TimeFrameUpdateDataThread(self)
+        # Register in refreshing threads
+        self.symbol_time_frame_updater_thread.register_evaluator_thread_manager(self.time_frame, self)
+
+    def get_refreshed_times(self):
+        return self.symbol_time_frame_updater_thread.get_refreshed_times(self.time_frame)
 
     def get_evaluator(self):
         return self.evaluator
 
     def notify(self, notifier_name):
-        if self.data_refresher.get_refreshed_times() > 0:
+        if self.get_refreshed_times() > 0:
             self.logger.debug("** Notified by {0} **".format(notifier_name))
             self._refresh_eval(notifier_name)
         else:
@@ -89,17 +93,15 @@ class EvaluatorThreadsManager:
                                  real_time_eval.get_eval_note())
 
     def start_threads(self):
-        self.data_refresher.start()
+        pass
 
     def stop_threads(self):
         for thread in self.evaluator.get_real_time_eval_list():
             thread.stop()
-        self.data_refresher.stop()
 
     def join_threads(self):
         for thread in self.evaluator.get_real_time_eval_list():
             thread.join()
-        self.data_refresher.join()
 
-    def get_data_refresher(self):
-        return self.data_refresher
+    def get_symbol_time_frame_updater_thread(self):
+        return self.symbol_time_frame_updater_thread

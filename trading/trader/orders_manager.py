@@ -2,8 +2,7 @@ import logging
 import threading
 from time import sleep
 
-import ccxt
-
+from backtesting.backtesting import Backtesting
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus
 
 """ OrdersManager class will perform the supervision of each open order of the exchange trader
@@ -28,11 +27,14 @@ class OrdersManager(threading.Thread):
 
     # Remove the specified order of the current open_order list (when the order is filled or canceled)
     def remove_order_from_list(self, order):
-        self.order_list.remove(order)
-        self.logger.debug("{0} {1} (ID : {2}) removed on {3}".format(order.get_order_symbol(),
-                                                                     order.get_name(),
-                                                                     order.get_id(),
-                                                                     self.trader.get_exchange().get_name()))
+        try:
+            self.order_list.remove(order)
+            self.logger.debug("{0} {1} (ID : {2}) removed on {3}".format(order.get_order_symbol(),
+                                                                         order.get_name(),
+                                                                         order.get_id(),
+                                                                         self.trader.get_exchange().get_name()))
+        except ValueError:
+            pass
 
     def stop(self):
         self.keep_running = False
@@ -42,15 +44,22 @@ class OrdersManager(threading.Thread):
         updated = []
         for order in self.order_list:
             if order.get_order_symbol() not in updated:
-                try:
-                    self._update_last_symbol_prices(order.get_order_symbol())
-                except ccxt.base.errors.RequestTimeout as e:
-                    self.logger.error(str(e))
+                self._update_last_symbol_prices(order.get_order_symbol())
+
                 updated.append(order.get_order_symbol())
 
     # Ask to update a specific symbol with exchange data
     def _update_last_symbol_prices(self, symbol):
-        last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+        # optimize exchange simulator calls when backtesting
+        if Backtesting.enabled(self.config):
+            if self.trader.get_exchange().should_update_recent_trades(symbol):
+                last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+            else:
+                last_symbol_price = None
+
+        # Exchange call when not backtesting
+        else:
+            last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
 
         # Check if exchange request failed
         if last_symbol_price is not None:
@@ -86,4 +95,5 @@ class OrdersManager(threading.Thread):
                                                                                       order.get_filled_price()))
                     order.close_order()
 
-            sleep(ORDER_REFRESHER_TIME)
+            if not Backtesting.enabled(self.config):
+                sleep(ORDER_REFRESHER_TIME)

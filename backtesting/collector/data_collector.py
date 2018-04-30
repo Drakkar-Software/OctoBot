@@ -2,13 +2,10 @@ import json
 import logging
 import threading
 import time
-from logging.config import fileConfig
 
 import ccxt
 
-from config.config import load_config
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_DATA_COLLECTOR, CONFIG_EXCHANGES, CONFIG_DATA_PATH, \
-    DATA_COLLECTOR_REFRESHER_TIME, TimeFrames, TimeFramesMinutes, MINUTE_TO_SECONDS
+from config.cst import *
 from trading import Exchange
 
 
@@ -48,33 +45,39 @@ class DataCollector:
         return CONFIG_DATA_COLLECTOR in config and config[CONFIG_DATA_COLLECTOR][CONFIG_ENABLED_OPTION]
 
 
+class DataCollectorParser:
+    @staticmethod
+    def parse(file):
+        with open(CONFIG_DATA_COLLECTOR_PATH + file) as file_to_parse:
+            file_content = json.loads(file_to_parse.read())
+
+        return file_content
+
+
 class ExchangeDataCollector(threading.Thread):
     def __init__(self, config, exchange):
         super().__init__()
         self.config = config
         self.exchange = exchange
+        self.symbol = self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL]
         self.keep_running = True
         self.file = None
         self.file_content = None
-        self.file_name = "{0}_{1}.data".format(self.exchange.get_name(), time.strftime("%Y%m%d_%H%M%S"))
+        self._data_updated = False
+        self.file_name = "{0}_{1}_{2}.data".format(self.exchange.get_name(),
+                                                   self.symbol.replace("/", "_"),
+                                                   time.strftime("%Y%m%d_%H%M%S"))
         self.time_frame_update = {}
         self.logger = logging.getLogger(self.__class__.__name__)
-
-        # TEMP
-        self.symbol = "BTC/USDT"
 
     def stop(self):
         self.keep_running = False
 
     def update_file(self):
-        file_content_json = {}
-        for time_frame in self.file_content:
-            file_content_json[time_frame] = self.file_content[time_frame].to_json()
-
-        json.dump(file_content_json, self.file)
+        with open(CONFIG_DATA_COLLECTOR_PATH + self.file_name, 'w') as json_file:
+            json.dump(self.file_content, json_file)
 
     def prepare_file(self):
-        self.file = open(CONFIG_DATA_PATH + self.file_name, 'w')
         self.file_content = {}
         for time_frame in TimeFrames:
             self.file_content[time_frame.value] = None
@@ -87,8 +90,8 @@ class ExchangeDataCollector(threading.Thread):
                 # write all available data for this time frame
                 self.file_content[time_frame.value] = self.exchange.get_symbol_prices(self.symbol,
                                                                                       time_frame,
-                                                                                      None)
-
+                                                                                      limit=None,
+                                                                                      data_frame=False)
                 self.time_frame_update[time_frame] = time.time()
         self.update_file()
 
@@ -100,22 +103,20 @@ class ExchangeDataCollector(threading.Thread):
 
             for time_frame in TimeFrames:
                 if self.exchange.time_frame_exists(time_frame.value):
-                    if (time.time() - now) >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                        self.file_content[time_frame.value].concat(self.exchange.get_symbol_prices(self.symbol,
-                                                                                                   time_frame,
-                                                                                                   1))
-                        self.time_frame_update[time_frame] = time.time()
+                    if now - self.time_frame_update[time_frame] >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
+                        result_df = self.exchange.get_symbol_prices(self.symbol,
+                                                                    time_frame,
+                                                                    limit=1,
+                                                                    data_frame=False)[0]
+
+                        self.file_content[time_frame.value].append(result_df)
+                        self._data_updated = True
+                        self.time_frame_update[time_frame] = now
                         self.logger.info("{0} : {1} updated".format(self.exchange.get_name(), time_frame))
 
-            self.update_file()
-            time.sleep(DATA_COLLECTOR_REFRESHER_TIME)
+            if self._data_updated:
+                self.update_file()
+                self._data_updated = False
 
-
-if __name__ == '__main__':
-    fileConfig('config/logging_config.ini')
-    global_config = load_config()
-
-    if DataCollector.enabled(global_config):
-        data_collector_inst = DataCollector(global_config)
-        # data_collector_inst.stop()
-        data_collector_inst.join()
+            final_sleep = DATA_COLLECTOR_REFRESHER_TIME - (time.time() - now)
+            time.sleep(final_sleep if final_sleep >= 0 else 0)
