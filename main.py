@@ -8,8 +8,7 @@ from cryptobot import CryptoBot
 import argparse
 
 from config.config import load_config
-from config.cst import VERSION, CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION, CONFIG_EVALUATOR, CONFIG_EVALUATOR_FILE, \
-    CONFIG_CATEGORY_NOTIFICATION
+from config.cst import *
 
 
 def _log_uncaught_exceptions(ex_cls, ex, tb):
@@ -38,6 +37,7 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
+    parser.add_argument('--risk', type=float, default=0.5, help='Risk representation (between 0 and 1)')
 
     args = parser.parse_args()
 
@@ -58,10 +58,14 @@ if __name__ == '__main__':
         # data_collector_inst.stop()
         data_collector_inst.join()
 
-    elif args.backtesting:
-        config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-        config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
-        start_crypto_bot(config)
+    # start crypto bot options
+    else:
+        if args.backtesting:
+            config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
+            config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
 
-    elif args.start:
-        start_crypto_bot(config)
+        if 0 < args.risk <= 1:
+            config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
+
+        if args.start:
+            start_crypto_bot(config)
