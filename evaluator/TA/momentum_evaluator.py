@@ -13,7 +13,6 @@ class RSIMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
         self.pertinence = 1
-        self.enabled = True
 
     # TODO : temp analysis
     def eval_impl(self):
@@ -43,7 +42,6 @@ class RSIMomentumEvaluator(MomentumEvaluator):
 class BBMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = True
 
     def eval_impl(self):
 
@@ -93,7 +91,6 @@ class CandlePatternMomentumEvaluator(MomentumEvaluator):
         super().__init__()
         self.pertinence = 1
         self.factor = 0.5
-        self.enabled = True
 
     def update_note(self, pattern_bool):
         last_value = pattern_bool.tail(1).values[0]
@@ -175,7 +172,6 @@ class CandlePatternMomentumEvaluator(MomentumEvaluator):
 class ADXMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = True
 
     # implementation according to: https://www.investopedia.com/articles/technical/02/041002.asp => length = 14 and
     # exponential moving average = 20 in a uptrend market
@@ -225,7 +221,6 @@ class ADXMomentumEvaluator(MomentumEvaluator):
 class OBVMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
 
     def eval_impl(self):
         obv_v = talib.OBV(self.data[PriceStrings.STR_PRICE_CLOSE.value],
@@ -236,7 +231,6 @@ class OBVMomentumEvaluator(MomentumEvaluator):
 class WilliamsRMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
 
     def eval_impl(self):
         willr_v = talib.WILLR(self.data[PriceStrings.STR_PRICE_HIGH.value],
@@ -248,7 +242,6 @@ class WilliamsRMomentumEvaluator(MomentumEvaluator):
 class TRIXMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
 
     def eval_impl(self):
         trix_v = talib.TRIX(self.data[PriceStrings.STR_PRICE_CLOSE.value])
@@ -257,7 +250,6 @@ class TRIXMomentumEvaluator(MomentumEvaluator):
 class MACDMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = True
 
     def eval_impl(self):
         macd, macd_signal, macd_hist = talib.MACD(self.data[PriceStrings.STR_PRICE_CLOSE.value],
@@ -301,7 +293,6 @@ class MACDMomentumEvaluator(MomentumEvaluator):
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
 
     def eval_impl(self):
         pass
@@ -310,7 +301,6 @@ class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
 class StochasticMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
-        self.enabled = False
 
     def eval_impl(self):
         slowk, slowd = talib.STOCH(self.data[PriceStrings.STR_PRICE_HIGH.value],

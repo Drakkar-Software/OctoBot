@@ -1,29 +1,64 @@
+import operator
 from enum import Enum
 
-VERSION = "0.0.8-alpha"
+VERSION = "0.0.9-alpha"
 
 MINUTE_TO_SECONDS = 60
-START_PENDING_EVAL_NOTE = "0"  # force exception
-INIT_EVAL_NOTE = 0
-START_EVAL_PERTINENCE = 1
-MAX_TA_EVAL_TIME_SECONDS = 0.03
+HOURS_TO_SECONDS = MINUTE_TO_SECONDS * 60
+DAYS_TO_SECONDS = HOURS_TO_SECONDS * 24
 
-MARKET_SEPARATOR = "/"
-
-CONFIG_FILE = "config/config.json"
 CONFIG_GLOBAL_UTILS = "global_utils"
+CONFIG_ENABLED_OPTION = "enabled"
+CONFIG_SYMBOL = "symbol"
+
+# Files
+CONFIG_FILE = "config/config.json"
+CONFIG_EVALUATOR_FILE = "config/evaluator_config.json"
+
+# Advanced
 CONFIG_ADVANCED_CLASSES = "advanced_classes"
 CONFIG_ADVANCED_INSTANCES = "advanced_instances"
-SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
-CONFIG_REFRESH_RATE = "refresh_rate_seconds"
-CONFIG_TIME_FRAME = "time_frame"
-CONFIG_FILE_EXT = ".json"
-CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
-CONFIG_CRYPTO_PAIRS = "pairs"
 
-# notification
+# Backtesting
+CONFIG_BACKTESTING = "backtesting"
+CONFIG_BACKTESTING_DATA_FILE = "file"
+
+# Data collector
+CONFIG_DATA_COLLECTOR = "data_collector"
+DATA_COLLECTOR_REFRESHER_TIME = 10
+CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
+
+# Trading
+CONFIG_EXCHANGES = "exchanges"
+CONFIG_TRADER = "trader"
+CONFIG_SIMULATOR = "simulator"
+CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
+CONFIG_TRADER_RISK = "risk"
+CONFIG_TRADER_RISK_MIN = 0.05
+CONFIG_TRADER_RISK_MAX = 1
+ORDER_REFRESHER_TIME = 5
+SIMULATOR_LAST_PRICES_TO_CHECK = 10
+# e-7
+MARKET_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
+CURRENCY_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
+CONFIG_TRADER_REFERENCE_MARKET = "reference_market"
+DEFAULT_REFERENCE_MARKET = "BTC"
+MARKET_SEPARATOR = "/"
+
+# Notification
+CONFIG_NOTIFICATION_INSTANCE = "notifier"
+CONFIG_CATEGORY_NOTIFICATION = "notification"
 NOTIFICATION_STARTING_MESSAGE = "CryptoBot v{0} starting...".format(VERSION)
 NOTIFICATION_STOPPING_MESSAGE = "CryptoBot v{0} stopping...".format(VERSION)
+
+# DEBUG options
+CONFIG_DEBUG_OPTION_PERF = "Performance_analyser"
+CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN = 5
+CONFIG_DEBUG_OPTION = "DEBUG"
+
+# SERVICES
+CONFIG_CATEGORY_SERVICES = "services"
+CONFIG_SERVICE_INSTANCE = "service_instance"
 
 # gmail
 CONFIG_GMAIL = "gmail"
@@ -32,53 +67,36 @@ CONFIG_GMAIL = "gmail"
 CONFIG_TWITTERS_ACCOUNTS = "accounts"
 CONFIG_TWITTERS_HASHTAGS = "hashtags"
 CONFIG_TWITTER = "twitter"
+CONFIG_REDDIT = "reddit"
+CONFIG_REDDIT_SUBREDDITS = "subreddits"
+CONFIG_REDDIT_ENTRY = "entry"
+CONFIG_REDDIT_ENTRY_WEIGHT = "entry_weight"
 CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
-CONFIG_ADDITIONAL_RESOURCES = "additional_resources"
 CONFIG_TWEET = "tweet"
 CONFIG_TWEET_DESCRIPTION = "tweet_description"
 
-# DEBUG
-CONFIG_DEBUG_OPTION_PERF = "PERF"
-CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN = 5
-CONFIG_DEBUG_OPTION = "DEBUG"
+# Evaluator
+CONFIG_EVALUATOR = "evaluator"
+SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
+START_PENDING_EVAL_NOTE = "0"  # force exception
+INIT_EVAL_NOTE = 0
+START_EVAL_PERTINENCE = 1
+MAX_TA_EVAL_TIME_SECONDS = 0.1
+CONFIG_REFRESH_RATE = "refresh_rate_seconds"
+CONFIG_TIME_FRAME = "time_frame"
+CONFIG_FILE_EXT = ".json"
+CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
+CONFIG_CRYPTO_PAIRS = "pairs"
 
-CONFIG_ENABLED_OPTION = "enabled"
-
-CONFIG_EXCHANGES = "exchanges"
-CONFIG_TRADER = "trader"
-CONFIG_SIMULATOR = "simulator"
-CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
-CONFIG_NOTIFICATION_INSTANCE = "notifier"
-CONFIG_CATEGORY_NOTIFICATION = "notification"
-CONFIG_CATEGORY_SERVICES = "services"
-CONFIG_SERVICE_INSTANCE = "service_instance"
-
-CONFIG_TRADER_RISK = "risk"
-CONFIG_TRADER_RISK_MIN = 0.05
-CONFIG_TRADER_RISK_MAX = 1
-
+# Socials
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
 
+# Stats
 STATS_EVALUATOR_HISTORY_TIME = "relevant_history_months"
 STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 
-ORDER_REFRESHER_TIME = 5
-SIMULATOR_LAST_PRICES_TO_CHECK = 10
-
-CONFIG_TRADER_REFERENCE_MARKET = "reference_market"
-DEFAULT_REFERENCE_MARKET = "BTC"
-
+# Tools
 DIVERGENCE_USED_VALUE = 30
-
-# e-7
-MARKET_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
-CURRENCY_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
-
-
-class EvaluatorRisk(Enum):
-    LOW = 1
-    MEDIUM = 2
-    HIGH = 3
 
 
 class EvaluatorMatrixTypes(Enum):
@@ -108,6 +126,15 @@ class PriceStrings(Enum):
     STR_PRICE_HIGH = "high"
     STR_PRICE_LOW = "low"
     STR_PRICE_VOL = "vol"
+
+
+class PriceIndexes(Enum):
+    IND_PRICE_TIME = 0
+    IND_PRICE_CLOSE = 4
+    IND_PRICE_OPEN = 1
+    IND_PRICE_HIGH = 2
+    IND_PRICE_LOW = 3
+    IND_PRICE_VOL = 5
 
 
 class TimeFrames(Enum):
@@ -144,6 +171,8 @@ TimeFramesMinutes = {
     TimeFrames.ONE_MONTH: 43200,
 }
 
+TimeFramesRank = sorted(TimeFramesMinutes, key=TimeFramesMinutes.__getitem__)
+
 # ladder : 1-100
 TimeFramesRelevance = {
     TimeFrames.ONE_MINUTE: 5,
@@ -161,6 +190,9 @@ TimeFramesRelevance = {
     TimeFrames.ONE_WEEK: 15,
     TimeFrames.ONE_MONTH: 5,
 }
+
+IMAGE_ENDINGS = ["png", "jpg", "jpeg", "gif", "jfif", "tiff", "bmp", "ppm", "pgm", "pbm", "pnm", "webp", "hdr", "heif",
+                 "bat", "bpg", "svg", "cgm"]
 
 
 class TradeOrderSide(Enum):

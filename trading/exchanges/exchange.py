@@ -4,17 +4,21 @@ import logging
 import pandas
 from ccxt import OrderNotFound, BaseError
 
-from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES
+from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES, PriceIndexes, \
+    CONFIG_TIME_FRAME, TimeFrames
 
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
 class Exchange:
-    def __init__(self, config, exchange_type):
+    def __init__(self, config, exchange_type, connect=True):
         self.exchange_type = exchange_type
+        self.connect = connect
         self.client = None
         self.config = config
         self.name = self.exchange_type.__name__
+
         self.create_client()
+
         self.client.load_markets()
 
         self.all_currencies_price_ticker = None
@@ -31,12 +35,15 @@ class Exchange:
 
     def create_client(self):
         if self.check_config():
-            self.client = self.exchange_type({
-                'apiKey': self.config["exchanges"][self.name]["api-key"],
-                'secret': self.config["exchanges"][self.name]["api-secret"],
-                'verbose': False,
-                'enableRateLimit': True
-            })
+            if self.connect:
+                self.client = self.exchange_type({
+                    'apiKey': self.config["exchanges"][self.name]["api-key"],
+                    'secret': self.config["exchanges"][self.name]["api-secret"],
+                    'verbose': False,
+                    'enableRateLimit': True
+                })
+            else:
+                self.client = self.exchange_type({'verbose': False})
         else:
             self.client = self.exchange_type({'verbose': False})
         self.client.logger.setLevel(logging.INFO)
@@ -63,9 +70,19 @@ class Exchange:
     def get_balance(self):
         return self.client.fetchBalance()
 
-    def get_symbol_prices(self, symbol, time_frame):
-        candles = self.client.fetch_ohlcv(symbol, time_frame.value)
+    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
+        if limit:
+            candles = self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
+        else:
+            candles = self.client.fetch_ohlcv(symbol, time_frame.value)
 
+        if data_frame:
+            return self.candles_array_to_data_frame(candles)
+        else:
+            return candles
+
+    @staticmethod
+    def candles_array_to_data_frame(candles_array):
         prices = {PriceStrings.STR_PRICE_HIGH.value: [],
                   PriceStrings.STR_PRICE_LOW.value: [],
                   PriceStrings.STR_PRICE_OPEN.value: [],
@@ -73,13 +90,13 @@ class Exchange:
                   PriceStrings.STR_PRICE_VOL.value: [],
                   PriceStrings.STR_PRICE_TIME.value: []}
 
-        for c in candles:
-            prices[PriceStrings.STR_PRICE_TIME.value].append(float(c[0]))
-            prices[PriceStrings.STR_PRICE_OPEN.value].append(float(c[1]))
-            prices[PriceStrings.STR_PRICE_HIGH.value].append(float(c[2]))
-            prices[PriceStrings.STR_PRICE_LOW.value].append(float(c[3]))
-            prices[PriceStrings.STR_PRICE_CLOSE.value].append(float(c[4]))
-            prices[PriceStrings.STR_PRICE_VOL.value].append(float(c[5]))
+        for c in candles_array:
+            prices[PriceStrings.STR_PRICE_TIME.value].append(float(c[PriceIndexes.IND_PRICE_TIME.value]))
+            prices[PriceStrings.STR_PRICE_OPEN.value].append(float(c[PriceIndexes.IND_PRICE_OPEN.value]))
+            prices[PriceStrings.STR_PRICE_HIGH.value].append(float(c[PriceIndexes.IND_PRICE_HIGH.value]))
+            prices[PriceStrings.STR_PRICE_LOW.value].append(float(c[PriceIndexes.IND_PRICE_LOW.value]))
+            prices[PriceStrings.STR_PRICE_CLOSE.value].append(float(c[PriceIndexes.IND_PRICE_CLOSE.value]))
+            prices[PriceStrings.STR_PRICE_VOL.value].append(float(c[PriceIndexes.IND_PRICE_VOL.value]))
 
         return pandas.DataFrame(data=prices)
 
@@ -207,3 +224,19 @@ class Exchange:
     @staticmethod
     def merge_currencies(currency, market):
         return "{0}/{1}".format(currency, market)
+
+    @staticmethod
+    def get_config_time_frame(config):
+        if CONFIG_TIME_FRAME in config:
+            result = []
+            for time_frame in config[CONFIG_TIME_FRAME]:
+                try:
+                    result.append(TimeFrames(time_frame))
+                except ValueError:
+                    logging.warning("Time frame not found : {0}".format(time_frame))
+            return result
+        else:
+            return TimeFrames
+
+    def get_rate_limit(self):
+        return self.exchange_type.rateLimit / 1000

@@ -30,15 +30,17 @@ class Order:
         self.order_type = None
         self.executed_time = 0
         self.last_prices = None
+        self.created_last_price = None
 
         self.order_notifier = None
 
         self.linked_orders = []
 
     # create the order by setting all the required values
-    def new(self, order_type, symbol, quantity, price=None, stop_price=None, order_notifier=None):
+    def new(self, order_type, symbol, current_price, quantity, price=None, stop_price=None, order_notifier=None):
         self.origin_price = price
         self.last_prices = price
+        self.created_last_price = current_price
         self.origin_quantity = quantity
         self.origin_stop_price = stop_price
         self.symbol = symbol
@@ -128,6 +130,9 @@ class Order:
 
     def set_last_prices(self, last_prices):
         self.last_prices = last_prices
+
+    def get_create_last_price(self):
+        return self.created_last_price
 
     @classmethod
     def get_name(cls):

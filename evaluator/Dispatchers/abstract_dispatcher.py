@@ -1,7 +1,7 @@
 import threading
 from abc import *
 
-from tools.asynchronous_client import AsynchronousClient
+from tools.asynchronous_server import AsynchronousServer
 
 
 # ****** Unique dispatcher side ******
@@ -35,7 +35,7 @@ class AbstractDispatcher(threading.Thread):
 
 
 # ****** Implementation side ******
-class DispatcherAbstractClient(AsynchronousClient):
+class DispatcherAbstractClient(AsynchronousServer):
     __metaclass__ = ABCMeta
 
     def __init__(self):

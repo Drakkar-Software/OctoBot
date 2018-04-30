@@ -1,10 +1,8 @@
 {
-  "refresh_rate_seconds" : 3600,
-  "relevant_history_months" : 3,
   "accounts" : {
     "Bitcoin": ["GuillaGjum","RedditBTC","BTCFoundation"],
-    "Ethereum": ["ethereum"],
-    "Neo": ["NEO_Blockchain"]
+    "Ethereum": ["GuillaGjum","ethereum"],
+    "Neo": ["GuillaGjum","NEO_Blockchain"]
   },
   "hashtags" : {
     "Bitcoin": ["bitcoin","btc","binance","kucoin","tether","bitfinex","bitmex","cryptopia","cryptocurrencies","blockchain"],

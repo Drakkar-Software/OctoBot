@@ -61,7 +61,7 @@ class TradesManager:
     """
 
     def get_profitability(self):
-        self.profitability_diff = self.profitability
+        self.profitability_diff = self.profitability_percent
         self.profitability = 0
         self.profitability_percent = 0
 
@@ -72,7 +72,7 @@ class TradesManager:
             self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
 
             # calculate difference with the last current portfolio
-            self.profitability_diff -= self.profitability
+            self.profitability_diff -= self.profitability_percent
         except Exception as e:
             self.logger.error(str(e))
 
@@ -89,12 +89,14 @@ class TradesManager:
         return self.trades_value
 
     def _update_portfolio_current_value(self):
-        self.last_portfolio = self.portfolio.get_portfolio()
+        with self.portfolio as pf:
+            self.last_portfolio = pf.get_portfolio()
         self.portfolio_current_value = self._evaluate_portfolio_value(self.last_portfolio)
 
     def _get_portfolio_origin_value(self):
         self._update_currencies_prices()
-        self.origin_portfolio = self.portfolio.get_portfolio()
+        with self.portfolio as pf:
+            self.origin_portfolio = pf.get_portfolio()
         self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio)
 
     """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reference currency
@@ -110,7 +112,7 @@ class TradesManager:
         elif symbol_inverted in self.currencies_prices:
             return quantity / self.currencies_prices[symbol_inverted][ExchangeConstantsTickersColumns.LAST.value]
         else:
-            # TODO : manage if currency/market does not exist
+            # TODO : manage if currency/market doesn't exist
             return 0
 
     """ evaluate_portfolio_value performs evaluate_value with a portfolio configuration

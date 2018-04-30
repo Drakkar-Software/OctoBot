@@ -1,0 +1,7 @@
+{
+  "subreddits" : {
+    "Bitcoin": ["Bitcoin"],
+    "Ethereum": ["ethereum"],
+    "Neo": ["NEO"]
+  }
+}
