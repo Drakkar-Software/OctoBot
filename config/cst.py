@@ -4,8 +4,8 @@ from enum import Enum
 VERSION = "0.0.8-alpha"
 
 MINUTE_TO_SECONDS = 60
-HOURS_TO_SECONDS = MINUTE_TO_SECONDS*60
-DAYS_TO_SECONDS = HOURS_TO_SECONDS*24
+HOURS_TO_SECONDS = MINUTE_TO_SECONDS * 60
+DAYS_TO_SECONDS = HOURS_TO_SECONDS * 24
 
 CONFIG_GLOBAL_UTILS = "global_utils"
 CONFIG_ENABLED_OPTION = "enabled"
@@ -99,12 +99,6 @@ STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 DIVERGENCE_USED_VALUE = 30
 
 
-class EvaluatorRisk(Enum):
-    LOW = 1
-    MEDIUM = 2
-    HIGH = 3
-
-
 class EvaluatorMatrixTypes(Enum):
     TA = "TA"
     SOCIAL = "SOCIAL"
@@ -176,7 +170,6 @@ TimeFramesMinutes = {
     TimeFrames.ONE_WEEK: 10080,
     TimeFrames.ONE_MONTH: 43200,
 }
-
 
 TimeFramesRank = sorted(TimeFramesMinutes, key=TimeFramesMinutes.__getitem__)
 
@@ -268,4 +261,3 @@ class ExchangeConstantsTickersInfoColumns(Enum):
     FIRST_ID = "firstId"
     LAST_ID = "lastId"
     COUNT = "count"
-
