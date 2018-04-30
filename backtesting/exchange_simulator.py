@@ -50,6 +50,12 @@ class ExchangeSimulator(Exchange):
         # currently 1 symbol per file and 1 file parsed => juste return data
         return self.data
 
+    def symbol_exists(self, symbol):
+        return symbol in self.symbols
+
+    def get_name(self):
+        return self.__class__.__name__+str(self.symbols)
+
     def _prepare(self):
 
         for symbol in self.symbols:

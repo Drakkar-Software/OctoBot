@@ -95,10 +95,6 @@ class CryptoBot:
         # create dispatchers
         self.dispatchers_list = EvaluatorCreator.create_dispatchers(self.config)
 
-        # update crypto_currencies according to backtesting data if necessary
-        if Backtesting.enabled(self.config):
-            Backtesting.update_config_crypto_currencies(self.config, self.exchanges_list.values())
-
         # create Social and TA evaluators
         for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
