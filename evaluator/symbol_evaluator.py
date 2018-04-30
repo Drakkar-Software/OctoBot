@@ -15,7 +15,7 @@ class SymbolEvaluator:
         self.trader_simulators = None
         self.dispatchers_list = dispatchers_list
 
-        self.evaluator_threads = {}
+        self.evaluator_thread_managers = {}
         self.final_evaluators = {}
         self.matrices = {}
         self.strategies_eval_lists = {}
@@ -52,11 +52,11 @@ class SymbolEvaluator:
     def set_trader_simulators(self, simulator):
         self.trader_simulators = simulator
 
-    def add_evaluator_thread(self, exchange, symbol, evaluator_thread):
-        if exchange.get_name() in self.evaluator_threads:
-            self.evaluator_threads[exchange.get_name()].append(evaluator_thread)
+    def add_evaluator_thread_manager(self, exchange, symbol, evaluator_thread):
+        if exchange.get_name() in self.evaluator_thread_managers:
+            self.evaluator_thread_managers[exchange.get_name()].append(evaluator_thread)
         else:
-            self.evaluator_threads[exchange.get_name()] = [evaluator_thread]
+            self.evaluator_thread_managers[exchange.get_name()] = [evaluator_thread]
             self.final_evaluators[exchange.get_name()] = FinalEvaluator(self, exchange, symbol)
             self.matrices[exchange.get_name()] = EvaluatorMatrix()
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
@@ -80,8 +80,8 @@ class SymbolEvaluator:
 
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
-        for evaluator_thread in self.evaluator_threads[exchange.get_name()]:
-            if evaluator_thread.get_data_refresher().get_refreshed_times() == 0:
+        for evaluator_thread in self.evaluator_thread_managers[exchange.get_name()]:
+            if evaluator_thread.get_refreshed_times() == 0:
                 self.finalize_enabled_list[exchange.get_name()] = False
 
     def get_trader(self, exchange):
@@ -97,7 +97,7 @@ class SymbolEvaluator:
         return self.matrices[exchange.get_name()]
 
     def get_evaluator(self, exchange):
-        return self.evaluator_threads[exchange.get_name()].get_evaluator()
+        return self.evaluator_thread_managers[exchange.get_name()].get_evaluator()
 
     def get_config(self):
         return self.config

@@ -1,6 +1,6 @@
 # CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot)
 
-#### Version 0.0.8-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md))
+#### Version 0.0.9-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md))
 
 ## Disclaimer
 This software is for educational purposes only. Do not risk money which 
@@ -36,7 +36,7 @@ Rename config/default_config.json to config/config.json
 
 ### More configuration
 See [Configuration Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Configuration)
-```
+```json
 "crypto_currencies": {
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
@@ -44,7 +44,7 @@ See [Configuration Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Configur
 }
 ```
 See [Exchanges Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Exchanges)
-```
+```json
 "exchanges": {
     "binance": {
       "api-key": "",
@@ -53,21 +53,21 @@ See [Exchanges Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Exchanges)
 }
 ```
 See [Notifications Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Notifications)
-```
+```json
 "notification":{
     "enabled": true,
     "type": [1, 2]
 }
 ```
 See [Trader Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Trader)
-```
+```json
 "trader":{
     "enabled": false,
     "risk": 0.5
 }
 ```
 See [Simulator Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator)
-```
+```json
 "simulator":{
     "enabled": true,
     "risk": 0.5,
@@ -78,12 +78,12 @@ See [Simulator Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator)
 }
 ```
 See [Services Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Services)
-```
+```json
 "services": {}
 ```
   
 ## Usage
-```
+```bash
 python main.py
 ```
 ## Customize you CryptoBot !
@@ -110,7 +110,7 @@ More information and examples on the [wiki](https://github.com/Trading-Bot/Crypt
 
 ## Testing
 Use *pytest* command in the root folder : 
-```
+```bash
 pytest
 ```
 
