@@ -1,9 +1,12 @@
+import random
+
 import ccxt
 
 from backtesting.exchange_simulator import ExchangeSimulator
-from config.cst import TraderOrderType
+from config.cst import TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK
 from tests.test_utils.config import load_test_config
-from trading.trader.order import BuyMarketOrder, OrderConstants, SellLimitOrder
+from trading.trader.order import BuyMarketOrder, OrderConstants, SellLimitOrder, BuyLimitOrder, SellMarketOrder, \
+    StopLossOrder
 from trading.trader.portfolio import Portfolio
 from trading.trader.trader_simulator import TraderSimulator
 
@@ -88,3 +91,121 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
+
+    def test_update_portfolio(self):
+        config, portfolio_inst = self.init_default()
+        _, trader_inst = self.create_trader_and_exchanges(config)
+
+        # Test buy order
+        limit_buy = BuyLimitOrder(trader_inst)
+        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+                      "BTC/USD",
+                      70,
+                      10,
+                      70)
+
+        # update portfolio with creations
+        portfolio_inst.update_portfolio_available(limit_buy, True)
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 300
+
+        last_prices = []
+        for i in range(0, SIMULATOR_LAST_PRICES_TO_CHECK):
+            last_prices.insert(i, {})
+            last_prices[i]["price"] = random.uniform(69, 71)
+
+        limit_buy.last_prices = last_prices
+        limit_buy.update_order_status()
+
+        portfolio_inst.update_portfolio(limit_buy)
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 20
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 300
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 20
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 300
+
+        # Test buy order
+        market_sell = SellMarketOrder(trader_inst)
+        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+                        "BTC/USD",
+                        80,
+                        8,
+                        80)
+
+        # update portfolio with creations
+        portfolio_inst.update_portfolio_available(market_sell, True)
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 12
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 300
+
+        last_prices = [{
+            "price": 80
+        }]
+
+        market_sell.last_prices = last_prices
+        market_sell.update_order_status()
+
+        # when filling market sell
+        portfolio_inst.update_portfolio(market_sell)
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 12
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 940
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 12
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 940
+
+    def test_update_portfolio_with_cancelled_orders(self):
+        config, portfolio_inst = self.init_default()
+        _, trader_inst = self.create_trader_and_exchanges(config)
+
+        # Test buy order
+        market_sell = SellMarketOrder(trader_inst)
+        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+                        "BTC/USD",
+                        70,
+                        3,
+                        70)
+        last_prices = [{
+            "price": 70
+        }]
+
+        market_sell.last_prices = last_prices
+        market_sell.update_order_status()
+
+        # Test sell order
+        limit_sell = SellLimitOrder(trader_inst)
+        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                       "BTC/USD",
+                       100,
+                       4.2,
+                       100)
+
+        # Test stop loss order
+        stop_loss = StopLossOrder(trader_inst)
+        stop_loss.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+                       "BTC/USD",
+                       80,
+                       4.2,
+                       80)
+
+        limit_sell.add_linked_order(stop_loss)
+        stop_loss.add_linked_order(limit_sell)
+
+        # update portfolio with creations
+        portfolio_inst.update_portfolio_available(market_sell, True)
+        portfolio_inst.update_portfolio_available(limit_sell, True)
+        portfolio_inst.update_portfolio_available(stop_loss, True)
+
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 2.8
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
+
+        # when cancelling limit and stop orders
+        portfolio_inst.update_portfolio_available(stop_loss, False)
+        portfolio_inst.update_portfolio_available(limit_sell, False)
+
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 7
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
+
+        # when filling market sell
+        portfolio_inst.update_portfolio_available(market_sell, False)
+
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 7
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1210
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 7
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1210
