@@ -20,6 +20,10 @@ class AbstractTATest:
         self.data_bank = DataBank(self.config, data_file, test_symbols)
         self._assert_init()
 
+    @abstractmethod
+    def init_test_with_evaluator_to_test(self):
+        raise NotImplementedError("init_test_with_evaluator_to_test not implemented")
+
     # replays a whole dataframe set and assert no exceptions are raised
     @abstractmethod
     def test_stress_test(self):
