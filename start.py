@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import sys
 import traceback
 from logging.config import fileConfig
@@ -36,6 +37,8 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--data_collector', help='start the data collector process to create data for backtesting',
                         action='store_true')
+    parser.add_argument('--update', help='update the cryptobot with the last version available',
+                        action='store_true')
     parser.add_argument('--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
     parser.add_argument('--risk', type=float, default=0.5, help='Risk representation (between 0 and 1)')
@@ -54,7 +57,21 @@ if __name__ == '__main__':
     config = load_config()
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
-    if args.data_collector:
+    if args.update:
+        logger.info("Updating...")
+        try:
+            process_set_remote = subprocess.Popen(["git", "remote", "set-url", "origin", ORIGIN_URL], stdout=subprocess.PIPE)
+            output = process_set_remote.communicate()[0]
+
+            process_pull = subprocess.Popen(["git", "pull", "origin"], stdout=subprocess.PIPE)
+            output = process_pull.communicate()[0]
+
+            logger.info("Updated")
+        except Exception as e:
+            logger.info("Exception raised during updating process...")
+            raise e
+
+    elif args.data_collector:
         zipline_enabled = False
         if CONFIG_DATA_COLLECTOR_ZIPLINE in config[CONFIG_DATA_COLLECTOR]:
             zipline_enabled = config[CONFIG_DATA_COLLECTOR][CONFIG_DATA_COLLECTOR_ZIPLINE]
