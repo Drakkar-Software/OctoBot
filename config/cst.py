@@ -1,7 +1,11 @@
 import operator
 from enum import Enum
 
-VERSION = "0.0.9-alpha"
+SHORT_VERSION = "0.0.9"
+REV_VERSION = "1"
+VERSION_DEV_PHASE = "alpha"
+VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
+LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
 
 MSECONDS_TO_SECONDS = 1000
 MINUTE_TO_SECONDS = 60
@@ -51,8 +55,8 @@ MARKET_SEPARATOR = "/"
 # Notification
 CONFIG_NOTIFICATION_INSTANCE = "notifier"
 CONFIG_CATEGORY_NOTIFICATION = "notification"
-NOTIFICATION_STARTING_MESSAGE = "CryptoBot v{0} starting...".format(VERSION)
-NOTIFICATION_STOPPING_MESSAGE = "CryptoBot v{0} stopping...".format(VERSION)
+NOTIFICATION_STARTING_MESSAGE = "CryptoBot v{0} starting...".format(LONG_VERSION)
+NOTIFICATION_STOPPING_MESSAGE = "CryptoBot v{0} stopping...".format(LONG_VERSION)
 
 # DEBUG options
 CONFIG_DEBUG_OPTION_PERF = "Performance_analyser"
