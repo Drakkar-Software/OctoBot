@@ -10,6 +10,6 @@ install:
   - pip install tox-travis coveralls
   - python -m pip install -r requirements.txt
 script:
-  - pytest tests/ --cov coveralls
+  - pytest tests/ --cov=.
 
 
