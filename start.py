@@ -48,7 +48,7 @@ if __name__ == '__main__':
     sys.excepthook = _log_uncaught_exceptions
 
     # Version
-    logger.info("Version : {0}".format(VERSION))
+    logger.info("Version : {0}".format(LONG_VERSION))
 
     logger.info("Load config files...")
     config = load_config()
