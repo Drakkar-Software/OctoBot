@@ -5,6 +5,7 @@ import time
 
 import ccxt
 
+from backtesting.collector.zipline_data_collector import ZiplineExchangeDataCollector
 from config.cst import *
 from trading import Exchange
 
@@ -16,6 +17,10 @@ class DataCollector:
 
         self.exchange_data_collectors_threads = []
         self.logger.info("Create data collectors...")
+
+        if CONFIG_DATA_COLLECTOR_ZIPLINE in self.config[CONFIG_DATA_COLLECTOR]:
+            self.zipline_enabled = self.config[CONFIG_DATA_COLLECTOR][CONFIG_DATA_COLLECTOR_ZIPLINE]
+
         self.create_exchange_data_collectors()
 
     def create_exchange_data_collectors(self):
@@ -26,8 +31,13 @@ class DataCollector:
 
                 exchange_inst = Exchange(self.config, exchange_type)
 
-                exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst)
-                exchange_data_collector.start()
+                if self.zipline_enabled:
+                    exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst)
+                    exchange_data_collector.start()
+                else:
+                    exchange_data_collector = ZiplineExchangeDataCollector(self.config, exchange_inst)
+                    exchange_data_collector.start()
+
                 self.exchange_data_collectors_threads.append(exchange_data_collector)
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))

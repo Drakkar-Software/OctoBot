@@ -27,6 +27,7 @@ CONFIG_BACKTESTING_DATA_FILE = "file"
 
 # Data collector
 CONFIG_DATA_COLLECTOR = "data_collector"
+CONFIG_DATA_COLLECTOR_ZIPLINE = "zipline"
 DATA_COLLECTOR_REFRESHER_TIME = 10
 CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
