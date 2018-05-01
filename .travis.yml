@@ -9,7 +9,7 @@ install:
   - ./docs/install/install-ta-lib.sh
   - python -m pip install python-coveralls
   - python -m pip install -r requirements.txt
-script: pytest --doctest-modules --pep8 coveralls -v --cov coveralls --cov-report term-missing tests/
+script: pytest tests/ --cov coveralls
 after_success:
   - coveralls
 
