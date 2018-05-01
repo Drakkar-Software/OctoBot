@@ -4,6 +4,7 @@ import traceback
 from logging.config import fileConfig
 
 from backtesting.collector.data_collector import DataCollector
+from backtesting.collector.zipline_data_collector import ZiplineDataCollector
 from cryptobot import CryptoBot
 import argparse
 
@@ -54,7 +55,15 @@ if __name__ == '__main__':
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
     if args.data_collector:
-        data_collector_inst = DataCollector(config)
+        zipline_enabled = False
+        if CONFIG_DATA_COLLECTOR_ZIPLINE in config[CONFIG_DATA_COLLECTOR]:
+            zipline_enabled = config[CONFIG_DATA_COLLECTOR][CONFIG_DATA_COLLECTOR_ZIPLINE]
+
+        if zipline_enabled:
+            data_collector_inst = ZiplineDataCollector(config)
+        else:
+            data_collector_inst = DataCollector(config)
+
         # data_collector_inst.stop()
         data_collector_inst.join()
 
