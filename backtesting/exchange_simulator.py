@@ -56,6 +56,10 @@ class ExchangeSimulator(Exchange):
     def time_frame_exists(self, time_frame):
         return time_frame in self.time_frame_get_times
 
+    def has_data_for_time_frame(self, time_frame):
+        return time_frame in self.data \
+               and len(self.data[time_frame]) >= self.DEFAULT_LIMIT + self.MIN_LIMIT
+
     def get_name(self):
         return self.__class__.__name__+str(self.symbols)
 
