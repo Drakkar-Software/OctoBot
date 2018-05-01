@@ -297,9 +297,6 @@ class MACDMomentumEvaluator(MomentumEvaluator):
                         zero_crossing_indexes,
                         pattern_move_time)
 
-            else:
-                print("2")
-
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
