@@ -32,8 +32,29 @@ class AbstractTATest:
     def get_full_data(self):
         return self.full_data
 
-    def run_stress_test_without_exceptions(self):
-        i=0
+    # runs stress test and assert that neutral evaluation ratio is under required_not_neutral_evaluation_ratio and
+    # resets eval_note between each run if reset_eval_to_none_before_each_eval set to True
+    def run_stress_test_without_exceptions(self,
+                                           required_not_neutral_evaluation_ratio=0.75,
+                                           reset_eval_to_none_before_each_eval=True):
+
+        # start with 0 data dataframe and goes onwards the end of the data
+        not_neutral_evaluation_count = 0
+
+        for current_time_in_frame in range(len(self.one_hour_data)):
+
+            self.evaluator.set_data(self.one_hour_data[0:current_time_in_frame])
+            if reset_eval_to_none_before_each_eval:
+                # force None value if possible to make sure eval_note is set during eval_impl()
+                self.evaluator.eval_note = None
+            self.evaluator.eval_impl()
+
+            assert self.evaluator.eval_note
+            if self.evaluator.eval_note != START_PENDING_EVAL_NOTE:
+                not_neutral_evaluation_count += 1
+
+        assert not_neutral_evaluation_count/len(self.one_hour_data) >= required_not_neutral_evaluation_ratio
+
 
     def _init_data(self, data_file):
         data_location = data_file if data_file else self.config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILE]
