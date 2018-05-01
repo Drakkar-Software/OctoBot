@@ -7,7 +7,10 @@ notifications:
   email: false
 install:
   - ./docs/install/install-ta-lib.sh
+  - python -m pip install python-coveralls
   - python -m pip install -r requirements.txt
-script: pytest --cov-report term --cov=. tests/
+script: pytest --doctest-modules --pep8 coveralls -v --cov coveralls --cov-report term-missing tests/
+after_success:
+  - coveralls
 
 
