@@ -5,13 +5,13 @@ from config.cst import VERSION
 DESCRIPTION = open('README.md').read() + '\n\n' + open('docs/CHANGELOG.md').read()
 
 setup(
-    name='coveralls',
+    name='CryptoBot',
     version=VERSION,
-    packages=['coveralls'],
-    url='http://github.com/coveralls-clients/coveralls-python',
+    # TODO packages=['coveralls'],
+    url='https://github.com/Trading-Bot/CryptoBot',
     license='MIT',
-    author='coveralls-clients contributors',
-    description='Show coverage stats online via coveralls.io',
+    author='Trading-Bot team',
+    description='Cryptocurrencies alert / trading bot',
     long_description=DESCRIPTION,
     entry_points={
         'console_scripts': [
