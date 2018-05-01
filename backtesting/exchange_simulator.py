@@ -138,7 +138,7 @@ class ExchangeSimulator(Exchange):
         for tf in full:
             max_price = max(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
             min_price = min(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
-            for i in range(0, self.CREATED_TICKER_BY_TIME_FRAME):
+            for _ in range(0, self.CREATED_TICKER_BY_TIME_FRAME):
                 created_tickers.append(random.uniform(min_price, max_price))
         return created_tickers
 
@@ -148,7 +148,7 @@ class ExchangeSimulator(Exchange):
         for tf in full:
             max_price = max(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
             min_price = min(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
-            for i in range(0, self.CREATED_TRADES_BY_TIME_FRAME):
+            for _ in range(0, self.CREATED_TRADES_BY_TIME_FRAME):
                 created_trades.append(
                     {
                         "price": random.uniform(min_price, max_price)
