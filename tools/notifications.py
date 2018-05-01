@@ -176,11 +176,11 @@ class OrdersNotification(Notification):
                                                                                              order.get_origin_price(),
                                                                                              market))
 
-            if trade_profitability is not None:
+            if trade_profitability is not None and orders_canceled is None:
                 content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
                                                                          round(trade_profitability, 7))
 
-            if portfolio_profitability is not None:
+            if portfolio_profitability is not None and orders_canceled is None:
                 content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(round(portfolio_profitability, 5),
                                                                                     "+" if portfolio_diff >= 0 else "",
                                                                                     round(portfolio_diff, 7))
