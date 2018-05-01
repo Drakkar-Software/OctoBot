@@ -6,4 +6,8 @@ class TestMACDTAEvaluator(AbstractTATest):
 
     def test_stress_test(self):
         self.init(MACDMomentumEvaluator)
-        self.run_stress_test_without_exceptions(0.22)
+        self.run_stress_test_without_exceptions(0.6)
+
+    def test_reactions_to_dump(self):
+        self.init(MACDMomentumEvaluator)
+        self.run_test_reactions_to_dump(0.3, 0.2, -0.5, -0.5, -0.5)

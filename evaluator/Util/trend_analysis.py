@@ -41,19 +41,25 @@ class TrendAnalysis(AbstractUtil):
         #     total_delta.append(candle_delta - indicator_delta)
 
     @staticmethod
-    def get_estimation_of_move_state_relatively_to_previous_moves_length(mean_crossing_indexes, pattern_move_size=1):
+    def get_estimation_of_move_state_relatively_to_previous_moves_length(mean_crossing_indexes,
+                                                                         current_trend,
+                                                                         pattern_move_size=1):
 
         if mean_crossing_indexes:
             # compute average move size
             time_averages = [(lambda a: mean_crossing_indexes[a+1]-mean_crossing_indexes[a])(a)
                              for a in range(len(mean_crossing_indexes)-1)]
+            # add 1st length
+            time_averages.append(mean_crossing_indexes[0])
+
             time_average = numpy.mean(time_averages)*pattern_move_size
 
+            current_move_length = len(current_trend.index) - mean_crossing_indexes[-1]
             # higher than time_average => high chances to be at half of the move already
-            if time_averages[-1] > time_average/2:
+            if current_move_length > time_average/2:
                 return 1
             else:
-                return time_averages[-1] / (time_average/2)
+                return current_move_length / (time_average/2)
         else:
             return 0
 
