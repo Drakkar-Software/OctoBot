@@ -1,11 +1,47 @@
 import csv
 import time
 
-from backtesting.collector.data_collector import DataCollectorParser, ExchangeDataCollector
+import ccxt
+
+from backtesting.collector.data_collector import DataCollectorParser, ExchangeDataCollector, DataCollector
 from config.cst import *
 
-from zipline.data.bundles import register
-from zipline.data.bundles.csvdir import csvdir_equities
+
+# from zipline.data.bundles import register
+# from zipline.data.bundles.csvdir import csvdir_equities
+from trading import Exchange
+
+
+class ZiplineDataCollector(DataCollector):
+    def __init__(self, config):
+        super().__init__(config)
+
+    def create_exchange_data_collectors(self):
+        available_exchanges = ccxt.exchanges
+        for exchange_class_string in self.config[CONFIG_EXCHANGES]:
+            if exchange_class_string in available_exchanges:
+                exchange_type = getattr(ccxt, exchange_class_string)
+
+                exchange_inst = Exchange(self.config, exchange_type)
+
+                exchange_data_collector = ZiplineExchangeDataCollector(self.config, exchange_inst)
+                exchange_data_collector.start()
+
+                self.exchange_data_collectors_threads.append(exchange_data_collector)
+            else:
+                self.logger.error("{0} exchange not found".format(exchange_class_string))
+
+    def stop(self):
+        for data_collector in self.exchange_data_collectors_threads:
+            data_collector.stop()
+
+    def join(self):
+        for data_collector in self.exchange_data_collectors_threads:
+            data_collector.join()
+
+    @staticmethod
+    def enabled(config):
+        return CONFIG_DATA_COLLECTOR in config and config[CONFIG_DATA_COLLECTOR][CONFIG_ENABLED_OPTION]
 
 
 class ZiplineDataCollectorParser(DataCollectorParser):
