@@ -217,7 +217,7 @@ class ADXMomentumEvaluator(MomentumEvaluator):
                 else:
                     crossing_indexes = TrendAnalysis.get_threshold_change_indexes(adx, neutral_adx)
                     chances_to_be_max = TrendAnalysis.get_estimation_of_move_state_relatively_to_previous_moves_length(
-                        crossing_indexes)
+                        crossing_indexes, adx)
                     proximity_to_max = min(1, current_adx / max_adx)
                     self.eval_note = multiplier * proximity_to_max * chances_to_be_max
 
@@ -287,15 +287,18 @@ class MACDMomentumEvaluator(MomentumEvaluator):
                 weight = macd_hist.iloc[-1] / macd_hist[current_pattern_start:].max() if signe_multiplier == 1 \
                     else macd_hist.iloc[-1] / macd_hist[current_pattern_start:].min()
 
-                # finally, add pattern's strength
-                weight = weight*PatternAnalyser.get_pattern_strength(pattern)
+                if not math.isnan(weight):
 
-                # check if currently
-                self.eval_note = signe_multiplier * \
-                    weight * \
-                    TrendAnalysis.get_estimation_of_move_state_relatively_to_previous_moves_length(
-                        zero_crossing_indexes,
-                        pattern_move_time)
+                    # add pattern's strength
+                    weight = weight*PatternAnalyser.get_pattern_strength(pattern)
+
+                    # compute chances to be after average pattern period
+                    average_pattern_period = TrendAnalysis.get_estimation_of_move_state_relatively_to_previous_moves_length(
+                            zero_crossing_indexes,
+                            macd_hist,
+                            pattern_move_time) if len(zero_crossing_indexes) > 1 else 0.7
+
+                    self.eval_note = signe_multiplier * weight * average_pattern_period
 
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
     def __init__(self):

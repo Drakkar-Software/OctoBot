@@ -37,8 +37,13 @@ class PatternAnalyser:
 
             if shape != PatternAnalyser.UNKNOWN_PATTERN:
                 return shape, zero_crossing_indexes[-1], data_frame_max_index
+        else:
+            # if very few data: proceed with basic analysis
 
-        return PatternAnalyser.UNKNOWN_PATTERN, None, None
+            # if last_move_data is shaped in W
+            start_pattern_index = 0 if not zero_crossing_indexes else zero_crossing_indexes[0]
+            shape = PatternAnalyser._get_pattern(data_frame[start_pattern_index:])
+            return shape, start_pattern_index, data_frame_max_index
 
     @staticmethod
     def _get_pattern(data_frame):

@@ -6,4 +6,8 @@ class TestDoubleMovingAveragesTAEvaluator(AbstractTATest):
 
     def test_stress_test(self):
         self.init(DoubleMovingAverageTrendEvaluator)
-        self.run_stress_test_without_exceptions(0.6)
+        self.run_stress_test_without_exceptions(0.8)
+
+    def test_reactions_to_dump(self):
+        self.init(DoubleMovingAverageTrendEvaluator)
+        self.run_test_reactions_to_dump(0.15, 0.15, -0.4, -0.85, -1)
