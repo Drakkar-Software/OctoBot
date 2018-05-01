@@ -51,7 +51,7 @@ class AbstractTATest:
                     self.evaluator.eval_note = None
                 self.evaluator.eval_impl()
 
-                assert self.evaluator.eval_note != None
+                assert self.evaluator.eval_note is not None
                 if self.evaluator.eval_note != START_PENDING_EVAL_NOTE:
                     not_neutral_evaluation_count += 1
             assert not_neutral_evaluation_count/len(current_time_frame_data) >= required_not_neutral_evaluation_ratio
