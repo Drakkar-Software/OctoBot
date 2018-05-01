@@ -7,9 +7,8 @@ notifications:
   email: false
 install:
   - ./docs/install/install-ta-lib.sh
-  - pip install tox-travis coveralls
   - python -m pip install -r requirements.txt
 script:
-  - pytest tests/ --cov=.
+  - pytest --cov-report term --cov=. tests/
 
 
