@@ -7,7 +7,7 @@ DESCRIPTION = open('README.md').read() + '\n\n' + open('docs/CHANGELOG.md').read
 setup(
     name='CryptoBot',
     version=VERSION,
-    # TODO packages=['coveralls'],
+    # TODO packages=[''],
     url='https://github.com/Trading-Bot/CryptoBot',
     license='MIT',
     author='Trading-Bot team',
