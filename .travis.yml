@@ -8,6 +8,7 @@ notifications:
 install:
   - ./docs/install/install-ta-lib.sh
   - python -m pip install -r requirements.txt
+  - python -m pip install -r dev_requirements.txt
 script:
   - pytest --cov-report term --cov=. tests/
 
