@@ -13,16 +13,18 @@ class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
         super().__init__()
 
     def eval_impl(self):
-        time_units = [5, 10]
-        current_moving_average = talib.MA(self.data[PriceStrings.STR_PRICE_CLOSE.value], timeperiod=2, matype=0)
-        results = [self.get_moving_average_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value],
-                                                    current_moving_average,
-                                                    i)
-                   for i in time_units]
-        self.eval_note = numpy.mean(results)
+        self.eval_note = START_PENDING_EVAL_NOTE
+        if len(self.data):
+            time_units = [5, 10]
+            current_moving_average = talib.MA(self.data[PriceStrings.STR_PRICE_CLOSE.value], timeperiod=2, matype=0)
+            results = [self.get_moving_average_analysis(self.data[PriceStrings.STR_PRICE_CLOSE.value],
+                                                        current_moving_average,
+                                                        i)
+                       for i in time_units]
+            self.eval_note = numpy.mean(results)
 
-        if self.eval_note == 0:
-            self.eval_note = START_PENDING_EVAL_NOTE
+            if self.eval_note == 0:
+                self.eval_note = START_PENDING_EVAL_NOTE
 
     # < 0 --> Current average bellow other one (computed using time_period)
     # > 0 --> Current average above other one (computed using time_period)
