@@ -87,6 +87,7 @@ class Order:
                 return False
 
     def cancel_order(self):
+        self.status = OrderStatus.CANCELED
         # TODO exchange
         self.trader.notify_order_cancel(self)
 

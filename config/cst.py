@@ -212,6 +212,8 @@ class TradeOrderSide(Enum):
 class OrderStatus(Enum):
     FILLED = 1
     PENDING = 2
+    PARTIALLY_FILLED = 3
+    CANCELED = 4
 
 
 class TraderOrderType(Enum):
