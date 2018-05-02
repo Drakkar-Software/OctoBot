@@ -30,16 +30,19 @@ class DataBank:
     def get_rise_after_over_sold(self):
         return pandas.concat([self._get_bank_time_frame_data(TimeFrames.FOUR_HOURS)[35:61],
                               self._get_bank_time_frame_data(TimeFrames.FOUR_HOURS)])[0:49], \
-               35, 43, 46, 47
+            35, 43, 46, 47
 
     # works only with default data file
-    def get_sudden_pump(self):
-        pass
+    # not started, buying started, buying maxed, start dipping, super dip, max: back normal:
+    def get_dip_after_over_bought(self):
+        return self._get_bank_time_frame_data(TimeFrames.ONE_DAY)[0:89], \
+            -17, -14, -10, -8, -2
 
     # works only with default data file
     # not started, started, heavy dump, very light dump, max: stopped dump:
     def get_sudden_dump(self):
-        return self._get_bank_time_frame_data(TimeFrames.ONE_HOUR)[0:46], -4, -3, -2, -1
+        return self._get_bank_time_frame_data(TimeFrames.ONE_HOUR)[0:46], \
+            -4, -3, -2, -1
 
     def _get_bank_time_frame_data(self, time_frame):
         return self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame]
