@@ -20,11 +20,11 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--data_collector', help='start the data collector process to create data for backtesting',
                         action='store_true')
-    parser.add_argument('--update', help='update the cryptobot with the last version available',
+    parser.add_argument('--update', help='update CryptoBot with the latest version available',
                         action='store_true')
     parser.add_argument('--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
-    parser.add_argument('--risk', type=float, default=0.5, help='Risk representation (between 0 and 1)')
+    parser.add_argument('--risk', type=float, default=0.5, help='risk representation (between 0 and 1)')
 
     args = parser.parse_args()
 

@@ -5,8 +5,6 @@ from evaluator.Util.text_analysis import TextAnalysis
 from evaluator.Util.overall_state_analysis import OverallStateAnalyser
 from evaluator.Dispatchers.reddit_dispatcher import RedditDispatcher
 from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
-from tools.decoding_encoding import DecoderEncoder
-import time
 
 
 # RedditForumEvaluator is used to get an overall state of a market, it will not trigger a trade
@@ -57,11 +55,11 @@ class RedditForumEvaluator(ForumSocialEvaluator, DispatcherAbstractClient):
             return -1 * self.sentiment_analyser.analyse(entry.selftext)
         return START_PENDING_EVAL_NOTE
 
-    def is_interested_by_this_notification(self, subreddit_name):
+    def is_interested_by_this_notification(self, notification_description):
         # true if in this symbol's subreddits configuration
         if self.social_config[CONFIG_REDDIT_SUBREDDITS]:
             for subreddit in self.social_config[CONFIG_REDDIT_SUBREDDITS][self.symbol]:
-                if subreddit.lower() == subreddit_name:
+                if subreddit.lower() == notification_description:
                     return True
         return False
 
