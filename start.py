@@ -1,34 +1,17 @@
+import argparse
 import logging
-import subprocess
 import sys
 import traceback
 from logging.config import fileConfig
 
-from backtesting.collector.data_collector import DataCollector
-from backtesting.collector.zipline_data_collector import ZiplineDataCollector
-from cryptobot import CryptoBot
-import argparse
-
 from config.config import load_config
 from config.cst import *
+from tools.commands import Commands
 
 
 def _log_uncaught_exceptions(ex_cls, ex, tb):
     logging.exception(''.join(traceback.format_tb(tb)))
     logging.exception('{0}: {1}'.format(ex_cls, ex))
-
-
-def start_crypto_bot(config):
-    bot = CryptoBot(config)
-    bot.create_exchange_traders()
-    bot.create_evaluation_threads()
-    try:
-        bot.start_threads()
-        bot.join_threads()
-    except Exception as e:
-        logging.exception("CryptBot Exception : {0}".format(e))
-        bot.stop_threads()
-        raise e
 
 
 if __name__ == '__main__':
@@ -58,18 +41,7 @@ if __name__ == '__main__':
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
     if args.update:
-        logger.info("Updating...")
-        try:
-            process_set_remote = subprocess.Popen(["git", "remote", "set-url", "origin", ORIGIN_URL], stdout=subprocess.PIPE)
-            output = process_set_remote.communicate()[0]
-
-            process_pull = subprocess.Popen(["git", "pull", "origin"], stdout=subprocess.PIPE)
-            output = process_pull.communicate()[0]
-
-            logger.info("Updated")
-        except Exception as e:
-            logger.info("Exception raised during updating process...")
-            raise e
+        Commands.update(logger)
 
     elif args.data_collector:
         zipline_enabled = False
@@ -77,12 +49,9 @@ if __name__ == '__main__':
             zipline_enabled = config[CONFIG_DATA_COLLECTOR][CONFIG_DATA_COLLECTOR_ZIPLINE]
 
         if zipline_enabled:
-            data_collector_inst = ZiplineDataCollector(config)
+            Commands.zipline_data_collector(config)
         else:
-            data_collector_inst = DataCollector(config)
-
-        # data_collector_inst.stop()
-        data_collector_inst.join()
+            Commands.data_collector(config)
 
     # start crypto bot options
     else:
@@ -94,4 +63,4 @@ if __name__ == '__main__':
             config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
 
         if args.start:
-            start_crypto_bot(config)
+            Commands.start_bot(config, logger)
