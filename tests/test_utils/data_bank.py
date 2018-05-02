@@ -29,8 +29,8 @@ class DataBank:
     # not started, selling started, selling maxed, buying starting, max: back normal:
     def get_rise_after_over_sold(self):
         return pandas.concat([self._get_bank_time_frame_data(TimeFrames.FOUR_HOURS)[35:61],
-                              self._get_bank_time_frame_data(TimeFrames.FOUR_HOURS)])[0:49]\
-            , 35, 43, 46, 47
+                              self._get_bank_time_frame_data(TimeFrames.FOUR_HOURS)])[0:49], \
+               35, 43, 46, 47
 
     # works only with default data file
     def get_sudden_pump(self):
