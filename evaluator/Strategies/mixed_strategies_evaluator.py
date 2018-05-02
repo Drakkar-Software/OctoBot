@@ -5,9 +5,13 @@ from evaluator.Strategies import MixedStrategiesEvaluator
 
 
 # TEMP strategy
+from tools.evaluators_util import check_valid_eval_note
+
+
 class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def __init__(self):
         super().__init__()
+        self.create_divergence_analyser()
         self.social_counter = 0
         self.ta_relevance_counter = 0
         self.rt_counter = 0
@@ -25,6 +29,12 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def inc_rt_counter(self, inc=1):
         self.rt_counter += inc
 
+    def set_matrix(self, matrix):
+        super().set_matrix(matrix)
+
+        # TODO temp with notification
+        self.get_divergence()
+
     def eval_impl(self) -> None:
         # TODO : temp counter without relevance
         self.social_counter = 0
@@ -39,20 +49,20 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
         self.rt_evaluation = 0
 
         for rt in self.matrix[EvaluatorMatrixTypes.REAL_TIME]:
-            if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]):
+            if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]):
                     self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]
                     self.inc_rt_counter()
 
         for ta in self.matrix[EvaluatorMatrixTypes.TA]:
             if self.matrix[EvaluatorMatrixTypes.TA][ta]:
                 for ta_time_frame in self.matrix[EvaluatorMatrixTypes.TA][ta]:
-                    if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]):
+                    if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]):
                         time_frame_relevance = TimeFramesRelevance[ta_time_frame]
                         self.ta_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame] * time_frame_relevance
                         self.inc_ta_counter(time_frame_relevance)
 
         for social in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
-            if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][social]):
+            if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][social]):
                 self.social_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
                 self.inc_social_counter()
 
