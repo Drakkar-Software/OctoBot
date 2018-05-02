@@ -1,11 +1,10 @@
 import logging
 
-from config.cst import *
-from evaluator.Strategies import StrategiesEvaluator
+from tools.evaluators_util import check_valid_eval_note
 
 
 class EvaluatorDivergenceAnalyser:
-    def __init__(self,):
+    def __init__(self):
         self.average_note = None
         self.average_counter = None
         self.matrix = None
@@ -14,7 +13,7 @@ class EvaluatorDivergenceAnalyser:
 
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def notify_matrix_update(self, matrix):
+    def update(self, matrix):
         self.average_note = 0
         self.average_counter = 0
         self.matrix = matrix
@@ -45,14 +44,15 @@ class EvaluatorDivergenceAnalyser:
             for evaluator_name in self.matrix[matrix_type]:
                 if isinstance(self.matrix[matrix_type][evaluator_name], dict):
                     for time_frame in self.matrix[matrix_type][evaluator_name]:
-                        if StrategiesEvaluator.check_valid_eval_note(self.matrix[matrix_type][evaluator_name][time_frame]):
+                        if check_valid_eval_note(
+                                self.matrix[matrix_type][evaluator_name][time_frame]):
                             if self.check_eval_note_divergence(self.matrix[matrix_type][evaluator_name][time_frame]):
                                 self.log_divergence(matrix_type,
                                                     evaluator_name,
                                                     self.matrix[matrix_type][evaluator_name][time_frame],
                                                     time_frame)
                 else:
-                    if StrategiesEvaluator.check_valid_eval_note(self.matrix[matrix_type][evaluator_name]):
+                    if check_valid_eval_note(self.matrix[matrix_type][evaluator_name]):
                         if self.check_eval_note_divergence(self.matrix[matrix_type][evaluator_name]):
                             self.log_divergence(matrix_type,
                                                 evaluator_name,
@@ -73,9 +73,3 @@ class EvaluatorDivergenceAnalyser:
                                                                                                        time_frame,
                                                                                                        self.average_note,
                                                                                                        eval_note))
-
-    @staticmethod
-    def enabled(config):
-        if CONFIG_DEBUG_EVALUATOR_DIVERGENCE_ANALYSER in config:
-            return config[CONFIG_DEBUG_EVALUATOR_DIVERGENCE_ANALYSER]
-        return False
