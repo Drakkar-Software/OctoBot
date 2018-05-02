@@ -5,8 +5,6 @@ from evaluator.Util.text_analysis import TextAnalysis
 from evaluator.Util.overall_state_analysis import OverallStateAnalyser
 from evaluator.Dispatchers.reddit_dispatcher import RedditDispatcher
 from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
-from tools.decoding_encoding import DecoderEncoder
-import time
 
 
 # RedditForumEvaluator is used to get an overall state of a market, it will not trigger a trade
