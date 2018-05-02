@@ -1,9 +1,7 @@
 from abc import *
 
-import math
-
-from config.cst import START_PENDING_EVAL_NOTE
 from evaluator.abstract_evaluator import AbstractEvaluator
+from tools.evaluator_divergence_analyser import EvaluatorDivergenceAnalyser
 
 
 class StrategiesEvaluator(AbstractEvaluator):
@@ -12,6 +10,7 @@ class StrategiesEvaluator(AbstractEvaluator):
     def __init__(self):
         super().__init__()
         self.matrix = None
+        self.divergence_evaluator_analyser = None
 
     def set_matrix(self, matrix):
         self.matrix = matrix.get_matrix()
@@ -19,12 +18,11 @@ class StrategiesEvaluator(AbstractEvaluator):
     def get_is_evaluable(self):
         return not (self.get_is_updating() or self.matrix is None)
 
-    @staticmethod
-    def check_valid_eval_note(eval_note):
-        if eval_note and eval_note is not START_PENDING_EVAL_NOTE and not math.isnan(eval_note):
-            return True
-        else:
-            return False
+    def create_divergence_analyser(self):
+        self.divergence_evaluator_analyser = EvaluatorDivergenceAnalyser()
+
+    def get_divergence(self):
+        return self.divergence_evaluator_analyser.update(self.matrix)
 
     @abstractmethod
     def eval_impl(self) -> None:

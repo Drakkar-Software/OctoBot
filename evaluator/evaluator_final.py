@@ -5,11 +5,10 @@ from config.cst import EvaluatorStates, INIT_EVAL_NOTE
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 from tools import EvaluatorNotification
 from tools.asynchronous_server import AsynchronousServer
-from tools.evaluator_divergence_analyser import EvaluatorDivergenceAnalyser
 
 
 class FinalEvaluator(AsynchronousServer):
-    def __init__(self, config, symbol_evaluator, exchange, symbol):
+    def __init__(self, symbol_evaluator, exchange, symbol):
         super().__init__(self.finalize)
         self.symbol_evaluator = symbol_evaluator
         self.config = symbol_evaluator.get_config()
@@ -27,11 +26,6 @@ class FinalEvaluator(AsynchronousServer):
         self.NEUTRAL_THRESHOLD = 0.25
         self.SHORT_THRESHOLD = 0.75
         self.RISK_THRESHOLD = 0.2
-
-        if EvaluatorDivergenceAnalyser.enabled(config):
-            self.divergence_evaluator_analyser = EvaluatorDivergenceAnalyser()
-        else:
-            self.divergence_evaluator_analyser = None
 
         self.notifier = EvaluatorNotification(self.config)
         self.queue = Queue()
@@ -135,10 +129,6 @@ class FinalEvaluator(AsynchronousServer):
     def finalize(self):
         # reset previous note
         self.final_eval = INIT_EVAL_NOTE
-
-        # check eval notes divergence
-        if self.divergence_evaluator_analyser is not None:
-            self.divergence_evaluator_analyser.notify_matrix_update(self.symbol_evaluator.get_matrix(self.exchange).get_matrix())
 
         self._prepare()
         self._create_state()
