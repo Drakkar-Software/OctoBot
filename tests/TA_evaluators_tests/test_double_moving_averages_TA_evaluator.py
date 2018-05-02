@@ -14,3 +14,7 @@ class TestDoubleMovingAveragesTAEvaluator(AbstractTATest):
     def test_reactions_to_dump(self):
         self.init_test_with_evaluator_to_test()
         self.run_test_reactions_to_dump(0.15, 0.15, -0.4, -0.85, -1)
+
+    def test_reaction_to_rise_after_over_sold(self):
+        self.init_test_with_evaluator_to_test()
+        self.run_test_reactions_to_rise_after_over_sold(-0.7, -0.99, -0.99, -0.5, 0.85)
