@@ -18,3 +18,7 @@ class TestRSITAEvaluator(AbstractTATest):
     def test_reaction_to_rise_after_over_sold(self):
         self.init_test_with_evaluator_to_test()
         self.run_test_reactions_to_rise_after_over_sold(-1, -1, -1, -1, -1)
+
+    def test_reaction_to_over_bought_then_dip(self):
+        self.init_test_with_evaluator_to_test()
+        self.run_test_reactions_to_over_bought_then_dip(0.1, 0.4, 0.85, 1, 0.75, 0.8)

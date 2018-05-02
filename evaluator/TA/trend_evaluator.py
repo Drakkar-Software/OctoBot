@@ -36,8 +36,8 @@ class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
         time_period_unit_moving_average = talib.MA(data_frame, timeperiod=time_period, matype=0)
 
         # compute difference between 1 unit values and others ( >0 means currently up the other one)
-        values_difference = (current_moving_average - time_period_unit_moving_average).dropna()
-        values_difference.reset_index(drop=True, inplace=True)
+        values_difference = (current_moving_average - time_period_unit_moving_average)
+        values_difference = DataFrameUtil.drop_nan_and_reset_index(values_difference)
 
         if len(values_difference):
             # indexes where current_unit_moving_average crosses time_period_unit_moving_average
@@ -48,7 +48,7 @@ class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
             # check at least some data crossed 0
             if crossing_indexes:
                 normalized_data = DataFrameUtil.normalize_data_frame(values_difference)
-                current_value = min(abs(normalized_data.iloc[-1])*2,1)
+                current_value = min(abs(normalized_data.iloc[-1])*2, 1)
                 if math.isnan(current_value):
                     return 0
                 # check <= values_difference.count()-1if current value is max/min

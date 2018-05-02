@@ -13,8 +13,12 @@ class TestMACDTAEvaluator(AbstractTATest):
 
     def test_reactions_to_dump(self):
         self.init_test_with_evaluator_to_test()
-        self.run_test_reactions_to_dump(0.3, 0.2, -0.5, -0.5, -0.5)
+        self.run_test_reactions_to_dump(0.3, 0.2, -0.5, -0.7, -0.7)
 
     def test_reaction_to_rise_after_over_sold(self):
         self.init_test_with_evaluator_to_test()
         self.run_test_reactions_to_rise_after_over_sold(0, -0.5, -0.65, -0.4, -0.1)
+
+    def test_reaction_to_over_bought_then_dip(self):
+        self.init_test_with_evaluator_to_test()
+        self.run_test_reactions_to_over_bought_then_dip(-0.6, 0.1, 0.7, 0.7, -0.4, -0.65)

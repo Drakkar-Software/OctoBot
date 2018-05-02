@@ -6,6 +6,7 @@ from config.cst import *
 from evaluator.TA.TA_evaluator import MomentumEvaluator
 
 from evaluator.Util.trend_analysis import TrendAnalysis
+from evaluator.Util.data_frame_util import DataFrameUtil
 from evaluator.Util.pattern_analysis import PatternAnalyser
 
 
@@ -194,36 +195,41 @@ class ADXMomentumEvaluator(MomentumEvaluator):
                             timeperiod=14)
             instant_ema = talib.EMA(self.data[PriceStrings.STR_PRICE_CLOSE.value], timeperiod=2)
             slow_ema = talib.EMA(self.data[PriceStrings.STR_PRICE_CLOSE.value], timeperiod=20)
+            adx = DataFrameUtil.drop_nan_and_reset_index(adx)
 
-            current_adx = adx.iloc[-1]
-            current_slows_ema = slow_ema.iloc[-1]
-            current_instant_ema = instant_ema.iloc[-1]
+            if len(adx):
+                current_adx = adx.iloc[-1]
+                current_slows_ema = slow_ema.iloc[-1]
+                current_instant_ema = instant_ema.iloc[-1]
 
-            multiplier = -1 if current_instant_ema < current_slows_ema else 1
+                multiplier = -1 if current_instant_ema < current_slows_ema else 1
 
-            # strong adx => strong trend
-            if current_adx > neutral_adx:
-                # if max adx already reached => when ADX forms a top and begins to turn down, you should look for a
-                # retracement that causes the price to move toward its 20-day exponential moving average (EMA).
-                adx_last_values = adx.tail(20)
-                adx_last_value = adx_last_values.iloc[-1]
+                # strong adx => strong trend
+                if current_adx > neutral_adx:
+                    # if max adx already reached => when ADX forms a top and begins to turn down, you should look for a
+                    # retracement that causes the price to move toward its 20-day exponential moving average (EMA).
+                    adx_last_values = adx.tail(15)
+                    adx_last_value = adx_last_values.iloc[-1]
 
-                # max already reached => trend will slow down
-                if adx_last_value < adx_last_values.max():
+                    local_max_adx = adx_last_values.max()
+                    # max already reached => trend will slow down
+                    if adx_last_value < local_max_adx:
 
-                    self.eval_note = multiplier * (1 - ((max_adx - current_adx) / (max_adx - neutral_adx)))
+                        self.eval_note = multiplier * (1 - (current_adx - neutral_adx) / (local_max_adx - neutral_adx))
 
-                # max not reached => trend will continue, return chances to be max now
+                    # max not reached => trend will continue, return chances to be max now
+                    else:
+                        crossing_indexes = TrendAnalysis.get_threshold_change_indexes(adx, neutral_adx)
+                        chances_to_be_max = \
+                            TrendAnalysis.get_estimation_of_move_state_relatively_to_previous_moves_length(
+                                crossing_indexes, adx) if len(crossing_indexes) > 2 \
+                            else 0.75
+                        proximity_to_max = min(1, current_adx / max_adx)
+                        self.eval_note = multiplier * proximity_to_max * chances_to_be_max
+
+                # weak adx => change to come
                 else:
-                    crossing_indexes = TrendAnalysis.get_threshold_change_indexes(adx, neutral_adx)
-                    chances_to_be_max = TrendAnalysis.get_estimation_of_move_state_relatively_to_previous_moves_length(
-                        crossing_indexes, adx)
-                    proximity_to_max = min(1, current_adx / max_adx)
-                    self.eval_note = multiplier * proximity_to_max * chances_to_be_max
-
-            # weak adx => change to come
-            else:
-                self.eval_note = multiplier * min(1, ((neutral_adx - current_adx) / (neutral_adx - min_adx)))
+                    self.eval_note = multiplier * min(1, ((neutral_adx - current_adx) / (neutral_adx - min_adx)))
 
 
 class OBVMomentumEvaluator(MomentumEvaluator):
@@ -270,7 +276,7 @@ class MACDMomentumEvaluator(MomentumEvaluator):
 
             # on macd hist => M pattern: bearish movement, W pattern: bullish movement
             #                 max on hist: optimal sell or buy
-
+            macd_hist = DataFrameUtil.drop_nan_and_reset_index(macd_hist)
             zero_crossing_indexes = TrendAnalysis.get_threshold_change_indexes(macd_hist, 0)
             last_index = len(macd_hist.index)-1
             pattern, start_index, end_index = PatternAnalyser.find_pattern(macd_hist, zero_crossing_indexes, last_index)
@@ -293,12 +299,25 @@ class MACDMomentumEvaluator(MomentumEvaluator):
                     # add pattern's strength
                     weight = price_weight*PatternAnalyser.get_pattern_strength(pattern)
 
-                    # compute chances to be after average pattern period
-                    average_pattern_period = TrendAnalysis.\
-                        get_estimation_of_move_state_relatively_to_previous_moves_length(
+                    average_pattern_period = 0.7
+                    if len(zero_crossing_indexes) > 1:
+                        # compute chances to be after average pattern period
+                        patterns = [PatternAnalyser.get_pattern(
+                            macd_hist[zero_crossing_indexes[i]:zero_crossing_indexes[i+1]])
+                            for i in range(len(zero_crossing_indexes)-1)
+                        ]
+                        if 0 != zero_crossing_indexes[0]:
+                            patterns.append(PatternAnalyser.get_pattern(macd_hist[0:zero_crossing_indexes[0]]))
+                        if len(macd_hist)-1 != zero_crossing_indexes[-1]:
+                            patterns.append(PatternAnalyser.get_pattern(macd_hist[zero_crossing_indexes[-1]:]))
+                        double_patterns_count = patterns.count("W") + patterns.count("M")
+
+                        average_pattern_period = TrendAnalysis. \
+                            get_estimation_of_move_state_relatively_to_previous_moves_length(
                             zero_crossing_indexes,
                             macd_hist,
-                            pattern_move_time) if len(zero_crossing_indexes) > 1 else 0.7
+                            pattern_move_time,
+                            double_patterns_count)
 
                     # if we have few data but wave is growing => set higher value
                     if len(zero_crossing_indexes) <= 1 and price_weight == 1:
