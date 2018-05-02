@@ -3,11 +3,10 @@ from evaluator.RealTime import InstantFluctuationsEvaluator
 from evaluator.Social import MediumNewsEvaluator, RedditForumEvaluator
 from evaluator.Strategies import MixedStrategiesEvaluator
 
-# TEMP strategy
-from evaluator.TA import RSIMomentumEvaluator
 from tools.evaluators_util import check_valid_eval_note
 
 
+# TEMP strategy
 class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def __init__(self):
         super().__init__()
@@ -34,7 +33,7 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
         super().set_matrix(matrix)
 
         # TODO temp with notification
-        self.get_divergence()
+        # self.get_divergence()
 
     def eval_impl(self) -> None:
         # TODO : temp counter without relevance
@@ -50,10 +49,10 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
         self.rt_evaluation = 0
 
         # example
-        if RSIMomentumEvaluator.get_name() in self.matrix[EvaluatorMatrixTypes.TA]:
-            self.divergence_evaluation = self.divergence_evaluator_analyser.calc_evaluator_divergence(
-                EvaluatorMatrixTypes.TA,
-                RSIMomentumEvaluator.get_name())
+        # if RSIMomentumEvaluator.get_name() in self.matrix[EvaluatorMatrixTypes.TA]:
+        #     self.divergence_evaluation = self.divergence_evaluator_analyser.calc_evaluator_divergence(
+        #         EvaluatorMatrixTypes.TA,
+        #         RSIMomentumEvaluator.get_name())
 
         for rt in self.matrix[EvaluatorMatrixTypes.REAL_TIME]:
             if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]):
