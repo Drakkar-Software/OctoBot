@@ -57,11 +57,11 @@ class RedditForumEvaluator(ForumSocialEvaluator, DispatcherAbstractClient):
             return -1 * self.sentiment_analyser.analyse(entry.selftext)
         return START_PENDING_EVAL_NOTE
 
-    def is_interested_by_this_notification(self, subreddit_name):
+    def is_interested_by_this_notification(self, notification_description):
         # true if in this symbol's subreddits configuration
         if self.social_config[CONFIG_REDDIT_SUBREDDITS]:
             for subreddit in self.social_config[CONFIG_REDDIT_SUBREDDITS][self.symbol]:
-                if subreddit.lower() == subreddit_name:
+                if subreddit.lower() == notification_description:
                     return True
         return False
 
