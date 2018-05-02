@@ -34,6 +34,11 @@ class AbstractTATest:
     def test_reactions_to_dump(self):
         raise NotImplementedError("test_reactions_to_dump not implemented")
 
+    # checks evaluations when an asset is over-sold
+    @abstractmethod
+    def test_reaction_to_rise_after_over_sold(self):
+        raise NotImplementedError("test_reaction_to_oversold not implemented")
+
     # runs stress test and assert that neutral evaluation ratio is under required_not_neutral_evaluation_ratio and
     # resets eval_note between each run if reset_eval_to_none_before_each_eval set to True
     def run_stress_test_without_exceptions(self,
@@ -71,34 +76,53 @@ class AbstractTATest:
         dump_data, pre_dump, start_dump, heavy_dump, end_dump = self.data_bank.get_sudden_dump()
 
         # not dumped yet
-        self.evaluator.set_data(dump_data[0:pre_dump])
-        self.evaluator.eval_impl()
-        assert self.evaluator.eval_note == pre_dump_eval \
-            or self.evaluator.eval_note >= pre_dump_eval
+        self._set_data_and_check_eval(dump_data[0:pre_dump], pre_dump_eval, False)
 
         # starts dumping
-        self.evaluator.set_data(dump_data[0:start_dump])
-        self.evaluator.eval_impl()
-        assert self.evaluator.eval_note == slight_dump_started_eval \
-            or self.evaluator.eval_note <= slight_dump_started_eval
+        self._set_data_and_check_eval(dump_data[0:start_dump], slight_dump_started_eval, True)
 
         # real dumping
-        self.evaluator.set_data(dump_data[0:heavy_dump])
-        self.evaluator.eval_impl()
-        assert self.evaluator.eval_note == heavy_dump_started_eval \
-            or self.evaluator.eval_note <= heavy_dump_started_eval
+        self._set_data_and_check_eval(dump_data[0:heavy_dump], heavy_dump_started_eval, True)
 
         # end dumping
-        self.evaluator.set_data(dump_data[0:end_dump])
-        self.evaluator.eval_impl()
-        assert self.evaluator.eval_note == end_dump_eval \
-            or self.evaluator.eval_note <= end_dump_eval
+        self._set_data_and_check_eval(dump_data[0:end_dump], end_dump_eval, True)
 
         # stopped dumping
-        self.evaluator.set_data(dump_data)
+        self._set_data_and_check_eval(dump_data, after_dump_eval, True)
+
+    # test reaction to over-sold
+    def run_test_reactions_to_rise_after_over_sold(self, pre_sell_eval,
+                                                   started_sell_eval,
+                                                   max_sell_eval,
+                                                   start_rise_eval,
+                                                   after_rise_eval):
+
+        sell_then_buy_data, pre_sell, start_sell, max_sell, start_rise = self.data_bank.get_rise_after_over_sold()
+
+        # not sold
+        self._set_data_and_check_eval(sell_then_buy_data[0:pre_sell], pre_sell_eval, False)
+
+        # starts selling
+        self._set_data_and_check_eval(sell_then_buy_data[0:start_sell], started_sell_eval, True)
+
+        # max selling
+        self._set_data_and_check_eval(sell_then_buy_data[0:max_sell], max_sell_eval, True)
+
+        # start buying
+        self._set_data_and_check_eval(sell_then_buy_data[0:start_rise], start_rise_eval, True)
+
+        # bought
+        self._set_data_and_check_eval(sell_then_buy_data, after_rise_eval, True)
+
+    def _set_data_and_check_eval(self, data, expected_eval_note, check_inferior):
+        self.evaluator.set_data(data)
         self.evaluator.eval_impl()
-        assert self.evaluator.eval_note == after_dump_eval \
-            or self.evaluator.eval_note <= after_dump_eval
+        if check_inferior:
+            assert self.evaluator.eval_note == expected_eval_note \
+                or self.evaluator.eval_note <= expected_eval_note
+        else:
+            assert self.evaluator.eval_note == expected_eval_note \
+                or self.evaluator.eval_note >= expected_eval_note
 
     def _assert_init(self):
         assert self.evaluator

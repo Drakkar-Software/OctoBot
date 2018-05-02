@@ -186,7 +186,7 @@ class ADXMomentumEvaluator(MomentumEvaluator):
         self.eval_note = START_PENDING_EVAL_NOTE
         if len(self.data):
             min_adx = 7.5
-            max_adx = 50
+            max_adx = 45
             neutral_adx = 25
             adx = talib.ADX(self.data[PriceStrings.STR_PRICE_HIGH.value],
                             self.data[PriceStrings.STR_PRICE_LOW.value],
@@ -258,6 +258,7 @@ class TRIXMomentumEvaluator(MomentumEvaluator):
 class MACDMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
         super().__init__()
+        self.previous_note = None
 
     def eval_impl(self):
         self.eval_note = START_PENDING_EVAL_NOTE
@@ -284,21 +285,31 @@ class MACDMomentumEvaluator(MomentumEvaluator):
 
                 # set weight according to the max value of the pattern and the current value
                 current_pattern_start = start_index
-                weight = macd_hist.iloc[-1] / macd_hist[current_pattern_start:].max() if signe_multiplier == 1 \
+                price_weight = macd_hist.iloc[-1] / macd_hist[current_pattern_start:].max() if signe_multiplier == 1 \
                     else macd_hist.iloc[-1] / macd_hist[current_pattern_start:].min()
 
-                if not math.isnan(weight):
+                if not math.isnan(price_weight):
 
                     # add pattern's strength
-                    weight = weight*PatternAnalyser.get_pattern_strength(pattern)
+                    weight = price_weight*PatternAnalyser.get_pattern_strength(pattern)
 
                     # compute chances to be after average pattern period
-                    average_pattern_period = TrendAnalysis.get_estimation_of_move_state_relatively_to_previous_moves_length(
+                    average_pattern_period = TrendAnalysis.\
+                        get_estimation_of_move_state_relatively_to_previous_moves_length(
                             zero_crossing_indexes,
                             macd_hist,
                             pattern_move_time) if len(zero_crossing_indexes) > 1 else 0.7
 
+                    # if we have few data but wave is growing => set higher value
+                    if len(zero_crossing_indexes) <= 1 and price_weight == 1:
+                        if self.previous_note is not None:
+                            average_pattern_period = 0.95
+                        self.previous_note = signe_multiplier * weight * average_pattern_period
+                    else:
+                        self.previous_note = None
+
                     self.eval_note = signe_multiplier * weight * average_pattern_period
+
 
 class ChaikinOscillatorMomentumEvaluator(MomentumEvaluator):
     def __init__(self):
