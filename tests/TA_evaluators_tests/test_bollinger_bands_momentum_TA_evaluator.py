@@ -18,3 +18,7 @@ class TestBollingerBandsMomentumTAEvaluator(AbstractTATest):
     def test_reaction_to_rise_after_over_sold(self):
         self.init_test_with_evaluator_to_test()
         self.run_test_reactions_to_rise_after_over_sold(-0.1, -0.99, -0.99, -0.5, 1)
+
+    def test_reaction_to_over_bought_then_dip(self):
+        self.init_test_with_evaluator_to_test()
+        self.run_test_reactions_to_over_bought_then_dip(0, 1, 1, 0.95, -0.3, -0.1)

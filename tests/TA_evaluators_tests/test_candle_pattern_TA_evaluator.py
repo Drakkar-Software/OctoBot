@@ -21,3 +21,9 @@ class TestCandlePatternTAEvaluator(AbstractTATest):
         self.init_test_with_evaluator_to_test()
         self.run_test_reactions_to_rise_after_over_sold(START_PENDING_EVAL_NOTE, START_PENDING_EVAL_NOTE, -0.5,
                                                         -0.5, -0.5)
+
+    def test_reaction_to_over_bought_then_dip(self):
+        self.init_test_with_evaluator_to_test()
+        self.run_test_reactions_to_over_bought_then_dip(START_PENDING_EVAL_NOTE, START_PENDING_EVAL_NOTE,
+                                                        START_PENDING_EVAL_NOTE, -0.5,
+                                                        -0.5, -0.5)
