@@ -62,7 +62,7 @@ class SymbolEvaluator:
             self.evaluator_thread_managers[exchange.get_name()].append(evaluator_thread)
         else:
             self.evaluator_thread_managers[exchange.get_name()] = [evaluator_thread]
-            self.final_evaluators[exchange.get_name()] = FinalEvaluator(self, exchange, symbol)
+            self.final_evaluators[exchange.get_name()] = FinalEvaluator(self.config, self, exchange, symbol)
             self.matrices[exchange.get_name()] = EvaluatorMatrix()
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
             self.finalize_enabled_list[exchange.get_name()] = False
