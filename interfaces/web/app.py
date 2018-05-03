@@ -23,18 +23,29 @@ class WebApp(threading.Thread):
         self.server = self.app.server
 
         self.app.layout = html.Div(children=[
+            html.H1('CryptoBot'),
+            html.Div([
+                html.Label('Currency'),
+                dcc.Dropdown(id='cryptocurrency-name',
+                             options=[{'label': s, 'value': s}
+                                      for s in self.config[CONFIG_CRYPTO_CURRENCIES].keys()],
+                             value=list(self.config[CONFIG_CRYPTO_CURRENCIES].keys())[0],
+                             multi=False,
+                             ),
+                html.Label('Risk'),
+                dcc.Slider(
+                    min=0.1,
+                    max=1,
+                    value=0.5,
+                    step=0.05,
+                    marks={0.1: 'Risk minimized', 1: 'Risk maximized'},
+                ),
+            ],
+                style={'columnCount': 2, 'marginLeft': 25, 'marginRight': 25}),
             dcc.Graph(id='live-graph', animate=True),
-
-            dcc.Dropdown(id='cryptocurrency-name',
-                         options=[{'label': s, 'value': s}
-                                  for s in self.config[CONFIG_CRYPTO_CURRENCIES].keys()],
-                         value=[tuple(self.config[CONFIG_CRYPTO_CURRENCIES].keys())],
-                         multi=False
-                         ),
-
             dcc.Interval(
                 id='graph-update',
-                interval=5 * 1000
+                interval=1 * 10000
             ),
         ])
 
