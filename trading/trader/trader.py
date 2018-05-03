@@ -114,7 +114,7 @@ class Trader:
             # remove order to open_orders
             self.order_manager.remove_order_from_list(order)
 
-            order_profitability = order.get_create_last_price() - order.get_filled_price()
+            order_profitability = order.get_filled_price() - order.get_create_last_price()
 
         if order_closed is not None:
             profitability_activated = True
