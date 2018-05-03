@@ -15,6 +15,10 @@ class TestMACDTAEvaluator(AbstractTATest):
         self.init_test_with_evaluator_to_test()
         self.run_test_reactions_to_dump(0.3, 0.2, -0.5, -0.7, -0.7)
 
+    def test_reactions_to_pump(self):
+        self.init_test_with_evaluator_to_test()
+        self.run_test_reactions_to_pump(0.3, 0.4, 0.75, 0.75, 0.75, 0.75, 0.2)
+
     def test_reaction_to_rise_after_over_sold(self):
         self.init_test_with_evaluator_to_test()
         self.run_test_reactions_to_rise_after_over_sold(0, -0.5, -0.65, -0.4, -0.1)

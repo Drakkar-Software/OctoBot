@@ -27,7 +27,6 @@ class DataBank:
         self.exchange_inst.data = self.get_data_from_file(self.data_file)
         self.data_by_symbol_by_data_frame = None
         self._init_data()
-        self.get_sudden_pump()
 
     def get_all_data_for_all_available_time_frames_for_symbol(self, symbol):
         return self.data_by_symbol_by_data_frame[symbol]
@@ -52,10 +51,10 @@ class DataBank:
             -4, -3, -2, -1
 
     # works only with default data file
-    # not started, started, heavy pump, max pump, max: start dip:
+    # not started, started, heavy pump, max pump, change trend, dipping, max: dipped:
     def get_sudden_pump(self):
-        return self._get_bank_time_frame_data(TimeFrames.HEIGHT_HOURS)[:85], \
-            71, 74, 76, 77, 78
+        return self._get_bank_time_frame_data(TimeFrames.HEIGHT_HOURS)[:83], \
+            71, 74, 76, 77, 78, 79
 
     def _get_bank_time_frame_data(self, time_frame):
         return self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame]

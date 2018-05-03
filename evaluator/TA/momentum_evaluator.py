@@ -253,7 +253,7 @@ class ADXMomentumEvaluator(MomentumEvaluator):
                     # max already reached => trend will slow down
                     if adx_last_value < local_max_adx:
 
-                        self.eval_note = multiplier * (1 - (current_adx - neutral_adx) / (local_max_adx - neutral_adx))
+                        self.eval_note = multiplier * (current_adx - neutral_adx) / (local_max_adx - neutral_adx)
 
                     # max not reached => trend will continue, return chances to be max now
                     else:
