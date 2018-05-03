@@ -186,7 +186,7 @@ class OrdersNotification(Notification):
 
             if trade_profitability is not None and profitability:
                 content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
-                                                                      round(trade_profitability, 7))
+                                                                      round(trade_profitability*100, 7))
 
             if portfolio_profitability is not None and profitability:
                 content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(round(portfolio_profitability, 5),

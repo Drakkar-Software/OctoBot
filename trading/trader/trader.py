@@ -82,7 +82,6 @@ class Trader:
         # If need to cancel the order call the method and no need to update the portfolio (only availability)
         if cancel:
             order_closed = None
-            order_profitability = None
             orders_canceled = order.get_linked_orders() + [order]
 
             self.cancel_order(order)
@@ -114,8 +113,6 @@ class Trader:
             # remove order to open_orders
             self.order_manager.remove_order_from_list(order)
 
-            order_profitability = order.get_filled_price() - order.get_create_last_price()
-
         if order_closed is not None:
             profitability_activated = True
         else:
@@ -124,7 +121,7 @@ class Trader:
         # notification
         order.get_order_notifier().end(order_closed,
                                        orders_canceled,
-                                       order_profitability,
+                                       order.get_profitability(),
                                        profitability_percent,
                                        profitability_diff,
                                        profitability_activated)
