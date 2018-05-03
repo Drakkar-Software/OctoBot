@@ -8,6 +8,12 @@ from config.cst import *
 """
 Class containing data with known moves
 Moves are in the middle of the return data_frame
+
+TimeFrames.ONE_HOUR: 2018-04-07 16:00:00 -> 2018-04-11 20:00:00
+TimeFrames.FOUR_HOURS: 2018-02-03 00:00:00 -> 2018-02-20 16:00:00
+TimeFrames.HEIGHT_HOURS: 2017-11-12 04:00:00 -> 2017-12-11 16:00:00
+TimeFrames.ONE_DAY: 2017-08-17 00:00:00 -> 2017-11-12 00:00:00
+
 """
 
 
@@ -21,6 +27,7 @@ class DataBank:
         self.exchange_inst.data = self.get_data_from_file(self.data_file)
         self.data_by_symbol_by_data_frame = None
         self._init_data()
+        self.get_sudden_pump()
 
     def get_all_data_for_all_available_time_frames_for_symbol(self, symbol):
         return self.data_by_symbol_by_data_frame[symbol]
@@ -43,6 +50,12 @@ class DataBank:
     def get_sudden_dump(self):
         return self._get_bank_time_frame_data(TimeFrames.ONE_HOUR)[0:46], \
             -4, -3, -2, -1
+
+    # works only with default data file
+    # not started, started, heavy pump, max pump, max: start dip:
+    def get_sudden_pump(self):
+        return self._get_bank_time_frame_data(TimeFrames.HEIGHT_HOURS)[:85], \
+            71, 74, 76, 77, 78
 
     def _get_bank_time_frame_data(self, time_frame):
         return self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame]
