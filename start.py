@@ -6,6 +6,8 @@ from logging.config import fileConfig
 
 from config.config import load_config
 from config.cst import *
+from cryptobot import CryptoBot
+from interfaces.web.app import WebApp
 from tools.commands import Commands
 
 
@@ -25,6 +27,8 @@ if __name__ == '__main__':
     parser.add_argument('--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
     parser.add_argument('--risk', type=float, default=0.5, help='risk representation (between 0 and 1)')
+    parser.add_argument('--web', help='Start web server',
+                        action='store_true')
 
     args = parser.parse_args()
 
@@ -39,6 +43,14 @@ if __name__ == '__main__':
     logger.info("Load config files...")
     config = load_config()
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
+
+    bot = CryptoBot(config)
+
+    if args.web:
+        import interfaces.web
+        interfaces.web.__init__(bot)
+        webapp = WebApp(config)
+        webapp.start()
 
     if args.update:
         Commands.update(logger)
@@ -63,4 +75,4 @@ if __name__ == '__main__':
             config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
 
         if args.start:
-            Commands.start_bot(config, logger)
+            Commands.start_bot(bot, logger)
