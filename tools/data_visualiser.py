@@ -2,6 +2,7 @@ import datetime
 
 import matplotlib.pyplot as plt
 from matplotlib import ticker
+
 from matplotlib.finance import candlestick2_ohlc
 
 from config.cst import PriceStrings
@@ -18,13 +19,14 @@ class DataVisualiser:
         fig, ax = plt.subplots()
 
         candlestick2_ohlc(ax,
-                          dataframe[PriceStrings.STR_PRICE_OPEN],
-                          dataframe[PriceStrings.STR_PRICE_HIGH],
-                          dataframe[PriceStrings.STR_PRICE_LOW],
-                          dataframe[PriceStrings.STR_PRICE_CLOSE],
+                          dataframe[PriceStrings.STR_PRICE_OPEN.value],
+                          dataframe[PriceStrings.STR_PRICE_HIGH.value],
+                          dataframe[PriceStrings.STR_PRICE_LOW.value],
+                          dataframe[PriceStrings.STR_PRICE_CLOSE.value],
                           width=0.6)
 
-        xdate = [datetime.datetime.fromtimestamp(i) for i in dataframe[PriceStrings.STR_PRICE_TIME]]
+        # xdate = [datetime.datetime.fromtimestamp(i) for i in dataframe[PriceStrings.STR_PRICE_TIME.value]]
+        xdate = dataframe[PriceStrings.STR_PRICE_TIME.value].values
 
         ax.xaxis.set_major_locator(ticker.MaxNLocator(6))
 
