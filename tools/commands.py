@@ -2,7 +2,6 @@ import subprocess
 
 from backtesting.collector.data_collector import DataCollector
 from backtesting.collector.zipline_data_collector import ZiplineDataCollector
-from cryptobot import CryptoBot
 
 
 class Commands:
@@ -46,8 +45,7 @@ class Commands:
                 raise e
 
     @staticmethod
-    def start_bot(config, logger, catch=False):
-        bot = CryptoBot(config)
+    def start_bot(bot, logger, catch=False):
         bot.create_exchange_traders()
         bot.create_evaluation_threads()
         try:

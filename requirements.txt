@@ -1,3 +1,4 @@
+flask
 matplotlib==2.0
 vaderSentiment
 pandas

@@ -37,11 +37,6 @@ class CryptoBot:
         # Advanced
         AdvancedManager.create_class_list(self.config)
 
-        # Interfaces
-        self.web_app = WebApp(self.config)
-        if self.web_app.enabled():
-            self.web_app.start()
-
         # Debug tools
         self.performance_analyser = None
         if CONFIG_DEBUG_OPTION_PERF in self.config and self.config[CONFIG_DEBUG_OPTION_PERF]:
@@ -204,5 +199,23 @@ class CryptoBot:
         if self.performance_analyser:
             self.performance_analyser.stop()
 
-        if self.web_app.enabled():
-            self.web_app.stop()
+    def get_symbols_threads_manager(self):
+        return self.symbols_threads_manager
+
+    def get_exchange_traders(self):
+        return self.exchange_traders
+
+    def get_exchange_trader_simulators(self):
+        return self.exchange_trader_simulators
+
+    def get_exchanges_list(self):
+        return self.exchanges_list
+
+    def get_symbol_evaluator_list(self):
+        return self.symbol_evaluator_list
+
+    def get_dispatchers_list(self):
+        return self.dispatchers_list
+
+    def get_symbol_time_frame_updater_threads(self):
+        return self.symbol_time_frame_updater_threads
