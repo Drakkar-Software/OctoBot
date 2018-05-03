@@ -1,3 +1,4 @@
+import dash
 import plotly
 from dash.dependencies import Output, Event
 
@@ -7,12 +8,16 @@ import plotly.graph_objs as go
 
 
 @app_instance.callback(Output('live-graph', 'figure'),
+                       [dash.dependencies.Input('cryptocurrency-name', 'value')],
                        events=[Event('graph-update', 'interval')])
-def update_values():
+def update_values(cryptocurrency_name):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
 
+    if cryptocurrency_name not in symbol_evaluator_list:
+        cryptocurrency_name = "Bitcoin"
+
     if len(symbol_evaluator_list) > 0:
-        evaluator_thread_manager = symbol_evaluator_list[0].get_evaluator_thread_managers()["binance"]
+        evaluator_thread_manager = symbol_evaluator_list[cryptocurrency_name].get_evaluator_thread_managers()["binance"]
         df = evaluator_thread_manager[0].get_evaluator().get_data()
 
         if df is not None:
