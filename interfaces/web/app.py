@@ -28,7 +28,7 @@ class WebApp(threading.Thread):
             dcc.Dropdown(id='cryptocurrency-name',
                          options=[{'label': s, 'value': s}
                                   for s in self.config[CONFIG_CRYPTO_CURRENCIES].keys()],
-                         value=[tuple(self.config[CONFIG_CRYPTO_CURRENCIES].keys())],
+                         value=next(iter(self.config[CONFIG_CRYPTO_CURRENCIES].keys())),
                          multi=False
                          ),
 
