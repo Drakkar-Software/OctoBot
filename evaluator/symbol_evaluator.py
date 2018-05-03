@@ -101,8 +101,8 @@ class SymbolEvaluator:
     def get_matrix(self, exchange):
         return self.matrices[exchange.get_name()]
 
-    def get_evaluator(self, exchange):
-        return self.evaluator_thread_managers[exchange.get_name()].get_evaluator()
+    def get_evaluator_thread_managers(self):
+        return self.evaluator_thread_managers
 
     def get_config(self):
         return self.config
