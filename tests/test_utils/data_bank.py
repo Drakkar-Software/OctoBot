@@ -35,8 +35,8 @@ class DataBank:
     # works only with default data file
     # not started, buying started, buying maxed, start dipping, super dip, max: back normal:
     def get_dip_after_over_bought(self):
-        return self._get_bank_time_frame_data(TimeFrames.ONE_DAY)[0:89], \
-            -17, -14, -10, -8, -2
+        return self._get_bank_time_frame_data(TimeFrames.ONE_DAY)[0:90], \
+            -18, -14, -10, -9, -2
 
     # works only with default data file
     # not started, started, heavy dump, very light dump, max: stopped dump:

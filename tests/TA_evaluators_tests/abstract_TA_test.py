@@ -39,6 +39,11 @@ class AbstractTATest:
     def test_reaction_to_rise_after_over_sold(self):
         raise NotImplementedError("test_reaction_to_oversold not implemented")
 
+    # checks evaluations when an asset is over-sold
+    @abstractmethod
+    def test_reaction_to_over_bought_then_dip(self):
+        raise NotImplementedError("test_reaction_to_over_bought_then_dip not implemented")
+
     # runs stress test and assert that neutral evaluation ratio is under required_not_neutral_evaluation_ratio and
     # resets eval_note between each run if reset_eval_to_none_before_each_eval set to True
     def run_stress_test_without_exceptions(self,
@@ -99,7 +104,7 @@ class AbstractTATest:
 
         sell_then_buy_data, pre_sell, start_sell, max_sell, start_rise = self.data_bank.get_rise_after_over_sold()
 
-        # not sold
+        # not started
         self._set_data_and_check_eval(sell_then_buy_data[0:pre_sell], pre_sell_eval, False)
 
         # starts selling
@@ -113,6 +118,36 @@ class AbstractTATest:
 
         # bought
         self._set_data_and_check_eval(sell_then_buy_data, after_rise_eval, True)
+
+    # test reaction to over-bought
+    def run_test_reactions_to_over_bought_then_dip(self, pre_buy_eval,
+                                                   started_buy_eval,
+                                                   max_buy_eval,
+                                                   start_dip_eval,
+                                                   max_dip_eval,
+                                                   after_dip_eval):
+
+        # not started, buying started, buying maxed, start dipping, max dip, max: back normal:
+        buy_then_sell_data, pre_buy, start_buy, max_buy, start_dip, max_dip = \
+            self.data_bank.get_dip_after_over_bought()
+
+        # not started
+        self._set_data_and_check_eval(buy_then_sell_data[0:pre_buy], pre_buy_eval, False)
+
+        # starts buying
+        self._set_data_and_check_eval(buy_then_sell_data[0:start_buy], started_buy_eval, False)
+
+        # max buying
+        self._set_data_and_check_eval(buy_then_sell_data[0:max_buy], max_buy_eval, False)
+
+        # start dipping
+        self._set_data_and_check_eval(buy_then_sell_data[0:start_dip], start_dip_eval, False)
+
+        # max dip
+        self._set_data_and_check_eval(buy_then_sell_data[0:max_dip], max_dip_eval, True)
+
+        # back normal
+        self._set_data_and_check_eval(buy_then_sell_data, after_dip_eval, False)
 
     def _set_data_and_check_eval(self, data, expected_eval_note, check_inferior):
         self.evaluator.set_data(data)
