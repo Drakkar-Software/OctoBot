@@ -1,5 +1,3 @@
-dash
-flask
 matplotlib==2.0
 vaderSentiment
 pandas
@@ -13,3 +11,10 @@ psutil
 plotly
 newspaper3k
 praw
+
+dash
+flask
+dash-renderer
+dash-html-components
+dash-core-components
+flask
