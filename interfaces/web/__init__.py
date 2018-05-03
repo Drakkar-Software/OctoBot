@@ -14,4 +14,4 @@ def get_bot():
 
 
 def load_callbacks():
-    from .controller import update_values
+    from .controller import update_values, update_strategy_values
