@@ -21,9 +21,23 @@ class RSIMomentumEvaluator(MomentumEvaluator):
         if len(self.data):
             rsi_v = talib.RSI(self.data[PriceStrings.STR_PRICE_CLOSE.value])
 
-            # DataVisualiser examples 
+            # DataVisualiser examples
             # DataVisualiser.show_candlesticks_dataframe(self.data)
-            # DataVisualiser.show_candlesticks_dataframe_with_indicator(self.data, rsi_v)
+            # DataVisualiser.show_candlesticks_dataframe_with_indicator(self.data, rsi_v, True)
+            # DataVisualiser.show_candlesticks_dataframe_with_indicator(self.data, rsi_v, False)
+            # indicators_map = [
+            #     {
+            #         "title": "RSI",
+            #         "data": rsi_v,
+            #         "in_graph": True
+            #     },
+            #     {
+            #         "title": "RSI2",
+            #         "data": rsi_v,
+            #         "in_graph": False
+            #     }
+            # ]
+            # DataVisualiser.show_candlesticks_dataframe_with_indicators(self.data, indicators_map)
 
             if len(rsi_v) and not math.isnan(rsi_v.tail(1)):
                 long_trend = TrendAnalysis.get_trend(rsi_v, self.long_term_averages)
@@ -59,6 +73,25 @@ class BBMomentumEvaluator(MomentumEvaluator):
             # if close to lower band => low value => bad,
             # therefore if close to middle, value is keeping up => good
             # finally if up the middle one or even close to the upper band => very good
+
+            # indicators_map = [
+            #     {
+            #         "title": "upper_band",
+            #         "data": upper_band,
+            #         "in_graph": True
+            #     },
+            #     {
+            #         "title": "middle_band",
+            #         "data": middle_band,
+            #         "in_graph": True
+            #     },
+            #     {
+            #         "title": "lower_band",
+            #         "data": lower_band,
+            #         "in_graph": True
+            #     }
+            # ]
+            # DataVisualiser.show_candlesticks_dataframe_with_indicators(self.data, indicators_map)
 
             current_value = self.data[PriceStrings.STR_PRICE_CLOSE.value].iloc[-1]
             current_up = upper_band.tail(1).values[0]
@@ -228,7 +261,7 @@ class ADXMomentumEvaluator(MomentumEvaluator):
                         chances_to_be_max = \
                             TrendAnalysis.get_estimation_of_move_state_relatively_to_previous_moves_length(
                                 crossing_indexes, adx) if len(crossing_indexes) > 2 \
-                            else 0.75
+                                else 0.75
                         proximity_to_max = min(1, current_adx / max_adx)
                         self.eval_note = multiplier * proximity_to_max * chances_to_be_max
 
@@ -283,7 +316,7 @@ class MACDMomentumEvaluator(MomentumEvaluator):
             #                 max on hist: optimal sell or buy
             macd_hist = DataFrameUtil.drop_nan_and_reset_index(macd_hist)
             zero_crossing_indexes = TrendAnalysis.get_threshold_change_indexes(macd_hist, 0)
-            last_index = len(macd_hist.index)-1
+            last_index = len(macd_hist.index) - 1
             pattern, start_index, end_index = PatternAnalyser.find_pattern(macd_hist, zero_crossing_indexes, last_index)
 
             if pattern != PatternAnalyser.UNKNOWN_PATTERN:
@@ -302,18 +335,18 @@ class MACDMomentumEvaluator(MomentumEvaluator):
                 if not math.isnan(price_weight):
 
                     # add pattern's strength
-                    weight = price_weight*PatternAnalyser.get_pattern_strength(pattern)
+                    weight = price_weight * PatternAnalyser.get_pattern_strength(pattern)
 
                     average_pattern_period = 0.7
                     if len(zero_crossing_indexes) > 1:
                         # compute chances to be after average pattern period
                         patterns = [PatternAnalyser.get_pattern(
-                            macd_hist[zero_crossing_indexes[i]:zero_crossing_indexes[i+1]])
-                            for i in range(len(zero_crossing_indexes)-1)
+                            macd_hist[zero_crossing_indexes[i]:zero_crossing_indexes[i + 1]])
+                            for i in range(len(zero_crossing_indexes) - 1)
                         ]
                         if 0 != zero_crossing_indexes[0]:
                             patterns.append(PatternAnalyser.get_pattern(macd_hist[0:zero_crossing_indexes[0]]))
-                        if len(macd_hist)-1 != zero_crossing_indexes[-1]:
+                        if len(macd_hist) - 1 != zero_crossing_indexes[-1]:
                             patterns.append(PatternAnalyser.get_pattern(macd_hist[zero_crossing_indexes[-1]:]))
                         double_patterns_count = patterns.count("W") + patterns.count("M")
 
