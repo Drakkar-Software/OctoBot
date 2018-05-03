@@ -35,7 +35,7 @@ class EvaluatorMatrixHistory:
     @staticmethod
     def update_history(matrix):
         with open(CONFIG_DEBUG_MATRIX_HISTORY_FILE, "a") as file:
-            file.write(matrix)
+            file.write(str(matrix))
 
     @staticmethod
     def enabled(config):
