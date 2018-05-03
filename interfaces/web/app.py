@@ -5,7 +5,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 from flask import request
 
-from interfaces.web import app_instance, load_callbacks
+from config.cst import CONFIG_CRYPTO_CURRENCIES
+from interfaces.web import app_instance, load_callbacks, get_bot
 
 
 class WebApp(threading.Thread):
@@ -23,6 +24,14 @@ class WebApp(threading.Thread):
 
         self.app.layout = html.Div(children=[
             dcc.Graph(id='live-graph', animate=True),
+
+            dcc.Dropdown(id='cryptocurrency-name',
+                         options=[{'label': s, 'value': s}
+                                  for s in self.config[CONFIG_CRYPTO_CURRENCIES].keys()],
+                         value=[tuple(self.config[CONFIG_CRYPTO_CURRENCIES].keys())],
+                         multi=False
+                         ),
+
             dcc.Interval(
                 id='graph-update',
                 interval=5 * 1000

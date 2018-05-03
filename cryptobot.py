@@ -57,7 +57,7 @@ class CryptoBot:
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.exchanges_list = {}
-        self.symbol_evaluator_list = []
+        self.symbol_evaluator_list = {}
         self.dispatchers_list = []
         self.symbol_time_frame_updater_threads = []
 
@@ -97,7 +97,7 @@ class CryptoBot:
             symbol_evaluator = SymbolEvaluator(self.config, crypto_currency, self.dispatchers_list)
             symbol_evaluator.set_traders(self.exchange_traders)
             symbol_evaluator.set_trader_simulators(self.exchange_trader_simulators)
-            self.symbol_evaluator_list.append(symbol_evaluator)
+            self.symbol_evaluator_list[crypto_currency] = symbol_evaluator
 
             # create TA evaluators
             for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
@@ -137,7 +137,7 @@ class CryptoBot:
             self.performance_analyser.start()
 
         for symbol_evaluator in self.symbol_evaluator_list:
-            symbol_evaluator.start_threads()
+            self.symbol_evaluator_list[symbol_evaluator].start_threads()
 
         for manager in self.symbols_threads_manager:
             manager.start_threads()
@@ -158,7 +158,7 @@ class CryptoBot:
             thread.join()
 
         for symbol_evaluator in self.symbol_evaluator_list:
-            symbol_evaluator.join_threads()
+            self.symbol_evaluator_list[symbol_evaluator].join_threads()
 
         for trader in self.exchange_traders:
             self.exchange_traders[trader].join_order_manager()
@@ -185,7 +185,7 @@ class CryptoBot:
             manager.stop_threads()
 
         for symbol_evaluator in self.symbol_evaluator_list:
-            symbol_evaluator.stop_threads()
+            self.symbol_evaluator_list[symbol_evaluator].stop_threads()
 
         for trader in self.exchange_traders:
             self.exchange_traders[trader].stop_order_manager()
