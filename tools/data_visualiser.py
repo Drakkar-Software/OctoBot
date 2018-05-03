@@ -1,8 +1,9 @@
-import datetime
+import warnings
+import matplotlib.cbook
+warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
 import matplotlib.pyplot as plt
 from matplotlib import ticker
-
 from matplotlib.finance import candlestick2_ohlc
 
 from config.cst import PriceStrings
@@ -15,7 +16,6 @@ class DataVisualiser:
 
     @staticmethod
     def show_candlesticks_dataframe(dataframe):
-
         fig, ax = plt.subplots()
 
         candlestick2_ohlc(ax,
@@ -23,7 +23,10 @@ class DataVisualiser:
                           dataframe[PriceStrings.STR_PRICE_HIGH.value],
                           dataframe[PriceStrings.STR_PRICE_LOW.value],
                           dataframe[PriceStrings.STR_PRICE_CLOSE.value],
-                          width=0.6)
+                          width=0.8,
+                          colorup='#008000',
+                          colordown='#FF0000',
+                          alpha=1)
 
         # xdate = [datetime.datetime.fromtimestamp(i) for i in dataframe[PriceStrings.STR_PRICE_TIME.value]]
         xdate = dataframe[PriceStrings.STR_PRICE_TIME.value].values
