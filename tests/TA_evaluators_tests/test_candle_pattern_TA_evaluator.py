@@ -17,6 +17,13 @@ class TestCandlePatternTAEvaluator(AbstractTATest):
         self.run_test_reactions_to_dump(START_PENDING_EVAL_NOTE, START_PENDING_EVAL_NOTE, START_PENDING_EVAL_NOTE,
                                         START_PENDING_EVAL_NOTE, -0.5)
 
+    def test_reactions_to_pump(self):
+        self.init_test_with_evaluator_to_test()
+        self.run_test_reactions_to_pump(-0.5, -0.5,
+                                        -0.5, -0.5,
+                                        -0.5, -0.5,
+                                        -0.5)
+
     def test_reaction_to_rise_after_over_sold(self):
         self.init_test_with_evaluator_to_test()
         self.run_test_reactions_to_rise_after_over_sold(START_PENDING_EVAL_NOTE, START_PENDING_EVAL_NOTE, -0.5,

@@ -34,6 +34,11 @@ class AbstractTATest:
     def test_reactions_to_dump(self):
         raise NotImplementedError("test_reactions_to_dump not implemented")
 
+    # checks evaluations when a pump is happening
+    @abstractmethod
+    def test_reactions_to_pump(self):
+        raise NotImplementedError("test_reactions_to_pump not implemented")
+
     # checks evaluations when an asset is over-sold
     @abstractmethod
     def test_reaction_to_rise_after_over_sold(self):
@@ -94,6 +99,39 @@ class AbstractTATest:
 
         # stopped dumping
         self._set_data_and_check_eval(dump_data, after_dump_eval, True)
+
+    # test reaction to pump
+    def run_test_reactions_to_pump(self, pre_pump_eval,
+                                   start_pump_started_eval,
+                                   heavy_pump_started_eval,
+                                   max_pump_eval,
+                                   stop_pump_eval,
+                                   start_dip_eval,
+                                   dipped_eval):
+
+        # not started, started, heavy pump, max pump, change trend, dipping, max: dipped:
+        pump_data, pre_pump, start_dump, heavy_pump, max_pump, change_trend, dipping = self.data_bank.get_sudden_pump()
+
+        # not pumped yet
+        self._set_data_and_check_eval(pump_data[0:pre_pump], pre_pump_eval, False)
+
+        # starts pumping
+        self._set_data_and_check_eval(pump_data[0:start_dump], start_pump_started_eval, False)
+
+        # real pumping
+        self._set_data_and_check_eval(pump_data[0:heavy_pump], heavy_pump_started_eval, False)
+
+        # max pumping
+        self._set_data_and_check_eval(pump_data[0:max_pump], max_pump_eval, False)
+
+        # trend reversing
+        self._set_data_and_check_eval(pump_data[0:change_trend], stop_pump_eval, True)
+
+        # starts dipping
+        self._set_data_and_check_eval(pump_data[0:dipping], start_dip_eval, True)
+
+        # dipped
+        self._set_data_and_check_eval(pump_data, dipped_eval, True)
 
     # test reaction to over-sold
     def run_test_reactions_to_rise_after_over_sold(self, pre_sell_eval,
