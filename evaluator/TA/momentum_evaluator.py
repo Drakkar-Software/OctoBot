@@ -8,6 +8,7 @@ from evaluator.TA.TA_evaluator import MomentumEvaluator
 from evaluator.Util.trend_analysis import TrendAnalysis
 from evaluator.Util.data_frame_util import DataFrameUtil
 from evaluator.Util.pattern_analysis import PatternAnalyser
+from tools.data_visualiser import DataVisualiser
 
 
 class RSIMomentumEvaluator(MomentumEvaluator):
@@ -19,6 +20,10 @@ class RSIMomentumEvaluator(MomentumEvaluator):
     def eval_impl(self):
         if len(self.data):
             rsi_v = talib.RSI(self.data[PriceStrings.STR_PRICE_CLOSE.value])
+
+            # DataVisualiser examples 
+            # DataVisualiser.show_candlesticks_dataframe(self.data)
+            # DataVisualiser.show_candlesticks_dataframe_with_indicator(self.data, rsi_v)
 
             if len(rsi_v) and not math.isnan(rsi_v.tail(1)):
                 long_trend = TrendAnalysis.get_trend(rsi_v, self.long_term_averages)
