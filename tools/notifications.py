@@ -145,13 +145,21 @@ class OrdersNotification(Notification):
             content = "Order(s) creation "
             for order in orders:
                 content += "\n- {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
-                                                                                        order.get_origin_quantity(),
-                                                                                        currency,
-                                                                                        order.get_origin_price(),
-                                                                                        market))
+                                                                                         order.get_origin_quantity(),
+                                                                                         currency,
+                                                                                         order.get_origin_price(),
+                                                                                         market))
             self.twitter_response_factory(tweet_instance, content)
 
-    def notify_end(self, order_filled, orders_canceled, symbol, trade_profitability, portfolio_profitability, portfolio_diff):
+    def notify_end(self,
+                   order_filled,
+                   orders_canceled,
+                   symbol,
+                   trade_profitability,
+                   portfolio_profitability,
+                   portfolio_diff,
+                   profitability=False):
+
         if self.twitter_notification_available() \
                 and self.evaluator_notification is not None \
                 and self.evaluator_notification.get_tweet_instance() is not None:
@@ -176,11 +184,11 @@ class OrdersNotification(Notification):
                                                                                              order.get_origin_price(),
                                                                                              market))
 
-            if trade_profitability is not None and orders_canceled is None:
+            if trade_profitability is not None and profitability:
                 content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
-                                                                         round(trade_profitability, 7))
+                                                                      round(trade_profitability, 7))
 
-            if portfolio_profitability is not None and orders_canceled is None:
+            if portfolio_profitability is not None and profitability:
                 content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(round(portfolio_profitability, 5),
                                                                                     "+" if portfolio_diff >= 0 else "",
                                                                                     round(portfolio_diff, 7))

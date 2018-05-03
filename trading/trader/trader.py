@@ -116,12 +116,18 @@ class Trader:
 
             order_profitability = order.get_create_last_price() - order.get_filled_price()
 
+        if order_closed is not None:
+            profitability_activated = True
+        else:
+            profitability_activated = False
+
         # notification
         order.get_order_notifier().end(order_closed,
                                        orders_canceled,
                                        order_profitability,
                                        profitability_percent,
-                                       profitability_diff)
+                                       profitability_diff,
+                                       profitability_activated)
 
     def get_open_orders(self):
         return self.order_manager.get_open_orders()
