@@ -43,16 +43,21 @@ class TrendAnalysis(AbstractUtil):
     @staticmethod
     def get_estimation_of_move_state_relatively_to_previous_moves_length(mean_crossing_indexes,
                                                                          current_trend,
-                                                                         pattern_move_size=1):
+                                                                         pattern_move_size=1,
+                                                                         double_size_patterns_count=0):
 
         if mean_crossing_indexes:
             # compute average move size
             time_averages = [(lambda a: mean_crossing_indexes[a+1]-mean_crossing_indexes[a])(a)
                              for a in range(len(mean_crossing_indexes)-1)]
             # add 1st length
-            time_averages.append(mean_crossing_indexes[0])
+            if 0 != mean_crossing_indexes[0]:
+                time_averages.append(mean_crossing_indexes[0])
 
-            time_average = numpy.mean(time_averages)*pattern_move_size
+            # take double_size_patterns_count into account
+            [time_averages.append(0) for _ in range(double_size_patterns_count)]
+
+            time_average = numpy.mean(time_averages)*pattern_move_size if time_averages else 0
 
             current_move_length = len(current_trend.index) - mean_crossing_indexes[-1]
             # higher than time_average => high chances to be at half of the move already
