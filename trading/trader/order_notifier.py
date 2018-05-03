@@ -27,4 +27,5 @@ class OrderNotifier:
                                  self.order.get_order_symbol(),
                                  trade_profitability,
                                  portfolio_profitability,
-                                 portfolio_diff)
+                                 portfolio_diff,
+                                 profitability)
