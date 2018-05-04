@@ -1,7 +1,7 @@
 import logging
+import time
 
 import ccxt
-import time
 
 from backtesting.backtesting import Backtesting
 from backtesting.exchange_simulator import ExchangeSimulator
@@ -12,7 +12,6 @@ from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import SymbolEvaluator
-from interfaces.web.app import WebApp
 from services import ServiceCreator
 from tools import Notification
 from tools.performance_analyser import PerformanceAnalyser

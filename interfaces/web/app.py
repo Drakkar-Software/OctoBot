@@ -5,7 +5,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from flask import request
 
-from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_EXCHANGES, TimeFrames
+from config.cst import CONFIG_CRYPTO_CURRENCIES
 from interfaces.web import app_instance, load_callbacks, get_bot, load_routes
 
 
