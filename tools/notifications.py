@@ -83,16 +83,16 @@ class EvaluatorNotification(Notification):
         super().__init__(config)
         self.tweet_instance = None
 
-    def notify_state_changed(self, final_eval, symbol_evaluator, trader, result, matrix):
+    def notify_state_changed(self, final_eval, crypto_currency_evaluator, trader, result, matrix):
         if self.gmail_notification_available():
             profitability, profitability_percent, _ = trader.get_trades_manager().get_profitability()
 
-            self.gmail_notification_factory("CRYPTO BOT ALERT : {0} / {1}".format(symbol_evaluator.crypto_currency,
+            self.gmail_notification_factory("CRYPTO BOT ALERT : {0} / {1}".format(crypto_currency_evaluator.crypto_currency,
                                                                                   result),
                                             "CRYPTO BOT ALERT : {0} / {1} \n {2} \n Current portfolio "
                                             "profitability : {3} "
                                             "{4} ({5}%)".format(
-                                                symbol_evaluator.crypto_currency,
+                                                crypto_currency_evaluator.crypto_currency,
                                                 result,
                                                 pprint.pformat(matrix),
                                                 round(profitability, 2),
@@ -101,12 +101,12 @@ class EvaluatorNotification(Notification):
 
         if self.twitter_notification_available():
             # + "\n see more at https://github.com/Trading-Bot/CryptoBot"
-            formatted_pairs = [p.replace("/", "") for p in symbol_evaluator.get_symbol_pairs()]
+            formatted_pairs = [p.replace("/", "") for p in crypto_currency_evaluator.get_symbol_pairs()]
             self.tweet_instance = self.twitter_notification_factory("CryptoBot ALERT : #{0} "
                                                                     "\n Cryptocurrency : #{1}"
                                                                     "\n Result : {2}"
                                                                     "\n Evaluation : {3}".format(
-                symbol_evaluator.crypto_currency,
+                crypto_currency_evaluator.crypto_currency,
                 " #".join(formatted_pairs),
                 str(result).split(".")[1],
                 final_eval)

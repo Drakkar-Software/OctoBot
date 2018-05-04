@@ -46,7 +46,7 @@ class FinalEvaluator(AsynchronousServer):
             if self.notifier.enabled() and self.state is not EvaluatorStates.NEUTRAL:
                 evaluator_notification = self.notifier.notify_state_changed(
                     self.final_eval,
-                    self.symbol_evaluator,
+                    self.symbol_evaluator.get_crypto_currency_evaluator(),
                     self.symbol_evaluator.get_trader(self.exchange),
                     self.state,
                     self.symbol_evaluator.get_matrix(self.exchange).get_matrix())
