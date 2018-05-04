@@ -55,16 +55,8 @@ class WebApp(threading.Thread):
                              value="TempFullMixedStrategiesEvaluator",
                              multi=False,
                              ),
-                html.Label('Risk'),
-                dcc.Slider(
-                    min=0.1,
-                    max=1,
-                    value=0.5,
-                    step=0.05,
-                    marks={0.1: 'Risk minimized', 1: 'Risk maximized'},
-                ),
             ],
-                style={'columnCount': 2, 'marginLeft': 25, 'marginRight': 25, 'marginTop': 25, 'marginBottom': 25}),
+                style={'columnCount': 1, 'marginLeft': 25, 'marginRight': 25, 'marginTop': 25, 'marginBottom': 25}),
 
             html.Label('Symbol real time data (per time frame)'),
             dcc.Graph(id='live-graph', animate=True),
