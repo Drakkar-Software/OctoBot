@@ -1,7 +1,4 @@
-import copy
-import time
-
-from config.cst import EvaluatorMatrixTypes, CONFIG_DEBUG_MATRIX_HISTORY
+from config.cst import EvaluatorMatrixTypes
 from tools.evaluators_util import check_valid_eval_note
 
 
@@ -15,11 +12,6 @@ class EvaluatorMatrix:
             EvaluatorMatrixTypes.STRATEGIES: {}
         }
 
-        if EvaluatorMatrixHistory.enabled(self.config):
-            self.matrix_history = EvaluatorMatrixHistory()
-        else:
-            self.matrix_history = None
-
     # ---- getters and setters----
     def set_eval(self, matrix_type, evaluator_name, value, time_frame=None):
         if evaluator_name not in self.matrix[matrix_type]:
@@ -29,9 +21,6 @@ class EvaluatorMatrix:
             self.matrix[matrix_type][evaluator_name][time_frame] = value
         else:
             self.matrix[matrix_type][evaluator_name] = value
-
-        if self.matrix_history is not None:
-            self.matrix_history.update_history(self.matrix)
 
     def get_type_evals(self, matrix_type):
         return self.matrix[matrix_type]
@@ -52,29 +41,3 @@ class EvaluatorMatrix:
 
     def get_matrix(self):
         return self.matrix
-
-    def get_matrix_history(self):
-        return self.matrix_history
-
-
-class EvaluatorMatrixHistory:
-    def __init__(self):
-        self.matrix_history = []
-
-    def get_history(self):
-        return self.matrix_history
-
-    def update_history(self, matrix):
-        self.matrix_history.append({
-            "matrix": copy.deepcopy(matrix),
-            "timestamp": time.time()
-        })
-        # with open(CONFIG_DEBUG_MATRIX_HISTORY_FILE, "a") as file:
-        #     json.dump(matrix, file)
-
-    @staticmethod
-    def enabled(config):
-        if CONFIG_DEBUG_MATRIX_HISTORY in config and config[CONFIG_DEBUG_MATRIX_HISTORY]:
-            return True
-        else:
-            return False

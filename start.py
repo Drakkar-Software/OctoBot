@@ -45,12 +45,12 @@ if __name__ == '__main__':
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
     bot = CryptoBot(config)
+    web_app = None
 
     if args.web:
         import interfaces.web
-        interfaces.web.__init__(bot)
-        webapp = WebApp(config)
-        webapp.start()
+        interfaces.web.__init__(bot, config)
+        web_app = WebApp(config)
 
     if args.update:
         Commands.update(logger)
@@ -75,4 +75,4 @@ if __name__ == '__main__':
             config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
 
         if args.start:
-            Commands.start_bot(bot, logger)
+            Commands.start_bot(bot, logger, web_app)

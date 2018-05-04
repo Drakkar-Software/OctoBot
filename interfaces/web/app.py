@@ -5,7 +5,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from flask import request
 
-from config.cst import CONFIG_CRYPTO_CURRENCIES
+from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_EXCHANGES, TimeFrames
 from interfaces.web import app_instance, load_callbacks, get_bot
 
 
@@ -26,9 +26,10 @@ class WebApp(threading.Thread):
             html.H1('CryptoBot'),
             html.Div([
                 html.Label('Exchange'),
-                dcc.Dropdown(id='strategy-name',
-                             options=[],
-                             value="binance",
+                dcc.Dropdown(id='exchange-name',
+                             options=[{'label': s, 'value': s}
+                                      for s in get_bot().get_exchanges_list().keys()],
+                             value=list(get_bot().get_exchanges_list().keys())[0],
                              multi=False,
                              ),
                 html.Label('Currency'),
@@ -38,8 +39,20 @@ class WebApp(threading.Thread):
                              value=list(self.config[CONFIG_CRYPTO_CURRENCIES].keys())[0],
                              multi=False,
                              ),
-                html.Label('Strategy'),
-                dcc.Dropdown(id='strategy-name',
+                html.Label('Symbol'),
+                dcc.Dropdown(id='symbol',
+                             options=[],
+                             value="BTC/USDT",
+                             multi=False,
+                             ),
+                html.Label('TimeFrame'),
+                dcc.Dropdown(id='time-frame',
+                             options=[],
+                             value=None,
+                             multi=False,
+                             ),
+                html.Label('Evaluator'),
+                dcc.Dropdown(id='evaluator-name',
                              options=[],
                              value="TempFullMixedStrategiesEvaluator",
                              multi=False,
@@ -53,18 +66,18 @@ class WebApp(threading.Thread):
                     marks={0.1: 'Risk minimized', 1: 'Risk maximized'},
                 ),
             ],
-                style={'columnCount': 2, 'marginLeft': 25, 'marginRight': 25}),
+                style={'columnCount': 2, 'marginLeft': 25, 'marginRight': 25, 'marginTop': 25, 'marginBottom': 25}),
 
             dcc.Graph(id='live-graph', animate=True),
             dcc.Interval(
                 id='graph-update',
-                interval=1 * 10000
+                interval=1 * 1000
             ),
 
             dcc.Graph(id='strategy-live-graph', animate=True),
             dcc.Interval(
                 id='strategy-graph-update',
-                interval=1 * 10000
+                interval=1 * 1000
             ),
         ])
 
