@@ -70,7 +70,7 @@ class DataBank:
                               self._get_bank_time_frame_data(TimeFrames.HEIGHT_HOURS)[25:43],
                               self._get_bank_time_frame_data(TimeFrames.FIFTEEN_MINUTES)[6:72],
                               self._get_bank_time_frame_data(TimeFrames.FIFTEEN_MINUTES)[6:72]]), \
-            66, 84, 86, 89, 94, 106, 115, 122, 137, 140, 150, 152, 160, 162, 172, 173, 174, 179, 182, 192, 197, 202, 206
+            67, 85, 87, 90, 95, 107, 116, 123, 138, 141, 151, 153, 161, 163, 173, 174, 175, 180, 183, 193, 198, 203, 207
 
     def _get_bank_time_frame_data(self, time_frame):
         return self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame]

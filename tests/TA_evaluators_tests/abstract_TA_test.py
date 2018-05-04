@@ -19,6 +19,7 @@ class AbstractTATest:
         self.test_symbols = test_symbols
         self.data_bank = DataBank(self.config, data_file, test_symbols)
         self._assert_init()
+        self.previous_move_stop = None
 
     @abstractmethod
     def init_test_with_evaluator_to_test(self):
@@ -206,67 +207,81 @@ class AbstractTATest:
         # micro up, micro down, micro up, micro down, back normal, micro down, back normal, micro down, back up,
         # micro up, back down, back normal, micro down, back up, micro down, back up, micro down, back up
         up_then_flat_data, start_move_ending_up_in_a_rise, reaches_flat_trend, first_micro_up_p1, first_micro_up_p2, \
-        micro_down1, micro_up1, micro_down2, micro_up2, micro_down3, back_normal3, micro_down4, back_normal4, \
-        micro_down5, back_up5, micro_up6, back_down6, back_normal6, micro_down7, back_up7, micro_down8, back_up8, \
-        micro_down9, back_up9 = self.data_bank.get_overall_flat_trend()
+            micro_down1, micro_up1, micro_down2, micro_up2, micro_down3, back_normal3, micro_down4, back_normal4, \
+            micro_down5, back_up5, micro_up6, back_down6, back_normal6, micro_down7, back_up7, micro_down8, back_up8, \
+            micro_down9, back_up9 = self.data_bank.get_overall_flat_trend()
 
         # start_move_ending_up_in_a_rise
         self._set_data_and_check_eval(
             up_then_flat_data[0:start_move_ending_up_in_a_rise], eval_start_move_ending_up_in_a_rise, False)
         #  reaches_flat_trend
-        self._set_data_and_check_eval(up_then_flat_data[0:reaches_flat_trend], eval_reaches_flat_trend, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, reaches_flat_trend, eval_reaches_flat_trend, False)
         #  first_micro_up_p1
-        self._set_data_and_check_eval(up_then_flat_data[0:first_micro_up_p1], eval_first_micro_up_p1, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, first_micro_up_p1, eval_first_micro_up_p1, False)
         #  first_micro_up_p2
-        self._set_data_and_check_eval(up_then_flat_data[0:first_micro_up_p2], eval_first_micro_up_p2, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, first_micro_up_p2, eval_first_micro_up_p2, False)
         #  micro_down1
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_down1], eval_micro_down1, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_down1, eval_micro_down1, True)
         #  micro_up1
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_up1], eval_micro_up1, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_up1, eval_micro_up1, False)
         #  micro_down2
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_down2], eval_micro_down2, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_down2, eval_micro_down2, True)
         #  micro_up2
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_up2], eval_micro_up2, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_up2, eval_micro_up2, False)
         #  micro_down3
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_down3], eval_micro_down3, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_down3, eval_micro_down3, True)
         #  back_normal3
-        self._set_data_and_check_eval(up_then_flat_data[0:back_normal3], eval_back_normal3, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, back_normal3, eval_back_normal3, False)
         #  micro_down4
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_down4], eval_micro_down4, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_down4, eval_micro_down4, True)
         #  back_normal4
-        self._set_data_and_check_eval(up_then_flat_data[0:back_normal4], eval_back_normal4, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, back_normal4, eval_back_normal4, False)
         #  micro_down5
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_down5], eval_micro_down5, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_down5, eval_micro_down5, True)
         #  back_up5
-        self._set_data_and_check_eval(up_then_flat_data[0:back_up5], eval_back_up5, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, back_up5, eval_back_up5, False)
         #  micro_up6
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_up6], eval_micro_up6, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_up6, eval_micro_up6, False)
         #  back_down6
-        self._set_data_and_check_eval(up_then_flat_data[0:back_down6], eval_back_down6, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, back_down6, eval_back_down6, True)
         #  back_normal6
-        self._set_data_and_check_eval(up_then_flat_data[0:back_normal6], eval_back_normal6, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, back_normal6, eval_back_normal6, False)
         #  micro_down7
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_down7], eval_micro_down7, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_down7, eval_micro_down7, True)
         #  back_up7
-        self._set_data_and_check_eval(up_then_flat_data[0:back_up7], eval_back_up7, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, back_up7, eval_back_up7, False)
         #  micro_down8
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_down8], eval_micro_down8, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_down8, eval_micro_down8, True)
         #  back_up8
-        self._set_data_and_check_eval(up_then_flat_data[0:back_up8], eval_back_up8, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, back_up8, eval_back_up8, False)
         #  micro_down9
-        self._set_data_and_check_eval(up_then_flat_data[0:micro_down9], eval_micro_down9, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, micro_down9, eval_micro_down9, True)
         #  back_up9
-        self._set_data_and_check_eval(up_then_flat_data[0:back_up9], eval_back_up9, False)
+        self._move_and_set_data_and_check_eval(up_then_flat_data, back_up9, eval_back_up9, False)
+
+    def _move_and_set_data_and_check_eval(self, data, eval_index, expected_eval_note, check_inferior):
+        if self.previous_move_stop is None:
+            self.previous_move_stop = 0
+
+        if eval_index > 0:
+            # move up to next evaluation
+            for i in range(eval_index - self.previous_move_stop - 1):
+                self.evaluator.set_data(data[0:self.previous_move_stop + i])
+                self.evaluator.eval_impl()
+
+        self._set_data_and_check_eval(data[0:eval_index], expected_eval_note, check_inferior)
+        self.previous_move_stop = eval_index
 
     def _set_data_and_check_eval(self, data, expected_eval_note, check_inferior):
         self.evaluator.set_data(data)
         self.evaluator.eval_impl()
-        if check_inferior:
-            assert self.evaluator.eval_note == expected_eval_note \
-                or self.evaluator.eval_note <= expected_eval_note
-        else:
-            assert self.evaluator.eval_note == expected_eval_note \
-                or self.evaluator.eval_note >= expected_eval_note
+        if expected_eval_note != -2:
+            if check_inferior:
+                assert self.evaluator.eval_note == expected_eval_note \
+                    or self.evaluator.eval_note <= expected_eval_note
+            else:
+                assert self.evaluator.eval_note == expected_eval_note \
+                    or self.evaluator.eval_note >= expected_eval_note
 
     def _assert_init(self):
         assert self.evaluator
