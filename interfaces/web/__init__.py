@@ -6,7 +6,7 @@ import time
 import flask
 
 server_instance = flask.Flask(__name__)
-app_instance = dash.Dash(__name__, server=server_instance)
+app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
 bot_instance = None
 global_config = None
 
@@ -53,4 +53,9 @@ def get_bot():
 
 
 def load_callbacks():
-    from .controller import update_values, update_strategy_values, update_symbol_dropdown, update_evaluator_dropdown
+    from .dash_controller import update_values, update_strategy_values, update_symbol_dropdown, \
+        update_evaluator_dropdown
+
+
+def load_routes():
+    from .flask_controller import index
