@@ -75,7 +75,7 @@ class WebApp(threading.Thread):
 
         load_callbacks()
         load_routes()
-        self.app.run_server(host='localhost',
+        self.app.run_server(host='0.0.0.0',
                             port=5000,
                             debug=False,
                             threaded=True)
