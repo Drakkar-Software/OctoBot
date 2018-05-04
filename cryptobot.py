@@ -1,6 +1,7 @@
 import logging
 
 import ccxt
+import time
 
 from backtesting.backtesting import Backtesting
 from backtesting.exchange_simulator import ExchangeSimulator
@@ -29,6 +30,7 @@ class CryptoBot:
     """
 
     def __init__(self, config):
+        self.start_time = time.time()
         self.config = config
 
         # Logger
@@ -219,3 +221,6 @@ class CryptoBot:
 
     def get_symbol_time_frame_updater_threads(self):
         return self.symbol_time_frame_updater_threads
+
+    def get_start_time(self):
+        return self.start_time

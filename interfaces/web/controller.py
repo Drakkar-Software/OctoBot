@@ -2,13 +2,13 @@ import time
 
 import dash
 import plotly
+import plotly.graph_objs as go
 from dash.dependencies import Output, Event
 
-from config.cst import PriceStrings
+from config.cst import PriceStrings, EvaluatorMatrixTypes
+from evaluator.Strategies import TempFullMixedStrategiesEvaluator
+from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces.web import app_instance, get_bot
-import plotly.graph_objs as go
-
-from tools.evaluators_util import check_valid_eval_note
 
 
 @app_instance.callback(Output('live-graph', 'figure'),
@@ -48,25 +48,44 @@ def update_values(cryptocurrency_name):
                        [dash.dependencies.Input('cryptocurrency-name', 'value')],
                        events=[Event('strategy-graph-update', 'interval')])
 def update_strategy_values(strategy_name):
-    symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
-    exchange_list = get_bot().get_exchanges_list()
-
     # temp
     cryptocurrency_name = "Bitcoin"
 
+    return get_evaluator_graph_in_matrix_history(cryptocurrency_name,
+                                          "binance",
+                                          EvaluatorMatrixTypes.STRATEGIES,
+                                          TempFullMixedStrategiesEvaluator.get_name())
+
+
+def get_evaluator_graph_in_matrix_history(cryptocurrency_name,
+                                          exchange_name,
+                                          evaluator_type,
+                                          evaluator_name,
+                                          time_frame=None):
+    symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
+    exchange_list = get_bot().get_exchanges_list()
+
     if len(symbol_evaluator_list) > 0:
-        strategies_eval_list = symbol_evaluator_list[cryptocurrency_name].get_strategies_eval_list(exchange_list["binance"])
-        eval_note = strategies_eval_list[0].get_eval_note()
+        matrix_inst = symbol_evaluator_list[cryptocurrency_name].get_matrix(exchange_list[exchange_name])
 
-        if check_valid_eval_note(eval_note):
-            data = plotly.graph_objs.Scatter(
-                x=time.time(),
-                y=eval_note,
-                name='Scatter',
-                mode='lines+markers'
-            )
+        formatted_matrix_history = {
+            "timestamps": [],
+            "evaluator_data": []
+        }
 
-            return {'data': [data], 'layout': go.Layout(xaxis=dict(range=[0, time.time()]),
-                                                        yaxis=dict(range=[-1, 1]), )}
+        for matrix in matrix_inst.get_matrix_history().get_history():
+            eval_note = EvaluatorMatrix.get_eval_note(matrix["matrix"], evaluator_type, evaluator_name, time_frame)
+            if eval_note is not None:
+                formatted_matrix_history["evaluator_data"].append(eval_note)
+                formatted_matrix_history["timestamps"].append(matrix["timestamp"])
 
-    return {}
+        data = plotly.graph_objs.Scatter(
+            x=formatted_matrix_history["timestamps"],
+            y=formatted_matrix_history["evaluator_data"],
+            name='Scatter',
+            mode='lines+markers'
+        )
+
+        return {'data': [data], 'layout': go.Layout(xaxis=dict(range=[get_bot().get_start_time(), time.time()]),
+                                                    yaxis=dict(range=[-1, 1]), )}
+    return None
