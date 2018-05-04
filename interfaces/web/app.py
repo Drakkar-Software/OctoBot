@@ -6,7 +6,7 @@ import dash_html_components as html
 from flask import request
 
 from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_EXCHANGES, TimeFrames
-from interfaces.web import app_instance, load_callbacks, get_bot
+from interfaces.web import app_instance, load_callbacks, get_bot, load_routes
 
 
 class WebApp(threading.Thread):
@@ -21,7 +21,7 @@ class WebApp(threading.Thread):
         self.app = app_instance
 
         self.app.layout = html.Div(children=[
-            html.H1('CryptoBot'),
+            html.H1('CryptoBot Dashboard'),
             html.Div([
                 html.Label('Exchange'),
                 dcc.Dropdown(id='exchange-name',
@@ -66,12 +66,14 @@ class WebApp(threading.Thread):
             ],
                 style={'columnCount': 2, 'marginLeft': 25, 'marginRight': 25, 'marginTop': 25, 'marginBottom': 25}),
 
+            html.Label('Symbol real time data (per time frame)'),
             dcc.Graph(id='live-graph', animate=True),
             dcc.Interval(
                 id='graph-update',
                 interval=1 * 1000
             ),
 
+            html.Label('Current symbol strategy'),
             dcc.Graph(id='strategy-live-graph', animate=True),
             dcc.Interval(
                 id='strategy-graph-update',
@@ -80,7 +82,11 @@ class WebApp(threading.Thread):
         ])
 
         load_callbacks()
-        self.app.run_server(host='localhost', port=5000, debug=False, threaded=True)
+        load_routes()
+        self.app.run_server(host='localhost',
+                            port=5000,
+                            debug=False,
+                            threaded=True)
 
     def stop(self):
         func = request.environ.get('werkzeug.server.shutdown')
