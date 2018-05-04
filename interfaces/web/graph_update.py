@@ -13,7 +13,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame):
     exchange_list = get_bot().get_exchanges_list()
 
     if time_frame is not None:
-        time_frame = TimeFrames(time_frame)
+        time_frame = TimeFrames(time_frame["value"])
 
         if len(symbol_evaluator_list) > 0:
             evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_thread_managers(
@@ -29,12 +29,12 @@ def get_currency_graph_update(exchange_name, symbol, time_frame):
                         X = df[PriceStrings.STR_PRICE_TIME.value]
                         Y = df[PriceStrings.STR_PRICE_CLOSE.value]
 
-                        # Ohlc
-                        data = go.Candlestick(x=df[PriceStrings.STR_PRICE_TIME.value],
-                                              open=df[PriceStrings.STR_PRICE_OPEN.value],
-                                              high=df[PriceStrings.STR_PRICE_HIGH.value],
-                                              low=df[PriceStrings.STR_PRICE_LOW.value],
-                                              close=df[PriceStrings.STR_PRICE_CLOSE.value])
+                        # Candlestick
+                        data = go.Ohlc(x=df[PriceStrings.STR_PRICE_TIME.value],
+                                       open=df[PriceStrings.STR_PRICE_OPEN.value],
+                                       high=df[PriceStrings.STR_PRICE_HIGH.value],
+                                       low=df[PriceStrings.STR_PRICE_LOW.value],
+                                       close=df[PriceStrings.STR_PRICE_CLOSE.value])
 
                         return {'data': [data], 'layout': go.Layout(xaxis=dict(range=[min(X), max(X)]),
                                                                     yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02]), )}
@@ -45,11 +45,11 @@ def get_evaluator_graph_in_matrix_history(symbol,
                                           exchange_name,
                                           evaluator_type,
                                           evaluator_name,
-                                          time_frame=None):
+                                          time_frame):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
     exchange_list = get_bot().get_exchanges_list()
 
-    if len(symbol_evaluator_list) > 0:
+    if evaluator_name is not None and len(symbol_evaluator_list) > 0:
         matrix = symbol_evaluator_list[symbol].get_matrix(exchange_list[exchange_name])
         add_to_matrix_history(matrix)
 
@@ -59,7 +59,8 @@ def get_evaluator_graph_in_matrix_history(symbol,
         }
 
         for matrix in get_matrix_history():
-            eval_note = EvaluatorMatrix.get_eval_note(matrix["matrix"], evaluator_type, evaluator_name, time_frame)
+            eval_note = EvaluatorMatrix.get_eval_note(matrix["matrix"], evaluator_type, evaluator_name,
+                                                      time_frame["value"])
             if eval_note is not None:
                 formatted_matrix_history["evaluator_data"].append(eval_note)
                 formatted_matrix_history["timestamps"].append(matrix["timestamp"])
