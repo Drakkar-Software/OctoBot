@@ -4,11 +4,16 @@ import dash
 import time
 
 import flask
+import logging
 
 server_instance = flask.Flask(__name__)
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
 bot_instance = None
 global_config = None
+
+# disable Flask logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 matrix_history = []
 symbol_data_history = {}
@@ -53,7 +58,11 @@ def get_bot():
 
 
 def load_callbacks():
-    from .dash_controller import update_values, update_strategy_values, update_symbol_dropdown, \
+    from .dash_controller import update_values, \
+        update_strategy_values, \
+        update_time_frame_dropdown_options, \
+        update_symbol_dropdown_options, \
+        update_symbol_dropdown_value, \
         update_evaluator_dropdown
 
 

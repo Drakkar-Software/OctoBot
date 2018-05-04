@@ -5,7 +5,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from flask import request
 
-from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_EXCHANGES, TimeFrames
+from config.cst import CONFIG_CRYPTO_CURRENCIES
 from interfaces.web import app_instance, load_callbacks, get_bot, load_routes
 
 
@@ -55,16 +55,8 @@ class WebApp(threading.Thread):
                              value="TempFullMixedStrategiesEvaluator",
                              multi=False,
                              ),
-                html.Label('Risk'),
-                dcc.Slider(
-                    min=0.1,
-                    max=1,
-                    value=0.5,
-                    step=0.05,
-                    marks={0.1: 'Risk minimized', 1: 'Risk maximized'},
-                ),
             ],
-                style={'columnCount': 2, 'marginLeft': 25, 'marginRight': 25, 'marginTop': 25, 'marginBottom': 25}),
+                style={'columnCount': 1, 'marginLeft': 25, 'marginRight': 25, 'marginTop': 25, 'marginBottom': 25}),
 
             html.Label('Symbol real time data (per time frame)'),
             dcc.Graph(id='live-graph', animate=True),
@@ -83,7 +75,7 @@ class WebApp(threading.Thread):
 
         load_callbacks()
         load_routes()
-        self.app.run_server(host='localhost',
+        self.app.run_server(host='0.0.0.0',
                             port=5000,
                             debug=False,
                             threaded=True)
