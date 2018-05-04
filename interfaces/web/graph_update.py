@@ -29,15 +29,15 @@ def get_currency_graph_update(exchange_name, symbol, time_frame):
                         X = df[PriceStrings.STR_PRICE_TIME.value]
                         Y = df[PriceStrings.STR_PRICE_CLOSE.value]
 
-                        data = plotly.graph_objs.Scatter(
-                            x=X,
-                            y=Y,
-                            name='Scatter',
-                            mode='lines+markers'
-                        )
+                        # Ohlc
+                        data = go.Candlestick(x=df[PriceStrings.STR_PRICE_TIME.value],
+                                              open=df[PriceStrings.STR_PRICE_OPEN.value],
+                                              high=df[PriceStrings.STR_PRICE_HIGH.value],
+                                              low=df[PriceStrings.STR_PRICE_LOW.value],
+                                              close=df[PriceStrings.STR_PRICE_CLOSE.value])
 
                         return {'data': [data], 'layout': go.Layout(xaxis=dict(range=[min(X), max(X)]),
-                                                                    yaxis=dict(range=[min(Y)*0.98, max(Y)*1.02]), )}
+                                                                    yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02]), )}
     return None
 
 
