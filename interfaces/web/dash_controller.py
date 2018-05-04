@@ -14,7 +14,7 @@ from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, g
                        events=[Event('graph-update', 'interval')])
 def update_values(exchange_name, cryptocurrency_name, symbol, time_frame):
     return get_currency_graph_update(exchange_name,
-                                     symbol,
+                                     symbol["value"],
                                      time_frame)
 
 
@@ -26,16 +26,17 @@ def update_values(exchange_name, cryptocurrency_name, symbol, time_frame):
                         Input('evaluator-name', 'value')],
                        events=[Event('strategy-graph-update', 'interval')])
 def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_frame, evaluator_name):
-    return get_evaluator_graph_in_matrix_history(symbol,
+    return get_evaluator_graph_in_matrix_history(symbol["value"],
                                                  exchange_name,
                                                  EvaluatorMatrixTypes.STRATEGIES,
-                                                 evaluator_name)
+                                                 evaluator_name,
+                                                 time_frame)
 
 
 @app_instance.callback(Output('symbol', 'options'),
                        [Input('exchange-name', 'value'),
                         Input('cryptocurrency-name', 'value')])
-def update_symbol_dropdown(exchange_name, cryptocurrency_name):
+def update_symbol_dropdown_options(exchange_name, cryptocurrency_name):
     exchange = get_bot().get_exchanges_list()[exchange_name]
     symbol_list = []
 
@@ -49,10 +50,26 @@ def update_symbol_dropdown(exchange_name, cryptocurrency_name):
     return symbol_list
 
 
+@app_instance.callback(Output('symbol', 'value'),
+                       [Input('exchange-name', 'value'),
+                        Input('cryptocurrency-name', 'value')])
+def update_symbol_dropdown_value(exchange_name, cryptocurrency_name):
+    exchange = get_bot().get_exchanges_list()[exchange_name]
+
+    for symbol in global_config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency_name][CONFIG_CRYPTO_PAIRS]:
+        if exchange.symbol_exists(symbol):
+            return {
+                "label": symbol,
+                "value": symbol
+            }
+
+    return None
+
+
 @app_instance.callback(Output('time-frame', 'options'),
                        [Input('exchange-name', 'value'),
                         Input('symbol', 'value')])
-def update_symbol_dropdown(exchange_name, symbol):
+def update_time_frame_dropdown_options(exchange_name, symbol):
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     time_frame_list = []
@@ -65,13 +82,28 @@ def update_symbol_dropdown(exchange_name, symbol):
     return time_frame_list
 
 
+@app_instance.callback(Output('time-frame', 'value'),
+                       [Input('exchange-name', 'value'),
+                        Input('symbol', 'value')])
+def update_time_frame_dropdown_options(exchange_name, symbol):
+    exchange = get_bot().get_exchanges_list()[exchange_name]
+
+    for time_frame in global_config[CONFIG_TIME_FRAME]:
+        if exchange.time_frame_exists(TimeFrames(time_frame).value):
+            return {
+                "label": time_frame,
+                "value": time_frame
+            }
+    return None
+
+
 @app_instance.callback(Output('evaluator-name', 'options'),
                        [Input('cryptocurrency-name', 'value'),
                         Input('exchange-name', 'value'),
                         Input('symbol', 'value'),
                         Input('time-frame', 'value')])
 def update_evaluator_dropdown(cryptocurrency_name, exchange_name, symbol, time_frame):
-    symbol_evaluator = get_bot().get_symbol_evaluator_list()[symbol]
+    symbol_evaluator = get_bot().get_symbol_evaluator_list()[symbol["value"]]
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     evaluator_list = []
