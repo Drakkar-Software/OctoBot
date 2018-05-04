@@ -71,7 +71,7 @@ def update_symbol_dropdown(exchange_name, symbol):
                         Input('symbol', 'value'),
                         Input('time-frame', 'value')])
 def update_evaluator_dropdown(cryptocurrency_name, exchange_name, symbol, time_frame):
-    symbol_evaluator = get_bot().get_symbol_evaluator_list()[cryptocurrency_name]
+    symbol_evaluator = get_bot().get_symbol_evaluator_list()[symbol]
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     evaluator_list = []
