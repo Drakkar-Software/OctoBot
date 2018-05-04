@@ -65,7 +65,9 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
             self.eval()
 
             if not Backtesting.enabled(self.config):
-                time.sleep(self.refresh_time - (time.time() - now))
+                sleeping_time = self.refresh_time - (time.time() - now)
+                if sleeping_time > 0:
+                    time.sleep(sleeping_time)
 
 
 class RealTimeTAEvaluator(RealTimeEvaluator):
