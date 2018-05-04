@@ -8,7 +8,7 @@ from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history
 
 
-def get_currency_graph_update(cryptocurrency_name, exchange_name, symbol, time_frame):
+def get_currency_graph_update(exchange_name, symbol, time_frame):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
     exchange_list = get_bot().get_exchanges_list()
 
@@ -16,12 +16,11 @@ def get_currency_graph_update(cryptocurrency_name, exchange_name, symbol, time_f
         time_frame = TimeFrames(time_frame)
 
         if len(symbol_evaluator_list) > 0:
-            evaluator_thread_managers = symbol_evaluator_list[cryptocurrency_name].get_evaluator_thread_managers(
+            evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_thread_managers(
                 exchange_list[exchange_name])
 
             for evaluator_thread_manager in evaluator_thread_managers:
-                if evaluator_thread_manager.get_evaluator().get_symbol() == symbol \
-                        and evaluator_thread_manager.get_evaluator().get_time_frame() == time_frame:
+                if evaluator_thread_manager.get_evaluator().get_time_frame() == time_frame:
                     df = evaluator_thread_manager.get_evaluator().get_data()
 
                     if df is not None:
@@ -42,7 +41,7 @@ def get_currency_graph_update(cryptocurrency_name, exchange_name, symbol, time_f
     return None
 
 
-def get_evaluator_graph_in_matrix_history(cryptocurrency_name,
+def get_evaluator_graph_in_matrix_history(symbol,
                                           exchange_name,
                                           evaluator_type,
                                           evaluator_name,
@@ -51,7 +50,7 @@ def get_evaluator_graph_in_matrix_history(cryptocurrency_name,
     exchange_list = get_bot().get_exchanges_list()
 
     if len(symbol_evaluator_list) > 0:
-        matrix = symbol_evaluator_list[cryptocurrency_name].get_matrix(exchange_list[exchange_name])
+        matrix = symbol_evaluator_list[symbol].get_matrix(exchange_list[exchange_name])
         add_to_matrix_history(matrix)
 
         formatted_matrix_history = {
