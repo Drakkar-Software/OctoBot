@@ -45,11 +45,13 @@ class Commands:
                 raise e
 
     @staticmethod
-    def start_bot(bot, logger, catch=False):
+    def start_bot(bot, logger, web_app, catch=False):
         bot.create_exchange_traders()
         bot.create_evaluation_threads()
         try:
             bot.start_threads()
+            if web_app is not None:
+                web_app.start()
             bot.join_threads()
         except Exception as e:
             logger.exception("CryptBot Exception : {0}".format(e))

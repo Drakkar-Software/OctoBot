@@ -1,91 +1,88 @@
-import time
+from dash.dependencies import Output, Event, Input
 
-import dash
-import plotly
-import plotly.graph_objs as go
-from dash.dependencies import Output, Event
-
-from config.cst import PriceStrings, EvaluatorMatrixTypes
-from evaluator.Strategies import TempFullMixedStrategiesEvaluator
-from evaluator.evaluator_matrix import EvaluatorMatrix
-from interfaces.web import app_instance, get_bot
+from config.cst import EvaluatorMatrixTypes, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME, \
+    TimeFrames
+from interfaces.web import app_instance, global_config, get_bot
+from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, get_currency_graph_update
 
 
 @app_instance.callback(Output('live-graph', 'figure'),
-                       [dash.dependencies.Input('cryptocurrency-name', 'value')],
+                       [Input('exchange-name', 'value'),
+                        Input('cryptocurrency-name', 'value'),
+                        Input('symbol', 'value'),
+                        Input('time-frame', 'value')],
                        events=[Event('graph-update', 'interval')])
-def update_values(cryptocurrency_name):
-    symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
-
-    # temp
-    if cryptocurrency_name not in symbol_evaluator_list:
-        cryptocurrency_name = "Bitcoin"
-
-    if len(symbol_evaluator_list) > 0:
-        evaluator_thread_manager = symbol_evaluator_list[cryptocurrency_name].get_evaluator_thread_managers()["binance"]
-
-        # temp
-        df = evaluator_thread_manager[0].get_evaluator().get_data()
-
-        if df is not None:
-            X = df[PriceStrings.STR_PRICE_TIME.value]
-            Y = df[PriceStrings.STR_PRICE_CLOSE.value]
-
-            data = plotly.graph_objs.Scatter(
-                x=X,
-                y=Y,
-                name='Scatter',
-                mode='lines+markers'
-            )
-
-            return {'data': [data], 'layout': go.Layout(xaxis=dict(range=[min(X), max(X)]),
-                                                        yaxis=dict(range=[min(Y), max(Y)]), )}
-
-    return {}
+def update_values(exchange_name, cryptocurrency_name, symbol, time_frame):
+    return get_currency_graph_update(cryptocurrency_name,
+                                     exchange_name,
+                                     symbol,
+                                     time_frame)
 
 
 @app_instance.callback(Output('strategy-live-graph', 'figure'),
-                       [dash.dependencies.Input('cryptocurrency-name', 'value')],
+                       [Input('exchange-name', 'value'),
+                        Input('cryptocurrency-name', 'value'),
+                        Input('symbol', 'value'),
+                        Input('time-frame', 'value'),
+                        Input('evaluator-name', 'value')],
                        events=[Event('strategy-graph-update', 'interval')])
-def update_strategy_values(strategy_name):
-    # temp
-    cryptocurrency_name = "Bitcoin"
-
+def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_frame, evaluator_name):
     return get_evaluator_graph_in_matrix_history(cryptocurrency_name,
-                                          "binance",
-                                          EvaluatorMatrixTypes.STRATEGIES,
-                                          TempFullMixedStrategiesEvaluator.get_name())
+                                                 exchange_name,
+                                                 EvaluatorMatrixTypes.STRATEGIES,
+                                                 evaluator_name)
 
 
-def get_evaluator_graph_in_matrix_history(cryptocurrency_name,
-                                          exchange_name,
-                                          evaluator_type,
-                                          evaluator_name,
-                                          time_frame=None):
-    symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
-    exchange_list = get_bot().get_exchanges_list()
+@app_instance.callback(Output('symbol', 'options'),
+                       [Input('exchange-name', 'value'),
+                        Input('cryptocurrency-name', 'value')])
+def update_symbol_dropdown(exchange_name, cryptocurrency_name):
+    exchange = get_bot().get_exchanges_list()[exchange_name]
+    symbol_list = []
 
-    if len(symbol_evaluator_list) > 0:
-        matrix_inst = symbol_evaluator_list[cryptocurrency_name].get_matrix(exchange_list[exchange_name])
+    for symbol in global_config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency_name][CONFIG_CRYPTO_PAIRS]:
+        if exchange.symbol_exists(symbol):
+            symbol_list.append({
+                "label": symbol,
+                "value": symbol
+            })
 
-        formatted_matrix_history = {
-            "timestamps": [],
-            "evaluator_data": []
-        }
+    return symbol_list
 
-        for matrix in matrix_inst.get_matrix_history().get_history():
-            eval_note = EvaluatorMatrix.get_eval_note(matrix["matrix"], evaluator_type, evaluator_name, time_frame)
-            if eval_note is not None:
-                formatted_matrix_history["evaluator_data"].append(eval_note)
-                formatted_matrix_history["timestamps"].append(matrix["timestamp"])
 
-        data = plotly.graph_objs.Scatter(
-            x=formatted_matrix_history["timestamps"],
-            y=formatted_matrix_history["evaluator_data"],
-            name='Scatter',
-            mode='lines+markers'
-        )
+@app_instance.callback(Output('time-frame', 'options'),
+                       [Input('exchange-name', 'value'),
+                        Input('symbol', 'value')])
+def update_symbol_dropdown(exchange_name, symbol):
+    exchange = get_bot().get_exchanges_list()[exchange_name]
 
-        return {'data': [data], 'layout': go.Layout(xaxis=dict(range=[get_bot().get_start_time(), time.time()]),
-                                                    yaxis=dict(range=[-1, 1]), )}
-    return None
+    time_frame_list = []
+    for time_frame in global_config[CONFIG_TIME_FRAME]:
+        if exchange.time_frame_exists(TimeFrames(time_frame).value):
+            time_frame_list.append({
+                "label": time_frame,
+                "value": time_frame
+            })
+    return time_frame_list
+
+
+@app_instance.callback(Output('evaluator-name', 'options'),
+                       [Input('cryptocurrency-name', 'value'),
+                        Input('exchange-name', 'value'),
+                        Input('symbol', 'value'),
+                        Input('time-frame', 'value')])
+def update_evaluator_dropdown(cryptocurrency_name, exchange_name, symbol, time_frame):
+    symbol_evaluator = get_bot().get_symbol_evaluator_list()[cryptocurrency_name]
+    exchange = get_bot().get_exchanges_list()[exchange_name]
+
+    evaluator_list = []
+    evaluator_name_list = []
+    for strategies in symbol_evaluator.get_strategies_eval_list(exchange):
+        if strategies.get_name() not in evaluator_name_list:
+            evaluator_name_list.append(strategies.get_name())
+            evaluator_list.append({
+                "label": strategies.get_name(),
+                "value": strategies.get_name()
+            })
+
+    return evaluator_list
