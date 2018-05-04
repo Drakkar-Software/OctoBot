@@ -41,7 +41,7 @@ class EvaluatorThreadsManager:
         self.evaluator.set_symbol_evaluator(self.symbol_evaluator)
 
         # Add threaded evaluators that can notify the current thread
-        self.evaluator.set_social_eval(self.symbol_evaluator.get_social_eval_list(), self)
+        self.evaluator.set_social_eval(self.symbol_evaluator.get_crypto_currency_evaluator().get_social_eval_list(), self)
         self.evaluator.set_real_time_eval(real_time_ta_eval_list, self)
 
         # Create static evaluators
