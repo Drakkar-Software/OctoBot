@@ -70,7 +70,7 @@ class WebApp(threading.Thread):
             dcc.Graph(id='live-graph', animate=True),
             dcc.Interval(
                 id='graph-update',
-                interval=1 * 1000
+                interval=60 * 1000
             ),
 
             html.Label('Current symbol strategy'),

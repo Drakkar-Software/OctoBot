@@ -13,8 +13,7 @@ from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, g
                         Input('time-frame', 'value')],
                        events=[Event('graph-update', 'interval')])
 def update_values(exchange_name, cryptocurrency_name, symbol, time_frame):
-    return get_currency_graph_update(cryptocurrency_name,
-                                     exchange_name,
+    return get_currency_graph_update(exchange_name,
                                      symbol,
                                      time_frame)
 
@@ -27,7 +26,7 @@ def update_values(exchange_name, cryptocurrency_name, symbol, time_frame):
                         Input('evaluator-name', 'value')],
                        events=[Event('strategy-graph-update', 'interval')])
 def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_frame, evaluator_name):
-    return get_evaluator_graph_in_matrix_history(cryptocurrency_name,
+    return get_evaluator_graph_in_matrix_history(symbol,
                                                  exchange_name,
                                                  EvaluatorMatrixTypes.STRATEGIES,
                                                  evaluator_name)
@@ -72,7 +71,7 @@ def update_symbol_dropdown(exchange_name, symbol):
                         Input('symbol', 'value'),
                         Input('time-frame', 'value')])
 def update_evaluator_dropdown(cryptocurrency_name, exchange_name, symbol, time_frame):
-    symbol_evaluator = get_bot().get_symbol_evaluator_list()[cryptocurrency_name]
+    symbol_evaluator = get_bot().get_symbol_evaluator_list()[symbol]
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     evaluator_list = []

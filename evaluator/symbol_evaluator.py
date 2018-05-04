@@ -1,20 +1,18 @@
 from config.cst import EvaluatorMatrixTypes
-from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_final import FinalEvaluator
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
-from backtesting.backtesting import Backtesting
 
 
 class SymbolEvaluator:
-    def __init__(self, config, crypto_currency, dispatchers_list):
-        self.crypto_currency = crypto_currency
+    def __init__(self, config, symbol, crypto_currency_evaluator):
+        self.crypto_currency_evaluator = crypto_currency_evaluator
+        self.symbol = symbol
         self.trader_simulator = None
         self.config = config
         self.traders = None
         self.trader_simulators = None
-        self.dispatchers_list = dispatchers_list
 
         self.evaluator_thread_managers = {}
         self.final_evaluators = {}
@@ -22,34 +20,7 @@ class SymbolEvaluator:
         self.strategies_eval_lists = {}
         self.finalize_enabled_list = {}
 
-        if Backtesting.enabled(self.config):
-            self.social_eval_list = []
-            self.social_not_threaded_list = []
-        else:
-            self.social_eval_list = EvaluatorCreator.create_social_eval(self.config,
-                                                                        self.crypto_currency,
-                                                                        self.dispatchers_list)
-
-            self.social_not_threaded_list = EvaluatorCreator.create_social_not_threaded_list(self.social_eval_list)
-
-        self.social_evaluator_refresh = SocialEvaluatorNotThreadedUpdateThread(self.social_not_threaded_list)
-
         self.evaluator_order_creator = EvaluatorOrderCreator()
-
-    def start_threads(self):
-        self.social_evaluator_refresh.start()
-
-    def stop_threads(self):
-        for thread in self.social_eval_list:
-            thread.stop()
-
-        self.social_evaluator_refresh.stop()
-
-    def join_threads(self):
-        for thread in self.social_eval_list:
-            thread.join()
-
-        self.social_evaluator_refresh.join()
 
     def set_traders(self, trader):
         self.traders = trader
@@ -113,15 +84,5 @@ class SymbolEvaluator:
     def get_evaluator_order_creator(self):
         return self.evaluator_order_creator
 
-    def get_social_eval_list(self):
-        return self.social_eval_list
-
-    def get_dispatchers_list(self):
-        return self.dispatchers_list
-
-    def get_social_not_threaded_list(self):
-        return self.social_not_threaded_list
-
-    def get_symbol_pairs(self):
-        return self.config["crypto_currencies"][self.crypto_currency]["pairs"]
-
+    def get_crypto_currency_evaluator(self):
+        return self.crypto_currency_evaluator
