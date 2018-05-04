@@ -3,7 +3,10 @@ import copy
 import dash
 import time
 
-app_instance = dash.Dash(__name__)
+import flask
+
+server_instance = flask.Flask(__name__)
+app_instance = dash.Dash(__name__, server=server_instance)
 bot_instance = None
 global_config = None
 
