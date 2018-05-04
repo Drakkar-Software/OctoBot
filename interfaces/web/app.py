@@ -14,13 +14,11 @@ class WebApp(threading.Thread):
         super().__init__()
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.server = None
         self.app = None
 
     def run(self):
         # Define the WSGI application object
         self.app = app_instance
-        self.server = self.app.server
 
         self.app.layout = html.Div(children=[
             html.H1('CryptoBot'),

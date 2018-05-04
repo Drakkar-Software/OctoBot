@@ -38,7 +38,7 @@ def get_currency_graph_update(cryptocurrency_name, exchange_name, symbol, time_f
                         )
 
                         return {'data': [data], 'layout': go.Layout(xaxis=dict(range=[min(X), max(X)]),
-                                                                    yaxis=dict(range=[min(Y), max(Y)]), )}
+                                                                    yaxis=dict(range=[min(Y)*0.98, max(Y)*1.02]), )}
     return None
 
 
