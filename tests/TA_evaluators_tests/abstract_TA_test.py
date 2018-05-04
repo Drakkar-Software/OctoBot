@@ -44,10 +44,15 @@ class AbstractTATest:
     def test_reaction_to_rise_after_over_sold(self):
         raise NotImplementedError("test_reaction_to_oversold not implemented")
 
-    # checks evaluations when an asset is over-sold
+    # checks evaluations when an asset is over-bought
     @abstractmethod
     def test_reaction_to_over_bought_then_dip(self):
         raise NotImplementedError("test_reaction_to_over_bought_then_dip not implemented")
+
+    # checks evaluations when an asset doing nothing
+    @abstractmethod
+    def test_reaction_to_flat_trend(self):
+        raise NotImplementedError("test_reaction_to_flat_trend not implemented")
 
     # runs stress test and assert that neutral evaluation ratio is under required_not_neutral_evaluation_ratio and
     # resets eval_note between each run if reset_eval_to_none_before_each_eval set to True
@@ -186,6 +191,72 @@ class AbstractTATest:
 
         # back normal
         self._set_data_and_check_eval(buy_then_sell_data, after_dip_eval, False)
+
+    # test reaction to flat trend
+    def run_test_reactions_to_flat_trend(self, eval_start_move_ending_up_in_a_rise,
+                                         eval_reaches_flat_trend, eval_first_micro_up_p1, eval_first_micro_up_p2,
+                                         eval_micro_down1, eval_micro_up1, eval_micro_down2, eval_micro_up2,
+                                         eval_micro_down3, eval_back_normal3, eval_micro_down4, eval_back_normal4,
+                                         eval_micro_down5, eval_back_up5, eval_micro_up6, eval_back_down6,
+                                         eval_back_normal6, eval_micro_down7, eval_back_up7, eval_micro_down8,
+                                         eval_back_up8, eval_micro_down9, eval_back_up9):
+
+        # long data_frame with flat then sudden big rise and then mostly flat for 120 values
+        # start move ending up in a rise, reaches flat trend, first micro up p1, first mirco up p2, micro down,
+        # micro up, micro down, micro up, micro down, back normal, micro down, back normal, micro down, back up,
+        # micro up, back down, back normal, micro down, back up, micro down, back up, micro down, back up
+        up_then_flat_data, start_move_ending_up_in_a_rise, reaches_flat_trend, first_micro_up_p1, first_micro_up_p2, \
+        micro_down1, micro_up1, micro_down2, micro_up2, micro_down3, back_normal3, micro_down4, back_normal4, \
+        micro_down5, back_up5, micro_up6, back_down6, back_normal6, micro_down7, back_up7, micro_down8, back_up8, \
+        micro_down9, back_up9 = self.data_bank.get_overall_flat_trend()
+
+        # start_move_ending_up_in_a_rise
+        self._set_data_and_check_eval(
+            up_then_flat_data[0:start_move_ending_up_in_a_rise], eval_start_move_ending_up_in_a_rise, False)
+        #  reaches_flat_trend
+        self._set_data_and_check_eval(up_then_flat_data[0:reaches_flat_trend], eval_reaches_flat_trend, False)
+        #  first_micro_up_p1
+        self._set_data_and_check_eval(up_then_flat_data[0:first_micro_up_p1], eval_first_micro_up_p1, False)
+        #  first_micro_up_p2
+        self._set_data_and_check_eval(up_then_flat_data[0:first_micro_up_p2], eval_first_micro_up_p2, False)
+        #  micro_down1
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_down1], eval_micro_down1, False)
+        #  micro_up1
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_up1], eval_micro_up1, False)
+        #  micro_down2
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_down2], eval_micro_down2, False)
+        #  micro_up2
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_up2], eval_micro_up2, False)
+        #  micro_down3
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_down3], eval_micro_down3, False)
+        #  back_normal3
+        self._set_data_and_check_eval(up_then_flat_data[0:back_normal3], eval_back_normal3, False)
+        #  micro_down4
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_down4], eval_micro_down4, False)
+        #  back_normal4
+        self._set_data_and_check_eval(up_then_flat_data[0:back_normal4], eval_back_normal4, False)
+        #  micro_down5
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_down5], eval_micro_down5, False)
+        #  back_up5
+        self._set_data_and_check_eval(up_then_flat_data[0:back_up5], eval_back_up5, False)
+        #  micro_up6
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_up6], eval_micro_up6, False)
+        #  back_down6
+        self._set_data_and_check_eval(up_then_flat_data[0:back_down6], eval_back_down6, False)
+        #  back_normal6
+        self._set_data_and_check_eval(up_then_flat_data[0:back_normal6], eval_back_normal6, False)
+        #  micro_down7
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_down7], eval_micro_down7, False)
+        #  back_up7
+        self._set_data_and_check_eval(up_then_flat_data[0:back_up7], eval_back_up7, False)
+        #  micro_down8
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_down8], eval_micro_down8, False)
+        #  back_up8
+        self._set_data_and_check_eval(up_then_flat_data[0:back_up8], eval_back_up8, False)
+        #  micro_down9
+        self._set_data_and_check_eval(up_then_flat_data[0:micro_down9], eval_micro_down9, False)
+        #  back_up9
+        self._set_data_and_check_eval(up_then_flat_data[0:back_up9], eval_back_up9, False)
 
     def _set_data_and_check_eval(self, data, expected_eval_note, check_inferior):
         self.evaluator.set_data(data)
