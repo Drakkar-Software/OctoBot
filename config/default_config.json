@@ -13,7 +13,8 @@
   },
   "services": {},
   "notification":{
-    "enabled": false
+    "enabled": false,
+    "type": []
   },
   "trader":{
     "enabled": false,
