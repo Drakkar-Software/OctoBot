@@ -150,11 +150,11 @@ class Order:
         if self.get_filled_price() is not 0 and self.get_create_last_price() is not 0:
             if self.get_filled_price() >= self.get_create_last_price():
                 self.order_profitability = 1 - self.get_filled_price() / self.get_create_last_price()
-                if self.side == TradeOrderSide.BUY:
+                if self.side == TradeOrderSide.SELL:
                     self.order_profitability *= -1
             else:
                 self.order_profitability = 1 - self.get_create_last_price() / self.get_filled_price()
-                if self.side == TradeOrderSide.SELL:
+                if self.side == TradeOrderSide.BUY:
                     self.order_profitability *= -1
         return self.order_profitability
 
