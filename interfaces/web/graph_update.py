@@ -8,13 +8,18 @@ from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history
 
 
+def get_time_frame(time_frame):
+    if isinstance(time_frame, dict):
+        return TimeFrames(time_frame["value"])
+    else:
+        return TimeFrames(time_frame)
+
+
 def get_currency_graph_update(exchange_name, symbol, time_frame):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
     exchange_list = get_bot().get_exchanges_list()
 
     if time_frame is not None:
-        time_frame = TimeFrames(time_frame["value"])
-
         if len(symbol_evaluator_list) > 0:
             evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_thread_managers(
                 exchange_list[exchange_name])
@@ -59,8 +64,8 @@ def get_evaluator_graph_in_matrix_history(symbol,
         }
 
         for matrix in get_matrix_history():
-            eval_note = EvaluatorMatrix.get_eval_note(matrix["matrix"], evaluator_type, evaluator_name,
-                                                      time_frame["value"])
+            eval_note = EvaluatorMatrix.get_eval_note(matrix["matrix"], evaluator_type, evaluator_name, time_frame)
+
             if eval_note is not None:
                 formatted_matrix_history["evaluator_data"].append(eval_note)
                 formatted_matrix_history["timestamps"].append(matrix["timestamp"])
