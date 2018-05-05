@@ -1,10 +1,17 @@
-import operator
 from enum import Enum
 
-VERSION = "0.0.9-alpha"
+SHORT_VERSION = "0.0.10"
+REV_VERSION = "0"
+VERSION_DEV_PHASE = "alpha"
+VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
+LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
 
+ORIGIN_URL = "https://github.com/Trading-Bot/CryptoBot.git"
+
+MSECONDS_TO_SECONDS = 1000
 MINUTE_TO_SECONDS = 60
 HOURS_TO_SECONDS = MINUTE_TO_SECONDS * 60
+HOURS_TO_MSECONDS = MSECONDS_TO_SECONDS * MINUTE_TO_SECONDS * MINUTE_TO_SECONDS
 DAYS_TO_SECONDS = HOURS_TO_SECONDS * 24
 
 CONFIG_GLOBAL_UTILS = "global_utils"
@@ -25,6 +32,7 @@ CONFIG_BACKTESTING_DATA_FILE = "file"
 
 # Data collector
 CONFIG_DATA_COLLECTOR = "data_collector"
+CONFIG_DATA_COLLECTOR_ZIPLINE = "zipline"
 DATA_COLLECTOR_REFRESHER_TIME = 10
 CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
@@ -48,11 +56,11 @@ MARKET_SEPARATOR = "/"
 # Notification
 CONFIG_NOTIFICATION_INSTANCE = "notifier"
 CONFIG_CATEGORY_NOTIFICATION = "notification"
-NOTIFICATION_STARTING_MESSAGE = "CryptoBot v{0} starting...".format(VERSION)
-NOTIFICATION_STOPPING_MESSAGE = "CryptoBot v{0} stopping...".format(VERSION)
+NOTIFICATION_STARTING_MESSAGE = "CryptoBot v{0} starting...".format(LONG_VERSION)
+NOTIFICATION_STOPPING_MESSAGE = "CryptoBot v{0} stopping...".format(LONG_VERSION)
 
 # DEBUG options
-CONFIG_DEBUG_OPTION_PERF = "Performance_analyser"
+CONFIG_DEBUG_OPTION_PERF = "performance_analyser"
 CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN = 5
 CONFIG_DEBUG_OPTION = "DEBUG"
 
@@ -203,6 +211,8 @@ class TradeOrderSide(Enum):
 class OrderStatus(Enum):
     FILLED = 1
     PENDING = 2
+    PARTIALLY_FILLED = 3
+    CANCELED = 4
 
 
 class TraderOrderType(Enum):

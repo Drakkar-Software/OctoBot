@@ -32,6 +32,7 @@ class Order:
         self.executed_time = 0
         self.last_prices = None
         self.created_last_price = None
+        self.order_profitability = None
 
         self.order_notifier = None
 
@@ -87,6 +88,7 @@ class Order:
                 return False
 
     def cancel_order(self):
+        self.status = OrderStatus.CANCELED
         # TODO exchange
         self.trader.notify_order_cancel(self)
 
@@ -143,6 +145,18 @@ class Order:
 
     def get_create_last_price(self):
         return self.created_last_price
+
+    def get_profitability(self):
+        if self.get_filled_price() is not 0 and self.get_create_last_price() is not 0:
+            if self.get_filled_price() >= self.get_create_last_price():
+                self.order_profitability = 1 - self.get_filled_price() / self.get_create_last_price()
+                if self.side == TradeOrderSide.BUY:
+                    self.order_profitability *= -1
+            else:
+                self.order_profitability = 1 - self.get_create_last_price() / self.get_filled_price()
+                if self.side == TradeOrderSide.SELL:
+                    self.order_profitability *= -1
+        return self.order_profitability
 
     @classmethod
     def get_name(cls):

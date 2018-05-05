@@ -2,6 +2,7 @@ import json
 import logging
 import threading
 import time
+import os.path
 
 import ccxt
 
@@ -16,6 +17,7 @@ class DataCollector:
 
         self.exchange_data_collectors_threads = []
         self.logger.info("Create data collectors...")
+
         self.create_exchange_data_collectors()
 
     def create_exchange_data_collectors(self):
@@ -28,6 +30,7 @@ class DataCollector:
 
                 exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst)
                 exchange_data_collector.start()
+
                 self.exchange_data_collectors_threads.append(exchange_data_collector)
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
@@ -48,9 +51,12 @@ class DataCollector:
 class DataCollectorParser:
     @staticmethod
     def parse(file):
-        with open(CONFIG_DATA_COLLECTOR_PATH + file) as file_to_parse:
-            file_content = json.loads(file_to_parse.read())
-
+        if os.path.isfile(CONFIG_DATA_COLLECTOR_PATH + file):
+            with open(CONFIG_DATA_COLLECTOR_PATH + file) as file_to_parse:
+                file_content = json.loads(file_to_parse.read())
+        else:
+            with open(file) as file_to_parse:
+                file_content = json.loads(file_to_parse.read())
         return file_content
 
 
@@ -73,18 +79,18 @@ class ExchangeDataCollector(threading.Thread):
     def stop(self):
         self.keep_running = False
 
-    def update_file(self):
+    def _update_file(self):
         with open(CONFIG_DATA_COLLECTOR_PATH + self.file_name, 'w') as json_file:
             json.dump(self.file_content, json_file)
 
-    def prepare_file(self):
+    def _prepare_file(self):
         self.file_content = {}
         for time_frame in TimeFrames:
             self.file_content[time_frame.value] = None
 
-    def prepare(self):
+    def _prepare(self):
         self.logger.info("{0} prepare...".format(self.exchange.get_name()))
-        self.prepare_file()
+        self._prepare_file()
         for time_frame in TimeFrames:
             if self.exchange.time_frame_exists(time_frame.value):
                 # write all available data for this time frame
@@ -93,10 +99,10 @@ class ExchangeDataCollector(threading.Thread):
                                                                                       limit=None,
                                                                                       data_frame=False)
                 self.time_frame_update[time_frame] = time.time()
-        self.update_file()
+        self._update_file()
 
     def run(self):
-        self.prepare()
+        self._prepare()
         self.logger.info("{0} updating...".format(self.exchange.get_name()))
         while self.keep_running:
             now = time.time()
@@ -115,7 +121,7 @@ class ExchangeDataCollector(threading.Thread):
                         self.logger.info("{0} : {1} updated".format(self.exchange.get_name(), time_frame))
 
             if self._data_updated:
-                self.update_file()
+                self._update_file()
                 self._data_updated = False
 
             final_sleep = DATA_COLLECTOR_REFRESHER_TIME - (time.time() - now)

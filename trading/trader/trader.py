@@ -64,8 +64,9 @@ class Trader:
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
     def cancel_open_orders(self, symbol):
-        for order in self.get_open_orders():
-            if order.get_order_symbol() == symbol:
+        # use a copy of the list (not the reference)
+        for order in list(self.get_open_orders()):
+            if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
                 self.notify_order_close(order, True)
 
     def notify_order_cancel(self, order):
@@ -81,7 +82,6 @@ class Trader:
         # If need to cancel the order call the method and no need to update the portfolio (only availability)
         if cancel:
             order_closed = None
-            order_profitability = None
             orders_canceled = order.get_linked_orders() + [order]
 
             self.cancel_order(order)
@@ -113,14 +113,18 @@ class Trader:
             # remove order to open_orders
             self.order_manager.remove_order_from_list(order)
 
-            order_profitability = order.get_create_last_price() - order.get_filled_price()
+        if order_closed is not None:
+            profitability_activated = True
+        else:
+            profitability_activated = False
 
         # notification
         order.get_order_notifier().end(order_closed,
                                        orders_canceled,
-                                       order_profitability,
+                                       order.get_profitability(),
                                        profitability_percent,
-                                       profitability_diff)
+                                       profitability_diff,
+                                       profitability_activated)
 
     def get_open_orders(self):
         return self.order_manager.get_open_orders()

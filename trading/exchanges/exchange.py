@@ -10,16 +10,17 @@ from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_E
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
 class Exchange:
-    def __init__(self, config, exchange_type, connect=True):
+    def __init__(self, config, exchange_type, connect_to_online_exchange=True):
         self.exchange_type = exchange_type
-        self.connect = connect
+        self.connect_to_online_exchange = connect_to_online_exchange
         self.client = None
         self.config = config
         self.name = self.exchange_type.__name__
 
-        self.create_client()
+        if self.connect_to_online_exchange:
+            self.create_client()
 
-        self.client.load_markets()
+            self.client.load_markets()
 
         self.all_currencies_price_ticker = None
 
@@ -27,7 +28,8 @@ class Exchange:
 
     def enabled(self):
         # if we can get candlestick data
-        if self.name in self.config[CONFIG_EXCHANGES] and self.client.has['fetchOHLCV']:
+        if not self.connect_to_online_exchange \
+                or (self.name in self.config[CONFIG_EXCHANGES] and self.client.has['fetchOHLCV']):
             return True
         else:
             self.logger.warning("Exchange {0} is currently disabled".format(self.name))
@@ -35,7 +37,7 @@ class Exchange:
 
     def create_client(self):
         if self.check_config():
-            if self.connect:
+            if self.connect_to_online_exchange:
                 self.client = self.exchange_type({
                     'apiKey': self.config["exchanges"][self.name]["api-key"],
                     'secret': self.config["exchanges"][self.name]["api-secret"],

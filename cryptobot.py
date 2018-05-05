@@ -1,17 +1,17 @@
 import logging
+import time
 
 import ccxt
 
 from backtesting.backtesting import Backtesting
 from backtesting.exchange_simulator import ExchangeSimulator
-from config.config import load_config
 from config.cst import *
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.Util.advanced_manager import AdvancedManager
+from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import SymbolEvaluator
-from interfaces.web.app import WebApp
 from services import ServiceCreator
 from tools import Notification
 from tools.performance_analyser import PerformanceAnalyser
@@ -30,6 +30,7 @@ class CryptoBot:
     """
 
     def __init__(self, config):
+        self.start_time = time.time()
         self.config = config
 
         # Logger
@@ -37,11 +38,6 @@ class CryptoBot:
 
         # Advanced
         AdvancedManager.create_class_list(self.config)
-
-        # Interfaces
-        self.web_app = WebApp(self.config)
-        if self.web_app.enabled():
-            self.web_app.start()
 
         # Debug tools
         self.performance_analyser = None
@@ -59,11 +55,12 @@ class CryptoBot:
         # Notify starting
         self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
 
-        self.symbols_threads_manager = []
+        self.symbol_threads_manager = []
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.exchanges_list = {}
-        self.symbol_evaluator_list = []
+        self.symbol_evaluator_list = {}
+        self.crypto_currency_evaluator_list = {}
         self.dispatchers_list = []
         self.symbol_time_frame_updater_threads = []
 
@@ -99,14 +96,20 @@ class CryptoBot:
         # create Social and TA evaluators
         for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
-            # create symbol evaluator
-            symbol_evaluator = SymbolEvaluator(self.config, crypto_currency, self.dispatchers_list)
-            symbol_evaluator.set_traders(self.exchange_traders)
-            symbol_evaluator.set_trader_simulators(self.exchange_trader_simulators)
-            self.symbol_evaluator_list.append(symbol_evaluator)
+            # create crypto_currency evaluator
+            crypto_currency_evaluator = CryptocurrencyEvaluator(self.config, crypto_currency, self.dispatchers_list)
+            self.crypto_currency_evaluator_list[crypto_currency] = crypto_currency_evaluator
 
             # create TA evaluators
             for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
+
+                # create symbol evaluator
+                symbol_evaluator = SymbolEvaluator(self.config, symbol, crypto_currency_evaluator)
+                symbol_evaluator.set_traders(self.exchange_traders)
+                symbol_evaluator.set_trader_simulators(self.exchange_trader_simulators)
+
+                crypto_currency_evaluator.add_symbol_evaluator(symbol, symbol_evaluator)
+                self.symbol_evaluator_list[symbol] = symbol_evaluator
 
                 for exchange in self.exchanges_list.values():
                     if exchange.enabled():
@@ -129,23 +132,23 @@ class CryptoBot:
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
             if exchange.time_frame_exists(time_frame.value):
-                self.symbols_threads_manager.append(EvaluatorThreadsManager(self.config,
-                                                                            symbol,
-                                                                            time_frame,
-                                                                            symbol_time_frame_updater_thread,
-                                                                            symbol_evaluator,
-                                                                            exchange,
-                                                                            real_time_ta_eval_list))
+                self.symbol_threads_manager.append(EvaluatorThreadsManager(self.config,
+                                                                           symbol,
+                                                                           time_frame,
+                                                                           symbol_time_frame_updater_thread,
+                                                                           symbol_evaluator,
+                                                                           exchange,
+                                                                           real_time_ta_eval_list))
         self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
 
     def start_threads(self):
         if self.performance_analyser:
             self.performance_analyser.start()
 
-        for symbol_evaluator in self.symbol_evaluator_list:
-            symbol_evaluator.start_threads()
+        for crypto_currency in self.crypto_currency_evaluator_list:
+            self.crypto_currency_evaluator_list[crypto_currency].start_threads()
 
-        for manager in self.symbols_threads_manager:
+        for manager in self.symbol_threads_manager:
             manager.start_threads()
 
         for thread in self.symbol_time_frame_updater_threads:
@@ -157,14 +160,14 @@ class CryptoBot:
         self.logger.info("Evaluation threads started...")
 
     def join_threads(self):
-        for manager in self.symbols_threads_manager:
+        for manager in self.symbol_threads_manager:
             manager.join_threads()
 
         for thread in self.symbol_time_frame_updater_threads:
             thread.join()
 
-        for symbol_evaluator in self.symbol_evaluator_list:
-            symbol_evaluator.join_threads()
+        for crypto_currency in self.crypto_currency_evaluator_list:
+            self.crypto_currency_evaluator_list[crypto_currency].join_threads()
 
         for trader in self.exchange_traders:
             self.exchange_traders[trader].join_order_manager()
@@ -187,11 +190,11 @@ class CryptoBot:
         for thread in self.symbol_time_frame_updater_threads:
             thread.stop()
 
-        for manager in self.symbols_threads_manager:
+        for manager in self.symbol_threads_manager:
             manager.stop_threads()
 
-        for symbol_evaluator in self.symbol_evaluator_list:
-            symbol_evaluator.stop_threads()
+        for crypto_currency in self.crypto_currency_evaluator_list:
+            self.crypto_currency_evaluator_list[crypto_currency].stop_threads()
 
         for trader in self.exchange_traders:
             self.exchange_traders[trader].stop_order_manager()
@@ -205,5 +208,29 @@ class CryptoBot:
         if self.performance_analyser:
             self.performance_analyser.stop()
 
-        if self.web_app.enabled():
-            self.web_app.stop()
+    def get_symbols_threads_manager(self):
+        return self.symbol_threads_manager
+
+    def get_exchange_traders(self):
+        return self.exchange_traders
+
+    def get_exchange_trader_simulators(self):
+        return self.exchange_trader_simulators
+
+    def get_exchanges_list(self):
+        return self.exchanges_list
+
+    def get_symbol_evaluator_list(self):
+        return self.symbol_evaluator_list
+
+    def get_crypto_currency_evaluator_list(self):
+        return self.crypto_currency_evaluator_list
+
+    def get_dispatchers_list(self):
+        return self.dispatchers_list
+
+    def get_symbol_time_frame_updater_threads(self):
+        return self.symbol_time_frame_updater_threads
+
+    def get_start_time(self):
+        return self.start_time

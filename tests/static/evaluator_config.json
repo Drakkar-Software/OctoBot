@@ -2,6 +2,7 @@
   "RSIMomentumEvaluator": true,
   "DoubleMovingAverageTrendEvaluator": true,
   "BBMomentumEvaluator": true,
+  "MACDMomentumEvaluator": true,
   "CandlePatternMomentumEvaluator": true,
   "ADXMomentumEvaluator": true,
 
