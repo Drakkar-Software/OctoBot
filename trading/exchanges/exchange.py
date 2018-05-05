@@ -242,6 +242,3 @@ class Exchange:
 
     def get_rate_limit(self):
         return self.exchange_type.rateLimit / 1000
-
-    def get_name(self):
-        return self.name

@@ -16,9 +16,9 @@ class Portfolio:
     AVAILABLE = "available"
     TOTAL = "total"
 
-    def __init__(self, config):
+    def __init__(self, config, is_simulated=False):
         self.config = config
-        self.is_simulated = self._check_simulation()
+        self.is_simulated = is_simulated
         self.portfolio = {}
         self._load_portfolio()
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -31,10 +31,6 @@ class Portfolio:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.lock.release()
-
-    # Returns true if this portfolio is simulated
-    def _check_simulation(self):
-        return CONFIG_SIMULATOR in self.config and CONFIG_STARTING_PORTFOLIO in self.config[CONFIG_SIMULATOR]
 
     # Load exchange portfolio / simulated portfolio from config
     def _load_portfolio(self):
@@ -152,6 +148,3 @@ class Portfolio:
     def reset_portfolio_available(self):
         for currency in self.portfolio:
             self.portfolio[currency][Portfolio.AVAILABLE] = self.portfolio[currency][Portfolio.TOTAL]
-
-    def get_portfolio(self):
-        return self.portfolio

@@ -3,6 +3,7 @@ import logging
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
 from trading.trader.order import OrderConstants
 from trading.trader.order_notifier import OrderNotifier
+from trading.trader.portfolio import Portfolio
 from trading.trader.trader import Trader
 
 """ TraderSimulator has a role of exchange response simulator
@@ -14,6 +15,7 @@ class TraderSimulator(Trader):
         super().__init__(config, exchange)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = True
+        self.portfolio = Portfolio(self.config, self.simulate)
 
     def enabled(self):
         if self.config["simulator"][CONFIG_ENABLED_OPTION]:
