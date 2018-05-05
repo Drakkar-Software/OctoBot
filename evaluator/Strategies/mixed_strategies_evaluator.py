@@ -3,11 +3,14 @@ from evaluator.RealTime import InstantFluctuationsEvaluator
 from evaluator.Social import MediumNewsEvaluator, RedditForumEvaluator
 from evaluator.Strategies import MixedStrategiesEvaluator
 
+from tools.evaluators_util import check_valid_eval_note
+
 
 # TEMP strategy
 class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
     def __init__(self):
         super().__init__()
+        self.create_divergence_analyser()
         self.social_counter = 0
         self.ta_relevance_counter = 0
         self.rt_counter = 0
@@ -15,6 +18,7 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
         self.ta_evaluation = 0
         self.social_evaluation = 0
         self.rt_evaluation = 0
+        self.divergence_evaluation = 0
 
     def inc_social_counter(self, inc=1):
         self.social_counter += inc
@@ -24,6 +28,12 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
 
     def inc_rt_counter(self, inc=1):
         self.rt_counter += inc
+
+    def set_matrix(self, matrix):
+        super().set_matrix(matrix)
+
+        # TODO temp with notification
+        # self.get_divergence()
 
     def eval_impl(self) -> None:
         # TODO : temp counter without relevance
@@ -38,21 +48,28 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
         self.social_evaluation = 0
         self.rt_evaluation = 0
 
+        # example
+        # if RSIMomentumEvaluator.get_name() in self.matrix[EvaluatorMatrixTypes.TA]:
+        #     self.divergence_evaluation = self.divergence_evaluator_analyser.calc_evaluator_divergence(
+        #         EvaluatorMatrixTypes.TA,
+        #         RSIMomentumEvaluator.get_name())
+
         for rt in self.matrix[EvaluatorMatrixTypes.REAL_TIME]:
-            if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]):
-                    self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]
-                    self.inc_rt_counter()
+            if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]):
+                self.rt_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][rt]
+                self.inc_rt_counter()
 
         for ta in self.matrix[EvaluatorMatrixTypes.TA]:
             if self.matrix[EvaluatorMatrixTypes.TA][ta]:
                 for ta_time_frame in self.matrix[EvaluatorMatrixTypes.TA][ta]:
-                    if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]):
+                    if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame]):
                         time_frame_relevance = TimeFramesRelevance[ta_time_frame]
-                        self.ta_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta][ta_time_frame] * time_frame_relevance
+                        self.ta_evaluation += self.matrix[EvaluatorMatrixTypes.TA][ta][
+                                                  ta_time_frame] * time_frame_relevance
                         self.inc_ta_counter(time_frame_relevance)
 
         for social in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
-            if self.check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][social]):
+            if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][social]):
                 self.social_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
                 self.inc_social_counter()
 

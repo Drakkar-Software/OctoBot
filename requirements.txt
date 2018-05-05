@@ -1,5 +1,4 @@
-pytest
-pytest-cov
+matplotlib==2.0
 vaderSentiment
 pandas
 pytrends
@@ -9,11 +8,13 @@ numpy
 colorlog
 Python-Twitter
 psutil
+plotly
+newspaper3k
+praw
+
 dash
 flask
 dash-renderer
 dash-html-components
 dash-core-components
-plotly
-newspaper3k
-praw
+flask

@@ -1,4 +1,5 @@
 import numpy
+import math
 
 
 class PatternAnalyser:
@@ -16,7 +17,7 @@ class PatternAnalyser:
             last_move_data = data_frame[zero_crossing_indexes[-1]:]
 
             # if last_move_data is shaped in W
-            shape = PatternAnalyser._get_pattern(last_move_data)
+            shape = PatternAnalyser.get_pattern(last_move_data)
 
             if shape == "N" or shape == "V":
                 # check presence of W or M with insignificant move in the other direction
@@ -25,7 +26,7 @@ class PatternAnalyser:
                         zero_crossing_indexes[-1*backwards_index] - zero_crossing_indexes[-1*backwards_index-1] < 4:
                     backwards_index += 1
                 extended_last_move_data = data_frame[zero_crossing_indexes[-1*backwards_index]:]
-                extended_shape = PatternAnalyser._get_pattern(extended_last_move_data)
+                extended_shape = PatternAnalyser.get_pattern(extended_last_move_data)
 
                 if extended_shape == "W" or extended_shape == "M":
                     # check that values are on the same side (< or >0)
@@ -35,14 +36,20 @@ class PatternAnalyser:
                     if numpy.mean(first_part)*numpy.mean(second_part) > 0:
                         return extended_shape, zero_crossing_indexes[-1*backwards_index], zero_crossing_indexes[-1]
 
-            if shape != PatternAnalyser.UNKNOWN_PATTERN:
-                return shape, zero_crossing_indexes[-1], data_frame_max_index
+            return shape, zero_crossing_indexes[-1], data_frame_max_index
+        else:
+            # if very few data: proceed with basic analysis
 
-        return PatternAnalyser.UNKNOWN_PATTERN, None, None
+            # if last_move_data is shaped in W
+            start_pattern_index = 0 if not zero_crossing_indexes else zero_crossing_indexes[0]
+            shape = PatternAnalyser.get_pattern(data_frame[start_pattern_index:])
+            return shape, start_pattern_index, data_frame_max_index
 
     @staticmethod
-    def _get_pattern(data_frame):
-        mean_value = numpy.mean(data_frame)*0.5
+    def get_pattern(data_frame):
+        mean_value = numpy.mean(data_frame)*0.7
+        if math.isnan(mean_value):
+            return PatternAnalyser.UNKNOWN_PATTERN
         indexes_under_mean_value = data_frame.index[data_frame > mean_value] \
             if mean_value < 0 \
             else data_frame.index[data_frame < mean_value]

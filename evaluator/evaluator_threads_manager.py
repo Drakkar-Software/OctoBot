@@ -28,8 +28,8 @@ class EvaluatorThreadsManager:
         # TODO : self.exchange.update_balance(self.symbol)
 
         self.thread_name = "TA THREAD MANAGER - {0} - {1} - {2}".format(self.symbol,
-                                                                self.exchange.get_name(),
-                                                                self.time_frame)
+                                                                        self.exchange.get_name(),
+                                                                        self.time_frame)
         self.logger = logging.getLogger(self.thread_name)
 
         # Create Evaluator
@@ -41,7 +41,7 @@ class EvaluatorThreadsManager:
         self.evaluator.set_symbol_evaluator(self.symbol_evaluator)
 
         # Add threaded evaluators that can notify the current thread
-        self.evaluator.set_social_eval(self.symbol_evaluator.get_social_eval_list(), self)
+        self.evaluator.set_social_eval(self.symbol_evaluator.get_crypto_currency_evaluator().get_social_eval_list(), self)
         self.evaluator.set_real_time_eval(real_time_ta_eval_list, self)
 
         # Create static evaluators

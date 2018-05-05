@@ -92,3 +92,6 @@ class Evaluator:
 
     def get_config(self):
         return self.config
+
+    def get_time_frame(self):
+        return self.time_frame
