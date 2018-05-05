@@ -26,7 +26,7 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
-    parser.add_argument('--risk', type=float, default=0.5, help='risk representation (between 0 and 1)')
+    parser.add_argument('--risk', type=float, help='risk representation (between 0 and 1)')
     parser.add_argument('--web', help='Start web server',
                         action='store_true')
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
             config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
             config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
 
-        if 0 < args.risk <= 1:
+        if  args.risk is not None and 0 < args.risk <= 1:
             config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
 
         if args.start:
