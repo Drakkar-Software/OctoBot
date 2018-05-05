@@ -3,7 +3,7 @@ from dash.dependencies import Output, Event, Input
 from config.cst import EvaluatorMatrixTypes, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME, \
     TimeFrames
 from interfaces.web import app_instance, global_config, get_bot
-from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, get_currency_graph_update
+from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, get_currency_graph_update, get_time_frame
 
 
 @app_instance.callback(Output('live-graph', 'figure'),
@@ -15,7 +15,7 @@ from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, g
 def update_values(exchange_name, cryptocurrency_name, symbol, time_frame):
     return get_currency_graph_update(exchange_name,
                                      symbol["value"],
-                                     time_frame)
+                                     get_time_frame(time_frame))
 
 
 @app_instance.callback(Output('strategy-live-graph', 'figure'),
@@ -30,7 +30,7 @@ def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_fram
                                                  exchange_name,
                                                  EvaluatorMatrixTypes.STRATEGIES,
                                                  evaluator_name,
-                                                 time_frame)
+                                                 get_time_frame(time_frame))
 
 
 @app_instance.callback(Output('symbol', 'options'),

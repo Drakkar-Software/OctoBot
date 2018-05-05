@@ -7,7 +7,7 @@ VERSION_DEV_PHASE = "alpha"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
 
-ORIGIN_URL = "https://github.com/Herklos-Bots/CryptoBot.git"
+ORIGIN_URL = "https://github.com/Trading-Bot/CryptoBot.git"
 
 MSECONDS_TO_SECONDS = 1000
 MINUTE_TO_SECONDS = 60
