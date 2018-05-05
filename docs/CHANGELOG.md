@@ -1,3 +1,40 @@
+Changelog for 0.0.10
+====================
+*Released date : May 5 2018*
+
+# Concerned issues :
+    #63 Calculate evaluator divergence note 
+    #86 [CI] Implement third party
+    #117 auto adapt symbol configuration for backtesting 
+    #119 TA test architecture
+    #120 [Backtesting] Test Zipline lib implementation
+    #121 added sudden pump data and described bank data 
+    #122 added test_reaction_to_over_bought_then_dip to all TA 
+    #123 added rise after over-sold test for all TA
+    #124 added flat trend tests on all TA 
+    #125 [Notification] Double notification when an order linked is cancelled
+    #127 Add in price graph and out price graph indicator list plot 
+    #126 [Order] Too much canceled orders when RealTime Evaluators are created
+    #128 [Notification] No notification of profitability
+    #129 [Web] Create web interface prototype 
+
+# New features :
+    - Web interface prototype
+    - Full TA patterns tests
+    - Data Visualiser
+    - Performance Analyser
+    - Bot starter with options
+    - Multiple new tests to improve code coverage
+    
+# Bug fix :
+    - Fix risk logic with market orders
+    - Fix notifications : only concerned symbol
+    - Fix default config
+    - Fix datavisualiser style
+    - Fix RedditEvaluator overriden method param names
+    - Fix portfolio profitability notification 
+
+
 Changelog for 0.0.9
 ====================
 *Released date : Apr 30 2018*
