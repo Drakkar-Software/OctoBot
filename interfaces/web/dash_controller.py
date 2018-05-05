@@ -3,7 +3,12 @@ from dash.dependencies import Output, Event, Input
 from config.cst import EvaluatorMatrixTypes, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME, \
     TimeFrames
 from interfaces.web import app_instance, global_config, get_bot
-from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, get_currency_graph_update, get_value_from_dict_or_string
+from interfaces.web.bot_data_model import get_evaluator_graph_in_matrix_history, get_currency_graph_update, \
+    get_value_from_dict_or_string, \
+    get_portfolio_currencies_update
+
+import random
+import pandas as pd
 
 
 @app_instance.callback(Output('live-graph', 'figure'),
@@ -31,6 +36,11 @@ def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_fram
                                                  EvaluatorMatrixTypes.STRATEGIES,
                                                  evaluator_name,
                                                  get_value_from_dict_or_string(time_frame, True))
+
+@app_instance.callback(Output('datatable-portfolio', 'rows'),
+                       [Input('strategy-live-graph', 'figure')])
+def update_currencies_amounts(strategy_live_graph):
+    return get_portfolio_currencies_update()
 
 
 @app_instance.callback(Output('symbol', 'options'),

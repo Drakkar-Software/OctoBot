@@ -6,6 +6,8 @@ import time
 import flask
 import logging
 
+import cryptobot
+
 server_instance = flask.Flask(__name__)
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
 bot_instance = None
@@ -53,7 +55,7 @@ def get_symbol_data_history():
     return symbol_data_history
 
 
-def get_bot():
+def get_bot() -> cryptobot.CryptoBot:
     return bot_instance
 
 
@@ -63,7 +65,8 @@ def load_callbacks():
         update_time_frame_dropdown_options, \
         update_symbol_dropdown_options, \
         update_symbol_dropdown_value, \
-        update_evaluator_dropdown
+        update_evaluator_dropdown, \
+        update_currencies_amounts
 
 
 def load_routes():

@@ -3,6 +3,7 @@ import threading
 
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table_experiments as dt
 from flask import request
 
 from config.cst import CONFIG_CRYPTO_CURRENCIES
@@ -17,11 +18,24 @@ class WebApp(threading.Thread):
         self.app = None
 
     def run(self):
+
         # Define the WSGI application object
         self.app = app_instance
 
         self.app.layout = html.Div(children=[
             html.H1('CryptoBot Dashboard'),
+
+            html.Label('Portfolio'),
+            dt.DataTable(
+                rows=[{}],
+                row_selectable=False,
+                filterable=True,
+                sortable=True,
+                editable=False,
+                id='datatable-portfolio'
+            ),
+
+
             html.Div([
                 html.Label('Exchange'),
                 dcc.Dropdown(id='exchange-name',

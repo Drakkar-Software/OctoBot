@@ -148,3 +148,6 @@ class Trader:
 
     def join_order_manager(self):
         self.order_manager.join()
+
+    def get_simulate(self):
+        return self.simulate

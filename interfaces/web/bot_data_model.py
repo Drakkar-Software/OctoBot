@@ -2,10 +2,12 @@ import time
 
 import plotly
 import plotly.graph_objs as go
+import pandas
 
 from config.cst import PriceStrings, TimeFrames
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history
+from trading.trader.portfolio import Portfolio
 
 
 def get_value_from_dict_or_string(data, is_time_frame=False):
@@ -19,6 +21,24 @@ def get_value_from_dict_or_string(data, is_time_frame=False):
             return TimeFrames(data)
         else:
             return data
+
+
+def get_portfolio_currencies_update():
+    data = []
+    bot = get_bot()
+    traders = [trader for trader in bot.get_exchange_traders().values()] + \
+              [trader for trader in bot.get_exchange_trader_simulators().values()]
+    for trader in traders:
+        data += [pandas.DataFrame(data={"Cryptocurrency": [currency],
+                                        "Total (available)": ["{} ({})".format(amounts[Portfolio.TOTAL],
+                                                                               amounts[Portfolio.AVAILABLE])],
+                                        "Exchange": [trader.exchange.get_name()],
+                                        "Real / Simulator": ["Simulator" if trader.get_simulate() else "Real"]
+                                        })
+                 for currency, amounts in trader.get_portfolio().get_portfolio().items()]
+    currencies = pandas.concat(data, ignore_index=True)
+    return currencies.to_dict('records')
+
 
 def get_currency_graph_update(exchange_name, symbol, time_frame):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
