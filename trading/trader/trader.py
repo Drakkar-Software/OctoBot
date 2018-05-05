@@ -14,17 +14,18 @@ class Trader:
         self.config = config
         self.risk = self.config[CONFIG_TRADER][CONFIG_TRADER_RISK]
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.simulate = False
 
-        self.portfolio = Portfolio(self.config)
+        if not hasattr(self, 'simulate'):
+            self.simulate = False
+
+        self.portfolio = Portfolio(self.config, self.simulate)
 
         self.trades_manager = TradesManager(config, self)
 
         self.order_manager = OrdersManager(config, self)
-        self.order_manager.start()
 
-        # Debug
         if self.enabled():
+            self.order_manager.start()
             self.logger.debug("Enabled on " + self.exchange.get_name())
         else:
             self.logger.debug("Disabled on " + self.exchange.get_name())

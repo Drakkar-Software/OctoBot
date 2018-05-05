@@ -12,10 +12,8 @@ from trading.trader.trader import Trader
 
 class TraderSimulator(Trader):
     def __init__(self, config, exchange):
-        super().__init__(config, exchange)
-        self.logger = logging.getLogger(self.__class__.__name__)
         self.simulate = True
-        self.portfolio = Portfolio(self.config, self.simulate)
+        super().__init__(config, exchange)
 
     def enabled(self):
         if self.config["simulator"][CONFIG_ENABLED_OPTION]:
