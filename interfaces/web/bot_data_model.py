@@ -2,7 +2,6 @@ import time
 
 import plotly
 import plotly.graph_objs as go
-import pandas
 
 from config.cst import PriceStrings, TimeFrames
 from evaluator.evaluator_matrix import EvaluatorMatrix
