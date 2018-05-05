@@ -51,6 +51,7 @@ class FinalEvaluator(AsynchronousServer):
                     evaluator_notification = self.notifier.notify_state_changed(
                         self.final_eval,
                         self.symbol_evaluator.get_crypto_currency_evaluator(),
+                        self.symbol_evaluator.get_symbol(),
                         self.symbol_evaluator.get_trader(self.exchange),
                         self.state,
                         self.symbol_evaluator.get_matrix(self.exchange).get_matrix())

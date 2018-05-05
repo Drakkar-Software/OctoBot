@@ -84,5 +84,8 @@ class SymbolEvaluator:
     def get_evaluator_order_creator(self):
         return self.evaluator_order_creator
 
+    def get_symbol(self):
+        return self.symbol
+
     def get_crypto_currency_evaluator(self):
         return self.crypto_currency_evaluator
