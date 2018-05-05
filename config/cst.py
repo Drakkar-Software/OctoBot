@@ -2,7 +2,7 @@ import operator
 from enum import Enum
 
 SHORT_VERSION = "0.0.9"
-REV_VERSION = "4"
+REV_VERSION = "5"
 VERSION_DEV_PHASE = "alpha"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
