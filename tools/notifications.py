@@ -83,33 +83,33 @@ class EvaluatorNotification(Notification):
         super().__init__(config)
         self.tweet_instance = None
 
-    def notify_state_changed(self, final_eval, crypto_currency_evaluator, trader, result, matrix):
+    def notify_state_changed(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
         if self.gmail_notification_available():
             profitability, profitability_percent, _ = trader.get_trades_manager().get_profitability()
 
-            self.gmail_notification_factory("CRYPTO BOT ALERT : {0} / {1}".format(crypto_currency_evaluator.crypto_currency,
-                                                                                  result),
-                                            "CRYPTO BOT ALERT : {0} / {1} \n {2} \n Current portfolio "
-                                            "profitability : {3} "
-                                            "{4} ({5}%)".format(
-                                                crypto_currency_evaluator.crypto_currency,
-                                                result,
-                                                pprint.pformat(matrix),
-                                                round(profitability, 2),
-                                                TradesManager.get_reference_market(self.config),
-                                                round(profitability_percent, 2)))
+            self.gmail_notification_factory(
+                "CRYPTO BOT ALERT : {0} / {1}".format(crypto_currency_evaluator.crypto_currency,
+                                                      result),
+                "CRYPTO BOT ALERT : {0} / {1} \n {2} \n Current portfolio "
+                "profitability : {3} "
+                "{4} ({5}%)".format(
+                    crypto_currency_evaluator.crypto_currency,
+                    result,
+                    pprint.pformat(matrix),
+                    round(profitability, 2),
+                    TradesManager.get_reference_market(self.config),
+                    round(profitability_percent, 2)))
 
         if self.twitter_notification_available():
-            # + "\n see more at https://github.com/Trading-Bot/CryptoBot"
-            formatted_pairs = [p.replace("/", "") for p in crypto_currency_evaluator.get_symbol_pairs()]
-            self.tweet_instance = self.twitter_notification_factory("CryptoBot ALERT : #{0} "
-                                                                    "\n Cryptocurrency : #{1}"
-                                                                    "\n Result : {2}"
-                                                                    "\n Evaluation : {3}".format(
-                crypto_currency_evaluator.crypto_currency,
-                " #".join(formatted_pairs),
-                str(result).split(".")[1],
-                final_eval)
+            self.tweet_instance = self.twitter_notification_factory(
+                "CryptoBot ALERT : #{0} "
+                "\n Symbol : #{1}"
+                "\n Result : {2}"
+                "\n Evaluation : {3}".format(
+                    crypto_currency_evaluator.crypto_currency,
+                    symbol.replace("/", ""),
+                    str(result).split(".")[1],
+                    final_eval)
             )
 
         return self
@@ -186,7 +186,7 @@ class OrdersNotification(Notification):
 
             if trade_profitability is not None and profitability:
                 content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
-                                                                      round(trade_profitability*100, 7))
+                                                                      round(trade_profitability * 100, 7))
 
             if portfolio_profitability is not None and profitability:
                 content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(round(portfolio_profitability, 5),
