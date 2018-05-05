@@ -24,20 +24,21 @@ def get_value_from_dict_or_string(data, is_time_frame=False):
 
 
 def get_portfolio_currencies_update():
-    data = []
+    currencies = []
     bot = get_bot()
     traders = [trader for trader in bot.get_exchange_traders().values()] + \
               [trader for trader in bot.get_exchange_trader_simulators().values()]
     for trader in traders:
-        data += [pandas.DataFrame(data={"Cryptocurrency": [currency],
-                                        "Total (available)": ["{} ({})".format(amounts[Portfolio.TOTAL],
-                                                                               amounts[Portfolio.AVAILABLE])],
-                                        "Exchange": [trader.exchange.get_name()],
-                                        "Real / Simulator": ["Simulator" if trader.get_simulate() else "Real"]
-                                        })
-                 for currency, amounts in trader.get_portfolio().get_portfolio().items()]
-    currencies = pandas.concat(data, ignore_index=True)
-    return currencies.to_dict('records')
+        currencies += [
+                        {
+                            "Cryptocurrency": [currency],
+                            "Total (available)": ["{} ({})".format(amounts[Portfolio.TOTAL],
+                                                                   amounts[Portfolio.AVAILABLE])],
+                            "Exchange": [trader.exchange.get_name()],
+                            "Real / Simulator": ["Simulator" if trader.get_simulate() else "Real"]
+                        }
+                        for currency, amounts in trader.get_portfolio().get_portfolio().items()]
+    return currencies
 
 
 def get_currency_graph_update(exchange_name, symbol, time_frame):

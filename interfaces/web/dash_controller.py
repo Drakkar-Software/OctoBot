@@ -1,8 +1,7 @@
 from dash.dependencies import Output, Event, Input
 
-from config.cst import EvaluatorMatrixTypes, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME, \
-    TimeFrames
-from interfaces.web import app_instance, global_config, get_bot
+from config.cst import EvaluatorMatrixTypes, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME
+from interfaces.web import app_instance, global_config
 from interfaces.web.bot_data_model import *
 
 
