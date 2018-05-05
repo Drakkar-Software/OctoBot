@@ -3,7 +3,7 @@ from dash.dependencies import Output, Event, Input
 from config.cst import EvaluatorMatrixTypes, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME, \
     TimeFrames
 from interfaces.web import app_instance, global_config, get_bot
-from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, get_currency_graph_update, get_time_frame
+from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, get_currency_graph_update, get_value_from_dict_or_string
 
 
 @app_instance.callback(Output('live-graph', 'figure'),
@@ -14,8 +14,8 @@ from interfaces.web.graph_update import get_evaluator_graph_in_matrix_history, g
                        events=[Event('graph-update', 'interval')])
 def update_values(exchange_name, cryptocurrency_name, symbol, time_frame):
     return get_currency_graph_update(exchange_name,
-                                     symbol["value"],
-                                     get_time_frame(time_frame))
+                                     get_value_from_dict_or_string(symbol),
+                                     get_value_from_dict_or_string(time_frame, True))
 
 
 @app_instance.callback(Output('strategy-live-graph', 'figure'),
@@ -26,11 +26,11 @@ def update_values(exchange_name, cryptocurrency_name, symbol, time_frame):
                         Input('evaluator-name', 'value')],
                        events=[Event('strategy-graph-update', 'interval')])
 def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_frame, evaluator_name):
-    return get_evaluator_graph_in_matrix_history(symbol["value"],
+    return get_evaluator_graph_in_matrix_history(get_value_from_dict_or_string(symbol),
                                                  exchange_name,
                                                  EvaluatorMatrixTypes.STRATEGIES,
                                                  evaluator_name,
-                                                 get_time_frame(time_frame))
+                                                 get_value_from_dict_or_string(time_frame, True))
 
 
 @app_instance.callback(Output('symbol', 'options'),
@@ -103,7 +103,7 @@ def update_time_frame_dropdown_options(exchange_name, symbol):
                         Input('symbol', 'value'),
                         Input('time-frame', 'value')])
 def update_evaluator_dropdown(cryptocurrency_name, exchange_name, symbol, time_frame):
-    symbol_evaluator = get_bot().get_symbol_evaluator_list()[symbol["value"]]
+    symbol_evaluator = get_bot().get_symbol_evaluator_list()[get_value_from_dict_or_string(symbol)]
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     evaluator_list = []

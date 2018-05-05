@@ -8,12 +8,17 @@ from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history
 
 
-def get_time_frame(time_frame):
-    if isinstance(time_frame, dict):
-        return TimeFrames(time_frame["value"])
+def get_value_from_dict_or_string(data, is_time_frame=False):
+    if isinstance(data, dict):
+        if is_time_frame:
+            return TimeFrames(data["value"])
+        else:
+            return data["value"]
     else:
-        return TimeFrames(time_frame)
-
+        if is_time_frame:
+            return TimeFrames(data)
+        else:
+            return data
 
 def get_currency_graph_update(exchange_name, symbol, time_frame):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
