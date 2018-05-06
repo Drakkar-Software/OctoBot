@@ -13,7 +13,7 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from evaluator.symbol_evaluator import SymbolEvaluator
 from services import ServiceCreator
-from tools import Notification
+from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from trading import Exchange
 from trading.trader.trader import Trader

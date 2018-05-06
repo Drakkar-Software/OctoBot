@@ -7,6 +7,7 @@ from config.cst import CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_NOTIFICATION, CONF
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM
 from services import TwitterService, TelegramService
 from services.gmail_service import GmailService
+from tools.pretty_printer import PrettyPrinter
 from trading import Exchange
 from trading.trader.order import OrderConstants
 from trading.trader.trades_manager import TradesManager
@@ -150,7 +151,7 @@ class OrdersNotification(Notification):
             round(price, 7),
             market)
 
-    def notify_create(self, evaluator_notification, orders, symbol):
+    def notify_create(self, evaluator_notification, orders):
         if evaluator_notification is not None:
             self.evaluator_notification = evaluator_notification
 
@@ -159,14 +160,9 @@ class OrdersNotification(Notification):
                 and self.evaluator_notification.get_tweet_instance() is not None:
 
             tweet_instance = self.evaluator_notification.get_tweet_instance()
-            currency, market = Exchange.split_symbol(symbol)
             content = "Order(s) creation "
             for order in orders:
-                content += "\n- {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
-                                                                                         order.get_origin_quantity(),
-                                                                                         currency,
-                                                                                         order.get_origin_price(),
-                                                                                         market))
+                content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
             self.twitter_response_factory(tweet_instance, content)
 
     def notify_end(self,
