@@ -7,6 +7,7 @@ from logging.config import fileConfig
 from config.config import load_config
 from config.cst import *
 from cryptobot import CryptoBot
+from interfaces.telegram.bot import TelegramApp
 from interfaces.web.app import WebApp
 from tools.commands import Commands
 
@@ -29,6 +30,8 @@ if __name__ == '__main__':
     parser.add_argument('--risk', type=float, help='risk representation (between 0 and 1)')
     parser.add_argument('--web', help='Start web server',
                         action='store_true')
+    parser.add_argument('--telegram', help='Start telegram command handler',
+                        action='store_true')
 
     args = parser.parse_args()
 
@@ -44,6 +47,9 @@ if __name__ == '__main__':
     config = load_config()
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
+    if args.telegram:
+        TelegramApp.enable(config)
+
     bot = CryptoBot(config)
     web_app = None
 
@@ -51,6 +57,10 @@ if __name__ == '__main__':
         import interfaces.web
         interfaces.web.__init__(bot, config)
         web_app = WebApp(config)
+
+    if args.telegram:
+        import interfaces.telegram
+        interfaces.telegram.__init__(bot)
 
     if args.update:
         Commands.update(logger)

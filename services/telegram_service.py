@@ -1,6 +1,7 @@
 import telegram
 
 from config.cst import *
+from interfaces.telegram.bot import TelegramApp
 from services.abstract_service import *
 
 
@@ -10,6 +11,7 @@ class TelegramService(AbstractService):
         super().__init__()
         self.telegram_api = None
         self.chat_id = None
+        self.telegram_app = None
 
     @staticmethod
     def is_setup_correctly(config):
@@ -24,6 +26,10 @@ class TelegramService(AbstractService):
             self.chat_id = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]["chat_id"]
             self.telegram_api = telegram.Bot(
                 token=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_TOKEN])
+
+        if not self.telegram_app:
+            if TelegramApp.is_enabled(self.config):
+                self.telegram_app = TelegramApp(self.config, self)
 
     def get_type(self):
         return CONFIG_TELEGRAM

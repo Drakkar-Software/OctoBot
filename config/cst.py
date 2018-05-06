@@ -110,6 +110,11 @@ STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 # Tools
 DIVERGENCE_USED_VALUE = 30
 
+# Interfaces
+CONFIG_INTERFACES = "interfaces"
+CONFIG_INTERFACES_WEB = "web"
+CONFIG_INTERFACES_TELEGRAM = "telegram"
+
 
 class EvaluatorMatrixTypes(Enum):
     TA = "TA"
