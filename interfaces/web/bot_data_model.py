@@ -69,6 +69,9 @@ def update_portfolio_history():
 def get_portfolio_value_in_history():
     at_least_one_simulated = False
     at_least_one_real = False
+    min_value = 0
+    max_value = 1
+    real_simulated_string = ""
 
     reference_market = next(iter(get_bot().get_exchange_traders().values())).get_trades_manager().get_reference()
 
@@ -78,9 +81,6 @@ def get_portfolio_value_in_history():
         at_least_one_real = True
     if max(portfolio_value_in_history["simulated_value"]) > 0:
         at_least_one_simulated = True
-
-    max_value = max(portfolio_value_in_history["real_value"] + portfolio_value_in_history["simulated_value"])
-    min_value = min(portfolio_value_in_history["real_value"] + portfolio_value_in_history["simulated_value"])
 
     real_data = plotly.graph_objs.Scatter(
         x=portfolio_value_in_history["timestamp"],
@@ -96,19 +96,20 @@ def get_portfolio_value_in_history():
         mode='lines'
     )
 
-    # Title
-    real_simulated_string = "simulated" if at_least_one_simulated else ""
-    real_simulated_string += " and " if at_least_one_simulated and at_least_one_real else ""
-    real_simulated_string += "real" if at_least_one_real else ""
-
     # merge two portfolio types
     merged_data = []
-
     if at_least_one_simulated:
         merged_data.append(simulated_data)
-
+        min_value = min(portfolio_value_in_history["simulated_value"])
+        max_value = max(portfolio_value_in_history["simulated_value"])
+        real_simulated_string = "simulated portfolio"
     if at_least_one_real or not at_least_one_simulated:
         merged_data.append(real_data)
+        min_value = min(min_value, min(portfolio_value_in_history["real_value"]))
+        max_value = max(max_value, max(portfolio_value_in_history["real_value"]))
+        if real_simulated_string:
+            real_simulated_string += " and "
+        real_simulated_string += "real portfolio"
 
     return {'data': merged_data,
             'layout': go.Layout(
