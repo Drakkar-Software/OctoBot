@@ -25,7 +25,6 @@ class WebApp(threading.Thread):
         self.app.layout = html.Div(children=[
             html.H1('CryptoBot Dashboard'),
 
-            html.Label('Portfolio total value'),
             dcc.Graph(id='portfolio-value-graph', animate=True),
 
             html.Label('Portfolio'),
@@ -74,14 +73,12 @@ class WebApp(threading.Thread):
             ],
                 style={'columnCount': 1, 'marginLeft': 25, 'marginRight': 25, 'marginTop': 25, 'marginBottom': 25}),
 
-            html.Label('Symbol real time data (per time frame)'),
             dcc.Graph(id='live-graph', animate=True),
             dcc.Interval(
                 id='graph-update',
                 interval=60 * 1000
             ),
 
-            html.Label('Current symbol strategy'),
             dcc.Graph(id='strategy-live-graph', animate=True),
             dcc.Interval(
                 id='strategy-graph-update',
