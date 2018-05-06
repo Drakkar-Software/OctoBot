@@ -131,7 +131,7 @@ def get_portfolio_value_in_history():
             )}
 
 
-def get_currency_graph_update(exchange_name, symbol, time_frame):
+def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_name):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
     exchange_list = get_bot().get_exchanges_list()
 
@@ -160,7 +160,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame):
 
                         return {'data': [data],
                                 'layout': go.Layout(
-                                    title="{} real time data (per time frame)".format(symbol_tag),
+                                    title="{} real time data (per time frame)".format(cryptocurrency_name),
                                     xaxis=dict(range=[min(X), max(X)],
                                                title=TIME_AXIS_TITLE),
                                     yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02],
@@ -173,14 +173,14 @@ def get_evaluator_graph_in_matrix_history(symbol,
                                           exchange_name,
                                           evaluator_type,
                                           evaluator_name,
-                                          time_frame):
+                                          time_frame,
+                                          cryptocurrency_name):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
     exchange_list = get_bot().get_exchanges_list()
 
     if evaluator_name is not None and len(symbol_evaluator_list) > 0:
         matrix = symbol_evaluator_list[symbol].get_matrix(exchange_list[exchange_name])
         add_to_matrix_history(matrix)
-        symbol_tag, _ = Exchange.split_symbol(symbol)
 
         formatted_matrix_history = {
             "timestamps": [],
@@ -203,7 +203,7 @@ def get_evaluator_graph_in_matrix_history(symbol,
 
         return {'data': [data],
                 'layout': go.Layout(
-                    title="{} strategy".format(symbol_tag),
+                    title="{} strategy".format(cryptocurrency_name),
                     xaxis=dict(range=[get_bot().get_start_time(), time.time()],
                                title=TIME_AXIS_TITLE),
                     yaxis=dict(range=[-1, 1],
