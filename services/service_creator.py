@@ -18,7 +18,11 @@ class ServiceCreator:
                 service_instance.set_logger(logging.getLogger(service_class.get_name()))
                 service_instance.set_config(config)
                 if service_instance.has_required_configuration():
-                    service_instance.prepare()
-                    config[CONFIG_CATEGORY_SERVICES][service_instance.get_type()][CONFIG_SERVICE_INSTANCE] = service_instance
+                    try:
+                        service_instance.prepare()
+                        config[CONFIG_CATEGORY_SERVICES][service_instance.get_type()][CONFIG_SERVICE_INSTANCE] = \
+                            service_instance
+                    except Exception as e:
+                        logger.error(service_class.get_name() + " preparation produced the following error: " + str(e))
                 else:
-                    logger.warning(service_class.get_name()+" can't be initialized: configuration is missing !")
+                    logger.warning(service_class.get_name() + " can't be initialized: configuration is missing !")
