@@ -22,3 +22,23 @@ def get_portfolio_current_value():
             real_value += current_value
 
     return real_value, simulated_value
+
+
+def get_open_orders():
+    simulated_open_orders = {}
+    real_open_orders = {}
+
+    traders = [trader for trader in get_bot().get_exchange_traders().values()] + \
+              [trader for trader in get_bot().get_exchange_trader_simulators().values()]
+    for trader in traders:
+        if trader.get_simulate():
+            if trader.get_exchange().get_name() not in simulated_open_orders:
+                simulated_open_orders[trader.get_exchange().get_name()] = []
+            simulated_open_orders[trader.get_exchange().get_name()].append(trader.get_open_orders())
+        else:
+            if trader.get_exchange().get_name() not in real_open_orders:
+                real_open_orders[trader.get_exchange().get_name()] = []
+            real_open_orders[trader.get_exchange().get_name()].append(trader.get_open_orders())
+
+    return real_open_orders, simulated_open_orders
+

@@ -131,6 +131,9 @@ class Order:
     def get_order_symbol(self):
         return self.symbol
 
+    def get_exchange(self):
+        return self.exchange
+
     def get_origin_quantity(self):
         return self.origin_quantity
 
