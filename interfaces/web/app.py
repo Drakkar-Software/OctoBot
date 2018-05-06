@@ -43,14 +43,14 @@ class WebApp(threading.Thread):
                 dcc.Dropdown(id='exchange-name',
                              options=[{'label': s, 'value': s}
                                       for s in get_bot().get_exchanges_list().keys()],
-                             value=list(get_bot().get_exchanges_list().keys())[0],
+                             value=next(iter(get_bot().get_exchanges_list().keys())),
                              multi=False,
                              ),
                 html.Label('Currency'),
                 dcc.Dropdown(id='cryptocurrency-name',
                              options=[{'label': s, 'value': s}
                                       for s in self.config[CONFIG_CRYPTO_CURRENCIES].keys()],
-                             value=list(self.config[CONFIG_CRYPTO_CURRENCIES].keys())[0],
+                             value=next(iter(self.config[CONFIG_CRYPTO_CURRENCIES].keys())),
                              multi=False,
                              ),
                 html.Label('Symbol'),
