@@ -36,6 +36,10 @@ class WebApp(threading.Thread):
                 selected_row_indices=[],
                 id='datatable-portfolio'
             ),
+            dcc.Interval(
+                id='portfolio-update',
+                interval=3 * 1000
+            ),
 
             html.Div([
                 html.Label('Exchange'),
