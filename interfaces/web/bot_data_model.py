@@ -57,7 +57,7 @@ def get_portfolio_value_in_history():
             reference_market = trade_manager.get_reference()
         if trader.get_simulate():
             simulated_value += trade_manager.get_portfolio_current_value()
-            at_least_one_simulated = False
+            at_least_one_simulated = True
         else:
             real_value += trade_manager.get_portfolio_current_value()
 
