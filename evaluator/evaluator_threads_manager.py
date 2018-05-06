@@ -20,7 +20,7 @@ class EvaluatorThreadsManager:
         self.symbol_evaluator = symbol_evaluator
 
         # notify symbol evaluator
-        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.symbol, self)
+        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.symbol, self.time_frame, self)
 
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 

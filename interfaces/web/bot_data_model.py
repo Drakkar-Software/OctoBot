@@ -6,11 +6,10 @@ import plotly.graph_objs as go
 from config.cst import PriceStrings, TimeFrames
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
-    add_to_portfolio_value_history, get_portfolio_value_history
-from trading.trader.portfolio import Portfolio
+    add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE
 from trading.exchanges.exchange import Exchange
+from trading.trader.portfolio import Portfolio
 
-TIME_AXIS_TITLE = "Time"
 
 def get_value_from_dict_or_string(data, is_time_frame=False):
     if isinstance(data, dict):
@@ -32,89 +31,79 @@ def get_portfolio_currencies_update():
               [trader for trader in bot.get_exchange_trader_simulators().values()]
     for trader in traders:
         currencies += [
-                        {
-                            "Cryptocurrency": [currency],
-                            "Total (available)": ["{} ({})".format(amounts[Portfolio.TOTAL],
-                                                                   amounts[Portfolio.AVAILABLE])],
-                            "Exchange": [trader.exchange.get_name()],
-                            "Real / Simulator": ["Simulator" if trader.get_simulate() else "Real"]
-                        }
-                        for currency, amounts in trader.get_portfolio().get_portfolio().items()]
+            {
+                "Cryptocurrency": [currency],
+                "Total (available)": ["{} ({})".format(amounts[Portfolio.TOTAL],
+                                                       amounts[Portfolio.AVAILABLE])],
+                "Exchange": [trader.exchange.get_name()],
+                "Real / Simulator": ["Simulator" if trader.get_simulate() else "Real"]
+            }
+            for currency, amounts in trader.get_portfolio().get_portfolio().items()]
     return currencies
 
 
-def get_portfolio_value_in_history():
-
-    reference_market = None
-    at_least_one_simulated = False
-    at_least_one_real = False
-    max_value = 0
+def update_portfolio_history():
     simulated_value = 0
     real_value = 0
     bot = get_bot()
+
     traders = [trader for trader in bot.get_exchange_traders().values()] + \
               [trader for trader in bot.get_exchange_trader_simulators().values()]
     for trader in traders:
         trade_manager = trader.get_trades_manager()
-        if not reference_market:
-            reference_market = trade_manager.get_reference()
+
+        current_value = trade_manager.get_portfolio_current_value()
+
+        # current_value might be 0 if no trades have been made / canceled => use origin value
+        if current_value == 0:
+            current_value = trade_manager.get_portfolio_origin_value()
+
         if trader.get_simulate():
-            current_value = trade_manager.get_portfolio_current_value()
-            # current_value might be 0 if no trades have been made / canceled => use origin value
-            if current_value == 0:
-                current_value = trade_manager.get_portfolio_origin_value()
             simulated_value += current_value
         else:
-            real_value += trade_manager.get_portfolio_current_value()
+            real_value += current_value
 
     add_to_portfolio_value_history(real_value, simulated_value)
 
-    formatted_real_value_history = {
-        "timestamps": [],
-        "value": []
-    }
-    formatted_simulated_value_history = {
-        "timestamps": [],
-        "value": []
-    }
 
-    for value in get_portfolio_value_history():
-        time_stamp = value["timestamp"]
-        real_value = value["real_value"]
-        simulated_value = value["simulated_value"]
+def get_portfolio_value_in_history():
+    at_least_one_simulated = False
+    at_least_one_real = False
 
-        formatted_real_value_history["timestamps"].append(time_stamp)
-        formatted_simulated_value_history["timestamps"].append(time_stamp)
-        formatted_real_value_history["value"].append(real_value)
-        formatted_simulated_value_history["value"].append(simulated_value)
+    reference_market = next(iter(get_bot().get_exchange_traders().values())).get_trades_manager().get_reference()
 
-        if real_value > 0:
-            at_least_one_real = True
-        if simulated_value > 0:
-            at_least_one_simulated = True
+    portfolio_value_in_history = get_portfolio_value_history()
 
-        if max_value < real_value:
-            max_value = real_value
-        if at_least_one_simulated and max_value < simulated_value:
-            max_value = simulated_value
+    if max(portfolio_value_in_history["real_value"]) > 0:
+        at_least_one_real = True
+    if max(portfolio_value_in_history["simulated_value"]) > 0:
+        at_least_one_simulated = True
+
+    max_value = max(portfolio_value_in_history["real_value"] + portfolio_value_in_history["simulated_value"])
+    min_value = min(portfolio_value_in_history["real_value"] + portfolio_value_in_history["simulated_value"])
 
     real_data = plotly.graph_objs.Scatter(
-        x=formatted_real_value_history["timestamps"],
-        y=formatted_real_value_history["value"],
+        x=portfolio_value_in_history["timestamp"],
+        y=portfolio_value_in_history["real_value"],
         name='Real Portfolio in {}'.format(reference_market),
         mode='lines'
     )
 
     simulated_data = plotly.graph_objs.Scatter(
-        x=formatted_simulated_value_history["timestamps"],
-        y=formatted_simulated_value_history["value"],
+        x=portfolio_value_in_history["timestamp"],
+        y=portfolio_value_in_history["simulated_value"],
         name='Simulated Portfolio in {}'.format(reference_market),
         mode='lines'
     )
 
-    min_value = 0
+    # Title
+    real_simulated_string = "simulated" if at_least_one_simulated else ""
+    real_simulated_string += " and " if at_least_one_simulated and at_least_one_real else ""
+    real_simulated_string += "real" if at_least_one_real else ""
+
+    # merge two portfolio types
     merged_data = []
-    real_simulated_string = ""
+
     if at_least_one_simulated:
         merged_data.append(simulated_data)
         min_value = min(formatted_simulated_value_history["value"])
@@ -128,11 +117,11 @@ def get_portfolio_value_in_history():
 
     return {'data': merged_data,
             'layout': go.Layout(
-                                title='Portfolio value ({})'.format(real_simulated_string),
-                                xaxis=dict(range=[get_bot().get_start_time(), time.time()],
-                                           title=TIME_AXIS_TITLE),
-                                yaxis=dict(range=[max(0, min_value*0.99), max(0.01, max_value*1.01)],
-                                           title=reference_market)
+                title='Portfolio value ({})'.format(real_simulated_string),
+                xaxis=dict(range=[get_bot().get_start_time(), time.time()],
+                           title=TIME_AXIS_TITLE),
+                yaxis=dict(range=[max(0, min_value * 0.99), max(0.1, max_value * 1.1)],
+                           title=reference_market)
             )}
 
 
@@ -145,32 +134,32 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
             evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_thread_managers(
                 exchange_list[exchange_name])
 
-            for evaluator_thread_manager in evaluator_thread_managers:
-                if evaluator_thread_manager.get_evaluator().get_time_frame() == time_frame:
-                    df = evaluator_thread_manager.get_evaluator().get_data()
+            if time_frame in evaluator_thread_managers:
+                evaluator_thread_manager = evaluator_thread_managers[time_frame]
+                df = evaluator_thread_manager.get_evaluator().get_data()
 
-                    if df is not None:
-                        symbol_tag, pair_tag = Exchange.split_symbol(symbol)
-                        add_to_symbol_data_history(symbol, df, time_frame)
+                if df is not None:
+                    symbol_tag, pair_tag = Exchange.split_symbol(symbol)
+                    add_to_symbol_data_history(symbol, df, time_frame)
 
-                        X = df[PriceStrings.STR_PRICE_TIME.value]
-                        Y = df[PriceStrings.STR_PRICE_CLOSE.value]
+                    X = df[PriceStrings.STR_PRICE_TIME.value]
+                    Y = df[PriceStrings.STR_PRICE_CLOSE.value]
 
-                        # Candlestick
-                        data = go.Ohlc(x=df[PriceStrings.STR_PRICE_TIME.value],
-                                       open=df[PriceStrings.STR_PRICE_OPEN.value],
-                                       high=df[PriceStrings.STR_PRICE_HIGH.value],
-                                       low=df[PriceStrings.STR_PRICE_LOW.value],
-                                       close=df[PriceStrings.STR_PRICE_CLOSE.value])
+                    # Candlestick
+                    data = go.Ohlc(x=df[PriceStrings.STR_PRICE_TIME.value],
+                                   open=df[PriceStrings.STR_PRICE_OPEN.value],
+                                   high=df[PriceStrings.STR_PRICE_HIGH.value],
+                                   low=df[PriceStrings.STR_PRICE_LOW.value],
+                                   close=df[PriceStrings.STR_PRICE_CLOSE.value])
 
-                        return {'data': [data],
-                                'layout': go.Layout(
-                                    title="{} real time data (per time frame)".format(cryptocurrency_name),
-                                    xaxis=dict(range=[min(X), max(X)],
-                                               title=TIME_AXIS_TITLE),
-                                    yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02],
-                                               title=pair_tag)
-                                )}
+                    return {'data': [data],
+                            'layout': go.Layout(
+                                title="{} real time data (per time frame)".format(cryptocurrency_name),
+                                xaxis=dict(range=[min(X), max(X)],
+                                           title=TIME_AXIS_TITLE),
+                                yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02],
+                                           title=pair_tag)
+                            )}
     return None
 
 

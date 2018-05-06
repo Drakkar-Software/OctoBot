@@ -55,7 +55,7 @@ class CryptoBot:
         # Notify starting
         self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
 
-        self.symbol_threads_manager = []
+        self.symbol_threads_manager = {}
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.exchanges_list = {}
@@ -132,23 +132,23 @@ class CryptoBot:
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
             if exchange.time_frame_exists(time_frame.value):
-                self.symbol_threads_manager.append(EvaluatorThreadsManager(self.config,
-                                                                           symbol,
-                                                                           time_frame,
-                                                                           symbol_time_frame_updater_thread,
-                                                                           symbol_evaluator,
-                                                                           exchange,
-                                                                           real_time_ta_eval_list))
+                self.symbol_threads_manager[time_frame] = EvaluatorThreadsManager(self.config,
+                                                                                  symbol,
+                                                                                  time_frame,
+                                                                                  symbol_time_frame_updater_thread,
+                                                                                  symbol_evaluator,
+                                                                                  exchange,
+                                                                                  real_time_ta_eval_list)
         self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
 
     def start_threads(self):
         if self.performance_analyser:
             self.performance_analyser.start()
 
-        for crypto_currency in self.crypto_currency_evaluator_list:
-            self.crypto_currency_evaluator_list[crypto_currency].start_threads()
+        for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
+            crypto_currency_evaluator.start_threads()
 
-        for manager in self.symbol_threads_manager:
+        for manager in self.symbol_threads_manager.values():
             manager.start_threads()
 
         for thread in self.symbol_time_frame_updater_threads:
@@ -161,19 +161,19 @@ class CryptoBot:
 
     def join_threads(self):
         for manager in self.symbol_threads_manager:
-            manager.join_threads()
+            self.symbol_threads_manager[manager].join_threads()
 
         for thread in self.symbol_time_frame_updater_threads:
             thread.join()
 
-        for crypto_currency in self.crypto_currency_evaluator_list:
-            self.crypto_currency_evaluator_list[crypto_currency].join_threads()
+        for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
+            crypto_currency_evaluator.join_threads()
 
-        for trader in self.exchange_traders:
-            self.exchange_traders[trader].join_order_manager()
+        for trader in self.exchange_traders.values():
+            trader.join_order_manager()
 
-        for trader_simulator in self.exchange_trader_simulators:
-            self.exchange_trader_simulators[trader_simulator].join_order_manager()
+        for trader_simulator in self.exchange_trader_simulators.values():
+            trader_simulator.join_order_manager()
 
         for thread in self.dispatchers_list:
             thread.join()
@@ -190,17 +190,17 @@ class CryptoBot:
         for thread in self.symbol_time_frame_updater_threads:
             thread.stop()
 
-        for manager in self.symbol_threads_manager:
+        for manager in self.symbol_threads_manager.values():
             manager.stop_threads()
 
-        for crypto_currency in self.crypto_currency_evaluator_list:
-            self.crypto_currency_evaluator_list[crypto_currency].stop_threads()
+        for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
+            crypto_currency_evaluator.stop_threads()
 
-        for trader in self.exchange_traders:
-            self.exchange_traders[trader].stop_order_manager()
+        for trader in self.exchange_traders.values():
+            trader.stop_order_manager()
 
-        for trader_simulator in self.exchange_trader_simulators:
-            self.exchange_trader_simulators[trader_simulator].stop_order_manager()
+        for trader_simulator in self.exchange_trader_simulators.values():
+            trader_simulator.stop_order_manager()
 
         for thread in self.dispatchers_list:
             thread.stop()
