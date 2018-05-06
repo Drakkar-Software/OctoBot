@@ -114,16 +114,21 @@ def get_portfolio_value_in_history():
 
     min_value = 0
     merged_data = []
+    real_simulated_string = ""
     if at_least_one_simulated:
         merged_data.append(simulated_data)
         min_value = min(formatted_simulated_value_history["value"])
+        real_simulated_string = "simulated"
     if at_least_one_real or not at_least_one_simulated:
         merged_data.append(real_data)
         min_value = min(min_value, min(formatted_real_value_history["value"]))
+        if real_simulated_string:
+            real_simulated_string += " and "
+        real_simulated_string += "real"
 
     return {'data': merged_data,
             'layout': go.Layout(
-                                title='Portfolio value',
+                                title='Portfolio value ({})'.format(real_simulated_string),
                                 xaxis=dict(range=[get_bot().get_start_time(), time.time()],
                                            title=TIME_AXIS_TITLE),
                                 yaxis=dict(range=[max(0, min_value*0.99), max(0.01, max_value*1.01)],
