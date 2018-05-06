@@ -96,9 +96,9 @@ def get_portfolio_value_in_history():
     )
 
     # Title
-    real_simulated_string = "simulated" if at_least_one_simulated else ""
+    real_simulated_string = "real" if at_least_one_real or not at_least_one_simulated else ""
     real_simulated_string += " and " if at_least_one_simulated and at_least_one_real else ""
-    real_simulated_string += "real" if at_least_one_real else ""
+    real_simulated_string += "simulated" if at_least_one_simulated else ""
 
     # merge two portfolio types
     merged_data = []
