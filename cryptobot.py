@@ -55,7 +55,7 @@ class CryptoBot:
         # Notify starting
         self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
 
-        self.symbol_threads_manager = []
+        self.symbol_threads_manager = {}
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.exchanges_list = {}
@@ -132,13 +132,13 @@ class CryptoBot:
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
             if exchange.time_frame_exists(time_frame.value):
-                self.symbol_threads_manager.append(EvaluatorThreadsManager(self.config,
-                                                                           symbol,
-                                                                           time_frame,
-                                                                           symbol_time_frame_updater_thread,
-                                                                           symbol_evaluator,
-                                                                           exchange,
-                                                                           real_time_ta_eval_list))
+                self.symbol_threads_manager[time_frame] = EvaluatorThreadsManager(self.config,
+                                                                                  symbol,
+                                                                                  time_frame,
+                                                                                  symbol_time_frame_updater_thread,
+                                                                                  symbol_evaluator,
+                                                                                  exchange,
+                                                                                  real_time_ta_eval_list)
         self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
 
     def start_threads(self):
@@ -149,7 +149,7 @@ class CryptoBot:
             self.crypto_currency_evaluator_list[crypto_currency].start_threads()
 
         for manager in self.symbol_threads_manager:
-            manager.start_threads()
+            self.symbol_threads_manager[manager].start_threads()
 
         for thread in self.symbol_time_frame_updater_threads:
             thread.start()
@@ -161,7 +161,7 @@ class CryptoBot:
 
     def join_threads(self):
         for manager in self.symbol_threads_manager:
-            manager.join_threads()
+            self.symbol_threads_manager[manager].join_threads()
 
         for thread in self.symbol_time_frame_updater_threads:
             thread.join()
@@ -191,7 +191,7 @@ class CryptoBot:
             thread.stop()
 
         for manager in self.symbol_threads_manager:
-            manager.stop_threads()
+            self.symbol_threads_manager[manager].stop_threads()
 
         for crypto_currency in self.crypto_currency_evaluator_list:
             self.crypto_currency_evaluator_list[crypto_currency].stop_threads()
