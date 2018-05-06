@@ -15,7 +15,7 @@ class TestPortfolio:
     @staticmethod
     def init_default():
         config = load_test_config()
-        portfolio_inst = Portfolio(config)
+        portfolio_inst = Portfolio(config, True)
         return config, portfolio_inst
 
     @staticmethod
