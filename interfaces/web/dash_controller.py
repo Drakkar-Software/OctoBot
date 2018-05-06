@@ -32,6 +32,12 @@ def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_fram
                                                  get_value_from_dict_or_string(time_frame, True))
 
 
+@app_instance.callback(Output('portfolio-value-graph', 'figure'),
+                       [Input('strategy-live-graph', 'figure')])
+def update_portfolio_value(strategy_live_graph):
+    return get_portfolio_value_in_history()
+
+
 @app_instance.callback(Output('datatable-portfolio', 'rows'),
                        [Input('strategy-live-graph', 'figure')])
 def update_currencies_amounts(strategy_live_graph):

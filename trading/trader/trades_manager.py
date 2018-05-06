@@ -81,6 +81,9 @@ class TradesManager:
     def get_profitability_without_update(self):
         return self.profitability, self.profitability_percent, self.profitability_diff
 
+    def get_portfolio_current_value(self):
+        return self.portfolio_current_value
+
     # Currently unused method
     def get_trades_value(self):
         self.trades_value = 0

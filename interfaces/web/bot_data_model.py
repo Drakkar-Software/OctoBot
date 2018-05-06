@@ -5,7 +5,8 @@ import plotly.graph_objs as go
 
 from config.cst import PriceStrings, TimeFrames
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history
+from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
+    add_to_portfolio_value_history, get_portfolio_value_history
 from trading.trader.portfolio import Portfolio
 
 
@@ -38,6 +39,75 @@ def get_portfolio_currencies_update():
                         }
                         for currency, amounts in trader.get_portfolio().get_portfolio().items()]
     return currencies
+
+
+def get_portfolio_value_in_history():
+
+    reference_market = None
+    at_least_one_simulated = False
+    max_value = 0
+    simulated_value = 0
+    real_value = 0
+    bot = get_bot()
+    traders = [trader for trader in bot.get_exchange_traders().values()] + \
+              [trader for trader in bot.get_exchange_trader_simulators().values()]
+    for trader in traders:
+        trade_manager = trader.get_trades_manager()
+        if not reference_market:
+            reference_market = trade_manager.get_reference()
+        if trader.get_simulate():
+            simulated_value += trade_manager.get_portfolio_current_value()
+            at_least_one_simulated = False
+        else:
+            real_value += trade_manager.get_portfolio_current_value()
+
+    add_to_portfolio_value_history(real_value, simulated_value)
+
+    formatted_real_value_history = {
+        "timestamps": [],
+        "value": []
+    }
+    formatted_simulated_value_history = {
+        "timestamps": [],
+        "value": []
+    }
+
+    for value in get_portfolio_value_history():
+        time_stamp = value["timestamp"]
+        real_value = value["real_value"]
+        simulated_value = value["simulated_value"]
+
+        formatted_real_value_history["timestamps"].append(time_stamp)
+        formatted_simulated_value_history["timestamps"].append(time_stamp)
+        formatted_real_value_history["value"].append(real_value)
+        formatted_simulated_value_history["value"].append(simulated_value)
+
+        if max_value < real_value:
+            max_value = real_value
+        if max_value < simulated_value:
+            max_value = simulated_value
+
+    real_data = plotly.graph_objs.Scatter(
+        x=formatted_real_value_history["timestamps"],
+        y=formatted_real_value_history["value"],
+        name='Real Portfolio in {}'.format(reference_market),
+        mode='lines+markers'
+    )
+
+    simulated_data = plotly.graph_objs.Scatter(
+        x=formatted_simulated_value_history["timestamps"],
+        y=formatted_simulated_value_history["value"],
+        name='Simulated Portfolio in {}'.format(reference_market),
+        mode='lines+markers'
+    )
+
+    merged_data = [real_data]
+    if at_least_one_simulated:
+        merged_data.append(simulated_data)
+
+    return {'data': merged_data,
+            'layout': go.Layout(xaxis=dict(range=[get_bot().get_start_time(), time.time()]),
+                                yaxis=dict(range=[0, max(0.01, max_value)]), )}
 
 
 def get_currency_graph_update(exchange_name, symbol, time_frame):
