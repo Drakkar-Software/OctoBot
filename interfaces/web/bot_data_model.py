@@ -8,7 +8,9 @@ from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
     add_to_portfolio_value_history, get_portfolio_value_history
 from trading.trader.portfolio import Portfolio
+from trading.exchanges.exchange import Exchange
 
+TIME_AXIS_TITLE = "Time"
 
 def get_value_from_dict_or_string(data, is_time_frame=False):
     if isinstance(data, dict):
@@ -120,8 +122,13 @@ def get_portfolio_value_in_history():
         min_value = min(min_value, min(formatted_real_value_history["value"]))
 
     return {'data': merged_data,
-            'layout': go.Layout(xaxis=dict(range=[get_bot().get_start_time(), time.time()]),
-                                yaxis=dict(range=[max(0, min_value*0.99), max(0.01, max_value*1.01)]), )}
+            'layout': go.Layout(
+                                title='Portfolio value',
+                                xaxis=dict(range=[get_bot().get_start_time(), time.time()],
+                                           title=TIME_AXIS_TITLE),
+                                yaxis=dict(range=[max(0, min_value*0.99), max(0.01, max_value*1.01)],
+                                           title=reference_market)
+            )}
 
 
 def get_currency_graph_update(exchange_name, symbol, time_frame):
@@ -138,6 +145,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame):
                     df = evaluator_thread_manager.get_evaluator().get_data()
 
                     if df is not None:
+                        symbol_tag, pair_tag = Exchange.split_symbol(symbol)
                         add_to_symbol_data_history(symbol, df, time_frame)
 
                         X = df[PriceStrings.STR_PRICE_TIME.value]
@@ -150,8 +158,14 @@ def get_currency_graph_update(exchange_name, symbol, time_frame):
                                        low=df[PriceStrings.STR_PRICE_LOW.value],
                                        close=df[PriceStrings.STR_PRICE_CLOSE.value])
 
-                        return {'data': [data], 'layout': go.Layout(xaxis=dict(range=[min(X), max(X)]),
-                                                                    yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02]), )}
+                        return {'data': [data],
+                                'layout': go.Layout(
+                                    title="{} real time data (per time frame)".format(symbol_tag),
+                                    xaxis=dict(range=[min(X), max(X)],
+                                               title=TIME_AXIS_TITLE),
+                                    yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02],
+                                               title=pair_tag)
+                                )}
     return None
 
 
@@ -166,6 +180,7 @@ def get_evaluator_graph_in_matrix_history(symbol,
     if evaluator_name is not None and len(symbol_evaluator_list) > 0:
         matrix = symbol_evaluator_list[symbol].get_matrix(exchange_list[exchange_name])
         add_to_matrix_history(matrix)
+        symbol_tag, _ = Exchange.split_symbol(symbol)
 
         formatted_matrix_history = {
             "timestamps": [],
@@ -186,6 +201,12 @@ def get_evaluator_graph_in_matrix_history(symbol,
             mode='lines+markers'
         )
 
-        return {'data': [data], 'layout': go.Layout(xaxis=dict(range=[get_bot().get_start_time(), time.time()]),
-                                                    yaxis=dict(range=[-1, 1]), )}
+        return {'data': [data],
+                'layout': go.Layout(
+                    title="{} strategy".format(symbol_tag),
+                    xaxis=dict(range=[get_bot().get_start_time(), time.time()],
+                               title=TIME_AXIS_TITLE),
+                    yaxis=dict(range=[-1, 1],
+                               title="Buy or sell")
+                )}
     return None
