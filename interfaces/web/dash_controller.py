@@ -14,7 +14,8 @@ from interfaces.web.bot_data_model import *
 def update_values(exchange_name, cryptocurrency_name, symbol, time_frame):
     return get_currency_graph_update(exchange_name,
                                      get_value_from_dict_or_string(symbol),
-                                     get_value_from_dict_or_string(time_frame, True))
+                                     get_value_from_dict_or_string(time_frame, True),
+                                     cryptocurrency_name)
 
 
 @app_instance.callback(Output('strategy-live-graph', 'figure'),
@@ -29,7 +30,8 @@ def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_fram
                                                  exchange_name,
                                                  EvaluatorMatrixTypes.STRATEGIES,
                                                  evaluator_name,
-                                                 get_value_from_dict_or_string(time_frame, True))
+                                                 get_value_from_dict_or_string(time_frame, True),
+                                                 cryptocurrency_name)
 
 
 @app_instance.callback(Output('portfolio-value-graph', 'figure'),
