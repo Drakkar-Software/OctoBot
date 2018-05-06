@@ -1,7 +1,7 @@
 import numpy
 
 from evaluator.Util.abstract_util import AbstractUtil
-from config.cst import DIVERGENCE_USED_VALUE
+# from config.cst import DIVERGENCE_USED_VALUE
 
 
 class TrendAnalysis(AbstractUtil):
@@ -55,7 +55,7 @@ class TrendAnalysis(AbstractUtil):
                 time_averages.append(mean_crossing_indexes[0])
 
             # take double_size_patterns_count into account
-            [time_averages.append(0) for _ in range(double_size_patterns_count)]
+            time_averages += [0]*double_size_patterns_count
 
             time_average = numpy.mean(time_averages)*pattern_move_size if time_averages else 0
 
@@ -77,8 +77,7 @@ class TrendAnalysis(AbstractUtil):
         # remove consecutive sub-threshold values because they are not crosses
         threshold_crossing_indexes = []
         current_move_size = 1
-        for i in range(len(sub_threshold_indexes)):
-            index = sub_threshold_indexes[i]
+        for i, index in enumerate(sub_threshold_indexes):
             if not len(threshold_crossing_indexes):
                 threshold_crossing_indexes.append(index)
             else:

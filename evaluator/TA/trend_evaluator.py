@@ -2,7 +2,6 @@ from config.cst import *
 import numpy
 import talib
 import math
-import pandas
 
 from evaluator.TA.TA_evaluator import TrendEvaluator
 from evaluator.Util.trend_analysis import TrendAnalysis
