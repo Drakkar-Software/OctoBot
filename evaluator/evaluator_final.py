@@ -62,31 +62,28 @@ class FinalEvaluator(AsynchronousServer):
     # create real and/or simulating orders in trader instances
     def create_final_state_orders(self, evaluator_notification):
         # create orders
+
+        # simulated trader
+        self._create_order_if_possible(evaluator_notification,
+                                       self.symbol_evaluator.get_trader_simulator(self.exchange))
+
+        # real trader
+        self._create_order_if_possible(evaluator_notification,
+                                       self.symbol_evaluator.get_trader(self.exchange))
+
+    def _create_order_if_possible(self, evaluator_notification, trader):
         if EvaluatorOrderCreator.can_create_order(self.symbol,
                                                   self.exchange,
-                                                  self.symbol_evaluator.get_trader(
-                                                      self.exchange),
+                                                  trader,
                                                   self.state):
-
-            # create real exchange order
-            if self.symbol_evaluator.get_trader(self.exchange).enabled():
-                FinalEvaluator._push_order_notification_if_possible(
-                    self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
-                        self.final_eval,
-                        self.symbol,
-                        self.exchange,
-                        self.symbol_evaluator.get_trader(self.exchange),
-                        self.state),
-                    evaluator_notification)
-
             # create trader simulator order
-            if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
+            if trader.enabled():
                 FinalEvaluator._push_order_notification_if_possible(
                     self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
                         self.final_eval,
                         self.symbol,
                         self.exchange,
-                        self.symbol_evaluator.get_trader_simulator(self.exchange),
+                        trader,
                         self.state),
                     evaluator_notification)
 
