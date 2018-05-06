@@ -118,13 +118,13 @@ def get_portfolio_value_in_history():
     if at_least_one_simulated:
         merged_data.append(simulated_data)
         min_value = min(formatted_simulated_value_history["value"])
-        real_simulated_string = "simulated"
+        real_simulated_string = "simulated portfolio"
     if at_least_one_real or not at_least_one_simulated:
         merged_data.append(real_data)
         min_value = min(min_value, min(formatted_real_value_history["value"]))
         if real_simulated_string:
             real_simulated_string += " and "
-        real_simulated_string += "real"
+        real_simulated_string += "real portfolio"
 
     return {'data': merged_data,
             'layout': go.Layout(
