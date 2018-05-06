@@ -79,6 +79,9 @@ def get_portfolio_value_in_history():
     if max(portfolio_value_in_history["simulated_value"]) > 0:
         at_least_one_simulated = True
 
+    max_value = max(portfolio_value_in_history["real_value"] + portfolio_value_in_history["simulated_value"])
+    min_value = min(portfolio_value_in_history["real_value"] + portfolio_value_in_history["simulated_value"])
+
     real_data = plotly.graph_objs.Scatter(
         x=portfolio_value_in_history["timestamp"],
         y=portfolio_value_in_history["real_value"],
@@ -103,16 +106,9 @@ def get_portfolio_value_in_history():
 
     if at_least_one_simulated:
         merged_data.append(simulated_data)
-        min_value = min(portfolio_value_in_history["simulated_value"])
-        max_value = max(portfolio_value_in_history["simulated_value"])
-        real_simulated_string = "simulated portfolio"
+
     if at_least_one_real or not at_least_one_simulated:
         merged_data.append(real_data)
-        min_value = min(min_value, min(portfolio_value_in_history["real_value"]))
-        max_value = max(max_value, max(portfolio_value_in_history["real_value"]))
-        if real_simulated_string:
-            real_simulated_string += " and "
-        real_simulated_string += "real portfolio"
 
     return {'data': merged_data,
             'layout': go.Layout(
