@@ -46,6 +46,7 @@ def get_portfolio_value_in_history():
     reference_market = None
     at_least_one_simulated = False
     max_value = 0
+    min_value = None
     simulated_value = 0
     real_value = 0
     bot = get_bot()
@@ -56,7 +57,11 @@ def get_portfolio_value_in_history():
         if not reference_market:
             reference_market = trade_manager.get_reference()
         if trader.get_simulate():
-            simulated_value += trade_manager.get_portfolio_current_value()
+            current_value = trade_manager.get_portfolio_current_value()
+            # current_value might be 0 if no trades have been made / canceled => use origin value
+            if current_value == 0:
+                current_value = trade_manager.get_portfolio_origin_value()
+            simulated_value += current_value
             at_least_one_simulated = True
         else:
             real_value += trade_manager.get_portfolio_current_value()
@@ -87,6 +92,14 @@ def get_portfolio_value_in_history():
         if max_value < simulated_value:
             max_value = simulated_value
 
+        if min_value is None:
+            min_value = min(real_value, simulated_value)
+            
+        if min_value > real_value:
+            min_value = real_value
+        if min_value > simulated_value:
+            min_value = simulated_value
+
     real_data = plotly.graph_objs.Scatter(
         x=formatted_real_value_history["timestamps"],
         y=formatted_real_value_history["value"],
@@ -107,7 +120,7 @@ def get_portfolio_value_in_history():
 
     return {'data': merged_data,
             'layout': go.Layout(xaxis=dict(range=[get_bot().get_start_time(), time.time()]),
-                                yaxis=dict(range=[0, max(0.01, max_value)]), )}
+                                yaxis=dict(range=[max(0, min_value*0.9), max(0.01, max_value*1.1)]), )}
 
 
 def get_currency_graph_update(exchange_name, symbol, time_frame):
