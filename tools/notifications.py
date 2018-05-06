@@ -4,8 +4,8 @@ from abc import ABCMeta
 from enum import Enum
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
-    CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER
-from services import TwitterService
+    CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM
+from services import TwitterService, TelegramService
 from services.gmail_service import GmailService
 from trading import Exchange
 from trading.trader.order import OrderConstants
@@ -34,6 +34,9 @@ class Notification:
         # twitter
         self.twitter_notification_factory(message)
 
+        # telegram
+        self.telegram_notification_factory(message)
+
     def gmail_notification_available(self):
         if self.enable and NotificationTypes.MAIL.value in self.notification_type:
             if GmailService.is_setup_correctly(self.config):
@@ -48,6 +51,21 @@ class Notification:
                 self.logger.info("Mail sent")
         else:
             self.logger.debug("Mail disabled")
+
+    def telegram_notification_available(self):
+        if self.enable and NotificationTypes.TELEGRAM.value in self.notification_type:
+            if TelegramService.is_setup_correctly(self.config):
+                return True
+        return False
+
+    def telegram_notification_factory(self, message):
+        if self.telegram_notification_available():
+            telegram_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_SERVICE_INSTANCE]
+            result = telegram_service.send_message(message)
+            if result:
+                self.logger.info("Telegram message sent")
+        else:
+            self.logger.debug("Telegram disabled")
 
     def twitter_notification_available(self):
         if self.enable and NotificationTypes.TWITTER.value in self.notification_type:
@@ -199,3 +217,4 @@ class OrdersNotification(Notification):
 class NotificationTypes(Enum):
     MAIL = 1
     TWITTER = 2
+    TELEGRAM = 3
