@@ -25,6 +25,9 @@ class WebApp(threading.Thread):
         self.app.layout = html.Div(children=[
             html.H1('CryptoBot Dashboard'),
 
+            html.Label('Portfolio total value'),
+            dcc.Graph(id='portfolio-value-graph', animate=True),
+
             html.Label('Portfolio'),
             dt.DataTable(
                 rows=[{}],
@@ -34,7 +37,6 @@ class WebApp(threading.Thread):
                 editable=False,
                 id='datatable-portfolio'
             ),
-
 
             html.Div([
                 html.Label('Exchange'),
