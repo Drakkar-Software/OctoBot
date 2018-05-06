@@ -45,8 +45,8 @@ def get_portfolio_value_in_history():
 
     reference_market = None
     at_least_one_simulated = False
+    at_least_one_real = False
     max_value = 0
-    min_value = None
     simulated_value = 0
     real_value = 0
     bot = get_bot()
@@ -62,7 +62,6 @@ def get_portfolio_value_in_history():
             if current_value == 0:
                 current_value = trade_manager.get_portfolio_origin_value()
             simulated_value += current_value
-            at_least_one_simulated = True
         else:
             real_value += trade_manager.get_portfolio_current_value()
 
@@ -87,40 +86,42 @@ def get_portfolio_value_in_history():
         formatted_real_value_history["value"].append(real_value)
         formatted_simulated_value_history["value"].append(simulated_value)
 
+        if real_value > 0:
+            at_least_one_real = True
+        if simulated_value > 0:
+            at_least_one_simulated = True
+
         if max_value < real_value:
             max_value = real_value
-        if max_value < simulated_value:
+        if at_least_one_simulated and max_value < simulated_value:
             max_value = simulated_value
-
-        if min_value is None:
-            min_value = min(real_value, simulated_value)
-            
-        if min_value > real_value:
-            min_value = real_value
-        if min_value > simulated_value:
-            min_value = simulated_value
 
     real_data = plotly.graph_objs.Scatter(
         x=formatted_real_value_history["timestamps"],
         y=formatted_real_value_history["value"],
         name='Real Portfolio in {}'.format(reference_market),
-        mode='lines+markers'
+        mode='lines'
     )
 
     simulated_data = plotly.graph_objs.Scatter(
         x=formatted_simulated_value_history["timestamps"],
         y=formatted_simulated_value_history["value"],
         name='Simulated Portfolio in {}'.format(reference_market),
-        mode='lines+markers'
+        mode='lines'
     )
 
-    merged_data = [real_data]
+    min_value = 0
+    merged_data = []
     if at_least_one_simulated:
         merged_data.append(simulated_data)
+        min_value = min(formatted_simulated_value_history["value"])
+    if at_least_one_real or not at_least_one_simulated:
+        merged_data.append(real_data)
+        min_value = min(min_value, min(formatted_real_value_history["value"]))
 
     return {'data': merged_data,
             'layout': go.Layout(xaxis=dict(range=[get_bot().get_start_time(), time.time()]),
-                                yaxis=dict(range=[max(0, min_value*0.9), max(0.01, max_value*1.1)]), )}
+                                yaxis=dict(range=[max(0, min_value*0.99), max(0.01, max_value*1.01)]), )}
 
 
 def get_currency_graph_update(exchange_name, symbol, time_frame):
