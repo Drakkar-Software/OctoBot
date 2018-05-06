@@ -27,13 +27,13 @@ class WebApp(threading.Thread):
 
             dcc.Graph(id='portfolio-value-graph', animate=True),
 
-            html.Label('Portfolio'),
             dt.DataTable(
                 rows=[{}],
                 row_selectable=False,
                 filterable=True,
                 sortable=True,
                 editable=False,
+                selected_row_indices=[],
                 id='datatable-portfolio'
             ),
 
