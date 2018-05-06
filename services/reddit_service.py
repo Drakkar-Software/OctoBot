@@ -34,7 +34,7 @@ class RedditService(AbstractService):
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
-               and CONFIG_TWITTER in self.config[CONFIG_CATEGORY_SERVICES] \
+               and CONFIG_REDDIT in self.config[CONFIG_CATEGORY_SERVICES] \
                and "client_id" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT] \
                and "client_secret" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT] \
                and "password" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT] \

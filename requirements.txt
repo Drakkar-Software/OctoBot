@@ -11,6 +11,7 @@ psutil
 plotly
 newspaper3k
 praw
+python-telegram-bot
 
 dash
 dash-table-experiments
