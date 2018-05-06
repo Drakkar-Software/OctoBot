@@ -72,7 +72,7 @@ CONFIG_SERVICE_INSTANCE = "service_instance"
 CONFIG_GMAIL = "gmail"
 
 # telegram
-CONFIG_SERVICES_TELEGRAM = "telegram"
+CONFIG_TELEGRAM = "telegram"
 CONFIG_TOKEN = "token"
 
 # twitter
