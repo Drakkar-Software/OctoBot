@@ -3,7 +3,8 @@ import logging
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
 from config.cst import *
-from interfaces.telegram import get_bot
+from interfaces import get_reference_market
+from interfaces.util import get_portfolio_current_value
 
 
 class TelegramApp:
@@ -35,19 +36,8 @@ class TelegramApp:
 
     @staticmethod
     def command_portfolio(_, update):
-        portfolio_real_current_value = 0
-        portfolio_simulated_current_value = 0
-        reference_market = next(iter(get_bot().get_exchange_traders().values())).get_trades_manager().get_reference()
-
-        # get real
-        for trader in get_bot().get_exchange_traders().values():
-            trade_manager = trader.get_trades_manager()
-            portfolio_real_current_value += trade_manager.get_portfolio_current_value()
-
-        # get simulated
-        for trader in get_bot().get_exchange_trader_simulators().values():
-            trade_manager = trader.get_trades_manager()
-            portfolio_simulated_current_value += trade_manager.get_portfolio_current_value()
+        portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
+        reference_market = get_reference_market()
 
         update.message.reply_text("Portfolio real value : {0} {1}".format(portfolio_real_current_value,
                                   reference_market))

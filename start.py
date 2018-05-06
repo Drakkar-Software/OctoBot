@@ -53,14 +53,13 @@ if __name__ == '__main__':
     bot = CryptoBot(config)
     web_app = None
 
+    import interfaces
+    interfaces.__init__(bot)
+
     if args.web:
         import interfaces.web
         interfaces.web.__init__(bot, config)
         web_app = WebApp(config)
-
-    if args.telegram:
-        import interfaces.telegram
-        interfaces.telegram.__init__(bot)
 
     if args.update:
         Commands.update(logger)
