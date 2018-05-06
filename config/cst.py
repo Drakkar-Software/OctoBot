@@ -71,6 +71,10 @@ CONFIG_SERVICE_INSTANCE = "service_instance"
 # gmail
 CONFIG_GMAIL = "gmail"
 
+# telegram
+CONFIG_SERVICES_TELEGRAM = "telegram"
+CONFIG_TOKEN = "token"
+
 # twitter
 CONFIG_TWITTERS_ACCOUNTS = "accounts"
 CONFIG_TWITTERS_HASHTAGS = "hashtags"
