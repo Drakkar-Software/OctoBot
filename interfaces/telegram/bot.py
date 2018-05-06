@@ -4,7 +4,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 
 from config.cst import *
 from interfaces import get_reference_market
-from interfaces.util import get_portfolio_current_value
+from interfaces.trading_util import get_portfolio_current_value
 
 
 class TelegramApp:
@@ -41,7 +41,7 @@ class TelegramApp:
 
         update.message.reply_text("Portfolio real value : {0} {1}".format(portfolio_real_current_value,
                                   reference_market))
-        update.message.reply_text("Portfolio simulated value : {0} {1}".format(portfolio_real_current_value,
+        update.message.reply_text("Portfolio simulated value : {0} {1}".format(portfolio_simulated_current_value,
                                   reference_market))
 
     @staticmethod
