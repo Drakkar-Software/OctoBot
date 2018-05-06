@@ -145,11 +145,11 @@ class CryptoBot:
         if self.performance_analyser:
             self.performance_analyser.start()
 
-        for crypto_currency in self.crypto_currency_evaluator_list:
-            self.crypto_currency_evaluator_list[crypto_currency].start_threads()
+        for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
+            crypto_currency_evaluator.start_threads()
 
-        for manager in self.symbol_threads_manager:
-            self.symbol_threads_manager[manager].start_threads()
+        for manager in self.symbol_threads_manager.values():
+            manager.start_threads()
 
         for thread in self.symbol_time_frame_updater_threads:
             thread.start()
@@ -166,14 +166,14 @@ class CryptoBot:
         for thread in self.symbol_time_frame_updater_threads:
             thread.join()
 
-        for crypto_currency in self.crypto_currency_evaluator_list:
-            self.crypto_currency_evaluator_list[crypto_currency].join_threads()
+        for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
+            crypto_currency_evaluator.join_threads()
 
-        for trader in self.exchange_traders:
-            self.exchange_traders[trader].join_order_manager()
+        for trader in self.exchange_traders.values():
+            trader.join_order_manager()
 
-        for trader_simulator in self.exchange_trader_simulators:
-            self.exchange_trader_simulators[trader_simulator].join_order_manager()
+        for trader_simulator in self.exchange_trader_simulators.values():
+            trader_simulator.join_order_manager()
 
         for thread in self.dispatchers_list:
             thread.join()
@@ -190,17 +190,17 @@ class CryptoBot:
         for thread in self.symbol_time_frame_updater_threads:
             thread.stop()
 
-        for manager in self.symbol_threads_manager:
-            self.symbol_threads_manager[manager].stop_threads()
+        for manager in self.symbol_threads_manager.values():
+            manager.stop_threads()
 
-        for crypto_currency in self.crypto_currency_evaluator_list:
-            self.crypto_currency_evaluator_list[crypto_currency].stop_threads()
+        for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
+            crypto_currency_evaluator.stop_threads()
 
-        for trader in self.exchange_traders:
-            self.exchange_traders[trader].stop_order_manager()
+        for trader in self.exchange_traders.values():
+            trader.stop_order_manager()
 
-        for trader_simulator in self.exchange_trader_simulators:
-            self.exchange_trader_simulators[trader_simulator].stop_order_manager()
+        for trader_simulator in self.exchange_trader_simulators.values():
+            trader_simulator.stop_order_manager()
 
         for thread in self.dispatchers_list:
             thread.stop()
