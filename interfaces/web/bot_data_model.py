@@ -79,9 +79,6 @@ def get_portfolio_value_in_history():
     if max(portfolio_value_in_history["simulated_value"]) > 0:
         at_least_one_simulated = True
 
-    max_value = max(portfolio_value_in_history["real_value"] + portfolio_value_in_history["simulated_value"])
-    min_value = min(portfolio_value_in_history["real_value"] + portfolio_value_in_history["simulated_value"])
-
     real_data = plotly.graph_objs.Scatter(
         x=portfolio_value_in_history["timestamp"],
         y=portfolio_value_in_history["real_value"],
@@ -106,11 +103,13 @@ def get_portfolio_value_in_history():
 
     if at_least_one_simulated:
         merged_data.append(simulated_data)
-        min_value = min(formatted_simulated_value_history["value"])
+        min_value = min(portfolio_value_in_history["simulated_value"])
+        max_value = max(portfolio_value_in_history["simulated_value"])
         real_simulated_string = "simulated portfolio"
     if at_least_one_real or not at_least_one_simulated:
         merged_data.append(real_data)
-        min_value = min(min_value, min(formatted_real_value_history["value"]))
+        min_value = min(min_value, min(portfolio_value_in_history["real_value"]))
+        max_value = max(max_value, max(portfolio_value_in_history["real_value"]))
         if real_simulated_string:
             real_simulated_string += " and "
         real_simulated_string += "real portfolio"
@@ -120,7 +119,7 @@ def get_portfolio_value_in_history():
                 title='Portfolio value ({})'.format(real_simulated_string),
                 xaxis=dict(range=[get_bot().get_start_time(), time.time()],
                            title=TIME_AXIS_TITLE),
-                yaxis=dict(range=[max(0, min_value * 0.99), max(0.1, max_value * 1.1)],
+                yaxis=dict(range=[max(0, min_value * 0.99), max(0.1, max_value * 1.01)],
                            title=reference_market)
             )}
 

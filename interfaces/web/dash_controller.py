@@ -35,14 +35,14 @@ def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_fram
 
 
 @app_instance.callback(Output('portfolio-value-graph', 'figure'),
-                       events=[Event('strategy-graph-update', 'interval')])
+                       events=[Event('portfolio-update', 'interval')])
 def update_portfolio_value():
     update_portfolio_history()
     return get_portfolio_value_in_history()
 
 
 @app_instance.callback(Output('datatable-portfolio', 'rows'),
-                       events=[Event('strategy-graph-update', 'interval')])
+                       events=[Event('portfolio-update', 'interval')])
 def update_currencies_amounts():
     return get_portfolio_currencies_update()
 
