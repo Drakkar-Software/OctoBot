@@ -19,6 +19,7 @@ log.setLevel(logging.ERROR)
 
 matrix_history = []
 symbol_data_history = {}
+portfolio_value_history = []
 
 
 def __init__(bot, config):
@@ -32,6 +33,14 @@ def __init__(bot, config):
 def add_to_matrix_history(matrix):
     matrix_history.append({
         "matrix": copy.deepcopy(matrix.get_matrix()),
+        "timestamp": time.time()
+    })
+
+
+def add_to_portfolio_value_history(real_value, simulated_value):
+    portfolio_value_history.append({
+        "real_value": real_value,
+        "simulated_value": simulated_value,
         "timestamp": time.time()
     })
 
@@ -51,6 +60,10 @@ def get_matrix_history():
     return matrix_history
 
 
+def get_portfolio_value_history():
+    return portfolio_value_history
+
+
 def get_symbol_data_history():
     return symbol_data_history
 
@@ -66,7 +79,8 @@ def load_callbacks():
         update_symbol_dropdown_options, \
         update_symbol_dropdown_value, \
         update_evaluator_dropdown, \
-        update_currencies_amounts
+        update_currencies_amounts, \
+        update_portfolio_value
 
 
 def load_routes():

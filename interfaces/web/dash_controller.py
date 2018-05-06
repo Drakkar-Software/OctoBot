@@ -1,8 +1,7 @@
 from dash.dependencies import Output, Event, Input
 
-from config.cst import EvaluatorMatrixTypes, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME, \
-    TimeFrames
-from interfaces.web import app_instance, global_config, get_bot
+from config.cst import EvaluatorMatrixTypes, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME
+from interfaces.web import app_instance, global_config
 from interfaces.web.bot_data_model import *
 
 
@@ -31,6 +30,12 @@ def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_fram
                                                  EvaluatorMatrixTypes.STRATEGIES,
                                                  evaluator_name,
                                                  get_value_from_dict_or_string(time_frame, True))
+
+
+@app_instance.callback(Output('portfolio-value-graph', 'figure'),
+                       [Input('strategy-live-graph', 'figure')])
+def update_portfolio_value(strategy_live_graph):
+    return get_portfolio_value_in_history()
 
 
 @app_instance.callback(Output('datatable-portfolio', 'rows'),
