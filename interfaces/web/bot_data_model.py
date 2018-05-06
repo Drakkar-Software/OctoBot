@@ -128,32 +128,32 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
             evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_thread_managers(
                 exchange_list[exchange_name])
 
-            for evaluator_thread_manager in evaluator_thread_managers:
-                if evaluator_thread_manager.get_evaluator().get_time_frame() == time_frame:
-                    df = evaluator_thread_manager.get_evaluator().get_data()
+            if time_frame in evaluator_thread_managers:
+                evaluator_thread_manager = evaluator_thread_managers[time_frame]
+                df = evaluator_thread_manager.get_evaluator().get_data()
 
-                    if df is not None:
-                        symbol_tag, pair_tag = Exchange.split_symbol(symbol)
-                        add_to_symbol_data_history(symbol, df, time_frame)
+                if df is not None:
+                    symbol_tag, pair_tag = Exchange.split_symbol(symbol)
+                    add_to_symbol_data_history(symbol, df, time_frame)
 
-                        X = df[PriceStrings.STR_PRICE_TIME.value]
-                        Y = df[PriceStrings.STR_PRICE_CLOSE.value]
+                    X = df[PriceStrings.STR_PRICE_TIME.value]
+                    Y = df[PriceStrings.STR_PRICE_CLOSE.value]
 
-                        # Candlestick
-                        data = go.Ohlc(x=df[PriceStrings.STR_PRICE_TIME.value],
-                                       open=df[PriceStrings.STR_PRICE_OPEN.value],
-                                       high=df[PriceStrings.STR_PRICE_HIGH.value],
-                                       low=df[PriceStrings.STR_PRICE_LOW.value],
-                                       close=df[PriceStrings.STR_PRICE_CLOSE.value])
+                    # Candlestick
+                    data = go.Ohlc(x=df[PriceStrings.STR_PRICE_TIME.value],
+                                   open=df[PriceStrings.STR_PRICE_OPEN.value],
+                                   high=df[PriceStrings.STR_PRICE_HIGH.value],
+                                   low=df[PriceStrings.STR_PRICE_LOW.value],
+                                   close=df[PriceStrings.STR_PRICE_CLOSE.value])
 
-                        return {'data': [data],
-                                'layout': go.Layout(
-                                    title="{} real time data (per time frame)".format(cryptocurrency_name),
-                                    xaxis=dict(range=[min(X), max(X)],
-                                               title=TIME_AXIS_TITLE),
-                                    yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02],
-                                               title=pair_tag)
-                                )}
+                    return {'data': [data],
+                            'layout': go.Layout(
+                                title="{} real time data (per time frame)".format(cryptocurrency_name),
+                                xaxis=dict(range=[min(X), max(X)],
+                                           title=TIME_AXIS_TITLE),
+                                yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02],
+                                           title=pair_tag)
+                            )}
     return None
 
 
