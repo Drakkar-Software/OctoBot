@@ -5,6 +5,8 @@ import plotly.graph_objs as go
 
 from config.cst import PriceStrings, TimeFrames
 from evaluator.evaluator_matrix import EvaluatorMatrix
+from interfaces import get_reference_market
+from interfaces.util import get_portfolio_current_value
 from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
     add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE
 from trading.exchanges.exchange import Exchange
@@ -43,25 +45,7 @@ def get_portfolio_currencies_update():
 
 
 def update_portfolio_history():
-    simulated_value = 0
-    real_value = 0
-    bot = get_bot()
-
-    traders = [trader for trader in bot.get_exchange_traders().values()] + \
-              [trader for trader in bot.get_exchange_trader_simulators().values()]
-    for trader in traders:
-        trade_manager = trader.get_trades_manager()
-
-        current_value = trade_manager.get_portfolio_current_value()
-
-        # current_value might be 0 if no trades have been made / canceled => use origin value
-        if current_value == 0:
-            current_value = trade_manager.get_portfolio_origin_value()
-
-        if trader.get_simulate():
-            simulated_value += current_value
-        else:
-            real_value += current_value
+    real_value, simulated_value = get_portfolio_current_value()
 
     add_to_portfolio_value_history(real_value, simulated_value)
 
@@ -72,7 +56,7 @@ def get_portfolio_value_in_history():
     min_value = 0
     max_value = 1
 
-    reference_market = next(iter(get_bot().get_exchange_traders().values())).get_trades_manager().get_reference()
+    reference_market = get_reference_market()
 
     portfolio_value_in_history = get_portfolio_value_history()
 
