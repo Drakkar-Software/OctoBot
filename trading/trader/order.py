@@ -29,6 +29,8 @@ class Order:
         self.order_id = None
         self.status = None
         self.order_type = None
+        self.creation_time = 0
+        self.canceled_time = 0
         self.executed_time = 0
         self.last_prices = None
         self.created_last_price = None
@@ -58,6 +60,7 @@ class Order:
         self.order_type = order_type
         self.order_notifier = order_notifier
         self.currency, self.market = self.exchange.split_symbol(symbol)
+        self.creation_time = time.time()
 
         if not self.trader.simulate:
             # self.status, self.order_id, self.filled_price, self.filled_quantity, self.ex_time
@@ -89,6 +92,7 @@ class Order:
 
     def cancel_order(self):
         self.status = OrderStatus.CANCELED
+        self.canceled_time = time.time()
         # TODO exchange
         self.trader.notify_order_cancel(self)
 
@@ -142,6 +146,15 @@ class Order:
 
     def get_order_notifier(self):
         return self.order_notifier
+
+    def get_canceled_time(self):
+        return self.canceled_time
+
+    def get_executed_time(self):
+        return self.executed_time
+
+    def get_creation_time(self):
+        return self.creation_time
 
     def set_last_prices(self, last_prices):
         self.last_prices = last_prices
