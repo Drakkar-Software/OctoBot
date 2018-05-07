@@ -154,7 +154,8 @@ class Trader:
         self.order_manager.stop()
 
     def join_order_manager(self):
-        self.order_manager.join()
+        if self.order_manager.isAlive():
+            self.order_manager.join()
 
     def get_simulate(self):
         return self.simulate
