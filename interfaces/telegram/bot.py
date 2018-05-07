@@ -9,6 +9,8 @@ from tools.pretty_printer import PrettyPrinter
 
 
 class TelegramApp:
+    EOL = "\n"
+
     def __init__(self, config, telegram_service, telegram_updater):
         self.config = config
         self.telegram_service = telegram_service
@@ -42,21 +44,23 @@ class TelegramApp:
         reference_market = get_reference_market()
 
         update.message.reply_text("Portfolio real value : {0} {1}".format(portfolio_real_current_value,
-                                  reference_market))
+                                                                          reference_market))
         update.message.reply_text("Portfolio simulated value : {0} {1}".format(portfolio_simulated_current_value,
-                                  reference_market))
+                                                                               reference_market))
 
     @staticmethod
     def command_open_orders(_, update):
         portfolio_real_open_orders, portfolio_simulated_open_orders = get_open_orders()
 
-        portfolio_real_current_value_string = ""
-        for order in portfolio_real_open_orders:
-            portfolio_real_current_value_string += PrettyPrinter.open_order_pretty_printer(order)
+        portfolio_real_current_value_string = TelegramApp.EOL
+        for orders in portfolio_real_open_orders:
+            for order in orders:
+                portfolio_real_current_value_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
 
-        portfolio_simulated_current_value_string = ""
-        for order in portfolio_simulated_open_orders:
-            portfolio_real_current_value_string += PrettyPrinter.open_order_pretty_printer(order)
+        portfolio_simulated_current_value_string = TelegramApp.EOL
+        for orders in portfolio_simulated_open_orders:
+            for order in orders:
+                portfolio_simulated_current_value_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
 
         update.message.reply_text("Real open orders : {0}".format(portfolio_real_current_value_string))
         update.message.reply_text("Simulated open orders : {0}".format(portfolio_simulated_current_value_string))
