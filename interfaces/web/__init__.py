@@ -1,9 +1,11 @@
 import copy
 import logging
+import numpy
 import time
 
 import dash
 import flask
+import pandas
 
 server_instance = flask.Flask(__name__)
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
@@ -48,13 +50,14 @@ def add_to_portfolio_value_history(real_value, simulated_value):
 
 def add_to_symbol_data_history(symbol, data, time_frame):
     if symbol not in symbol_data_history:
-        symbol_data_history[symbol] = []
+        symbol_data_history[symbol] = {}
 
-    symbol_data_history[symbol].append({
-        "data": data,
-        "timestamp": time.time(),
-        "time_frame": time_frame
-    })
+    if time_frame not in symbol_data_history[symbol]:
+        symbol_data_history[symbol][time_frame] = data
+
+    symbol_data_history[symbol][time_frame] = pandas.concat([symbol_data_history[symbol][time_frame], data])
+    symbol_data_history[symbol][time_frame] = symbol_data_history[symbol][time_frame].reset_index(drop=True)
+    # symbol_data_history[symbol][time_frame].append(data).drop_duplicates()
 
 
 def get_matrix_history():
@@ -65,8 +68,8 @@ def get_portfolio_value_history():
     return portfolio_value_history
 
 
-def get_symbol_data_history():
-    return symbol_data_history
+def get_symbol_data_history(symbol, time_frame):
+    return symbol_data_history[symbol][time_frame]
 
 
 def get_bot():

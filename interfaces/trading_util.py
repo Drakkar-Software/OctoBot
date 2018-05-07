@@ -110,3 +110,24 @@ def get_global_portfolio_currencies_amouts():
             real_global_portfolio[currency][Portfolio.AVAILABLE] = amounts[Portfolio.AVAILABLE]
 
     return real_global_portfolio, simulated_global_portfolio
+
+
+def get_trades_by_times_and_prices(time_factor=1):
+    simulated_trades_times = []
+    simulated_trades_prices = []
+
+    real_trades_times = []
+    real_trades_prices = []
+
+    traders = [trader for trader in get_bot().get_exchange_traders().values()] + \
+              [trader for trader in get_bot().get_exchange_trader_simulators().values()]
+    for trader in traders:
+        for trade in trader.get_trades_manager().get_trade_history():
+            if trader.get_simulate():
+                simulated_trades_times.append(trade.get_filled_time()*time_factor)
+                simulated_trades_prices.append(trade.get_price())
+            else:
+                real_trades_times.append(trade.get_filled_time()*time_factor)
+                real_trades_prices.append(trade.get_price())
+
+    return real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times

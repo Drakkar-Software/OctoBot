@@ -1,3 +1,5 @@
+import time
+
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_collector import DataCollectorParser
 from config.cst import *
@@ -15,6 +17,7 @@ class ExchangeSimulator(Exchange):
             raise Exception("Data collector config not found")
 
         self.data = DataCollectorParser.parse(self.config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILE])
+        self.fix_timestamps()
 
         self.symbols = self._get_symbol_list()
 
@@ -41,6 +44,12 @@ class ExchangeSimulator(Exchange):
     def _get_symbol_list(self):
         # temp
         return [self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL]]
+
+    def fix_timestamps(self):
+        for time_frame in self.data:
+            time_delta = time.time()*1000 - self.data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
+            for data_list in self.data[time_frame]:
+                data_list[PriceIndexes.IND_PRICE_TIME.value] += time_delta
 
     # returns price data for a given symbol
     def _get_symbol_data(self, symbol):
