@@ -5,6 +5,7 @@ from config.cst import EvaluatorStates, INIT_EVAL_NOTE
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 from tools.asynchronous_server import AsynchronousServer
 from tools.notifications import EvaluatorNotification
+from tools.evaluators_util import check_valid_eval_note
 
 
 class FinalEvaluator(AsynchronousServer):
@@ -102,8 +103,10 @@ class FinalEvaluator(AsynchronousServer):
         strategies_analysis_note_counter = 0
         # Strategies analysis
         for evaluated_strategies in self.symbol_evaluator.get_strategies_eval_list(self.exchange):
-            self.final_eval += evaluated_strategies.get_eval_note() * evaluated_strategies.get_pertinence()
-            strategies_analysis_note_counter += evaluated_strategies.get_pertinence()
+            strategy_eval = evaluated_strategies.get_eval_note()
+            if check_valid_eval_note(strategy_eval):
+                self.final_eval += strategy_eval * evaluated_strategies.get_pertinence()
+                strategies_analysis_note_counter += evaluated_strategies.get_pertinence()
 
         if strategies_analysis_note_counter > 0:
             self.final_eval /= strategies_analysis_note_counter
