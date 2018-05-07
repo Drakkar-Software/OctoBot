@@ -10,6 +10,7 @@ class Backtesting:
     def __init__(self, config, exchange_simulator):
         self.config = config
         self.begin_time = time.time()
+        self.time_delta = 0
         self.exchange_simulator = exchange_simulator
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -24,6 +25,8 @@ class Backtesting:
         market_data = self.exchange_simulator.get_data()[self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
         market_data_df = self.exchange_simulator.candles_array_to_data_frame(market_data)
 
+        self.time_delta = self.begin_time - market_data[0][PriceIndexes.IND_PRICE_TIME.value]
+
         # profitability
         total_profitability = 0
         for trader in get_bot().get_exchange_trader_simulators().values():
@@ -34,7 +37,25 @@ class Backtesting:
         market_delta = self.get_market_delta(market_data)
 
         # graph
-        DataVisualiser.show_candlesticks_dataframe(market_data_df)
+        trade_created = []
+        trade_filled = []
+        trade_canceled = []
+        for trader in get_bot().get_exchange_trader_simulators().values():
+            for trade in trader.get_trades_manager().get_trade_history():
+                if trade.get_final_status() == OrderStatus.FILLED:
+                    trade_filled.append([trade.get_filled_time() - self.time_delta, trade.get_price()])
+
+        indicators_map = [
+            {
+                "title": "Filled",
+                "data": trade_filled,
+                "in_graph": True,
+                "points": True,
+                "share_x": False,
+                "share_y": True
+            }
+        ]
+        DataVisualiser.show_candlesticks_dataframe_with_indicators(market_data_df, indicators_map)
 
         # log
         self.logger.info(
