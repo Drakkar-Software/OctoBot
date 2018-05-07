@@ -70,6 +70,6 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                     if sleeping_time > 0:
                         time.sleep(sleeping_time)
                 else:
-                    time.sleep(0.001)
+                    time.sleep(1)
         else:
             logging.getLogger(self.__class__.__name__).warning("no time frames to monitor, going to sleep.")

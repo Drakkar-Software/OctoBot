@@ -6,9 +6,9 @@ import plotly.graph_objs as go
 from config.cst import PriceStrings, TimeFrames
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces import get_reference_market
-from interfaces.trading_util import get_portfolio_current_value
+from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
 from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
-    add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE
+    add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE, get_symbol_data_history
 from trading.exchanges.exchange import Exchange
 from trading.trader.portfolio import Portfolio
 
@@ -121,6 +121,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                 if df is not None:
                     symbol_tag, pair_tag = Exchange.split_symbol(symbol)
                     add_to_symbol_data_history(symbol, df, time_frame)
+                    df = get_symbol_data_history(symbol, time_frame)
 
                     X = df[PriceStrings.STR_PRICE_TIME.value]
                     Y = df[PriceStrings.STR_PRICE_CLOSE.value]
@@ -132,7 +133,23 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                                    low=df[PriceStrings.STR_PRICE_LOW.value],
                                    close=df[PriceStrings.STR_PRICE_CLOSE.value])
 
-                    return {'data': [data],
+                    real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times = get_trades_by_times_and_prices(1000)
+
+                    real_trades_points = go.Scatter(
+                        x=real_trades_prices,
+                        y=real_trades_times,
+                        mode='markers',
+                        name='markers'
+                    )
+
+                    simulated_trades_points = go.Scatter(
+                        x=simulated_trades_times,
+                        y=simulated_trades_prices,
+                        mode='markers',
+                        name='markers'
+                    )
+
+                    return {'data': [data, real_trades_points, simulated_trades_points],
                             'layout': go.Layout(
                                 title="{} real time data (per time frame)".format(cryptocurrency_name),
                                 xaxis=dict(range=[min(X), max(X)],

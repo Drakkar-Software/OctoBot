@@ -80,7 +80,7 @@ class WebApp(threading.Thread):
             dcc.Graph(id='live-graph', animate=True),
             dcc.Interval(
                 id='graph-update',
-                interval=60 * 1000
+                interval=1 * 1000
             ),
 
             dcc.Graph(id='strategy-live-graph', animate=True),
