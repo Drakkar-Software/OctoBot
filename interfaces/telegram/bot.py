@@ -82,13 +82,13 @@ class TelegramApp:
 
         update.message.reply_text("Portfolio real value : {0} {1}".format(portfolio_real_current_value,
                                                                           reference_market))
+        update.message.reply_text("Global real portfolio : \n{0}"
+                                  .format(PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio)))
+
         update.message.reply_text("Portfolio simulated value : {0} {1}".format(portfolio_simulated_current_value,
                                                                                reference_market))
         update.message.reply_text("Global simulated portfolio : \n{0}"
                                   .format(PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio)))
-
-        update.message.reply_text("Global real portfolio : \n{0}"
-                                  .format(PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio)))
 
     @staticmethod
     def command_open_orders(_, update):
