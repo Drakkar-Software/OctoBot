@@ -12,7 +12,8 @@ class Trader:
     def __init__(self, config, exchange):
         self.exchange = exchange
         self.config = config
-        self.risk = self.config[CONFIG_TRADER][CONFIG_TRADER_RISK]
+        self.risk = None
+        self.set_risk(self.config[CONFIG_TRADER][CONFIG_TRADER_RISK])
         self.logger = logging.getLogger(self.__class__.__name__)
 
         if not hasattr(self, 'simulate'):
@@ -37,11 +38,15 @@ class Trader:
             return False
 
     def get_risk(self):
-        if self.risk < CONFIG_TRADER_RISK_MIN:
-            self.risk = CONFIG_TRADER_RISK_MIN
-        elif self.risk > CONFIG_TRADER_RISK_MAX:
-            self.risk = CONFIG_TRADER_RISK_MAX
         return self.risk
+
+    def set_risk(self, risk):
+        if risk < CONFIG_TRADER_RISK_MIN:
+            self.risk = CONFIG_TRADER_RISK_MIN
+        elif risk > CONFIG_TRADER_RISK_MAX:
+            self.risk = CONFIG_TRADER_RISK_MAX
+        else:
+            self.risk = risk
 
     def get_exchange(self):
         return self.exchange

@@ -4,7 +4,8 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 
 from config.cst import *
 from interfaces import get_reference_market
-from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_global_portfolio_currencies_amouts
+from interfaces.trading_util import get_portfolio_current_value, get_open_orders, \
+    get_global_portfolio_currencies_amouts, set_risk
 from tools.pretty_printer import PrettyPrinter
 
 
@@ -27,6 +28,7 @@ class TelegramApp:
         self.dispatcher.add_handler(CommandHandler("start", self.command_start))
         self.dispatcher.add_handler(CommandHandler("portfolio", self.command_portfolio))
         self.dispatcher.add_handler(CommandHandler("open_orders", self.command_open_orders))
+        self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
 
         # log all errors
         self.dispatcher.add_error_handler(self.command_error)
@@ -37,6 +39,15 @@ class TelegramApp:
     @staticmethod
     def command_start(_, update):
         update.message.reply_text("Hello, I'm CryptoBot, type /help to know my skills.")
+
+    @staticmethod
+    def command_risk(_, update):
+        try:
+            risk = float(update.message.text.replace("/set_risk", ""))
+            set_risk(risk)
+            update.message.reply_text("New risk set.")
+        except Exception:
+            update.message.reply_text("Failed to set new risk.")
 
     @staticmethod
     def command_portfolio(_, update):
