@@ -46,7 +46,7 @@ class TelegramService(AbstractService):
     def get_updater(self):
         return self.telegram_updater
 
-    def stop_telegram_app(self):
+    def stop(self):
         if self.telegram_updater:
             self.telegram_updater.stop()
 

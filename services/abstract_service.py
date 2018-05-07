@@ -32,6 +32,10 @@ class AbstractService:
     def get_is_enabled(self):
         return self.enabled
 
+    # implement locally if the service has thread(s) to stop
+    def stop(self):
+        pass
+
     # Returns true if all the configuration is available
     @abstractmethod
     def has_required_configuration(self):

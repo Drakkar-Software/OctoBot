@@ -37,15 +37,19 @@ class TelegramApp:
         self.dispatcher.add_handler(MessageHandler(Filters.text, self.echo))
 
     @staticmethod
+    def get_command_param(command_name, update):
+        return update.message.text.replace(command_name, "")
+
+    @staticmethod
     def command_start(_, update):
         update.message.reply_text("Hello, I'm CryptoBot, type /help to know my skills.")
 
     @staticmethod
     def command_risk(_, update):
         try:
-            risk = float(update.message.text.replace("/set_risk", ""))
+            risk = float(TelegramApp.get_command_param("/set_risk", update))
             set_risk(risk)
-            update.message.reply_text("New risk set.")
+            update.message.reply_text("New risk set successfully.")
         except Exception:
             update.message.reply_text("Failed to set new risk.")
 

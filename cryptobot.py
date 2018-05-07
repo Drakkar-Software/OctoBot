@@ -208,6 +208,10 @@ class CryptoBot:
         if self.performance_analyser:
             self.performance_analyser.stop()
 
+        # stop services
+        for service_instance in ServiceCreator.get_service_instances(self.config):
+            service_instance.stop()
+
     def get_symbols_threads_manager(self):
         return self.symbol_threads_manager
 

@@ -26,3 +26,11 @@ class ServiceCreator:
                         logger.error(service_class.get_name() + " preparation produced the following error: " + str(e))
                 else:
                     logger.warning(service_class.get_name() + " can't be initialized: configuration is missing !")
+
+    @staticmethod
+    def get_service_instances(config):
+        instances = []
+        for services in config[CONFIG_CATEGORY_SERVICES]:
+            if CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][services]:
+                instances.append(config[CONFIG_CATEGORY_SERVICES][services][CONFIG_SERVICE_INSTANCE])
+        return instances
