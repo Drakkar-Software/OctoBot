@@ -4,3 +4,4 @@ pytest-cov
 coverage
 
 zipline
+backtrader
