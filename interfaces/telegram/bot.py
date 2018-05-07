@@ -4,7 +4,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 
 from config.cst import *
 from interfaces import get_reference_market
-from interfaces.trading_util import get_portfolio_current_value, get_open_orders
+from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_global_portfolio_currencies_amouts
 from tools.pretty_printer import PrettyPrinter
 
 
@@ -42,11 +42,17 @@ class TelegramApp:
     def command_portfolio(_, update):
         portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
         reference_market = get_reference_market()
+        real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amouts()
 
         update.message.reply_text("Portfolio real value : {0} {1}".format(portfolio_real_current_value,
                                                                           reference_market))
         update.message.reply_text("Portfolio simulated value : {0} {1}".format(portfolio_simulated_current_value,
                                                                                reference_market))
+        update.message.reply_text("Global simulated portfolio : \n{0}"
+                                  .format(PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio)))
+
+        update.message.reply_text("Global real portfolio : \n{0}"
+                                  .format(PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio)))
 
     @staticmethod
     def command_open_orders(_, update):

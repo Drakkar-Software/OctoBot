@@ -1,4 +1,5 @@
 from trading.trader.order import OrderConstants
+from trading.trader.portfolio import Portfolio
 
 
 class PrettyPrinter:
@@ -26,3 +27,10 @@ class PrettyPrinter:
             symbol.replace("/", ""),
             str(result).split(".")[1],
             final_eval)
+
+    @staticmethod
+    def global_portfolio_pretty_print(global_portfolio, separator="\n"):
+        result = ["{0} ({1}) {2}".format(amounts[Portfolio.TOTAL], amounts[Portfolio.AVAILABLE], currency)
+                  for currency, amounts in global_portfolio.items()]
+
+        return separator.join(result)

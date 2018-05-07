@@ -1,4 +1,5 @@
 from interfaces import get_bot
+from trading.trader.portfolio import Portfolio
 
 
 def get_portfolio_current_value():
@@ -38,3 +39,47 @@ def get_open_orders():
 
     return real_open_orders, simulated_open_orders
 
+
+def get_portfolios():
+    simulated_portfolios = []
+    real_portfolios = []
+
+    traders = [trader for trader in get_bot().get_exchange_traders().values()] + \
+              [trader for trader in get_bot().get_exchange_trader_simulators().values()]
+    for trader in traders:
+        if trader.get_simulate():
+            simulated_portfolios.append(trader.get_portfolio().get_portfolio())
+        else:
+            real_portfolios.append(trader.get_portfolio().get_portfolio())
+
+    return real_portfolios, simulated_portfolios
+
+
+def get_global_portfolio_currencies_amouts():
+    real_portfolios, simulated_portfolios = get_portfolios()
+    real_global_portfolio = {}
+    simulated_global_portfolio = {}
+
+    for portfolio in simulated_portfolios:
+        for currency, amounts in portfolio.items():
+            if currency not in simulated_global_portfolio:
+                simulated_global_portfolio[currency] = {
+                    Portfolio.TOTAL: 0,
+                    Portfolio.AVAILABLE: 0
+                }
+
+            simulated_global_portfolio[currency][Portfolio.TOTAL] += amounts[Portfolio.TOTAL]
+            simulated_global_portfolio[currency][Portfolio.AVAILABLE] = amounts[Portfolio.AVAILABLE]
+
+    for portfolio in real_portfolios:
+        for currency, amounts in portfolio.items():
+            if currency not in real_global_portfolio:
+                real_global_portfolio[currency] = {
+                    Portfolio.TOTAL: 0,
+                    Portfolio.AVAILABLE: 0
+                }
+
+            real_global_portfolio[currency][Portfolio.TOTAL] += amounts[Portfolio.TOTAL]
+            real_global_portfolio[currency][Portfolio.AVAILABLE] = amounts[Portfolio.AVAILABLE]
+
+    return real_global_portfolio, simulated_global_portfolio
