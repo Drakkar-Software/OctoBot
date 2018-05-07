@@ -34,3 +34,10 @@ class PrettyPrinter:
                   for currency, amounts in global_portfolio.items()]
 
         return separator.join(result)
+
+    @staticmethod
+    def portfolio_profitability_pretty_print(profitability, profitability_percent, reference):
+        difference = "({0}%)".format(round(profitability_percent, 2)) if profitability_percent is not None else ""
+        return "{0} {1} {2}".format(round(profitability, 2),
+                                                                      reference,
+                                                                      difference)

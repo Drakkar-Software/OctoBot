@@ -47,6 +47,26 @@ def set_risk(risk):
         trader.set_risk(risk)
 
 
+def get_global_profitability():
+    simulated_global_profitability = 0
+    real_global_profitability = 0
+
+    traders = [trader for trader in get_bot().get_exchange_traders().values()] + \
+              [trader for trader in get_bot().get_exchange_trader_simulators().values()]
+    for trader in traders:
+        trade_manager = trader.get_trades_manager()
+
+        # TODO : use other return values
+        current_value, _, _ = trade_manager.get_profitability()
+
+        if trader.get_simulate():
+            simulated_global_profitability += current_value
+        else:
+            real_global_profitability += current_value
+
+    return real_global_profitability, simulated_global_profitability
+
+
 def get_portfolios():
     simulated_portfolios = []
     real_portfolios = []

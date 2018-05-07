@@ -69,7 +69,11 @@ class TradesManager:
             self._update_currencies_prices()
             self._update_portfolio_current_value()
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
-            self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
+
+            if self.portfolio_origin_value > 0:
+                self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
+            else:
+                self.profitability_percent = 0
 
             # calculate difference with the last current portfolio
             self.profitability_diff = self.profitability_percent - self.profitability_diff

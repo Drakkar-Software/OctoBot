@@ -1,11 +1,12 @@
+import datetime
 import logging
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
 from config.cst import *
-from interfaces import get_reference_market
+from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_open_orders, \
-    get_global_portfolio_currencies_amouts, set_risk
+    get_global_portfolio_currencies_amouts, set_risk, get_global_profitability
 from tools.pretty_printer import PrettyPrinter
 
 
@@ -26,8 +27,10 @@ class TelegramApp:
 
     def add_handlers(self):
         self.dispatcher.add_handler(CommandHandler("start", self.command_start))
+        self.dispatcher.add_handler(CommandHandler("ping", self.command_ping))
         self.dispatcher.add_handler(CommandHandler("portfolio", self.command_portfolio))
         self.dispatcher.add_handler(CommandHandler("open_orders", self.command_open_orders))
+        self.dispatcher.add_handler(CommandHandler("profitability", self.command_profitability))
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
 
         # log all errors
@@ -45,6 +48,11 @@ class TelegramApp:
         update.message.reply_text("Hello, I'm CryptoBot, type /help to know my skills.")
 
     @staticmethod
+    def command_ping(_, update):
+        update.message.reply_text("I'm alive since {0}.".format(
+            datetime.datetime.fromtimestamp(get_bot().get_start_time()).strftime('%Y-%m-%d %H:%M:%S')))
+
+    @staticmethod
     def command_risk(_, update):
         try:
             risk = float(TelegramApp.get_command_param("/set_risk", update))
@@ -52,6 +60,19 @@ class TelegramApp:
             update.message.reply_text("New risk set successfully.")
         except Exception:
             update.message.reply_text("Failed to set new risk.")
+
+    @staticmethod
+    def command_profitability(_, update):
+        real_global_profitability, simulated_global_profitability = get_global_profitability()
+        update.message.reply_text("Real global profitability : {0}".format(
+            PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
+                                                               None,
+                                                               get_reference_market())))
+
+        update.message.reply_text("Simulated global profitability : {0}".format(
+            PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
+                                                               None,
+                                                               get_reference_market())))
 
     @staticmethod
     def command_portfolio(_, update):
