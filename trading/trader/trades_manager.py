@@ -98,6 +98,9 @@ class TradesManager:
             self.trades_value += self._evaluate_value(trade.get_currency(), trade.get_quantity())
         return self.trades_value
 
+    def get_trade_history(self):
+        return self.trade_history
+
     def _update_portfolio_current_value(self):
         with self.portfolio as pf:
             self.last_portfolio = pf.get_portfolio()

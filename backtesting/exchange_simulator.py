@@ -30,7 +30,7 @@ class ExchangeSimulator(Exchange):
 
         self.MIN_ENABLED_TIME_FRAME = self._find_config_min_time_frame()
         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = self.MIN_ENABLED_TIME_FRAME
-        self.CREATED_TRADES_BY_TIME_FRAME = 100
+        self.CREATED_TRADES_BY_TIME_FRAME = 50
         self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.CREATED_TICKER_BY_TIME_FRAME = 1
 
