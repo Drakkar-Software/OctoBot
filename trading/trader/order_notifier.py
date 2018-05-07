@@ -24,7 +24,6 @@ class OrderNotifier:
 
         self.notifier.notify_end(order_filled,
                                  orders_canceled,
-                                 self.order.get_order_symbol(),
                                  trade_profitability,
                                  portfolio_profitability,
                                  portfolio_diff,

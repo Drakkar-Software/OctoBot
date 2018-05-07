@@ -12,3 +12,11 @@ class PrettyPrinter:
             currency,
             round(order.get_origin_price(), 7),
             market)
+
+    @staticmethod
+    def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):
+        return "CryptoBot ALERT : #{0}\n Symbol : #{1}\n Result : {2}\n Evaluation : {3}".format(
+            crypto_currency,
+            symbol.replace("/", ""),
+            str(result).split(".")[1],
+            final_eval)
