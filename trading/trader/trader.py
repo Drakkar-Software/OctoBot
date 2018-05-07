@@ -2,6 +2,7 @@ import logging
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus
+from tools.pretty_printer import PrettyPrinter
 from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
@@ -108,10 +109,10 @@ class Trader:
             # debug purpose
             profitability, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability()
 
-            self.logger.info("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
-                                                                                       self.get_trades_manager().get_reference(),
-                                                                                       round(profitability_percent,
-                                                                                             2)))
+            self.logger.info("Current portfolio profitability : {0}".format(
+                PrettyPrinter.portfolio_profitability_pretty_print(profitability,
+                                                                   profitability_percent,
+                                                                   self.get_trades_manager().get_reference())))
 
             # add to trade history
             self.trades_manager.add_new_trade_in_history(Trade(self.exchange, order))
