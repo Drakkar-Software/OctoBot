@@ -8,8 +8,6 @@ from config.cst import CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_NOTIFICATION, CONF
 from services import TwitterService, TelegramService
 from services.gmail_service import GmailService
 from tools.pretty_printer import PrettyPrinter
-from trading import Exchange
-from trading.trader.order import OrderConstants
 from trading.trader.trades_manager import TradesManager
 
 
