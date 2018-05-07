@@ -27,14 +27,17 @@ class Notification:
             return False
 
     def notify_with_all(self, message):
-        # gmail
-        self.gmail_notification_factory(message, message)
+        try:
+            # gmail
+            self.gmail_notification_factory(message, message)
 
-        # twitter
-        self.twitter_notification_factory(message)
+            # twitter
+            self.twitter_notification_factory(message)
 
-        # telegram
-        self.telegram_notification_factory(message)
+            # telegram
+            self.telegram_notification_factory(message)
+        except Exception as e:
+            self.logger.error("Failed to notify all : {0}".format(e))
 
     def gmail_notification_available(self):
         if self.enable and NotificationTypes.MAIL.value in self.notification_type:
