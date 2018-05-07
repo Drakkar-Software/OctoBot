@@ -40,6 +40,13 @@ def get_open_orders():
     return real_open_orders, simulated_open_orders
 
 
+def set_risk(risk):
+    traders = [trader for trader in get_bot().get_exchange_traders().values()] + \
+              [trader for trader in get_bot().get_exchange_trader_simulators().values()]
+    for trader in traders:
+        trader.set_risk(risk)
+
+
 def get_portfolios():
     simulated_portfolios = []
     real_portfolios = []
