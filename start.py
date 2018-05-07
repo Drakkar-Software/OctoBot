@@ -65,22 +65,18 @@ if __name__ == '__main__':
         Commands.update(logger)
 
     elif args.data_collector:
-        zipline_enabled = False
-        if CONFIG_DATA_COLLECTOR_ZIPLINE in config[CONFIG_DATA_COLLECTOR]:
-            zipline_enabled = config[CONFIG_DATA_COLLECTOR][CONFIG_DATA_COLLECTOR_ZIPLINE]
-
-        if zipline_enabled:
-            Commands.zipline_data_collector(config)
-        else:
-            Commands.data_collector(config)
+        Commands.data_collector(config)
 
     # start crypto bot options
     else:
         if args.backtesting:
+            import backtesting
+            backtesting.__init__(bot)
+
             config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
             config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
 
-        if  args.risk is not None and 0 < args.risk <= 1:
+        if args.risk is not None and 0 < args.risk <= 1:
             config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
 
         if args.start:

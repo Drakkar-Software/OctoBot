@@ -99,7 +99,7 @@ def update_time_frame_dropdown_options(exchange_name, symbol):
 @app_instance.callback(Output('time-frame', 'value'),
                        [Input('exchange-name', 'value'),
                         Input('symbol', 'value')])
-def update_time_frame_dropdown_options(exchange_name, symbol):
+def update_time_frame_dropdown_value(exchange_name, symbol):
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     for time_frame in global_config[CONFIG_TIME_FRAME]:

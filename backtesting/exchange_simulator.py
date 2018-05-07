@@ -1,5 +1,3 @@
-import random
-
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_collector import DataCollectorParser
 from config.cst import *
@@ -17,7 +15,6 @@ class ExchangeSimulator(Exchange):
             raise Exception("Data collector config not found")
 
         self.data = DataCollectorParser.parse(self.config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILE])
-        self.backtesting = Backtesting(config)
 
         self.symbols = self._get_symbol_list()
 
@@ -33,10 +30,11 @@ class ExchangeSimulator(Exchange):
 
         self.MIN_ENABLED_TIME_FRAME = self._find_config_min_time_frame()
         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = self.MIN_ENABLED_TIME_FRAME
-        self.CREATED_TRADES_BY_TIME_FRAME = 10
+        self.CREATED_TRADES_BY_TIME_FRAME = 100
         self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.CREATED_TICKER_BY_TIME_FRAME = 1
 
+        self.backtesting = Backtesting(config, self)
         self._prepare()
 
     # toto: faire une vrai implémentation lorsque la liste des symboles sera géré définitivement
@@ -138,8 +136,8 @@ class ExchangeSimulator(Exchange):
         for tf in full:
             max_price = max(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
             min_price = min(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
-            for _ in range(0, self.CREATED_TICKER_BY_TIME_FRAME):
-                created_tickers.append(random.uniform(min_price, max_price))
+
+            created_tickers += self._create_prices_in_range(min_price, max_price, self.CREATED_TRADES_BY_TIME_FRAME)
         return created_tickers
 
     def _create_recent_trades(self, symbol):
@@ -148,13 +146,31 @@ class ExchangeSimulator(Exchange):
         for tf in full:
             max_price = max(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
             min_price = min(tf[PriceIndexes.IND_PRICE_OPEN.value], tf[PriceIndexes.IND_PRICE_CLOSE.value])
-            for _ in range(0, self.CREATED_TRADES_BY_TIME_FRAME):
+
+            trades = self._create_prices_in_range(min_price, max_price, self.CREATED_TRADES_BY_TIME_FRAME)
+
+            for trade in trades:
                 created_trades.append(
                     {
-                        "price": random.uniform(min_price, max_price)
+                        "price": trade
                     }
                 )
+
         return created_trades
+
+    @staticmethod
+    def _create_prices_in_range(min_price, max_price, count):
+        diff = max_price - min_price
+
+        if diff == 0:
+            return [max_price for _ in range(0, count)]
+
+        generated_prices = []
+        inc = diff / count
+        for i in range(0, count):
+            generated_prices.append(min_price + i*inc)
+
+        return generated_prices
 
     def _extract_indexes(self, array, index, factor=1, max_value=None):
         max_limit = len(array)
@@ -178,6 +194,9 @@ class ExchangeSimulator(Exchange):
                                      self.time_frame_get_times[
                                         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value],
                                      factor=self.CREATED_TRADES_BY_TIME_FRAME)
+
+    def get_data(self):
+        return self.data
 
     def get_all_currencies_price_ticker(self):
         return {

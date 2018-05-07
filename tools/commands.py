@@ -1,7 +1,6 @@
 import subprocess
 
 from backtesting.collector.data_collector import DataCollector
-from backtesting.collector.zipline_data_collector import ZiplineDataCollector
 
 
 class Commands:
@@ -19,17 +18,6 @@ class Commands:
             logger.info("Updated")
         except Exception as e:
             logger.info("Exception raised during updating process...")
-            if not catch:
-                raise e
-
-    @staticmethod
-    def zipline_data_collector(config, catch=False):
-        data_collector_inst = None
-        try:
-            data_collector_inst = ZiplineDataCollector(config)
-            data_collector_inst.join()
-        except Exception as e:
-            data_collector_inst.stop()
             if not catch:
                 raise e
 
