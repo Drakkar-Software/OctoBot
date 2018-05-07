@@ -142,15 +142,6 @@ class OrdersNotification(Notification):
         super().__init__(config)
         self.evaluator_notification = None
 
-    @staticmethod
-    def twitter_order_description(order_type, quantity, currency, price, market):
-        return "{0} : {1} {2} at {3} {4}".format(
-            OrderConstants.TraderOrderTypeClasses[order_type].__name__,
-            round(quantity, 7),
-            currency,
-            round(price, 7),
-            market)
-
     def notify_create(self, evaluator_notification, orders):
         if evaluator_notification is not None:
             self.evaluator_notification = evaluator_notification
@@ -177,26 +168,16 @@ class OrdersNotification(Notification):
         if self.twitter_notification_available() \
                 and self.evaluator_notification is not None \
                 and self.evaluator_notification.get_tweet_instance() is not None:
-            currency, market = Exchange.split_symbol(symbol)
             tweet_instance = self.evaluator_notification.get_tweet_instance()
             content = ""
 
             if order_filled is not None:
-                content += "\nOrder(s) filled : \n- {0}".format(
-                    OrdersNotification.twitter_order_description(order_filled.get_order_type(),
-                                                                 order_filled.get_origin_quantity(),
-                                                                 currency,
-                                                                 order_filled.get_origin_price(),
-                                                                 market))
+                content += "\nOrder(s) filled : \n- {0}".format(PrettyPrinter.open_order_pretty_printer(order_filled))
 
             if orders_canceled is not None and len(orders_canceled) > 0:
                 content += "\nOrder(s) canceled :"
                 for order in orders_canceled:
-                    content += "\n- {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
-                                                                                             order.get_origin_quantity(),
-                                                                                             currency,
-                                                                                             order.get_origin_price(),
-                                                                                             market))
+                    content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
 
             if trade_profitability is not None and profitability:
                 content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
