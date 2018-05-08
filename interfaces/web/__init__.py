@@ -57,7 +57,6 @@ def add_to_symbol_data_history(symbol, data, time_frame):
 
     symbol_data_history[symbol][time_frame] = pandas.concat([symbol_data_history[symbol][time_frame], data])
     symbol_data_history[symbol][time_frame] = symbol_data_history[symbol][time_frame].reset_index(drop=True)
-    # symbol_data_history[symbol][time_frame].append(data).drop_duplicates()
 
 
 def get_matrix_history():

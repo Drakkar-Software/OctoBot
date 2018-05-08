@@ -123,6 +123,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                     add_to_symbol_data_history(symbol, df, time_frame)
                     df = get_symbol_data_history(symbol, time_frame)
 
+                    df.loc[:, PriceStrings.STR_PRICE_TIME.value] /= 1000
+
                     X = df[PriceStrings.STR_PRICE_TIME.value]
                     Y = df[PriceStrings.STR_PRICE_CLOSE.value]
 
@@ -133,7 +135,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                                    low=df[PriceStrings.STR_PRICE_LOW.value],
                                    close=df[PriceStrings.STR_PRICE_CLOSE.value])
 
-                    real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times = get_trades_by_times_and_prices(1000)
+                    real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times = get_trades_by_times_and_prices()
 
                     real_trades_points = go.Scatter(
                         x=real_trades_prices,
