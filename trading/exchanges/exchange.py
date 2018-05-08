@@ -129,6 +129,7 @@ class Exchange:
             return None
 
     def get_all_currencies_price_ticker(self):
+        # todo add timer
         try:
             self.all_currencies_price_ticker = self.client.fetch_tickers()
             return self.all_currencies_price_ticker

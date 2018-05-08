@@ -21,7 +21,7 @@ class TradesManager:
         self.profitability_percent = 0
         self.profitability_diff = 0
 
-        self.currencies_prices = None
+        self.currencies_prices = {}
         self.origin_portfolio = None
         self.last_portfolio = None
 
@@ -52,8 +52,8 @@ class TradesManager:
     and set currencies_prices attribute
     """
 
-    def _update_currencies_prices(self):
-        self.currencies_prices = self.exchange.get_all_currencies_price_ticker()
+    def _update_currencies_prices(self, symbol):
+        self.currencies_prices[symbol] = self.exchange.get_price_ticker(symbol)
 
     """ Get profitability calls get_currencies_prices to update required data
     Then calls get_portfolio_current_value to set the current value of portfolio_current_value attribute
@@ -66,7 +66,6 @@ class TradesManager:
         self.profitability_percent = 0
 
         try:
-            self._update_currencies_prices()
             self._update_portfolio_current_value()
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
 
@@ -107,7 +106,6 @@ class TradesManager:
         self.portfolio_current_value = self._evaluate_portfolio_value(self.last_portfolio)
 
     def _get_portfolio_origin_value(self):
-        self._update_currencies_prices()
         with self.portfolio as pf:
             self.origin_portfolio = pf.get_portfolio()
         self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio)
@@ -116,13 +114,14 @@ class TradesManager:
     It will try to create the symbol that fit with the exchange logic
     Returns the value found of this currency quantity, if not found returns 0     
     """
-    # TODO : use ccxt method
     def _try_get_value_of_currency(self, currency, quantity):
         symbol = self.exchange.merge_currencies(currency, self.reference_market)
         symbol_inverted = self.exchange.merge_currencies(self.reference_market, currency)
-        if symbol in self.currencies_prices:
+        if self.exchange.symbol_exists(symbol):
+            self._update_currencies_prices(symbol)
             return self.currencies_prices[symbol][ExchangeConstantsTickersColumns.LAST.value] * quantity
-        elif symbol_inverted in self.currencies_prices:
+        elif self.exchange.symbol_exists(symbol_inverted):
+            self._update_currencies_prices(symbol_inverted)
             return quantity / self.currencies_prices[symbol_inverted][ExchangeConstantsTickersColumns.LAST.value]
         else:
             # TODO : manage if currency/market doesn't exist
