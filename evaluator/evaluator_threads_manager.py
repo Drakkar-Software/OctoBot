@@ -86,7 +86,7 @@ class EvaluatorThreadsManager:
 
         for social_eval in self.evaluator.get_social_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
-                                 social_eval.get_eval_note())
+                                 social_eval.get_eval_note(), None, social_eval.get_eval_timestamp())
 
         for real_time_eval in self.evaluator.get_real_time_eval_list():
             self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),

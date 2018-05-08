@@ -16,6 +16,7 @@ class AbstractEvaluator:
 
         self.eval_note = START_PENDING_EVAL_NOTE
         self.pertinence = START_EVAL_PERTINENCE
+        self.eval_timestamp = None
 
     @classmethod
     def get_name(cls):
@@ -53,6 +54,10 @@ class AbstractEvaluator:
     # If the eval method is running
     def get_is_updating(self):
         return self.is_updating
+
+    # The timestamp of the last evaluation, None if not implemented by subclass
+    def get_eval_timestamp(self):
+        return self.eval_timestamp
 
     # generic eval that will call the indicator eval()
     # and provide a safe execution by disabling multi-call
