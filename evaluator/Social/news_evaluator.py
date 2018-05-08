@@ -1,3 +1,5 @@
+import time
+
 from config.cst import *
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
@@ -45,6 +47,7 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def _check_eval_note(self):
         if self.eval_note != START_PENDING_EVAL_NOTE:
             if self.eval_note > 0.6 or self.eval_note < -0.6:
+                self.eval_timestamp = time.time()
                 self.notify_evaluator_thread_managers(self.__class__.__name__)
 
     def get_tweet_sentiment(self, tweet, tweet_text, is_a_quote=False):
