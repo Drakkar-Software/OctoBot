@@ -76,7 +76,6 @@ class Order:
 
     # check_last_prices is used to collect data to perform the order update_order_status process
     def check_last_prices(self, price, inferior):
-        # TODO : use timestamp
         prices = [p["price"] for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]]
 
         if inferior:
