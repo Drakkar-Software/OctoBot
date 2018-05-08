@@ -20,14 +20,15 @@ class EvaluatorOrderCreator:
         self.QUANTITY_MARKET_MIN_PERCENT = 0.5
         self.QUANTITY_MARKET_MAX_PERCENT = 1
         self.QUANTITY_BUY_MARKET_ATTENUATION = 0.2
-        self.QUANTITY_MARKET_ATTENUATION = (self.QUANTITY_MARKET_MAX_PERCENT - self.QUANTITY_MARKET_MIN_PERCENT) / self.MAX_SUM_RESULT
+        self.QUANTITY_MARKET_ATTENUATION = (
+                                                   self.QUANTITY_MARKET_MAX_PERCENT - self.QUANTITY_MARKET_MIN_PERCENT) / self.MAX_SUM_RESULT
 
         self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.995
         self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.98
         self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
         self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
         self.LIMIT_ORDER_ATTENUATION = (
-                                                   self.BUY_LIMIT_ORDER_MAX_PERCENT - self.BUY_LIMIT_ORDER_MIN_PERCENT) / self.MAX_SUM_RESULT
+                                               self.BUY_LIMIT_ORDER_MAX_PERCENT - self.BUY_LIMIT_ORDER_MIN_PERCENT) / self.MAX_SUM_RESULT
 
     @staticmethod
     def _check_factor(min_val, max_val, factor):
@@ -45,6 +46,7 @@ class EvaluatorOrderCreator:
     1 - abs(eval_note) + 1 - trader.get_risk() --> result between 0 and 2 --> self.MAX_SUM_RESULT
     self.QUANTITY_ATTENUATION --> try to contains the result between self.XXX_MIN_PERCENT and self.XXX_MAX_PERCENT
     """
+
     def _get_limit_price_from_risk(self, eval_note, trader):
         if eval_note > 0:
             factor = self.SELL_LIMIT_ORDER_MIN_PERCENT + \
@@ -66,6 +68,7 @@ class EvaluatorOrderCreator:
     abs(eval_note) + trader.get_risk() --> result between 0 and 2 --> self.MAX_SUM_RESULT
     self.QUANTITY_ATTENUATION --> try to contains the result between self.QUANTITY_MIN_PERCENT and self.QUANTITY_MAX_PERCENT
     """
+
     def _get_limit_quantity_from_risk(self, eval_note, trader, quantity):
         factor = self.QUANTITY_MIN_PERCENT + ((abs(eval_note) + trader.get_risk()) * self.QUANTITY_ATTENUATION)
         return EvaluatorOrderCreator._check_factor(self.QUANTITY_MIN_PERCENT,
@@ -79,9 +82,10 @@ class EvaluatorOrderCreator:
     abs(eval_note) + trader.get_risk() --> result between 0 and 2 --> self.MAX_SUM_RESULT
     self.QUANTITY_MARKET_ATTENUATION --> try to contains the result between self.QUANTITY_MARKET_MIN_PERCENT and self.QUANTITY_MARKET_MAX_PERCENT
     """
+
     def _get_market_quantity_from_risk(self, eval_note, trader, quantity, buy=False):
         factor = self.QUANTITY_MARKET_MIN_PERCENT + (
-                    (abs(eval_note) + trader.get_risk()) * self.QUANTITY_MARKET_ATTENUATION)
+                (abs(eval_note) + trader.get_risk()) * self.QUANTITY_MARKET_ATTENUATION)
 
         # if buy market --> limit market usage
         if buy:
@@ -96,6 +100,7 @@ class EvaluatorOrderCreator:
     trader.get_risk() --> low risk : stop level close to the current price
     self.STOP_LOSS_ORDER_ATTENUATION --> try to contains the result between self.STOP_LOSS_ORDER_MIN_PERCENT and self.STOP_LOSS_ORDER_MAX_PERCENT
     """
+
     def _get_stop_price_from_risk(self, trader):
         factor = self.STOP_LOSS_ORDER_MAX_PERCENT - (trader.get_risk() * self.STOP_LOSS_ORDER_ATTENUATION)
         return EvaluatorOrderCreator._check_factor(self.STOP_LOSS_ORDER_MIN_PERCENT,
@@ -121,6 +126,12 @@ class EvaluatorOrderCreator:
         # other cases like neutral state or unfulfilled previous conditions
         return False
 
+    @staticmethod
+    def _check_quantity(quantity):
+        if quantity > CURRENCY_MIN_PORTFOLIO_CREATE_ORDER:
+            return True
+        return False
+
     # creates a new order, always check EvaluatorOrderCreator.can_create_order() first.
     def create_new_order(self, eval_note, symbol, exchange, trader, state):
         try:
@@ -143,59 +154,72 @@ class EvaluatorOrderCreator:
 
             # TODO : temp
             if state == EvaluatorStates.VERY_SHORT:
-                market = trader.create_order(TraderOrderType.SELL_MARKET,
-                                             symbol,
-                                             reference,
-                                             self._get_market_quantity_from_risk(eval_note,
-                                                                                 trader,
-                                                                                 current_portfolio),
-                                             reference)
-                return market
+                quantity = self._get_market_quantity_from_risk(eval_note,
+                                                               trader,
+                                                               current_portfolio)
+                if self._check_quantity(quantity):
+                    market = trader.create_order(TraderOrderType.SELL_MARKET,
+                                                 symbol,
+                                                 reference,
+                                                 quantity,
+                                                 reference)
+                    return market
 
             elif state == EvaluatorStates.SHORT:
-                limit = trader.create_order(TraderOrderType.SELL_LIMIT,
+                quantity = self._get_limit_quantity_from_risk(eval_note,
+                                                              trader,
+                                                              current_portfolio)
+
+                if self._check_quantity(quantity):
+                    limit = trader.create_order(TraderOrderType.SELL_LIMIT,
+                                                symbol,
+                                                reference,
+                                                quantity,
+                                                reference * self._get_limit_price_from_risk(eval_note,
+                                                                                            trader))
+
+                    quantity = self._get_limit_quantity_from_risk(eval_note,
+                                                                  trader,
+                                                                  current_portfolio)
+
+                    if self._check_quantity(quantity):
+                        trader.create_order(TraderOrderType.STOP_LOSS,
                                             symbol,
                                             reference,
-                                            self._get_limit_quantity_from_risk(eval_note,
-                                                                               trader,
-                                                                               current_portfolio),
-                                            reference * self._get_limit_price_from_risk(eval_note,
-                                                                                        trader))
-                trader.create_order(TraderOrderType.STOP_LOSS,
-                                    symbol,
-                                    reference,
-                                    self._get_limit_quantity_from_risk(eval_note,
-                                                                       trader,
-                                                                       current_portfolio),
-                                    reference * self._get_stop_price_from_risk(trader),
-                                    linked_to=limit)
-                return limit
+                                            quantity,
+                                            reference * self._get_stop_price_from_risk(trader),
+                                            linked_to=limit)
+                    return limit
 
             elif state == EvaluatorStates.NEUTRAL:
                 pass
 
             # TODO : stop loss
             elif state == EvaluatorStates.LONG:
-                limit = trader.create_order(TraderOrderType.BUY_LIMIT,
-                                            symbol,
-                                            reference,
-                                            self._get_limit_quantity_from_risk(eval_note,
-                                                                               trader,
-                                                                               market_quantity),
-                                            reference * self._get_limit_price_from_risk(eval_note,
-                                                                                        trader))
-                return limit
+                quantity = self._get_limit_quantity_from_risk(eval_note,
+                                                              trader,
+                                                              market_quantity)
+                if self._check_quantity(quantity):
+                    limit = trader.create_order(TraderOrderType.BUY_LIMIT,
+                                                symbol,
+                                                reference,
+                                                quantity,
+                                                reference * self._get_limit_price_from_risk(eval_note,
+                                                                                            trader))
+                    return limit
 
             elif state == EvaluatorStates.VERY_LONG:
-                market = trader.create_order(TraderOrderType.BUY_MARKET,
-                                             symbol,
-                                             reference,
-                                             self._get_market_quantity_from_risk(eval_note,
-                                                                                 trader,
-                                                                                 market_quantity,
-                                                                                 True),
-                                             reference)
-                return market
+                quantity = self._get_market_quantity_from_risk(eval_note,
+                                                               trader,
+                                                               market_quantity,
+                                                               True)
+                if self._check_quantity(quantity):
+                    market = trader.create_order(TraderOrderType.BUY_MARKET,
+                                                 symbol,
+                                                 reference,
+                                                 quantity,
+                                                 reference)
+                    return market
 
         except Exception as e:
             logging.getLogger(self.__class__.__name__).error("Failed to create order : {0}".format(e))
