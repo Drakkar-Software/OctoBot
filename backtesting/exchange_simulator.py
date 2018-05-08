@@ -47,10 +47,11 @@ class ExchangeSimulator(Exchange):
         return [self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL]]
 
     def fix_timestamps(self):
-        for time_frame in self.data:
-            time_delta = get_bot().get_start_time()*1000 - self.data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
-            for data_list in self.data[time_frame]:
-                data_list[PriceIndexes.IND_PRICE_TIME.value] += time_delta
+        if get_bot() is not None:
+            for time_frame in self.data:
+                time_delta = get_bot().get_start_time()*1000 - self.data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
+                for data_list in self.data[time_frame]:
+                    data_list[PriceIndexes.IND_PRICE_TIME.value] += time_delta
 
     # returns price data for a given symbol
     def _get_symbol_data(self, symbol):
