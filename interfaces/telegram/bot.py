@@ -43,15 +43,16 @@ class TelegramApp:
 
     @staticmethod
     def command_help(_, update):
-        update.message.reply_text("My CryptoBot skills:")
-        update.message.reply_text("/start: Displays my startup message.")
-        update.message.reply_text("/ping: Shows for how long I'm working.")
-        update.message.reply_text("/portfolio: Displays my current portfolio.")
-        update.message.reply_text("/open_orders: Displays my current open orders.")
-        update.message.reply_text("/profitability: Displays the profitability I made since I started.")
-        update.message.reply_text("/market_status: Displays my understanding of the market and my risk parameter.")
-        update.message.reply_text("/set_risk: Changes my current risk setting into your command's parameter.")
-        update.message.reply_text("/help: Displays this help.")
+        message = "My CryptoBot skills:"+TelegramApp.EOL+TelegramApp.EOL
+        message += "/start: Displays my startup message."+TelegramApp.EOL
+        message += "/ping: Shows for how long I'm working."+TelegramApp.EOL
+        message += "/portfolio: Displays my current portfolio."+TelegramApp.EOL
+        message += "/open_orders: Displays my current open orders."+TelegramApp.EOL
+        message += "/profitability: Displays the profitability I made since I started."+TelegramApp.EOL
+        message += "/market_status: Displays my understanding of the market and my risk parameter."+TelegramApp.EOL
+        message += "/set_risk: Changes my current risk setting into your command's parameter."+TelegramApp.EOL
+        message += "/help: Displays this help."
+        update.message.reply_text(message)
 
     @staticmethod
     def get_command_param(command_name, update):
@@ -125,16 +126,17 @@ class TelegramApp:
 
     @staticmethod
     def command_market_status(_, update):
-        update.message.reply_text("My cryptocurrencies evaluations are:")
         try:
+            message = "My cryptocurrencies evaluations are:" + TelegramApp.EOL + TelegramApp.EOL
             for currency_pair, currency_info in get_currencies_with_status().items():
-                update.message.reply_text("- {0}: ".format(currency_pair))
+                message += "- {0}:{1}".format(currency_pair, TelegramApp.EOL)
                 for exchange_name, evaluation in currency_info.items():
-                    update.message.reply_text("=> {0}: {1}".format(exchange_name, evaluation.name))
+                    message += "=> {0}: {1}{2}".format(exchange_name, evaluation.name, TelegramApp.EOL)
+            message += "{0}My current risk is: {1}".format(TelegramApp.EOL, get_risk())
+            update.message.reply_text(message)
         except Exception:
             update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, " +
                                       "please retry in a few seconds:")
-        update.message.reply_text("My current risk is: {0}".format(get_risk()))
 
     @staticmethod
     def command_error(_, update):
