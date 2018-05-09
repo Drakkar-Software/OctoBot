@@ -115,6 +115,9 @@ CONFIG_INTERFACES = "interfaces"
 CONFIG_INTERFACES_WEB = "web"
 CONFIG_INTERFACES_TELEGRAM = "telegram"
 
+# Matrix
+MATRIX_EVALUATION = "evaluation"
+MATRIX_TIMESTAMP = "timestamp"
 
 class EvaluatorMatrixTypes(Enum):
     TA = "TA"
