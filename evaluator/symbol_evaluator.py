@@ -69,6 +69,9 @@ class SymbolEvaluator:
     def get_final(self, exchange):
         return self.final_evaluators[exchange.get_name()]
 
+    def has_exchange(self, exchange):
+        return exchange.get_name() in self.final_evaluators
+
     def get_matrix(self, exchange):
         return self.matrices[exchange.get_name()]
 

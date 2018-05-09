@@ -6,7 +6,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 from config.cst import *
 from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_open_orders, \
-    get_global_portfolio_currencies_amouts, set_risk, get_global_profitability
+    get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status
 from tools.pretty_printer import PrettyPrinter
 
 
@@ -32,12 +32,26 @@ class TelegramApp:
         self.dispatcher.add_handler(CommandHandler("open_orders", self.command_open_orders))
         self.dispatcher.add_handler(CommandHandler("profitability", self.command_profitability))
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
+        self.dispatcher.add_handler(CommandHandler("market_status", self.command_market_status))
+        self.dispatcher.add_handler(CommandHandler("help", self.command_help))
 
         # log all errors
         self.dispatcher.add_error_handler(self.command_error)
 
         # TEST : unhandled messages
         self.dispatcher.add_handler(MessageHandler(Filters.text, self.echo))
+
+    @staticmethod
+    def command_help(_, update):
+        update.message.reply_text("My CryptoBot skills:")
+        update.message.reply_text("/start: Displays my startup message.")
+        update.message.reply_text("/ping: Shows for how long I'm working.")
+        update.message.reply_text("/portfolio: Displays my current portfolio.")
+        update.message.reply_text("/open_orders: Displays my current open orders.")
+        update.message.reply_text("/profitability: Displays the profitability I made since I started.")
+        update.message.reply_text("/market_status: Displays my understanding of the market and my risk parameter.")
+        update.message.reply_text("/set_risk: Changes my current risk setting into your command's parameter.")
+        update.message.reply_text("/help: Displays this help.")
 
     @staticmethod
     def get_command_param(command_name, update):
@@ -59,7 +73,7 @@ class TelegramApp:
             set_risk(risk)
             update.message.reply_text("New risk set successfully.")
         except Exception:
-            update.message.reply_text("Failed to set new risk.")
+            update.message.reply_text("Failed to set new risk, please provide a number between 0 and 1.")
 
     @staticmethod
     def command_profitability(_, update):
@@ -78,7 +92,7 @@ class TelegramApp:
     def command_portfolio(_, update):
         portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
         reference_market = get_reference_market()
-        real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amouts()
+        real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amounts()
 
         update.message.reply_text("Portfolio real value : {0} {1}".format(portfolio_real_current_value,
                                                                           reference_market))
@@ -97,15 +111,30 @@ class TelegramApp:
         portfolio_real_current_value_string = TelegramApp.EOL
         for orders in portfolio_real_open_orders:
             for order in orders:
-                portfolio_real_current_value_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
+                portfolio_real_current_value_string += PrettyPrinter.open_order_pretty_printer(order) + \
+                                                       TelegramApp.EOL
 
         portfolio_simulated_current_value_string = TelegramApp.EOL
         for orders in portfolio_simulated_open_orders:
             for order in orders:
-                portfolio_simulated_current_value_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
+                portfolio_simulated_current_value_string += PrettyPrinter.open_order_pretty_printer(order) + \
+                                                            TelegramApp.EOL
 
         update.message.reply_text("Real open orders : {0}".format(portfolio_real_current_value_string))
         update.message.reply_text("Simulated open orders : {0}".format(portfolio_simulated_current_value_string))
+
+    @staticmethod
+    def command_market_status(_, update):
+        update.message.reply_text("My cryptocurrencies evaluations are:")
+        try:
+            for currency_pair, currency_info in get_currencies_with_status().items():
+                update.message.reply_text("- {0}: ".format(currency_pair))
+                for exchange_name, evaluation in currency_info.items():
+                    update.message.reply_text("=> {0}: {1}".format(exchange_name, evaluation.name))
+        except Exception:
+            update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, " +
+                                      "please retry in a few seconds:")
+        update.message.reply_text("My current risk is: {0}".format(get_risk()))
 
     @staticmethod
     def command_error(_, update):

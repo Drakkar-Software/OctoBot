@@ -35,8 +35,8 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def get_twitter_service(self):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
-    def _print_tweet(self, tweet_text, count=""):
-        self.logger.debug("Current note : {0} | {1} : {2} : Text : {3}".format(self.eval_note,
+    def _print_tweet(self, tweet_text, note, count=""):
+        self.logger.debug("Current note : {0} | {1} : {2} : Text : {3}".format(note,
                                                                                count,
                                                                                self.symbol,
                                                                                DecoderEncoder.encode_into_bytes(
@@ -44,15 +44,16 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
 
     def receive_notification_data(self, data):
         self.count += 1
-        self.eval_note = self.get_tweet_sentiment(data[CONFIG_TWEET], data[CONFIG_TWEET_DESCRIPTION])
-        if self.eval_note != START_PENDING_EVAL_NOTE:
-            self._print_tweet(data[CONFIG_TWEET_DESCRIPTION], str(self.count))
-        self._check_eval_note()
+        note = self.get_tweet_sentiment(data[CONFIG_TWEET], data[CONFIG_TWEET_DESCRIPTION])
+        if note != START_PENDING_EVAL_NOTE:
+            self._print_tweet(data[CONFIG_TWEET_DESCRIPTION], note, str(self.count))
+        self._check_eval_note(note)
 
-    def _check_eval_note(self):
-        if self.eval_note != START_PENDING_EVAL_NOTE:
-            if abs(self.eval_note) > self._EVAL_NOTIFICATION_THRESHOLD:
-                self.eval_timestamp = time.time()
+    # only set eval note when something is happening
+    def _check_eval_note(self, note):
+        if note != START_PENDING_EVAL_NOTE:
+            if abs(note) > self._EVAL_NOTIFICATION_THRESHOLD:
+                self.eval_note = note
                 self.save_evaluation_expiration_time(self._compute_notification_time_to_live(self.eval_note))
                 self.notify_evaluator_thread_managers(self.__class__.__name__)
 
