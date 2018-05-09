@@ -116,7 +116,7 @@ def update_time_frame_dropdown_value(exchange_name, symbol):
                         Input('exchange-name', 'value'),
                         Input('symbol', 'value'),
                         Input('time-frame', 'value')])
-def update_evaluator_dropdown(cryptocurrency_name, exchange_name, symbol, time_frame):
+def update_evaluator_dropdown_options(cryptocurrency_name, exchange_name, symbol, time_frame):
     symbol_evaluator = get_bot().get_symbol_evaluator_list()[get_value_from_dict_or_string(symbol)]
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
@@ -131,3 +131,19 @@ def update_evaluator_dropdown(cryptocurrency_name, exchange_name, symbol, time_f
             })
 
     return evaluator_list
+
+
+@app_instance.callback(Output('evaluator-name', 'value'),
+                       [Input('cryptocurrency-name', 'value'),
+                        Input('exchange-name', 'value'),
+                        Input('symbol', 'value'),
+                        Input('time-frame', 'value')])
+def update_evaluator_dropdown_values(cryptocurrency_name, exchange_name, symbol, time_frame):
+    symbol_evaluator = get_bot().get_symbol_evaluator_list()[get_value_from_dict_or_string(symbol)]
+    exchange = get_bot().get_exchanges_list()[exchange_name]
+    first_strategy = next(iter(symbol_evaluator.get_strategies_eval_list(exchange))).get_name()
+
+    return {
+        "label": first_strategy,
+        "value": first_strategy
+    }

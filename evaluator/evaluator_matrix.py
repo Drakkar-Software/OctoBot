@@ -1,4 +1,4 @@
-from config.cst import EvaluatorMatrixTypes, MATRIX_EVALUATION, MATRIX_TIMESTAMP
+from config.cst import EvaluatorMatrixTypes
 from tools.evaluators_util import check_valid_eval_note
 
 
@@ -20,13 +20,7 @@ class EvaluatorMatrix:
         if time_frame:
             self.matrix[matrix_type][evaluator_name][time_frame] = value
         else:
-            if matrix_type == EvaluatorMatrixTypes.SOCIAL:
-                self.matrix[matrix_type][evaluator_name] = {
-                    MATRIX_EVALUATION: value,
-                    MATRIX_TIMESTAMP: timestamp
-                }
-            else:
-                self.matrix[matrix_type][evaluator_name] = value
+            self.matrix[matrix_type][evaluator_name] = value
 
     def get_type_evals(self, matrix_type):
         return self.matrix[matrix_type]
@@ -34,14 +28,10 @@ class EvaluatorMatrix:
     @staticmethod
     def get_eval_note(matrix, matrix_type, evaluator_name, time_frame=None):
         if matrix_type in matrix and evaluator_name in matrix[matrix_type]:
-            if isinstance(matrix[matrix_type][evaluator_name], dict):
-                if time_frame is not None:
-                    if time_frame in matrix[matrix_type][evaluator_name]:
-                        eval_note = matrix[matrix_type][evaluator_name][time_frame]
-                        if check_valid_eval_note(eval_note):
-                            return eval_note
-                elif matrix_type == EvaluatorMatrixTypes.SOCIAL:
-                    eval_note = matrix[matrix_type][evaluator_name][MATRIX_EVALUATION]
+            if time_frame is not None:
+                if isinstance(matrix[matrix_type][evaluator_name], dict) \
+                        and time_frame in matrix[matrix_type][evaluator_name]:
+                    eval_note = matrix[matrix_type][evaluator_name][time_frame]
                     if check_valid_eval_note(eval_note):
                         return eval_note
             else:

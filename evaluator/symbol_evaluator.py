@@ -78,9 +78,6 @@ class SymbolEvaluator:
     def get_config(self):
         return self.config
 
-    def get_first_strategies_eval(self):
-        return next(iter(self.strategies_eval_lists.values()))
-
     def get_strategies_eval_list(self, exchange):
         return self.strategies_eval_lists[exchange.get_name()]
 

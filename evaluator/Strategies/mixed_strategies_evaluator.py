@@ -69,7 +69,7 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
                         self.inc_ta_counter(time_frame_relevance)
 
         for social in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
-            eval_note = self.matrix[EvaluatorMatrixTypes.SOCIAL][social][MATRIX_EVALUATION]
+            eval_note = self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
             if check_valid_eval_note(eval_note):
                 self.social_evaluation += eval_note
                 self.inc_social_counter()

@@ -1,5 +1,3 @@
-import time
-
 from backtesting import get_bot
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_collector import DataCollectorParser
@@ -208,6 +206,17 @@ class ExchangeSimulator(Exchange):
 
     def get_data(self):
         return self.data
+
+    def get_price_ticker(self, symbol):
+        return {
+            "symbol": symbol,
+            ExchangeConstantsTickersColumns.LAST.value:
+                self._extract_indexes(self.tickers[symbol],
+                                      self.time_frame_get_times[
+                                          self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value],
+                                      factor=self.CREATED_TICKER_BY_TIME_FRAME,
+                                      max_value=1)[0]
+        }
 
     def get_all_currencies_price_ticker(self):
         return {
