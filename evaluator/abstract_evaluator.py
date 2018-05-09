@@ -133,9 +133,9 @@ class AbstractEvaluator:
                 return default
 
     # use only if the current evaluation is to stay for a pre-defined amount of seconds
-    def save_evaluation_expiration_time(self, eval_note_time_to_live, eval_note_changed_time=time.time()):
+    def save_evaluation_expiration_time(self, eval_note_time_to_live, eval_note_changed_time=None):
         self.eval_note_time_to_live = eval_note_time_to_live
-        self.eval_note_changed_time = eval_note_changed_time
+        self.eval_note_changed_time = eval_note_changed_time if eval_note_changed_time else time.time()
 
     def eval_note_changed(self):
         if self.eval_note_time_to_live is not None:

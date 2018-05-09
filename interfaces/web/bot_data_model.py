@@ -135,7 +135,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                                    low=df[PriceStrings.STR_PRICE_LOW.value],
                                    close=df[PriceStrings.STR_PRICE_CLOSE.value])
 
-                    real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times = get_trades_by_times_and_prices()
+                    real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times = \
+                        get_trades_by_times_and_prices()
 
                     real_trades_points = go.Scatter(
                         x=real_trades_prices,

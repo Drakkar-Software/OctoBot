@@ -108,3 +108,6 @@ class EvaluatorThreadsManager:
 
     def get_symbol_time_frame_updater_thread(self):
         return self.symbol_time_frame_updater_thread
+
+    def get_exchange(self):
+        return self.exchange
