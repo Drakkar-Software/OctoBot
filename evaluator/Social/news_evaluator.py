@@ -10,6 +10,11 @@ from tools.decoding_encoding import DecoderEncoder
 
 
 class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
+    # max time to live for a pulse is 10min
+    _EVAL_MAX_TIME_TO_LIVE = 10 * MINUTE_TO_SECONDS
+    # absolute value above which a notification is triggered
+    _EVAL_NOTIFICATION_THRESHOLD = 0.6
+
     def __init__(self):
         NewsSocialEvaluator.__init__(self)
         DispatcherAbstractClient.__init__(self)
@@ -46,9 +51,14 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
 
     def _check_eval_note(self):
         if self.eval_note != START_PENDING_EVAL_NOTE:
-            if self.eval_note > 0.6 or self.eval_note < -0.6:
+            if abs(self.eval_note) > self._EVAL_NOTIFICATION_THRESHOLD:
                 self.eval_timestamp = time.time()
+                self.save_evaluation_expiration_time(self._compute_notification_time_to_live(self.eval_note))
                 self.notify_evaluator_thread_managers(self.__class__.__name__)
+
+    @staticmethod
+    def _compute_notification_time_to_live(evaluation):
+        return TwitterNewsEvaluator._EVAL_MAX_TIME_TO_LIVE * abs(evaluation)
 
     def get_tweet_sentiment(self, tweet, tweet_text, is_a_quote=False):
         try:
