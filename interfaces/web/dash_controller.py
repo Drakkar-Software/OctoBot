@@ -120,8 +120,40 @@ def update_evaluator_dropdown_options(cryptocurrency_name, exchange_name, symbol
     symbol_evaluator = get_bot().get_symbol_evaluator_list()[get_value_from_dict_or_string(symbol)]
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
+    time_frame = get_value_from_dict_or_string(time_frame, True)
     evaluator_list = []
     evaluator_name_list = []
+
+    # TA
+    for ta in symbol_evaluator.get_evaluator_thread_managers(exchange)[time_frame]\
+            .get_evaluator().get_ta_eval_list():
+        if ta.get_name() not in evaluator_name_list:
+            evaluator_name_list.append(ta.get_name())
+            evaluator_list.append({
+                "label": ta.get_name(),
+                "value": ta.get_name()
+            })
+
+    # Real time
+    for real_time in symbol_evaluator.get_evaluator_thread_managers(exchange)[time_frame]\
+            .get_evaluator().get_real_time_eval_list():
+        if real_time.get_name() not in evaluator_name_list:
+            evaluator_name_list.append(real_time.get_name())
+            evaluator_list.append({
+                "label": real_time.get_name(),
+                "value": real_time.get_name()
+            })
+
+    # Socials
+    for social in symbol_evaluator.get_crypto_currency_evaluator().get_social_eval_list():
+        if social.get_name() not in evaluator_name_list:
+            evaluator_name_list.append(social.get_name())
+            evaluator_list.append({
+                "label": social.get_name(),
+                "value": social.get_name()
+            })
+
+    # strategies
     for strategies in symbol_evaluator.get_strategies_eval_list(exchange):
         if strategies.get_name() not in evaluator_name_list:
             evaluator_name_list.append(strategies.get_name())
