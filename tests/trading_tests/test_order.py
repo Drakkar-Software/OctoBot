@@ -3,10 +3,11 @@ import random
 import ccxt
 
 from backtesting.exchange_simulator import ExchangeSimulator
-from config.cst import TradeOrderSide, SIMULATOR_LAST_PRICES_TO_CHECK
+from config.cst import TradeOrderSide, SIMULATOR_LAST_PRICES_TO_CHECK, TraderOrderType, OrderStatus
 from tests.test_utils.config import load_test_config
-from trading.trader.order import Order
+from trading.trader.order import Order, OrderConstants
 from trading.trader.trader import Trader
+from trading.trader.trader_simulator import TraderSimulator
 
 
 class TestOrder:
@@ -96,7 +97,7 @@ class TestOrder:
         # append validating trade
         recent_trades.append({"price": max_price})
         order_inst.last_prices = recent_trades
-        assert order_inst.check_last_prices(random.uniform(min_price, max_price-1), inferior=False)
+        assert order_inst.check_last_prices(random.uniform(min_price, max_price - 1), inferior=False)
 
         # test price not in last trades
         # test inferior TRUE
@@ -118,3 +119,51 @@ class TestOrder:
         assert not order_inst.check_last_prices(max_price, inferior=False)
 
         self.stop(trader_inst)
+
+    def test_new(self):
+        config, order_inst, trader_inst, exchange_inst = self.init_default()
+
+        # with real trader
+        order_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+                       "BTC/USDT",
+                       10000,
+                       1,
+                       price=None,
+                       stop_price=None,
+                       order_notifier=None)
+
+        assert order_inst.get_order_type() == OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET]
+        assert order_inst.get_order_symbol() == "BTC/USDT"
+        assert order_inst.get_create_last_price() == 10000
+        assert order_inst.get_origin_quantity() == 1
+        assert order_inst.get_creation_time() != 0
+        assert order_inst.get_currency_and_market() == ('BTC', 'USDT')
+        assert order_inst.get_side() is None
+        assert order_inst.get_status() is None
+
+        order_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT],
+                       "ETH/BTC",
+                       0.1,
+                       5.2,
+                       price=0.12,
+                       stop_price=0.9,
+                       order_notifier=None)
+        assert order_inst.origin_stop_price == 0.9
+        assert order_inst.last_prices == 0.12
+        assert order_inst.origin_price == 0.12
+
+        # with simulated trader
+        trader_sim_inst = TraderSimulator(config, exchange_inst)
+        order_sim_inst = Order(trader_sim_inst)
+
+        order_sim_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+                           "LTC/USDT",
+                           100,
+                           3.22,
+                           price=None,
+                           stop_price=None,
+                           order_notifier=None)
+        assert order_sim_inst.get_status() == OrderStatus.PENDING
+
+        self.stop(trader_inst)
+        self.stop(trader_sim_inst)
