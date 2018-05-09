@@ -13,7 +13,7 @@ class EvaluatorMatrix:
         }
 
     # ---- getters and setters----
-    def set_eval(self, matrix_type, evaluator_name, value, time_frame=None, timestamp=None):
+    def set_eval(self, matrix_type, evaluator_name, value, time_frame=None):
         if evaluator_name not in self.matrix[matrix_type]:
             self.matrix[matrix_type][evaluator_name] = {}
 
