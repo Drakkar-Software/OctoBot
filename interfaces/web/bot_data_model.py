@@ -123,7 +123,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                     add_to_symbol_data_history(symbol, df, time_frame)
                     df = get_symbol_data_history(symbol, time_frame)
 
-                    df.loc[:, PriceStrings.STR_PRICE_TIME.value] /= 1000
+                    # df.loc[:, PriceStrings.STR_PRICE_TIME.value] /= 1000
 
                     X = df[PriceStrings.STR_PRICE_TIME.value]
                     Y = df[PriceStrings.STR_PRICE_CLOSE.value]
@@ -181,7 +181,7 @@ def get_evaluator_graph_in_matrix_history(symbol,
         }
 
         for matrix in get_matrix_history():
-            eval_note = EvaluatorMatrix.get_eval_note(matrix["matrix"], evaluator_type, evaluator_name, time_frame)
+            eval_note = EvaluatorMatrix.get_eval_note(matrix, evaluator_type, evaluator_name, time_frame)
 
             if eval_note is not None:
                 formatted_matrix_history["evaluator_data"].append(eval_note)

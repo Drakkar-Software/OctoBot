@@ -81,7 +81,8 @@ def load_callbacks():
         update_time_frame_dropdown_options, \
         update_symbol_dropdown_options, \
         update_symbol_dropdown_value, \
-        update_evaluator_dropdown, \
+        update_evaluator_dropdown_options, \
+        update_evaluator_dropdown_values, \
         update_currencies_amounts, \
         update_portfolio_value
 
