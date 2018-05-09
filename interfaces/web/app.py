@@ -71,7 +71,8 @@ class WebApp(threading.Thread):
                 html.Label('Evaluator'),
                 dcc.Dropdown(id='evaluator-name',
                              options=[],
-                             value="TempFullMixedStrategiesEvaluator",
+                             value=next(iter(get_bot().get_symbol_evaluator_list().values()))
+                                .get_first_strategies_eval()[0].get_name(),
                              multi=False,
                              ),
             ],
