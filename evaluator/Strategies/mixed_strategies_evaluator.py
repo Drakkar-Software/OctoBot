@@ -129,9 +129,9 @@ class InstantSocialReactionMixedStrategiesEvaluator(MixedStrategiesEvaluator):
 
         if RedditForumEvaluator.get_name() in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
             if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][
-                                         RedditForumEvaluator.get_name()][MATRIX_EVALUATION]):
+                                         RedditForumEvaluator.get_name()]):
                 self.social_evaluation += \
-                    self.matrix[EvaluatorMatrixTypes.SOCIAL][RedditForumEvaluator.get_name()][MATRIX_EVALUATION]
+                    self.matrix[EvaluatorMatrixTypes.SOCIAL][RedditForumEvaluator.get_name()]
                 self.inc_social_counter()
 
         self.finalize()
