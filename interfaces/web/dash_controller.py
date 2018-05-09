@@ -29,7 +29,7 @@ def update_strategy_values(exchange_name, cryptocurrency_name, symbol, time_fram
     return get_evaluator_graph_in_matrix_history(get_value_from_dict_or_string(symbol),
                                                  exchange_name,
                                                  EvaluatorMatrixTypes.STRATEGIES,
-                                                 evaluator_name,
+                                                 get_value_from_dict_or_string(evaluator_name),
                                                  get_value_from_dict_or_string(time_frame, True),
                                                  cryptocurrency_name)
 

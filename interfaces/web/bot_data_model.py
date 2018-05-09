@@ -3,7 +3,7 @@ import time
 import plotly
 import plotly.graph_objs as go
 
-from config.cst import PriceStrings, TimeFrames
+from config.cst import PriceStrings, TimeFrames, EvaluatorMatrixTypes
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces import get_reference_market
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
@@ -181,7 +181,10 @@ def get_evaluator_graph_in_matrix_history(symbol,
         }
 
         for matrix in get_matrix_history():
-            eval_note = EvaluatorMatrix.get_eval_note(matrix, evaluator_type, evaluator_name, time_frame)
+            if evaluator_type == EvaluatorMatrixTypes.TA:
+                eval_note = EvaluatorMatrix.get_eval_note(matrix["matrix"], evaluator_type, evaluator_name, time_frame)
+            else:
+                eval_note = EvaluatorMatrix.get_eval_note(matrix["matrix"], evaluator_type, evaluator_name)
 
             if eval_note is not None:
                 formatted_matrix_history["evaluator_data"].append(eval_note)
@@ -199,7 +202,7 @@ def get_evaluator_graph_in_matrix_history(symbol,
                     title="{} strategy".format(cryptocurrency_name),
                     xaxis=dict(range=[get_bot().get_start_time(), time.time()],
                                title=TIME_AXIS_TITLE),
-                    yaxis=dict(range=[-1, 1],
+                    yaxis=dict(range=[-1.1, 1.1],
                                title="Buy or sell")
                 )}
     return None
