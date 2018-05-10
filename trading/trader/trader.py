@@ -31,6 +31,10 @@ class Trader:
         if not self.simulate:
             self.update_open_orders()
             # TODO update closed
+            # self.update_close_orders()
+
+        for order in self.get_open_orders():
+            self.cancel_order(order)
 
         if self.enabled():
             self.order_manager.start()
@@ -65,15 +69,22 @@ class Trader:
                      price=None,
                      stop_price=None,
                      linked_to=None,
+                     status=None,
                      order_id=None,
                      quantity_filled=None,
                      new=True,
                      timestamp=None):
 
-        self.logger.info("Order creation : {0} | {1} | Price : {2} | Quantity : {3}".format(symbol,
-                                                                                            order_type,
-                                                                                            price,
-                                                                                            quantity))
+        if new:
+            self.logger.info("Order creation : {0} | {1} | Price : {2} | Quantity : {3}".format(symbol,
+                                                                                                order_type,
+                                                                                                price,
+                                                                                                quantity))
+        else:
+            self.logger.info("Order loaded : {0} | {1} | Price : {2} | Quantity : {3}".format(symbol,
+                                                                                              order_type,
+                                                                                              price,
+                                                                                              quantity))
 
         # create new order instance
         order_class = OrderConstants.TraderOrderTypeClasses[order_type]
@@ -93,6 +104,7 @@ class Trader:
                   stop_price=stop_price,
                   order_notifier=order_notifier,
                   order_id=order_id,
+                  status=status,
                   quantity_filled=quantity_filled,
                   timestamp=timestamp,
                   create=new)
@@ -186,10 +198,10 @@ class Trader:
     def get_open_orders(self):
         return self.order_manager.get_open_orders()
 
-    def get_close_orders(self):
+    def update_close_orders(self):
         for symbol in self.exchange.get_traded_pairs():
             for close_order in self.exchange.get_closed_orders(symbol):
-                pass
+                self.parse_exchange_order_to_trade_instance(close_order)
 
     def update_open_orders(self):
         for symbol in self.exchange.get_traded_pairs():
@@ -198,17 +210,27 @@ class Trader:
                 self.parse_exchange_order_to_order_instance(open_order)
 
     def parse_exchange_order_to_order_instance(self, order):
-        self.create_order(order_type=self.parse_order_type(order),
-                          symbol=order["symbol"],
-                          current_price=0,
-                          quantity=order["amount"],
-                          stop_price=None,
-                          linked_to=None,
-                          quantity_filled=order["filled"],
-                          order_id=order["id"],
-                          price=order["price"],
-                          timestamp=order["timestamp"],
-                          new=False)
+        return self.create_order(order_type=self.parse_order_type(order),
+                                 symbol=order["symbol"],
+                                 current_price=0,
+                                 quantity=order["amount"],
+                                 stop_price=None,
+                                 linked_to=None,
+                                 quantity_filled=order["filled"],
+                                 order_id=order["id"],
+                                 status=self.parse_status(order),
+                                 price=order["price"],
+                                 timestamp=order["timestamp"],
+                                 new=False)
+
+    def parse_exchange_order_to_trade_instance(self, order):
+        order_inst = self.parse_exchange_order_to_order_instance(order)
+        trade = Trade(self.exchange, order_inst)
+        self.trades_manager.add_new_trade_in_history(trade)
+
+    @staticmethod
+    def parse_status(order):
+        return OrderStatus(order["status"])
 
     @staticmethod
     def parse_order_type(order):

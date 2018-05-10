@@ -230,7 +230,7 @@ class OrderStatus(Enum):
     OPEN = "open"
     PARTIALLY_FILLED = "partially_filled"
     CANCELED = "canceled"
-    CLOSE = "close"
+    CLOSED = "closed"
 
 
 class TraderOrderType(Enum):
