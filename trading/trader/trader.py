@@ -22,27 +22,33 @@ class Trader:
         if not hasattr(self, 'simulate'):
             self.simulate = False
 
+        self.enable = self.enabled(self.config)
+
         self.portfolio = Portfolio(self.config, self)
 
         self.trades_manager = TradesManager(config, self)
 
         self.order_manager = OrdersManager(config, self)
 
-        if not self.simulate:
-            self.update_open_orders()
-            # self.update_close_orders()
+        if self.enable:
+            if not self.simulate:
+                self.update_open_orders()
+                # self.update_close_orders()
 
-        if self.enabled():
             self.order_manager.start()
             self.logger.debug("Enabled on " + self.exchange.get_name())
         else:
             self.logger.debug("Disabled on " + self.exchange.get_name())
 
-    def enabled(self):
-        if self.config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]:
+    @staticmethod
+    def enabled(config):
+        if config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]:
             return True
         else:
             return False
+
+    def is_enabled(self):
+        return self.enable
 
     def get_risk(self):
         return self.risk
@@ -190,7 +196,8 @@ class Trader:
             profitability_activated = False
 
         # update current order list with exchange
-        self.update_open_orders()
+        if not self.simulate:
+            self.update_open_orders()
 
         # notification
         order.get_order_notifier().end(order_closed,

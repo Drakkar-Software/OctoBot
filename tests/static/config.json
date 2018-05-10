@@ -44,7 +44,7 @@
     "enabled": false,
     "risk": 1
   },
-  "simulator":{
+  "trader_simulator":{
     "enabled": true,
     "risk": 1,
     "starting_portfolio": {

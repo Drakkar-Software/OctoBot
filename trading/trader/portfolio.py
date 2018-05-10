@@ -20,6 +20,7 @@ class Portfolio:
         self.config = config
         self.trader = trader
         self.is_simulated = trader.simulate
+        self.is_enabled = trader.enable
         self.portfolio = {}
         self._load_portfolio()
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -35,14 +36,15 @@ class Portfolio:
 
     # Load exchange portfolio / simulated portfolio from config
     def _load_portfolio(self):
-        if self.is_simulated:
-            for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
-                self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
-        else:
-            self.update_portfolio_balance()
+        if self.is_enabled:
+            if self.is_simulated:
+                for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
+                    self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
+            else:
+                self.update_portfolio_balance()
 
     def update_portfolio_balance(self):
-        if not self.is_simulated:
+        if not self.is_simulated and self.is_enabled:
             balance = self.trader.get_exchange().get_balance()
             for currency in balance:
                 self.portfolio[currency] = {Portfolio.AVAILABLE: balance[currency][CONFIG_PORTFOLIO_FREE],
