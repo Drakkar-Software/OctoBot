@@ -50,9 +50,14 @@ class TelegramService(AbstractService):
 
     def stop(self):
         if self.telegram_updater:
-            # self.telegram_updater.__stop_event.set()
+            # __exception_event.is_set()
+            # self.telegram_updater.dispatcher.__stop_event.set()
+            # self.telegram_updater.__exception_event.set()
+            # self.telegram_updater.dispatcher.__exception_event.set()
+            self.telegram_updater.dispatcher.running = False
+            self.telegram_updater.running = False
             # self.telegram_updater.dispatcher.running = False
-            self.telegram_updater.stop()
+            # self.telegram_updater.stop()
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \

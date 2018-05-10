@@ -7,6 +7,7 @@ from config.cst import *
 from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_open_orders, \
     get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status
+from tools.commands import Commands
 from tools.pretty_printer import PrettyPrinter
 
 
@@ -68,7 +69,7 @@ class TelegramApp:
     def command_stop(_, update):
         # TODO add confirmation
         update.message.reply_text("I'm leaving this world...")
-        get_bot().stop_threads()
+        Commands.stop_bot(get_bot())
 
     @staticmethod
     def command_ping(_, update):
