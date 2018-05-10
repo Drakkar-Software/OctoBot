@@ -10,6 +10,7 @@ Changelog for 0.0.11
     #135 [Simulation] Fix order and trades manager 
     #136 [Tests] Improve trading tests coverage 
     #139 prepare evaluators tests
+    #140 [Trading] Implement real portfolio management
 
 # New features :
     - Web interface improvements
@@ -17,6 +18,7 @@ Changelog for 0.0.11
     - Telegram notifications
     - Pretty Printer tool
     - Eval note expiration management
+    - Beginning of real trading implementation
     - Multiple new tests to improve code coverage
     
 # Bug fix :

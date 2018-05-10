@@ -148,7 +148,6 @@ class Exchange:
             return None
 
     def get_all_currencies_price_ticker(self):
-        # todo add timer
         try:
             self.all_currencies_price_ticker = self.client.fetch_tickers()
             return self.all_currencies_price_ticker
@@ -182,19 +181,19 @@ class Exchange:
         if self.client.has['fetchOrder']:
             return asyncio.get_event_loop().run_until_complete(self.client.fetch_order(order_id))
         else:
-            return None
+            raise Exception("This exchange doesn't support fetchOrder")
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchOrders']:
             return self.client.fetchOrders(symbol=symbol, since=since, limit=limit, params={})
         else:
-            return None
+            raise Exception("This exchange doesn't support fetchOrders")
 
     def get_open_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchClosedOrders']:
             return self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit, params={})
         else:
-            return None
+            raise Exception("This exchange doesn't support fetchClosedOrders")
 
     def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         return self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit, params={})
