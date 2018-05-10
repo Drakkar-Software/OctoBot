@@ -150,6 +150,9 @@ class Trader:
         else:
             profitability_activated = False
 
+        # update current order list with exchange
+        self.update_open_orders()
+
         # notification
         order.get_order_notifier().end(order_closed,
                                        orders_canceled,
@@ -162,11 +165,14 @@ class Trader:
         return self.order_manager.get_open_orders()
 
     def close_open_orders(self):
+        # get_closed_orders
         pass
 
     def update_open_orders(self):
         # see exchange
         # -> update order manager
+        get_all_orders
+        get_open_orders
         pass
 
     def get_order_manager(self):
