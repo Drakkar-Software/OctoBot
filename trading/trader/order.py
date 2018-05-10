@@ -16,6 +16,7 @@ class Order:
         super().__init__()
         self.trader = trader
         self.exchange = self.trader.get_exchange()
+        self.is_simulated = self.trader.simulate
         self.side = None
         self.symbol = None
         self.origin_price = 0
@@ -92,7 +93,11 @@ class Order:
     def cancel_order(self):
         self.status = OrderStatus.CANCELED
         self.canceled_time = time.time()
-        # TODO exchange
+
+        # if real order
+        if not self.is_simulated:
+            self.exchange.cancel_order(self.order_id)
+
         self.trader.notify_order_cancel(self)
 
     def close_order(self):

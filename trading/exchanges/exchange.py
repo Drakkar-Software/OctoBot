@@ -190,6 +190,12 @@ class Exchange:
             raise Exception("This exchange doesn't support fetchOrders")
 
     def get_open_orders(self, symbol=None, since=None, limit=None):
+        if self.client.has['fetchOpenOrders']:
+            return self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit, params={})
+        else:
+            raise Exception("This exchange doesn't support fetchOpenOrders")
+
+    def get_closed_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchClosedOrders']:
             return self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit, params={})
         else:
@@ -203,8 +209,10 @@ class Exchange:
             self.client.cancel_order(order_id)
             return True
         except OrderNotFound:
+            self.logger.error("Order {0} was not found".format(order_id))
             return False
 
+    # todo { 'type': 'trailing-stop' }
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         try:
             if order_type == TraderOrderType.BUY_MARKET:

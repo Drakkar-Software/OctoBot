@@ -8,9 +8,11 @@ Changelog for 0.0.11
     #133 [Backtesting] Implement report 
     #134 [Order Creation] Fix negative quantity 
     #135 [Simulation] Fix order and trades manager 
-    #136 [Tests] Improve trading tests coverage 
+    #136 [Tests] Improve trading tests coverage
+    #138 [Trading] Implement real trades
     #139 prepare evaluators tests
     #140 [Trading] Implement real portfolio management
+    #141 [Trading] Implement real order management
 
 # New features :
     - Web interface improvements
