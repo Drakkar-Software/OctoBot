@@ -126,9 +126,9 @@ class Portfolio:
             self._update_portfolio_available(order, 1 if is_new_order else -1)
 
             # debug purpose
-            self.logger.debug("Portfolio available updated after order on {0} | Current Portfolio : {1}".format(
-                order.get_order_symbol(),
-                self.portfolio))
+            # self.logger.debug("Portfolio available updated after order on {0} | Current Portfolio : {1}".format(
+            #     order.get_order_symbol(),
+            #     self.portfolio))
 
     # Check if the order has impact on availability
     @staticmethod
