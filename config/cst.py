@@ -39,7 +39,7 @@ CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 # Trading
 CONFIG_EXCHANGES = "exchanges"
 CONFIG_TRADER = "trader"
-CONFIG_SIMULATOR = "simulator"
+CONFIG_SIMULATOR = "trader_simulator"
 CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
 CONFIG_TRADER_RISK = "risk"
 CONFIG_TRADER_RISK_MIN = 0.05

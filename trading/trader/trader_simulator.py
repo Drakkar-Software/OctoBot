@@ -1,4 +1,4 @@
-from config.cst import CONFIG_ENABLED_OPTION
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR
 from trading.trader.trader import Trader
 
 """ TraderSimulator has a role of exchange response simulator
@@ -10,8 +10,9 @@ class TraderSimulator(Trader):
         self.simulate = True
         super().__init__(config, exchange)
 
-    def enabled(self):
-        if self.config["simulator"][CONFIG_ENABLED_OPTION]:
+    @staticmethod
+    def enabled(config):
+        if config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION]:
             return True
         else:
             return False

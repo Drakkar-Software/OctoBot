@@ -41,9 +41,9 @@ class FinalEvaluator(AsynchronousServer):
             if new_state is not EvaluatorStates.NEUTRAL:
 
                 # cancel open orders
-                if self.symbol_evaluator.get_trader(self.exchange).enabled():
+                if self.symbol_evaluator.get_trader(self.exchange).is_enabled():
                     self.symbol_evaluator.get_trader(self.exchange).cancel_open_orders(self.symbol)
-                if self.symbol_evaluator.get_trader_simulator(self.exchange).enabled():
+                if self.symbol_evaluator.get_trader_simulator(self.exchange).is_enabled():
                     self.symbol_evaluator.get_trader_simulator(self.exchange).cancel_open_orders(self.symbol)
 
                 # create notification
@@ -78,7 +78,7 @@ class FinalEvaluator(AsynchronousServer):
                                                   trader,
                                                   self.state):
             # create trader simulator order
-            if trader.enabled():
+            if trader.is_enabled():
                 FinalEvaluator._push_order_notification_if_possible(
                     self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
                         self.final_eval,
