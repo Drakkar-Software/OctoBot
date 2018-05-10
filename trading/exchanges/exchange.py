@@ -186,7 +186,7 @@ class Exchange:
     # }
     def get_order(self, order_id):
         if self.client.has['fetchOrder']:
-            return asyncio.get_event_loop().run_until_complete(self.client.fetch_order(order_id))
+            return self.client.fetch_order(order_id)
         else:
             raise Exception("This exchange doesn't support fetchOrder")
 

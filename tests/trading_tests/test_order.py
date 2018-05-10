@@ -6,7 +6,6 @@ from backtesting.exchange_simulator import ExchangeSimulator
 from config.cst import TradeOrderSide, SIMULATOR_LAST_PRICES_TO_CHECK, TraderOrderType, OrderStatus
 from tests.test_utils.config import load_test_config
 from trading.trader.order import Order, OrderConstants
-from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 
 
@@ -15,7 +14,7 @@ class TestOrder:
     def init_default():
         config = load_test_config()
         exchange_inst = ExchangeSimulator(config, ccxt.binance)
-        trader_inst = Trader(config, exchange_inst)
+        trader_inst = TraderSimulator(config, exchange_inst)
         order_inst = Order(trader_inst)
         return config, order_inst, trader_inst, exchange_inst
 
@@ -139,7 +138,7 @@ class TestOrder:
         assert order_inst.get_creation_time() != 0
         assert order_inst.get_currency_and_market() == ('BTC', 'USDT')
         assert order_inst.get_side() is None
-        assert order_inst.get_status() is None
+        assert order_inst.get_status() == OrderStatus.OPEN
 
         order_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT],
                        "ETH/BTC",
@@ -163,7 +162,7 @@ class TestOrder:
                            price=None,
                            stop_price=None,
                            order_notifier=None)
-        assert order_sim_inst.get_status() == OrderStatus.PENDING
+        assert order_sim_inst.get_status() == OrderStatus.OPEN
 
         self.stop(trader_inst)
         self.stop(trader_sim_inst)

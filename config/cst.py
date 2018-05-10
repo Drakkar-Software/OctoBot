@@ -221,15 +221,16 @@ IMAGE_ENDINGS = ["png", "jpg", "jpeg", "gif", "jfif", "tiff", "bmp", "ppm", "pgm
 
 
 class TradeOrderSide(Enum):
-    BUY = 1
-    SELL = 2
+    BUY = "buy"
+    SELL = "sell"
 
 
 class OrderStatus(Enum):
-    FILLED = 1
-    PENDING = 2
-    PARTIALLY_FILLED = 3
-    CANCELED = 4
+    FILLED = "filled"
+    OPEN = "open"
+    PARTIALLY_FILLED = "partially_filled"
+    CANCELED = "canceled"
+    CLOSE = "close"
 
 
 class TraderOrderType(Enum):

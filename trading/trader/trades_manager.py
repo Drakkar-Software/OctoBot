@@ -47,6 +47,7 @@ class TradesManager:
     def add_new_trade_in_history(self, trade):
         if trade not in self.trade_history:
             self.trade_history.append(trade)
+            # TODO update closed
 
     """ get currencies prices update currencies data by polling tickers from exchange
     and set currencies_prices attribute
