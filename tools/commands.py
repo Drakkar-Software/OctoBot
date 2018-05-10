@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 from backtesting.collector.data_collector import DataCollector
@@ -41,6 +42,11 @@ class Commands:
             bot.join_threads()
         except Exception as e:
             logger.exception("CryptBot Exception : {0}".format(e))
-            bot.stop_threads()
             if not catch:
                 raise e
+            Commands.stop_bot(bot)
+
+    @staticmethod
+    def stop_bot(bot):
+        bot.stop_threads()
+        os._exit(0)

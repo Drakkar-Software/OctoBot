@@ -212,7 +212,10 @@ class CryptoBot:
 
         # stop services
         for service_instance in ServiceCreator.get_service_instances(self.config):
-            service_instance.stop()
+            try:
+                service_instance.stop()
+            except Exception as e:
+                raise e
 
         self.logger.info("Threads stopped.")
 
