@@ -1,7 +1,7 @@
 import logging
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
-    CONFIG_TRADER_RISK_MAX, OrderStatus
+    CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.order import OrderConstants
 from trading.trader.order_notifier import OrderNotifier
@@ -27,6 +27,10 @@ class Trader:
         self.trades_manager = TradesManager(config, self)
 
         self.order_manager = OrdersManager(config, self)
+
+        if not self.simulate:
+            self.update_open_orders()
+            # TODO update closed
 
         if self.enabled():
             self.order_manager.start()
@@ -57,7 +61,8 @@ class Trader:
     def get_portfolio(self):
         return self.portfolio
 
-    def create_order(self, order_type, symbol, current_price, quantity, price=None, stop_price=None, linked_to=None):
+    def create_order(self, order_type, symbol, current_price, quantity,
+                     price=None, stop_price=None, linked_to=None, order_id=None, quantity_filled=None, new=True):
         self.logger.info("Order creation : {0} | {1} | Price : {2} | Quantity : {3}".format(symbol,
                                                                                             order_type,
                                                                                             price,
@@ -73,7 +78,12 @@ class Trader:
         else:
             order_notifier = linked_to.get_order_notifier()
 
-        order.new(order_type, symbol, current_price, quantity, price, stop_price, order_notifier)
+        if new:
+            order.new(order_type, symbol, current_price, quantity, price, stop_price,
+                      order_notifier, order_id, quantity_filled)
+        else:
+            order.init_order(order_type, symbol, current_price, quantity, price, stop_price,
+                             order_notifier, order_id, quantity_filled)
 
         # update the availability of the currency in the portfolio
         with self.portfolio as pf:
@@ -164,16 +174,42 @@ class Trader:
     def get_open_orders(self):
         return self.order_manager.get_open_orders()
 
-    def close_open_orders(self):
-        # get_closed_orders
-        pass
+    def get_close_orders(self):
+        for symbol in self.exchange.get_traded_pairs():
+            for close_order in self.exchange.get_closed_orders(symbol):
+                pass
 
     def update_open_orders(self):
-        # see exchange
-        # -> update order manager
-        get_all_orders
-        get_open_orders
-        pass
+        for symbol in self.exchange.get_traded_pairs():
+            for open_order in self.exchange.get_open_orders(symbol=symbol):
+                self.parse_exchange_order_to_order_instance(open_order)
+
+    def parse_exchange_order_to_order_instance(self, order):
+        self.create_order(self.parse_order_type(order),
+                          order["symbol"],
+                          0,
+                          order["amount"],
+                          price=None,
+                          stop_price=None,
+                          linked_to=None,
+                          quantity_filled=order["filled"],
+                          order_id=order["id"],
+                          new=False)
+
+    @staticmethod
+    def parse_order_type(order):
+        side = TradeOrderSide(order["side"])
+        order_type = order["type"]
+        if side == TradeOrderSide.BUY:
+            if order_type == "limit":
+                return TraderOrderType.BUY_LIMIT
+            elif order_type == "market":
+                return TraderOrderType.BUY_MARKET
+        elif side == TradeOrderSide.SELL:
+            if order_type == "limit":
+                return TraderOrderType.SELL_LIMIT
+            elif order_type == "market":
+                return TraderOrderType.SELL_MARKET
 
     def get_order_manager(self):
         return self.order_manager
