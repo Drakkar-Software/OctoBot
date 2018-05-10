@@ -5,7 +5,8 @@ import pandas
 from ccxt import OrderNotFound, BaseError
 
 from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES, PriceIndexes, \
-    CONFIG_TIME_FRAME, TimeFrames
+    CONFIG_TIME_FRAME, TimeFrames, CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_INFO, CONFIG_PORTFOLIO_USED, \
+    CONFIG_PORTFOLIO_TOTAL
 
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
@@ -15,6 +16,10 @@ class Exchange:
         self.connect_to_online_exchange = connect_to_online_exchange
         self.client = None
         self.config = config
+        self.info_list = None
+        self.free = None
+        self.used = None
+        self.total = None
         self.name = self.exchange_type.__name__
 
         if self.connect_to_online_exchange:
@@ -70,7 +75,21 @@ class Exchange:
     #
     #     'total': { ... },    // total (free + used), by currency
     def get_balance(self):
-        return self.client.fetchBalance()
+        balance = self.client.fetchBalance()
+
+        # store portfolio global info
+        self.info_list = balance[CONFIG_PORTFOLIO_INFO]
+        self.free = balance[CONFIG_PORTFOLIO_FREE]
+        self.used = balance[CONFIG_PORTFOLIO_USED]
+        self.total = balance[CONFIG_PORTFOLIO_TOTAL]
+
+        # remove not currency specific keys
+        balance.pop(CONFIG_PORTFOLIO_INFO, None)
+        balance.pop(CONFIG_PORTFOLIO_FREE, None)
+        balance.pop(CONFIG_PORTFOLIO_USED, None)
+        balance.pop(CONFIG_PORTFOLIO_TOTAL, None)
+
+        return balance
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         if limit:
