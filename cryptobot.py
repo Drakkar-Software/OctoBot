@@ -214,6 +214,8 @@ class CryptoBot:
         for service_instance in ServiceCreator.get_service_instances(self.config):
             service_instance.stop()
 
+        self.logger.info("Threads stopped.")
+
     def get_symbols_threads_manager(self):
         return self.symbol_threads_manager
 
