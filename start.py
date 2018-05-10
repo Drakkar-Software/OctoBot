@@ -8,7 +8,7 @@ from config.config import load_config
 from config.cst import *
 from cryptobot import CryptoBot
 from interfaces.telegram.bot import TelegramApp
-from interfaces.web.app import WebApp
+from services import WebService
 from tools.commands import Commands
 
 
@@ -50,16 +50,13 @@ if __name__ == '__main__':
     if args.telegram:
         TelegramApp.enable(config)
 
+    if args.web:
+        WebService.enable(config)
+
     bot = CryptoBot(config)
-    web_app = None
 
     import interfaces
-    interfaces.__init__(bot)
-
-    if args.web:
-        import interfaces.web
-        interfaces.web.__init__(bot, config)
-        web_app = WebApp(config)
+    interfaces.__init__(bot, config)
 
     if args.update:
         Commands.update(logger)
@@ -80,4 +77,4 @@ if __name__ == '__main__':
             config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
 
         if args.start:
-            Commands.start_bot(bot, logger, web_app)
+            Commands.start_bot(bot, logger)
