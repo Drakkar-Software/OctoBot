@@ -214,9 +214,9 @@ class Exchange:
     def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         return self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit, params={})
 
-    def cancel_order(self, order_id):
+    def cancel_order(self, order_id, symbol=None):
         try:
-            self.client.cancel_order(order_id)
+            self.client.cancel_order(order_id, symbol=symbol)
             return True
         except OrderNotFound:
             self.logger.error("Order {0} was not found".format(order_id))

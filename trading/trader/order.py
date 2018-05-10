@@ -52,8 +52,13 @@ class Order:
 
     # create the order by setting all the required values
     def new(self, order_type, symbol, current_price, quantity,
-            price=None, stop_price=None, order_notifier=None,
-            order_id=None, quantity_filled=None, timestamp=None,
+            price=None,
+            stop_price=None,
+            status=None,
+            order_notifier=None,
+            order_id=None,
+            quantity_filled=None,
+            timestamp=None,
             create=True):
 
         if create:
@@ -69,6 +74,7 @@ class Order:
         self.order_id = order_id
         self.origin_price = price
         self.last_prices = price
+        self.status = status
         self.created_last_price = current_price
         self.origin_quantity = quantity
         self.origin_stop_price = stop_price
@@ -109,7 +115,7 @@ class Order:
 
         # if real order
         if not self.is_simulated:
-            self.exchange.cancel_order(self.order_id)
+            self.exchange.cancel_order(self.order_id, self.symbol)
 
         self.trader.notify_order_cancel(self)
 
