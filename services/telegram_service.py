@@ -1,5 +1,7 @@
+from queue import Queue
+
 import telegram
-from telegram.ext import Updater
+from telegram.ext import Updater, Dispatcher
 
 from config.cst import *
 from interfaces.telegram.bot import TelegramApp
@@ -48,6 +50,8 @@ class TelegramService(AbstractService):
 
     def stop(self):
         if self.telegram_updater:
+            # self.telegram_updater.__stop_event.set()
+            # self.telegram_updater.dispatcher.running = False
             self.telegram_updater.stop()
 
     def has_required_configuration(self):
