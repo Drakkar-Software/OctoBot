@@ -20,7 +20,7 @@ class Trader:
         if not hasattr(self, 'simulate'):
             self.simulate = False
 
-        self.portfolio = Portfolio(self.config, self.simulate)
+        self.portfolio = Portfolio(self.config, self)
 
         self.trades_manager = TradesManager(config, self)
 
