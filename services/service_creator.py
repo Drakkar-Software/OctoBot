@@ -25,7 +25,8 @@ class ServiceCreator:
                     except Exception as e:
                         logger.error(service_class.get_name() + " preparation produced the following error: " + str(e))
                 else:
-                    logger.warning(service_class.get_name() + " can't be initialized: configuration is missing !")
+                    if service_instance.get_should_warn():
+                        logger.warning(service_class.get_name() + " can't be initialized: configuration is missing !")
 
     @staticmethod
     def get_service_instances(config):
