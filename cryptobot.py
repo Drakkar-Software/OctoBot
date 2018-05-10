@@ -117,6 +117,7 @@ class CryptoBot:
 
                         # Verify that symbol exists on this exchange
                         if exchange.symbol_exists(symbol):
+                            exchange.add_traded_pair(symbol)
                             self._create_symbol_threads_managers(symbol,
                                                                  exchange,
                                                                  symbol_evaluator)
