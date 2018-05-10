@@ -75,6 +75,9 @@ CONFIG_GMAIL = "gmail"
 CONFIG_TELEGRAM = "telegram"
 CONFIG_TOKEN = "token"
 
+# web
+CONFIG_WEB = "web"
+
 # twitter
 CONFIG_TWITTERS_ACCOUNTS = "accounts"
 CONFIG_TWITTERS_HASHTAGS = "hashtags"

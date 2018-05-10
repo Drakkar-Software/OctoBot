@@ -32,6 +32,7 @@ class CryptoBot:
     def __init__(self, config):
         self.start_time = time.time()
         self.config = config
+        self.ready = False
 
         # Logger
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -157,6 +158,7 @@ class CryptoBot:
         for thread in self.dispatchers_list:
             thread.start()
 
+        self.ready = True
         self.logger.info("Evaluation threads started...")
 
     def join_threads(self):
@@ -238,3 +240,6 @@ class CryptoBot:
 
     def get_start_time(self):
         return self.start_time
+
+    def is_ready(self):
+        return self.ready
