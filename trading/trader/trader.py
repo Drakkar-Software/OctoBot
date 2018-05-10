@@ -30,11 +30,7 @@ class Trader:
 
         if not self.simulate:
             self.update_open_orders()
-            # TODO update closed
             # self.update_close_orders()
-
-        for order in self.get_open_orders():
-            self.cancel_order(order)
 
         if self.enabled():
             self.order_manager.start()
@@ -76,15 +72,17 @@ class Trader:
                      timestamp=None):
 
         if new:
-            self.logger.info("Order creation : {0} | {1} | Price : {2} | Quantity : {3}".format(symbol,
-                                                                                                order_type,
-                                                                                                price,
-                                                                                                quantity))
-        else:
-            self.logger.info("Order loaded : {0} | {1} | Price : {2} | Quantity : {3}".format(symbol,
-                                                                                              order_type,
-                                                                                              price,
-                                                                                              quantity))
+            if not self.simulate and not self.check_if_self_managed(order_type):
+                new_order = self.exchange.create_order(order_type, symbol, quantity, price, stop_price)
+                return self.parse_exchange_order_to_order_instance(new_order)
+            else:
+                status = OrderStatus.OPEN
+                quantity_filled = quantity
+
+        self.logger.info("Order creation : {0} | {1} | Price : {2} | Quantity : {3}".format(symbol,
+                                                                                            order_type,
+                                                                                            price,
+                                                                                            quantity))
 
         # create new order instance
         order_class = OrderConstants.TraderOrderTypeClasses[order_type]
@@ -106,8 +104,7 @@ class Trader:
                   order_id=order_id,
                   status=status,
                   quantity_filled=quantity_filled,
-                  timestamp=timestamp,
-                  create=new)
+                  timestamp=timestamp)
 
         # update the availability of the currency in the portfolio
         with self.portfolio as pf:
@@ -262,3 +259,13 @@ class Trader:
 
     def get_simulate(self):
         return self.simulate
+
+    @staticmethod
+    def check_if_self_managed(order_type):
+        # stop losses and take profits are self managed by the bot
+        if order_type in [TraderOrderType.TAKE_PROFIT,
+                          TraderOrderType.TAKE_PROFIT_LIMIT,
+                          TraderOrderType.STOP_LOSS,
+                          TraderOrderType.STOP_LOSS_LIMIT]:
+            return True
+        return False

@@ -58,18 +58,7 @@ class Order:
             order_notifier=None,
             order_id=None,
             quantity_filled=None,
-            timestamp=None,
-            create=True):
-
-        if create:
-            if not self.trader.simulate:
-                # TODO
-                # self.status, self.order_id, self.filled_price, self.filled_quantity, self.ex_time
-                # self.exchange.create_order(order_type, symbol, quantity, price, stop_price)
-                pass
-            else:
-                self.status = OrderStatus.OPEN
-                self.filled_quantity = quantity
+            timestamp=None):
 
         self.order_id = order_id
         self.origin_price = price
@@ -274,15 +263,16 @@ class StopLossOrder(Order):
         self.side = TradeOrderSide.SELL
 
     def update_order_status(self):
-        if not self.trader.simulate:
-            # self.status, self.order_id, self.total_fees, self.filled_price, self.filled_quantity, self.executed_time =
-            self.exchange.get_order(self.order_id)
-        else:
-            # ONLY FOR SIMULATION
-            if self.check_last_prices(self.origin_price, True):
+        if self.check_last_prices(self.origin_price, True):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.executed_time = time.time()
+            if not self.trader.simulate:
+                self.trader.create_order(order_type=TraderOrderType.SELL_MARKET,
+                                         symbol=self.symbol,
+                                         current_price=self.origin_price,
+                                         quantity=self.origin_quantity,
+                                         price=self.origin_price)
 
 
 # TODO
