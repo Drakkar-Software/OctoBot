@@ -50,8 +50,22 @@ class Order:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.lock.release()
 
-    def init_order(self, order_type, symbol, current_price, quantity,
-                   price=None, stop_price=None, order_notifier=None, order_id=None, quantity_filled=None):
+    # create the order by setting all the required values
+    def new(self, order_type, symbol, current_price, quantity,
+            price=None, stop_price=None, order_notifier=None,
+            order_id=None, quantity_filled=None, timestamp=None,
+            create=True):
+
+        if create:
+            if not self.trader.simulate:
+                # TODO
+                # self.status, self.order_id, self.filled_price, self.filled_quantity, self.ex_time
+                # self.exchange.create_order(order_type, symbol, quantity, price, stop_price)
+                pass
+            else:
+                self.status = OrderStatus.OPEN
+                self.filled_quantity = quantity
+
         self.order_id = order_id
         self.origin_price = price
         self.last_prices = price
@@ -62,21 +76,12 @@ class Order:
         self.order_type = order_type
         self.order_notifier = order_notifier
         self.currency, self.market = self.exchange.split_symbol(symbol)
-        self.creation_time = time.time()
         self.filled_quantity = quantity_filled
 
-    # create the order by setting all the required values
-    def new(self, order_type, symbol, current_price, quantity,
-            price=None, stop_price=None, order_notifier=None, order_id=None, quantity_filled=None):
-        self.init_order(order_type, symbol, current_price, quantity, price, stop_price, order_notifier)
-        if not self.trader.simulate:
-            # TODO
-            # self.status, self.order_id, self.filled_price, self.filled_quantity, self.ex_time
-            # self.exchange.create_order(order_type, symbol, quantity, price, stop_price)
-            pass
+        if timestamp is None:
+            self.creation_time = time.time()
         else:
-            self.status = OrderStatus.OPEN
-            self.filled_quantity = quantity
+            self.creation_time = timestamp
 
     # update_order_status will define the rules for a simulated order to be filled / canceled
     @abstractmethod
