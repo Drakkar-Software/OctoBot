@@ -138,7 +138,7 @@ class TestOrder:
         assert order_inst.get_creation_time() != 0
         assert order_inst.get_currency_and_market() == ('BTC', 'USDT')
         assert order_inst.get_side() is None
-        assert order_inst.get_status() == OrderStatus.OPEN
+        assert order_inst.get_status() is None
 
         order_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT],
                        "ETH/BTC",
@@ -162,7 +162,9 @@ class TestOrder:
                            price=None,
                            stop_price=None,
                            order_notifier=None)
-        assert order_sim_inst.get_status() == OrderStatus.OPEN
+
+        # test moved into trader
+        assert order_sim_inst.get_status() is None
 
         self.stop(trader_inst)
         self.stop(trader_sim_inst)
