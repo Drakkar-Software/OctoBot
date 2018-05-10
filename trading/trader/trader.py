@@ -102,7 +102,6 @@ class Trader:
         return order
 
     def create_order(self, order, loaded=False):
-
         if not loaded:
             if not self.simulate and not self.check_if_self_managed(order.get_order_type()):
                 new_order = self.exchange.create_order(order.get_order_type(),
