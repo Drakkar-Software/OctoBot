@@ -206,22 +206,25 @@ class Exchange:
             return False
 
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
-        if order_type == TraderOrderType.BUY_MARKET:
-            self.client.create_market_buy_order(symbol, quantity)
-        elif order_type == TraderOrderType.BUY_LIMIT:
-            self.client.create_limit_buy_order(symbol, quantity, price)
-        elif order_type == TraderOrderType.SELL_MARKET:
-            self.client.create_market_sell_order(symbol, quantity)
-        elif order_type == TraderOrderType.SELL_LIMIT:
-            self.client.create_limit_sell_order(symbol, quantity, price)
-        elif order_type == TraderOrderType.STOP_LOSS:
-            pass
-        elif order_type == TraderOrderType.STOP_LOSS_LIMIT:
-            pass
-        elif order_type == TraderOrderType.TAKE_PROFIT:
-            pass
-        elif order_type == TraderOrderType.TAKE_PROFIT_LIMIT:
-            pass
+        try:
+            if order_type == TraderOrderType.BUY_MARKET:
+                self.client.create_market_buy_order(symbol, quantity)
+            elif order_type == TraderOrderType.BUY_LIMIT:
+                self.client.create_limit_buy_order(symbol, quantity, price)
+            elif order_type == TraderOrderType.SELL_MARKET:
+                self.client.create_market_sell_order(symbol, quantity)
+            elif order_type == TraderOrderType.SELL_LIMIT:
+                self.client.create_limit_sell_order(symbol, quantity, price)
+            elif order_type == TraderOrderType.STOP_LOSS:
+                pass
+            elif order_type == TraderOrderType.STOP_LOSS_LIMIT:
+                pass
+            elif order_type == TraderOrderType.TAKE_PROFIT:
+                pass
+            elif order_type == TraderOrderType.TAKE_PROFIT_LIMIT:
+                pass
+        except Exception as e:
+            self.logger.error("Failed to create order : {0}".format(e))
 
     def symbol_exists(self, symbol):
         if symbol in self.client.symbols:
