@@ -9,8 +9,6 @@ import pandas
 
 server_instance = flask.Flask(__name__)
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
-bot_instance = None
-global_config = None
 
 # disable Flask logging
 log = logging.getLogger('werkzeug')
@@ -25,14 +23,6 @@ portfolio_value_history = {
 }
 
 TIME_AXIS_TITLE = "Time"
-
-
-def __init__(bot, config):
-    global bot_instance
-    bot_instance = bot
-
-    global global_config
-    global_config = config
 
 
 def add_to_matrix_history(matrix):
@@ -69,10 +59,6 @@ def get_portfolio_value_history():
 
 def get_symbol_data_history(symbol, time_frame):
     return symbol_data_history[symbol][time_frame]
-
-
-def get_bot():
-    return bot_instance
 
 
 def load_callbacks():

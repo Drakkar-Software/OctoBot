@@ -5,9 +5,9 @@ import plotly.graph_objs as go
 
 from config.cst import PriceStrings, TimeFrames, EvaluatorMatrixTypes
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from interfaces import get_reference_market
+from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
-from interfaces.web import get_bot, add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
+from interfaces.web import add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
     add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE, get_symbol_data_history
 from trading.exchanges.exchange import Exchange
 from trading.trader.portfolio import Portfolio
