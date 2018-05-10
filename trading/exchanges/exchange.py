@@ -6,7 +6,7 @@ from ccxt import OrderNotFound, BaseError
 
 from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES, PriceIndexes, \
     CONFIG_TIME_FRAME, TimeFrames, CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_INFO, CONFIG_PORTFOLIO_USED, \
-    CONFIG_PORTFOLIO_TOTAL
+    CONFIG_PORTFOLIO_TOTAL, CONFIG_CRYPTO_PAIRS
 
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
@@ -41,8 +41,11 @@ class Exchange:
             self.logger.warning("Exchange {0} is currently disabled".format(self.name))
             return False
 
-    def add_traded_pair(self, symbol):
-        self.traded_pairs.append(symbol)
+    def created_traded_pairs(self, symbols):
+        for cryptocurrency in symbols:
+            for symbol in symbols[cryptocurrency][CONFIG_CRYPTO_PAIRS]:
+                if self.symbol_exists(symbol):
+                    self.traded_pairs.append(symbol)
 
     def get_traded_pairs(self):
         return self.traded_pairs

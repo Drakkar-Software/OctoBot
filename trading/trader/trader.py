@@ -62,7 +62,14 @@ class Trader:
         return self.portfolio
 
     def create_order(self, order_type, symbol, current_price, quantity,
-                     price=None, stop_price=None, linked_to=None, order_id=None, quantity_filled=None, new=True):
+                     price=None,
+                     stop_price=None,
+                     linked_to=None,
+                     order_id=None,
+                     quantity_filled=None,
+                     new=True,
+                     timestamp=None):
+
         self.logger.info("Order creation : {0} | {1} | Price : {2} | Quantity : {3}".format(symbol,
                                                                                             order_type,
                                                                                             price,
@@ -78,12 +85,17 @@ class Trader:
         else:
             order_notifier = linked_to.get_order_notifier()
 
-        if new:
-            order.new(order_type, symbol, current_price, quantity, price, stop_price,
-                      order_notifier, order_id, quantity_filled)
-        else:
-            order.init_order(order_type, symbol, current_price, quantity, price, stop_price,
-                             order_notifier, order_id, quantity_filled)
+        order.new(order_type=order_type,
+                  symbol=symbol,
+                  current_price=current_price,
+                  quantity=quantity,
+                  price=price,
+                  stop_price=stop_price,
+                  order_notifier=order_notifier,
+                  order_id=order_id,
+                  quantity_filled=quantity_filled,
+                  timestamp=timestamp,
+                  create=new)
 
         # update the availability of the currency in the portfolio
         with self.portfolio as pf:
@@ -181,19 +193,21 @@ class Trader:
 
     def update_open_orders(self):
         for symbol in self.exchange.get_traded_pairs():
-            for open_order in self.exchange.get_open_orders(symbol=symbol):
+            orders = self.exchange.get_open_orders(symbol=symbol)
+            for open_order in orders:
                 self.parse_exchange_order_to_order_instance(open_order)
 
     def parse_exchange_order_to_order_instance(self, order):
-        self.create_order(self.parse_order_type(order),
-                          order["symbol"],
-                          0,
-                          order["amount"],
-                          price=None,
+        self.create_order(order_type=self.parse_order_type(order),
+                          symbol=order["symbol"],
+                          current_price=0,
+                          quantity=order["amount"],
                           stop_price=None,
                           linked_to=None,
                           quantity_filled=order["filled"],
                           order_id=order["id"],
+                          price=order["price"],
+                          timestamp=order["timestamp"],
                           new=False)
 
     @staticmethod

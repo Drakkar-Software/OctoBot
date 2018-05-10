@@ -78,6 +78,9 @@ class CryptoBot:
                     # True Exchange
                     exchange_inst = Exchange(self.config, exchange_type)
 
+                # create traded pairs
+                exchange_inst.created_traded_pairs(self.config[CONFIG_CRYPTO_CURRENCIES])
+
                 # create trader instance for this exchange
                 exchange_trader = Trader(self.config, exchange_inst)
                 exchange_trader_simulator = TraderSimulator(self.config, exchange_inst)
@@ -116,8 +119,7 @@ class CryptoBot:
                     if exchange.enabled():
 
                         # Verify that symbol exists on this exchange
-                        if exchange.symbol_exists(symbol):
-                            exchange.add_traded_pair(symbol)
+                        if symbol in exchange.get_traded_pairs():
                             self._create_symbol_threads_managers(symbol,
                                                                  exchange,
                                                                  symbol_evaluator)
