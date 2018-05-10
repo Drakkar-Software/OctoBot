@@ -1,5 +1,6 @@
 import logging
 import threading
+from time import sleep
 
 import dash_core_components as dcc
 import dash_html_components as html
@@ -7,7 +8,8 @@ import dash_table_experiments as dt
 from flask import request
 
 from config.cst import CONFIG_CRYPTO_CURRENCIES
-from interfaces.web import app_instance, load_callbacks, get_bot, load_routes
+from interfaces import get_bot
+from interfaces.web import app_instance, load_callbacks, load_routes
 
 
 class WebApp(threading.Thread):
@@ -18,6 +20,10 @@ class WebApp(threading.Thread):
         self.app = None
 
     def run(self):
+
+        # wait bot is ready
+        while get_bot() is None or not get_bot().is_ready():
+            sleep(0.1)
 
         # Define the WSGI application object
         self.app = app_instance
