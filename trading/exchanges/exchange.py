@@ -21,6 +21,7 @@ class Exchange:
         self.used = None
         self.total = None
         self.name = self.exchange_type.__name__
+        self.traded_pairs = []
 
         if self.connect_to_online_exchange:
             self.create_client()
@@ -39,6 +40,12 @@ class Exchange:
         else:
             self.logger.warning("Exchange {0} is currently disabled".format(self.name))
             return False
+
+    def add_traded_pair(self, symbol):
+        self.traded_pairs.append(symbol)
+
+    def get_traded_pairs(self):
+        return self.traded_pairs
 
     def create_client(self):
         if self.check_config():
