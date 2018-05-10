@@ -33,6 +33,7 @@ class TelegramApp:
         self.dispatcher.add_handler(CommandHandler("profitability", self.command_profitability))
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
         self.dispatcher.add_handler(CommandHandler("market_status", self.command_market_status))
+        self.dispatcher.add_handler(CommandHandler("stop", self.command_stop))
         self.dispatcher.add_handler(CommandHandler("help", self.command_help))
 
         # log all errors
@@ -43,14 +44,15 @@ class TelegramApp:
 
     @staticmethod
     def command_help(_, update):
-        message = "My CryptoBot skills:"+TelegramApp.EOL+TelegramApp.EOL
-        message += "/start: Displays my startup message."+TelegramApp.EOL
-        message += "/ping: Shows for how long I'm working."+TelegramApp.EOL
-        message += "/portfolio: Displays my current portfolio."+TelegramApp.EOL
-        message += "/open_orders: Displays my current open orders."+TelegramApp.EOL
-        message += "/profitability: Displays the profitability I made since I started."+TelegramApp.EOL
-        message += "/market_status: Displays my understanding of the market and my risk parameter."+TelegramApp.EOL
-        message += "/set_risk: Changes my current risk setting into your command's parameter."+TelegramApp.EOL
+        message = "My CryptoBot skills:" + TelegramApp.EOL + TelegramApp.EOL
+        message += "/start: Displays my startup message." + TelegramApp.EOL
+        message += "/ping: Shows for how long I'm working." + TelegramApp.EOL
+        message += "/portfolio: Displays my current portfolio." + TelegramApp.EOL
+        message += "/open_orders: Displays my current open orders." + TelegramApp.EOL
+        message += "/profitability: Displays the profitability I made since I started." + TelegramApp.EOL
+        message += "/market_status: Displays my understanding of the market and my risk parameter." + TelegramApp.EOL
+        message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
+        message += "/stop: Stop me." + TelegramApp.EOL
         message += "/help: Displays this help."
         update.message.reply_text(message)
 
@@ -61,6 +63,12 @@ class TelegramApp:
     @staticmethod
     def command_start(_, update):
         update.message.reply_text("Hello, I'm CryptoBot, type /help to know my skills.")
+
+    @staticmethod
+    def command_stop(_, update):
+        # TODO add confirmation
+        update.message.reply_text("I'm leaving this world...")
+        get_bot().stop_threads()
 
     @staticmethod
     def command_ping(_, update):
