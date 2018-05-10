@@ -1,3 +1,28 @@
+Changelog for 0.0.11
+====================
+*Released date : XXX*
+
+# Concerned issues :
+    #87  [Interface] Prototype telegram interface
+    #132 [Web]: add portfolio view
+    #133 [Backtesting] Implement report 
+    #134 [Order Creation] Fix negative quantity 
+    #135 [Simulation] Fix order and trades manager 
+    #136 [Tests] Improve trading tests coverage 
+    #139 prepare evaluators tests
+
+# New features :
+    - Web interface improvements
+    - Telegram interface
+    - Telegram notifications
+    - Pretty Printer tool
+    - Eval note expiration management
+    - Multiple new tests to improve code coverage
+    
+# Bug fix :
+    - Fixed trader simulation order creation
+    - [Order Creation] Fix negative quantity 
+
 Changelog for 0.0.10
 ====================
 *Released date : May 5 2018*
