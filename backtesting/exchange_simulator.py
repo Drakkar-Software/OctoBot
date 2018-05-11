@@ -2,6 +2,7 @@ from backtesting import get_bot
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_collector import DataCollectorParser
 from config.cst import *
+from tools.time_frame_manager import TimeFrameManager
 from trading import Exchange
 
 
@@ -20,7 +21,7 @@ class ExchangeSimulator(Exchange):
 
         self.symbols = self._get_symbol_list()
 
-        self.config_time_frames = self.get_config_time_frame(config)
+        self.config_time_frames = TimeFrameManager.get_config_time_frame(config)
 
         self.time_frame_get_times = {}
         self.tickers = {}
@@ -30,7 +31,7 @@ class ExchangeSimulator(Exchange):
         self.DEFAULT_LIMIT = 100
         self.MIN_LIMIT = 20
 
-        self.MIN_ENABLED_TIME_FRAME = self._find_config_min_time_frame()
+        self.MIN_ENABLED_TIME_FRAME = TimeFrameManager.find_config_min_time_frame(self.config_time_frames)
         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.CREATED_TRADES_BY_TIME_FRAME = 50
         self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_ENABLED_TIME_FRAME
@@ -85,7 +86,7 @@ class ExchangeSimulator(Exchange):
             self.time_frame_get_times[time_frame.value] = 0
 
     def should_update_data(self, time_frame):
-        previous_time_frame = self._get_previous_time_frame(time_frame, time_frame)
+        previous_time_frame = TimeFrameManager.get_previous_time_frame(self.config_time_frames, time_frame, time_frame)
         previous_time_frame_sec = TimeFramesMinutes[previous_time_frame]
         previous_time_frame_updated_times = self.time_frame_get_times[previous_time_frame.value]
         current_time_frame_sec = TimeFramesMinutes[time_frame]
@@ -103,31 +104,6 @@ class ExchangeSimulator(Exchange):
                 self.fetched_trades_counter[symbol] += 1
                 return True
         return False
-
-    def _get_previous_time_frame(self, time_frame, origin_time_frame):
-        current_time_frame_index = TimeFramesRank.index(time_frame)
-
-        if current_time_frame_index > 0:
-            previous = TimeFramesRank[current_time_frame_index - 1]
-            if previous in self.config_time_frames:
-                return previous
-            else:
-                return self._get_previous_time_frame(previous, origin_time_frame)
-        else:
-            if time_frame in self.config_time_frames:
-                return time_frame
-            else:
-                return origin_time_frame
-
-    def _find_config_min_time_frame(self):
-        # TimeFramesRank is the ordered list of timeframes
-        for tf in TimeFramesRank:
-            if tf in self.config_time_frames:
-                try:
-                    return TimeFrames(tf)
-                except ValueError:
-                    pass
-        return TimeFrames.ONE_MINUTE
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         result = self._extract_data_with_limit(time_frame)

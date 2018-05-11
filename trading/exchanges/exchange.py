@@ -1,12 +1,9 @@
-import asyncio
 import logging
 
 import pandas
 from ccxt import OrderNotFound, BaseError
 
-from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES, PriceIndexes, \
-    CONFIG_TIME_FRAME, TimeFrames, CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_INFO, CONFIG_PORTFOLIO_USED, \
-    CONFIG_PORTFOLIO_TOTAL, CONFIG_CRYPTO_PAIRS
+from config.cst import *
 
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
@@ -266,19 +263,6 @@ class Exchange:
     @staticmethod
     def merge_currencies(currency, market):
         return "{0}/{1}".format(currency, market)
-
-    @staticmethod
-    def get_config_time_frame(config):
-        if CONFIG_TIME_FRAME in config:
-            result = []
-            for time_frame in config[CONFIG_TIME_FRAME]:
-                try:
-                    result.append(TimeFrames(time_frame))
-                except ValueError:
-                    logging.warning("Time frame not found : {0}".format(time_frame))
-            return result
-        else:
-            return TimeFrames
 
     def get_rate_limit(self):
         return self.exchange_type.rateLimit / 1000

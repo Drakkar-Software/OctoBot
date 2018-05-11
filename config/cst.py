@@ -196,8 +196,6 @@ TimeFramesMinutes = {
     TimeFrames.ONE_MONTH: 43200,
 }
 
-TimeFramesRank = sorted(TimeFramesMinutes, key=TimeFramesMinutes.__getitem__)
-
 # ladder : 1-100
 TimeFramesRelevance = {
     TimeFrames.ONE_MINUTE: 5,

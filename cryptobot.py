@@ -15,6 +15,7 @@ from evaluator.symbol_evaluator import SymbolEvaluator
 from services import ServiceCreator
 from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
+from tools.time_frame_manager import TimeFrameManager
 from trading import Exchange
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
@@ -45,7 +46,7 @@ class CryptoBot:
         if CONFIG_DEBUG_OPTION_PERF in self.config and self.config[CONFIG_DEBUG_OPTION_PERF]:
             self.performance_analyser = PerformanceAnalyser()
 
-        self.time_frames = Exchange.get_config_time_frame(self.config)
+        self.time_frames = TimeFrameManager.get_config_time_frame(self.config)
 
         # Add services to self.config[CONFIG_CATEGORY_SERVICES]
         ServiceCreator.create_services(self.config)
