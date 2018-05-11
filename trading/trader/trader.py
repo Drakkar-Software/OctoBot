@@ -110,9 +110,6 @@ class Trader:
                                                        order.get_origin_price(),
                                                        order.origin_stop_price)
                 order = self.parse_exchange_order_to_order_instance(new_order)
-            else:
-                order.status = OrderStatus.OPEN
-                order.filled_quantity = order.get_origin_quantity()
 
         self.logger.info("Order creation : {0} | {1} | Price : {2} | Quantity : {3}".format(order.get_order_symbol(),
                                                                                             order.get_order_type(),
