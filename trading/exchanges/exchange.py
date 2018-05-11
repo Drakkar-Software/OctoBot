@@ -7,8 +7,12 @@ from config.cst import *
 
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
+from tools.time_frame_manager import TimeFrameManager
+
+
 class Exchange:
     def __init__(self, config, exchange_type, connect_to_online_exchange=True):
+        self.ready = False
         self.exchange_type = exchange_type
         self.connect_to_online_exchange = connect_to_online_exchange
         self.client = None
@@ -17,6 +21,7 @@ class Exchange:
         self.free = None
         self.used = None
         self.total = None
+        self.time_frames = []
         self.name = self.exchange_type.__name__
         self.traded_pairs = []
 
@@ -26,7 +31,8 @@ class Exchange:
             self.client.load_markets()
 
         self.all_currencies_price_ticker = None
-
+        self.set_config_time_frame()
+        self.ready = True
         self.logger = logging.getLogger(self.name)
 
     def enabled(self):
@@ -263,6 +269,14 @@ class Exchange:
     @staticmethod
     def merge_currencies(currency, market):
         return "{0}/{1}".format(currency, market)
+
+    def set_config_time_frame(self):
+        for time_frame in TimeFrameManager.get_config_time_frame(self.config):
+            if self.time_frame_exists(time_frame.value):
+                self.time_frames.append(time_frame)
+
+    def get_config_time_frame(self):
+        return self.time_frames
 
     def get_rate_limit(self):
         return self.exchange_type.rateLimit / 1000
