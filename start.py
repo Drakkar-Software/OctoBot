@@ -73,6 +73,9 @@ if __name__ == '__main__':
             config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
             config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
 
+            config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+            config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
         if args.risk is not None and 0 < args.risk <= 1:
             config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
 
