@@ -13,6 +13,7 @@ Changelog for 0.0.11
     #139 prepare evaluators tests
     #140 [Trading] Implement real portfolio management
     #141 [Trading] Implement real order management
+    #142 [Timeframe manager] Implementation
 
 # New features :
     - Web interface improvements
@@ -22,6 +23,7 @@ Changelog for 0.0.11
     - Eval note expiration management
     - Beginning of real trading implementation
     - Multiple new tests to improve code coverage
+    - TimeFrame Manager
     
 # Bug fix :
     - Fixed trader simulation order creation
