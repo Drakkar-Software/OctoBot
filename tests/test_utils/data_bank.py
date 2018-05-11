@@ -1,11 +1,10 @@
 import ccxt
 import pandas
-import random
 
 from backtesting.collector.data_collector import DataCollectorParser
 from backtesting.exchange_simulator import ExchangeSimulator
 from tools.data_visualiser import DataVisualiser
-from config.cst import TimeFrames, PriceStrings
+from config.cst import TimeFrames
 
 """
 Class containing data with known moves

@@ -1,6 +1,6 @@
 from enum import Enum
 
-SHORT_VERSION = "0.0.10"
+SHORT_VERSION = "0.0.11"
 REV_VERSION = "0"
 VERSION_DEV_PHASE = "alpha"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
@@ -39,19 +39,24 @@ CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 # Trading
 CONFIG_EXCHANGES = "exchanges"
 CONFIG_TRADER = "trader"
-CONFIG_SIMULATOR = "simulator"
+CONFIG_SIMULATOR = "trader_simulator"
 CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
 CONFIG_TRADER_RISK = "risk"
 CONFIG_TRADER_RISK_MIN = 0.05
 CONFIG_TRADER_RISK_MAX = 1
 ORDER_REFRESHER_TIME = 5
-SIMULATOR_LAST_PRICES_TO_CHECK = 10
+SIMULATOR_LAST_PRICES_TO_CHECK = 50
 # e-7
 MARKET_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
 CURRENCY_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
 CONFIG_TRADER_REFERENCE_MARKET = "reference_market"
 DEFAULT_REFERENCE_MARKET = "BTC"
 MARKET_SEPARATOR = "/"
+
+CONFIG_PORTFOLIO_INFO = "info"
+CONFIG_PORTFOLIO_FREE = "free"
+CONFIG_PORTFOLIO_USED = "used"
+CONFIG_PORTFOLIO_TOTAL = "total"
 
 # Notification
 CONFIG_NOTIFICATION_INSTANCE = "notifier"
@@ -70,6 +75,13 @@ CONFIG_SERVICE_INSTANCE = "service_instance"
 
 # gmail
 CONFIG_GMAIL = "gmail"
+
+# telegram
+CONFIG_TELEGRAM = "telegram"
+CONFIG_TOKEN = "token"
+
+# web
+CONFIG_WEB = "web"
 
 # twitter
 CONFIG_TWITTERS_ACCOUNTS = "accounts"
@@ -105,6 +117,11 @@ STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 
 # Tools
 DIVERGENCE_USED_VALUE = 30
+
+# Interfaces
+CONFIG_INTERFACES = "interfaces"
+CONFIG_INTERFACES_WEB = "web"
+CONFIG_INTERFACES_TELEGRAM = "telegram"
 
 
 class EvaluatorMatrixTypes(Enum):
@@ -179,8 +196,6 @@ TimeFramesMinutes = {
     TimeFrames.ONE_MONTH: 43200,
 }
 
-TimeFramesRank = sorted(TimeFramesMinutes, key=TimeFramesMinutes.__getitem__)
-
 # ladder : 1-100
 TimeFramesRelevance = {
     TimeFrames.ONE_MINUTE: 5,
@@ -204,15 +219,16 @@ IMAGE_ENDINGS = ["png", "jpg", "jpeg", "gif", "jfif", "tiff", "bmp", "ppm", "pgm
 
 
 class TradeOrderSide(Enum):
-    BUY = 1
-    SELL = 2
+    BUY = "buy"
+    SELL = "sell"
 
 
 class OrderStatus(Enum):
-    FILLED = 1
-    PENDING = 2
-    PARTIALLY_FILLED = 3
-    CANCELED = 4
+    FILLED = "filled"
+    OPEN = "open"
+    PARTIALLY_FILLED = "partially_filled"
+    CANCELED = "canceled"
+    CLOSED = "closed"
 
 
 class TraderOrderType(Enum):

@@ -1,5 +1,6 @@
 from config.cst import *
 from evaluator.RealTime.realtime_evaluator import RealTimeTAEvaluator
+from tools.time_frame_manager import TimeFrameManager
 
 
 class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
@@ -63,7 +64,10 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
         self.last_price = volume_data[PriceStrings.STR_PRICE_CLOSE.value].tail(1).values[0]
 
     def set_default_config(self):
+        time_frames = self.exchange.get_config_time_frame()
+        min_time_frame = TimeFrameManager.find_config_min_time_frame(time_frames)
+
         self.specific_config = {
-            CONFIG_REFRESH_RATE: 10,
-            CONFIG_TIME_FRAME: TimeFrames.ONE_MINUTE
+            CONFIG_TIME_FRAME: min_time_frame,
+            CONFIG_REFRESH_RATE: TimeFramesMinutes[min_time_frame] / 6 * MINUTE_TO_SECONDS,
         }

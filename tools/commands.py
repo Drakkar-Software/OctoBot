@@ -1,7 +1,7 @@
+import os
 import subprocess
 
 from backtesting.collector.data_collector import DataCollector
-from backtesting.collector.zipline_data_collector import ZiplineDataCollector
 
 
 class Commands:
@@ -23,17 +23,6 @@ class Commands:
                 raise e
 
     @staticmethod
-    def zipline_data_collector(config, catch=False):
-        data_collector_inst = None
-        try:
-            data_collector_inst = ZiplineDataCollector(config)
-            data_collector_inst.join()
-        except Exception as e:
-            data_collector_inst.stop()
-            if not catch:
-                raise e
-
-    @staticmethod
     def data_collector(config, catch=False):
         data_collector_inst = None
         try:
@@ -45,16 +34,19 @@ class Commands:
                 raise e
 
     @staticmethod
-    def start_bot(bot, logger, web_app, catch=False):
+    def start_bot(bot, logger, catch=False):
         bot.create_exchange_traders()
         bot.create_evaluation_threads()
         try:
             bot.start_threads()
-            if web_app is not None:
-                web_app.start()
             bot.join_threads()
         except Exception as e:
             logger.exception("CryptBot Exception : {0}".format(e))
-            bot.stop_threads()
             if not catch:
                 raise e
+            Commands.stop_bot(bot)
+
+    @staticmethod
+    def stop_bot(bot):
+        bot.stop_threads()
+        os._exit(0)

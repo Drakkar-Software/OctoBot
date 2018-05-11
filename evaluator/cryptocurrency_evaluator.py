@@ -37,7 +37,8 @@ class CryptocurrencyEvaluator:
 
     def join_threads(self):
         for thread in self.social_eval_list:
-            thread.join()
+            if thread.is_alive():
+                thread.join()
 
         self.social_evaluator_refresh.join()
 

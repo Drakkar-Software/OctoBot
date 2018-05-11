@@ -1,14 +1,13 @@
-import talib
 import math
+
+import talib
 from talib._ta_lib import CDLINVERTEDHAMMER, CDLDOJI, CDLSHOOTINGSTAR, CDLHAMMER, CDLHARAMI, CDLPIERCING
 
 from config.cst import *
 from evaluator.TA.TA_evaluator import MomentumEvaluator
-
-from evaluator.Util.trend_analysis import TrendAnalysis
 from evaluator.Util.data_frame_util import DataFrameUtil
 from evaluator.Util.pattern_analysis import PatternAnalyser
-from tools.data_visualiser import DataVisualiser
+from evaluator.Util.trend_analysis import TrendAnalysis
 
 
 class RSIMomentumEvaluator(MomentumEvaluator):
@@ -20,24 +19,6 @@ class RSIMomentumEvaluator(MomentumEvaluator):
     def eval_impl(self):
         if len(self.data):
             rsi_v = talib.RSI(self.data[PriceStrings.STR_PRICE_CLOSE.value])
-
-            # DataVisualiser examples
-            # DataVisualiser.show_candlesticks_dataframe(self.data)
-            # DataVisualiser.show_candlesticks_dataframe_with_indicator(self.data, rsi_v, True)
-            # DataVisualiser.show_candlesticks_dataframe_with_indicator(self.data, rsi_v, False)
-            # indicators_map = [
-            #     {
-            #         "title": "RSI",
-            #         "data": rsi_v,
-            #         "in_graph": True
-            #     },
-            #     {
-            #         "title": "RSI2",
-            #         "data": rsi_v,
-            #         "in_graph": False
-            #     }
-            # ]
-            # DataVisualiser.show_candlesticks_dataframe_with_indicators(self.data, indicators_map)
 
             if len(rsi_v) and not math.isnan(rsi_v.tail(1)):
                 long_trend = TrendAnalysis.get_trend(rsi_v, self.long_term_averages)

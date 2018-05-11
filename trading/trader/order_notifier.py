@@ -1,4 +1,4 @@
-from tools import OrdersNotification
+from tools.notifications import OrdersNotification
 
 
 class OrderNotifier:
@@ -12,7 +12,7 @@ class OrderNotifier:
         self.evaluator_notification = evaluator_notification
         orders = [order for order in self.order.get_linked_orders()]
         orders.append(self.order)
-        self.notifier.notify_create(evaluator_notification, orders, self.order.get_order_symbol())
+        self.notifier.notify_create(evaluator_notification, orders)
 
     def end(self,
             order_filled,
@@ -24,7 +24,6 @@ class OrderNotifier:
 
         self.notifier.notify_end(order_filled,
                                  orders_canceled,
-                                 self.order.get_order_symbol(),
                                  trade_profitability,
                                  portfolio_profitability,
                                  portfolio_diff,

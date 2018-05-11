@@ -1,12 +1,15 @@
 import logging
 import threading
+from time import sleep
 
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table_experiments as dt
 from flask import request
 
 from config.cst import CONFIG_CRYPTO_CURRENCIES
-from interfaces.web import app_instance, load_callbacks, get_bot, load_routes
+from interfaces import get_bot
+from interfaces.web import app_instance, load_callbacks, load_routes
 
 
 class WebApp(threading.Thread):
@@ -17,24 +20,46 @@ class WebApp(threading.Thread):
         self.app = None
 
     def run(self):
+
+        # wait bot is ready
+        while get_bot() is None or not get_bot().is_ready():
+            sleep(0.1)
+
         # Define the WSGI application object
         self.app = app_instance
 
         self.app.layout = html.Div(children=[
             html.H1('CryptoBot Dashboard'),
+
+            dcc.Graph(id='portfolio-value-graph', animate=True),
+
+            dt.DataTable(
+                rows=[{}],
+                row_selectable=False,
+                filterable=True,
+                sortable=True,
+                editable=False,
+                selected_row_indices=[],
+                id='datatable-portfolio'
+            ),
+            dcc.Interval(
+                id='portfolio-update',
+                interval=3 * 1000
+            ),
+
             html.Div([
                 html.Label('Exchange'),
                 dcc.Dropdown(id='exchange-name',
                              options=[{'label': s, 'value': s}
                                       for s in get_bot().get_exchanges_list().keys()],
-                             value=list(get_bot().get_exchanges_list().keys())[0],
+                             value=next(iter(get_bot().get_exchanges_list().keys())),
                              multi=False,
                              ),
                 html.Label('Currency'),
                 dcc.Dropdown(id='cryptocurrency-name',
                              options=[{'label': s, 'value': s}
                                       for s in self.config[CONFIG_CRYPTO_CURRENCIES].keys()],
-                             value=list(self.config[CONFIG_CRYPTO_CURRENCIES].keys())[0],
+                             value=next(iter(self.config[CONFIG_CRYPTO_CURRENCIES].keys())),
                              multi=False,
                              ),
                 html.Label('Symbol'),
@@ -52,24 +77,22 @@ class WebApp(threading.Thread):
                 html.Label('Evaluator'),
                 dcc.Dropdown(id='evaluator-name',
                              options=[],
-                             value="TempFullMixedStrategiesEvaluator",
+                             value="",
                              multi=False,
                              ),
             ],
                 style={'columnCount': 1, 'marginLeft': 25, 'marginRight': 25, 'marginTop': 25, 'marginBottom': 25}),
 
-            html.Label('Symbol real time data (per time frame)'),
             dcc.Graph(id='live-graph', animate=True),
             dcc.Interval(
                 id='graph-update',
-                interval=60 * 1000
+                interval=3 * 1000
             ),
 
-            html.Label('Current symbol strategy'),
             dcc.Graph(id='strategy-live-graph', animate=True),
             dcc.Interval(
                 id='strategy-graph-update',
-                interval=1 * 1000
+                interval=3 * 1000
             ),
         ])
 
@@ -81,7 +104,8 @@ class WebApp(threading.Thread):
                             threaded=True)
 
     def stop(self):
-        func = request.environ.get('werkzeug.server.shutdown')
-        if func is None:
-            self.logger.warning("Not running with the Werkzeug Server")
-        func()
+        # func = request.environ.get('werkzeug.server.shutdown')
+        # if func is None:
+        #     raise RuntimeError('Not running with the Werkzeug Server')
+        # func()
+        pass

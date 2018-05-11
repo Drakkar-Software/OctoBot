@@ -2,3 +2,6 @@ pytest
 pytest-pep8
 pytest-cov
 coverage
+
+zipline
+backtrader

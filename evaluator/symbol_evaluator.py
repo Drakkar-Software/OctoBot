@@ -28,11 +28,11 @@ class SymbolEvaluator:
     def set_trader_simulators(self, simulator):
         self.trader_simulators = simulator
 
-    def add_evaluator_thread_manager(self, exchange, symbol, evaluator_thread):
+    def add_evaluator_thread_manager(self, exchange, symbol, time_frame, evaluator_thread):
         if exchange.get_name() in self.evaluator_thread_managers:
-            self.evaluator_thread_managers[exchange.get_name()].append(evaluator_thread)
+            self.evaluator_thread_managers[exchange.get_name()][time_frame] = evaluator_thread
         else:
-            self.evaluator_thread_managers[exchange.get_name()] = [evaluator_thread]
+            self.evaluator_thread_managers[exchange.get_name()] = {time_frame: evaluator_thread}
             self.final_evaluators[exchange.get_name()] = FinalEvaluator(self, exchange, symbol)
             self.matrices[exchange.get_name()] = EvaluatorMatrix(self.config)
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
@@ -56,7 +56,7 @@ class SymbolEvaluator:
 
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
-        for evaluator_thread in self.evaluator_thread_managers[exchange.get_name()]:
+        for evaluator_thread in self.evaluator_thread_managers[exchange.get_name()].values():
             if evaluator_thread.get_refreshed_times() == 0:
                 self.finalize_enabled_list[exchange.get_name()] = False
 
@@ -68,6 +68,9 @@ class SymbolEvaluator:
 
     def get_final(self, exchange):
         return self.final_evaluators[exchange.get_name()]
+
+    def has_exchange(self, exchange):
+        return exchange.get_name() in self.final_evaluators
 
     def get_matrix(self, exchange):
         return self.matrices[exchange.get_name()]

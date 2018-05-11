@@ -11,10 +11,11 @@ psutil
 plotly
 newspaper3k
 praw
+python-telegram-bot
 
 dash
+dash-table-experiments
 flask
 dash-renderer
 dash-html-components
 dash-core-components
-flask

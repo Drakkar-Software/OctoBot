@@ -7,7 +7,8 @@ from logging.config import fileConfig
 from config.config import load_config
 from config.cst import *
 from cryptobot import CryptoBot
-from interfaces.web.app import WebApp
+from interfaces.telegram.bot import TelegramApp
+from services import WebService
 from tools.commands import Commands
 
 
@@ -29,6 +30,8 @@ if __name__ == '__main__':
     parser.add_argument('--risk', type=float, help='risk representation (between 0 and 1)')
     parser.add_argument('--web', help='Start web server',
                         action='store_true')
+    parser.add_argument('--telegram', help='Start telegram command handler',
+                        action='store_true')
 
     args = parser.parse_args()
 
@@ -44,35 +47,37 @@ if __name__ == '__main__':
     config = load_config()
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
-    bot = CryptoBot(config)
-    web_app = None
+    if args.telegram:
+        TelegramApp.enable(config)
 
     if args.web:
-        import interfaces.web
-        interfaces.web.__init__(bot, config)
-        web_app = WebApp(config)
+        WebService.enable(config)
+
+    bot = CryptoBot(config)
+
+    import interfaces
+    interfaces.__init__(bot, config)
 
     if args.update:
         Commands.update(logger)
 
     elif args.data_collector:
-        zipline_enabled = False
-        if CONFIG_DATA_COLLECTOR_ZIPLINE in config[CONFIG_DATA_COLLECTOR]:
-            zipline_enabled = config[CONFIG_DATA_COLLECTOR][CONFIG_DATA_COLLECTOR_ZIPLINE]
-
-        if zipline_enabled:
-            Commands.zipline_data_collector(config)
-        else:
-            Commands.data_collector(config)
+        Commands.data_collector(config)
 
     # start crypto bot options
     else:
         if args.backtesting:
+            import backtesting
+            backtesting.__init__(bot)
+
             config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
             config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
 
-        if  args.risk is not None and 0 < args.risk <= 1:
+            config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+            config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+        if args.risk is not None and 0 < args.risk <= 1:
             config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
 
         if args.start:
-            Commands.start_bot(bot, logger, web_app)
+            Commands.start_bot(bot, logger)

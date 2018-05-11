@@ -69,8 +69,9 @@ class TempFullMixedStrategiesEvaluator(MixedStrategiesEvaluator):
                         self.inc_ta_counter(time_frame_relevance)
 
         for social in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
-            if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][social]):
-                self.social_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
+            eval_note = self.matrix[EvaluatorMatrixTypes.SOCIAL][social]
+            if check_valid_eval_note(eval_note):
+                self.social_evaluation += eval_note
                 self.inc_social_counter()
 
         self.finalize()
@@ -114,17 +115,24 @@ class InstantSocialReactionMixedStrategiesEvaluator(MixedStrategiesEvaluator):
 
         # TODO : This is an example
         if InstantFluctuationsEvaluator.get_name() in self.matrix[EvaluatorMatrixTypes.REAL_TIME]:
-            self.instant_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][
-                InstantFluctuationsEvaluator.get_name()]
-            self.inc_instant_counter()
+            if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.REAL_TIME][
+                    InstantFluctuationsEvaluator.get_name()]):
+                self.instant_evaluation += self.matrix[EvaluatorMatrixTypes.REAL_TIME][
+                    InstantFluctuationsEvaluator.get_name()]
+                self.inc_instant_counter()
 
         if MediumNewsEvaluator.get_name() in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
-            self.social_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][MediumNewsEvaluator.get_name()]
-            self.inc_social_counter()
+            if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][
+                                         MediumNewsEvaluator.get_name()]):
+                self.social_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][MediumNewsEvaluator.get_name()]
+                self.inc_social_counter()
 
         if RedditForumEvaluator.get_name() in self.matrix[EvaluatorMatrixTypes.SOCIAL]:
-            self.social_evaluation += self.matrix[EvaluatorMatrixTypes.SOCIAL][MediumNewsEvaluator.get_name()]
-            self.inc_social_counter()
+            if check_valid_eval_note(self.matrix[EvaluatorMatrixTypes.SOCIAL][
+                                         RedditForumEvaluator.get_name()]):
+                self.social_evaluation += \
+                    self.matrix[EvaluatorMatrixTypes.SOCIAL][RedditForumEvaluator.get_name()]
+                self.inc_social_counter()
 
         self.finalize()
 

@@ -1,3 +1,40 @@
+Changelog for 0.0.11
+====================
+*Released date : May 11 2018*
+
+**Info** : 
+- Config : "simulator" root key changed to "trader_simulator"
+
+**Warning** : 
+- <span style="color:red">Real trading is in pre-alpha version</span>
+
+# Concerned issues :
+    #87  [Interface] Prototype telegram interface
+    #132 [Web]: add portfolio view
+    #133 [Backtesting] Implement report 
+    #134 [Order Creation] Fix negative quantity 
+    #135 [Simulation] Fix order and trades manager 
+    #136 [Tests] Improve trading tests coverage
+    #138 [Trading] Implement real trades
+    #139 prepare evaluators tests
+    #140 [Trading] Implement real portfolio management
+    #141 [Trading] Implement real order management
+    #142 [Timeframe manager] Implementation
+
+# New features :
+    - Web interface improvements
+    - Telegram interface
+    - Telegram notifications
+    - Pretty Printer tool
+    - Eval note expiration management
+    - Beginning of real trading implementation
+    - Multiple new tests to improve code coverage
+    - TimeFrame Manager
+    
+# Bug fix :
+    - Fixed trader simulation order creation
+    - [Order Creation] Fix negative quantity 
+
 Changelog for 0.0.10
 ====================
 *Released date : May 5 2018*

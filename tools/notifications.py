@@ -4,11 +4,10 @@ from abc import ABCMeta
 from enum import Enum
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
-    CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER
-from services import TwitterService
+    CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM
+from services import TwitterService, TelegramService
 from services.gmail_service import GmailService
-from trading import Exchange
-from trading.trader.order import OrderConstants
+from tools.pretty_printer import PrettyPrinter
 from trading.trader.trades_manager import TradesManager
 
 
@@ -28,11 +27,17 @@ class Notification:
             return False
 
     def notify_with_all(self, message):
-        # gmail
-        self.gmail_notification_factory(message, message)
+        try:
+            # gmail
+            self.gmail_notification_factory(message, message)
 
-        # twitter
-        self.twitter_notification_factory(message)
+            # twitter
+            self.twitter_notification_factory(message)
+
+            # telegram
+            self.telegram_notification_factory(message)
+        except Exception as e:
+            self.logger.error("Failed to notify all : {0}".format(e))
 
     def gmail_notification_available(self):
         if self.enable and NotificationTypes.MAIL.value in self.notification_type:
@@ -48,6 +53,21 @@ class Notification:
                 self.logger.info("Mail sent")
         else:
             self.logger.debug("Mail disabled")
+
+    def telegram_notification_available(self):
+        if self.enable and NotificationTypes.TELEGRAM.value in self.notification_type:
+            if TelegramService.is_setup_correctly(self.config):
+                return True
+        return False
+
+    def telegram_notification_factory(self, message):
+        if self.telegram_notification_available():
+            telegram_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_SERVICE_INSTANCE]
+            result = telegram_service.send_message(message)
+            if result:
+                self.logger.info("Telegram message sent")
+        else:
+            self.logger.debug("Telegram disabled")
 
     def twitter_notification_available(self):
         if self.enable and NotificationTypes.TWITTER.value in self.notification_type:
@@ -100,17 +120,17 @@ class EvaluatorNotification(Notification):
                     TradesManager.get_reference_market(self.config),
                     round(profitability_percent, 2)))
 
-        if self.twitter_notification_available():
-            self.tweet_instance = self.twitter_notification_factory(
-                "CryptoBot ALERT : #{0} "
-                "\n Symbol : #{1}"
-                "\n Result : {2}"
-                "\n Evaluation : {3}".format(
+        alert_content = PrettyPrinter.cryptocurrency_alert(
                     crypto_currency_evaluator.crypto_currency,
-                    symbol.replace("/", ""),
-                    str(result).split(".")[1],
+                    symbol,
+                    result,
                     final_eval)
-            )
+
+        if self.twitter_notification_available():
+            self.tweet_instance = self.twitter_notification_factory(alert_content)
+
+        if self.telegram_notification_available():
+            self.telegram_notification_factory(alert_content)
 
         return self
 
@@ -123,79 +143,62 @@ class OrdersNotification(Notification):
         super().__init__(config)
         self.evaluator_notification = None
 
-    @staticmethod
-    def twitter_order_description(order_type, quantity, currency, price, market):
-        return "{0} : {1} {2} at {3} {4}".format(
-            OrderConstants.TraderOrderTypeClasses[order_type].__name__,
-            round(quantity, 7),
-            currency,
-            round(price, 7),
-            market)
-
-    def notify_create(self, evaluator_notification, orders, symbol):
+    def notify_create(self, evaluator_notification, orders):
         if evaluator_notification is not None:
             self.evaluator_notification = evaluator_notification
+
+        content = "Order(s) creation "
+        for order in orders:
+            content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
 
         if self.twitter_notification_available() \
                 and self.evaluator_notification is not None \
                 and self.evaluator_notification.get_tweet_instance() is not None:
-
             tweet_instance = self.evaluator_notification.get_tweet_instance()
-            currency, market = Exchange.split_symbol(symbol)
-            content = "Order(s) creation "
-            for order in orders:
-                content += "\n- {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
-                                                                                         order.get_origin_quantity(),
-                                                                                         currency,
-                                                                                         order.get_origin_price(),
-                                                                                         market))
             self.twitter_response_factory(tweet_instance, content)
+
+        if self.telegram_notification_available():
+            self.telegram_notification_factory(content)
 
     def notify_end(self,
                    order_filled,
                    orders_canceled,
-                   symbol,
                    trade_profitability,
                    portfolio_profitability,
                    portfolio_diff,
                    profitability=False):
 
+        content = ""
+
+        if order_filled is not None:
+            content += "\nOrder(s) filled : \n- {0}".format(PrettyPrinter.open_order_pretty_printer(order_filled))
+
+        if orders_canceled is not None and len(orders_canceled) > 0:
+            content += "\nOrder(s) canceled :"
+            for order in orders_canceled:
+                content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
+
+        if trade_profitability is not None and profitability:
+            content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
+                                                                  round(trade_profitability * 100, 7))
+
+        if portfolio_profitability is not None and profitability:
+            content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(round(portfolio_profitability, 5),
+                                                                                "+" if portfolio_diff >= 0 else "",
+                                                                                round(portfolio_diff, 7))
+
         if self.twitter_notification_available() \
                 and self.evaluator_notification is not None \
                 and self.evaluator_notification.get_tweet_instance() is not None:
-            currency, market = Exchange.split_symbol(symbol)
             tweet_instance = self.evaluator_notification.get_tweet_instance()
-            content = ""
-
-            if order_filled is not None:
-                content += "\nOrder(s) filled : \n- {0}".format(
-                    OrdersNotification.twitter_order_description(order_filled.get_order_type(),
-                                                                 order_filled.get_origin_quantity(),
-                                                                 currency,
-                                                                 order_filled.get_origin_price(),
-                                                                 market))
-
-            if orders_canceled is not None and len(orders_canceled) > 0:
-                content += "\nOrder(s) canceled :"
-                for order in orders_canceled:
-                    content += "\n- {0}".format(OrdersNotification.twitter_order_description(order.get_order_type(),
-                                                                                             order.get_origin_quantity(),
-                                                                                             currency,
-                                                                                             order.get_origin_price(),
-                                                                                             market))
-
-            if trade_profitability is not None and profitability:
-                content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
-                                                                      round(trade_profitability * 100, 7))
-
-            if portfolio_profitability is not None and profitability:
-                content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(round(portfolio_profitability, 5),
-                                                                                    "+" if portfolio_diff >= 0 else "",
-                                                                                    round(portfolio_diff, 7))
 
             self.twitter_response_factory(tweet_instance, content)
+
+        if self.telegram_notification_available():
+            self.telegram_notification_factory(content)
 
 
 class NotificationTypes(Enum):
     MAIL = 1
     TWITTER = 2
+    TELEGRAM = 3
