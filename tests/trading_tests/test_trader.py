@@ -6,6 +6,7 @@ from tests.test_utils.config import load_test_config
 from trading.trader.order import *
 from trading.trader.order_notifier import OrderNotifier
 from trading.trader.trader import Trader
+from trading.trader.trader_simulator import TraderSimulator
 
 
 class TestTrader:
@@ -15,7 +16,7 @@ class TestTrader:
     def init_default():
         config = load_test_config()
         exchange_inst = ExchangeSimulator(config, ccxt.binance)
-        trader_inst = Trader(config, exchange_inst)
+        trader_inst = TraderSimulator(config, exchange_inst)
         return config, exchange_inst, trader_inst
 
     @staticmethod

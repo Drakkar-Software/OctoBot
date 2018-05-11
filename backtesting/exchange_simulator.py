@@ -8,7 +8,7 @@ from trading import Exchange
 
 class ExchangeSimulator(Exchange):
     def __init__(self, config, exchange_type):
-        super().__init__(config, exchange_type, connect_to_online_exchange=False)
+        self.config = config
 
         if CONFIG_BACKTESTING not in self.config:
             raise Exception("Backtesting config not found")
@@ -39,6 +39,8 @@ class ExchangeSimulator(Exchange):
 
         self.backtesting = Backtesting(config, self)
         self._prepare()
+
+        super().__init__(config, exchange_type, connect_to_online_exchange=False)
 
     # toto: faire une vrai implémentation lorsque la liste des symboles sera géré définitivement
     def _get_symbol_list(self):

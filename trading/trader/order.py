@@ -86,6 +86,9 @@ class Order:
         else:
             self.status = status
 
+        if self.trader.simulate:
+            self.filled_quantity = quantity
+
     # update_order_status will define the rules for a simulated order to be filled / canceled
     @abstractmethod
     def update_order_status(self):
