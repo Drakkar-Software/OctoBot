@@ -74,9 +74,9 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
     __metaclass__ = RealTimeEvaluator
 
     def __init__(self, exchange_inst, symbol):
+        self.exchange = exchange_inst
         super().__init__()
         self.symbol = symbol
-        self.exchange = exchange_inst
         self._define_refresh_time()
 
     @abstractmethod
