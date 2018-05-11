@@ -1,6 +1,6 @@
 # CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot) [![Coverage Status](https://coveralls.io/repos/github/Trading-Bot/CryptoBot/badge.svg?branch=dev)](https://coveralls.io/github/Trading-Bot/CryptoBot?branch=dev)
 
-#### Version 0.0.10-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/alpha/docs/CHANGELOG.md))
+#### Version 0.0.11-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/alpha/docs/CHANGELOG.md))
 
 ## Disclaimer
 This software is for educational purposes only. Do not risk money which 
