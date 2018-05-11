@@ -1,15 +1,14 @@
 import copy
-
-import dash
+import logging
+import numpy
 import time
 
+import dash
 import flask
-import logging
+import pandas
 
 server_instance = flask.Flask(__name__)
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
-bot_instance = None
-global_config = None
 
 # disable Flask logging
 log = logging.getLogger('werkzeug')
@@ -17,14 +16,13 @@ log.setLevel(logging.ERROR)
 
 matrix_history = []
 symbol_data_history = {}
+portfolio_value_history = {
+    "real_value": [],
+    "simulated_value": [],
+    "timestamp": []
+}
 
-
-def __init__(bot, config):
-    global bot_instance
-    bot_instance = bot
-
-    global global_config
-    global_config = config
+TIME_AXIS_TITLE = "Time"
 
 
 def add_to_matrix_history(matrix):
@@ -34,27 +32,33 @@ def add_to_matrix_history(matrix):
     })
 
 
-def add_to_symbol_data_history(symbol, data, time_frame):
-    if not symbol in symbol_data_history:
-        symbol_data_history[symbol] = []
+def add_to_portfolio_value_history(real_value, simulated_value):
+    portfolio_value_history["real_value"].append(real_value)
+    portfolio_value_history["simulated_value"].append(simulated_value)
+    portfolio_value_history["timestamp"].append(time.time())
 
-    symbol_data_history[symbol].append({
-        "data": data,
-        "timestamp": time.time(),
-        "time_frame": time_frame
-    })
+
+def add_to_symbol_data_history(symbol, data, time_frame):
+    if symbol not in symbol_data_history:
+        symbol_data_history[symbol] = {}
+
+    if time_frame not in symbol_data_history[symbol]:
+        symbol_data_history[symbol][time_frame] = data
+
+    symbol_data_history[symbol][time_frame] = pandas.concat([symbol_data_history[symbol][time_frame], data])
+    symbol_data_history[symbol][time_frame] = symbol_data_history[symbol][time_frame].reset_index(drop=True)
 
 
 def get_matrix_history():
     return matrix_history
 
 
-def get_symbol_data_history():
-    return symbol_data_history
+def get_portfolio_value_history():
+    return portfolio_value_history
 
 
-def get_bot():
-    return bot_instance
+def get_symbol_data_history(symbol, time_frame):
+    return symbol_data_history[symbol][time_frame]
 
 
 def load_callbacks():
@@ -63,7 +67,10 @@ def load_callbacks():
         update_time_frame_dropdown_options, \
         update_symbol_dropdown_options, \
         update_symbol_dropdown_value, \
-        update_evaluator_dropdown
+        update_evaluator_dropdown_options, \
+        update_evaluator_dropdown_values, \
+        update_currencies_amounts, \
+        update_portfolio_value
 
 
 def load_routes():

@@ -1,3 +1,5 @@
+import time
+
 from config.cst import *
 from evaluator.Dispatchers.abstract_dispatcher import *
 
@@ -16,6 +18,9 @@ class AbstractEvaluator:
 
         self.eval_note = START_PENDING_EVAL_NOTE
         self.pertinence = START_EVAL_PERTINENCE
+
+        self.eval_note_time_to_live = None
+        self.eval_note_changed_time = None
 
     @classmethod
     def get_name(cls):
@@ -59,6 +64,7 @@ class AbstractEvaluator:
     def eval(self) -> None:
         self.is_updating = True
         try:
+            self.ensure_eval_note_is_not_expired()
             self.eval_impl()
         except Exception as e:
             if CONFIG_DEBUG_OPTION in self.config and self.config[CONFIG_DEBUG_OPTION]:
@@ -94,7 +100,7 @@ class AbstractEvaluator:
                 if DispatcherAbstractClient in base.__bases__:
                     return True
         return False
-    
+
     @classmethod
     def get_parent_evaluator_classes(cls, higher_parent_class_limit=None):
         classes = []
@@ -105,6 +111,7 @@ class AbstractEvaluator:
         return classes
 
     def set_eval_note(self, new_eval_note):
+        self.eval_note_changed()
         if self.eval_note == START_PENDING_EVAL_NOTE:
             self.eval_note = INIT_EVAL_NOTE
 
@@ -124,3 +131,23 @@ class AbstractEvaluator:
                     if parent.__name__ in self.config[CONFIG_EVALUATOR]:
                         return self.config[CONFIG_EVALUATOR][parent.__name__]
                 return default
+
+    # use only if the current evaluation is to stay for a pre-defined amount of seconds
+    def save_evaluation_expiration_time(self, eval_note_time_to_live, eval_note_changed_time=None):
+        self.eval_note_time_to_live = eval_note_time_to_live
+        self.eval_note_changed_time = eval_note_changed_time if eval_note_changed_time else time.time()
+
+    def eval_note_changed(self):
+        if self.eval_note_time_to_live is not None:
+            if self.eval_note_changed_time is None:
+                self.eval_note_changed_time = time.time()
+
+    def ensure_eval_note_is_not_expired(self):
+        if self.eval_note_time_to_live is not None:
+            if self.eval_note_changed_time is None:
+                self.eval_note_changed_time = time.time()
+
+            if time.time() - self.eval_note_changed_time > self.eval_note_time_to_live:
+                self.eval_note = START_PENDING_EVAL_NOTE
+                self.eval_note_time_to_live = None
+                self.eval_note_changed_time = None

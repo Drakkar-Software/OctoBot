@@ -15,34 +15,34 @@ class TestPortfolio:
     @staticmethod
     def init_default():
         config = load_test_config()
-        portfolio_inst = Portfolio(config)
-        return config, portfolio_inst
-
-    @staticmethod
-    def create_trader_and_exchanges(config):
         exchange_inst = ExchangeSimulator(config, ccxt.binance)
         trader_inst = TraderSimulator(config, exchange_inst)
-        return exchange_inst, trader_inst
+        portfolio_inst = Portfolio(config, trader_inst)
+        return config, portfolio_inst, exchange_inst, trader_inst
 
     @staticmethod
     def stop(trader):
         trader.stop_order_manager()
 
     def test_load_portfolio(self):
-        _, portfolio_inst = self.init_default()
+        _, portfolio_inst, _, trader_inst = self.init_default()
         portfolio_inst._load_portfolio()
         assert portfolio_inst.portfolio == {'BTC': {'available': 10, 'total': 10},
                                             'USD': {'available': 1000, 'total': 1000}
                                             }
 
+        self.stop(trader_inst)
+
     def test_get_currency_portfolio(self):
-        _, portfolio_inst = self.init_default()
+        _, portfolio_inst, _, trader_inst = self.init_default()
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("NANO", Portfolio.TOTAL) == 0
 
+        self.stop(trader_inst)
+
     def test_update_portfolio_data(self):
-        _, portfolio_inst = self.init_default()
+        _, portfolio_inst, _, trader_inst = self.init_default()
         portfolio_inst._update_portfolio_data("BTC", -5)
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 5
         portfolio_inst._update_portfolio_data("BTC", -6, total=False, available=True)
@@ -50,9 +50,10 @@ class TestPortfolio:
         portfolio_inst._update_portfolio_data("XRP", 4.5, total=True, available=True)
         assert portfolio_inst.get_currency_portfolio("XRP", Portfolio.AVAILABLE) == 4.5
 
+        self.stop(trader_inst)
+
     def test_update_portfolio_available(self):
-        config, portfolio_inst = self.init_default()
-        _, trader_inst = self.create_trader_and_exchanges(config)
+        config, portfolio_inst, _, trader_inst = self.init_default()
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
@@ -99,8 +100,7 @@ class TestPortfolio:
         self.stop(trader_inst)
 
     def test_update_portfolio(self):
-        config, portfolio_inst = self.init_default()
-        _, trader_inst = self.create_trader_and_exchanges(config)
+        config, portfolio_inst, _, trader_inst = self.init_default()
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
@@ -159,8 +159,7 @@ class TestPortfolio:
         self.stop(trader_inst)
 
     def test_update_portfolio_with_filled_orders(self):
-        config, portfolio_inst = self.init_default()
-        _, trader_inst = self.create_trader_and_exchanges(config)
+        config, portfolio_inst, _, trader_inst = self.init_default()
 
         # Test buy order
         market_sell = SellMarketOrder(trader_inst)
@@ -246,8 +245,7 @@ class TestPortfolio:
         self.stop(trader_inst)
 
     def test_update_portfolio_with_cancelled_orders(self):
-        config, portfolio_inst = self.init_default()
-        _, trader_inst = self.create_trader_and_exchanges(config)
+        config, portfolio_inst, _, trader_inst = self.init_default()
 
         # Test buy order
         market_sell = SellMarketOrder(trader_inst)
@@ -305,8 +303,7 @@ class TestPortfolio:
         self.stop(trader_inst)
 
     def test_update_portfolio_with_stop_loss_orders(self):
-        config, portfolio_inst = self.init_default()
-        _, trader_inst = self.create_trader_and_exchanges(config)
+        config, portfolio_inst, _, trader_inst = self.init_default()
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
@@ -365,8 +362,7 @@ class TestPortfolio:
         self.stop(trader_inst)
 
     def test_reset_portfolio_available(self):
-        config, portfolio_inst = self.init_default()
-        _, trader_inst = self.create_trader_and_exchanges(config)
+        config, portfolio_inst, _, trader_inst = self.init_default()
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)

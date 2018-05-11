@@ -6,6 +6,7 @@ from tests.test_utils.config import load_test_config
 from trading.trader.order import *
 from trading.trader.order_notifier import OrderNotifier
 from trading.trader.trader import Trader
+from trading.trader.trader_simulator import TraderSimulator
 
 
 class TestTrader:
@@ -15,7 +16,7 @@ class TestTrader:
     def init_default():
         config = load_test_config()
         exchange_inst = ExchangeSimulator(config, ccxt.binance)
-        trader_inst = Trader(config, exchange_inst)
+        trader_inst = TraderSimulator(config, exchange_inst)
         return config, exchange_inst, trader_inst
 
     @staticmethod
@@ -23,18 +24,14 @@ class TestTrader:
         trader.stop_order_manager()
 
     def test_enabled(self):
-        config, exchange_inst, trader_inst = self.init_default()
+        config, _, trader_inst = self.init_default()
         self.stop(trader_inst)
 
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = True
-        trader_1 = Trader(config, exchange_inst)
-        assert trader_1.enabled()
-        self.stop(trader_1)
+        assert Trader.enabled(config)
 
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-        trader_2 = Trader(config, exchange_inst)
-        assert not trader_2.enabled()
-        self.stop(trader_2)
+        assert not Trader.enabled(config)
 
     def test_get_risk(self):
         config, exchange_inst, trader_inst = self.init_default()

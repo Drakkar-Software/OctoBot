@@ -28,8 +28,9 @@ class EvaluatorMatrix:
     @staticmethod
     def get_eval_note(matrix, matrix_type, evaluator_name, time_frame=None):
         if matrix_type in matrix and evaluator_name in matrix[matrix_type]:
-            if time_frame is not None and isinstance(matrix[matrix_type][evaluator_name], dict):
-                if time_frame in matrix[matrix_type][evaluator_name]:
+            if time_frame is not None:
+                if isinstance(matrix[matrix_type][evaluator_name], dict) \
+                        and time_frame in matrix[matrix_type][evaluator_name]:
                     eval_note = matrix[matrix_type][evaluator_name][time_frame]
                     if check_valid_eval_note(eval_note):
                         return eval_note

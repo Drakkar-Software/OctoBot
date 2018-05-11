@@ -1,21 +1,29 @@
-import asyncio
 import logging
 
 import pandas
 from ccxt import OrderNotFound, BaseError
 
-from config.cst import PriceStrings, MARKET_SEPARATOR, TraderOrderType, CONFIG_EXCHANGES, PriceIndexes, \
-    CONFIG_TIME_FRAME, TimeFrames
+from config.cst import *
 
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
+from tools.time_frame_manager import TimeFrameManager
+
+
 class Exchange:
     def __init__(self, config, exchange_type, connect_to_online_exchange=True):
+        self.ready = False
         self.exchange_type = exchange_type
         self.connect_to_online_exchange = connect_to_online_exchange
         self.client = None
         self.config = config
+        self.info_list = None
+        self.free = None
+        self.used = None
+        self.total = None
+        self.time_frames = []
         self.name = self.exchange_type.__name__
+        self.traded_pairs = []
 
         if self.connect_to_online_exchange:
             self.create_client()
@@ -23,7 +31,8 @@ class Exchange:
             self.client.load_markets()
 
         self.all_currencies_price_ticker = None
-
+        self.set_config_time_frame()
+        self.ready = True
         self.logger = logging.getLogger(self.name)
 
     def enabled(self):
@@ -34,6 +43,15 @@ class Exchange:
         else:
             self.logger.warning("Exchange {0} is currently disabled".format(self.name))
             return False
+
+    def created_traded_pairs(self, symbols):
+        for cryptocurrency in symbols:
+            for symbol in symbols[cryptocurrency][CONFIG_CRYPTO_PAIRS]:
+                if self.symbol_exists(symbol):
+                    self.traded_pairs.append(symbol)
+
+    def get_traded_pairs(self):
+        return self.traded_pairs
 
     def create_client(self):
         if self.check_config():
@@ -70,7 +88,21 @@ class Exchange:
     #
     #     'total': { ... },    // total (free + used), by currency
     def get_balance(self):
-        return self.client.fetchBalance()
+        balance = self.client.fetchBalance()
+
+        # store portfolio global info
+        self.info_list = balance[CONFIG_PORTFOLIO_INFO]
+        self.free = balance[CONFIG_PORTFOLIO_FREE]
+        self.used = balance[CONFIG_PORTFOLIO_USED]
+        self.total = balance[CONFIG_PORTFOLIO_TOTAL]
+
+        # remove not currency specific keys
+        balance.pop(CONFIG_PORTFOLIO_INFO, None)
+        balance.pop(CONFIG_PORTFOLIO_FREE, None)
+        balance.pop(CONFIG_PORTFOLIO_USED, None)
+        balance.pop(CONFIG_PORTFOLIO_TOTAL, None)
+
+        return balance
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         if limit:
@@ -160,49 +192,60 @@ class Exchange:
     # }
     def get_order(self, order_id):
         if self.client.has['fetchOrder']:
-            return asyncio.get_event_loop().run_until_complete(self.client.fetch_order(order_id))
+            return self.client.fetch_order(order_id)
         else:
-            return None
+            raise Exception("This exchange doesn't support fetchOrder")
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchOrders']:
             return self.client.fetchOrders(symbol=symbol, since=since, limit=limit, params={})
         else:
-            return None
+            raise Exception("This exchange doesn't support fetchOrders")
 
     def get_open_orders(self, symbol=None, since=None, limit=None):
+        if self.client.has['fetchOpenOrders']:
+            return self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit, params={})
+        else:
+            raise Exception("This exchange doesn't support fetchOpenOrders")
+
+    def get_closed_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchClosedOrders']:
             return self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit, params={})
         else:
-            return None
+            raise Exception("This exchange doesn't support fetchClosedOrders")
 
     def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         return self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit, params={})
 
-    def cancel_order(self, order_id):
+    def cancel_order(self, order_id, symbol=None):
         try:
-            self.client.cancel_order(order_id)
+            self.client.cancel_order(order_id, symbol=symbol)
             return True
         except OrderNotFound:
+            self.logger.error("Order {0} was not found".format(order_id))
             return False
 
+    # todo { 'type': 'trailing-stop' }
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
-        if order_type == TraderOrderType.BUY_MARKET:
-            self.client.create_market_buy_order(symbol, quantity)
-        elif order_type == TraderOrderType.BUY_LIMIT:
-            self.client.create_limit_buy_order(symbol, quantity, price)
-        elif order_type == TraderOrderType.SELL_MARKET:
-            self.client.create_market_sell_order(symbol, quantity)
-        elif order_type == TraderOrderType.SELL_LIMIT:
-            self.client.create_limit_sell_order(symbol, quantity, price)
-        elif order_type == TraderOrderType.STOP_LOSS:
-            pass
-        elif order_type == TraderOrderType.STOP_LOSS_LIMIT:
-            pass
-        elif order_type == TraderOrderType.TAKE_PROFIT:
-            pass
-        elif order_type == TraderOrderType.TAKE_PROFIT_LIMIT:
-            pass
+        try:
+            if order_type == TraderOrderType.BUY_MARKET:
+                return self.client.create_market_buy_order(symbol, quantity)
+            elif order_type == TraderOrderType.BUY_LIMIT:
+                return self.client.create_limit_buy_order(symbol, quantity, price)
+            elif order_type == TraderOrderType.SELL_MARKET:
+                return self.client.create_market_sell_order(symbol, quantity)
+            elif order_type == TraderOrderType.SELL_LIMIT:
+                return self.client.create_limit_sell_order(symbol, quantity, price)
+            elif order_type == TraderOrderType.STOP_LOSS:
+                return None
+            elif order_type == TraderOrderType.STOP_LOSS_LIMIT:
+                return None
+            elif order_type == TraderOrderType.TAKE_PROFIT:
+                return None
+            elif order_type == TraderOrderType.TAKE_PROFIT_LIMIT:
+                return None
+        except Exception as e:
+            self.logger.error("Failed to create order : {0}".format(e))
 
     def symbol_exists(self, symbol):
         if symbol in self.client.symbols:
@@ -227,18 +270,13 @@ class Exchange:
     def merge_currencies(currency, market):
         return "{0}/{1}".format(currency, market)
 
-    @staticmethod
-    def get_config_time_frame(config):
-        if CONFIG_TIME_FRAME in config:
-            result = []
-            for time_frame in config[CONFIG_TIME_FRAME]:
-                try:
-                    result.append(TimeFrames(time_frame))
-                except ValueError:
-                    logging.warning("Time frame not found : {0}".format(time_frame))
-            return result
-        else:
-            return TimeFrames
+    def set_config_time_frame(self):
+        for time_frame in TimeFrameManager.get_config_time_frame(self.config):
+            if self.time_frame_exists(time_frame.value):
+                self.time_frames.append(time_frame)
+
+    def get_config_time_frame(self):
+        return self.time_frames
 
     def get_rate_limit(self):
         return self.exchange_type.rateLimit / 1000

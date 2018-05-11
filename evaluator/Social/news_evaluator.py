@@ -1,3 +1,5 @@
+import time
+
 from config.cst import *
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
@@ -8,6 +10,11 @@ from tools.decoding_encoding import DecoderEncoder
 
 
 class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
+    # max time to live for a pulse is 10min
+    _EVAL_MAX_TIME_TO_LIVE = 10 * MINUTE_TO_SECONDS
+    # absolute value above which a notification is triggered
+    _EVAL_NOTIFICATION_THRESHOLD = 0.6
+
     def __init__(self):
         NewsSocialEvaluator.__init__(self)
         DispatcherAbstractClient.__init__(self)
@@ -28,8 +35,8 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
     def get_twitter_service(self):
         return self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
 
-    def _print_tweet(self, tweet_text, count=""):
-        self.logger.debug("Current note : {0} | {1} : {2} : Text : {3}".format(self.eval_note,
+    def _print_tweet(self, tweet_text, note, count=""):
+        self.logger.debug("Current note : {0} | {1} : {2} : Text : {3}".format(note,
                                                                                count,
                                                                                self.symbol,
                                                                                DecoderEncoder.encode_into_bytes(
@@ -37,15 +44,22 @@ class TwitterNewsEvaluator(NewsSocialEvaluator, DispatcherAbstractClient):
 
     def receive_notification_data(self, data):
         self.count += 1
-        self.eval_note = self.get_tweet_sentiment(data[CONFIG_TWEET], data[CONFIG_TWEET_DESCRIPTION])
-        if self.eval_note != START_PENDING_EVAL_NOTE:
-            self._print_tweet(data[CONFIG_TWEET_DESCRIPTION], str(self.count))
-        self._check_eval_note()
+        note = self.get_tweet_sentiment(data[CONFIG_TWEET], data[CONFIG_TWEET_DESCRIPTION])
+        if note != START_PENDING_EVAL_NOTE:
+            self._print_tweet(data[CONFIG_TWEET_DESCRIPTION], note, str(self.count))
+        self._check_eval_note(note)
 
-    def _check_eval_note(self):
-        if self.eval_note != START_PENDING_EVAL_NOTE:
-            if self.eval_note > 0.6 or self.eval_note < -0.6:
+    # only set eval note when something is happening
+    def _check_eval_note(self, note):
+        if note != START_PENDING_EVAL_NOTE:
+            if abs(note) > self._EVAL_NOTIFICATION_THRESHOLD:
+                self.eval_note = note
+                self.save_evaluation_expiration_time(self._compute_notification_time_to_live(self.eval_note))
                 self.notify_evaluator_thread_managers(self.__class__.__name__)
+
+    @staticmethod
+    def _compute_notification_time_to_live(evaluation):
+        return TwitterNewsEvaluator._EVAL_MAX_TIME_TO_LIVE * abs(evaluation)
 
     def get_tweet_sentiment(self, tweet, tweet_text, is_a_quote=False):
         try:

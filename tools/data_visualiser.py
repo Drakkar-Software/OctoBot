@@ -59,19 +59,40 @@ class DataVisualiser:
         fig, axes = plt.subplots(nrows=count_in_graph, sharex=True)
 
         if count_in_graph > 1:
+            ref_axe = axes[0]
             DataVisualiser.get_plot_candlesticks_dataframe(prices_data_frame, axes[0])
             axes[0].set_title('Symbol prices')
         else:
+            ref_axe = axes
             DataVisualiser.get_plot_candlesticks_dataframe(prices_data_frame, axes)
             axes.set_title('Symbol prices')
 
         row = 1
         for indicator_data_frame in indicator_data_frames:
             if indicator_data_frame["in_graph"]:
-                axe = fig.add_subplot(count_in_graph * 100 + 10 + row, frameon=False)
-                axe.get_yaxis().set_ticks([])
-                DataVisualiser.add_indicator_to_plot(indicator_data_frame["data"],
-                                                     axe)
+                if indicator_data_frame["points"]:
+
+                    if indicator_data_frame["share_x"]:
+                        share_x = ref_axe
+                    else:
+                        share_x = None
+
+                    if indicator_data_frame["share_y"]:
+                        share_y = ref_axe
+                    else:
+                        share_y = None
+
+                    axe = fig.add_subplot(count_in_graph * 100 + 10 + row, frameon=False,
+                                          sharey=share_y, sharex=share_x)
+                    axe.get_yaxis().set_ticks([])
+                    DataVisualiser.add_indicator_to_plot(indicator_data_frame["data"],
+                                                         axe,
+                                                         points=True)
+                else:
+                    axe = fig.add_subplot(count_in_graph * 100 + 10 + row, frameon=False)
+                    axe.get_yaxis().set_ticks([])
+                    DataVisualiser.add_indicator_to_plot(indicator_data_frame["data"],
+                                                         axe)
             else:
                 DataVisualiser.add_indicator_to_plot(indicator_data_frame["data"],
                                                      axes[row],
@@ -83,8 +104,8 @@ class DataVisualiser:
         plt.show()
 
     @staticmethod
-    def add_indicator_to_plot(indicator_data_frame, ax, title=None):
-        DataVisualiser.get_plot_indicator_dataframe(indicator_data_frame, ax)
+    def add_indicator_to_plot(indicator_data_frame, ax, points=False, title=None):
+        DataVisualiser.get_plot_indicator_dataframe(indicator_data_frame, ax, points)
         if title is not None:
             ax.set_title('Axe {0}'.format(title))
 
@@ -114,5 +135,8 @@ class DataVisualiser:
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(get_date))
 
     @staticmethod
-    def get_plot_indicator_dataframe(indicator_data_frame, ax):
-        ax.plot(indicator_data_frame.values)
+    def get_plot_indicator_dataframe(indicator_data_frame, ax, points):
+        if points:
+            ax.plot(*zip(*indicator_data_frame), marker='o', color='r', ls='')
+        else:
+            ax.plot(indicator_data_frame.values)
