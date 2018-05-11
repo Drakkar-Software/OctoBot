@@ -81,6 +81,11 @@ class Order:
         else:
             self.creation_time = timestamp
 
+        if status is None:
+            self.status = OrderStatus.OPEN
+        else:
+            self.status = status
+
     # update_order_status will define the rules for a simulated order to be filled / canceled
     @abstractmethod
     def update_order_status(self):
@@ -209,6 +214,7 @@ class BuyMarketOrder(Order):
             # ONLY FOR SIMULATION
             self.status = OrderStatus.FILLED
             self.filled_price = float(self.last_prices[-1]["price"])
+            self.filled_quantity = self.origin_quantity
             self.executed_time = time.time()
 
 
@@ -228,6 +234,7 @@ class BuyLimitOrder(Order):
             if self.check_last_prices(self.origin_price, True):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
+                self.filled_quantity = self.origin_quantity
                 self.executed_time = time.time()
 
 
@@ -246,6 +253,7 @@ class SellMarketOrder(Order):
             # ONLY FOR SIMULATION
             self.status = OrderStatus.FILLED
             self.filled_price = float(self.last_prices[-1]["price"])
+            self.filled_quantity = self.origin_quantity
             self.executed_time = time.time()
 
 
@@ -265,6 +273,7 @@ class SellLimitOrder(Order):
             if self.check_last_prices(self.origin_price, False):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
+                self.filled_quantity = self.origin_quantity
                 self.executed_time = time.time()
 
 
@@ -277,6 +286,7 @@ class StopLossOrder(Order):
         if self.check_last_prices(self.origin_price, True):
             self.status = OrderStatus.FILLED
             self.filled_price = self.origin_price
+            self.filled_quantity = self.origin_quantity
             self.executed_time = time.time()
             if not self.trader.simulate:
                 market_sell = self.trader.create_order_instance(order_type=TraderOrderType.SELL_MARKET,
