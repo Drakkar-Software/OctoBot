@@ -1,6 +1,12 @@
 Changelog for 0.0.11
 ====================
-*Released date : XXX*
+*Released date : May 11 2018*
+
+**Info** : 
+- Config : "simulator" root key changed to "trader_simulator"
+
+**Warning** : 
+- <span style="color:red">Real trading is in pre-alpha version</span>
 
 # Concerned issues :
     #87  [Interface] Prototype telegram interface
