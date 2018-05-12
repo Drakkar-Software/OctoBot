@@ -28,7 +28,7 @@ CONFIG_ADVANCED_INSTANCES = "advanced_instances"
 
 # Backtesting
 CONFIG_BACKTESTING = "backtesting"
-CONFIG_BACKTESTING_DATA_FILE = "file"
+CONFIG_BACKTESTING_DATA_FILES = "files"
 
 # Data collector
 CONFIG_DATA_COLLECTOR = "data_collector"

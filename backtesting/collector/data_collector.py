@@ -30,7 +30,7 @@ class DataCollector:
 
                 exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst)
 
-                if len(exchange_data_collector.get_symbols()) ==  0 or len(exchange_data_collector.time_frames) == 0:
+                if len(exchange_data_collector.get_symbols()) == 0 or len(exchange_data_collector.time_frames) == 0:
                     self.logger.warning("{0} exchange not started (not enough symbols or timeframes)"
                                         .format(exchange_class_string))
                 else:
@@ -61,6 +61,8 @@ class DataCollectorParser:
 
 
 class ExchangeDataCollector(threading.Thread):
+    Exchange_Data_Collector_File_Ext = ".data"
+
     def __init__(self, config, exchange):
         super().__init__()
         self.config = config
@@ -90,13 +92,31 @@ class ExchangeDataCollector(threading.Thread):
     def stop(self):
         self.keep_running = False
 
+    def _set_file_name(self, symbol):
+        return "{0}_{1}_{2}{3}".format(self.exchange.get_name(),
+                                       symbol.replace("/", "_"),
+                                       time.strftime("%Y%m%d_%H%M%S"),
+                                       self.Exchange_Data_Collector_File_Ext)
+
+    @staticmethod
+    def get_file_name(file_name):
+        data = file_name.split("_")
+        try:
+            exchange_name = data[0]
+            symbol = Exchange.merge_currencies(data[1], data[2])
+            timestamp = data[3] + data[4].replace(ExchangeDataCollector.Exchange_Data_Collector_File_Ext, "")
+        except KeyError:
+            exchange_name = None
+            symbol = None
+            timestamp = None
+
+        return exchange_name, symbol, timestamp
+
     def _prepare_files(self):
         for symbol in self.symbols:
             self.file_contents[symbol] = {}
             self.time_frame_update[symbol] = {}
-            self.file_names[symbol] = "{0}_{1}_{2}.data".format(self.exchange.get_name(),
-                                                                symbol.replace("/", "_"),
-                                                                time.strftime("%Y%m%d_%H%M%S"))
+            self.file_names[symbol] = self._set_file_name(symbol)
             for time_frame in self.time_frames:
                 self.file_contents[symbol][time_frame.value] = None
 
@@ -125,7 +145,8 @@ class ExchangeDataCollector(threading.Thread):
 
             for symbol in self.symbols:
                 for time_frame in self.time_frames:
-                    if now - self.time_frame_update[symbol][time_frame] >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
+                    if now - self.time_frame_update[symbol][time_frame] >= TimeFramesMinutes[
+                        time_frame] * MINUTE_TO_SECONDS:
                         result_df = self.exchange.get_symbol_prices(symbol,
                                                                     time_frame,
                                                                     limit=1,
@@ -134,7 +155,8 @@ class ExchangeDataCollector(threading.Thread):
                         self.file_contents[symbol][time_frame.value].append(result_df)
                         self._data_updated = True
                         self.time_frame_update[symbol][time_frame] = now
-                        self.logger.info("{0} ({2}) on {1} updated".format(symbol, self.exchange.get_name(), time_frame))
+                        self.logger.info(
+                            "{0} ({2}) on {1} updated".format(symbol, self.exchange.get_name(), time_frame))
 
                 if self._data_updated:
                     self._update_file(symbol)

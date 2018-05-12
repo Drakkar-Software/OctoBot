@@ -1,3 +1,23 @@
+Changelog for 0.0.12
+====================
+*Released date : XX XX 2018*
+
+**Info** : 
+- Config : "data_collector" root key removed
+- Backtesting : "file" root key changed to "files" as array
+
+# Concerned issues :
+    #145 [Datacollector] Implements multiple symbol
+    #146 [Backtesting] Implement multi symbols
+
+
+# New features :
+    - Multi symbols / exchanges data collector
+
+    
+# Bug fix :
+
+
 Changelog for 0.0.11
 ====================
 *Released date : May 11 2018*
