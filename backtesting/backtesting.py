@@ -15,14 +15,15 @@ class Backtesting:
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def end(self):
-        self.report()
+        for symbol in self.exchange_simulator.get_symbols():
+            self.report(symbol)
 
         # make sure to wait the end of threads process
         time.sleep(3)
         raise Exception("End of simulation in {0} sec".format(time.time() - self.begin_time))
 
-    def report(self):
-        market_data = self.exchange_simulator.get_data()[self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
+    def report(self, symbol):
+        market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
 
         self.time_delta = self.begin_time - market_data[0][PriceIndexes.IND_PRICE_TIME.value] / 1000
 

@@ -91,4 +91,4 @@ class DataBank:
             time_frame,
             data_frame=True)
             for time_frame in TimeFrames
-            if self.exchange_inst.has_data_for_time_frame(time_frame.value)}
+            if self.exchange_inst.has_data_for_time_frame(symbol, time_frame.value)}
