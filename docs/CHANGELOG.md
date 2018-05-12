@@ -13,9 +13,11 @@ Changelog for 0.0.12
 
 # New features :
     - Multi symbols / exchanges data collector
+    - Multi symbols backtesting
 
     
 # Bug fix :
+    - Fix exception in order update_status when backtesting
 
 
 Changelog for 0.0.11
