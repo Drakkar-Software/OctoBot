@@ -31,7 +31,11 @@ class Exchange:
             self.client.load_markets()
 
         self.all_currencies_price_ticker = None
-        self.set_config_time_frame()
+
+        # prepare
+        self._set_config_time_frame()
+        self._set_config_traded_pairs()
+
         self.ready = True
         self.logger = logging.getLogger(self.name)
 
@@ -43,15 +47,6 @@ class Exchange:
         else:
             self.logger.warning("Exchange {0} is currently disabled".format(self.name))
             return False
-
-    def created_traded_pairs(self, symbols):
-        for cryptocurrency in symbols:
-            for symbol in symbols[cryptocurrency][CONFIG_CRYPTO_PAIRS]:
-                if self.symbol_exists(symbol):
-                    self.traded_pairs.append(symbol)
-
-    def get_traded_pairs(self):
-        return self.traded_pairs
 
     def create_client(self):
         if self.check_config():
@@ -270,13 +265,22 @@ class Exchange:
     def merge_currencies(currency, market):
         return "{0}/{1}".format(currency, market)
 
-    def set_config_time_frame(self):
+    def _set_config_time_frame(self):
         for time_frame in TimeFrameManager.get_config_time_frame(self.config):
             if self.time_frame_exists(time_frame.value):
                 self.time_frames.append(time_frame)
 
     def get_config_time_frame(self):
         return self.time_frames
+
+    def _set_config_traded_pairs(self):
+        for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
+            for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]:
+                if self.symbol_exists(symbol):
+                    self.traded_pairs.append(symbol)
+
+    def get_traded_pairs(self):
+        return self.traded_pairs
 
     def get_rate_limit(self):
         return self.exchange_type.rateLimit / 1000

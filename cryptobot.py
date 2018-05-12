@@ -81,9 +81,6 @@ class CryptoBot:
 
                 self.exchanges_list[exchange_inst.get_name()] = exchange_inst
 
-                # create traded pairs
-                exchange_inst.created_traded_pairs(self.config[CONFIG_CRYPTO_CURRENCIES])
-
                 # create trader instance for this exchange
                 exchange_trader = Trader(self.config, exchange_inst)
                 self.exchange_traders[exchange_inst.get_name()] = exchange_trader

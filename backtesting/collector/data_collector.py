@@ -43,10 +43,6 @@ class DataCollector:
         for data_collector in self.exchange_data_collectors_threads:
             data_collector.join()
 
-    @staticmethod
-    def enabled(config):
-        return CONFIG_DATA_COLLECTOR in config and config[CONFIG_DATA_COLLECTOR][CONFIG_ENABLED_OPTION]
-
 
 class DataCollectorParser:
     @staticmethod
@@ -65,41 +61,51 @@ class ExchangeDataCollector(threading.Thread):
         super().__init__()
         self.config = config
         self.exchange = exchange
-        self.symbol = self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL]
+        self.symbols = self.exchange.get_traded_pairs()
         self.keep_running = True
         self.file = None
-        self.file_content = None
         self._data_updated = False
-        self.file_name = "{0}_{1}_{2}.data".format(self.exchange.get_name(),
-                                                   self.symbol.replace("/", "_"),
-                                                   time.strftime("%Y%m%d_%H%M%S"))
+
+        self.file_names = {}
+        self.file_contents = {}
         self.time_frame_update = {}
+
+        self.time_frames = []
+        for time_frame in TimeFrames:
+            if self.exchange.time_frame_exists(time_frame.value):
+                self.time_frames.append(time_frame)
+
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def stop(self):
         self.keep_running = False
 
-    def _update_file(self):
-        with open(CONFIG_DATA_COLLECTOR_PATH + self.file_name, 'w') as json_file:
-            json.dump(self.file_content, json_file)
-
-    def _prepare_file(self):
-        self.file_content = {}
-        for time_frame in TimeFrames:
-            self.file_content[time_frame.value] = None
+    def _prepare_files(self):
+        for symbol in self.symbols:
+            self.file_contents[symbol] = {}
+            self.time_frame_update[symbol] = {}
+            self.file_names[symbol] = "{0}_{1}_{2}.data".format(self.exchange.get_name(),
+                                                                symbol.replace("/", "_"),
+                                                                time.strftime("%Y%m%d_%H%M%S"))
+            for time_frame in self.time_frames:
+                self.file_contents[symbol][time_frame.value] = None
 
     def _prepare(self):
         self.logger.info("{0} prepare...".format(self.exchange.get_name()))
-        self._prepare_file()
-        for time_frame in TimeFrames:
-            if self.exchange.time_frame_exists(time_frame.value):
+        self._prepare_files()
+        for symbol in self.symbols:
+            for time_frame in self.time_frames:
                 # write all available data for this time frame
-                self.file_content[time_frame.value] = self.exchange.get_symbol_prices(self.symbol,
-                                                                                      time_frame,
-                                                                                      limit=None,
-                                                                                      data_frame=False)
-                self.time_frame_update[time_frame] = time.time()
-        self._update_file()
+                self.file_contents[symbol][time_frame.value] = self.exchange.get_symbol_prices(symbol,
+                                                                                               time_frame,
+                                                                                               limit=None,
+                                                                                               data_frame=False)
+                self.time_frame_update[symbol][time_frame] = time.time()
+            self._update_file(symbol)
+
+    def _update_file(self, symbol):
+        with open(CONFIG_DATA_COLLECTOR_PATH + self.file_names[symbol], 'w') as json_file:
+            json.dump(self.file_contents[symbol], json_file)
 
     def run(self):
         self._prepare()
@@ -107,22 +113,22 @@ class ExchangeDataCollector(threading.Thread):
         while self.keep_running:
             now = time.time()
 
-            for time_frame in TimeFrames:
-                if self.exchange.time_frame_exists(time_frame.value):
-                    if now - self.time_frame_update[time_frame] >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                        result_df = self.exchange.get_symbol_prices(self.symbol,
+            for symbol in self.symbols:
+                for time_frame in self.time_frames:
+                    if now - self.time_frame_update[symbol][time_frame] >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
+                        result_df = self.exchange.get_symbol_prices(symbol,
                                                                     time_frame,
                                                                     limit=1,
                                                                     data_frame=False)[0]
 
-                        self.file_content[time_frame.value].append(result_df)
+                        self.file_contents[symbol][time_frame.value].append(result_df)
                         self._data_updated = True
-                        self.time_frame_update[time_frame] = now
-                        self.logger.info("{0} : {1} updated".format(self.exchange.get_name(), time_frame))
+                        self.time_frame_update[symbol][time_frame] = now
+                        self.logger.info("{0} ({2}) on {1} updated".format(symbol, self.exchange.get_name(), time_frame))
 
-            if self._data_updated:
-                self._update_file()
-                self._data_updated = False
+                if self._data_updated:
+                    self._update_file(symbol)
+                    self._data_updated = False
 
             final_sleep = DATA_COLLECTOR_REFRESHER_TIME - (time.time() - now)
             time.sleep(final_sleep if final_sleep >= 0 else 0)
