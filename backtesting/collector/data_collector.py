@@ -29,9 +29,13 @@ class DataCollector:
                 exchange_inst = Exchange(self.config, exchange_type)
 
                 exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst)
-                exchange_data_collector.start()
 
-                self.exchange_data_collectors_threads.append(exchange_data_collector)
+                if len(exchange_data_collector.get_symbols()) ==  0 or len(exchange_data_collector.time_frames) == 0:
+                    self.logger.warning("{0} exchange not started (not enough symbols or timeframes)"
+                                        .format(exchange_class_string))
+                else:
+                    exchange_data_collector.start()
+                    self.exchange_data_collectors_threads.append(exchange_data_collector)
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
 
@@ -76,6 +80,12 @@ class ExchangeDataCollector(threading.Thread):
                 self.time_frames.append(time_frame)
 
         self.logger = logging.getLogger(self.__class__.__name__)
+
+    def get_symbols(self):
+        return self.symbols
+
+    def get_time_frames(self):
+        return self.time_frames
 
     def stop(self):
         self.keep_running = False
