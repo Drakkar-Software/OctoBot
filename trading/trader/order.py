@@ -64,7 +64,6 @@ class Order:
 
         self.order_id = order_id
         self.origin_price = price
-        self.last_prices = price
         self.status = status
         self.created_last_price = current_price
         self.origin_quantity = quantity
@@ -96,18 +95,20 @@ class Order:
 
     # check_last_prices is used to collect data to perform the order update_order_status process
     def check_last_prices(self, price, inferior):
-        prices = [p["price"] for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]]
+        if self.last_prices is not None:
+            prices = [p["price"] for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]]
 
-        if inferior:
-            if float(min(prices)) < price:
-                return True
+            if inferior:
+                if float(min(prices)) < price:
+                    return True
+                else:
+                    return False
             else:
-                return False
-        else:
-            if float(max(prices)) > price:
-                return True
-            else:
-                return False
+                if float(max(prices)) > price:
+                    return True
+                else:
+                    return False
+        return False
 
     def cancel_order(self):
         self.status = OrderStatus.CANCELED

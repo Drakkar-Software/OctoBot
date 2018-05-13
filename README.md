@@ -27,6 +27,7 @@ git clone https://github.com/Trading-Bot/CryptoBot
 cd CryptoBot
 pip install -r requirements.txt
 ```
+See installation [troubleshoots page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)
 
 ## Configuration
 Create a **config.json** file in the **config folder** with the following example :
@@ -68,7 +69,7 @@ See [Trader Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Trader)
 ```
 See [Simulator Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator)
 ```json
-"simulator":{
+"trader_simulator":{
     "enabled": true,
     "risk": 0.5,
     "starting_portfolio": {
@@ -83,30 +84,30 @@ See [Services Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Services)
 ```
   
 ## Usage
+### Start the bot
 ```bash
 python start.py
 ```
+### Start the bot in simulation mode
+```bash
+python start.py --simulate
+```
+### Start the bot in backtesting mode
+```bash
+python start.py --backtesting
+```
+### Start the bot with interfaces (web / telegram)
+```bash
+python start.py --web 
+python start.py --telegram
+python start.py --web --telegram 
+```
+### Start the bot in data collector mode (for backtesting)
+```bash
+python start.py --data_collector
+```
 ## Customize you CryptoBot !
-### Adding implementations of any evaluator
-
-To add another implementation of an existing evaluator, 3 simple steps:
-1. Create a class **inheriting** the evaluator to improve
-2. Store it in the evaluator's ```Advanced``` folder (in ```CryptoBot/evaluator/evaluator_type/Advanced```).
-3. In this ```Advanced``` folder, create or update the ```__init__.py``` file to add the following line:
-```python
-from .file_containing_new_implementation_name.py import *
-```
-### Adding implementations of any analysis tool
-
-To add another implementation of an existing analysis tool, 3 simple steps:
-1. Create a class inheriting the analyser to improve
-2. Store it in the ```Advanced``` folder (in ```CryptoBot/evaluator/Util/Advanced```).
-3. In this ```Advanced``` folder, create or update the ```__init__.py``` file to add the following line:
-```python
-from .file_containing_new_implementation_name.py import *
-```
-
-More information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
+Information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
 
 ## Testing
 Use *pytest* command in the root folder : 

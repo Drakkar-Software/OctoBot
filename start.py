@@ -21,6 +21,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CryptoBot')
     parser.add_argument('start', help='start the CryptoBot',
                         action='store_true')
+    parser.add_argument('--simulate', help='start the CryptoBot with the trader simulator',
+                        action='store_true')
     parser.add_argument('--data_collector', help='start the data collector process to create data for backtesting',
                         action='store_true')
     parser.add_argument('--update', help='update CryptoBot with the latest version available',
@@ -73,6 +75,10 @@ if __name__ == '__main__':
             config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
             config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
 
+            config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+            config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+        if args.simulate:
             config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
             config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
 

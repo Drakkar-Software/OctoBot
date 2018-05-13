@@ -148,7 +148,7 @@ class TestOrder:
                        stop_price=0.9,
                        order_notifier=None)
         assert order_inst.origin_stop_price == 0.9
-        assert order_inst.last_prices == 0.12
+        assert order_inst.last_prices is None
         assert order_inst.origin_price == 0.12
 
         # with simulated trader
