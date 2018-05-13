@@ -1,6 +1,6 @@
 from backtesting import get_bot
 from backtesting.backtesting import Backtesting
-from backtesting.collector.data_collector import DataCollectorParser
+from backtesting.collector.data_collector import DataCollectorParser, ExchangeDataCollector
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
 from trading import Exchange
@@ -13,13 +13,9 @@ class ExchangeSimulator(Exchange):
         if CONFIG_BACKTESTING not in self.config:
             raise Exception("Backtesting config not found")
 
-        if CONFIG_DATA_COLLECTOR not in self.config:
-            raise Exception("Data collector config not found")
-
-        self.data = DataCollectorParser.parse(self.config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILE])
-        self.fix_timestamps()
-
-        self.symbols = self._get_symbol_list()
+        self.symbols = None
+        self.data = None
+        self._get_symbol_list()
 
         self.config_time_frames = TimeFrameManager.get_config_time_frame(config)
 
@@ -42,23 +38,39 @@ class ExchangeSimulator(Exchange):
 
         super().__init__(config, exchange_type, connect_to_online_exchange=False)
 
-    # toto: faire une vrai implémentation lorsque la liste des symboles sera géré définitivement
+    # todo merge multiple file with the same symbol
     def _get_symbol_list(self):
-        # temp
-        return [self.config[CONFIG_DATA_COLLECTOR][CONFIG_SYMBOL]]
+        self.symbols = []
+        self.data = {}
+        symbols_appended = {}
 
-    def fix_timestamps(self):
+        # parse files
+        for file in self.config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES]:
+            exchange_name, symbol, timestamp = ExchangeDataCollector.get_file_name(file)
+            if exchange_name is not None and symbol is not None and timestamp is not None:
+
+                # check if symbol data already in symbols
+                # TODO check exchanges ?
+                if symbol not in symbols_appended:
+                    symbols_appended[symbol] = 0
+                    if symbols_appended[symbol] < int(timestamp):
+                        symbols_appended[symbol] = int(timestamp)
+                        self.symbols.append(symbol)
+                        data = DataCollectorParser.parse(file)
+                        self.data[symbol] = self.fix_timestamps(data)
+
+    @staticmethod
+    def fix_timestamps(data):
         if get_bot() is not None:
-            for time_frame in self.data:
-                time_delta = get_bot().get_start_time()*1000 - self.data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
-                for data_list in self.data[time_frame]:
+            for time_frame in data:
+                time_delta = get_bot().get_start_time()*1000 - data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
+                for data_list in data[time_frame]:
                     data_list[PriceIndexes.IND_PRICE_TIME.value] += time_delta
+        return data
 
     # returns price data for a given symbol
     def _get_symbol_data(self, symbol):
-        # temp: to adapt when multi symbol file is up or any other solution
-        # currently 1 symbol per file and 1 file parsed => juste return data
-        return self.data
+        return self.data[symbol]
 
     def symbol_exists(self, symbol):
         return symbol in self.symbols
@@ -66,9 +78,12 @@ class ExchangeSimulator(Exchange):
     def time_frame_exists(self, time_frame):
         return time_frame in self.time_frame_get_times
 
-    def has_data_for_time_frame(self, time_frame):
-        return time_frame in self.data \
-               and len(self.data[time_frame]) >= self.DEFAULT_LIMIT + self.MIN_LIMIT
+    def has_data_for_time_frame(self, symbol, time_frame):
+        return time_frame in self.data[symbol] \
+               and len(self.data[symbol][time_frame]) >= self.DEFAULT_LIMIT + self.MIN_LIMIT
+
+    def get_symbols(self):
+        return self.symbols
 
     def get_name(self):
         return self.__class__.__name__+str(self.symbols)
@@ -108,7 +123,7 @@ class ExchangeSimulator(Exchange):
         return False
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        result = self._extract_data_with_limit(time_frame)
+        result = self._extract_data_with_limit(symbol, time_frame)
         self.time_frame_get_times[time_frame.value] += 1
 
         if data_frame:
@@ -173,8 +188,8 @@ class ExchangeSimulator(Exchange):
         else:
             return array[index:index + max_count]
 
-    def _extract_data_with_limit(self, time_frame):
-        return self._extract_indexes(self.data[time_frame.value], self.time_frame_get_times[time_frame.value])
+    def _extract_data_with_limit(self, symbol, time_frame):
+        return self._extract_indexes(self.data[symbol][time_frame.value], self.time_frame_get_times[time_frame.value])
 
     def get_recent_trades(self, symbol):
         return self._extract_indexes(self.fetched_trades[symbol],
