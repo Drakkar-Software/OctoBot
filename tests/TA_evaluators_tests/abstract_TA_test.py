@@ -13,7 +13,7 @@ Reference class for technical analysis black box testing. Defines tests to imple
 class AbstractTATest:
     __metaclass__ = ABCMeta
 
-    def init(self, TA_evaluator_class, data_file=None, test_symbols=["BTC"]):
+    def init(self, TA_evaluator_class, data_file=None, test_symbols=["BTC/USDT"]):
         self.evaluator = TA_evaluator_class()
         self.config = load_test_config()
         self.test_symbols = test_symbols

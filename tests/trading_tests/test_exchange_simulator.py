@@ -21,7 +21,7 @@ class TestExchangeSimulator:
         _, exchange_inst = self.init_default()
 
         test_df = exchange_inst.get_symbol_prices(
-            "BTC",
+            self.DEFAULT_SYMBOL,
             TimeFrames.ONE_HOUR,
             data_frame=True)
 
