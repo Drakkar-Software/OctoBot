@@ -1,8 +1,8 @@
 import json
 import logging
+import os.path
 import threading
 import time
-import os.path
 
 import ccxt
 
@@ -100,7 +100,7 @@ class ExchangeDataCollector(threading.Thread):
 
     @staticmethod
     def get_file_name(file_name):
-        data = file_name.split("_")
+        data = os.path.basename(file_name).split("_")
         try:
             exchange_name = data[0]
             symbol = Exchange.merge_currencies(data[1], data[2])
