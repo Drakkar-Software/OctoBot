@@ -54,6 +54,6 @@
   },
   "backtesting": {
     "enabled": false,
-    "files": ["binance_BTC_USDT_20180428_121156.data"]
+    "files": ["tests/static/binance_BTC_USDT_20180428_121156.data"]
   }
 }
