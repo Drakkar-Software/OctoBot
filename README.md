@@ -84,8 +84,27 @@ See [Services Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Services)
 ```
   
 ## Usage
+### Start the bot
 ```bash
 python start.py
+```
+### Start the bot in simulation mode
+```bash
+python start.py --simulate
+```
+### Start the bot in backtesting mode
+```bash
+python start.py --backtesting
+```
+### Start the bot with interfaces (web / telegram)
+```bash
+python start.py --web 
+python start.py --telegram
+python start.py --web --telegram 
+```
+### Start the bot in data collector mode (for backtesting)
+```bash
+python start.py --data_collector
 ```
 ## Customize you CryptoBot !
 Information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
