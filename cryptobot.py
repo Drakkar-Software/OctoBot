@@ -57,6 +57,9 @@ class CryptoBot:
         # Notify starting
         self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
 
+        # Backtesting
+        self.backtesting_enabled = None
+
         self.symbol_threads_manager = {}
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
@@ -67,13 +70,15 @@ class CryptoBot:
         self.symbol_time_frame_updater_threads = []
 
     def create_exchange_traders(self):
+        self.backtesting_enabled = Backtesting.enabled(self.config)
+
         available_exchanges = ccxt.exchanges
         for exchange_class_string in self.config[CONFIG_EXCHANGES]:
             if exchange_class_string in available_exchanges:
                 exchange_type = getattr(ccxt, exchange_class_string)
 
                 # Backtesting Exchange
-                if Backtesting.enabled(self.config):
+                if self.backtesting_enabled:
                     exchange_inst = ExchangeSimulator(self.config, exchange_type)
                 else:
                     # True Exchange
@@ -126,7 +131,8 @@ class CryptoBot:
 
                         # notify that exchange doesn't support this symbol
                         else:
-                            self.logger.warning("{0} doesn't support {1}".format(exchange.get_name(), symbol))
+                            if not self.backtesting_enabled:
+                                self.logger.warning("{0} doesn't support {1}".format(exchange.get_name(), symbol))
 
     def _create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
         # Create real time TA evaluators
