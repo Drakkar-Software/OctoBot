@@ -85,11 +85,6 @@ class RedditForumEvaluator(ForumSocialEvaluator, DispatcherAbstractClient):
     def run(self):
         pass
 
-    def set_default_config(self):
-        self.social_config = {
-            CONFIG_REFRESH_RATE: 3
-        }
-
 
 class BTCTalkForumEvaluator(ForumSocialEvaluator):
     def __init__(self):

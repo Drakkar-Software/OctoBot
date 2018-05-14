@@ -39,13 +39,13 @@ if __name__ == '__main__':
 
     fileConfig('config/logging_config.ini')
 
-    logger = logging.getLogger("MAIN")
+    logger = logging.getLogger("CryptoBot Launcher")
     sys.excepthook = _log_uncaught_exceptions
 
     # Version
     logger.info("Version : {0}".format(LONG_VERSION))
 
-    logger.info("Load config files...")
+    logger.info("Loading config files...")
     config = load_config()
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 

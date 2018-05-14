@@ -7,7 +7,7 @@ import dash_html_components as html
 import dash_table_experiments as dt
 from flask import request
 
-from config.cst import CONFIG_CRYPTO_CURRENCIES
+from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_WEB, CONFIG_CATEGORY_SERVICES, CONFIG_WEB_IP, CONFIG_WEB_PORT
 from interfaces import get_bot
 from interfaces.web import app_instance, load_callbacks, load_routes
 
@@ -98,8 +98,8 @@ class WebApp(threading.Thread):
 
         load_callbacks()
         load_routes()
-        self.app.run_server(host='0.0.0.0',
-                            port=5000,
+        self.app.run_server(host=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP],
+                            port=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT],
                             debug=False,
                             threaded=True)
 

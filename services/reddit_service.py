@@ -39,3 +39,7 @@ class RedditService(AbstractService):
                and "client_secret" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT] \
                and "password" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT] \
                and "username" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]
+
+    def get_successful_startup_message(self):
+        return "Successfully initialized using {0} account."\
+            .format(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["username"])

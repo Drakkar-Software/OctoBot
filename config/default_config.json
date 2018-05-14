@@ -20,7 +20,7 @@
     "enabled": false,
     "risk": 0.5
   },
-  "simulator":{
+  "trader_simulator":{
     "enabled": true,
     "risk": 0.5,
     "starting_portfolio": {
