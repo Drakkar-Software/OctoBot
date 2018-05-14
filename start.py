@@ -34,6 +34,8 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--telegram', help='Start telegram command handler',
                         action='store_true')
+    parser.add_argument('--packager', help='Start CryptoBot package manager',
+                        action='store_true')
 
     args = parser.parse_args()
 
@@ -65,6 +67,9 @@ if __name__ == '__main__':
 
     elif args.data_collector:
         Commands.data_collector(config)
+
+    elif args.packager:
+        Commands.package_manager(config, None)
 
     # start crypto bot options
     else:
