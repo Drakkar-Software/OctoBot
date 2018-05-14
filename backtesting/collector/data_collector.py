@@ -145,8 +145,8 @@ class ExchangeDataCollector(threading.Thread):
 
             for symbol in self.symbols:
                 for time_frame in self.time_frames:
-                    if now - self.time_frame_update[symbol][time_frame] >= TimeFramesMinutes[
-                        time_frame] * MINUTE_TO_SECONDS:
+                    if now - self.time_frame_update[symbol][time_frame] \
+                            >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
                         result_df = self.exchange.get_symbol_prices(symbol,
                                                                     time_frame,
                                                                     limit=1,

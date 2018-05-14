@@ -60,3 +60,11 @@ class AbstractService:
     @abstractmethod
     def prepare(self) -> None:
         raise NotImplementedError("prepare not implemented")
+
+    # Called by say_hello after service is prepared, return relevant service information
+    @abstractmethod
+    def get_successful_startup_message(self):
+        raise NotImplementedError("get_successful_startup_message not implemented")
+
+    def say_hello(self):
+        self.logger.info(self.get_successful_startup_message())

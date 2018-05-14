@@ -58,3 +58,7 @@ class GmailService(AbstractService):
         except Exception as e:
             self.logger.error("Failed to send mail : {0}".format(e))
             return False
+
+    def get_successful_startup_message(self):
+        return "Successfully initialized to notify {0}."\
+            .format(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["mail_dest"])

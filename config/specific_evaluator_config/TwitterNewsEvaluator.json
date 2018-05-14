@@ -1,8 +1,8 @@
 {
   "accounts" : {
     "Bitcoin": ["GuillaGjum","RedditBTC","BTCFoundation"],
-    "Ethereum": ["GuillaGjum","ethereum"],
-    "Neo": ["GuillaGjum","NEO_Blockchain"]
+    "Ethereum": ["ethereum","VitalikButerin"],
+    "Neo": ["NEO_Blockchain","NEOnewstoday","NEO_council","neotogas","NEO_DevCon","RedditBTC","neonexchange","dahongfei"]
   },
   "hashtags" : {
     "Bitcoin": ["bitcoin","btc","binance","kucoin","tether","bitfinex","bitmex","cryptopia","cryptocurrencies","blockchain"],

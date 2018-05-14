@@ -81,3 +81,9 @@ class TwitterService(AbstractService):
 
     def get_tweet(self, tweet_id):
         return self.twitter_api.GetStatus(tweet_id)
+
+    def _get_twitter_url(self):
+        return "https://twitter.com/{0}".format(self.twitter_api.VerifyCredentials().screen_name)
+
+    def get_successful_startup_message(self):
+        return "Successfully initialized and accessible at: {0}.".format(self._get_twitter_url())

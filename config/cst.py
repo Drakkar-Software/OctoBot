@@ -82,6 +82,10 @@ CONFIG_TOKEN = "token"
 
 # web
 CONFIG_WEB = "web"
+CONFIG_WEB_IP = "ip"
+CONFIG_WEB_PORT = "port"
+DEFAULT_SERVER_IP = '0.0.0.0'
+DEFAULT_SERVER_PORT = 5001
 
 # twitter
 CONFIG_TWITTERS_ACCOUNTS = "accounts"
