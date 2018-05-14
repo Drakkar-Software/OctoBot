@@ -65,4 +65,4 @@ class WebService(AbstractService):
                     self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT])
 
     def get_successful_startup_message(self):
-        return "Successfully initialized and accessible at: {0}.".format(self._get_web_server_url())
+        return "Interface successfully initialized and accessible at: {0}.".format(self._get_web_server_url())
