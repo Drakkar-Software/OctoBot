@@ -78,7 +78,7 @@ See [Simulator Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator)
     }
 }
 ```
-See [Services Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Services)
+See [Interfaces Wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Interfaces)
 ```json
 "services": {}
 ```
@@ -106,7 +106,7 @@ python start.py --web --telegram
 ```bash
 python start.py --data_collector
 ```
-## Customize you CryptoBot !
+## Customize your CryptoBot !
 Information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
 
 ## Testing
@@ -116,7 +116,7 @@ pytest
 ```
 
 ## Changelog
-See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md)
+See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/alpha/docs/CHANGELOG.md)
 
 ## More
 For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).
