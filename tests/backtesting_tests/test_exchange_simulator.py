@@ -135,10 +135,10 @@ class TestExchangeSimulator:
         assert exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, self.DEFAULT_TF)
 
-        assert exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
-        assert not exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
-        assert not exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
+        # should be true
+        for _ in range(0, int(exchange_inst.to_fetch_trades_by_time_frame[TimeFrames.ONE_HOUR])):
+            assert exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
 
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, self.DEFAULT_TF)
+        # exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, self.DEFAULT_TF)
         assert exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
-        assert not exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
+        # assert not exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
