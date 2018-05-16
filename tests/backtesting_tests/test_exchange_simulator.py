@@ -132,7 +132,7 @@ class TestExchangeSimulator:
     def test_should_update_recent_trades(self):
         _, exchange_inst = self.init_default()
 
-        assert not exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
+        assert exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, self.DEFAULT_TF)
 
         assert exchange_inst.should_update_recent_trades(self.DEFAULT_SYMBOL)
