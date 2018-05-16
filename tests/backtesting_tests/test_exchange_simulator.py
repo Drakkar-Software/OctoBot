@@ -76,7 +76,6 @@ class TestExchangeSimulator:
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
         # call without get_recent_trades
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
@@ -84,13 +83,12 @@ class TestExchangeSimulator:
         exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = 2
 
         # call with not enough get_recent_trades
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
-        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = TimeFramesMinutes[
-            TimeFrames.ONE_HOUR] * exchange_inst.time_frame_get_times[TimeFrames.ONE_HOUR.value]
+        enough_recent_trades = exchange_inst.to_fetch_trades_by_time_frame[TimeFrames.ONE_HOUR] * 2
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = enough_recent_trades
 
         # call with enough get_recent_trades
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
@@ -98,25 +96,35 @@ class TestExchangeSimulator:
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
-        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
+        enough_recent_trades = exchange_inst.to_fetch_trades_by_time_frame[TimeFrames.ONE_HOUR] * 3
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = enough_recent_trades
 
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
-        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = ORDER_REFRESHER_TIME * 4
+        enough_recent_trades = exchange_inst.to_fetch_trades_by_time_frame[TimeFrames.ONE_HOUR] * 4
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = enough_recent_trades
 
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
+        enough_recent_trades = exchange_inst.to_fetch_trades_by_time_frame[TimeFrames.ONE_HOUR] * 5
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = enough_recent_trades
+
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
+
+        enough_recent_trades = exchange_inst.to_fetch_trades_by_time_frame[TimeFrames.ONE_HOUR] * 7
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = enough_recent_trades
+
+        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
