@@ -181,9 +181,6 @@ class ExchangeSimulator(Exchange):
         current_time_frame_sec = TimeFramesMinutes[time_frame]
         current_time_frame_updated_times = self.time_frame_get_times[time_frame.value]
 
-        temp = self.fetched_trades_counter[symbol]
-        temp2 = self.to_fetch_trades_by_time_frame[time_frame] * current_time_frame_updated_times
-
         if (previous_time_frame_updated_times - (
                 current_time_frame_updated_times * (current_time_frame_sec / previous_time_frame_sec)) >= 0)\
                 and self.fetched_trades_counter[symbol] >= \
