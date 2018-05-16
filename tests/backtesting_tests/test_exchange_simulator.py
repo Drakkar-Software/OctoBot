@@ -2,7 +2,8 @@ import ccxt
 from pandas import DataFrame
 
 from backtesting.exchange_simulator import ExchangeSimulator
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS, TimeFramesMinutes, \
+    ORDER_REFRESHER_TIME
 from tests.test_utils.config import load_test_config
 
 
@@ -65,41 +66,60 @@ class TestExchangeSimulator:
         _, exchange_inst = self.init_default()
 
         # first call
-        assert exchange_inst.should_update_data(TimeFrames.ONE_HOUR)
-        assert exchange_inst.should_update_data(TimeFrames.FOUR_HOURS)
-        assert exchange_inst.should_update_data(TimeFrames.ONE_DAY)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
         # call get prices
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
-        # regular call
+        # call without get_recent_trades
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-        assert exchange_inst.should_update_data(TimeFrames.ONE_HOUR)
-        assert not exchange_inst.should_update_data(TimeFrames.FOUR_HOURS)
-        assert not exchange_inst.should_update_data(TimeFrames.ONE_DAY)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
+
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = ORDER_REFRESHER_TIME * 2
+
+        # call with not enough get_recent_trades
+        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
+
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = ORDER_REFRESHER_TIME * TimeFramesMinutes[
+            TimeFrames.ONE_HOUR]
+
+        # call with enough get_recent_trades
+        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-        assert exchange_inst.should_update_data(TimeFrames.ONE_HOUR)
-        assert not exchange_inst.should_update_data(TimeFrames.FOUR_HOURS)
-        assert not exchange_inst.should_update_data(TimeFrames.ONE_DAY)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-        assert exchange_inst.should_update_data(TimeFrames.ONE_HOUR)
-        assert exchange_inst.should_update_data(TimeFrames.FOUR_HOURS)
-        assert not exchange_inst.should_update_data(TimeFrames.ONE_DAY)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
+
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = ORDER_REFRESHER_TIME * 4
 
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-        assert exchange_inst.should_update_data(TimeFrames.ONE_HOUR)
-        assert exchange_inst.should_update_data(TimeFrames.FOUR_HOURS)
-        assert not exchange_inst.should_update_data(TimeFrames.ONE_DAY)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
-        assert exchange_inst.should_update_data(TimeFrames.ONE_HOUR)
-        assert not exchange_inst.should_update_data(TimeFrames.FOUR_HOURS)
-        assert not exchange_inst.should_update_data(TimeFrames.ONE_DAY)
+        assert exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
     def test_should_update_recent_trades(self):
         _, exchange_inst = self.init_default()

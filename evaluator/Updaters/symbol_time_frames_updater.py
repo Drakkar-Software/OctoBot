@@ -56,7 +56,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
                 for time_frame in time_frames:
                     if back_testing_enabled:
-                        if evaluator_thread_manager.exchange.should_update_data(time_frame):
+                        if evaluator_thread_manager.exchange.should_update_data(evaluator_thread_manager.symbol, time_frame):
                             self._refresh_data(time_frame)
 
                     # if data from this time frame needs an update
@@ -69,7 +69,5 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                     sleeping_time = max_sleeping_time - (time.time() - now)
                     if sleeping_time > 0:
                         time.sleep(sleeping_time)
-                else:
-                    time.sleep(1)
         else:
             logging.getLogger(self.__class__.__name__).warning("no time frames to monitor, going to sleep.")
