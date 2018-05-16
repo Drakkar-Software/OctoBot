@@ -72,7 +72,7 @@ class ExchangeSimulator(Exchange):
         if time_frame not in self.created_trades_by_time_frame or time_frame not in self.to_fetch_trades_by_time_frame:
             trades_per_sec = SIMULATOR_LAST_PRICES_TO_CHECK
             # * MINUTE_TO_SECONDS
-            trades_in_time_frame = trades_per_sec * TimeFramesMinutes[time_frame]
+            trades_in_time_frame = trades_per_sec * TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS
             self.created_trades_by_time_frame[time_frame] = trades_in_time_frame / ORDER_REFRESHER_TIME
             self.to_fetch_trades_by_time_frame[time_frame] = self.created_trades_by_time_frame[time_frame] / SIMULATOR_LAST_PRICES_TO_CHECK
 
@@ -109,41 +109,6 @@ class ExchangeSimulator(Exchange):
             # create symbol last trades
             self.fetched_trades[symbol] = self._create_recent_trades(symbol)
             self.fetched_trades_counter[symbol] = 0
-
-    def should_update_data(self, symbol, time_frame):
-        previous_time_frame = TimeFrameManager.get_previous_time_frame(self.config_time_frames, time_frame, time_frame)
-        previous_time_frame_sec = TimeFramesMinutes[previous_time_frame]
-        previous_time_frame_updated_times = self.time_frame_get_times[previous_time_frame.value]
-        current_time_frame_sec = TimeFramesMinutes[time_frame]
-        current_time_frame_updated_times = self.time_frame_get_times[time_frame.value]
-
-        temp = self.fetched_trades_counter[symbol]
-        temp2 = self.to_fetch_trades_by_time_frame[time_frame] * current_time_frame_updated_times
-
-        if (previous_time_frame_updated_times - (
-                current_time_frame_updated_times * (current_time_frame_sec / previous_time_frame_sec)) >= 0)\
-                and self.fetched_trades_counter[symbol] >= \
-                self.to_fetch_trades_by_time_frame[time_frame] * current_time_frame_updated_times:
-            return True
-        else:
-            return False
-
-    def should_update_recent_trades(self, symbol):
-        if symbol in self.fetched_trades_counter:
-            if self.fetched_trades_counter[symbol] < (self.to_fetch_trades_by_time_frame[self.MIN_ENABLED_TIME_FRAME] *
-                                                      self.time_frame_get_times[self.MIN_ENABLED_TIME_FRAME.value]):
-                self.fetched_trades_counter[symbol] += 1
-            return True
-        return False
-
-    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        result = self._extract_data_with_limit(symbol, time_frame)
-        self.time_frame_get_times[time_frame.value] += 1
-
-        if data_frame:
-            return self.candles_array_to_data_frame(result)
-        else:
-            return result
 
     # Will use the One Minute time frame
     def _create_tickers(self, symbol):
@@ -209,11 +174,46 @@ class ExchangeSimulator(Exchange):
     def _extract_data_with_limit(self, symbol, time_frame):
         return self._extract_indexes(self.data[symbol][time_frame.value], self.time_frame_get_times[time_frame.value])
 
+    def should_update_data(self, symbol, time_frame):
+        previous_time_frame = TimeFrameManager.get_previous_time_frame(self.config_time_frames, time_frame, time_frame)
+        previous_time_frame_sec = TimeFramesMinutes[previous_time_frame]
+        previous_time_frame_updated_times = self.time_frame_get_times[previous_time_frame.value]
+        current_time_frame_sec = TimeFramesMinutes[time_frame]
+        current_time_frame_updated_times = self.time_frame_get_times[time_frame.value]
+
+        temp = self.fetched_trades_counter[symbol]
+        temp2 = self.to_fetch_trades_by_time_frame[time_frame] * current_time_frame_updated_times
+
+        if (previous_time_frame_updated_times - (
+                current_time_frame_updated_times * (current_time_frame_sec / previous_time_frame_sec)) >= 0)\
+                and self.fetched_trades_counter[symbol] >= \
+                self.to_fetch_trades_by_time_frame[time_frame] * current_time_frame_updated_times:
+            return True
+        else:
+            return False
+
+    def should_update_recent_trades(self, symbol):
+        if symbol in self.fetched_trades_counter:
+            if self.fetched_trades_counter[symbol] < (self.to_fetch_trades_by_time_frame[self.MIN_ENABLED_TIME_FRAME] *
+                                                      self.time_frame_get_times[self.MIN_ENABLED_TIME_FRAME.value]):
+                self.fetched_trades_counter[symbol] += 1
+            return True
+        return False
+
     def get_recent_trades(self, symbol):
         return self._extract_indexes(self.fetched_trades[symbol],
                                      self.time_frame_get_times[
                                          self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value] + self.fetched_trades_counter[symbol],
                                      factor=1)
+
+    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
+        result = self._extract_data_with_limit(symbol, time_frame)
+        self.time_frame_get_times[time_frame.value] += 1
+
+        if data_frame:
+            return self.candles_array_to_data_frame(result)
+        else:
+            return result
 
     def get_data(self):
         return self.data

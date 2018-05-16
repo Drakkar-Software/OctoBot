@@ -81,7 +81,7 @@ class TestExchangeSimulator:
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
-        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = ORDER_REFRESHER_TIME * 2
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = 2
 
         # call with not enough get_recent_trades
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
@@ -89,8 +89,8 @@ class TestExchangeSimulator:
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
         assert not exchange_inst.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
-        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = ORDER_REFRESHER_TIME * TimeFramesMinutes[
-            TimeFrames.ONE_HOUR]
+        exchange_inst.fetched_trades_counter[self.DEFAULT_SYMBOL] = TimeFramesMinutes[
+            TimeFrames.ONE_HOUR] * exchange_inst.time_frame_get_times[TimeFrames.ONE_HOUR.value]
 
         # call with enough get_recent_trades
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
