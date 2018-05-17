@@ -335,6 +335,99 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 6
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1240
 
+    def test_update_portfolio_with_some_filled_orders(self):
+        config, portfolio_inst, _, trader_inst = self.init_default()
+
+        # Test buy order
+        limit_sell = SellLimitOrder(trader_inst)
+        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                       "BTC/USD",
+                       90,
+                       4,
+                       90)
+
+        # Test buy order
+        limit_buy = BuyLimitOrder(trader_inst)
+        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+                      "BTC/USD",
+                      60,
+                      2,
+                      60)
+
+        # Test buy order
+        limit_buy_2 = BuyLimitOrder(trader_inst)
+        limit_buy_2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+                        "BTC/USD",
+                        50,
+                        4,
+                        50)
+
+        # Test sell order
+        limit_sell_2 = SellLimitOrder(trader_inst)
+        limit_sell_2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                         "BTC/USD",
+                         10,
+                         2,
+                         10)
+
+        # Test stop loss order
+        stop_loss_2 = StopLossOrder(trader_inst)
+        stop_loss_2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+                        "BTC/USD",
+                        10,
+                        2,
+                        10)
+
+        # Test sell order
+        limit_sell_3 = SellLimitOrder(trader_inst)
+        limit_sell_3.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                         "BTC/USD",
+                         20,
+                         1,
+                         20)
+
+        # Test stop loss order
+        stop_loss_3 = StopLossOrder(trader_inst)
+        stop_loss_3.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+                        "BTC/USD",
+                        20,
+                        1,
+                        20)
+
+        portfolio_inst.update_portfolio_available(stop_loss_2, True)
+        portfolio_inst.update_portfolio_available(stop_loss_3, True)
+        portfolio_inst.update_portfolio_available(limit_sell, True)
+        portfolio_inst.update_portfolio_available(limit_sell_2, True)
+        portfolio_inst.update_portfolio_available(limit_sell_3, True)
+        portfolio_inst.update_portfolio_available(limit_buy, True)
+        portfolio_inst.update_portfolio_available(limit_buy_2, True)
+
+        assert round(portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE), 1) == 3
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 680
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
+
+        # cancels
+        portfolio_inst.update_portfolio_available(stop_loss_3, False)
+        portfolio_inst.update_portfolio_available(limit_sell_2, False)
+        portfolio_inst.update_portfolio_available(limit_buy, False)
+
+        # filling
+        self.fill_limit_or_stop_order(stop_loss_2, 9, 11)
+        self.fill_limit_or_stop_order(limit_sell, 89, 91)
+        self.fill_limit_or_stop_order(limit_sell_3, 19, 21)
+        self.fill_limit_or_stop_order(limit_buy_2, 49, 51)
+
+        portfolio_inst.update_portfolio(stop_loss_2)
+        portfolio_inst.update_portfolio(limit_sell)
+        portfolio_inst.update_portfolio(limit_sell_3)
+        portfolio_inst.update_portfolio(limit_buy_2)
+
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 7
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1200
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 7
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1200
+
     def test_update_portfolio_with_multiple_filled_orders(self):
         config, portfolio_inst, _, trader_inst = self.init_default()
 
@@ -475,7 +568,7 @@ class TestPortfolio:
         portfolio_inst.update_portfolio_available(limit_buy_6, True)
 
         assert round(portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE), 1) == 2.1
-        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 62.729506308704
+        assert round(portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE), 7) == 62.7295063
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
 
@@ -512,7 +605,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 12.65448
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 692.22
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 12.65448
-        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 691.429506308704
+        assert round(portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL), 7) == 691.4295063
 
     def test_update_portfolio_with_multiple_symbols_orders(self):
         config, portfolio_inst, _, trader_inst = self.init_default()
