@@ -51,11 +51,9 @@ if __name__ == '__main__':
     config = load_config()
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
-    if args.telegram:
-        TelegramApp.enable(config)
+    TelegramApp.enable(config, args.telegram)
 
-    if args.web:
-        WebService.enable(config)
+    WebService.enable(config, args.web)
 
     bot = CryptoBot(config)
 
