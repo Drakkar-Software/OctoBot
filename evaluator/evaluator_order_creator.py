@@ -1,6 +1,7 @@
 import logging
 
 from config.cst import *
+from tools.symbol_util import split_symbol
 
 
 class EvaluatorOrderCreator:
@@ -109,7 +110,7 @@ class EvaluatorOrderCreator:
 
     @staticmethod
     def can_create_order(symbol, exchange, trader, state):
-        currency, market = exchange.split_symbol(symbol)
+        currency, market = split_symbol(symbol)
         portfolio = trader.get_portfolio()
 
         # todo : > min exchange
@@ -144,7 +145,7 @@ class EvaluatorOrderCreator:
 
             reference = reference_sum / self.last_values_count
 
-            currency, market = exchange.split_symbol(symbol)
+            currency, market = split_symbol(symbol)
 
             with portfolio as pf:
                 current_portfolio = pf.get_currency_portfolio(currency)

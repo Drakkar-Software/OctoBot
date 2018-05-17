@@ -2,6 +2,7 @@ import logging
 
 from config.cst import CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
+from tools.symbol_util import merge_currencies
 
 """ TradesManager will store all trades performed by the exchange trader
 Another feature of TradesManager is the profitability calculation
@@ -21,7 +22,7 @@ class TradesManager:
         self.profitability_percent = 0
         self.profitability_diff = 0
 
-        self.currencies_prices = {}
+        self.currencies_last_prices = {}
         self.origin_portfolio = None
         self.last_portfolio = None
 
@@ -53,7 +54,7 @@ class TradesManager:
     """
 
     def _update_currencies_prices(self, symbol):
-        self.currencies_prices[symbol] = self.exchange.get_price_ticker(symbol)
+        self.currencies_last_prices[symbol] = self.exchange.get_last_price_ticker(symbol)
 
     """ Get profitability calls get_currencies_prices to update required data
     Then calls get_portfolio_current_value to set the current value of portfolio_current_value attribute
@@ -115,14 +116,14 @@ class TradesManager:
     Returns the value found of this currency quantity, if not found returns 0     
     """
     def _try_get_value_of_currency(self, currency, quantity):
-        symbol = self.exchange.merge_currencies(currency, self.reference_market)
-        symbol_inverted = self.exchange.merge_currencies(self.reference_market, currency)
+        symbol = merge_currencies(currency, self.reference_market)
+        symbol_inverted = merge_currencies(self.reference_market, currency)
         if self.exchange.symbol_exists(symbol):
             self._update_currencies_prices(symbol)
-            return self.currencies_prices[symbol][ExchangeConstantsTickersColumns.LAST.value] * quantity
+            return self.currencies_last_prices[symbol] * quantity
         elif self.exchange.symbol_exists(symbol_inverted):
             self._update_currencies_prices(symbol_inverted)
-            return quantity / self.currencies_prices[symbol_inverted][ExchangeConstantsTickersColumns.LAST.value]
+            return quantity / self.currencies_last_prices[symbol_inverted]
         else:
             # TODO : manage if currency/market doesn't exist
             return 0

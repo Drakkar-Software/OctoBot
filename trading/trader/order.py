@@ -2,6 +2,7 @@ import time
 from abc import *
 from threading import Lock
 
+from tools.symbol_util import split_symbol
 from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK
 
 """ Order class will represent an open order in the specified exchange
@@ -71,7 +72,7 @@ class Order:
         self.symbol = symbol
         self.order_type = order_type
         self.order_notifier = order_notifier
-        self.currency, self.market = self.exchange.split_symbol(symbol)
+        self.currency, self.market = split_symbol(symbol)
         self.filled_quantity = quantity_filled
         self.linked_to = linked_to
 

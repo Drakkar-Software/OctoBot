@@ -9,7 +9,7 @@ from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
 from interfaces.web import add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
     add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE, get_symbol_data_history
-from trading.exchanges.exchange import Exchange
+from tools.symbol_util import split_symbol
 from trading.trader.portfolio import Portfolio
 
 
@@ -119,7 +119,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                 df = evaluator_thread_manager.get_evaluator().get_data()
 
                 if df is not None:
-                    symbol_tag, pair_tag = Exchange.split_symbol(symbol)
+                    symbol_tag, pair_tag = split_symbol(symbol)
                     add_to_symbol_data_history(symbol, df, time_frame)
                     df = get_symbol_data_history(symbol, time_frame)
 
