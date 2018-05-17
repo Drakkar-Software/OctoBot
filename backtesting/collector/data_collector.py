@@ -8,6 +8,7 @@ import ccxt
 
 from config.cst import *
 from trading import Exchange
+from tools.symbol_util import merge_currencies
 
 
 class DataCollector:
@@ -103,7 +104,7 @@ class ExchangeDataCollector(threading.Thread):
         data = os.path.basename(file_name).split("_")
         try:
             exchange_name = data[0]
-            symbol = Exchange.merge_currencies(data[1], data[2])
+            symbol = merge_currencies(data[1], data[2])
             timestamp = data[3] + data[4].replace(ExchangeDataCollector.Exchange_Data_Collector_File_Ext, "")
         except KeyError:
             exchange_name = None

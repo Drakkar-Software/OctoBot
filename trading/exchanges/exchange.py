@@ -4,7 +4,7 @@ import pandas
 from ccxt import OrderNotFound, BaseError
 
 from config.cst import *
-
+from trading.exchanges.websockets.abstract_websocket_manager import AbstractWebSocketManager
 
 # https://github.com/ccxt/ccxt/wiki/Manual#api-methods--endpoints
 from tools.time_frame_manager import TimeFrameManager
@@ -16,6 +16,7 @@ class Exchange:
         self.exchange_type = exchange_type
         self.connect_to_online_exchange = connect_to_online_exchange
         self.client = None
+        self.websocket_client = None
         self.config = config
         self.info_list = None
         self.free = None
@@ -36,8 +37,14 @@ class Exchange:
         self._set_config_time_frame()
         self._set_config_traded_pairs()
 
-        self.ready = True
         self.logger = logging.getLogger(self.name)
+
+        if self.connect_to_online_exchange:
+            self.create_websocket_client_if_possible()
+            self.init_web_sockets()
+            self.websocket_client.start_sockets()
+
+        self.ready = True
 
     def enabled(self):
         # if we can get candlestick data
@@ -62,6 +69,15 @@ class Exchange:
         else:
             self.client = self.exchange_type({'verbose': False})
         self.client.logger.setLevel(logging.INFO)
+
+    def create_websocket_client_if_possible(self):
+        for socket_manager in AbstractWebSocketManager.__subclasses__():
+            if socket_manager.get_name() == self.get_name().lower():
+                self.websocket_client = socket_manager.get_websocket_client(self.config)
+
+    def init_web_sockets(self):
+        if self.websocket_client:
+            self.websocket_client.init_all_currencies_prices_web_socket(self.time_frames, self.traded_pairs)
 
     def check_config(self):
         if not self.config["exchanges"][self.name]["api-key"] \
@@ -146,6 +162,17 @@ class Exchange:
         ask = order_book['asks'][0][0] if len(order_book['asks']) > 0 else None
         spread = (ask - bid) if (bid and ask) else None
         return {'bid': bid, 'ask': ask, 'spread': spread}
+
+    # A price ticker contains statistics for a particular market/symbol for the last instant
+    def get_last_price_ticker(self, symbol):
+        if self.websocket_client and self.websocket_client.last_price_ticker_is_initialized(symbol):
+            return self.websocket_client.get_last_price_ticker(symbol)
+        else:
+            try:
+                return self.client.fetch_ticker(symbol)[ExchangeConstantsTickersColumns.LAST.value]
+            except BaseError as e:
+                self.logger.error("Failed to get_price_ticker {0}".format(e))
+                return None
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     def get_price_ticker(self, symbol):
@@ -253,17 +280,6 @@ class Exchange:
             return True
         else:
             return False
-
-    # Return currency, market
-    @staticmethod
-    def split_symbol(symbol):
-        splitted = symbol.split(MARKET_SEPARATOR)
-        return splitted[0], splitted[1]
-
-    # Merge currency and market
-    @staticmethod
-    def merge_currencies(currency, market):
-        return "{0}/{1}".format(currency, market)
 
     def _set_config_time_frame(self):
         for time_frame in TimeFrameManager.get_config_time_frame(self.config):
