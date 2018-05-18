@@ -44,7 +44,7 @@ class WebService(AbstractService):
             self.web_app.stop()
 
     @staticmethod
-    def enable(config):
+    def enable(config, is_enabled):
         if CONFIG_CATEGORY_SERVICES not in config:
             config[CONFIG_CATEGORY_SERVICES] = {}
         if CONFIG_WEB not in config[CONFIG_CATEGORY_SERVICES]:
@@ -57,7 +57,7 @@ class WebService(AbstractService):
             if CONFIG_WEB_PORT not in config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB]:
                 config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT] = DEFAULT_SERVER_PORT
 
-        config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_ENABLED_OPTION] = True
+        config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_ENABLED_OPTION] = is_enabled
 
     def _get_web_server_url(self):
         return "{0}:{1}"\
