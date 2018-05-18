@@ -1,6 +1,7 @@
 from backtesting import get_bot
 from backtesting.backtesting import Backtesting
-from backtesting.collector.data_collector import DataCollectorParser, ExchangeDataCollector
+from backtesting.collector.data_parser import DataCollectorParser
+from backtesting.collector.exchange_collector import ExchangeDataCollector
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
 from trading import AbstractExchange
