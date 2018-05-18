@@ -1,6 +1,6 @@
 import ccxt
 
-from backtesting.exchange_simulator import ExchangeSimulator
+from trading.exchanges.exchange_simulator import ExchangeSimulator
 from config.cst import *
 from tests.test_utils.config import load_test_config
 from trading.trader.order import *
