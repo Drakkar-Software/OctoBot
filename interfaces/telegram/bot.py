@@ -160,12 +160,12 @@ class TelegramApp:
         update.message.reply_text(update.message.text)
 
     @staticmethod
-    def enable(config):
+    def enable(config, is_enabled):
         if CONFIG_INTERFACES not in config:
             config[CONFIG_INTERFACES] = {}
         if CONFIG_INTERFACES_TELEGRAM not in config[CONFIG_INTERFACES]:
             config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM] = {}
-        config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION] = True
+        config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION] = is_enabled
 
     @staticmethod
     def is_enabled(config):
