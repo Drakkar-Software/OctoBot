@@ -216,31 +216,56 @@ class Exchange:
     #     'info':     { ... },         // the original unparsed order structure as is
     # }
     def get_order(self, order_id):
-        # if self.websocket_client and self.websocket_client.():
-        #     balance = self.websocket_client.exchange_data.portfolio
-        # else:
-        if self.client.has['fetchOrder']:
-            return self.client.fetch_order(order_id)
+        if self.websocket_client and self.websocket_client.has_order(order_id):
+            return self.websocket_client.get_order(order_id)
         else:
-            raise Exception("This exchange doesn't support fetchOrder")
+            if self.client.has['fetchOrder']:
+                order = self.client.fetch_order(order_id)
+                self.init_orders_for_ws_if_possible([order])
+                return order
+            else:
+                raise Exception("This exchange doesn't support fetchOrder")
+
+    def init_orders_for_ws_if_possible(self, orders):
+        if self.websocket_client and not self.websocket_client.orders_are_initialized():
+            for order in orders:
+                self.websocket_client.init_ccxt_order_from_other_source(order)
+
+    def set_orders_are_initialized(self, value):
+        self.websocket_client.set_orders_are_initialized(value)
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
-        if self.client.has['fetchOrders']:
-            return self.client.fetchOrders(symbol=symbol, since=since, limit=limit, params={})
+        if self.websocket_client and self.websocket_client.orders_are_initialized():
+            return self.websocket_client.get_all_orders(symbol, since, limit)
         else:
-            raise Exception("This exchange doesn't support fetchOrders")
+            if self.client.has['fetchOrders']:
+                orders = self.client.fetchOrders(symbol=symbol, since=since, limit=limit, params={})
+                self.init_orders_for_ws_if_possible(orders)
+                return orders
+            else:
+                raise Exception("This exchange doesn't support fetchOrders")
 
     def get_open_orders(self, symbol=None, since=None, limit=None):
-        if self.client.has['fetchOpenOrders']:
-            return self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit, params={})
+        if self.websocket_client and self.websocket_client.orders_are_initialized():
+            return self.websocket_client.get_open_orders(symbol, since, limit)
         else:
-            raise Exception("This exchange doesn't support fetchOpenOrders")
+            if self.client.has['fetchOpenOrders']:
+                orders = self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit, params={})
+                self.init_orders_for_ws_if_possible(orders)
+                return orders
+            else:
+                raise Exception("This exchange doesn't support fetchOpenOrders")
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):
-        if self.client.has['fetchClosedOrders']:
-            return self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit, params={})
+        if self.websocket_client and self.websocket_client.orders_are_initialized():
+            return self.websocket_client.get_closed_orders(symbol, since, limit)
         else:
-            raise Exception("This exchange doesn't support fetchClosedOrders")
+            if self.client.has['fetchClosedOrders']:
+                orders = self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit, params={})
+                self.init_orders_for_ws_if_possible(orders)
+                return orders
+            else:
+                raise Exception("This exchange doesn't support fetchClosedOrders")
 
     def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         return self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit, params={})

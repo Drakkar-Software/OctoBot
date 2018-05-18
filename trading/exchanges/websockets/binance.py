@@ -2,7 +2,6 @@ from trading.exchanges.websockets.abstract_websocket_manager import AbstractWebS
 from binance.enums import *
 from binance.websockets import BinanceSocketManager
 from binance.client import Client
-from ccxt.base.exchange import Exchange as ccxtExchange
 
 from tools.symbol_util import merge_symbol
 
@@ -13,6 +12,12 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     _KLINE_KEY = "@kline"
     _MULTIPLEX_SOCKET_NAME = "multiplex"
     _USER_SOCKET_NAME = "user"
+    _STATUSES = {
+            'NEW': 'open',
+            'PARTIALLY_FILLED': 'open',
+            'FILLED': 'closed',
+            'CANCELED': 'canceled',
+        }
 
     def __init__(self, config):
         super().__init__(config)
@@ -51,33 +56,49 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
             total = free + locked
             self.exchange_data.update_portfolio(currency['a'], total, free, locked)
 
-    def _create_ccxt_order(self, order):
+    @staticmethod
+    def parse_order_status(status):
+        return BinanceWebSocketClient._STATUSES[status] if status in BinanceWebSocketClient._STATUSES \
+            else status.lower()
+
+    @staticmethod
+    def convert_into_ccxt_order(order):
+        status = AbstractWebSocketManager.safe_value(order, 'X')
+        if status is not None:
+            status = BinanceWebSocketClient.parse_order_status(status)
+        price = AbstractWebSocketManager.safe_float(order, "p")
+        amount = AbstractWebSocketManager.safe_float(order, "q")
+        filled = AbstractWebSocketManager.safe_float(order, "z", 0.0)
+        cost = None
+        if filled is not None:
+            if amount is not None:
+                remaining = max(amount - filled, 0.0)
+            if price is not None:
+                cost = price * filled
         return {
             'info': order,
-            'id': ccxtExchange.safe_string(order,"i"),
+            'id': AbstractWebSocketManager.safe_string(order, "i"),
             'timestamp': order["T"],
-            'datetime': ccxtExchange.iso8601(order["T"]),
+            'datetime': AbstractWebSocketManager.iso8601(order["T"]),
             'lastTradeTimestamp': None,
-            # 'symbol': symbol,
-            # 'type': type,
-            # 'side': side,
-            # 'price': ccxtExchange.safe_float(order, "p"),
-            # 'amount': amount,
-            # 'cost': cost,
-            # 'filled': filled,
-            # 'remaining': remaining,
-            # 'status': status,
-            # 'fee': None,
+            # warning string has no / between currency and market !!!
+            'symbol': AbstractWebSocketManager.safe_string(order, "s"),
+            'type': AbstractWebSocketManager.safe_lower_string(order, "o"),
+            'side': AbstractWebSocketManager.safe_lower_string(order, "S"),
+            'price': price,
+            'amount': amount,
+            'cost': cost,
+            'filled': filled,
+            'remaining': remaining,
+            'status': status,
+            'fee': AbstractWebSocketManager.safe_float(order, "n", None),
         }
-
-    def _update_orders(self, msg):
-        self._create_ccxt_order(msg)
 
     def user_callback(self, msg):
         if msg["e"] == "outboundAccountInfo":
             self._update_portfolio(msg)
         elif msg["e"] == "executionReport":
-            self._update_orders(msg)
+            self._update_order(msg)
 
     def _init_price_sockets(self, time_frames, trader_pairs):
         # add klines
