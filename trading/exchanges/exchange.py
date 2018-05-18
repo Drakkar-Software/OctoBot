@@ -99,8 +99,8 @@ class Exchange:
     #
     #     'total': { ... },    // total (free + used), by currency
     def get_balance(self):
-        if self.websocket_client and self.websocket_client.portofolio_is_initialized():
-            balance = self.websocket_client.exchange_data.portfolio
+        if self.websocket_client and self.websocket_client.portfolio_is_initialized():
+            balance = self.websocket_client.get_portfolio()
         else:
             balance = self.client.fetchBalance()
 
@@ -216,6 +216,9 @@ class Exchange:
     #     'info':     { ... },         // the original unparsed order structure as is
     # }
     def get_order(self, order_id):
+        # if self.websocket_client and self.websocket_client.():
+        #     balance = self.websocket_client.exchange_data.portfolio
+        # else:
         if self.client.has['fetchOrder']:
             return self.client.fetch_order(order_id)
         else:

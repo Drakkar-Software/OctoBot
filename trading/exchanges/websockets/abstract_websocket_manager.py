@@ -33,7 +33,10 @@ class AbstractWebSocketManager:
     def get_currency_database_is_initialized(self, symbol):
         return self.exchange_data.is_initialized(symbol)
 
-    def portofolio_is_initialized(self):
+    def portfolio_is_initialized(self):
+        return self.exchange_data.portfolio
+
+    def get_portfolio(self):
         return self.exchange_data.portfolio
 
     @abstractmethod
