@@ -2,6 +2,7 @@ from trading.exchanges.websockets.abstract_websocket_manager import AbstractWebS
 from binance.enums import *
 from binance.websockets import BinanceSocketManager
 from binance.client import Client
+import ccxt.base.exchange as ccxtExchange
 
 from tools.symbol_util import merge_symbol
 
@@ -50,8 +51,27 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
             total = free + locked
             self.exchange_data.update_portfolio(currency['a'], total, free, locked)
 
+    def _create_ccxt_order(self, order):
+        return {
+            'info': order,
+            'id': ccxtExchange.safe_string(order,"i"),
+            'timestamp': order["T"],
+            'datetime': ccxtExchange.iso8601(order["T"]),
+            'lastTradeTimestamp': None,
+            # 'symbol': symbol,
+            # 'type': type,
+            # 'side': side,
+            # 'price': ccxtExchange.safe_float(order, "p"),
+            # 'amount': amount,
+            # 'cost': cost,
+            # 'filled': filled,
+            # 'remaining': remaining,
+            # 'status': status,
+            # 'fee': None,
+        }
+
     def _update_orders(self, msg):
-        pass
+        self._create_ccxt_order(msg)
 
     def user_callback(self, msg):
         if msg["e"] == "outboundAccountInfo":
