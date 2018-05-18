@@ -7,8 +7,9 @@ from trading import Exchange
 
 
 class ExchangeSimulator(Exchange):
-    def __init__(self, config, exchange_type):
-        self.config = config
+    def __init__(self):
+        super().__init__()
+        self.is_simulated = True
 
         if CONFIG_BACKTESTING not in self.config:
             raise Exception("Backtesting config not found")
@@ -17,7 +18,7 @@ class ExchangeSimulator(Exchange):
         self.data = None
         self._get_symbol_list()
 
-        self.config_time_frames = TimeFrameManager.get_config_time_frame(config)
+        self.config_time_frames = TimeFrameManager.get_config_time_frame(self.config)
 
         self.time_frame_get_times = {}
         self.tickers = {}
@@ -33,10 +34,8 @@ class ExchangeSimulator(Exchange):
         self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.CREATED_TICKER_BY_TIME_FRAME = 1
 
-        self.backtesting = Backtesting(config, self)
+        self.backtesting = Backtesting(self.config, self)
         self._prepare()
-
-        super().__init__(config, exchange_type, connect_to_online_exchange=False)
 
     # todo merge multiple file with the same symbol
     def _get_symbol_list(self):
