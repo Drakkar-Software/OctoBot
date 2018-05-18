@@ -64,7 +64,7 @@ class InstantFluctuationsEvaluator(RealTimeTAEvaluator):
         self.last_price = volume_data[PriceStrings.STR_PRICE_CLOSE.value].tail(1).values[0]
 
     def set_default_config(self):
-        time_frames = self.exchange.get_config_time_frame()
+        time_frames = self.exchange.get_exchange_manager().get_config_time_frame()
         min_time_frame = TimeFrameManager.find_config_min_time_frame(time_frames)
 
         self.specific_config = {
