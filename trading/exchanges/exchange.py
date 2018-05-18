@@ -77,7 +77,7 @@ class Exchange:
 
     def init_web_sockets(self):
         if self.websocket_client:
-            self.websocket_client.init_all_currencies_prices_web_socket(self.time_frames, self.traded_pairs)
+            self.websocket_client.init_web_sockets(self.time_frames, self.traded_pairs)
 
     def check_config(self):
         if not self.config["exchanges"][self.name]["api-key"] \
@@ -99,19 +99,22 @@ class Exchange:
     #
     #     'total': { ... },    // total (free + used), by currency
     def get_balance(self):
-        balance = self.client.fetchBalance()
+        if self.websocket_client and self.websocket_client.portofolio_is_initialized():
+            balance = self.websocket_client.exchange_data.portfolio
+        else:
+            balance = self.client.fetchBalance()
 
-        # store portfolio global info
-        self.info_list = balance[CONFIG_PORTFOLIO_INFO]
-        self.free = balance[CONFIG_PORTFOLIO_FREE]
-        self.used = balance[CONFIG_PORTFOLIO_USED]
-        self.total = balance[CONFIG_PORTFOLIO_TOTAL]
+            # store portfolio global info
+            self.info_list = balance[CONFIG_PORTFOLIO_INFO]
+            self.free = balance[CONFIG_PORTFOLIO_FREE]
+            self.used = balance[CONFIG_PORTFOLIO_USED]
+            self.total = balance[CONFIG_PORTFOLIO_TOTAL]
 
-        # remove not currency specific keys
-        balance.pop(CONFIG_PORTFOLIO_INFO, None)
-        balance.pop(CONFIG_PORTFOLIO_FREE, None)
-        balance.pop(CONFIG_PORTFOLIO_USED, None)
-        balance.pop(CONFIG_PORTFOLIO_TOTAL, None)
+            # remove not currency specific keys
+            balance.pop(CONFIG_PORTFOLIO_INFO, None)
+            balance.pop(CONFIG_PORTFOLIO_FREE, None)
+            balance.pop(CONFIG_PORTFOLIO_USED, None)
+            balance.pop(CONFIG_PORTFOLIO_TOTAL, None)
 
         return balance
 

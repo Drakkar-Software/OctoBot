@@ -10,19 +10,22 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
 
     _TICKER_KEY = "@ticker"
     _KLINE_KEY = "@kline"
+    _MULTIPLEX_SOCKET_NAME = "multiplex"
+    _USER_SOCKET_NAME = "user"
 
     def __init__(self, config):
         super().__init__(config)
         self.client = Client(config["exchanges"][self.get_name()]["api-key"],
                              self.config["exchanges"][self.get_name()]["api-secret"])
         self.socket_manager = None
+        self.open_sockets_keys = {}
 
     @classmethod
     def get_name(cls):
         return "binance"
 
     def get_last_price_ticker(self, symbol):
-        return float(self.currency_database.symbol_tickers[merge_symbol(symbol)]["c"])
+        return float(self.exchange_data.symbol_tickers[merge_symbol(symbol)]["c"])
 
     def all_currencies_prices_callback(self, msg):
         if msg['data']['e'] == 'error':
@@ -32,15 +35,31 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
         else:
             msg_stream_type = msg["stream"]
             if self._TICKER_KEY in msg_stream_type:
-                self.currency_database.set_ticker(msg["data"]["s"],
-                                                  msg["data"])
-            if self._KLINE_KEY in msg_stream_type:
-                self.currency_database.add_price(msg["data"]["s"],
-                                                 msg["data"]["k"]["i"],
-                                                 msg["data"]["k"]["t"],
-                                                 msg["data"])
+                self.exchange_data.set_ticker(msg["data"]["s"],
+                                              msg["data"])
+            elif self._KLINE_KEY in msg_stream_type:
+                self.exchange_data.add_price(msg["data"]["s"],
+                                             msg["data"]["k"]["i"],
+                                             msg["data"]["k"]["t"],
+                                             msg["data"])
 
-    def init_all_currencies_prices_web_socket(self, time_frames, trader_pairs):
+    def _update_portfolio(self, msg):
+        for currency in msg['B']:
+            free = float(currency['f'])
+            locked = float(currency['f'])
+            total = free + locked
+            self.exchange_data.update_portfolio(currency['a'], total, free, locked)
+
+    def _update_orders(self, msg):
+        pass
+
+    def user_callback(self, msg):
+        if msg["e"] == "outboundAccountInfo":
+            self._update_portfolio(msg)
+        elif msg["e"] == "executionReport":
+            self._update_orders(msg)
+
+    def _init_price_sockets(self, time_frames, trader_pairs):
         # add klines
         prices = ["{}{}_{}".format(merge_symbol(symbol).lower(), self._KLINE_KEY, time_frame.value)
                   for time_frame in time_frames
@@ -49,7 +68,15 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
         for symbol in trader_pairs:
             prices.append("{}{}".format(merge_symbol(symbol).lower(), self._TICKER_KEY))
         connection_key = self.socket_manager.start_multiplex_socket(prices, self.all_currencies_prices_callback)
-        return connection_key
+        self.open_sockets_keys[self._MULTIPLEX_SOCKET_NAME] = connection_key
+
+    def _init_user_socket(self):
+        connection_key = self.socket_manager.start_user_socket(self.user_callback)
+        self.open_sockets_keys[self._USER_SOCKET_NAME] = connection_key
+
+    def init_web_sockets(self, time_frames, trader_pairs):
+        self._init_price_sockets(time_frames, trader_pairs)
+        self._init_user_socket()
 
     def get_socket_manager(self):
         return self.socket_manager
@@ -65,5 +92,5 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     @staticmethod
     def get_websocket_client(config):
         ws_client = BinanceWebSocketClient(config)
-        ws_client.socket_manager = BinanceSocketManager(ws_client)
+        ws_client.socket_manager = BinanceSocketManager(ws_client.client)
         return ws_client
