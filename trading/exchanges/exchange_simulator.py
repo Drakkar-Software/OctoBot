@@ -21,6 +21,10 @@ class ExchangeSimulator(AbstractExchange):
 
         self.config_time_frames = TimeFrameManager.get_config_time_frame(self.config)
 
+        # set exchange manager attributes
+        self.exchange_manager.traded_pairs = self.symbols
+        self.exchange_manager.time_frames = self.config_time_frames
+
         self.time_frame_get_times = {}
         self.tickers = {}
         self.fetched_trades = {}

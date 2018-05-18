@@ -1,5 +1,6 @@
 import ccxt
 
+from trading.exchanges.exchange_manager import ExchangeManager
 from trading.exchanges.exchange_simulator import ExchangeSimulator
 from tests.test_utils.config import load_test_config
 from trading.trader.trader import Trader
@@ -9,7 +10,8 @@ class TestOrdersManagers:
     @staticmethod
     def init_default():
         config = load_test_config()
-        exchange_inst = ExchangeSimulator(config, ccxt.binance)
+        exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        exchange_inst = exchange_manager.get_exchange()
         trader_inst = Trader(config, exchange_inst)
         order_manager_inst = trader_inst.get_order_manager()
         return config, exchange_inst, trader_inst, order_manager_inst

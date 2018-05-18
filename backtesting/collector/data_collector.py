@@ -23,7 +23,7 @@ class DataCollector:
             if exchange_class_string in available_exchanges:
                 exchange_type = getattr(ccxt, exchange_class_string)
 
-                exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=True)
+                exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False)
                 exchange_inst = exchange_manager.get_exchange()
 
                 exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst)

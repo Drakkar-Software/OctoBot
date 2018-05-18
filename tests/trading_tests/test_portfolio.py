@@ -2,6 +2,7 @@ import random
 
 import ccxt
 
+from trading.exchanges.exchange_manager import ExchangeManager
 from trading.exchanges.exchange_simulator import ExchangeSimulator
 from config.cst import TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK
 from tests.test_utils.config import load_test_config
@@ -15,7 +16,8 @@ class TestPortfolio:
     @staticmethod
     def init_default():
         config = load_test_config()
-        exchange_inst = ExchangeSimulator(config, ccxt.binance)
+        exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        exchange_inst = exchange_manager.get_exchange()
         trader_inst = TraderSimulator(config, exchange_inst)
         portfolio_inst = Portfolio(config, trader_inst)
         return config, portfolio_inst, exchange_inst, trader_inst
