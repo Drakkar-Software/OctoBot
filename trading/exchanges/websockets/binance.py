@@ -2,7 +2,7 @@ from trading.exchanges.websockets.abstract_websocket_manager import AbstractWebS
 from binance.enums import *
 from binance.websockets import BinanceSocketManager
 from binance.client import Client
-import ccxt.base.exchange as ccxtExchange
+from ccxt.base.exchange import Exchange as ccxtExchange
 
 from tools.symbol_util import merge_symbol
 
