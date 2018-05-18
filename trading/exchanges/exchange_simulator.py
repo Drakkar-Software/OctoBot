@@ -8,7 +8,7 @@ from trading import Exchange
 
 class ExchangeSimulator(Exchange):
     def __init__(self):
-        super().__init__()
+        super().__init__(None)
         self.is_simulated = True
 
         if CONFIG_BACKTESTING not in self.config:

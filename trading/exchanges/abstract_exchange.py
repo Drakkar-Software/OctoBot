@@ -2,7 +2,8 @@ import logging
 
 
 class AbstractExchange:
-    def __init__(self):
+    def __init__(self, exchange_type):
+        self.exchange_type = exchange_type
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.exchange = None

@@ -1,14 +1,13 @@
 import pandas
 
 from config.cst import *
-from trading import Exchange
 from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.websockets import AbstractWebSocketManager
 
 
 class ExchangeManager(AbstractExchange):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, exchange_type):
+        super().__init__(exchange_type)
 
         self.is_ready = False
         self.is_simulated = False
@@ -33,12 +32,11 @@ class ExchangeManager(AbstractExchange):
         self._set_config_traded_pairs()
 
     def create_exchanges(self):
-        # create REST based on ccxt exchange
-        self.exchange = Exchange()
-
-        # create Websocket exchange if possible
         if not self.is_simulated:
+            # create REST based on ccxt exchange
+            self.exchange = self.exchange_type()
 
+            # create Websocket exchange if possible
             # check if websocket is available for this exchange
             for socket_manager in AbstractWebSocketManager.__subclasses__():
                 if socket_manager.get_name() == self.get_name().lower():
@@ -53,7 +51,7 @@ class ExchangeManager(AbstractExchange):
                 # start the websocket
                 self.exchange_web_socket.start_sockets()
 
-        self._load_constants()
+            self._load_constants()
 
         self.is_ready = True
 
