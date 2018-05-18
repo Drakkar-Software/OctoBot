@@ -135,7 +135,7 @@ class TradesManager:
     def _evaluate_portfolio_value(self, portfolio):
         value = 0
         for currency in portfolio:
-            if portfolio[currency][Portfolio.TOTAL] > 0:
+            if portfolio[currency][Portfolio.TOTAL] != 0:
                 value += self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
         return value
 
