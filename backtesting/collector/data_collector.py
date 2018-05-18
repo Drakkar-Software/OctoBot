@@ -68,7 +68,7 @@ class ExchangeDataCollector(threading.Thread):
         super().__init__()
         self.config = config
         self.exchange = exchange
-        self.symbols = self.exchange.get_traded_pairs()
+        self.symbols = self.exchange.get_exchange_manager().get_traded_pairs()
         self.keep_running = True
         self.file = None
         self._data_updated = False
@@ -79,7 +79,7 @@ class ExchangeDataCollector(threading.Thread):
 
         self.time_frames = []
         for time_frame in TimeFrames:
-            if self.exchange.time_frame_exists(time_frame.value):
+            if self.exchange.get_exchange_manager().time_frame_exists(time_frame.value):
                 self.time_frames.append(time_frame)
 
         self.logger = logging.getLogger(self.__class__.__name__)
