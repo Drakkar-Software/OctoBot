@@ -20,6 +20,9 @@ class ExchangeDispatcher:
     def get_exchange_manager(self):
         return self.exchange.get_exchange_manager()
 
+    def get_exchange(self):
+        return self.exchange
+
     # total (free + used), by currency
     def get_balance(self):
         if self._web_socket_available():

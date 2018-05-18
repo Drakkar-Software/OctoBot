@@ -1,9 +1,9 @@
 import ccxt
 import pandas
 
-from trading.exchanges.exchange_simulator import ExchangeSimulator
-from tools.data_visualiser import DataVisualiser
 from config.cst import TimeFrames
+from tools.data_visualiser import DataVisualiser
+from trading.exchanges.exchange_manager import ExchangeManager
 
 """
 Class containing data with known moves
@@ -25,7 +25,10 @@ class DataBank:
         self.config = config
         self.data_file = data_file if data_file else "tests/static/binance_BTC_USDT_20180428_121156.data"
         self.symbols = symbols if symbols else ["BTC"]
-        self.exchange_inst = ExchangeSimulator(self.config, ccxt.binance)
+
+        exchange_manager = ExchangeManager(self.config, ccxt.binance, is_simulated=True)
+        self.exchange_inst = exchange_manager.get_exchange()
+
         self.data_by_symbol_by_data_frame = None
         self._init_data()
 
