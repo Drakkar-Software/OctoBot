@@ -1,8 +1,7 @@
 import ccxt
 import pandas
 
-from backtesting.collector.data_collector import DataCollectorParser
-from backtesting.exchange_simulator import ExchangeSimulator
+from trading.exchanges.exchange_simulator import ExchangeSimulator
 from tools.data_visualiser import DataVisualiser
 from config.cst import TimeFrames
 

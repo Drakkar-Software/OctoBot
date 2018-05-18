@@ -4,7 +4,7 @@ import time
 import ccxt
 
 from backtesting.backtesting import Backtesting
-from backtesting.exchange_simulator import ExchangeSimulator
+from trading.exchanges.exchange_simulator import ExchangeSimulator
 from config.cst import *
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.Util.advanced_manager import AdvancedManager
