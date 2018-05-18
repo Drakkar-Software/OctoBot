@@ -7,8 +7,8 @@ from trading.exchanges.exchange_manager import ExchangeManager
 
 
 class Exchange(ExchangeManager):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, exchange_type):
+        super().__init__(exchange_type)
 
         # ccxt client
         self.client = None
