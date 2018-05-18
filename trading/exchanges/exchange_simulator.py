@@ -22,7 +22,9 @@ class ExchangeSimulator(AbstractExchange):
         self.config_time_frames = TimeFrameManager.get_config_time_frame(self.config)
 
         # set exchange manager attributes
+        self.exchange_manager.client_symbols = self.symbols
         self.exchange_manager.traded_pairs = self.symbols
+        self.exchange_manager.client_time_frames = [tf.value for tf in self.config_time_frames]
         self.exchange_manager.time_frames = self.config_time_frames
 
         self.time_frame_get_times = {}
@@ -214,6 +216,9 @@ class ExchangeSimulator(AbstractExchange):
                                       factor=self.CREATED_TICKER_BY_TIME_FRAME,
                                       max_value=1)[0]
         }
+
+    def get_last_price_ticker(self, symbol):
+        return self.get_price_ticker(symbol)[ExchangeConstantsTickersColumns.LAST.value]
 
     def get_all_currencies_price_ticker(self):
         return {
