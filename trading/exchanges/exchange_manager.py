@@ -1,30 +1,35 @@
+import logging
+
 import pandas
 
 from config.cst import *
-from trading.exchanges.abstract_exchange import AbstractExchange
+from tools.time_frame_manager import TimeFrameManager
+from trading import Exchange
+from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
+from trading.exchanges.exchange_simulator import ExchangeSimulator
 from trading.exchanges.websockets import AbstractWebSocketManager
 
 
-class ExchangeManager(AbstractExchange):
-    def __init__(self, exchange_type):
-        super().__init__(exchange_type)
+class ExchangeManager:
+    def __init__(self, config, exchange_type, is_simulated=False):
+        self.config = config
+        self.exchange_type = exchange_type
+        self.logger = logging.getLogger(self.__class__.__name__)
 
         self.is_ready = False
-        self.is_simulated = False
+        self.is_simulated = is_simulated
+
+        self.exchange = None
+        self.exchange_web_socket = None
+        self.exchange_dispatcher = None
 
         self.client_symbols = []
         self.client_time_frames = []
 
-        self.config = None
-        self.exchange_type = None
-
-        self.name = self.exchange_type.__name__
         self.traded_pairs = []
         self.time_frames = []
 
-    def set_config(self, config, exchange_type):
-        self.config = config
-        self.exchange_type = exchange_type
+        self.create_exchanges()
 
     def _load_constants(self):
         self._load_config_symbols_and_time_frames()
@@ -34,41 +39,50 @@ class ExchangeManager(AbstractExchange):
     def create_exchanges(self):
         if not self.is_simulated:
             # create REST based on ccxt exchange
-            self.exchange = self.exchange_type()
+            self.exchange = Exchange(self.config, self.exchange_type, self)
 
             # create Websocket exchange if possible
             # check if websocket is available for this exchange
-            for socket_manager in AbstractWebSocketManager.__subclasses__():
-                if socket_manager.get_name() == self.get_name().lower():
-                    self.exchange_web_socket = socket_manager.get_websocket_client(self.config)
+            # for socket_manager in AbstractWebSocketManager.__subclasses__():
+            #     if socket_manager.get_name() == self.get_name().lower():
+            #         self.exchange_web_socket = socket_manager.get_websocket_client(self.config)
 
             # if a Websocket instance is created
-            if self.exchange_web_socket:
-
-                # init websocket
-                self.exchange_web_socket.init_web_sockets()
-
-                # start the websocket
-                self.exchange_web_socket.start_sockets()
+            # if self.exchange_web_socket:
+            #
+            #     # init websocket
+            #     self.exchange_web_socket.init_web_sockets()
+            #
+            #     # start the websocket
+            #     self.exchange_web_socket.start_sockets()
 
             self._load_constants()
 
+        # if simulated : create exchange simulator instance
+        else:
+            self.exchange = ExchangeSimulator(self.config, self.exchange_type, self)
+
+        self.exchange_dispatcher = ExchangeDispatcher(self.exchange, self.exchange_web_socket)
+
         self.is_ready = True
 
+    def get_exchange(self):
+        return self.exchange_dispatcher
+
     # Exchange configuration functions
-    def check_config(self):
-        if not self.config["exchanges"][self.name]["api-key"] \
-                and not self.config["exchanges"][self.name]["api-secret"]:
+    def check_config(self, exchange_name):
+        if not self.config["exchanges"][exchange_name]["api-key"] \
+                and not self.config["exchanges"][exchange_name]["api-secret"]:
             return False
         else:
             return True
 
     def enabled(self):
         # if we can get candlestick data
-        if self.is_simulated or self.name in self.config[CONFIG_EXCHANGES]:
+        if self.is_simulated or self.exchange.get_name() in self.config[CONFIG_EXCHANGES]:
             return True
         else:
-            self.logger.warning("Exchange {0} is currently disabled".format(self.name))
+            self.logger.warning("Exchange {0} is currently disabled".format(self.exchange.get_name()))
             return False
 
     def _set_config_time_frame(self):
@@ -133,9 +147,6 @@ class ExchangeManager(AbstractExchange):
         return pandas.DataFrame(data=prices)
 
     # Getters
-    def get_name(self):
-        return self.name
-
     def get_is_simulated(self):
         return self.is_simulated
 

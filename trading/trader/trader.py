@@ -207,12 +207,12 @@ class Trader:
         return self.order_manager.get_open_orders()
 
     def update_close_orders(self):
-        for symbol in self.exchange.get_traded_pairs():
+        for symbol in self.exchange.get_exchange_manager().get_traded_pairs():
             for close_order in self.exchange.get_closed_orders(symbol):
                 self.parse_exchange_order_to_trade_instance(close_order)
 
     def update_open_orders(self):
-        for symbol in self.exchange.get_traded_pairs():
+        for symbol in self.exchange.get_exchange_manager().get_traded_pairs():
             orders = self.exchange.get_open_orders(symbol=symbol)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)

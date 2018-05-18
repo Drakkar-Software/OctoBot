@@ -3,12 +3,13 @@ import logging
 from ccxt import OrderNotFound, BaseError
 
 from config.cst import *
-from trading.exchanges.exchange_manager import ExchangeManager
+from trading.exchanges.abstract_exchange import AbstractExchange
 
 
-class Exchange(ExchangeManager):
-    def __init__(self, exchange_type):
-        super().__init__(exchange_type)
+class Exchange(AbstractExchange):
+    def __init__(self, config, exchange_type, exchange_manager):
+        super().__init__(config, exchange_type)
+        self.exchange_manager = exchange_manager
 
         # ccxt client
         self.client = None
@@ -19,25 +20,21 @@ class Exchange(ExchangeManager):
         self.used = None
         self.total = None
 
-        # if the exchange is not simulated we will need to create the rest client and fetch exchange config
-        if not self.is_simulated:
-            self.create_client()
-            self.client.load_markets()
+        # We will need to create the rest client and fetch exchange config
+        self.create_client()
+        self.client.load_markets()
 
         self.all_currencies_price_ticker = None
 
     # ccxt exchange instance creation
     def create_client(self):
-        if self.check_config():
-            if not self.is_simulated:
-                self.client = self.exchange_type({
-                    'apiKey': self.config["exchanges"][self.name]["api-key"],
-                    'secret': self.config["exchanges"][self.name]["api-secret"],
-                    'verbose': False,
-                    'enableRateLimit': True
-                })
-            else:
-                self.client = self.exchange_type({'verbose': False})
+        if self.exchange_manager.check_config(self.get_name()):
+            self.client = self.exchange_type({
+                'apiKey': self.config["exchanges"][self.name]["api-key"],
+                'secret': self.config["exchanges"][self.name]["api-secret"],
+                'verbose': False,
+                'enableRateLimit': True
+            })
         else:
             self.client = self.exchange_type({'verbose': False})
         self.client.logger.setLevel(logging.INFO)
@@ -70,7 +67,7 @@ class Exchange(ExchangeManager):
             candles = self.client.fetch_ohlcv(symbol, time_frame.value)
 
         if data_frame:
-            return self.candles_array_to_data_frame(candles)
+            return self.exchange_manager.candles_array_to_data_frame(candles)
         else:
             return candles
 

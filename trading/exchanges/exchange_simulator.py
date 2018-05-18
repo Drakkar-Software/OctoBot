@@ -3,13 +3,13 @@ from backtesting.backtesting import Backtesting
 from backtesting.collector.data_collector import DataCollectorParser, ExchangeDataCollector
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
-from trading import Exchange
+from trading import AbstractExchange
 
 
-class ExchangeSimulator(Exchange):
-    def __init__(self):
-        super().__init__(None)
-        self.is_simulated = True
+class ExchangeSimulator(AbstractExchange):
+    def __init__(self, config, exchange_type, exchange_manager):
+        super().__init__(config, exchange_type)
+        self.exchange_manager = exchange_manager
 
         if CONFIG_BACKTESTING not in self.config:
             raise Exception("Backtesting config not found")
@@ -126,7 +126,7 @@ class ExchangeSimulator(Exchange):
         self.time_frame_get_times[time_frame.value] += 1
 
         if data_frame:
-            return self.candles_array_to_data_frame(result)
+            return self.exchange_manager.candles_array_to_data_frame(result)
         else:
             return result
 
