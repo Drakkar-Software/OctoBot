@@ -56,7 +56,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
                 for time_frame in time_frames:
                     if back_testing_enabled:
-                        if evaluator_thread_manager.exchange.should_update_data(evaluator_thread_manager.symbol, time_frame):
+                        if evaluator_thread_manager.exchange.get_exchange().should_update_data(time_frame):
                             self._refresh_data(time_frame)
 
                     # if data from this time frame needs an update
