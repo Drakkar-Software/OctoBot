@@ -88,10 +88,10 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
         raise NotImplementedError("Eval_impl not implemented")
 
     def valid_refresh_time(self, config_refresh_time):
-        if config_refresh_time > self.exchange.get_rate_limit():
+        if config_refresh_time > self.exchange.get_exchange_manager().get_rate_limit():
             return config_refresh_time
         else:
-            return self.exchange.get_rate_limit()
+            return self.exchange.get_exchange_manager().get_rate_limit()
 
     def _define_refresh_time(self):
         self.refresh_time = self.valid_refresh_time(self.specific_config[CONFIG_REFRESH_RATE])

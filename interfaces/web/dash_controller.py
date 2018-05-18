@@ -56,7 +56,7 @@ def update_symbol_dropdown_options(exchange_name, cryptocurrency_name):
     symbol_list = []
 
     for symbol in global_config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency_name][CONFIG_CRYPTO_PAIRS]:
-        if exchange.symbol_exists(symbol):
+        if exchange.get_exchange_manager().symbol_exists(symbol):
             symbol_list.append({
                 "label": symbol,
                 "value": symbol
@@ -72,7 +72,7 @@ def update_symbol_dropdown_value(exchange_name, cryptocurrency_name):
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     for symbol in global_config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency_name][CONFIG_CRYPTO_PAIRS]:
-        if exchange.symbol_exists(symbol):
+        if exchange.get_exchange_manager().symbol_exists(symbol):
             return {
                 "label": symbol,
                 "value": symbol
@@ -89,7 +89,7 @@ def update_time_frame_dropdown_options(exchange_name, symbol):
 
     time_frame_list = []
     for time_frame in global_config[CONFIG_TIME_FRAME]:
-        if exchange.time_frame_exists(TimeFrames(time_frame).value):
+        if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value):
             time_frame_list.append({
                 "label": time_frame,
                 "value": time_frame
@@ -104,7 +104,7 @@ def update_time_frame_dropdown_value(exchange_name, symbol):
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     for time_frame in global_config[CONFIG_TIME_FRAME]:
-        if exchange.time_frame_exists(TimeFrames(time_frame).value):
+        if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value):
             return {
                 "label": time_frame,
                 "value": time_frame

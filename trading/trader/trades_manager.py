@@ -118,10 +118,10 @@ class TradesManager:
     def _try_get_value_of_currency(self, currency, quantity):
         symbol = merge_currencies(currency, self.reference_market)
         symbol_inverted = merge_currencies(self.reference_market, currency)
-        if self.exchange.symbol_exists(symbol):
+        if self.exchange.get_exchange_manager().symbol_exists(symbol):
             self._update_currencies_prices(symbol)
             return self.currencies_last_prices[symbol] * quantity
-        elif self.exchange.symbol_exists(symbol_inverted):
+        elif self.exchange.get_exchange_manager().symbol_exists(symbol_inverted):
             self._update_currencies_prices(symbol_inverted)
             return quantity / self.currencies_last_prices[symbol_inverted]
         else:
@@ -135,7 +135,7 @@ class TradesManager:
     def _evaluate_portfolio_value(self, portfolio):
         value = 0
         for currency in portfolio:
-            if portfolio[currency][Portfolio.TOTAL] > 0:
+            if portfolio[currency][Portfolio.TOTAL] != 0:
                 value += self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
         return value
 
