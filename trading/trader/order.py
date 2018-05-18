@@ -100,7 +100,7 @@ class Order:
         if self.last_prices is not None:
             prices = [p["price"] 
                       for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]
-                      if not math.isnan(p)]
+                      if not math.isnan(p["price"])]
 
             if inferior:
                 if float(min(prices)) < price:
