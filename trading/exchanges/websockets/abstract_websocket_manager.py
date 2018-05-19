@@ -3,18 +3,17 @@ from abc import *
 from ccxt.base.exchange import Exchange as ccxtExchange
 
 from tools.symbol_util import merge_symbol
-from trading import AbstractExchange
 from trading.exchanges.exchange_data import ExchangeData
 
 
-class AbstractWebSocketManager(AbstractExchange):
+class AbstractWebSocketManager:
 
-    def __init__(self, config, exchange_type):
-        super().__init__(config, exchange_type)
+    def __init__(self, config):
         self.config = config
         self.client = None
         self.exchange_data = ExchangeData()
 
+    # Abstract methods
     @classmethod
     @abstractmethod
     def get_name(cls):
@@ -55,6 +54,7 @@ class AbstractWebSocketManager(AbstractExchange):
     def init_web_sockets(self, time_frames, trader_pairs):
         raise NotImplementedError("init_web_sockets not implemented")
 
+    # Initialized methods
     def last_price_ticker_is_initialized(self, symbol):
         return merge_symbol(symbol) in self.exchange_data.symbol_tickers
 
@@ -67,6 +67,10 @@ class AbstractWebSocketManager(AbstractExchange):
     def orders_are_initialized(self):
         return self.exchange_data.is_initialized[ExchangeData.ORDERS_KEY]
 
+    def set_orders_are_initialized(self, value):
+        self.exchange_data.is_initialized[ExchangeData.ORDERS_KEY] = value
+
+    # Abstract exchange
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         pass
 
@@ -88,9 +92,7 @@ class AbstractWebSocketManager(AbstractExchange):
     def get_closed_orders(self, symbol=None, since=None, limit=None):
         return self.exchange_data.get_closed_orders(symbol, since, limit)
 
-    def set_orders_are_initialized(self, value):
-        self.exchange_data.is_initialized[ExchangeData.ORDERS_KEY] = value
-
+    # ============== ccxt adaptation methods ==============
     def init_ccxt_order_from_other_source(self, ccxt_order):
         self.exchange_data.upsert_order(ccxt_order["id"], ccxt_order)
 
@@ -98,7 +100,6 @@ class AbstractWebSocketManager(AbstractExchange):
         ccxt_order = self.convert_into_ccxt_order(msg)
         self.exchange_data.upsert_order(ccxt_order["id"], ccxt_order)
 
-    # ============== ccxt adaptation methods ==============
     @staticmethod
     @abstractmethod
     def parse_order_status(status):
@@ -126,6 +127,4 @@ class AbstractWebSocketManager(AbstractExchange):
     @staticmethod
     def iso8601(value):
         return ccxtExchange.iso8601(value)
-
-    # ==============      -------------      ==============
 

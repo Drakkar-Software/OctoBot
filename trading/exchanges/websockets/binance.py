@@ -1,3 +1,4 @@
+from config.cst import *
 from trading.exchanges.websockets.abstract_websocket_manager import AbstractWebSocketManager
 from binance.websockets import BinanceSocketManager
 from binance.client import Client
@@ -18,10 +19,10 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
         'CANCELED': 'canceled',
     }
 
-    def __init__(self, config, exchange_type):
-        super().__init__(config, exchange_type)
-        self.client = Client(config["exchanges"][self.get_name()]["api-key"],
-                             self.config["exchanges"][self.get_name()]["api-secret"])
+    def __init__(self, config):
+        super().__init__(config)
+        self.client = Client(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY],
+                             self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET])
         self.socket_manager = None
         self.open_sockets_keys = {}
 
