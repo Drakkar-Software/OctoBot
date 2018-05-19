@@ -80,3 +80,15 @@ class WebSocketExchange(AbstractExchange):
 
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         pass
+
+    # utility methods
+    def init_orders_for_ws_if_possible(self, orders):
+        if not self.client.orders_are_initialized():
+            for order in orders:
+                self.client.init_ccxt_order_from_other_source(order)
+
+    def set_orders_are_initialized(self, value):
+        self.client.set_orders_are_initialized(value)
+
+    def orders_are_initialized(self):
+        return self.client.orders_are_initialized()
