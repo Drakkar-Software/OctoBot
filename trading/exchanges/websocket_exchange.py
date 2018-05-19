@@ -23,7 +23,7 @@ class WebSocketExchange(AbstractExchange):
 
     # websocket exchange startup
     def create_client(self):
-        self.client = self.socket_manager.get_websocket_client(self.config, self.exchange_type)
+        self.client = self.socket_manager.get_websocket_client(self.config)
 
         # init websocket
         self.client.init_web_sockets(self.exchange_manager.get_config_time_frame(),

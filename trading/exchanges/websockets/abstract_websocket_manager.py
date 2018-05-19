@@ -12,6 +12,7 @@ class AbstractWebSocketManager:
         self.config = config
         self.client = None
         self.exchange_data = ExchangeData()
+        self.name = self.get_name()
 
     # Abstract methods
     @classmethod
@@ -43,7 +44,7 @@ class AbstractWebSocketManager:
 
     @staticmethod
     @abstractmethod
-    def get_websocket_client(config, exchange_type):
+    def get_websocket_client(config):
         raise NotImplementedError("get_websocket_client not implemented")
 
     @abstractmethod
