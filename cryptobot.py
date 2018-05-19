@@ -227,6 +227,10 @@ class CryptoBot:
             except Exception as e:
                 raise e
 
+        # stop exchanges threads
+        for exchange in self.exchanges_list.values():
+            exchange.stop()
+
         self.logger.info("Threads stopped.")
 
     def get_symbols_threads_manager(self):

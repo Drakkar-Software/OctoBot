@@ -148,3 +148,6 @@ class ExchangeDispatcher:
                                           quantity=quantity,
                                           price=price,
                                           stop_price=stop_price)
+
+    def stop(self):
+        self.exchange_web_socket.stop()

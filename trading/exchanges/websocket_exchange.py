@@ -39,6 +39,9 @@ class WebSocketExchange(AbstractExchange):
     def get_client(self):
         return self.client
 
+    def stop(self):
+        self.client.stop_sockets()
+
     def _set_config_time_frame(self):
         for time_frame in TimeFrameManager.get_config_time_frame(self.config):
             if self.exchange_manager.time_frame_exists(time_frame.value):

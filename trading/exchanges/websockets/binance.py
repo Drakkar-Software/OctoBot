@@ -1,7 +1,7 @@
 from trading.exchanges.websockets.abstract_websocket_manager import AbstractWebSocketManager
-from binance.enums import *
 from binance.websockets import BinanceSocketManager
 from binance.client import Client
+from twisted.internet import reactor
 
 from tools.symbol_util import merge_symbol
 
@@ -122,9 +122,11 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def get_socket_manager(self):
         return self.socket_manager
 
-    def close_sockets(self):
+    def stop_sockets(self):
         if self.socket_manager:
             self.socket_manager.close()
+        reactor.stop()
+
 
     def start_sockets(self):
         if self.socket_manager:
