@@ -6,7 +6,7 @@ from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
 
 
-class Exchange(AbstractExchange):
+class RESTExchange(AbstractExchange):
     def __init__(self, config, exchange_type, exchange_manager):
         super().__init__(config, exchange_type)
         self.exchange_manager = exchange_manager

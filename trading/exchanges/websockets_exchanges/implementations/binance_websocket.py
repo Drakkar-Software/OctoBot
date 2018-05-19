@@ -1,5 +1,5 @@
 from config.cst import *
-from trading.exchanges.websockets.abstract_websocket_manager import AbstractWebSocketManager
+from trading.exchanges.websockets_exchanges.abstract_websocket_manager import AbstractWebSocketManager
 from binance.websockets import BinanceSocketManager
 from binance.client import Client
 from twisted.internet import reactor
