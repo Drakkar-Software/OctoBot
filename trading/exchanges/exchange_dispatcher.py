@@ -95,7 +95,7 @@ class ExchangeDispatcher(AbstractExchange):
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
         if self._web_socket_available() and self.exchange_web_socket.orders_are_initialized():
-            self.exchange_web_socket.get_all_orders(symbol=symbol,
+            return self.exchange_web_socket.get_all_orders(symbol=symbol,
                                                     since=since,
                                                     limit=limit)
         else:
@@ -108,7 +108,7 @@ class ExchangeDispatcher(AbstractExchange):
 
     def get_open_orders(self, symbol=None, since=None, limit=None):
         if self._web_socket_available() and self.exchange_web_socket.orders_are_initialized():
-            self.exchange_web_socket.get_open_orders(symbol=symbol,
+            return self.exchange_web_socket.get_open_orders(symbol=symbol,
                                                      since=since,
                                                      limit=limit)
         else:
@@ -121,7 +121,7 @@ class ExchangeDispatcher(AbstractExchange):
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):
         if self._web_socket_available() and self.exchange_web_socket.orders_are_initialized():
-            self.exchange_web_socket.get_closed_orders(symbol=symbol,
+            return self.exchange_web_socket.get_closed_orders(symbol=symbol,
                                                        since=since,
                                                        limit=limit)
         else:
