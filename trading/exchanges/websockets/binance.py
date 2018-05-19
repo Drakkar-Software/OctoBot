@@ -52,7 +52,7 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def _update_portfolio(self, msg):
         for currency in msg['B']:
             free = float(currency['f'])
-            locked = float(currency['f'])
+            locked = float(currency['l'])
             total = free + locked
             self.exchange_data.update_portfolio(currency['a'], total, free, locked)
 
