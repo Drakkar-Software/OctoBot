@@ -127,7 +127,6 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
         if self.socket_manager:
             self.socket_manager.close()
 
-        # ?
         reactor.stop()
 
     def start_sockets(self):

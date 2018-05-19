@@ -10,6 +10,12 @@ class ExchangeDispatcher(AbstractExchange):
         self.exchange = exchange
         self.exchange_web_socket = exchange_web_socket
 
+        self.logger.info("online with {0}".format(
+            "REST api{0}".format(
+                " and websocket api" if self.exchange_web_socket else ""
+            )
+        ))
+
     def _web_socket_available(self):
         return self.exchange_web_socket
 
