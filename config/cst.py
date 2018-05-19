@@ -162,10 +162,10 @@ class PriceStrings(Enum):
 
 class PriceIndexes(Enum):
     IND_PRICE_TIME = 0
-    IND_PRICE_CLOSE = 4
     IND_PRICE_OPEN = 1
     IND_PRICE_HIGH = 2
     IND_PRICE_LOW = 3
+    IND_PRICE_CLOSE = 4
     IND_PRICE_VOL = 5
 
 

@@ -134,26 +134,6 @@ class ExchangeManager:
     def get_rate_limit(self):
         return self.exchange_type.rateLimit / 1000
 
-    # Candles
-    @staticmethod
-    def candles_array_to_data_frame(candles_array):
-        prices = {PriceStrings.STR_PRICE_HIGH.value: [],
-                  PriceStrings.STR_PRICE_LOW.value: [],
-                  PriceStrings.STR_PRICE_OPEN.value: [],
-                  PriceStrings.STR_PRICE_CLOSE.value: [],
-                  PriceStrings.STR_PRICE_VOL.value: [],
-                  PriceStrings.STR_PRICE_TIME.value: []}
-
-        for c in candles_array:
-            prices[PriceStrings.STR_PRICE_TIME.value].append(float(c[PriceIndexes.IND_PRICE_TIME.value]))
-            prices[PriceStrings.STR_PRICE_OPEN.value].append(float(c[PriceIndexes.IND_PRICE_OPEN.value]))
-            prices[PriceStrings.STR_PRICE_HIGH.value].append(float(c[PriceIndexes.IND_PRICE_HIGH.value]))
-            prices[PriceStrings.STR_PRICE_LOW.value].append(float(c[PriceIndexes.IND_PRICE_LOW.value]))
-            prices[PriceStrings.STR_PRICE_CLOSE.value].append(float(c[PriceIndexes.IND_PRICE_CLOSE.value]))
-            prices[PriceStrings.STR_PRICE_VOL.value].append(float(c[PriceIndexes.IND_PRICE_VOL.value]))
-
-        return pandas.DataFrame(data=prices)
-
     # Getters
     def get_is_simulated(self):
         return self.is_simulated

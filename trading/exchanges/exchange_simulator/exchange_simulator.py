@@ -5,6 +5,7 @@ from backtesting.collector.exchange_collector import ExchangeDataCollector
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
 from trading import AbstractExchange
+from tools.data_frame_util import DataFrameUtil
 
 
 class ExchangeSimulator(AbstractExchange):
@@ -133,9 +134,9 @@ class ExchangeSimulator(AbstractExchange):
         self.time_frame_get_times[time_frame.value] += 1
 
         if data_frame:
-            return self.exchange_manager.candles_array_to_data_frame(result)
+            return DataFrameUtil.candles_array_to_data_frame(result), result
         else:
-            return result
+            return result, result
 
     # Will use the One Minute time frame
     def _create_tickers(self, symbol):

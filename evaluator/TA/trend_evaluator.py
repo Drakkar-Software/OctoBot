@@ -5,7 +5,7 @@ import math
 
 from evaluator.TA.TA_evaluator import TrendEvaluator
 from evaluator.Util.trend_analysis import TrendAnalysis
-from evaluator.Util.data_frame_util import DataFrameUtil
+from tools.data_frame_util import DataFrameUtil
 
 
 # evaluates position of the current (2 unit) average trend relatively to the 5 units average and 10 units average trend
