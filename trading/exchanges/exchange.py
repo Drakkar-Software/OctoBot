@@ -172,4 +172,6 @@ class Exchange(AbstractExchange):
             elif order_type == TraderOrderType.TAKE_PROFIT_LIMIT:
                 return None
         except Exception as e:
-            self.logger.error("Failed to create order : {0}".format(e))
+            order_desc = "order_type: {0}, symbol: {1}, quantity: {2}, price: {3}, stop_price: {4}".format(
+                str(order_type), str(symbol), str(quantity), str(price), str(stop_price))
+            self.logger.error("Failed to create order : {0} ({1})".format(e, order_desc))
