@@ -3,7 +3,7 @@ from abc import *
 from ccxt.base.exchange import Exchange as ccxtExchange
 
 from tools.symbol_util import merge_symbol
-from trading.exchanges.exchange_data import ExchangeData
+from trading.exchanges.websockets_exchanges.exchange_data import ExchangeData
 
 
 class AbstractWebSocketManager:

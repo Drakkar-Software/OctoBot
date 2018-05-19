@@ -15,7 +15,6 @@ from services import ServiceCreator
 from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
-from trading import Exchange
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator

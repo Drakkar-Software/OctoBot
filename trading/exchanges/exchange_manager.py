@@ -4,11 +4,11 @@ import pandas
 
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
-from trading import Exchange
+from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
 from trading import WebSocketExchange
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
-from trading.exchanges.exchange_simulator import ExchangeSimulator
-from trading.exchanges.websockets import AbstractWebSocketManager
+from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
+from trading.exchanges.websockets_exchanges import AbstractWebSocketManager
 
 
 class ExchangeManager:
@@ -40,7 +40,7 @@ class ExchangeManager:
     def create_exchanges(self):
         if not self.is_simulated:
             # create REST based on ccxt exchange
-            self.exchange = Exchange(self.config, self.exchange_type, self)
+            self.exchange = RESTExchange(self.config, self.exchange_type, self)
 
             self._load_constants()
 
