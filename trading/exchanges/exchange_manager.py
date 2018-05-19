@@ -5,6 +5,7 @@ import pandas
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
 from trading import Exchange
+from trading import WebSocketExchange
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.exchange_simulator import ExchangeSimulator
 from trading.exchanges.websockets import AbstractWebSocketManager
@@ -41,22 +42,13 @@ class ExchangeManager:
             # create REST based on ccxt exchange
             self.exchange = Exchange(self.config, self.exchange_type, self)
 
-            # create Websocket exchange if possible
-            # check if websocket is available for this exchange
-            # for socket_manager in AbstractWebSocketManager.__subclasses__():
-            #     if socket_manager.get_name() == self.get_name().lower():
-            #         self.exchange_web_socket = socket_manager.get_websocket_client(self.config)
-
-            # if a Websocket instance is created
-            # if self.exchange_web_socket:
-            #
-            #     # init websocket
-            #     self.exchange_web_socket.init_web_sockets()
-            #
-            #     # start the websocket
-            #     self.exchange_web_socket.start_sockets()
-
             self._load_constants()
+
+            # create Websocket exchange if possible
+            for socket_manager in AbstractWebSocketManager.__subclasses__():
+                if socket_manager.get_name() == self.exchange.get_name():
+                    self.exchange_web_socket = WebSocketExchange(self.config, self.exchange_type, self, socket_manager)
+                    break
 
         # if simulated : create exchange simulator instance
         else:
@@ -122,6 +114,12 @@ class ExchangeManager:
             return True
         else:
             return False
+
+    def get_client_symbols(self):
+        return self.client_symbols
+
+    def get_client_timeframes(self):
+        return self.client_time_frames
 
     def get_rate_limit(self):
         return self.exchange_type.rateLimit / 1000

@@ -4,62 +4,57 @@ from ccxt import OrderNotFound, BaseError
 
 from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
+from tools.time_frame_manager import TimeFrameManager
 
 
-class Exchange(AbstractExchange):
-    def __init__(self, config, exchange_type, exchange_manager):
+class WebSocketExchange(AbstractExchange):
+    def __init__(self, config, exchange_type, exchange_manager, socket_manager):
         super().__init__(config, exchange_type)
         self.exchange_manager = exchange_manager
+        self.socket_manager = socket_manager
+        self._time_frames = []
+        self._traded_pairs = []
 
-        # ccxt client
+        # websocket client
         self.client = None
-
-        # balance additional info
-        self.info_list = None
-        self.free = None
-        self.used = None
-        self.total = None
 
         # We will need to create the rest client and fetch exchange config
         self.create_client()
-        self.client.load_markets()
 
-        self.all_currencies_price_ticker = None
-
-    # ccxt exchange instance creation
+    # websocket exchange startup
     def create_client(self):
-        if self.exchange_manager.check_config(self.get_name()):
-            self.client = self.exchange_type({
-                'apiKey': self.config["exchanges"][self.name]["api-key"],
-                'secret': self.config["exchanges"][self.name]["api-secret"],
-                'verbose': False,
-                'enableRateLimit': True
-            })
-        else:
-            self.client = self.exchange_type({'verbose': False})
-        self.client.logger.setLevel(logging.INFO)
+
+        self.client = self.socket_manager.get_websocket_client(self.config)
+
+        # init websockets retrieved data
+        self._set_config_time_frame()
+        self._set_config_traded_pairs()
+
+        # init websocket
+        self.client.init_web_sockets(self._time_frames, self._traded_pairs)
+
+        # start the websocket
+        self.client.start_sockets()
 
     def get_client(self):
         return self.client
 
+    def _set_config_time_frame(self):
+        for time_frame in TimeFrameManager.get_config_time_frame(self.config):
+            if self.exchange_manager.time_frame_exists(time_frame.value):
+                self._time_frames.append(time_frame)
+
+    def _set_config_traded_pairs(self):
+        for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
+            for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]:
+                if self.exchange_manager.symbol_exists(symbol):
+                    self._traded_pairs.append(symbol)
+
     # total (free + used), by currency
     def get_balance(self):
-        balance = self.client.fetchBalance()
+        return self.client.get_portfolio()
 
-        # store portfolio global info
-        self.info_list = balance[CONFIG_PORTFOLIO_INFO]
-        self.free = balance[CONFIG_PORTFOLIO_FREE]
-        self.used = balance[CONFIG_PORTFOLIO_USED]
-        self.total = balance[CONFIG_PORTFOLIO_TOTAL]
-
-        # remove not currency specific keys
-        balance.pop(CONFIG_PORTFOLIO_INFO, None)
-        balance.pop(CONFIG_PORTFOLIO_FREE, None)
-        balance.pop(CONFIG_PORTFOLIO_USED, None)
-        balance.pop(CONFIG_PORTFOLIO_TOTAL, None)
-
-        return balance
-
+    # todo
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         if limit:
             candles = self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
@@ -72,9 +67,11 @@ class Exchange(AbstractExchange):
             return candles
 
     # return up to ten bidasks on each side of the order book stack
+    # todo
     def get_order_book(self, symbol, limit=30):
         return self.client.fetchOrderBook(symbol, limit)
 
+    # todo
     def get_recent_trades(self, symbol):
         try:
             return self.client.fetch_trades(symbol)
@@ -82,6 +79,7 @@ class Exchange(AbstractExchange):
             self.logger.error("Failed to get recent trade {0}".format(e))
             return None
 
+    # todo
     def get_market_price(self, symbol):
         order_book = self.get_order_book(symbol)
         bid = order_book['bids'][0][0] if len(order_book['bids']) > 0 else None
@@ -91,13 +89,10 @@ class Exchange(AbstractExchange):
 
     # A price ticker contains statistics for a particular market/symbol for the last instant
     def get_last_price_ticker(self, symbol):
-        try:
-            return self.client.fetch_ticker(symbol)[ExchangeConstantsTickersColumns.LAST.value]
-        except BaseError as e:
-            self.logger.error("Failed to get_price_ticker {0}".format(e))
-            return None
+        return self.client.get_last_price_ticker(symbol=symbol)
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
+    # todo
     def get_price_ticker(self, symbol):
         try:
             return self.client.fetch_ticker(symbol)
@@ -105,6 +100,7 @@ class Exchange(AbstractExchange):
             self.logger.error("Failed to get_price_ticker {0}".format(e))
             return None
 
+    # todo
     def get_all_currencies_price_ticker(self):
         try:
             self.all_currencies_price_ticker = self.client.fetch_tickers()
@@ -115,35 +111,22 @@ class Exchange(AbstractExchange):
 
     # ORDERS
     def get_order(self, order_id):
-        # if self.websocket_client and self.websocket_client.():
-        #     balance = self.websocket_client.exchange_data.portfolio
-        # else:
-        if self.client.has['fetchOrder']:
-            return self.client.fetch_order(order_id)
-        else:
-            raise Exception("This exchange doesn't support fetchOrder")
+        return self.client.get_order(order_id)
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
-        if self.client.has['fetchOrders']:
-            return self.client.fetchOrders(symbol=symbol, since=since, limit=limit, params={})
-        else:
-            raise Exception("This exchange doesn't support fetchOrders")
+        return self.client.get_all_orders(symbol, since, limit)
 
     def get_open_orders(self, symbol=None, since=None, limit=None):
-        if self.client.has['fetchOpenOrders']:
-            return self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit, params={})
-        else:
-            raise Exception("This exchange doesn't support fetchOpenOrders")
+        return self.client.get_open_orders(symbol, since, limit)
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):
-        if self.client.has['fetchClosedOrders']:
-            return self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit, params={})
-        else:
-            raise Exception("This exchange doesn't support fetchClosedOrders")
+        return self.client.get_closed_orders(symbol, since, limit)
 
+    # todo
     def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         return self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit, params={})
 
+    # todo
     def cancel_order(self, order_id, symbol=None):
         try:
             self.client.cancel_order(order_id, symbol=symbol)

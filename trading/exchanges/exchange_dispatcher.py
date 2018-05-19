@@ -9,10 +9,7 @@ class ExchangeDispatcher:
         self.exchange_web_socket = exchange_web_socket
 
     def _web_socket_available(self):
-        if self.exchange_web_socket and self.exchange_web_socket.portfolio_is_initialized():
-            return True
-        else:
-            return False
+        return self.exchange_web_socket
 
     def get_name(self):
         return self.exchange.get_name()
@@ -25,7 +22,8 @@ class ExchangeDispatcher:
 
     # total (free + used), by currency
     def get_balance(self):
-        if self._web_socket_available():
+        if self._web_socket_available() \
+                and self.exchange_web_socket.get_client().portfolio_is_initialized():
             return self.exchange_web_socket.get_portfolio()
         else:
             return self.exchange.get_balance()
@@ -61,7 +59,8 @@ class ExchangeDispatcher:
 
     # A price ticker contains statistics for a particular market/symbol for the last instant
     def get_last_price_ticker(self, symbol):
-        if self._web_socket_available():
+        if self._web_socket_available() \
+                and self.exchange_web_socket.get_client().last_price_ticker_is_initialized(symbol):
             return self.exchange_web_socket.get_last_price_ticker(symbol=symbol)
         else:
             return self.exchange.get_last_price_ticker(symbol=symbol)
@@ -80,35 +79,50 @@ class ExchangeDispatcher:
         return self.exchange.get_all_currencies_price_ticker()
 
     # ORDERS
-    def get_order(self, order_id):
-        if self._web_socket_available():
-            pass
 
-        return self.exchange.get_order(order_id=order_id)
+    def set_orders_are_initialized(self, value):
+        self.exchange_web_socket.get_client().set_orders_are_initialized(value)
+
+    def get_order(self, order_id):
+        if self._web_socket_available()\
+                and self.websocket_client.get_client().has_order(order_id):
+            return self.exchange_web_socket.get_order(order_id)
+        else:
+            order = self.exchange.get_order(order_id=order_id)
+            self._init_orders_for_ws_if_possible([order])
+            return order
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
-        if self._web_socket_available():
-            pass
-
-        return self.exchange.get_all_orders(symbol=symbol,
-                                            since=since,
-                                            limit=limit)
+        return self._get_filtered_orders(self.exchange.get_all_orders,
+                                         self.exchange_web_socket.get_all_orders,
+                                         symbol, since, limit)
 
     def get_open_orders(self, symbol=None, since=None, limit=None):
-        if self._web_socket_available():
-            pass
-
-        return self.exchange.get_open_orders(symbol=symbol,
-                                             since=since,
-                                             limit=limit)
+        return self._get_filtered_orders(self.exchange.get_open_orders,
+                                         self.exchange_web_socket.get_open_orders,
+                                         symbol, since, limit)
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):
-        if self._web_socket_available():
-            pass
+        return self._get_filtered_orders(self.exchange.get_closed_orders,
+                                         self.exchange_web_socket.get_closed_orders,
+                                         symbol, since, limit)
 
-        return self.exchange.get_closed_orders(symbol=symbol,
-                                               since=since,
-                                               limit=limit)
+    def _init_orders_for_ws_if_possible(self, orders):
+        if self._web_socket_available() \
+                and not self.exchange_web_socket.get_client().orders_are_initialized():
+            for order in orders:
+                self.exchange_web_socket.get_client().init_ccxt_order_from_other_source(order)
+
+    def _get_filtered_orders(self, rest_get_orders_method, ws_get_orders_method, symbol=None, since=None, limit=None):
+        if self._web_socket_available()\
+                and self.exchange_web_socket.get_client().orders_are_initialized():
+            return ws_get_orders_method(symbol, since, limit)
+        else:
+            orders = rest_get_orders_method(symbol=symbol,
+                                            since=since,
+                                            limit=limit)
+            self._init_orders_for_ws_if_possible(orders)
+            return orders
 
     def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         if self._web_socket_available():
