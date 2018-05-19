@@ -36,9 +36,9 @@ class ExchangeData:
 
     def update_portfolio(self, currency, total, available, in_order):
         self.portfolio[currency] = {
-            CONFIG_PORTFOLIO_TOTAL: total,
             CONFIG_PORTFOLIO_FREE: available,
-            CONFIG_PORTFOLIO_USED: in_order
+            CONFIG_PORTFOLIO_USED: in_order,
+            CONFIG_PORTFOLIO_TOTAL: total
         }
 
     def set_ticker(self, symbol, ticker_data):
