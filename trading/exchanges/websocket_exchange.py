@@ -1,10 +1,4 @@
-import logging
-
-from ccxt import OrderNotFound, BaseError
-
-from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
-from tools.time_frame_manager import TimeFrameManager
 
 
 class WebSocketExchange(AbstractExchange):

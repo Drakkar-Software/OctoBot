@@ -1,5 +1,3 @@
-import logging
-
 from trading import AbstractExchange
 
 
