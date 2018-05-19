@@ -54,7 +54,8 @@ class ExchangeManager:
         else:
             self.exchange = ExchangeSimulator(self.config, self.exchange_type, self)
 
-        self.exchange_dispatcher = ExchangeDispatcher(self.exchange, self.exchange_web_socket)
+        self.exchange_dispatcher = ExchangeDispatcher(self.config, self.exchange_type,
+                                                      self.exchange, self.exchange_web_socket)
 
         self.is_ready = True
 

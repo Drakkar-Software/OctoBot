@@ -1,8 +1,11 @@
 import logging
 
+from trading import AbstractExchange
 
-class ExchangeDispatcher:
-    def __init__(self, exchange, exchange_web_socket):
+
+class ExchangeDispatcher(AbstractExchange):
+    def __init__(self, config, exchange_type, exchange, exchange_web_socket):
+        super().__init__(config, exchange_type)
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.exchange = exchange
