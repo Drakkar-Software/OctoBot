@@ -135,7 +135,7 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
             self.socket_manager.start()
 
     @staticmethod
-    def get_websocket_client(config, exchange_type):
-        ws_client = BinanceWebSocketClient(config, exchange_type)
+    def get_websocket_client(config):
+        ws_client = BinanceWebSocketClient(config)
         ws_client.socket_manager = BinanceSocketManager(ws_client.client)
         return ws_client

@@ -43,7 +43,7 @@ class AbstractWebSocketManager:
 
     @staticmethod
     @abstractmethod
-    def get_websocket_client(config, exchange_type):
+    def get_websocket_client(config):
         raise NotImplementedError("get_websocket_client not implemented")
 
     @abstractmethod
