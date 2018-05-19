@@ -63,7 +63,7 @@ class ExchangeData:
     def is_initialized(self, symbol):
         return self.is_initialized[symbol]
 
-    # temporary method awaiting for symbol "/" reconstruction in ws
+    # TODO temporary method awaiting for symbol "/" reconstruction in ws
     @staticmethod
     def _adapt_symbol(symbol):
         return symbol.replace("/", "")
