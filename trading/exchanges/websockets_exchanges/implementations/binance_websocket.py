@@ -82,7 +82,7 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
             'timestamp': order["T"],
             'datetime': AbstractWebSocketManager.iso8601(order["T"]),
             'lastTradeTimestamp': None,
-            # warning string has no / between currency and market !!!
+            # TODO string has no / between currency and market => need to add it !!!
             'symbol': AbstractWebSocketManager.safe_string(order, "s"),
             'type': AbstractWebSocketManager.safe_lower_string(order, "o"),
             'side': AbstractWebSocketManager.safe_lower_string(order, "S"),
