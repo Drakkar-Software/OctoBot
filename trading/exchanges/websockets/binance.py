@@ -21,8 +21,8 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
 
     def __init__(self, config):
         super().__init__(config)
-        self.client = Client(self.config[CONFIG_EXCHANGES][self.get_name()][CONFIG_EXCHANGE_KEY],
-                             self.config[CONFIG_EXCHANGES][self.get_name()][CONFIG_EXCHANGE_SECRET])
+        self.client = Client(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY],
+                             self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET])
         self.socket_manager = None
         self.open_sockets_keys = {}
 
