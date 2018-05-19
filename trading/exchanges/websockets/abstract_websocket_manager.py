@@ -42,8 +42,9 @@ class AbstractWebSocketManager(AbstractExchange):
     def stop_sockets(self):
         raise NotImplementedError("stop_sockets not implemented")
 
+    @staticmethod
     @abstractmethod
-    def get_websocket_client(config):
+    def get_websocket_client(config, exchange_type):
         raise NotImplementedError("get_websocket_client not implemented")
 
     @abstractmethod
@@ -127,11 +128,4 @@ class AbstractWebSocketManager(AbstractExchange):
         return ccxtExchange.iso8601(value)
 
     # ==============      -------------      ==============
-
-
-class TimeFrameManager:
-
-    def __init__(self, start_candle_time, data):
-        self.start_candle_time = start_candle_time
-        self.data = data
 

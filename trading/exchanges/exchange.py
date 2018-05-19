@@ -30,8 +30,8 @@ class Exchange(AbstractExchange):
     def create_client(self):
         if self.exchange_manager.check_config(self.get_name()):
             self.client = self.exchange_type({
-                'apiKey': self.config["exchanges"][self.name]["api-key"],
-                'secret': self.config["exchanges"][self.name]["api-secret"],
+                'apiKey': self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY],
+                'secret': self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET],
                 'verbose': False,
                 'enableRateLimit': True
             })

@@ -24,7 +24,7 @@ class WebSocketExchange(AbstractExchange):
     # websocket exchange startup
     def create_client(self):
 
-        self.client = self.socket_manager.get_websocket_client(self.config)
+        self.client = self.socket_manager.get_websocket_client(self.config, self.exchange_type)
 
         # init websockets retrieved data
         self._set_config_time_frame()
@@ -138,7 +138,7 @@ class WebSocketExchange(AbstractExchange):
             self.logger.error("Order {0} was not found".format(order_id))
             return False
 
-    # todo { 'type': 'trailing-stop' }
+    # todo
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         try:
             if order_type == TraderOrderType.BUY_MARKET:

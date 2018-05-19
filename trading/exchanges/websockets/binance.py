@@ -7,20 +7,19 @@ from tools.symbol_util import merge_symbol
 
 
 class BinanceWebSocketClient(AbstractWebSocketManager):
-
     _TICKER_KEY = "@ticker"
     _KLINE_KEY = "@kline"
     _MULTIPLEX_SOCKET_NAME = "multiplex"
     _USER_SOCKET_NAME = "user"
     _STATUSES = {
-            'NEW': 'open',
-            'PARTIALLY_FILLED': 'open',
-            'FILLED': 'closed',
-            'CANCELED': 'canceled',
-        }
+        'NEW': 'open',
+        'PARTIALLY_FILLED': 'open',
+        'FILLED': 'closed',
+        'CANCELED': 'canceled',
+    }
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, exchange_type):
+        super().__init__(config, exchange_type)
         self.client = Client(config["exchanges"][self.get_name()]["api-key"],
                              self.config["exchanges"][self.get_name()]["api-secret"])
         self.socket_manager = None
@@ -36,7 +35,7 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def all_currencies_prices_callback(self, msg):
         if msg['data']['e'] == 'error':
             # close and restart the socket
-            self.close_sockets()
+            # self.close_sockets()
             self.start_sockets()
         else:
             msg_stream_type = msg["stream"]
@@ -70,6 +69,7 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
         amount = AbstractWebSocketManager.safe_float(order, "q")
         filled = AbstractWebSocketManager.safe_float(order, "z", 0.0)
         cost = None
+        remaining = None
         if filled is not None:
             if amount is not None:
                 remaining = max(amount - filled, 0.0)
@@ -125,15 +125,16 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def stop_sockets(self):
         if self.socket_manager:
             self.socket_manager.close()
-        reactor.stop()
 
+        # ?
+        reactor.stop()
 
     def start_sockets(self):
         if self.socket_manager:
             self.socket_manager.start()
 
     @staticmethod
-    def get_websocket_client(config):
-        ws_client = BinanceWebSocketClient(config)
+    def get_websocket_client(config, exchange_type):
+        ws_client = BinanceWebSocketClient(config, exchange_type)
         ws_client.socket_manager = BinanceSocketManager(ws_client.client)
         return ws_client

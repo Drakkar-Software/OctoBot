@@ -45,10 +45,11 @@ class ExchangeManager:
             self._load_constants()
 
             # create Websocket exchange if possible
-            for socket_manager in AbstractWebSocketManager.__subclasses__():
-                if socket_manager.get_name() == self.exchange.get_name():
-                    self.exchange_web_socket = WebSocketExchange(self.config, self.exchange_type, self, socket_manager)
-                    break
+            if self.check_web_socket_config(self.exchange.get_name()):
+                for socket_manager in AbstractWebSocketManager.__subclasses__():
+                    if socket_manager.get_name() == self.exchange.get_name():
+                        self.exchange_web_socket = WebSocketExchange(self.config, self.exchange_type, self, socket_manager)
+                        break
 
         # if simulated : create exchange simulator instance
         else:
@@ -64,11 +65,18 @@ class ExchangeManager:
 
     # Exchange configuration functions
     def check_config(self, exchange_name):
-        if not self.config["exchanges"][exchange_name]["api-key"] \
-                and not self.config["exchanges"][exchange_name]["api-secret"]:
+        if not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_KEY] \
+                and not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_SECRET]:
             return False
         else:
             return True
+
+    def check_web_socket_config(self, exchange_name):
+        if CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
+                and self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]:
+            return True
+        else:
+            return False
 
     def enabled(self):
         # if we can get candlestick data
@@ -152,4 +160,3 @@ class ExchangeManager:
     # Exceptions
     def _raise_exchange_load_error(self):
         raise Exception("{0} - Failed to load exchange instances")
-
