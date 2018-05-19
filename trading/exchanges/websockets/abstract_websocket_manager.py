@@ -79,13 +79,13 @@ class AbstractWebSocketManager(AbstractExchange):
     def get_order(self, order_id):
         return self.exchange_data.orders[order_id]
 
-    def get_all_orders(self, symbol, since, limit):
+    def get_all_orders(self, symbol=None, since=None, limit=None):
         return self.exchange_data.get_all_orders(symbol, since, limit)
 
-    def get_open_orders(self, symbol, since, limit):
+    def get_open_orders(self, symbol=None, since=None, limit=None):
         return self.exchange_data.get_open_orders(symbol, since, limit)
 
-    def get_closed_orders(self, symbol, since, limit):
+    def get_closed_orders(self, symbol=None, since=None, limit=None):
         return self.exchange_data.get_closed_orders(symbol, since, limit)
 
     def set_orders_are_initialized(self, value):

@@ -80,23 +80,23 @@ class ExchangeDispatcher(AbstractExchange):
         return self.exchange.get_all_currencies_price_ticker()
 
     # ORDERS
-    def _init_orders_for_ws_if_possible(self, orders):
-        if self._web_socket_available() and not self.exchange_web_socket.get_client().orders_are_initialized():
-            for order in orders:
-                self.exchange_web_socket.get_client().init_ccxt_order_from_other_source(order)
-
-    def _get_filtered_orders(self, rest_get_orders_method, ws_get_orders_method, symbol=None, since=None, limit=None):
-        if self._web_socket_available() and self.exchange_web_socket.get_client().orders_are_initialized():
-            return ws_get_orders_method(symbol, since, limit)
-        else:
-            orders = rest_get_orders_method(symbol=symbol,
-                                            since=since,
-                                            limit=limit)
-            self._init_orders_for_ws_if_possible(orders)
-            return orders
-
-    def set_orders_are_initialized(self, value):
-        self.exchange_web_socket.get_client().set_orders_are_initialized(value)
+    # def _init_orders_for_ws_if_possible(self, orders):
+    #     if self._web_socket_available() and not self.exchange_web_socket.get_client().orders_are_initialized():
+    #         for order in orders:
+    #             self.exchange_web_socket.get_client().init_ccxt_order_from_other_source(order)
+    #
+    # def _get_filtered_orders(self, rest_get_orders_method, ws_get_orders_method, symbol=None, since=None, limit=None):
+    #     if self._web_socket_available() and self.exchange_web_socket.get_client().orders_are_initialized():
+    #         return ws_get_orders_method(symbol, since, limit)
+    #     else:
+    #         orders = rest_get_orders_method(symbol=symbol,
+    #                                         since=since,
+    #                                         limit=limit)
+    #         self._init_orders_for_ws_if_possible(orders)
+    #         return orders
+    #
+    # def set_orders_are_initialized(self, value):
+    #     self.exchange_web_socket.get_client().set_orders_are_initialized(value)
 
     def get_order(self, order_id):
         if self._web_socket_available() and self.exchange_web_socket.get_client().has_order(order_id):
@@ -147,4 +147,5 @@ class ExchangeDispatcher(AbstractExchange):
                                           stop_price=stop_price)
 
     def stop(self):
-        self.exchange_web_socket.stop()
+        if self._web_socket_available():
+            self.exchange_web_socket.stop()
