@@ -27,12 +27,12 @@ class ExchangeData:
         else:
             time_frame_data = prices_per_time_frames[time_frame]
             # add new candle if previous candle is done
-            if time_frame_data[-1].start_candle_time < start_candle_time:
+            if time_frame_data[-1][self.TIME_FRAME_CANDLE_TIME] < start_candle_time:
                 time_frame_data.append({self.TIME_FRAME_CANDLE_TIME: start_candle_time,
                                         self.TIME_FRAME_DATA: price_data})
             # else update current candle
             else:
-                time_frame_data[-1].data = price_data
+                time_frame_data[-1][self.TIME_FRAME_DATA] = price_data
 
     def update_portfolio(self, currency, total, available, in_order):
         self.portfolio[currency] = {
