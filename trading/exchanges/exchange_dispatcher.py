@@ -34,13 +34,26 @@ class ExchangeDispatcher(AbstractExchange):
             return self.exchange.get_balance()
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        if self._web_socket_available():
-            pass
+        if self._web_socket_available() and self.exchange_web_socket.candles_are_initialized(symbol, time_frame):
+            candle_dataframe, candles = self.exchange_web_socket.get_symbol_prices(symbol=symbol,
+                                                                                   time_frame=time_frame,
+                                                                                   limit=limit,
+                                                                                   data_frame=data_frame)
+            return candle_dataframe
 
-        return self.exchange.get_symbol_prices(symbol=symbol,
-                                               time_frame=time_frame,
-                                               limit=limit,
-                                               data_frame=data_frame)
+        needs_to_init_candles = self._web_socket_available() and \
+            not self.exchange_web_socket.candles_are_initialized(symbol, time_frame)
+        select_limit = limit
+        if needs_to_init_candles:
+            data_frame = True
+            select_limit = None
+        candle_dataframe, candles = self.exchange.get_symbol_prices(symbol=symbol,
+                                                                    time_frame=time_frame,
+                                                                    limit=select_limit,
+                                                                    data_frame=data_frame)
+        if needs_to_init_candles:
+            self.exchange_web_socket.init_candle_data(symbol, time_frame, candles, candle_dataframe)
+        return candle_dataframe[-limit:] if limit is not None else candle_dataframe
 
     # return bid and asks on each side of the order book stack
     def get_order_book(self, symbol, limit=30):

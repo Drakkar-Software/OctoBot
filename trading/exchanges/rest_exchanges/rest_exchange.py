@@ -4,6 +4,7 @@ from ccxt import OrderNotFound, BaseError
 
 from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
+from tools.data_frame_util import DataFrameUtil
 
 
 class RESTExchange(AbstractExchange):
@@ -67,9 +68,9 @@ class RESTExchange(AbstractExchange):
             candles = self.client.fetch_ohlcv(symbol, time_frame.value)
 
         if data_frame:
-            return self.exchange_manager.candles_array_to_data_frame(candles)
+            return DataFrameUtil.candles_array_to_data_frame(candles), candles
         else:
-            return candles
+            return candles, candles
 
     # return up to ten bidasks on each side of the order book stack
     def get_order_book(self, symbol, limit=30):

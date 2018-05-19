@@ -59,8 +59,8 @@ class AbstractWebSocketManager:
     def last_price_ticker_is_initialized(self, symbol):
         return merge_symbol(symbol) in self.exchange_data.symbol_tickers
 
-    def currency_database_is_initialized(self, symbol):
-        return self.exchange_data.is_initialized(symbol)
+    def candles_are_initialized(self, symbol, time_frame):
+        return self.exchange_data.candles_are_initialized(symbol, time_frame)
 
     def portfolio_is_initialized(self):
         return self.exchange_data.portfolio
@@ -77,6 +77,9 @@ class AbstractWebSocketManager:
 
     def get_portfolio(self):
         return self.exchange_data.portfolio
+
+    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
+        return self.exchange_data.get_candles(symbol, time_frame, limit, data_frame)
 
     def has_order(self, order_id):
         return order_id in self.exchange_data.orders

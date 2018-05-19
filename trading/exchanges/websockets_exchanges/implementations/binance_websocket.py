@@ -33,6 +33,18 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def get_last_price_ticker(self, symbol):
         return float(self.exchange_data.symbol_tickers[merge_symbol(symbol)]["c"])
 
+    # candle: list[0:5]  #time, open, high, low, close, vol
+    @staticmethod
+    def _create_candle(kline_data):
+        return [
+            kline_data["t"],  # time
+            AbstractWebSocketManager.safe_float(kline_data, "o"),  # open
+            AbstractWebSocketManager.safe_float(kline_data, "h"),  # high
+            AbstractWebSocketManager.safe_float(kline_data, "l"),  # low
+            AbstractWebSocketManager.safe_float(kline_data, "c"),  # close
+            AbstractWebSocketManager.safe_float(kline_data, "v"),  # vol
+        ]
+
     def all_currencies_prices_callback(self, msg):
         if msg['data']['e'] == 'error':
             # close and restart the socket
@@ -47,7 +59,7 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
                 self.exchange_data.add_price(msg["data"]["s"],
                                              msg["data"]["k"]["i"],
                                              msg["data"]["k"]["t"],
-                                             msg["data"])
+                                             self._create_candle(msg["data"]["k"]))
 
     def _update_portfolio(self, msg):
         for currency in msg['B']:

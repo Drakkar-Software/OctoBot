@@ -87,8 +87,18 @@ class WebSocketExchange(AbstractExchange):
             for order in orders:
                 self.client.init_ccxt_order_from_other_source(order)
 
+    def init_candle_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_dataframe):
+        self.client.exchange_data.initialize_candles_data(symbol, time_frame, symbol_candle_data,
+                                                          symbol_candle_dataframe)
+
+    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
+        return self.client.get_symbol_prices(symbol, time_frame, limit, data_frame)
+
     def set_orders_are_initialized(self, value):
         self.client.set_orders_are_initialized(value)
+
+    def candles_are_initialized(self, symbol, time_frame):
+        return self.client.candles_are_initialized(symbol, time_frame)
 
     def orders_are_initialized(self):
         return self.client.orders_are_initialized()
