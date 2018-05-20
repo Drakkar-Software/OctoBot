@@ -42,6 +42,10 @@ if __name__ == '__main__':
     fileConfig('config/logging_config.ini')
 
     logger = logging.getLogger("CryptoBot Launcher")
+
+    # Force new log file creating not to log at the previous one's end.
+    logger.parent.handlers[1].doRollover()
+
     sys.excepthook = _log_uncaught_exceptions
 
     # Version
