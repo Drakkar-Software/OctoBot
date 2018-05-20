@@ -14,12 +14,15 @@ Changelog for 0.0.12-alpha
     #144 [Bug] Investigate version 0.0.11 negative simulated portfolio
     #145 [Datacollector] Implements multiple symbol
     #146 [Backtesting] Implement multi symbols
+    #147 [Backtesting] Implement multi exchanges
     #148 [Backtesting] Implement better order manager backtesting features
     #151 [Services] log info message when started
     #152 [Wiki] complete wiki version 1
     #153 [Beta Version] Prepare beta version
     #154 [Exchanges] implement web sockets for binance exchange
     #157 [Exchanges] manage websockets availability in exchange manager
+    #158 [Order management] implement order callback update for websockets additionnaly to poll updates
+    #159 added cyclic log file management 
 
 # New features :
     - Multi symbols / exchanges data collector
@@ -28,6 +31,7 @@ Changelog for 0.0.12-alpha
     - Websocket management
     - Exchange management
     - Binance Websocket
+    - Cyclic logging
     
 # Bug fix :
     - Fix exception in order update_status when backtesting
