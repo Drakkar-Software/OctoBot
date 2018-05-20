@@ -56,12 +56,11 @@ class ExchangeDispatcher(AbstractExchange):
         return candle_dataframe[-limit:] if limit is not None else candle_dataframe
 
     # return bid and asks on each side of the order book stack
-    def get_order_book(self, symbol, limit=30):
+    def get_order_book(self, symbol, limit=50):
         if self._web_socket_available():
             pass
 
-        return self.exchange.fetchOrderBook(symbol=symbol,
-                                            limit=limit)
+        return self.exchange.get_order_book(symbol, limit)
 
     def get_recent_trades(self, symbol):
         if self._web_socket_available() and self.exchange_web_socket.handles_recent_trades():
