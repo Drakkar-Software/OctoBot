@@ -71,13 +71,13 @@ class OrdersManager(threading.Thread):
     # Will be called by Websocket to perform order status update if new data available
     # TODO : currently blocking, may implement queue if needed
     def force_update_order_status(self):
-        self.update_orders_status()
+        self._update_orders_status()
 
     """ prepare order status updating by getting price data
     then ask orders to check their status
     Finally ask cancellation and filling process if it is required
     """
-    def update_orders_status(self):
+    def _update_orders_status(self):
         # update all prices only if simulate
         if self.trader.simulate:
             self._update_last_symbol_list()
@@ -106,7 +106,7 @@ class OrdersManager(threading.Thread):
         while self.keep_running:
 
             # call update status
-            self.update_orders_status()
+            self._update_orders_status()
 
             if not Backtesting.enabled(self.config):
                 sleep(ORDER_REFRESHER_TIME)
