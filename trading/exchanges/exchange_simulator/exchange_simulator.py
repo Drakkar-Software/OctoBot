@@ -70,7 +70,7 @@ class ExchangeSimulator(AbstractExchange):
     def fix_timestamps(data):
         if get_bot() is not None:
             for time_frame in data:
-                time_delta = get_bot().get_start_time()*1000 - data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
+                time_delta = get_bot().get_start_time() * 1000 - data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
                 for data_list in data[time_frame]:
                     data_list[PriceIndexes.IND_PRICE_TIME.value] += time_delta
         return data
@@ -93,7 +93,7 @@ class ExchangeSimulator(AbstractExchange):
         return self.symbols
 
     def get_name(self):
-        return self.__class__.__name__+str(self.symbols)
+        return self.__class__.__name__ + str(self.symbols)
 
     def _prepare(self):
 
@@ -177,7 +177,7 @@ class ExchangeSimulator(AbstractExchange):
         generated_prices = []
         inc = diff / count
         for i in range(0, count):
-            generated_prices.append(min_price + i*inc)
+            generated_prices.append(min_price + i * inc)
 
         return generated_prices
 
@@ -201,7 +201,7 @@ class ExchangeSimulator(AbstractExchange):
     def get_recent_trades(self, symbol):
         return self._extract_indexes(self.fetched_trades[symbol],
                                      self.time_frame_get_times[
-                                        self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value],
+                                         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value],
                                      factor=self.CREATED_TRADES_BY_TIME_FRAME)
 
     def get_data(self):
@@ -228,9 +228,27 @@ class ExchangeSimulator(AbstractExchange):
                 ExchangeConstantsTickersColumns.LAST.value:
                     self._extract_indexes(self.tickers[symbol],
                                           self.time_frame_get_times[
-                                             self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value],
+                                              self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value],
                                           factor=self.CREATED_TICKER_BY_TIME_FRAME,
                                           max_value=1)[0]
             }
             for symbol in self.symbols
+        }
+
+    def get_market_status(self, symbol):
+        return {
+            'limits': {
+                'amount': {
+                    'min': 0.00000000001,
+                    'max': 1000000000000,
+                },
+                'price': {
+                    'min': 0.00000000001,
+                    'max': 1000000000000,
+                },
+                'cost': {
+                    'min': 0.00000000001,
+                    'max': 1000000000000,
+                },
+            },
         }
