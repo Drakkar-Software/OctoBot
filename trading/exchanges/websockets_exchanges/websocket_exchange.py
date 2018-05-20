@@ -53,33 +53,34 @@ class WebSocketExchange(AbstractExchange):
     def get_closed_orders(self, symbol=None, since=None, limit=None):
         return self.client.get_closed_orders(symbol, since, limit)
 
-    # TODO method list
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        pass
+        return self.client.get_symbol_prices(symbol, time_frame, limit, data_frame)
 
-    def get_order_book(self, symbol, limit=30):
-        pass
+    # TODO method list
 
     def get_recent_trades(self, symbol):
-        pass
+        raise NotImplementedError("get_recent_trades not implemented")
+
+    def get_order_book(self, symbol, limit=30):
+        raise NotImplementedError("get_order_book not implemented")
 
     def get_market_price(self, symbol):
-        pass
+        raise NotImplementedError("get_market_price not implemented")
 
     def get_price_ticker(self, symbol):
-        pass
+        raise NotImplementedError("get_price_ticker not implemented")
 
     def get_all_currencies_price_ticker(self):
-        pass
+        raise NotImplementedError("get_all_currencies_price_ticker not implemented")
 
     def get_my_recent_trades(self, symbol=None, since=None, limit=None):
-        pass
+        raise NotImplementedError("get_my_recent_trades not implemented")
 
     def cancel_order(self, order_id, symbol=None):
-        pass
+        raise NotImplementedError("cancel_order not implemented")
 
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
-        pass
+        raise NotImplementedError("create_order not implemented")
 
     # utility methods
     def init_orders_for_ws_if_possible(self, orders):
@@ -90,9 +91,6 @@ class WebSocketExchange(AbstractExchange):
     def init_candle_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_dataframe):
         self.client.exchange_data.initialize_candles_data(symbol, time_frame, symbol_candle_data,
                                                           symbol_candle_dataframe)
-
-    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        return self.client.get_symbol_prices(symbol, time_frame, limit, data_frame)
 
     def set_orders_are_initialized(self, value):
         self.client.set_orders_are_initialized(value)
