@@ -1,5 +1,5 @@
 import telegram
-from telegram.ext import Updater, Dispatcher
+from telegram.ext import Updater  # , Dispatcher
 
 from config.cst import *
 from interfaces.telegram.bot import TelegramApp
