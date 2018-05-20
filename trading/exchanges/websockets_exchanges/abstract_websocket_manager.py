@@ -72,8 +72,6 @@ class AbstractWebSocketManager:
         self.exchange_data.is_initialized[ExchangeData.ORDERS_KEY] = value
 
     # Abstract exchange
-    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        pass
 
     def get_portfolio(self):
         return self.exchange_data.portfolio

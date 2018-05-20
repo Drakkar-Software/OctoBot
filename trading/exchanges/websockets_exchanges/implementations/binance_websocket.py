@@ -26,47 +26,34 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
         self.socket_manager = None
         self.open_sockets_keys = {}
 
-    @classmethod
-    def get_name(cls):
-        return "binance"
+    @staticmethod
+    def get_websocket_client(config):
+        ws_client = BinanceWebSocketClient(config)
+        ws_client.socket_manager = BinanceSocketManager(ws_client.client)
+        return ws_client
 
     def get_last_price_ticker(self, symbol):
         return float(self.exchange_data.symbol_tickers[merge_symbol(symbol)]["c"])
 
-    # candle: list[0:5]  #time, open, high, low, close, vol
-    @staticmethod
-    def _create_candle(kline_data):
-        return [
-            kline_data["t"],  # time
-            AbstractWebSocketManager.safe_float(kline_data, "o"),  # open
-            AbstractWebSocketManager.safe_float(kline_data, "h"),  # high
-            AbstractWebSocketManager.safe_float(kline_data, "l"),  # low
-            AbstractWebSocketManager.safe_float(kline_data, "c"),  # close
-            AbstractWebSocketManager.safe_float(kline_data, "v"),  # vol
-        ]
+    def init_web_sockets(self, time_frames, trader_pairs):
+        self._init_price_sockets(time_frames, trader_pairs)
+        self._init_user_socket()
 
-    def all_currencies_prices_callback(self, msg):
-        if msg['data']['e'] == 'error':
-            # close and restart the socket
-            # self.close_sockets()
-            self.start_sockets()
-        else:
-            msg_stream_type = msg["stream"]
-            if self._TICKER_KEY in msg_stream_type:
-                self.exchange_data.set_ticker(msg["data"]["s"],
-                                              msg["data"])
-            elif self._KLINE_KEY in msg_stream_type:
-                self.exchange_data.add_price(msg["data"]["s"],
-                                             msg["data"]["k"]["i"],
-                                             msg["data"]["k"]["t"],
-                                             self._create_candle(msg["data"]["k"]))
+    def start_sockets(self):
+        if self.socket_manager:
+            self.socket_manager.start()
 
-    def _update_portfolio(self, msg):
-        for currency in msg['B']:
-            free = float(currency['f'])
-            locked = float(currency['l'])
-            total = free + locked
-            self.exchange_data.update_portfolio(currency['a'], total, free, locked)
+    def stop_sockets(self):
+        if self.socket_manager:
+            self.socket_manager.close()
+        reactor.stop()
+
+    def get_socket_manager(self):
+        return self.socket_manager
+
+    @classmethod
+    def get_name(cls):
+        return "binance"
 
     @staticmethod
     def parse_order_status(status):
@@ -107,6 +94,22 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
             'fee': AbstractWebSocketManager.safe_float(order, "n", None),
         }
 
+    def all_currencies_prices_callback(self, msg):
+        if msg['data']['e'] == 'error':
+            # close and restart the socket
+            # self.close_sockets()
+            self.start_sockets()
+        else:
+            msg_stream_type = msg["stream"]
+            if self._TICKER_KEY in msg_stream_type:
+                self.exchange_data.set_ticker(msg["data"]["s"],
+                                              msg["data"])
+            elif self._KLINE_KEY in msg_stream_type:
+                self.exchange_data.add_price(msg["data"]["s"],
+                                             msg["data"]["k"]["i"],
+                                             msg["data"]["k"]["t"],
+                                             self._create_candle(msg["data"]["k"]))
+
     def user_callback(self, msg):
         if msg["e"] == "outboundAccountInfo":
             self._update_portfolio(msg)
@@ -128,25 +131,21 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
         connection_key = self.socket_manager.start_user_socket(self.user_callback)
         self.open_sockets_keys[self._USER_SOCKET_NAME] = connection_key
 
-    def init_web_sockets(self, time_frames, trader_pairs):
-        self._init_price_sockets(time_frames, trader_pairs)
-        self._init_user_socket()
-
-    def get_socket_manager(self):
-        return self.socket_manager
-
-    def stop_sockets(self):
-        if self.socket_manager:
-            self.socket_manager.close()
-
-        reactor.stop()
-
-    def start_sockets(self):
-        if self.socket_manager:
-            self.socket_manager.start()
-
+    # candle: list[0:5]  #time, open, high, low, close, vol
     @staticmethod
-    def get_websocket_client(config):
-        ws_client = BinanceWebSocketClient(config)
-        ws_client.socket_manager = BinanceSocketManager(ws_client.client)
-        return ws_client
+    def _create_candle(kline_data):
+        return [
+            kline_data["t"],  # time
+            AbstractWebSocketManager.safe_float(kline_data, "o"),  # open
+            AbstractWebSocketManager.safe_float(kline_data, "h"),  # high
+            AbstractWebSocketManager.safe_float(kline_data, "l"),  # low
+            AbstractWebSocketManager.safe_float(kline_data, "c"),  # close
+            AbstractWebSocketManager.safe_float(kline_data, "v"),  # vol
+        ]
+
+    def _update_portfolio(self, msg):
+        for currency in msg['B']:
+            free = float(currency['f'])
+            locked = float(currency['l'])
+            total = free + locked
+            self.exchange_data.update_portfolio(currency['a'], total, free, locked)

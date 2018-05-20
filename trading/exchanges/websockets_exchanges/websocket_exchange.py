@@ -36,9 +36,15 @@ class WebSocketExchange(AbstractExchange):
     def get_balance(self):
         return self.client.get_portfolio()
 
+    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
+        return self.client.get_symbol_prices(symbol, time_frame, limit, data_frame)
+
     # A price ticker contains statistics for a particular market/symbol for the last instant
     def get_last_price_ticker(self, symbol):
-        return self.client.get_last_price_ticker(symbol=symbol)
+        return self.client.get_last_price_ticker(symbol)
+
+    def get_recent_trades(self, symbol):
+        return self.client.get_recent_trades(symbol)
 
     # ORDERS
     def get_order(self, order_id):
@@ -53,13 +59,7 @@ class WebSocketExchange(AbstractExchange):
     def get_closed_orders(self, symbol=None, since=None, limit=None):
         return self.client.get_closed_orders(symbol, since, limit)
 
-    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        return self.client.get_symbol_prices(symbol, time_frame, limit, data_frame)
-
     # TODO method list
-
-    def get_recent_trades(self, symbol):
-        raise NotImplementedError("get_recent_trades not implemented")
 
     def get_order_book(self, symbol, limit=30):
         raise NotImplementedError("get_order_book not implemented")
