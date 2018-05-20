@@ -118,3 +118,5 @@ config/evaluator_config.json
 backtesting/collector/data/**
 
 logs/matrix_history\.data
+
+logs/CryptoBot\.log\.*
