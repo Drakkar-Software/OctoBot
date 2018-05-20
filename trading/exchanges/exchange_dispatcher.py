@@ -56,7 +56,9 @@ class ExchangeDispatcher(AbstractExchange):
         return candle_dataframe[-limit:] if limit is not None else candle_dataframe
 
     # return bid and asks on each side of the order book stack
+    # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
     def get_order_book(self, symbol, limit=50):
+        # websocket service not implemented yet
         if self._web_socket_available():
             pass
 
