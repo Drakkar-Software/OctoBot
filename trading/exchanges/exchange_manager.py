@@ -1,7 +1,5 @@
 import logging
 
-import pandas
-
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
 from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
@@ -140,4 +138,4 @@ class ExchangeManager:
 
     # Exceptions
     def _raise_exchange_load_error(self):
-        raise Exception("{0} - Failed to load exchange instances")
+        raise Exception("{0} - Failed to load exchange instances".format(self.exchange))

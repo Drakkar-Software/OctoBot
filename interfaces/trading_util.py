@@ -88,7 +88,7 @@ def get_portfolios():
 
 def get_currencies_with_status():
     symbol_with_evaluation = {}
-    for key, symbol_evaluator in get_bot().get_symbol_evaluator_list().items():
+    for symbol_evaluator in get_bot().get_symbol_evaluator_list().values():
         symbol_with_evaluation[symbol_evaluator.get_symbol()] = \
             {exchange.get_name(): symbol_evaluator.get_final(exchange).get_state()
              for exchange in get_bot().get_exchanges_list().values()
