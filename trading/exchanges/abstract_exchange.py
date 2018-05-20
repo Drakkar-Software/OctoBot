@@ -34,7 +34,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_order_book(self, symbol, limit=30):
+    def get_order_book(self, symbol, limit=50):
         pass
 
     @abstractmethod
