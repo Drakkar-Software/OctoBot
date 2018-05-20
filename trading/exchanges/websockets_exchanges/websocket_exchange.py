@@ -43,8 +43,11 @@ class WebSocketExchange(AbstractExchange):
     def get_last_price_ticker(self, symbol):
         return self.client.get_last_price_ticker(symbol)
 
+    # implementation depends on the websocket exchange implementation
     def get_recent_trades(self, symbol):
-        return self.client.get_recent_trades(symbol)
+        since = None
+        limit = 500
+        return self.client.get_recent_trades(symbol, since, limit)
 
     # ORDERS
     def get_order(self, order_id):
@@ -100,3 +103,6 @@ class WebSocketExchange(AbstractExchange):
 
     def orders_are_initialized(self):
         return self.client.orders_are_initialized()
+
+    def handles_recent_trades(self):
+        return self.client.handles_recent_trades()
