@@ -42,7 +42,7 @@ class ExchangeData:
 
     def add_price(self, symbol, time_frame, start_candle_time, candle_data):
 
-        # add price only if candles have been initialized bu rest exchange
+        # add price only if candles have been initialized by rest exchange
         if symbol in self.symbol_prices and time_frame in self.symbol_prices[symbol]:
             time_frame_data = self.symbol_prices[symbol][time_frame]
 
