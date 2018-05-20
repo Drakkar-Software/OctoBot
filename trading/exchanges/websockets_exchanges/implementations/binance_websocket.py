@@ -55,12 +55,24 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def get_name(cls):
         return "binance"
 
-    # Binance rest API:
+    # Binance rest API documentation
+    # (https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md):
+    #
     # Recent trades list
-    #     GET / api / v1 / trades
+    # GET /api/v1/trades
     # Get recent trades(up to last 500).
     #
     # Weight: 1
+    #
+    # and:
+    #
+    # Compressed/Aggregate trades list
+    # GET /api/v1/aggTrades
+    # Get compressed, aggregate trades. Trades that fill at the time, from the same order, with the same price will
+    # have the quantity aggregated.
+    #
+    # Weight: 1
+    #
     # => Better using rest exchange services to save cpu resources (minimal rest request weigh).
     @classmethod
     def handles_recent_trades(cls):
