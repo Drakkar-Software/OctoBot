@@ -84,3 +84,7 @@ class AbstractExchange:
     @abstractmethod
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         pass
+
+    @abstractmethod
+    def get_market_status(self, symbol):
+        pass

@@ -40,6 +40,13 @@ class RESTExchange(AbstractExchange):
             self.client = self.exchange_type({'verbose': False})
         self.client.logger.setLevel(logging.INFO)
 
+    def get_market_status(self, symbol):
+        if symbol in self.client.markets:
+            return self.client.markets[symbol]
+        else:
+            self.logger.error("Fail to get market status of {0}".format(symbol))
+            return []
+
     def get_client(self):
         return self.client
 

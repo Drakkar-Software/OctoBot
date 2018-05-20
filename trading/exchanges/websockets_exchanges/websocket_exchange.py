@@ -85,6 +85,9 @@ class WebSocketExchange(AbstractExchange):
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         raise NotImplementedError("create_order not implemented")
 
+    def get_market_status(self, symbol):
+        pass
+
     # utility methods
     def init_orders_for_ws_if_possible(self, orders):
         if not self.client.orders_are_initialized():
