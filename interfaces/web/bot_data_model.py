@@ -3,7 +3,7 @@ import time
 import plotly
 import plotly.graph_objs as go
 
-from config.cst import PriceStrings, TimeFrames, EvaluatorMatrixTypes, CONFIG_TIME_FRAME
+from config.cst import PriceStrings, TimeFrames, EvaluatorMatrixTypes
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
