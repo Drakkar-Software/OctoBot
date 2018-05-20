@@ -64,7 +64,7 @@ class WebSocketExchange(AbstractExchange):
 
     # TODO method list
 
-    def get_order_book(self, symbol, limit=30):
+    def get_order_book(self, symbol, limit=50):
         raise NotImplementedError("get_order_book not implemented")
 
     def get_market_price(self, symbol):
