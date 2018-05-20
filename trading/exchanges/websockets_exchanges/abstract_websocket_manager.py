@@ -34,6 +34,11 @@ class AbstractWebSocketManager:
     def get_last_price_ticker(self, symbol):
         raise NotImplementedError("get_last_price_ticker not implemented")
 
+    @classmethod
+    @abstractmethod
+    def handles_recent_trades(cls):
+        raise NotImplementedError("handles_recent_trades not implemented")
+
     @abstractmethod
     def start_sockets(self):
         raise NotImplementedError("start_sockets not implemented")
@@ -79,8 +84,11 @@ class AbstractWebSocketManager:
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         return self.exchange_data.get_candles(symbol, time_frame, limit, data_frame)
 
-    def has_order(self, order_id):
-        return order_id in self.exchange_data.orders
+    def get_recent_trades(self, symbol, since=None, limit=None):
+        if self.handles_recent_trades():
+            return self.exchange_data.get_recent_trades(symbol, since, limit)
+        else:
+            raise NotImplementedError("get_recent_trades is not handled for this websocket exchange implementation")
 
     def get_order(self, order_id):
         return self.exchange_data.orders[order_id]
@@ -93,6 +101,11 @@ class AbstractWebSocketManager:
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):
         return self.exchange_data.get_closed_orders(symbol, since, limit)
+
+    # specific methods
+
+    def has_order(self, order_id):
+        return order_id in self.exchange_data.orders
 
     # ============== ccxt adaptation methods ==============
     def init_ccxt_order_from_other_source(self, ccxt_order):

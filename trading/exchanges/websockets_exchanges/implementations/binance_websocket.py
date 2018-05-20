@@ -55,6 +55,17 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def get_name(cls):
         return "binance"
 
+    # Binance rest API:
+    # Recent trades list
+    #     GET / api / v1 / trades
+    # Get recent trades(up to last 500).
+    #
+    # Weight: 1
+    # => Better using rest exchange services to save cpu resources (minimal rest request weigh).
+    @classmethod
+    def handles_recent_trades(cls):
+        return False
+
     @staticmethod
     def parse_order_status(status):
         return BinanceWebSocketClient._STATUSES[status] if status in BinanceWebSocketClient._STATUSES \

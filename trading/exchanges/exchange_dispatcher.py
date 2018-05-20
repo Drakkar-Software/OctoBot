@@ -64,8 +64,8 @@ class ExchangeDispatcher(AbstractExchange):
                                             limit=limit)
 
     def get_recent_trades(self, symbol):
-        if self._web_socket_available():
-            pass
+        if self._web_socket_available() and self.exchange_web_socket.handles_recent_trades():
+            return self.exchange_web_socket.get_recent_trades(symbol=symbol)
 
         return self.exchange.get_recent_trades(symbol=symbol)
 

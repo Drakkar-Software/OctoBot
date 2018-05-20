@@ -24,21 +24,7 @@ class ExchangeData:
             self.ORDERS_KEY: False
         }
 
-    def _initialize_price_candles(self, symbol, time_frame, candle_data, candle_dataframe=None):
-        if symbol not in self.symbol_prices:
-            self.symbol_prices[symbol] = {}
-        prices_per_time_frames = self.symbol_prices[symbol]
-
-        # if no data from this timeframe => create new database
-        if time_frame not in prices_per_time_frames:
-            prices_per_time_frames[time_frame] = {
-                self.CANDLE_LIST: candle_data,
-                self.CANDLE_DATAFRAME:
-                    candle_dataframe if candle_dataframe is not None else
-                    DataFrameUtil.candles_array_to_data_frame(candle_data),
-                self.TIME_FRAME_HAS_REACH_MAX_CANDLE_COUNT:
-                    len(candle_data) >= self._MAX_STORED_CANDLE_COUNT
-            }
+    # insert methods
 
     def add_price(self, symbol, time_frame, start_candle_time, candle_data):
 
@@ -91,11 +77,15 @@ class ExchangeData:
     def upsert_order(self, order_id, ccxt_order):
         self.orders[order_id] = ccxt_order
 
-    def get_all_orders(self, symbol, since, limit):
-        return self._select_orders(None, symbol, since, limit)
+    def initialize_candles_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_dataframe):
+        self._initialize_price_candles(self._adapt_symbol(symbol), time_frame.value,
+                                       symbol_candle_data, symbol_candle_dataframe)
 
-    def get_open_orders(self, symbol, since, limit):
-        return self._select_orders("open", symbol, since, limit)
+    # select methods
+
+    def candles_are_initialized(self, symbol, time_frame):
+        adapted_symbol = self._adapt_symbol(symbol)
+        return adapted_symbol in self.symbol_prices and time_frame.value in self.symbol_prices[adapted_symbol]
 
     def get_candles(self, symbol, time_frame, limit=None, data_frame=True):
         adapted_symbol = self._adapt_symbol(symbol)
@@ -106,21 +96,20 @@ class ExchangeData:
             return wanted_candles[-actual_limit:].reset_index(drop=True), candles_data[self.CANDLE_LIST][-actual_limit:]
         return wanted_candles, candles_data[self.CANDLE_LIST]
 
+    # maybe implement later if required but can be very resource costly
+    def get_recent_trades(self, symbol, since=None, limit=None):
+        raise NotImplementedError("get_recent_trades not implemented")
+
+    def get_all_orders(self, symbol, since, limit):
+        return self._select_orders(None, symbol, since, limit)
+
+    def get_open_orders(self, symbol, since, limit):
+        return self._select_orders("open", symbol, since, limit)
+
     def get_closed_orders(self, symbol, since, limit):
         return self._select_orders("closed", symbol, since, limit)
 
-    def initialize_candles_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_dataframe):
-        self._initialize_price_candles(self._adapt_symbol(symbol), time_frame.value,
-                                       symbol_candle_data, symbol_candle_dataframe)
-
-    def candles_are_initialized(self, symbol, time_frame):
-        adapted_symbol = self._adapt_symbol(symbol)
-        return adapted_symbol in self.symbol_prices and time_frame.value in self.symbol_prices[adapted_symbol]
-
-    # TODO temporary method awaiting for symbol "/" reconstruction in ws
-    @staticmethod
-    def _adapt_symbol(symbol):
-        return symbol.replace("/", "")
+    # private methods
 
     def _select_orders(self, state, symbol, since, limit):
         orders = [
@@ -136,3 +125,24 @@ class ExchangeData:
             return orders[0:limit]
         else:
             return orders
+
+    def _initialize_price_candles(self, symbol, time_frame, candle_data, candle_dataframe=None):
+        if symbol not in self.symbol_prices:
+            self.symbol_prices[symbol] = {}
+        prices_per_time_frames = self.symbol_prices[symbol]
+
+        # if no data from this timeframe => create new database
+        if time_frame not in prices_per_time_frames:
+            prices_per_time_frames[time_frame] = {
+                self.CANDLE_LIST: candle_data,
+                self.CANDLE_DATAFRAME:
+                    candle_dataframe if candle_dataframe is not None else
+                    DataFrameUtil.candles_array_to_data_frame(candle_data),
+                self.TIME_FRAME_HAS_REACH_MAX_CANDLE_COUNT:
+                    len(candle_data) >= self._MAX_STORED_CANDLE_COUNT
+            }
+
+    # TODO temporary method awaiting for symbol "/" reconstruction in ws
+    @staticmethod
+    def _adapt_symbol(symbol):
+        return symbol.replace("/", "")
