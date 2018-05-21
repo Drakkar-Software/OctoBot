@@ -55,15 +55,16 @@ class ExchangeDispatcher(AbstractExchange):
                                                   time_frame=time_frame,
                                                   limit=None if needs_to_init_candles else limit)
 
-        candle_data_frame = DataFrameUtil.candles_array_to_data_frame(candles)
+        if needs_to_init_candles or data_frame:
+            candle_data_frame = DataFrameUtil.candles_array_to_data_frame(candles)
 
-        if needs_to_init_candles:
-            self.exchange_web_socket.init_candle_data(symbol, time_frame, candles, candle_data_frame)
+            if needs_to_init_candles:
+                self.exchange_web_socket.init_candle_data(symbol, time_frame, candles, candle_data_frame)
 
-        if data_frame:
-            return candle_data_frame.tail(limit) if limit is not None else candle_data_frame
-        else:
-            return candles[-limit:] if limit is not None else candles
+            if data_frame:
+                return candle_data_frame.tail(limit) if limit is not None else candle_data_frame
+
+        return candles[-limit:] if limit is not None else candles
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
