@@ -41,11 +41,7 @@ class ExchangeDispatcher(AbstractExchange):
                                                                  time_frame=time_frame,
                                                                  limit=limit,
                                                                  data_frame=data_frame)
-
-            if data_frame:
-                return DataFrameUtil.candles_array_to_data_frame(candles)
-            else:
-                return candles
+            return candles
 
         # else get price from REST exchange and init websocket (if enabled)
         needs_to_init_candles = self._web_socket_available() and not \

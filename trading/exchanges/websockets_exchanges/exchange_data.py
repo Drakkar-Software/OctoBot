@@ -93,8 +93,9 @@ class ExchangeData:
         wanted_candles = candles_data[self.CANDLE_DATAFRAME] if data_frame else candles_data[self.CANDLE_LIST]
         if limit is not None:
             actual_limit = min(limit, len(wanted_candles))
-            return wanted_candles[-actual_limit:].reset_index(drop=True), candles_data[self.CANDLE_LIST][-actual_limit:]
-        return wanted_candles, candles_data[self.CANDLE_LIST]
+            return wanted_candles[-actual_limit:].reset_index(drop=True) if data_frame \
+                else wanted_candles[-actual_limit:]
+        return wanted_candles
 
     # maybe implement later if required but can be very resource costly
     def get_recent_trades(self, symbol, since=None, limit=None):
