@@ -35,54 +35,6 @@ Create a **config.json** file in the **config folder** with the following exampl
 Rename config/default_config.json to config/config.json
 ```
 
-### More configuration
-See [Configuration Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Configuration)
-```json
-"crypto_currencies": {
-    "Bitcoin": {
-      "pairs" : ["BTC/USDT"]
-    }
-}
-```
-See [Exchanges Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Exchanges)
-```json
-"exchanges": {
-    "binance": {
-      "api-key": "",
-      "api-secret": ""
-    }
-}
-```
-See [Notifications Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Notifications)
-```json
-"notification":{
-    "enabled": true,
-    "type": [1, 2]
-}
-```
-See [Trader Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Trader)
-```json
-"trader":{
-    "enabled": false,
-    "risk": 0.5
-}
-```
-See [Simulator Wiki](https://github.com/Herklos-Bots/CryptoBot/wiki/Simulator)
-```json
-"trader_simulator":{
-    "enabled": true,
-    "risk": 0.5,
-    "starting_portfolio": {
-      "BTC": 10,
-      "USDT": 1000
-    }
-}
-```
-See [Interfaces Wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Interfaces)
-```json
-"services": {}
-```
-  
 ## Usage
 ### Start the bot
 ```bash
@@ -108,6 +60,9 @@ python start.py --data_collector
 ```
 ## Customize your CryptoBot !
 Information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
+
+## Screenshots
+TODO
 
 ## Testing
 Use *pytest* command in the root folder : 
