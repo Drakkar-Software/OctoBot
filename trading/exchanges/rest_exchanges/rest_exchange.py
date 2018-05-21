@@ -70,14 +70,9 @@ class RESTExchange(AbstractExchange):
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         if limit:
-            candles = self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
+            return self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
         else:
-            candles = self.client.fetch_ohlcv(symbol, time_frame.value)
-
-        if data_frame:
-            return DataFrameUtil.candles_array_to_data_frame(candles), candles
-        else:
-            return candles, candles
+            return self.client.fetch_ohlcv(symbol, time_frame.value)
 
     # return up to ten bidasks on each side of the order book stack
     def get_order_book(self, symbol, limit=30):
