@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 sudo apt-get install -y build-essential libc6-dev
 sudo apt-get install -y libncurses5-dev libncursesw5-dev libreadline6-dev
 sudo apt-get install -y libdb5.3-dev libgdbm-dev libsqlite3-dev libssl-dev
