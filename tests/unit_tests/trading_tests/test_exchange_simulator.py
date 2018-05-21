@@ -1,10 +1,9 @@
 import ccxt
 from pandas import DataFrame
 
-from trading.exchanges.exchange_manager import ExchangeManager
-from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS
 from tests.test_utils.config import load_test_config
+from trading.exchanges.exchange_manager import ExchangeManager
 
 
 class TestExchangeSimulator:
@@ -16,7 +15,7 @@ class TestExchangeSimulator:
         config = load_test_config()
         config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
-        exchange_inst = ExchangeSimulator(config, ccxt.binance, exchange_manager)
+        exchange_inst = exchange_manager.get_exchange()
         return config, exchange_inst
 
     def test_get_symbol_prices_data_frame(self):
@@ -28,6 +27,16 @@ class TestExchangeSimulator:
             data_frame=True)
 
         assert type(test_df) is DataFrame
+
+    def test_get_symbol_prices_list(self):
+        _, exchange_inst = self.init_default()
+
+        test_list = exchange_inst.get_symbol_prices(
+            self.DEFAULT_SYMBOL,
+            TimeFrames.ONE_HOUR,
+            data_frame=False)
+
+        assert isinstance(test_list, list)
 
     def test_multiple_get_symbol_prices(self):
         _, exchange_inst = self.init_default()
