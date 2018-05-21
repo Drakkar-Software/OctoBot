@@ -22,7 +22,12 @@ Changelog for 0.0.12-alpha
     #154 [Exchanges] implement web sockets for binance exchange
     #157 [Exchanges] manage websockets availability in exchange manager
     #158 [Order management] implement order callback update for websockets additionnaly to poll updates
-    #159 added cyclic log file management 
+    #159 added cyclic log file management
+    #160 [Real Trader] taking exchanges symbol and minimum trade requirements into account
+    #161 [Evaluators] Allows in run evaluator creation
+    #162 [Services] Allows in run service creation
+    #165 Bump matplotlib from 2.0 to 2.2.2
+    #166 [Tests] Features testing
 
 # New features :
     - Multi symbols / exchanges data collector
@@ -32,10 +37,12 @@ Changelog for 0.0.12-alpha
     - Exchange management
     - Binance Websocket
     - Cyclic logging
+    - Evaluator & Service restarting management
     
 # Bug fix :
     - Fix exception in order update_status when backtesting
     - Fix order fill bug in simulation
+    - Taking exchanges symbol and minimum trade requirements into account
 
 
 Changelog for 0.0.11-alpha
