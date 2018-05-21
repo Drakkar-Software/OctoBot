@@ -89,9 +89,10 @@ class FinalEvaluator(AsynchronousServer):
                     evaluator_notification)
 
     @staticmethod
-    def _push_order_notification_if_possible(order, notification):
-        if order is not None:
-            order.get_order_notifier().notify(notification)
+    def _push_order_notification_if_possible(order_list, notification):
+        if order_list:
+            for order in order_list:
+                order.get_order_notifier().notify(notification)
 
     def get_state(self):
         return self.state
