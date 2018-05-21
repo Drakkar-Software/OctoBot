@@ -10,6 +10,7 @@ from config.cst import PriceStrings
 
 server_instance = flask.Flask(__name__)
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
+app_instance.config['suppress_callback_exceptions'] = True
 
 # disable Flask logging
 log = logging.getLogger('werkzeug')
