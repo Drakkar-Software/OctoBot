@@ -1,4 +1,4 @@
-matplotlib==2.0
+matplotlib==2.2.2
 vaderSentiment
 pandas
 pytrends
