@@ -1,7 +1,7 @@
 from enum import Enum
 
 SHORT_VERSION = "0.0.11"
-REV_VERSION = "1"
+REV_VERSION = "3"
 VERSION_DEV_PHASE = "alpha"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
@@ -38,17 +38,17 @@ CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
+CONFIG_EXCHANGE_WEB_SOCKET = "web_socket"
+CONFIG_EXCHANGE_KEY = "api-key"
+CONFIG_EXCHANGE_SECRET = "api-secret"
 CONFIG_TRADER = "trader"
 CONFIG_SIMULATOR = "trader_simulator"
 CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
 CONFIG_TRADER_RISK = "risk"
 CONFIG_TRADER_RISK_MIN = 0.05
 CONFIG_TRADER_RISK_MAX = 1
-ORDER_REFRESHER_TIME = 10
+ORDER_REFRESHER_TIME = 15
 SIMULATOR_LAST_PRICES_TO_CHECK = 50
-# e-7
-MARKET_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
-CURRENCY_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
 CONFIG_TRADER_REFERENCE_MARKET = "reference_market"
 DEFAULT_REFERENCE_MARKET = "BTC"
 MARKET_SEPARATOR = "/"
@@ -159,10 +159,10 @@ class PriceStrings(Enum):
 
 class PriceIndexes(Enum):
     IND_PRICE_TIME = 0
-    IND_PRICE_CLOSE = 4
     IND_PRICE_OPEN = 1
     IND_PRICE_HIGH = 2
     IND_PRICE_LOW = 3
+    IND_PRICE_CLOSE = 4
     IND_PRICE_VOL = 5
 
 
@@ -291,3 +291,26 @@ class ExchangeConstantsTickersInfoColumns(Enum):
     FIRST_ID = "firstId"
     LAST_ID = "lastId"
     COUNT = "count"
+
+
+class ExchangeConstantsMarketStatusColumns(Enum):
+    SYMBOL = "symbol"
+    ID = "id"
+    CURRENCY = "base"
+    MARKET = "quote"
+    ACTIVE = "active"
+    PRECISION = "precision"  # number of decimal digits "after the dot"
+    PRECISION_PRICE = "price"
+    PRECISION_AMOUNT = "amount"
+    PRECISION_COST = "cost"
+    LIMITS = "limits"  # value limits when placing orders on this market
+    LIMITS_AMOUNT = "amount"
+    LIMITS_AMOUNT_MIN = "min"  # order amount should be > min
+    LIMITS_AMOUNT_MAX = "max"  # order amount should be < max
+    LIMITS_PRICE = "price"  # same min/max limits for the price of the order
+    LIMITS_PRICE_MIN = "min"  # order price should be > min
+    LIMITS_PRICE_MAX = "max"  # order price should be < max
+    LIMITS_COST = "cost"  # same limits for order cost = price * amount
+    LIMITS_COST_MIN = "min"  # order cost should be > min
+    LIMITS_COST_MAX = "max"  # order cost should be < max
+    INFO = "info"

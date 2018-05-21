@@ -10,6 +10,6 @@ install:
   - python -m pip install -r requirements.txt
   - python -m pip install -r dev_requirements.txt
 script:
-  - pytest --cov-report term --cov=. tests/
+  - pytest --cov-report term --cov=. tests/unit_tests/
 
 

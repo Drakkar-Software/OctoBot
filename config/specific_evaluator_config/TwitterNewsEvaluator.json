@@ -2,7 +2,14 @@
   "accounts" : {
     "Bitcoin": ["GuillaGjum","RedditBTC","BTCFoundation"],
     "Ethereum": ["ethereum","VitalikButerin"],
-    "Neo": ["NEO_Blockchain","NEOnewstoday","NEO_council","neotogas","NEO_DevCon","RedditBTC","neonexchange","dahongfei"]
+    "Neo": ["NEO_Blockchain","NEOnewstoday","NEO_council","neotogas","NEO_DevCon","RedditBTC","neonexchange","dahongfei"],
+    "ICON": ["helloiconworld "],
+    "NANO": ["nanocurrency"],
+    "VeChain": ["sunshinelu24","VechainThorCom","Vechain1"],
+    "Substratum": ["SubstratumNet"],
+    "Ethos": ["Ethos_io"],
+    "Ontology": ["OntologyNetwork"],
+    "Binance Coin": []
   },
   "hashtags" : {
     "Bitcoin": ["bitcoin","btc","binance","kucoin","tether","bitfinex","bitmex","cryptopia","cryptocurrencies","blockchain"],

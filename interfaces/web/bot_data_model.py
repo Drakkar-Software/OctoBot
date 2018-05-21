@@ -5,7 +5,7 @@ import plotly.graph_objs as go
 
 from config.cst import PriceStrings, TimeFrames, EvaluatorMatrixTypes
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from interfaces import get_reference_market, get_bot
+from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
 from interfaces.web import add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
     add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE, get_symbol_data_history
@@ -21,9 +21,16 @@ def get_value_from_dict_or_string(data, is_time_frame=False):
             return data["value"]
     else:
         if is_time_frame:
-            return TimeFrames(data)
+            if data is None:
+                return get_default_time_frame()
+            else:
+                return TimeFrames(data)
         else:
             return data
+
+
+def set_default_time_frame_for_this_symbol(time_frame_value):
+    set_default_time_frame(TimeFrames(time_frame_value))
 
 
 def get_portfolio_currencies_update():

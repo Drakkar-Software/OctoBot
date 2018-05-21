@@ -15,7 +15,6 @@ from services import ServiceCreator
 from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
-from trading import Exchange
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
@@ -226,6 +225,10 @@ class CryptoBot:
                 service_instance.stop()
             except Exception as e:
                 raise e
+
+        # stop exchanges threads
+        for exchange in self.exchanges_list.values():
+            exchange.stop()
 
         self.logger.info("Threads stopped.")
 

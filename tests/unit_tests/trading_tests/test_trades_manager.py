@@ -1,7 +1,6 @@
 import ccxt
 
 from trading.exchanges.exchange_manager import ExchangeManager
-from trading.exchanges.exchange_simulator import ExchangeSimulator
 from config.cst import *
 from tests.test_utils.config import load_test_config
 from trading.trader.trader import Trader
