@@ -4,9 +4,10 @@ from ccxt import OrderNotFound, BaseError
 
 from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
+from tools.data_frame_util import DataFrameUtil
 
 
-class Exchange(AbstractExchange):
+class RESTExchange(AbstractExchange):
     def __init__(self, config, exchange_type, exchange_manager):
         super().__init__(config, exchange_type)
         self.exchange_manager = exchange_manager
@@ -30,14 +31,21 @@ class Exchange(AbstractExchange):
     def create_client(self):
         if self.exchange_manager.check_config(self.get_name()):
             self.client = self.exchange_type({
-                'apiKey': self.config["exchanges"][self.name]["api-key"],
-                'secret': self.config["exchanges"][self.name]["api-secret"],
+                'apiKey': self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY],
+                'secret': self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET],
                 'verbose': False,
                 'enableRateLimit': True
             })
         else:
             self.client = self.exchange_type({'verbose': False})
         self.client.logger.setLevel(logging.INFO)
+
+    def get_market_status(self, symbol):
+        if symbol in self.client.markets:
+            return self.client.markets[symbol]
+        else:
+            self.logger.error("Fail to get market status of {0}".format(symbol))
+            return []
 
     def get_client(self):
         return self.client
@@ -67,9 +75,9 @@ class Exchange(AbstractExchange):
             candles = self.client.fetch_ohlcv(symbol, time_frame.value)
 
         if data_frame:
-            return self.exchange_manager.candles_array_to_data_frame(candles)
+            return DataFrameUtil.candles_array_to_data_frame(candles), candles
         else:
-            return candles
+            return candles, candles
 
     # return up to ten bidasks on each side of the order book stack
     def get_order_book(self, symbol, limit=30):
@@ -172,4 +180,6 @@ class Exchange(AbstractExchange):
             elif order_type == TraderOrderType.TAKE_PROFIT_LIMIT:
                 return None
         except Exception as e:
-            self.logger.error("Failed to create order : {0}".format(e))
+            order_desc = "order_type: {0}, symbol: {1}, quantity: {2}, price: {3}, stop_price: {4}".format(
+                str(order_type), str(symbol), str(quantity), str(price), str(stop_price))
+            self.logger.error("Failed to create order : {0} ({1})".format(e, order_desc))

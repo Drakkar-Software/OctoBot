@@ -1,6 +1,7 @@
 import logging
 
 from config.cst import *
+from config.cst import ExchangeConstantsMarketStatusColumns as Ecmsc
 from tools.symbol_util import split_symbol
 
 
@@ -113,23 +114,41 @@ class EvaluatorOrderCreator:
         currency, market = split_symbol(symbol)
         portfolio = trader.get_portfolio()
 
-        # todo : > min exchange
+        # get symbol min amount when creating order
+        symbol_limit_amount = exchange.get_market_status(symbol)[Ecmsc.LIMITS.value][Ecmsc.LIMITS_AMOUNT.value]
+        symbol_min_amount = symbol_limit_amount[Ecmsc.LIMITS_AMOUNT_MIN.value]
+
         # short cases => sell => need this currency
         if state == EvaluatorStates.VERY_SHORT or state == EvaluatorStates.SHORT:
             with portfolio as pf:
-                return pf.get_currency_portfolio(currency) > MARKET_MIN_PORTFOLIO_CREATE_ORDER
+                return pf.get_currency_portfolio(currency) > symbol_min_amount
 
         # long cases => buy => need money(aka other currency in the pair) to buy this currency
         elif state == EvaluatorStates.LONG or state == EvaluatorStates.VERY_LONG:
             with portfolio as pf:
-                return pf.get_currency_portfolio(market) > CURRENCY_MIN_PORTFOLIO_CREATE_ORDER
+                return pf.get_currency_portfolio(market) > symbol_min_amount
 
         # other cases like neutral state or unfulfilled previous conditions
         return False
 
     @staticmethod
-    def _check_quantity(quantity):
-        if quantity > CURRENCY_MIN_PORTFOLIO_CREATE_ORDER:
+    def _check_quantity(exchange, symbol, quantity):
+        limit_amount = exchange.get_market_status(symbol)[Ecmsc.LIMITS.value][Ecmsc.LIMITS_AMOUNT.value]
+        min_amount = limit_amount[Ecmsc.LIMITS_AMOUNT_MIN.value]
+        max_amount = limit_amount[Ecmsc.LIMITS_AMOUNT_MAX.value]
+
+        if max_amount > quantity > min_amount:
+            return True
+        return False
+
+    @staticmethod
+    def _check_price(exchange, symbol, price):
+        # TODO check cost
+        limit_price = exchange.get_market_status(symbol)[Ecmsc.LIMITS.value][Ecmsc.LIMITS_PRICE.value]
+        min_price = limit_price[Ecmsc.LIMITS_PRICE_MIN.value]
+        max_price = limit_price[Ecmsc.LIMITS_PRICE_MAX.value]
+
+        if max_price > price > min_price:
             return True
         return False
 
@@ -158,7 +177,7 @@ class EvaluatorOrderCreator:
                 quantity = self._get_market_quantity_from_risk(eval_note,
                                                                trader,
                                                                current_portfolio)
-                if self._check_quantity(quantity):
+                if self._check_quantity(exchange, symbol, quantity):
                     market = trader.create_order_instance(order_type=TraderOrderType.SELL_MARKET,
                                                           symbol=symbol,
                                                           current_price=reference,
@@ -172,7 +191,7 @@ class EvaluatorOrderCreator:
                                                               trader,
                                                               current_portfolio)
 
-                if self._check_quantity(quantity):
+                if self._check_quantity(exchange, symbol, quantity):
                     limit = trader.create_order_instance(order_type=TraderOrderType.SELL_LIMIT,
                                                          symbol=symbol,
                                                          current_price=reference,
@@ -185,7 +204,7 @@ class EvaluatorOrderCreator:
                                                                   trader,
                                                                   current_portfolio)
 
-                    if self._check_quantity(quantity):
+                    if self._check_quantity(exchange, symbol, quantity):
                         stop = trader.create_order_instance(order_type=TraderOrderType.STOP_LOSS,
                                                             symbol=symbol,
                                                             current_price=reference,
@@ -203,7 +222,7 @@ class EvaluatorOrderCreator:
                 quantity = self._get_limit_quantity_from_risk(eval_note,
                                                               trader,
                                                               market_quantity)
-                if self._check_quantity(quantity):
+                if self._check_quantity(exchange, symbol, quantity):
                     limit = trader.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
                                                          symbol=symbol,
                                                          current_price=reference,
@@ -218,7 +237,7 @@ class EvaluatorOrderCreator:
                                                                trader,
                                                                market_quantity,
                                                                True)
-                if self._check_quantity(quantity):
+                if self._check_quantity(exchange, symbol, quantity):
                     market = trader.create_order_instance(order_type=TraderOrderType.BUY_MARKET,
                                                           symbol=symbol,
                                                           current_price=reference,

@@ -3,7 +3,6 @@ import random
 import ccxt
 
 from trading.exchanges.exchange_manager import ExchangeManager
-from trading.exchanges.exchange_simulator import ExchangeSimulator
 from config.cst import TradeOrderSide, SIMULATOR_LAST_PRICES_TO_CHECK, TraderOrderType, OrderStatus
 from tests.test_utils.config import load_test_config
 from trading.trader.order import Order, OrderConstants

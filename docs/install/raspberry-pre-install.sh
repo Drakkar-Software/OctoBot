@@ -4,4 +4,4 @@ sudo apt install -y build-essential libc6-dev libncurses5-dev libncursesw5-dev l
 
 sudo add-apt-repository ppa:jonathonf/python-3.6
 sudo apt update
-sudo apt install -y python3 python3-pip
+sudo apt install -y python3 python3-pip python-tk

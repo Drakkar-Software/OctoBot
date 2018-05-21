@@ -35,6 +35,9 @@ class Trader:
                 self.update_open_orders()
                 # self.update_close_orders()
 
+                # can current orders received: start using websocket for orders if available
+                self.exchange.set_orders_are_initialized(True)
+
             self.order_manager.start()
             self.logger.debug("Enabled on " + self.exchange.get_name())
         else:

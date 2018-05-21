@@ -1,6 +1,7 @@
 bot_instance = None
 global_config = None
 reference_market = None
+default_time_frame = None
 
 
 def __init__(bot, config):
@@ -17,6 +18,15 @@ def get_bot():
 
 def get_global_config():
     return global_config
+
+
+def set_default_time_frame(time_frame):
+    global default_time_frame
+    default_time_frame = time_frame
+
+
+def get_default_time_frame():
+    return default_time_frame
 
 
 def get_reference_market():

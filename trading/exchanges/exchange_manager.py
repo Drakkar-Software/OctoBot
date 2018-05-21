@@ -1,13 +1,12 @@
 import logging
 
-import pandas
-
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
-from trading import Exchange
+from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
+from trading import WebSocketExchange
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
-from trading.exchanges.exchange_simulator import ExchangeSimulator
-from trading.exchanges.websockets import AbstractWebSocketManager
+from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
+from trading.exchanges.websockets_exchanges import AbstractWebSocketManager
 
 
 class ExchangeManager:
@@ -39,30 +38,24 @@ class ExchangeManager:
     def create_exchanges(self):
         if not self.is_simulated:
             # create REST based on ccxt exchange
-            self.exchange = Exchange(self.config, self.exchange_type, self)
-
-            # create Websocket exchange if possible
-            # check if websocket is available for this exchange
-            # for socket_manager in AbstractWebSocketManager.__subclasses__():
-            #     if socket_manager.get_name() == self.get_name().lower():
-            #         self.exchange_web_socket = socket_manager.get_websocket_client(self.config)
-
-            # if a Websocket instance is created
-            # if self.exchange_web_socket:
-            #
-            #     # init websocket
-            #     self.exchange_web_socket.init_web_sockets()
-            #
-            #     # start the websocket
-            #     self.exchange_web_socket.start_sockets()
+            self.exchange = RESTExchange(self.config, self.exchange_type, self)
 
             self._load_constants()
+
+            # create Websocket exchange if possible
+            if self.check_web_socket_config(self.exchange.get_name()):
+                for socket_manager in AbstractWebSocketManager.__subclasses__():
+                    if socket_manager.get_name() == self.exchange.get_name():
+                        self.exchange_web_socket = WebSocketExchange(self.config, self.exchange_type,
+                                                                     self, socket_manager)
+                        break
 
         # if simulated : create exchange simulator instance
         else:
             self.exchange = ExchangeSimulator(self.config, self.exchange_type, self)
 
-        self.exchange_dispatcher = ExchangeDispatcher(self.exchange, self.exchange_web_socket)
+        self.exchange_dispatcher = ExchangeDispatcher(self.config, self.exchange_type,
+                                                      self.exchange, self.exchange_web_socket)
 
         self.is_ready = True
 
@@ -71,11 +64,18 @@ class ExchangeManager:
 
     # Exchange configuration functions
     def check_config(self, exchange_name):
-        if not self.config["exchanges"][exchange_name]["api-key"] \
-                and not self.config["exchanges"][exchange_name]["api-secret"]:
+        if not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_KEY] \
+                and not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_SECRET]:
             return False
         else:
             return True
+
+    def check_web_socket_config(self, exchange_name):
+        if CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
+                and self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]:
+            return True
+        else:
+            return False
 
     def enabled(self):
         # if we can get candlestick data
@@ -123,28 +123,14 @@ class ExchangeManager:
         else:
             return False
 
+    def get_client_symbols(self):
+        return self.client_symbols
+
+    def get_client_timeframes(self):
+        return self.client_time_frames
+
     def get_rate_limit(self):
         return self.exchange_type.rateLimit / 1000
-
-    # Candles
-    @staticmethod
-    def candles_array_to_data_frame(candles_array):
-        prices = {PriceStrings.STR_PRICE_HIGH.value: [],
-                  PriceStrings.STR_PRICE_LOW.value: [],
-                  PriceStrings.STR_PRICE_OPEN.value: [],
-                  PriceStrings.STR_PRICE_CLOSE.value: [],
-                  PriceStrings.STR_PRICE_VOL.value: [],
-                  PriceStrings.STR_PRICE_TIME.value: []}
-
-        for c in candles_array:
-            prices[PriceStrings.STR_PRICE_TIME.value].append(float(c[PriceIndexes.IND_PRICE_TIME.value]))
-            prices[PriceStrings.STR_PRICE_OPEN.value].append(float(c[PriceIndexes.IND_PRICE_OPEN.value]))
-            prices[PriceStrings.STR_PRICE_HIGH.value].append(float(c[PriceIndexes.IND_PRICE_HIGH.value]))
-            prices[PriceStrings.STR_PRICE_LOW.value].append(float(c[PriceIndexes.IND_PRICE_LOW.value]))
-            prices[PriceStrings.STR_PRICE_CLOSE.value].append(float(c[PriceIndexes.IND_PRICE_CLOSE.value]))
-            prices[PriceStrings.STR_PRICE_VOL.value].append(float(c[PriceIndexes.IND_PRICE_VOL.value]))
-
-        return pandas.DataFrame(data=prices)
 
     # Getters
     def get_is_simulated(self):
@@ -152,5 +138,4 @@ class ExchangeManager:
 
     # Exceptions
     def _raise_exchange_load_error(self):
-        raise Exception("{0} - Failed to load exchange instances")
-
+        raise Exception("{0} - Failed to load exchange instances".format(self.exchange))
