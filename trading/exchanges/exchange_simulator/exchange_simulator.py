@@ -237,18 +237,18 @@ class ExchangeSimulator(AbstractExchange):
 
     def get_market_status(self, symbol):
         return {
-            'limits': {
-                'amount': {
-                    'min': 0.00000000001,
-                    'max': 1000000000000,
+            ExchangeConstantsMarketStatusColumns.LIMITS.value: {
+                ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT.value: {
+                    ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT_MIN.value: 0.00000000001,
+                    ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT_MAX.value: 1000000000000,
                 },
-                'price': {
-                    'min': 0.00000000001,
-                    'max': 1000000000000,
+                ExchangeConstantsMarketStatusColumns.LIMITS_PRICE.value: {
+                    ExchangeConstantsMarketStatusColumns.LIMITS_PRICE_MIN.value: 0.00000000001,
+                    ExchangeConstantsMarketStatusColumns.LIMITS_PRICE_MAX.value: 1000000000000,
                 },
-                'cost': {
-                    'min': 0.00000000001,
-                    'max': 1000000000000,
+                ExchangeConstantsMarketStatusColumns.LIMITS_COST.value: {
+                    ExchangeConstantsMarketStatusColumns.LIMITS_COST_MIN.value: 0.00000000001,
+                    ExchangeConstantsMarketStatusColumns.LIMITS_COST_MAX.value: 1000000000000,
                 },
             },
         }
