@@ -1,11 +1,6 @@
-import warnings
-import matplotlib.cbook
-
-warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
-
 import matplotlib.pyplot as plt
 from matplotlib import ticker
-from matplotlib.finance import candlestick2_ohlc
+from mpl_finance import candlestick_ohlc
 
 from config.cst import PriceStrings
 
@@ -111,7 +106,7 @@ class DataVisualiser:
 
     @staticmethod
     def get_plot_candlesticks_dataframe(data_frame, ax):
-        candlestick2_ohlc(ax,
+        candlestick_ohlc(ax,
                           data_frame[PriceStrings.STR_PRICE_OPEN.value],
                           data_frame[PriceStrings.STR_PRICE_HIGH.value],
                           data_frame[PriceStrings.STR_PRICE_LOW.value],
