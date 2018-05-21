@@ -1,9 +1,8 @@
 import ccxt
 from pandas import DataFrame
 
-from backtesting.exchange_simulator import ExchangeSimulator
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS, TimeFramesMinutes, \
-    ORDER_REFRESHER_TIME
+from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS
 from tests.test_utils.config import load_test_config
 
 
