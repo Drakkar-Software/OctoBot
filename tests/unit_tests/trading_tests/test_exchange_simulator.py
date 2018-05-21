@@ -1,6 +1,7 @@
 import ccxt
 from pandas import DataFrame
 
+from trading.exchanges.exchange_manager import ExchangeManager
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS
 from tests.test_utils.config import load_test_config
@@ -14,7 +15,8 @@ class TestExchangeSimulator:
     def init_default():
         config = load_test_config()
         config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-        exchange_inst = ExchangeSimulator(config, ccxt.binance)
+        exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        exchange_inst = ExchangeSimulator(config, ccxt.binance, exchange_manager)
         return config, exchange_inst
 
     def test_get_symbol_prices_data_frame(self):

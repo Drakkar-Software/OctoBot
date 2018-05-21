@@ -77,9 +77,9 @@ class ExchangeData:
     def upsert_order(self, order_id, ccxt_order):
         self.orders[order_id] = ccxt_order
 
-    def initialize_candles_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_dataframe):
+    def initialize_candles_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_data_frame):
         self._initialize_price_candles(self._adapt_symbol(symbol), time_frame.value,
-                                       symbol_candle_data, symbol_candle_dataframe)
+                                       symbol_candle_data, symbol_candle_data_frame)
 
     # select methods
 
@@ -126,7 +126,7 @@ class ExchangeData:
         else:
             return orders
 
-    def _initialize_price_candles(self, symbol, time_frame, candle_data, candle_dataframe=None):
+    def _initialize_price_candles(self, symbol, time_frame, candle_data, candle_data_frame=None):
         if symbol not in self.symbol_prices:
             self.symbol_prices[symbol] = {}
         prices_per_time_frames = self.symbol_prices[symbol]
@@ -136,7 +136,7 @@ class ExchangeData:
             prices_per_time_frames[time_frame] = {
                 self.CANDLE_LIST: candle_data,
                 self.CANDLE_DATAFRAME:
-                    candle_dataframe if candle_dataframe is not None else
+                    candle_data_frame if candle_data_frame is not None else
                     DataFrameUtil.candles_array_to_data_frame(candle_data),
                 self.TIME_FRAME_HAS_REACH_MAX_CANDLE_COUNT:
                     len(candle_data) >= self._MAX_STORED_CANDLE_COUNT

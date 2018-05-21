@@ -148,10 +148,7 @@ class ExchangeSimulator(AbstractExchange):
         result = self._extract_data_with_limit(symbol, time_frame)
         self.time_frame_get_times[time_frame.value] += 1
 
-        if data_frame:
-            return DataFrameUtil.candles_array_to_data_frame(result), result
-        else:
-            return result, result
+        return result
 
     # Will use the One Minute time frame
     def _create_tickers(self, symbol):
