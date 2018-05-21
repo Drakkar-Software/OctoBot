@@ -6,7 +6,7 @@ notifications:
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
   email: false
 install:
-  - ./docs/install/install-ta-lib.sh
+  - ./docs/install/linux_installer.sh
   - python -m pip install -r requirements.txt
   - python -m pip install -r dev_requirements.txt
 script:
