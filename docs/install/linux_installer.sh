@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-sudo apt install python3-tk -y
-bash ./install-ta-lib.sh
-bash ./install-matplotlib.sh
+apt install python3-tk -y
+bash ./docs/install/install-ta-lib.sh
+bash ./docs/install/install-matplotlib.sh
