@@ -1,7 +1,5 @@
-from queue import Queue
-
 import telegram
-from telegram.ext import Updater, Dispatcher
+from telegram.ext import Updater  # , Dispatcher
 
 from config.cst import *
 from interfaces.telegram.bot import TelegramApp
@@ -67,3 +65,9 @@ class TelegramService(AbstractService):
 
     def send_message(self, content):
         self.telegram_api.send_message(chat_id=self.chat_id, text=content)
+
+    def _get_bot_url(self):
+        return "https://web.telegram.org/#/im?p=@{0}".format(self.telegram_api.get_me().full_name)
+
+    def get_successful_startup_message(self):
+        return "Successfully initialized and accessible at: {0}.".format(self._get_bot_url())

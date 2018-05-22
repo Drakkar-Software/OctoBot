@@ -8,7 +8,8 @@
   "exchanges": {
     "binance": {
       "api-key": "",
-      "api-secret": ""
+      "api-secret": "",
+      "web_socket": true
     }
   },
   "services": {},
@@ -20,7 +21,7 @@
     "enabled": false,
     "risk": 0.5
   },
-  "simulator":{
+  "trader_simulator":{
     "enabled": true,
     "risk": 0.5,
     "starting_portfolio": {

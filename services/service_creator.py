@@ -22,6 +22,7 @@ class ServiceCreator:
                         service_instance.prepare()
                         config[CONFIG_CATEGORY_SERVICES][service_instance.get_type()][CONFIG_SERVICE_INSTANCE] = \
                             service_instance
+                        service_instance.say_hello()
                     except Exception as e:
                         logger.error(service_class.get_name() + " preparation produced the following error: " + str(e))
                 else:

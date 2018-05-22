@@ -82,5 +82,5 @@ class TwitterDispatcher(AbstractDispatcher):
                                                                           CONFIG_TWEET_DESCRIPTION: string_tweet.lower()
                                                                           })
                 except twitter.error.TwitterError as e:
-                    self.logger.error("Error when receiving Twitter feed: " + str(e.message))
+                    self.logger.error("Error when receiving Twitter feed: {0} ({1})".format(e.message, e))
         self.logger.warning("Nothing to monitor, dispatcher is going to sleep.")

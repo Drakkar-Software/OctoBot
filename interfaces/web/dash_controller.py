@@ -56,7 +56,7 @@ def update_symbol_dropdown_options(exchange_name, cryptocurrency_name):
     symbol_list = []
 
     for symbol in global_config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency_name][CONFIG_CRYPTO_PAIRS]:
-        if exchange.symbol_exists(symbol):
+        if exchange.get_exchange_manager().symbol_exists(symbol):
             symbol_list.append({
                 "label": symbol,
                 "value": symbol
@@ -72,7 +72,7 @@ def update_symbol_dropdown_value(exchange_name, cryptocurrency_name):
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     for symbol in global_config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency_name][CONFIG_CRYPTO_PAIRS]:
-        if exchange.symbol_exists(symbol):
+        if exchange.get_exchange_manager().symbol_exists(symbol):
             return {
                 "label": symbol,
                 "value": symbol
@@ -89,11 +89,13 @@ def update_time_frame_dropdown_options(exchange_name, symbol):
 
     time_frame_list = []
     for time_frame in global_config[CONFIG_TIME_FRAME]:
-        if exchange.time_frame_exists(TimeFrames(time_frame).value):
+        if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value):
             time_frame_list.append({
                 "label": time_frame,
                 "value": time_frame
             })
+    if time_frame_list:
+        set_default_time_frame_for_this_symbol(time_frame_list[0]["value"])
     return time_frame_list
 
 
@@ -104,7 +106,7 @@ def update_time_frame_dropdown_value(exchange_name, symbol):
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     for time_frame in global_config[CONFIG_TIME_FRAME]:
-        if exchange.time_frame_exists(TimeFrames(time_frame).value):
+        if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value):
             return {
                 "label": time_frame,
                 "value": time_frame
@@ -125,25 +127,27 @@ def update_evaluator_dropdown_options(cryptocurrency_name, exchange_name, symbol
     evaluator_list = []
     evaluator_name_list = []
 
-    # TA
-    for ta in symbol_evaluator.get_evaluator_thread_managers(exchange)[time_frame]\
-            .get_evaluator().get_ta_eval_list():
-        if ta.get_name() not in evaluator_name_list:
-            evaluator_name_list.append(ta.get_name())
-            evaluator_list.append({
-                "label": ta.get_name(),
-                "value": ta.get_name()
-            })
+    # TA and Real time
+    if time_frame in symbol_evaluator.get_evaluator_thread_managers(exchange):
+        for ta in symbol_evaluator.get_evaluator_thread_managers(exchange)[time_frame] \
+                .get_evaluator().get_ta_eval_list():
+            if ta.get_name() not in evaluator_name_list:
+                evaluator_name_list.append(ta.get_name())
+                evaluator_list.append({
+                    "label": ta.get_name(),
+                    "value": ta.get_name()
+                })
 
-    # Real time
-    for real_time in symbol_evaluator.get_evaluator_thread_managers(exchange)[time_frame]\
-            .get_evaluator().get_real_time_eval_list():
-        if real_time.get_name() not in evaluator_name_list:
-            evaluator_name_list.append(real_time.get_name())
-            evaluator_list.append({
-                "label": real_time.get_name(),
-                "value": real_time.get_name()
-            })
+        for real_time in symbol_evaluator.get_evaluator_thread_managers(exchange)[time_frame] \
+                .get_evaluator().get_real_time_eval_list():
+            if real_time.get_name() not in evaluator_name_list:
+                evaluator_name_list.append(real_time.get_name())
+                evaluator_list.append({
+                    "label": real_time.get_name(),
+                    "value": real_time.get_name()
+                })
+    else:
+        print(str(time_frame)+" not in: "+str(symbol_evaluator.get_evaluator_thread_managers(exchange)))
 
     # Socials
     for social in symbol_evaluator.get_crypto_currency_evaluator().get_social_eval_list():

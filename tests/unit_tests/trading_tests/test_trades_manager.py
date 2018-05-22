@@ -1,6 +1,6 @@
 import ccxt
 
-from backtesting.exchange_simulator import ExchangeSimulator
+from trading.exchanges.exchange_manager import ExchangeManager
 from config.cst import *
 from tests.test_utils.config import load_test_config
 from trading.trader.trader import Trader
@@ -11,7 +11,8 @@ class TestTradesManager:
     @staticmethod
     def init_default():
         config = load_test_config()
-        exchange_inst = ExchangeSimulator(config, ccxt.binance)
+        exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        exchange_inst = exchange_manager.get_exchange()
         trader_inst = Trader(config, exchange_inst)
         trades_manager_inst = trader_inst.get_trades_manager()
         return config, exchange_inst, trader_inst, trades_manager_inst

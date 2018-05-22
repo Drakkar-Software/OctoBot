@@ -1,4 +1,8 @@
-Changelog for 0.0.12
+Changelog for 0.1.0-beta
+====================
+*Released date : XX XX 2018*
+
+Changelog for 0.0.12-alpha
 ====================
 *Released date : XX XX 2018*
 
@@ -7,20 +11,41 @@ Changelog for 0.0.12
 - Backtesting : "file" root key changed to "files" as array
 
 # Concerned issues :
+    #144 [Bug] Investigate version 0.0.11 negative simulated portfolio
     #145 [Datacollector] Implements multiple symbol
     #146 [Backtesting] Implement multi symbols
-
+    #147 [Backtesting] Implement multi exchanges
+    #148 [Backtesting] Implement better order manager backtesting features
+    #151 [Services] log info message when started
+    #152 [Wiki] complete wiki version 1
+    #153 [Beta Version] Prepare beta version
+    #154 [Exchanges] implement web sockets for binance exchange
+    #157 [Exchanges] manage websockets availability in exchange manager
+    #158 [Order management] implement order callback update for websockets additionnaly to poll updates
+    #159 added cyclic log file management
+    #160 [Real Trader] taking exchanges symbol and minimum trade requirements into account
+    #161 [Evaluators] Allows in run evaluator creation
+    #162 [Services] Allows in run service creation
+    #165 Bump matplotlib from 2.0 to 2.2.2
+    #166 [Tests] Features testing
 
 # New features :
     - Multi symbols / exchanges data collector
     - Multi symbols backtesting
-
+    - Wiki completed
+    - Websocket management
+    - Exchange management
+    - Binance Websocket
+    - Cyclic logging
+    - Evaluator & Service restarting management
     
 # Bug fix :
     - Fix exception in order update_status when backtesting
+    - Fix order fill bug in simulation
+    - Taking exchanges symbol and minimum trade requirements into account
 
 
-Changelog for 0.0.11
+Changelog for 0.0.11-alpha
 ====================
 *Released date : May 11 2018*
 
@@ -57,7 +82,7 @@ Changelog for 0.0.11
     - Fixed trader simulation order creation
     - [Order Creation] Fix negative quantity 
 
-Changelog for 0.0.10
+Changelog for 0.0.10-alpha
 ====================
 *Released date : May 5 2018*
 
@@ -94,7 +119,7 @@ Changelog for 0.0.10
     - Fix portfolio profitability notification 
 
 
-Changelog for 0.0.9
+Changelog for 0.0.9-alpha
 ====================
 *Released date : Apr 30 2018*
 
@@ -131,7 +156,7 @@ Changelog for 0.0.9
     - Fix notification style end order
     - Fix portfolio concurrency access
     
-Changelog for 0.0.8
+Changelog for 0.0.8-alpha
 ====================
 *Released date : Apr 24 2018*
 
@@ -158,7 +183,7 @@ Changelog for 0.0.8
     - Fix portfolio profitability
     - Fix order cancel when state change
     
-Changelog for 0.0.7
+Changelog for 0.0.7-alpha
 ====================
 *Released date : Apr 21 2018*
 
@@ -188,7 +213,7 @@ Changelog for 0.0.7
     - Fix candle evaluator when no pattern is detected
     - Fix RealTime Evaluators creation
     
-Changelog for 0.0.6
+Changelog for 0.0.6-alpha
 ====================
 *Released date : Apr 16 2018*
 
@@ -211,7 +236,7 @@ Changelog for 0.0.6
     - Fix bollinger analyser
 
 
-Changelog for 0.0.5
+Changelog for 0.0.5-alpha
 ====================
 *Released date : Apr 12 2018*
 

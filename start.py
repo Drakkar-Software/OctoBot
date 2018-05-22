@@ -34,26 +34,30 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--telegram', help='Start telegram command handler',
                         action='store_true')
+    parser.add_argument('--packager', help='Start CryptoBot package manager',
+                        action='store_true')
 
     args = parser.parse_args()
 
     fileConfig('config/logging_config.ini')
 
-    logger = logging.getLogger("MAIN")
+    logger = logging.getLogger("CryptoBot Launcher")
+
+    # Force new log file creation not to log at the previous one's end.
+    logger.parent.handlers[1].doRollover()
+
     sys.excepthook = _log_uncaught_exceptions
 
     # Version
     logger.info("Version : {0}".format(LONG_VERSION))
 
-    logger.info("Load config files...")
+    logger.info("Loading config files...")
     config = load_config()
     config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
-    if args.telegram:
-        TelegramApp.enable(config)
+    TelegramApp.enable(config, args.telegram)
 
-    if args.web:
-        WebService.enable(config)
+    WebService.enable(config, args.web)
 
     bot = CryptoBot(config)
 
@@ -65,6 +69,9 @@ if __name__ == '__main__':
 
     elif args.data_collector:
         Commands.data_collector(config)
+
+    elif args.packager:
+        Commands.package_manager(config, None)
 
     # start crypto bot options
     else:

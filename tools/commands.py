@@ -2,6 +2,7 @@ import os
 import subprocess
 
 from backtesting.collector.data_collector import DataCollector
+from tools.evaluator_package_manager import EvaluatorPackageManager
 
 
 class Commands:
@@ -30,6 +31,15 @@ class Commands:
             data_collector_inst.join()
         except Exception as e:
             data_collector_inst.stop()
+            if not catch:
+                raise e
+
+    @staticmethod
+    def package_manager(config, command, catch=False):
+        try:
+            package_manager_inst = EvaluatorPackageManager(config)
+            package_manager_inst.parse_command(command)
+        except Exception as e:
             if not catch:
                 raise e
 
