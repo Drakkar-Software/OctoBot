@@ -57,7 +57,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
     def get_is_self_refreshing(self):
         return self.is_self_refreshing
 
-    # to implement in subclasses if config is necessary
+    # to implement in subclasses if config necessary
     # required if is_threaded = False --> provide evaluator refreshing time
     def set_default_config(self):
         pass

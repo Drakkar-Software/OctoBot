@@ -1,7 +1,7 @@
 from enum import Enum
 
 SHORT_VERSION = "0.0.11"
-REV_VERSION = "3"
+REV_VERSION = "4"
 VERSION_DEV_PHASE = "alpha"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
@@ -127,6 +127,13 @@ DIVERGENCE_USED_VALUE = 30
 CONFIG_INTERFACES = "interfaces"
 CONFIG_INTERFACES_WEB = "web"
 CONFIG_INTERFACES_TELEGRAM = "telegram"
+
+# Packages
+GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
+PACKAGES_PUBLIC_REPOSITORY = "Trading-Bot/CryptoBot-Packages"
+PACKAGES_PUBLIC_LIST = "packages_list.json"
+PACKAGES_DEFAULT_BRANCH = "master"
+EVALUATOR_PUBLIC_FOLDER = "Public"
 
 
 class EvaluatorMatrixTypes(Enum):
