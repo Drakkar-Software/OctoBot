@@ -1,5 +1,3 @@
-import time
-
 from config.cst import *
 from evaluator.Social.social_evaluator import NewsSocialEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager

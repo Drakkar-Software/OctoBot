@@ -22,7 +22,7 @@ class AbstractWebSocketManager:
 
     @staticmethod
     @abstractmethod
-    def convert_into_ccxt_order(msg):
+    def convert_into_ccxt_order(order):
         raise NotImplementedError("convert_into_ccxt_order not implemented")
 
     @staticmethod
@@ -142,4 +142,3 @@ class AbstractWebSocketManager:
     @staticmethod
     def iso8601(value):
         return ccxtExchange.iso8601(value)
-

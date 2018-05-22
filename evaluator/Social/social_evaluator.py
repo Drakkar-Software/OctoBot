@@ -110,7 +110,7 @@ class StatsSocialEvaluator(SocialEvaluator):
 
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("Run not implemented")
 
 
 class ForumSocialEvaluator(SocialEvaluator):
@@ -129,7 +129,7 @@ class ForumSocialEvaluator(SocialEvaluator):
 
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("Run not implemented")
 
 
 class NewsSocialEvaluator(SocialEvaluator):
@@ -148,4 +148,4 @@ class NewsSocialEvaluator(SocialEvaluator):
 
     @abstractmethod
     def run(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("Run not implemented")

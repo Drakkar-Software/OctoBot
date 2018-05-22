@@ -121,7 +121,7 @@ class DataVisualiser:
 
         ax.xaxis.set_major_locator(ticker.MaxNLocator(6))
 
-        def get_date(x, pos):
+        def get_date(x, _):
             try:
                 return xdate[int(x)]
             except IndexError:
