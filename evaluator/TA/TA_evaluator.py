@@ -36,9 +36,6 @@ class TAEvaluator(AbstractEvaluator):
 class MomentumEvaluator(TAEvaluator):
     __metaclass__ = TAEvaluator
 
-    def __init__(self):
-        super().__init__()
-
     @abstractmethod
     def eval_impl(self):
         raise NotImplementedError("Eval_impl not implemented")
@@ -46,9 +43,6 @@ class MomentumEvaluator(TAEvaluator):
 
 class OrderBookEvaluator(TAEvaluator):
     __metaclass__ = TAEvaluator
-
-    def __init__(self):
-        super().__init__()
 
     @abstractmethod
     def eval_impl(self):
@@ -58,9 +52,6 @@ class OrderBookEvaluator(TAEvaluator):
 class VolatilityEvaluator(TAEvaluator):
     __metaclass__ = TAEvaluator
 
-    def __init__(self):
-        super().__init__()
-
     @abstractmethod
     def eval_impl(self):
         raise NotImplementedError("Eval_impl not implemented")
@@ -68,9 +59,6 @@ class VolatilityEvaluator(TAEvaluator):
 
 class TrendEvaluator(TAEvaluator):
     __metaclass__ = TAEvaluator
-
-    def __init__(self):
-        super().__init__()
 
     @abstractmethod
     def eval_impl(self):
