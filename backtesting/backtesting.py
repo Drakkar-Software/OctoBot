@@ -3,7 +3,6 @@ import time
 
 from backtesting import get_bot
 from config.cst import *
-from tools.data_visualiser import DataVisualiser
 
 
 class Backtesting:

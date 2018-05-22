@@ -19,7 +19,7 @@ class PerformanceAnalyser(threading.Thread):
 
     def run(self):
         while self.keep_running:
-            self.logger.info("CPU : " + str(self._get_cpu()) + "% RAM : " + str(self._get_ram_go()) + " Go")
+            self.logger.info("CPU : {0}% RAM : {1} Go".format(self._get_cpu(), self._get_ram_go()))
             time.sleep(self.interval)
 
     def stop(self):

@@ -21,38 +21,40 @@ class AbstractTATest:
         self._assert_init()
         self.previous_move_stop = None
 
-    @abstractmethod
-    def init_test_with_evaluator_to_test(self):
-        raise NotImplementedError("init_test_with_evaluator_to_test not implemented")
-
     # replays a whole dataframe set and assert no exceptions are raised
+    @staticmethod
     @abstractmethod
-    def test_stress_test(self):
+    def test_stress_test(evaluator_tester):
         raise NotImplementedError("stress_test not implemented")
 
     # checks evaluations when a dump is happening
+    @staticmethod
     @abstractmethod
-    def test_reactions_to_dump(self):
+    def test_reactions_to_dump(evaluator_tester):
         raise NotImplementedError("test_reactions_to_dump not implemented")
 
     # checks evaluations when a pump is happening
+    @staticmethod
     @abstractmethod
-    def test_reactions_to_pump(self):
+    def test_reactions_to_pump(evaluator_tester):
         raise NotImplementedError("test_reactions_to_pump not implemented")
 
     # checks evaluations when an asset is over-sold
+    @staticmethod
     @abstractmethod
-    def test_reaction_to_rise_after_over_sold(self):
+    def test_reaction_to_rise_after_over_sold(evaluator_tester):
         raise NotImplementedError("test_reaction_to_oversold not implemented")
 
     # checks evaluations when an asset is over-bought
+    @staticmethod
     @abstractmethod
-    def test_reaction_to_over_bought_then_dip(self):
+    def test_reaction_to_over_bought_then_dip(evaluator_tester):
         raise NotImplementedError("test_reaction_to_over_bought_then_dip not implemented")
 
     # checks evaluations when an asset doing nothing
+    @staticmethod
     @abstractmethod
-    def test_reaction_to_flat_trend(self):
+    def test_reaction_to_flat_trend(evaluator_tester):
         raise NotImplementedError("test_reaction_to_flat_trend not implemented")
 
     # runs stress test and assert that neutral evaluation ratio is under required_not_neutral_evaluation_ratio and
