@@ -127,6 +127,12 @@ CONFIG_INTERFACES = "interfaces"
 CONFIG_INTERFACES_WEB = "web"
 CONFIG_INTERFACES_TELEGRAM = "telegram"
 
+# Packages
+GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
+PACKAGES_PUBLIC_REPOSITORY = "Trading-Bot/CryptoBot-Packages"
+PACKAGES_PUBLIC_LIST = "packages_list.json"
+PACKAGES_DEFAULT_BRANCH = "master"
+
 
 class EvaluatorMatrixTypes(Enum):
     TA = "TA"
