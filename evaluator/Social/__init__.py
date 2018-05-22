@@ -1,3 +1,4 @@
-from .forum_evaluator import *
+from .social_evaluator import *
 from .Advanced import *
+from .Public import *
 

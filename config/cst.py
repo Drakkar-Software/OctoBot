@@ -132,6 +132,7 @@ GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
 PACKAGES_PUBLIC_REPOSITORY = "Trading-Bot/CryptoBot-Packages"
 PACKAGES_PUBLIC_LIST = "packages_list.json"
 PACKAGES_DEFAULT_BRANCH = "master"
+EVALUATOR_PUBLIC_FOLDER = "Public"
 
 
 class EvaluatorMatrixTypes(Enum):
