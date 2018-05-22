@@ -15,7 +15,7 @@ RUN git checkout dev
 RUN bash ./docs/install/linux_installer.sh
 
 # configuration
-RUN cp ./docs/install/config_test.json ./config/config.json
+RUN cp ./config/default_config.json ./config/config.json
 
 # python libs
 RUN python3 -m pip install -r requirements.txt
