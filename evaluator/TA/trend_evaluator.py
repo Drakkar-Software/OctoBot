@@ -36,7 +36,7 @@ class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
         values_difference = (current_moving_average - time_period_unit_moving_average)
         values_difference = DataFrameUtil.drop_nan_and_reset_index(values_difference)
 
-        if len(values_difference):
+        if values_difference:
             # indexes where current_unit_moving_average crosses time_period_unit_moving_average
             crossing_indexes = TrendAnalysis.get_threshold_change_indexes(values_difference, 0)
 
