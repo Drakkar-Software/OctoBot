@@ -28,6 +28,7 @@ Changelog for 0.0.12-alpha
     #162 [Services] Allows in run service creation
     #165 Bump matplotlib from 2.0 to 2.2.2
     #166 [Tests] Features testing
+    #171 [Package Manager] Prototype
 
 # New features :
     - Multi symbols / exchanges data collector
@@ -38,8 +39,10 @@ Changelog for 0.0.12-alpha
     - Binance Websocket
     - Cyclic logging
     - Evaluator & Service restarting management
+    - Package Manager
     
 # Bug fix :
+    - Improve code quality
     - Fix exception in order update_status when backtesting
     - Fix order fill bug in simulation
     - Taking exchanges symbol and minimum trade requirements into account
