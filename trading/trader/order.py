@@ -302,7 +302,8 @@ class StopLossOrder(Order):
                                                                 current_price=self.origin_price,
                                                                 quantity=self.origin_quantity,
                                                                 price=self.origin_price)
-                self.trader.create_order(market_sell)
+                with self.trader.get_portfolio() as pf:
+                    self.trader.create_order(market_sell, pf)
 
 
 # TODO

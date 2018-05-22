@@ -229,10 +229,9 @@ class EvaluatorOrderCreator:
             return [(valid_quantity, valid_price)]
 
     # creates a new order (or multiple split orders), always check EvaluatorOrderCreator.can_create_order() first.
-    def create_new_order(self, eval_note, symbol, exchange, trader, state):
+    def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
         try:
             last_prices = exchange.get_recent_trades(symbol)
-            portfolio = trader.get_portfolio()
             reference_sum = 0
 
             for last_price in last_prices[-self.last_values_count:]:
@@ -242,9 +241,8 @@ class EvaluatorOrderCreator:
 
             currency, market = split_symbol(symbol)
 
-            with portfolio as pf:
-                current_portfolio = pf.get_currency_portfolio(currency)
-                current_market_quantity = pf.get_currency_portfolio(market)
+            current_portfolio = portfolio.get_currency_portfolio(currency)
+            current_market_quantity = portfolio.get_currency_portfolio(market)
 
             market_quantity = current_market_quantity / reference
 
@@ -264,7 +262,7 @@ class EvaluatorOrderCreator:
                                                           current_price=order_price,
                                                           quantity=order_quantity,
                                                           price=order_price)
-                    trader.create_order(market)
+                    trader.create_order(market, portfolio)
                     created_orders.append(market)
                 return created_orders
 
@@ -281,7 +279,7 @@ class EvaluatorOrderCreator:
                                                          current_price=order_price,
                                                          quantity=order_quantity,
                                                          price=limit_price)
-                    trader.create_order(limit)
+                    trader.create_order(limit, portfolio)
                     created_orders.append(limit)
 
                     # ???????????
@@ -298,7 +296,7 @@ class EvaluatorOrderCreator:
                                                         quantity=order_quantity,
                                                         price=stop_price,
                                                         linked_to=limit)
-                    trader.create_order(stop)
+                    trader.create_order(stop, portfolio)
                 return created_orders
 
             elif state == EvaluatorStates.NEUTRAL:
@@ -318,7 +316,7 @@ class EvaluatorOrderCreator:
                                                          current_price=order_price,
                                                          quantity=order_quantity,
                                                          price=limit_price)
-                    trader.create_order(limit)
+                    trader.create_order(limit, portfolio)
                     created_orders.append(limit)
                 return created_orders
 
@@ -334,7 +332,7 @@ class EvaluatorOrderCreator:
                                                           current_price=order_price,
                                                           quantity=order_quantity,
                                                           price=order_price)
-                    trader.create_order(market)
+                    trader.create_order(market, portfolio)
                     created_orders.append(market)
                 return created_orders
 
