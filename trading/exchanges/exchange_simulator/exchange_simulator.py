@@ -117,8 +117,7 @@ class ExchangeSimulator(AbstractExchange):
             # create symbol tickers
             self.tickers[symbol] = self._create_tickers(symbol)
 
-            # create symbol last trades
-            self.fetched_trades[symbol] = self._create_recent_trades(symbol)
+            # create symbol last trades counter
             self.fetched_trades_counter[symbol] = 0
 
     def should_update_data(self, symbol, time_frame):
@@ -216,6 +215,8 @@ class ExchangeSimulator(AbstractExchange):
         return self._extract_indexes(self.data[symbol][time_frame.value], self.time_frame_get_times[time_frame.value])
 
     def get_recent_trades(self, symbol):
+        if symbol not in self.fetched_trades or not self.fetched_trades[symbol]:
+            self.fetched_trades[symbol] = self._create_recent_trades(symbol)
         return self._extract_indexes(self.fetched_trades[symbol],
                                      self.time_frame_get_times[
                                          self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value],
