@@ -1,8 +1,8 @@
 from config.cst import *
-# from evaluator.Social.social_evaluator import ForumSocialEvaluator
+from evaluator.Social.social_evaluator import ForumSocialEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
-# from evaluator.Util.text_analysis import TextAnalysis
-# from evaluator.Util.overall_state_analysis import OverallStateAnalyser
+from evaluator.Util.text_analysis import TextAnalysis
+from evaluator.Util.overall_state_analysis import OverallStateAnalyser
 from evaluator.Dispatchers.reddit_dispatcher import RedditDispatcher
 from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 

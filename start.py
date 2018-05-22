@@ -6,7 +6,7 @@ from logging.config import fileConfig
 
 from config.config import load_config
 from config.cst import *
-from cryptobot import CryptoBot
+# from cryptobot import CryptoBot
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
 from tools.commands import Commands
@@ -34,8 +34,7 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')
-    parser.add_argument('-p', '--packager', help='Start CryptoBot package manager',
-                        action='store_true')
+    parser.add_argument('-p', '--packager', help='Start CryptoBot package manager', nargs='+')
 
     args = parser.parse_args()
 
@@ -59,7 +58,8 @@ if __name__ == '__main__':
 
     WebService.enable(config, args.web)
 
-    bot = CryptoBot(config)
+    # bot = CryptoBot(config)
+    bot = None
 
     import interfaces
     interfaces.__init__(bot, config)
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         Commands.data_collector(config)
 
     elif args.packager:
-        Commands.package_manager(config, None)
+        Commands.package_manager(config, args.packager)
 
     # start crypto bot options
     else:
