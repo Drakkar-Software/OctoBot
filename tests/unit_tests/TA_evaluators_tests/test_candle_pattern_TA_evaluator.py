@@ -1,5 +1,5 @@
 from tests.unit_tests.TA_evaluators_tests.abstract_TA_test import AbstractTATest
-from evaluator.TA.momentum_evaluator import CandlePatternMomentumEvaluator
+from evaluator.TA import CandlePatternMomentumEvaluator
 from config.cst import START_PENDING_EVAL_NOTE
 
 

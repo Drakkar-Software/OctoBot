@@ -1,5 +1,5 @@
 from tests.unit_tests.TA_evaluators_tests.abstract_TA_test import AbstractTATest
-from evaluator.TA.momentum_evaluator import RSIMomentumEvaluator
+from evaluator.TA import RSIMomentumEvaluator
 
 
 class TestRSITAEvaluator(AbstractTATest):
