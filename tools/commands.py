@@ -35,10 +35,10 @@ class Commands:
                 raise e
 
     @staticmethod
-    def package_manager(config, command, catch=False):
+    def package_manager(config, commands, catch=False):
         try:
             package_manager_inst = PackageManager(config)
-            package_manager_inst.parse_command(command)
+            package_manager_inst.parse_commands(commands)
         except Exception as e:
             if not catch:
                 raise e
