@@ -4,7 +4,7 @@ FROM ubuntu:16.04
 # Update Ubuntu Software repository
 RUN apt-get update
 
-RUN bash ./docs/install/install-ta-lib.sh
+RUN bash ./docs/install/linux_installer.sh
 
 RUN cp ./docs/install/config_test.json ./config/config.json
 
