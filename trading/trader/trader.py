@@ -39,9 +39,9 @@ class Trader:
                 self.exchange.set_orders_are_initialized(True)
 
             self.order_manager.start()
-            self.logger.debug("Enabled on " + self.exchange.get_name())
+            self.logger.debug("Enabled on {0}".format(self.exchange.get_name()))
         else:
-            self.logger.debug("Disabled on " + self.exchange.get_name())
+            self.logger.debug("Disabled on {0}".format(self.exchange.get_name()))
 
     @staticmethod
     def enabled(config):

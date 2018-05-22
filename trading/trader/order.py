@@ -103,15 +103,9 @@ class Order:
                       if not math.isnan(p["price"])]
 
             if inferior:
-                if float(min(prices)) < price:
-                    return True
-                else:
-                    return False
+                return float(min(prices)) < price
             else:
-                if float(max(prices)) > price:
-                    return True
-                else:
-                    return False
+                return float(max(prices)) > price
         return False
 
     def cancel_order(self):

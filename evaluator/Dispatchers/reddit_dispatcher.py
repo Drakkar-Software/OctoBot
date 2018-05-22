@@ -82,6 +82,6 @@ class RedditDispatcher(AbstractDispatcher):
                                                                      {CONFIG_REDDIT_ENTRY: entry,
                                                                       CONFIG_REDDIT_ENTRY_WEIGHT: entry_weight})
                 except Exception as e:
-                    self.logger.error("Error when receiving Reddit feed: '" + str(e) + \
-                                      "' this may mean that reddit login info in config.json are wrong.")
+                    self.logger.error("Error when receiving Reddit feed: '{0}' this may mean [1}"
+                                      .format(e, "that reddit login info in config.json are wrong."))
         self.logger.warning("Nothing to monitor, dispatcher is going to sleep.")

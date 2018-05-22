@@ -252,3 +252,33 @@ class ExchangeSimulator(AbstractExchange):
                 },
             },
         }
+
+    def cancel_order(self, order_id, symbol=None):
+        return True
+
+    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
+        pass
+
+    def get_all_orders(self, symbol=None, since=None, limit=None):
+        return []
+
+    def get_balance(self, order_id, symbol=None):
+        return None
+
+    def get_closed_orders(self, symbol=None, since=None, limit=None):
+        return []
+
+    def get_market_price(self, symbol):
+        raise NotImplementedError("get_market_price not implemented")
+
+    def get_my_recent_trades(self, symbol=None, since=None, limit=None):
+        return []
+
+    def get_open_orders(self, symbol=None, since=None, limit=None):
+        return []
+
+    def get_order(self, order_id):
+        raise NotImplementedError("get_order not implemented")
+
+    def get_order_book(self, symbol, limit=30):
+        raise NotImplementedError("get_order_book not implemented")
