@@ -79,19 +79,23 @@ class FinalEvaluator(AsynchronousServer):
                                                   self.state):
             # create trader simulator order
             if trader.is_enabled():
-                FinalEvaluator._push_order_notification_if_possible(
-                    self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
-                        self.final_eval,
-                        self.symbol,
-                        self.exchange,
-                        trader,
-                        self.state),
-                    evaluator_notification)
+                portfolio = trader.get_portfolio()
+                with portfolio as pf:
+                    FinalEvaluator._push_order_notification_if_possible(
+                        self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
+                            self.final_eval,
+                            self.symbol,
+                            self.exchange,
+                            trader,
+                            pf,
+                            self.state),
+                        evaluator_notification)
 
     @staticmethod
-    def _push_order_notification_if_possible(order, notification):
-        if order is not None:
-            order.get_order_notifier().notify(notification)
+    def _push_order_notification_if_possible(order_list, notification):
+        if order_list:
+            for order in order_list:
+                order.get_order_notifier().notify(notification)
 
     def get_state(self):
         return self.state

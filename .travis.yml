@@ -2,7 +2,7 @@ sudo: enabled
 language: python
 python:
   - 3.6
-notifications: 
+notifications:
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
   email: false
 install:

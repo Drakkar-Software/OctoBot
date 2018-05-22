@@ -5,7 +5,6 @@ from time import sleep
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table_experiments as dt
-from flask import request
 
 from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_WEB, CONFIG_CATEGORY_SERVICES, CONFIG_WEB_IP, CONFIG_WEB_PORT
 from interfaces import get_bot

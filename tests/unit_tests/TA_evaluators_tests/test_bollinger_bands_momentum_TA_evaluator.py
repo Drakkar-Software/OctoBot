@@ -1,35 +1,41 @@
+import pytest
+
 from tests.unit_tests.TA_evaluators_tests.abstract_TA_test import AbstractTATest
 from evaluator.TA import BBMomentumEvaluator
 
 
+@pytest.fixture()
+def evaluator_tester():
+    evaluator_tester_instance = TestBollingerBandsMomentumTAEvaluator()
+    evaluator_tester_instance.init(BBMomentumEvaluator)
+    return evaluator_tester_instance
+
+
 class TestBollingerBandsMomentumTAEvaluator(AbstractTATest):
 
-    def init_test_with_evaluator_to_test(self):
-        self.init(BBMomentumEvaluator)
+    @staticmethod
+    def test_stress_test(evaluator_tester):
+        evaluator_tester.run_stress_test_without_exceptions()
 
-    def test_stress_test(self):
-        self.init_test_with_evaluator_to_test()
-        self.run_stress_test_without_exceptions()
+    @staticmethod
+    def test_reactions_to_dump(evaluator_tester):
+        evaluator_tester.run_test_reactions_to_dump(0.7, 0.2, -1, -1, -1)
 
-    def test_reactions_to_dump(self):
-        self.init_test_with_evaluator_to_test()
-        self.run_test_reactions_to_dump(0.7, 0.2, -1, -1, -1)
+    @staticmethod
+    def test_reactions_to_pump(evaluator_tester):
+        evaluator_tester.run_test_reactions_to_pump(0.4, 0.5, 1, 1, 1, 1, 0.1)
 
-    def test_reactions_to_pump(self):
-        self.init_test_with_evaluator_to_test()
-        self.run_test_reactions_to_pump(0.4, 0.5, 1, 1, 1, 1, 0.1)
+    @staticmethod
+    def test_reaction_to_rise_after_over_sold(evaluator_tester):
+        evaluator_tester.run_test_reactions_to_rise_after_over_sold(-0.1, -0.99, -0.99, -0.5, 1)
 
-    def test_reaction_to_rise_after_over_sold(self):
-        self.init_test_with_evaluator_to_test()
-        self.run_test_reactions_to_rise_after_over_sold(-0.1, -0.99, -0.99, -0.5, 1)
+    @staticmethod
+    def test_reaction_to_over_bought_then_dip(evaluator_tester):
+        evaluator_tester.run_test_reactions_to_over_bought_then_dip(0, 1, 1, 0.95, -0.3, -0.1)
 
-    def test_reaction_to_over_bought_then_dip(self):
-        self.init_test_with_evaluator_to_test()
-        self.run_test_reactions_to_over_bought_then_dip(0, 1, 1, 0.95, -0.3, -0.1)
-
-    def test_reaction_to_flat_trend(self):
-        self.init_test_with_evaluator_to_test()
-        self.run_test_reactions_to_flat_trend(
+    @staticmethod
+    def test_reaction_to_flat_trend(evaluator_tester):
+        evaluator_tester.run_test_reactions_to_flat_trend(
             # eval_start_move_ending_up_in_a_rise,
             1,
             # eval_reaches_flat_trend, eval_first_micro_up_p1, eval_first_micro_up_p2,

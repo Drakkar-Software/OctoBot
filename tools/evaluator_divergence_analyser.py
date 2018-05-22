@@ -75,9 +75,10 @@ class EvaluatorDivergenceAnalyser:
         elif isinstance(self.matrix[matrix_type][evaluator_name], dict):
             local_divergence_average = 0
             local_divergence_counter = 0
-            for time_frame in self.matrix[matrix_type][evaluator_name]:
-                if check_valid_eval_note(self.matrix[matrix_type][evaluator_name][time_frame]):
-                    result = self._calc_eval_note_divergence(self.matrix[matrix_type][evaluator_name][time_frame])
+            for time_frame_iteration in self.matrix[matrix_type][evaluator_name]:
+                if check_valid_eval_note(self.matrix[matrix_type][evaluator_name][time_frame_iteration]):
+                    result = self._calc_eval_note_divergence(self.matrix[matrix_type][evaluator_name]
+                                                             [time_frame_iteration])
                     if result is not START_PENDING_EVAL_NOTE:
                         local_divergence_average += result
                         local_divergence_counter += 1

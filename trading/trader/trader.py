@@ -39,9 +39,9 @@ class Trader:
                 self.exchange.set_orders_are_initialized(True)
 
             self.order_manager.start()
-            self.logger.debug("Enabled on " + self.exchange.get_name())
+            self.logger.debug("Enabled on {0}".format(self.exchange.get_name()))
         else:
-            self.logger.debug("Disabled on " + self.exchange.get_name())
+            self.logger.debug("Disabled on {0}".format(self.exchange.get_name()))
 
     @staticmethod
     def enabled(config):
@@ -104,7 +104,7 @@ class Trader:
 
         return order
 
-    def create_order(self, order, loaded=False):
+    def create_order(self, order, portfolio, loaded=False):
         if not loaded:
             if not self.simulate and not self.check_if_self_managed(order.get_order_type()):
                 new_order = self.exchange.create_order(order.get_order_type(),
@@ -120,8 +120,7 @@ class Trader:
                                                                                             order.get_origin_quantity()))
 
         # update the availability of the currency in the portfolio
-        with self.portfolio as pf:
-            pf.update_portfolio_available(order, is_new_order=True)
+        portfolio.update_portfolio_available(order, is_new_order=True)
 
         # notify order manager of a new open order
         self.order_manager.add_order_to_list(order)
@@ -219,7 +218,8 @@ class Trader:
             orders = self.exchange.get_open_orders(symbol=symbol)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)
-                self.create_order(order, True)
+                with self.portfolio as pf:
+                    self.create_order(order, pf, True)
 
     def parse_exchange_order_to_order_instance(self, order):
         return self.create_order_instance(order_type=self.parse_order_type(order),
