@@ -1,14 +1,15 @@
 Changelog for 0.1.0-beta
 ====================
-*Released date : XX XX 2018*
+*Released date : June 1 2018*
 
 Changelog for 0.0.12-alpha
 ====================
-*Released date : XX XX 2018*
+*Released date : May 26 2018*
 
 **Info** : 
 - Config : "data_collector" root key removed
 - Backtesting : "file" root key changed to "files" as array
+- Package Manager : need to perform `python3 start.py -p install all` to install evaluators
 
 # Concerned issues :
     #144 [Bug] Investigate version 0.0.11 negative simulated portfolio
