@@ -1,3 +1,4 @@
+requests
 matplotlib==2.2.2
 vaderSentiment
 pandas

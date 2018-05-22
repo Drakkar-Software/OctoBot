@@ -21,21 +21,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CryptoBot')
     parser.add_argument('start', help='start the CryptoBot',
                         action='store_true')
-    parser.add_argument('--simulate', help='start the CryptoBot with the trader simulator',
+    parser.add_argument('-s', '--simulate', help='start the CryptoBot with the trader simulator',
                         action='store_true')
-    parser.add_argument('--data_collector', help='start the data collector process to create data for backtesting',
+    parser.add_argument('-d', '--data_collector', help='start the data collector process to create data for backtesting',
                         action='store_true')
-    parser.add_argument('--update', help='update CryptoBot with the latest version available',
+    parser.add_argument('-u', '--update', help='update CryptoBot with the latest version available',
                         action='store_true')
-    parser.add_argument('--backtesting', help='enable the backtesting option and use the backtesting config',
+    parser.add_argument('-b', '--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
-    parser.add_argument('--risk', type=float, help='risk representation (between 0 and 1)')
-    parser.add_argument('--web', help='Start web server',
+    parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
+    parser.add_argument('-w', '--web', help='Start web server',
                         action='store_true')
-    parser.add_argument('--telegram', help='Start telegram command handler',
+    parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')
-    parser.add_argument('--packager', help='Start CryptoBot package manager',
-                        action='store_true')
+    parser.add_argument('-p', '--packager', help='Start CryptoBot package manager', nargs='+')
 
     args = parser.parse_args()
 
@@ -71,7 +70,7 @@ if __name__ == '__main__':
         Commands.data_collector(config)
 
     elif args.packager:
-        Commands.package_manager(config, None)
+        Commands.package_manager(config, args.packager)
 
     # start crypto bot options
     else:

@@ -8,4 +8,3 @@ def __init__(bot):
 
 def get_bot():
     return bot_instance
-
