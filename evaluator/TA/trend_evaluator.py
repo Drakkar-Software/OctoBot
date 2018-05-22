@@ -10,8 +10,6 @@ from tools.data_frame_util import DataFrameUtil
 
 # evaluates position of the current (2 unit) average trend relatively to the 5 units average and 10 units average trend
 class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
-    def __init__(self):
-        super().__init__()
 
     def eval_impl(self):
         self.eval_note = START_PENDING_EVAL_NOTE
@@ -63,10 +61,9 @@ class DoubleMovingAverageTrendEvaluator(TrendEvaluator):
         # just crossed the average => neutral
         return 0
 
+
 # https://mrjbq7.github.io/ta-lib/func_groups/overlap_studies.html
 class CandleAnalysisTrendEvaluator(TrendEvaluator):
-    def __init__(self):
-        super().__init__()
 
     def eval_impl(self):
         pass
@@ -74,8 +71,6 @@ class CandleAnalysisTrendEvaluator(TrendEvaluator):
 
 # directional_movement_index --> trend strength
 class DMITrendEvaluator(TrendEvaluator):
-    def __init__(self):
-        super().__init__()
 
     def eval_impl(self):
         pass
@@ -83,8 +78,6 @@ class DMITrendEvaluator(TrendEvaluator):
 
 # bollinger_bands
 class BBTrendEvaluator(TrendEvaluator):
-    def __init__(self):
-        super().__init__()
 
     def eval_impl(self):
         pass
@@ -92,8 +85,6 @@ class BBTrendEvaluator(TrendEvaluator):
 
 # ease_of_movement --> ease to change trend --> trend strength
 class EOMTrendEvaluator(TrendEvaluator):
-    def __init__(self):
-        super().__init__()
 
     def eval_impl(self):
         pass
