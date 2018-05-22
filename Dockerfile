@@ -19,3 +19,6 @@ RUN cp ./config/default_config.json ./config/config.json
 
 # python libs
 RUN python3 -m pip install -r requirements.txt
+
+# install evaluators
+RUN python3 start.py -p install all

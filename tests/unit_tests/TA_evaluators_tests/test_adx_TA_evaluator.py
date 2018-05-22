@@ -1,7 +1,7 @@
 import pytest
 
 from tests.unit_tests.TA_evaluators_tests.abstract_TA_test import AbstractTATest
-from evaluator.TA.momentum_evaluator import ADXMomentumEvaluator
+from evaluator.TA import ADXMomentumEvaluator
 
 
 @pytest.fixture()

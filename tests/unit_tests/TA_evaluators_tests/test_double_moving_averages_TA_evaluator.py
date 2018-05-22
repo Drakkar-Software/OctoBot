@@ -1,7 +1,7 @@
 import pytest
 
 from tests.unit_tests.TA_evaluators_tests.abstract_TA_test import AbstractTATest
-from evaluator.TA.trend_evaluator import DoubleMovingAverageTrendEvaluator
+from evaluator.TA import DoubleMovingAverageTrendEvaluator
 
 
 @pytest.fixture()
