@@ -7,6 +7,7 @@ RUN apt install git -y
 
 # Set up dev environment
 RUN git clone https://github.com/Trading-Bot/CryptoBot
+RUN cd CryptoBot/
 RUN git checkout dev
 
 # install dependencies
