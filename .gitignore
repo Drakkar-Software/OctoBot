@@ -106,7 +106,7 @@ ENV/
 # config
 config/config.json
 
-# modules
+# evaluators
 /.gitmodules
 evaluator/.gitignore
 **/Advanced/*.*
