@@ -4,7 +4,6 @@ import time
 import ccxt
 
 from backtesting.backtesting import Backtesting
-from backtesting.exchange_simulator import ExchangeSimulator
 from config.cst import *
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.Util.advanced_manager import AdvancedManager
@@ -16,7 +15,7 @@ from services import ServiceCreator
 from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
-from trading import Exchange
+from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 
@@ -79,11 +78,12 @@ class CryptoBot:
 
                 # Backtesting Exchange
                 if self.backtesting_enabled:
-                    exchange_inst = ExchangeSimulator(self.config, exchange_type)
+                    exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=True)
                 else:
                     # True Exchange
-                    exchange_inst = Exchange(self.config, exchange_type)
+                    exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False)
 
+                exchange_inst = exchange_manager.get_exchange()
                 self.exchanges_list[exchange_inst.get_name()] = exchange_inst
 
                 # create trader instance for this exchange
@@ -121,10 +121,10 @@ class CryptoBot:
                 self.symbol_evaluator_list[symbol] = symbol_evaluator
 
                 for exchange in self.exchanges_list.values():
-                    if exchange.enabled():
+                    if exchange.get_exchange_manager().enabled():
 
                         # Verify that symbol exists on this exchange
-                        if symbol in exchange.get_traded_pairs():
+                        if symbol in exchange.get_exchange_manager().get_traded_pairs():
                             self._create_symbol_threads_managers(symbol,
                                                                  exchange,
                                                                  symbol_evaluator)
@@ -141,7 +141,7 @@ class CryptoBot:
                                                                             symbol)
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
-            if exchange.time_frame_exists(time_frame.value):
+            if exchange.get_exchange_manager().time_frame_exists(time_frame.value):
                 self.symbol_threads_manager[time_frame] = EvaluatorThreadsManager(self.config,
                                                                                   symbol,
                                                                                   time_frame,
@@ -225,6 +225,10 @@ class CryptoBot:
                 service_instance.stop()
             except Exception as e:
                 raise e
+
+        # stop exchanges threads
+        for exchange in self.exchanges_list.values():
+            exchange.stop()
 
         self.logger.info("Threads stopped.")
 

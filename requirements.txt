@@ -3,6 +3,10 @@ vaderSentiment
 pandas
 pytrends
 ccxt
+twisted
+
+python-binance
+
 TA-Lib
 numpy
 colorlog

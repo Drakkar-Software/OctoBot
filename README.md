@@ -1,4 +1,4 @@
-# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot) [![Coverage Status](https://coveralls.io/repos/github/Trading-Bot/CryptoBot/badge.svg?branch=dev)](https://coveralls.io/github/Trading-Bot/CryptoBot?branch=dev)
+# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot) [![Coverage Status](https://coveralls.io/repos/github/Trading-Bot/CryptoBot/badge.svg?branch=dev)](https://coveralls.io/github/Trading-Bot/CryptoBot?branch=dev) [![Code Factor](https://www.codefactor.io/repository/github/trading-bot/cryptobot/badge)](https://www.codefactor.io/repository/github/trading-bot/cryptobot/overview/dev) [![Build Status](https://semaphoreci.com/api/v1/herklos/cryptobot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/cryptobot)
 
 #### Version 0.0.11-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/alpha/docs/CHANGELOG.md))
 
@@ -58,7 +58,7 @@ python start.py --web --telegram
 ```bash
 python start.py --data_collector
 ```
-## Customize you CryptoBot !
+## Customize your CryptoBot !
 Information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
 
 ## Screenshots
@@ -71,7 +71,7 @@ pytest
 ```
 
 ## Changelog
-See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/master/docs/CHANGELOG.md)
+See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/alpha/docs/CHANGELOG.md)
 
 ## More
 For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).

@@ -1,6 +1,6 @@
 import backtrader
 
-from backtesting.exchange_simulator import ExchangeSimulator
+from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 
 
 class BacktraderExchangeSimulator(ExchangeSimulator, backtrader.Strategy):

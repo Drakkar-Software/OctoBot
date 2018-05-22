@@ -1,14 +1,17 @@
 from backtesting import get_bot
 from backtesting.backtesting import Backtesting
-from backtesting.collector.data_collector import DataCollectorParser, ExchangeDataCollector
+from backtesting.collector.data_parser import DataCollectorParser
+from backtesting.collector.exchange_collector import ExchangeDataCollector
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
-from trading import Exchange
+from trading import AbstractExchange
+from tools.data_frame_util import DataFrameUtil
 
 
-class ExchangeSimulator(Exchange):
-    def __init__(self, config, exchange_type):
-        self.config = config
+class ExchangeSimulator(AbstractExchange):
+    def __init__(self, config, exchange_type, exchange_manager):
+        super().__init__(config, exchange_type)
+        self.exchange_manager = exchange_manager
 
         if CONFIG_BACKTESTING not in self.config:
             raise Exception("Backtesting config not found")
@@ -17,7 +20,13 @@ class ExchangeSimulator(Exchange):
         self.data = None
         self._get_symbol_list()
 
-        self.config_time_frames = TimeFrameManager.get_config_time_frame(config)
+        self.config_time_frames = TimeFrameManager.get_config_time_frame(self.config)
+
+        # set exchange manager attributes
+        self.exchange_manager.client_symbols = self.symbols
+        self.exchange_manager.traded_pairs = self.symbols
+        self.exchange_manager.client_time_frames = [tf.value for tf in self.config_time_frames]
+        self.exchange_manager.time_frames = self.config_time_frames
 
         self.time_frame_get_times = {}
         self.tickers = {}
@@ -33,10 +42,8 @@ class ExchangeSimulator(Exchange):
         self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.CREATED_TICKER_BY_TIME_FRAME = 1
 
-        self.backtesting = Backtesting(config, self)
+        self.backtesting = Backtesting(self.config, self)
         self._prepare()
-
-        super().__init__(config, exchange_type, connect_to_online_exchange=False)
 
     # todo merge multiple file with the same symbol
     def _get_symbol_list(self):
@@ -63,7 +70,7 @@ class ExchangeSimulator(Exchange):
     def fix_timestamps(data):
         if get_bot() is not None:
             for time_frame in data:
-                time_delta = get_bot().get_start_time()*1000 - data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
+                time_delta = get_bot().get_start_time() * 1000 - data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
                 for data_list in data[time_frame]:
                     data_list[PriceIndexes.IND_PRICE_TIME.value] += time_delta
         return data
@@ -86,7 +93,7 @@ class ExchangeSimulator(Exchange):
         return self.symbols
 
     def get_name(self):
-        return self.__class__.__name__+str(self.symbols)
+        return self.__class__.__name__ + str(self.symbols)
 
     def _prepare(self):
 
@@ -127,9 +134,9 @@ class ExchangeSimulator(Exchange):
         self.time_frame_get_times[time_frame.value] += 1
 
         if data_frame:
-            return self.candles_array_to_data_frame(result)
+            return DataFrameUtil.candles_array_to_data_frame(result), result
         else:
-            return result
+            return result, result
 
     # Will use the One Minute time frame
     def _create_tickers(self, symbol):
@@ -170,7 +177,7 @@ class ExchangeSimulator(Exchange):
         generated_prices = []
         inc = diff / count
         for i in range(0, count):
-            generated_prices.append(min_price + i*inc)
+            generated_prices.append(min_price + i * inc)
 
         return generated_prices
 
@@ -194,7 +201,7 @@ class ExchangeSimulator(Exchange):
     def get_recent_trades(self, symbol):
         return self._extract_indexes(self.fetched_trades[symbol],
                                      self.time_frame_get_times[
-                                        self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value],
+                                         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value],
                                      factor=self.CREATED_TRADES_BY_TIME_FRAME)
 
     def get_data(self):
@@ -211,6 +218,9 @@ class ExchangeSimulator(Exchange):
                                       max_value=1)[0]
         }
 
+    def get_last_price_ticker(self, symbol):
+        return self.get_price_ticker(symbol)[ExchangeConstantsTickersColumns.LAST.value]
+
     def get_all_currencies_price_ticker(self):
         return {
             symbol: {
@@ -218,9 +228,27 @@ class ExchangeSimulator(Exchange):
                 ExchangeConstantsTickersColumns.LAST.value:
                     self._extract_indexes(self.tickers[symbol],
                                           self.time_frame_get_times[
-                                             self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value],
+                                              self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value],
                                           factor=self.CREATED_TICKER_BY_TIME_FRAME,
                                           max_value=1)[0]
             }
             for symbol in self.symbols
+        }
+
+    def get_market_status(self, symbol):
+        return {
+            'limits': {
+                'amount': {
+                    'min': 0.00000000001,
+                    'max': 1000000000000,
+                },
+                'price': {
+                    'min': 0.00000000001,
+                    'max': 1000000000000,
+                },
+                'cost': {
+                    'min': 0.00000000001,
+                    'max': 1000000000000,
+                },
+            },
         }
