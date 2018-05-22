@@ -126,7 +126,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                 df = evaluator_thread_manager.get_evaluator().get_data()
 
                 if df is not None:
-                    symbol_tag, pair_tag = split_symbol(symbol)
+                    _, pair_tag = split_symbol(symbol)
                     add_to_symbol_data_history(symbol, df, time_frame)
                     df = get_symbol_data_history(symbol, time_frame)
 

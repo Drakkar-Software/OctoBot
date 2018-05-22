@@ -32,9 +32,6 @@ class StrategiesEvaluator(AbstractEvaluator):
 class MixedStrategiesEvaluator(StrategiesEvaluator):
     __metaclass__ = StrategiesEvaluator
 
-    def __init__(self):
-        super().__init__()
-
     @abstractmethod
     def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
