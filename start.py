@@ -6,7 +6,7 @@ from logging.config import fileConfig
 
 from config.config import load_config
 from config.cst import *
-# from cryptobot import CryptoBot
+from cryptobot import CryptoBot
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
 from tools.commands import Commands
@@ -58,8 +58,7 @@ if __name__ == '__main__':
 
     WebService.enable(config, args.web)
 
-    # bot = CryptoBot(config)
-    bot = None
+    bot = CryptoBot(config)
 
     import interfaces
     interfaces.__init__(bot, config)

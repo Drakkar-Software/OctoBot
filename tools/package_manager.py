@@ -31,6 +31,9 @@ class PackageManager:
                                                       package_name)
         package_file = requests.get(package_url).text
 
+        if package_file.find("404: Not Found") != -1:
+            raise Exception(package_file)
+
         # Install package in evaluator
         with open("{0}/{1}/{2}/{3}.py".format(CONFIG_EVALUATOR,
                                               package_type,
@@ -42,6 +45,7 @@ class PackageManager:
         new_line_in_init = "from .{0} import *\n".format(package_name)
         init_content = ""
         init_file = "{0}/{1}/{2}/__init__.py".format(CONFIG_EVALUATOR, package_type, EVALUATOR_PUBLIC_FOLDER)
+
         if os.path.isfile(init_file):
             with open(init_file, "r") as init_file_r:
                 init_content = init_file_r.read()
@@ -62,11 +66,17 @@ class PackageManager:
 
                 if commands[1] and commands[1] == "all":
                     for package in self.package_list:
-                        self.install_package(package)
+                        try:
+                            self.install_package(package)
+                        except Exception:
+                            self.logger.error("Installation failed for package '{0}'".format(package))
                 else:
                     commands.pop(0)
                     for component in commands:
                         if component in self.package_list:
-                            self.install_package(component)
+                            try:
+                                self.install_package(component)
+                            except Exception:
+                                self.logger.error("Installation failed for package '{0}'".format(component))
                         else:
                             self.logger.warning("Cannot find installation for package '{0}'".format(component))
