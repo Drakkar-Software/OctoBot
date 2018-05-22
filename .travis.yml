@@ -10,6 +10,7 @@ install:
   - python -m pip install -r requirements.txt
   - python -m pip install -r dev_requirements.txt
   - cp ./config/default_config.json ./config/config.json
+  - python start.py -p install all
 script:
   - pytest --cov-report term --cov=. tests/unit_tests/
 
