@@ -25,7 +25,8 @@ See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Insta
 ```
 git clone https://github.com/Trading-Bot/CryptoBot
 cd CryptoBot
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python start.py -p install all
 ```
 See installation [troubleshoots page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)
 
