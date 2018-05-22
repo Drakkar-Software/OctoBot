@@ -62,7 +62,7 @@ python start.py --data_collector
 Information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
 
 ## Screenshots
-TODO
+![Web Candles Screenshot](/docs/static/images/web_candle_screenshot.png)
 
 ## Testing
 Use *pytest* command in the root folder : 
