@@ -7,6 +7,8 @@ from logging.config import fileConfig
 from config.config import load_config
 from config.cst import *
 from tools.commands import Commands
+from interfaces.telegram.bot import TelegramApp
+from services import WebService
 
 
 def _log_uncaught_exceptions(ex_cls, ex, tb):
@@ -59,11 +61,9 @@ if __name__ == '__main__':
 
     else:
         # In those cases load CryptoBot
-        config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
-
         from cryptobot import CryptoBot
-        from interfaces.telegram.bot import TelegramApp
-        from services import WebService
+
+        config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
         TelegramApp.enable(config, args.telegram)
 
