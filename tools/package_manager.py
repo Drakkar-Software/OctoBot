@@ -26,15 +26,16 @@ class PackageManager:
 
         self.default_package = self._get_package_description(default_package_list_url)
 
-        for package in self.config[CONFIG_PACKAGES_KEY]:
-            # try with package as in configuration
-            try:
-                self.advanced_package_list.append(self._get_package_description(package))
-            except Exception:
+        if CONFIG_PACKAGES_KEY in self.config:
+            for package in self.config[CONFIG_PACKAGES_KEY]:
+                # try with package as in configuration
                 try:
-                    self.advanced_package_list.append(self._get_package_description(package, True))
+                    self.advanced_package_list.append(self._get_package_description(package))
                 except Exception:
-                    self.logger.error("Impossible to get a CryptoBot package at: {0}".format(package))
+                    try:
+                        self.advanced_package_list.append(self._get_package_description(package, True))
+                    except Exception:
+                        self.logger.error("Impossible to get a CryptoBot package at: {0}".format(package))
 
     @staticmethod
     def _add_package_description_metadata(package_description, localisation, is_url):
