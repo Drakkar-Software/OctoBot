@@ -5,7 +5,6 @@ from backtesting.collector.exchange_collector import ExchangeDataCollector
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
 from trading import AbstractExchange
-from tools.data_frame_util import DataFrameUtil
 
 
 class ExchangeSimulator(AbstractExchange):
