@@ -5,7 +5,7 @@ import os
 import requests
 
 from config.cst import PACKAGES_PUBLIC_LIST, PACKAGES_DEFAULT_BRANCH, PACKAGES_PUBLIC_REPOSITORY, \
-    GITHUB_RAW_CONTENT_URL, CONFIG_EVALUATOR, EVALUATOR_PUBLIC_FOLDER
+    GITHUB_RAW_CONTENT_URL, CONFIG_EVALUATOR, EVALUATOR_DEFAULT_FOLDER
 
 
 class PackageManager:
@@ -34,17 +34,16 @@ class PackageManager:
         if package_file.find("404: Not Found") != -1:
             raise Exception(package_file)
 
+        file_dir = "{0}/{1}/{2}".format(CONFIG_EVALUATOR, package_type, EVALUATOR_DEFAULT_FOLDER)
+
         # Install package in evaluator
-        with open("{0}/{1}/{2}/{3}.py".format(CONFIG_EVALUATOR,
-                                              package_type,
-                                              EVALUATOR_PUBLIC_FOLDER,
-                                              package_name), "w") as installed_package:
+        with open("{0}/{1}.py".format(file_dir, package_name), "w") as installed_package:
             installed_package.write(package_file)
 
         # Update local __init__
         new_line_in_init = "from .{0} import *\n".format(package_name)
         init_content = ""
-        init_file = "{0}/{1}/{2}/__init__.py".format(CONFIG_EVALUATOR, package_type, EVALUATOR_PUBLIC_FOLDER)
+        init_file = "{0}/{1}/{2}/__init__.py".format(CONFIG_EVALUATOR, package_type, EVALUATOR_DEFAULT_FOLDER)
 
         if os.path.isfile(init_file):
             with open(init_file, "r") as init_file_r:
@@ -57,7 +56,8 @@ class PackageManager:
                 # add new package to init
                 init_file_w.write(init_content + new_line_in_init)
 
-        self.logger.info("{0} installed successfully".format(package_name))
+        self.logger.info("{0} {1} successfully installed in: {2}"
+                         .format(package_name, self.package_list[package_name]["version"], file_dir))
 
     def parse_commands(self, commands):
         self.update_list()
@@ -68,8 +68,8 @@ class PackageManager:
                     for package in self.package_list:
                         try:
                             self.install_package(package)
-                        except Exception:
-                            self.logger.error("Installation failed for package '{0}'".format(package))
+                        except Exception as e:
+                            self.logger.error("Installation failed for package '{0}' ({1})".format(package, e))
                 else:
                     commands.pop(0)
                     for component in commands:

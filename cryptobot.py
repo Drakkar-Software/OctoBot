@@ -1,6 +1,5 @@
 import logging
 import time
-
 import ccxt
 
 from backtesting.backtesting import Backtesting

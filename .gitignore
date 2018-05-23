@@ -108,7 +108,8 @@ config/config.json
 
 # evaluators
 /.gitmodules
-**/Public/*.*
+evaluator/.gitignore
+**/Default/*.*
 **/Advanced/*.*
 
 # Specific config
