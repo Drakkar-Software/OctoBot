@@ -31,7 +31,10 @@ class PackageManager:
             try:
                 self.advanced_package_list.append(self._get_package_description(package))
             except Exception:
-                self.advanced_package_list.append(self._get_package_description(package, True))
+                try:
+                    self.advanced_package_list.append(self._get_package_description(package, True))
+                except Exception:
+                    self.logger.error("Impossible to get a CryptoBot package at: {0}".format(package))
 
     @staticmethod
     def _add_package_description_metadata(package_description, localisation, is_url):
