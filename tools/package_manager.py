@@ -17,9 +17,7 @@ class PackageManager:
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def update_list(self):
-        rgit = "https://raw.githubusercontent.com"
-        git = "https://github.com"
-        default_package_list_url = "{0}/{1}/{2}/{3}".format(git,
+        default_package_list_url = "{0}/{1}/{2}/{3}".format(GITHUB_BASE_URL,
                                                             PACKAGES_PUBLIC_REPOSITORY,
                                                             PACKAGES_DEFAULT_BRANCH,
                                                             PACKAGES_PUBLIC_LIST)
@@ -35,7 +33,7 @@ class PackageManager:
                     try:
                         self.advanced_package_list.append(self._get_package_description(package, True))
                     except Exception:
-                        self.logger.error("Impossible to get a CryptoBot package at: {0}".format(package))
+                        self.logger.error("Impossible to get a CryptoBot package for : {0}".format(package))
 
     @staticmethod
     def _add_package_description_metadata(package_description, localisation, is_url):
@@ -142,6 +140,10 @@ class PackageManager:
                     self.install_module(package, module, package_localisation, is_url, target_folder)
             except Exception as e:
                 self.logger.error("Installation failed for module '{0}' ({1})".format(module, e))
+
+    @staticmethod
+    def parse_version(version):
+        return int(version.replace(".", ""))
 
     def parse_commands(self, commands):
         self.update_list()
