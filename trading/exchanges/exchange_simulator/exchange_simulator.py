@@ -207,6 +207,12 @@ class ExchangeSimulator(AbstractExchange):
 
     def get_market_status(self, symbol):
         return {
+            # number of decimal digits "after the dot"
+            ExchangeConstantsMarketStatusColumns.PRECISION.value: {
+                ExchangeConstantsMarketStatusColumns.PRECISION_AMOUNT.value: 8,
+                ExchangeConstantsMarketStatusColumns.PRECISION_COST.value: 8,
+                ExchangeConstantsMarketStatusColumns.PRECISION_PRICE.value: 8,
+            },
             ExchangeConstantsMarketStatusColumns.LIMITS.value: {
                 ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT.value: {
                     ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT_MIN.value: 0.00000000001,
