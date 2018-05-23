@@ -6,9 +6,6 @@ from logging.config import fileConfig
 
 from config.config import load_config
 from config.cst import *
-from cryptobot import CryptoBot
-from interfaces.telegram.bot import TelegramApp
-from services import WebService
 from tools.commands import Commands
 
 
@@ -52,44 +49,52 @@ if __name__ == '__main__':
 
     logger.info("Loading config files...")
     config = load_config()
-    config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
-    TelegramApp.enable(config, args.telegram)
-
-    WebService.enable(config, args.web)
-
-    bot = CryptoBot(config)
-
-    import interfaces
-    interfaces.__init__(bot, config)
-
-    if args.update:
-        Commands.update(logger)
-
-    elif args.data_collector:
-        Commands.data_collector(config)
-
-    elif args.packager:
+    # Handle utility methods before bot initializing if possible
+    if args.packager:
         Commands.package_manager(config, args.packager)
 
-    # start crypto bot options
+    elif args.update:
+        Commands.update(logger)
+
     else:
-        if args.backtesting:
-            import backtesting
-            backtesting.__init__(bot)
+        # In those cases load CryptoBot
+        config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
-            config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-            config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
+        from cryptobot import CryptoBot
+        from interfaces.telegram.bot import TelegramApp
+        from services import WebService
 
-            config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-            config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+        TelegramApp.enable(config, args.telegram)
 
-        if args.simulate:
-            config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-            config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+        WebService.enable(config, args.web)
 
-        if args.risk is not None and 0 < args.risk <= 1:
-            config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
+        bot = CryptoBot(config)
 
-        if args.start:
-            Commands.start_bot(bot, logger)
+        import interfaces
+        interfaces.__init__(bot, config)
+
+        if args.data_collector:
+            Commands.data_collector(config)
+
+        # start crypto bot options
+        else:
+            if args.backtesting:
+                import backtesting
+                backtesting.__init__(bot)
+
+                config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
+                config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
+
+                config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+                config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+            if args.simulate:
+                config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+                config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+            if args.risk is not None and 0 < args.risk <= 1:
+                config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
+
+            if args.start:
+                Commands.start_bot(bot, logger)
