@@ -158,14 +158,27 @@ class PackageManager:
                     commands.pop(0)
                     for component in commands:
                         if component in self.default_package:
+                            package_description = self.default_package[PACKAGE_DESCRIPTION]
+                            package_localisation = package_description[PACKAGE_DESCRIPTION_LOCALISATION]
+                            is_url = package_description[PACKAGE_DESCRIPTION_IS_URL]
                             try:
-                                self.install_module(component, EVALUATOR_DEFAULT_FOLDER)
-                            except Exception:
-                                self.logger.error("Installation failed for module '{0}'".format(component))
-                        if component in self.advanced_package_list:
-                            try:
-                                self.install_module(component, EVALUATOR_ADVANCED_FOLDER)
+                                self.install_module(self.default_package, component, package_localisation, is_url,
+                                                    EVALUATOR_DEFAULT_FOLDER)
                             except Exception:
                                 self.logger.error("Installation failed for module '{0}'".format(component))
                         else:
-                            self.logger.warning("Cannot find installation for package '{0}'".format(component))
+                            found = False
+                            for advanced_package in self.advanced_package_list:
+                                if component in advanced_package:
+                                    found = True
+                                    package_description = advanced_package[PACKAGE_DESCRIPTION]
+                                    package_localisation = package_description[PACKAGE_DESCRIPTION_LOCALISATION]
+                                    is_url = package_description[PACKAGE_DESCRIPTION_IS_URL]
+                                    try:
+                                        self.install_module(advanced_package, component, package_localisation, is_url,
+                                                            EVALUATOR_ADVANCED_FOLDER)
+                                        break
+                                    except Exception:
+                                        self.logger.error("Installation failed for module '{0}'".format(component))
+                            if not found:
+                                self.logger.error("Cannot find installation for module '{0}'".format(component))
