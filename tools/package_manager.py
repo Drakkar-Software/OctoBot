@@ -4,46 +4,103 @@ import os
 
 import requests
 
-from config.cst import PACKAGES_PUBLIC_LIST, PACKAGES_DEFAULT_BRANCH, PACKAGES_PUBLIC_REPOSITORY, \
-    GITHUB_RAW_CONTENT_URL, CONFIG_EVALUATOR, EVALUATOR_DEFAULT_FOLDER
+from config.cst import PACKAGES_PUBLIC_LIST, PACKAGES_DEFAULT_BRANCH, PACKAGES_PUBLIC_REPOSITORY, PACKAGE_DESCRIPTION,\
+    GITHUB_RAW_CONTENT_URL, CONFIG_EVALUATOR, EVALUATOR_DEFAULT_FOLDER, CONFIG_PACKAGES_KEY, GITHUB_BASE_URL, GITHUB, \
+    PACKAGE_DESCRIPTION_LOCALISATION, PACKAGE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER
 
 
 class PackageManager:
     def __init__(self, config):
         self.config = config
-        self.package_list = None
+        self.default_package = None
+        self.advanced_package_list = []
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def update_list(self):
-        package_list_url = "{0}/{1}/{2}/{3}".format(GITHUB_RAW_CONTENT_URL,
-                                                    PACKAGES_PUBLIC_REPOSITORY,
-                                                    PACKAGES_DEFAULT_BRANCH,
-                                                    PACKAGES_PUBLIC_LIST)
+        rgit = "https://raw.githubusercontent.com"
+        git = "https://github.com"
+        default_package_list_url = "{0}/{1}/{2}/{3}".format(git,
+                                                            PACKAGES_PUBLIC_REPOSITORY,
+                                                            PACKAGES_DEFAULT_BRANCH,
+                                                            PACKAGES_PUBLIC_LIST)
 
-        self.package_list = json.loads(requests.get(package_list_url).text)
+        self.default_package = self._get_package_description(default_package_list_url)
 
-    def install_package(self, package_name):
-        package_type = self.package_list[package_name]["type"]
-        package_url = "{0}/{1}/{2}/{3}/{4}.py".format(GITHUB_RAW_CONTENT_URL,
-                                                      PACKAGES_PUBLIC_REPOSITORY,
-                                                      PACKAGES_DEFAULT_BRANCH,
-                                                      package_type,
-                                                      package_name)
-        package_file = requests.get(package_url).text
+        for package in self.config[CONFIG_PACKAGES_KEY]:
+            # try with package as in configuration
+            try:
+                self.advanced_package_list.append(self._get_package_description(package))
+            except Exception:
+                self.advanced_package_list.append(self._get_package_description(package, True))
+
+    @staticmethod
+    def _add_package_description_metadata(package_description, localisation, is_url):
+        to_save_loc = str(localisation)
+        if localisation.endswith(PACKAGES_PUBLIC_LIST):
+            to_save_loc = localisation[0:-len(PACKAGES_PUBLIC_LIST)]
+            while to_save_loc.endswith("/") or to_save_loc.endswith("\\"):
+                to_save_loc = to_save_loc[0:-1]
+        package_description[PACKAGE_DESCRIPTION] = {
+            PACKAGE_DESCRIPTION_LOCALISATION: to_save_loc,
+            PACKAGE_DESCRIPTION_IS_URL: is_url
+        }
+
+    @staticmethod
+    def _get_package_description(url_or_path, try_to_adapt=False):
+        package_url_or_path = str(url_or_path)
+        # if its an url: download with requests.get and return text
+        if package_url_or_path.startswith("https://") \
+            or package_url_or_path.startswith("http://") \
+                or package_url_or_path.startswith("ftp://"):
+            if try_to_adapt:
+                if not package_url_or_path.endswith("/"):
+                    package_url_or_path += "/"
+                # if checking on github, try adding branch and file
+                if GITHUB in package_url_or_path:
+                    package_url_or_path += "{0}/{1}".format(PACKAGES_DEFAULT_BRANCH, PACKAGES_PUBLIC_LIST)
+                # else try adding file
+                else:
+                    package_url_or_path += PACKAGES_PUBLIC_LIST
+            downloaded_result = json.loads(requests.get(package_url_or_path).text)
+            if "error" in downloaded_result and GITHUB_BASE_URL in package_url_or_path:
+                package_url_or_path = package_url_or_path.replace(GITHUB_BASE_URL, GITHUB_RAW_CONTENT_URL)
+                downloaded_result = json.loads(requests.get(package_url_or_path).text)
+            # add package metadata
+            PackageManager._add_package_description_metadata(downloaded_result, package_url_or_path, True)
+            return downloaded_result
+
+        # if its a local path: return file content
+        else:
+            if try_to_adapt:
+                if not package_url_or_path.endswith("/"):
+                    package_url_or_path += "/"
+                package_url_or_path += PACKAGES_PUBLIC_LIST
+            with open(package_url_or_path, "r") as package_description:
+                read_result = json.loads(package_description.read())
+                # add package metadata
+                PackageManager._add_package_description_metadata(read_result, package_url_or_path, False)
+                return read_result
+
+    @staticmethod
+    def _get_package_from_url(url):
+        package_file = requests.get(url).text
 
         if package_file.find("404: Not Found") != -1:
             raise Exception(package_file)
 
-        file_dir = "{0}/{1}/{2}".format(CONFIG_EVALUATOR, package_type, EVALUATOR_DEFAULT_FOLDER)
+        return package_file
+
+    def _apply_module(self, module_type, module_name, module_version, module_file, target_folder):
+        file_dir = "{0}/{1}/{2}".format(CONFIG_EVALUATOR, module_type, target_folder)
 
         # Install package in evaluator
-        with open("{0}/{1}.py".format(file_dir, package_name), "w") as installed_package:
-            installed_package.write(package_file)
+        with open("{0}/{1}.py".format(file_dir, module_name), "w") as installed_package:
+            installed_package.write(module_file)
 
         # Update local __init__
-        new_line_in_init = "from .{0} import *\n".format(package_name)
+        new_line_in_init = "from .{0} import *\n".format(module_name)
         init_content = ""
-        init_file = "{0}/{1}/{2}/__init__.py".format(CONFIG_EVALUATOR, package_type, EVALUATOR_DEFAULT_FOLDER)
+        init_file = "{0}/{1}/{2}/__init__.py".format(CONFIG_EVALUATOR, module_type, target_folder)
 
         if os.path.isfile(init_file):
             with open(init_file, "r") as init_file_r:
@@ -52,31 +109,57 @@ class PackageManager:
         # check if line already exists
         if init_content.find(new_line_in_init) == -1:
             with open(init_file, "w") as init_file_w:
-
                 # add new package to init
                 init_file_w.write(init_content + new_line_in_init)
 
         self.logger.info("{0} {1} successfully installed in: {2}"
-                         .format(package_name, self.package_list[package_name]["version"], file_dir))
+                         .format(module_name, module_version, file_dir))
+
+    def install_module(self, package, module_name, package_localisation, is_url, target_folder):
+        package_type = package[module_name]["type"]
+        module_loc = "{0}/{1}/{2}.py".format(package_localisation, package_type, module_name)
+        module_version = package[module_name]["version"]
+
+        if is_url:
+            module_file = self._get_package_from_url(module_loc)
+        else:
+            with open(module_loc, "r") as module:
+                module_file = module.read()
+
+        self._apply_module(package_type, module_name, module_version, module_file, target_folder)
+
+    def _try_to_install_package(self, package, target_folder):
+        package_description = package[PACKAGE_DESCRIPTION]
+        package_localisation = package_description[PACKAGE_DESCRIPTION_LOCALISATION]
+        is_url = package_description[PACKAGE_DESCRIPTION_IS_URL]
+        for module in package:
+            try:
+                if module != PACKAGE_DESCRIPTION:
+                    self.install_module(package, module, package_localisation, is_url, target_folder)
+            except Exception as e:
+                self.logger.error("Installation failed for module '{0}' ({1})".format(module, e))
 
     def parse_commands(self, commands):
         self.update_list()
         if len(commands) > 0:
             if commands[0] == "install":
 
-                if commands[1] and commands[1] == "all":
-                    for package in self.package_list:
-                        try:
-                            self.install_package(package)
-                        except Exception as e:
-                            self.logger.error("Installation failed for package '{0}' ({1})".format(package, e))
+                if commands[1] == "all":
+                    self._try_to_install_package(self.default_package, EVALUATOR_DEFAULT_FOLDER)
+                    for package in self.advanced_package_list:
+                        self._try_to_install_package(package, EVALUATOR_ADVANCED_FOLDER)
                 else:
                     commands.pop(0)
                     for component in commands:
-                        if component in self.package_list:
+                        if component in self.default_package:
                             try:
-                                self.install_package(component)
+                                self.install_module(component, EVALUATOR_DEFAULT_FOLDER)
                             except Exception:
-                                self.logger.error("Installation failed for package '{0}'".format(component))
+                                self.logger.error("Installation failed for module '{0}'".format(component))
+                        if component in self.advanced_package_list:
+                            try:
+                                self.install_module(component, EVALUATOR_ADVANCED_FOLDER)
+                            except Exception:
+                                self.logger.error("Installation failed for module '{0}'".format(component))
                         else:
                             self.logger.warning("Cannot find installation for package '{0}'".format(component))

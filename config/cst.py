@@ -129,12 +129,18 @@ CONFIG_INTERFACES_WEB = "web"
 CONFIG_INTERFACES_TELEGRAM = "telegram"
 
 # Packages
+GITHUB = "github"
 GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
+GITHUB_BASE_URL = "https://github.com"
 PACKAGES_PUBLIC_REPOSITORY = "Trading-Bot/CryptoBot-Packages"
 PACKAGES_PUBLIC_LIST = "packages_list.json"
 PACKAGES_DEFAULT_BRANCH = "master"
 EVALUATOR_DEFAULT_FOLDER = "Default"
 EVALUATOR_ADVANCED_FOLDER = "Advanced"
+CONFIG_PACKAGES_KEY = "packages"
+PACKAGE_DESCRIPTION = "package_description"
+PACKAGE_DESCRIPTION_LOCALISATION = "localisation"
+PACKAGE_DESCRIPTION_IS_URL = "is_url"
 
 
 class EvaluatorMatrixTypes(Enum):
