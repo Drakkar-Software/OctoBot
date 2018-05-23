@@ -1,4 +1,4 @@
-from trading import AbstractExchange
+from trading import AbstractExchange, DataFrameUtil
 
 
 class ExchangeDispatcher(AbstractExchange):
@@ -34,26 +34,33 @@ class ExchangeDispatcher(AbstractExchange):
             return self.exchange.get_balance()
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
+        # if websocket is available --> get symbol price from WS
         if self._web_socket_available() and self.exchange_web_socket.candles_are_initialized(symbol, time_frame):
-            candle_dataframe, candles = self.exchange_web_socket.get_symbol_prices(symbol=symbol,
-                                                                                   time_frame=time_frame,
-                                                                                   limit=limit,
-                                                                                   data_frame=data_frame)
-            return candle_dataframe
 
-        needs_to_init_candles = self._web_socket_available() and \
-            not self.exchange_web_socket.candles_are_initialized(symbol, time_frame)
-        select_limit = limit
-        if needs_to_init_candles:
-            data_frame = True
-            select_limit = None
-        candle_dataframe, candles = self.exchange.get_symbol_prices(symbol=symbol,
-                                                                    time_frame=time_frame,
-                                                                    limit=select_limit,
-                                                                    data_frame=data_frame)
-        if needs_to_init_candles:
-            self.exchange_web_socket.init_candle_data(symbol, time_frame, candles, candle_dataframe)
-        return candle_dataframe[-limit:] if limit is not None else candle_dataframe
+            candles = self.exchange_web_socket.get_symbol_prices(symbol=symbol,
+                                                                 time_frame=time_frame,
+                                                                 limit=limit,
+                                                                 data_frame=data_frame)
+            return candles
+
+        # else get price from REST exchange and init websocket (if enabled)
+        needs_to_init_candles = self._web_socket_available() and not \
+            self.exchange_web_socket.candles_are_initialized(symbol, time_frame)
+
+        candles = self.exchange.get_symbol_prices(symbol=symbol,
+                                                  time_frame=time_frame,
+                                                  limit=None if needs_to_init_candles else limit)
+
+        if needs_to_init_candles or data_frame:
+            candle_data_frame = DataFrameUtil.candles_array_to_data_frame(candles)
+
+            if needs_to_init_candles:
+                self.exchange_web_socket.init_candle_data(symbol, time_frame, candles, candle_data_frame)
+
+            if data_frame:
+                return candle_data_frame.tail(limit) if limit is not None else candle_data_frame
+
+        return candles[-limit:] if limit is not None else candles
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
