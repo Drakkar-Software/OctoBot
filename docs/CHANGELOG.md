@@ -12,6 +12,8 @@ Changelog for 0.0.12-alpha
 - Package Manager : need to perform `python3 start.py -p install all` to install evaluators
 
 # Concerned issues :
+    #84 [Environment] Create docker
+    #86 [CI] Implement third party
     #144 [Bug] Investigate version 0.0.11 negative simulated portfolio
     #145 [Datacollector] Implements multiple symbol
     #146 [Backtesting] Implement multi symbols
