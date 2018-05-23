@@ -14,6 +14,7 @@ Changelog for 0.0.12-alpha
 # Concerned issues :
     #84 [Environment] Create docker
     #86 [CI] Implement third party
+    #139 [Tests] Improve evaluator management tests coverage
     #144 [Bug] Investigate version 0.0.11 negative simulated portfolio
     #145 [Datacollector] Implements multiple symbol
     #146 [Backtesting] Implement multi symbols
@@ -23,15 +24,20 @@ Changelog for 0.0.12-alpha
     #152 [Wiki] complete wiki version 1
     #153 [Beta Version] Prepare beta version
     #154 [Exchanges] implement web sockets for binance exchange
+    #155 [TA] improve real time evaluator
     #157 [Exchanges] manage websockets availability in exchange manager
     #158 [Order management] implement order callback update for websockets additionnaly to poll updates
     #159 added cyclic log file management
     #160 [Real Trader] taking exchanges symbol and minimum trade requirements into account
     #161 [Evaluators] Allows in run evaluator creation
     #162 [Services] Allows in run service creation
+    #163 [Exchanges Tests] implement web sockets for binance tests
     #165 Bump matplotlib from 2.0 to 2.2.2
     #166 [Tests] Features testing
     #171 [Package Manager] Prototype
+    #172 [Telegram Interface] No response when ask profitability
+    #175 Add tests for order creation
+    #176 [Package manager] implement advanced evaluators
 
 # New features :
     - Multi symbols / exchanges data collector
@@ -48,6 +54,7 @@ Changelog for 0.0.12-alpha
     - Improve code quality
     - Fix exception in order update_status when backtesting
     - Fix order fill bug in simulation
+    - Fix telegram no response on /profitability command
     - Taking exchanges symbol and minimum trade requirements into account
 
 

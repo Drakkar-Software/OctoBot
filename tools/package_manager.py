@@ -147,7 +147,7 @@ class PackageManager:
 
     def parse_commands(self, commands):
         self.update_list()
-        if len(commands) > 0:
+        if commands:
             if commands[0] == "install":
 
                 if commands[1] == "all":
@@ -182,3 +182,10 @@ class PackageManager:
                                         self.logger.error("Installation failed for module '{0}'".format(component))
                             if not found:
                                 self.logger.error("Cannot find installation for module '{0}'".format(component))
+
+            if commands[0] == "update":
+                if commands[1] == "all":
+                    pass
+                else:
+                    commands.pop(0)
+                    pass
