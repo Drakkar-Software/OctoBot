@@ -8,8 +8,6 @@ from tools.symbol_util import split_symbol
 
 class EvaluatorOrderCreator:
     def __init__(self):
-        self.last_values_count = 10
-
         self.MAX_SUM_RESULT = 2
 
         self.STOP_LOSS_ORDER_MAX_PERCENT = 0.99
@@ -234,10 +232,10 @@ class EvaluatorOrderCreator:
             last_prices = exchange.get_recent_trades(symbol)
             reference_sum = 0
 
-            for last_price in last_prices[-self.last_values_count:]:
+            for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]:
                 reference_sum += float(last_price["price"])
 
-            reference = reference_sum / self.last_values_count
+            reference = reference_sum / ORDER_CREATION_LAST_TRADES_TO_USE
 
             currency, market = split_symbol(symbol)
 

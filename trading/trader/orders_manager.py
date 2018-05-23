@@ -50,12 +50,12 @@ class OrdersManager(threading.Thread):
 
     # Ask to update a specific symbol with exchange data
     def _update_last_symbol_prices(self, symbol):
+        last_symbol_price = None
+
         # optimize exchange simulator calls when backtesting
         if Backtesting.enabled(self.config):
             if self.trader.get_exchange().get_exchange().should_update_recent_trades(symbol):
                 last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
-            else:
-                last_symbol_price = None
 
         # Exchange call when not backtesting
         else:
