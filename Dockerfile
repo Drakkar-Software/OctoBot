@@ -23,4 +23,5 @@ RUN pip3 install -r requirements.txt
 RUN python start.py -p install all
 
 # entry point
-ENTRYPOINT ["/python start.py"]
+ENTRYPOINT ["/python"]
+CMD ["start.py"]
