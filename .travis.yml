@@ -7,8 +7,8 @@ notifications:
   email: false
 install:
   - sudo ./docs/install/linux_installer.sh
-  - sudo pip3 install -r requirements.txt
-  - sudo pip3 install -r dev_requirements.txt
+  - sudo pip3 install -r requirements.txt --upgrade
+  - sudo pip3 install -r dev_requirements.txt 
   - cp ./config/default_config.json ./config/config.json
   - python start.py -p install all
 script:
