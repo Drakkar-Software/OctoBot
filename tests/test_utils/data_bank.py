@@ -2,7 +2,6 @@ import ccxt
 import pandas
 
 from config.cst import TimeFrames
-from tools.data_visualiser import DataVisualiser
 from trading.exchanges.exchange_manager import ExchangeManager
 
 """
@@ -77,10 +76,6 @@ class DataBank:
 
     def _init_data(self):
         self.data_by_symbol_by_data_frame = {symbol: self._get_symbol_data(symbol) for symbol in self.symbols}
-
-    @staticmethod
-    def show_data(data_frame):
-        DataVisualiser.show_candlesticks_dataframe(data_frame)
 
     def _get_symbol_data(self, symbol):
         return {time_frame: self.exchange_inst.get_symbol_prices(
