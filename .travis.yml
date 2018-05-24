@@ -13,6 +13,6 @@ install:
   - cp ./config/default_config.json ./config/config.json
   - python3 start.py -p install all
 script:
-  - pytest --cov-report term --cov=. tests/unit_tests/
+  - python3 -m pytest --cov-report term --cov=. tests/unit_tests/
 
 
