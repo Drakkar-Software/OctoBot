@@ -1,7 +1,6 @@
-#Download base image ubuntu 16.04
-FROM ubuntu:16.04
+FROM python:3
 
-# Update Ubuntu Software repository
+# Update Software repository
 RUN apt-get update
 RUN apt install git -y
 
@@ -18,7 +17,11 @@ RUN bash ./docs/install/linux_installer.sh
 RUN cp ./config/default_config.json ./config/config.json
 
 # python libs
-RUN python3 -m pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
 # install evaluators
-RUN python3 start.py -p install all
+RUN python start.py -p install all
+
+# entry point
+ENTRYPOINT ["/python"]
+CMD ["start.py"]
