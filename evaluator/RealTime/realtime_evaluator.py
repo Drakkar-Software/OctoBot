@@ -7,6 +7,7 @@ from backtesting.backtesting import Backtesting
 from config.config import load_config
 from config.cst import *
 from evaluator.abstract_evaluator import AbstractEvaluator
+from tools.time_frame_manager import TimeFrameManager
 
 
 class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
@@ -88,10 +89,23 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
         raise NotImplementedError("Eval_impl not implemented")
 
     def valid_refresh_time(self, config_refresh_time):
-        if config_refresh_time > self.exchange.get_exchange_manager().get_rate_limit():
+        if config_refresh_time > self.exchange.get_exchange_manager().get_rate_limit() or \
+                self.exchange.get_exchange_manager().websocket_available():
             return config_refresh_time
         else:
             return self.exchange.get_exchange_manager().get_rate_limit()
 
     def _define_refresh_time(self):
         self.refresh_time = self.valid_refresh_time(self.specific_config[CONFIG_REFRESH_RATE])
+
+    def set_default_config(self):
+        time_frames = self.exchange.get_exchange_manager().get_config_time_frame()
+        min_time_frame = TimeFrameManager.find_min_time_frame(time_frames)
+        refresh_rate = DEFAULT_WEBSOCKET_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS if \
+            self.exchange.get_exchange_manager().websocket_available() \
+            else DEFAULT_REST_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS
+
+        self.specific_config = {
+            CONFIG_TIME_FRAME: min_time_frame,
+            CONFIG_REFRESH_RATE: refresh_rate,
+        }

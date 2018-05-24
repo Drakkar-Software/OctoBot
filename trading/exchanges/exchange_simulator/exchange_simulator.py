@@ -33,7 +33,7 @@ class ExchangeSimulator(AbstractExchange):
         self.DEFAULT_LIMIT = 100
         self.MIN_LIMIT = 20
 
-        self.MIN_ENABLED_TIME_FRAME = TimeFrameManager.find_config_min_time_frame(self.config_time_frames)
+        self.MIN_ENABLED_TIME_FRAME = TimeFrameManager.find_min_time_frame(self.config_time_frames)
         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.RECENT_TRADES_TO_CREATE = max(SIMULATOR_LAST_PRICES_TO_CHECK, ORDER_CREATION_LAST_TRADES_TO_USE)
