@@ -1,5 +1,5 @@
 setuptools == 18.5
-matplotlib==2.2.2
+matplotlib == 2.2.2
 requests
 vaderSentiment
 pandas
