@@ -10,7 +10,7 @@ install:
   - sudo pip3 install -r requirements.txt
   - sudo pip3 install -r dev_requirements.txt
   - cp ./config/default_config.json ./config/config.json
-  - python start.py -p install all
+  - python3 start.py -p install all
 script:
   - pytest --cov-report term --cov=. tests/unit_tests/
 
