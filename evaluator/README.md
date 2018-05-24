@@ -1,7 +1,7 @@
 # Where are evaluators and strategies ?
 Because CryptoBot is modular, a wide range of evaluators and strategies are usable.
 
-Default evaluators and strategies are located here: [https://github.com/Trading-Bot/CryptoBot-Package-Template](https://github.com/Trading-Bot/CryptoBot-Package).
+Default evaluators and strategies are located here: [https://github.com/Trading-Bot/CryptoBot-Packages](https://github.com/Trading-Bot/CryptoBot-Packages).
 
 To install default evaluators and strategies in your CryptoBot, run the command 
 
