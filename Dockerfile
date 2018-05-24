@@ -20,8 +20,8 @@ RUN cp ./config/default_config.json ./config/config.json
 RUN pip3 install -r requirements.txt
 
 # install evaluators
-RUN python start.py -p install all
+RUN python3 start.py -p install all
 
 # entry point
-ENTRYPOINT ["/python"]
+ENTRYPOINT ["/python3"]
 CMD ["start.py"]
