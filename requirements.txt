@@ -1,6 +1,6 @@
-setuptools
-requests
+setuptools == 18.5
 matplotlib==2.2.2
+requests
 vaderSentiment
 pandas
 pytrends
