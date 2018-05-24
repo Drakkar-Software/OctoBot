@@ -7,12 +7,11 @@ notifications:
   email: false
 install:
   - sudo ./docs/install/linux_installer.sh
-  - pip3 install -U setuptools
   - pip3 install -r requirements.txt
   - pip3 install -r dev_requirements.txt
   - cp ./config/default_config.json ./config/config.json
   - python3 start.py -p install all
 script:
-  - python3 -m pytest --cov-report term --cov=. tests/unit_tests/
+  - pytest --cov-report term --cov=. tests/unit_tests/
 
 
