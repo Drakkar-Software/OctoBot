@@ -35,6 +35,9 @@ class ExchangeManager:
         self._set_config_time_frame()
         self._set_config_traded_pairs()
 
+    def websocket_available(self):
+        return self.exchange_web_socket
+
     def create_exchanges(self):
         if not self.is_simulated:
             # create REST based on ccxt exchange
@@ -89,6 +92,10 @@ class ExchangeManager:
         for time_frame in TimeFrameManager.get_config_time_frame(self.config):
             if self.time_frame_exists(time_frame.value):
                 self.time_frames.append(time_frame)
+        # add shortest timeframe for realtime evaluators
+        client_shortest_time_frame = TimeFrameManager.find_min_time_frame(self.client_time_frames)
+        if client_shortest_time_frame not in self.time_frames:
+            self.time_frames.append(client_shortest_time_frame)
 
     def get_config_time_frame(self):
         return self.time_frames

@@ -36,10 +36,10 @@ class TimeFrameManager:
                 return origin_time_frame
 
     @staticmethod
-    def find_config_min_time_frame(config_time_frames):
+    def find_min_time_frame(time_frames):
         # TimeFramesRank is the ordered list of timeframes
         for tf in TimeFrameManager.TimeFramesRank:
-            if tf in config_time_frames:
+            if tf in time_frames:
                 try:
                     return TimeFrames(tf)
                 except ValueError:
