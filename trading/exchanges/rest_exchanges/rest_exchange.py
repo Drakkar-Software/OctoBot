@@ -4,7 +4,6 @@ from ccxt import OrderNotFound, BaseError
 
 from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
-from tools.data_frame_util import DataFrameUtil
 
 
 class RESTExchange(AbstractExchange):
