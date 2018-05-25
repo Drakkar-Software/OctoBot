@@ -1,4 +1,5 @@
-from trading import AbstractExchange, DataFrameUtil
+from trading import AbstractExchange
+from tools.data_frame_util import DataFrameUtil
 
 
 class ExchangeDispatcher(AbstractExchange):

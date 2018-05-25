@@ -1,4 +1,5 @@
 from abc import *
+import logging
 
 from ccxt.base.exchange import Exchange as ccxtExchange
 
@@ -13,6 +14,7 @@ class AbstractWebSocketManager:
         self.client = None
         self.exchange_data = ExchangeData()
         self.name = self.get_name()
+        self.logger = logging.getLogger(self.name)
 
     # Abstract methods
     @classmethod
