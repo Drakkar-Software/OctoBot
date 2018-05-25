@@ -38,6 +38,7 @@ class RESTExchange(AbstractExchange):
             })
         else:
             self.client = self.exchange_type({'verbose': False})
+            self.logger.error("configuration issue: missing login information !")
         self.client.logger.setLevel(logging.INFO)
 
     def get_market_status(self, symbol):

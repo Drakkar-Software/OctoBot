@@ -67,8 +67,8 @@ class ExchangeManager:
 
     # Exchange configuration functions
     def check_config(self, exchange_name):
-        if not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_KEY] \
-                and not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_SECRET]:
+        if CONFIG_EXCHANGE_KEY not in self.config[CONFIG_EXCHANGES][exchange_name] \
+                or CONFIG_EXCHANGE_SECRET not in self.config[CONFIG_EXCHANGES][exchange_name]:
             return False
         else:
             return True
