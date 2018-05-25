@@ -6,11 +6,6 @@
     }
   },
   "exchanges": {
-    "binance": {
-      "api-key": "",
-      "api-secret": "",
-      "web_socket": true
-    }
   },
   "services": {},
   "notification":{
