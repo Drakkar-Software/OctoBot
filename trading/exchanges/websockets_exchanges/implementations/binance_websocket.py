@@ -1,7 +1,7 @@
 from config.cst import *
 from trading.exchanges.websockets_exchanges.abstract_websocket_manager import AbstractWebSocketManager
 from binance.websockets import BinanceSocketManager
-from binance.client import Client
+from binance.client import Client, BinanceAPIException
 from twisted.internet import reactor
 
 from tools.symbol_util import merge_symbol
@@ -36,8 +36,11 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
         return float(self.exchange_data.symbol_tickers[merge_symbol(symbol)]["c"])
 
     def init_web_sockets(self, time_frames, trader_pairs):
-        self._init_price_sockets(time_frames, trader_pairs)
-        self._init_user_socket()
+        try:
+            self._init_price_sockets(time_frames, trader_pairs)
+            self._init_user_socket()
+        except BinanceAPIException as e:
+            self.logger.error("error when connecting to binance websockets: {0}".format(e))
 
     def start_sockets(self):
         if self.socket_manager:
