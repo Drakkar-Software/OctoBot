@@ -71,7 +71,7 @@ class ExchangeManager:
             return True
 
     def check_web_socket_config(self, exchange_name):
-        if CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
+        if self.check_config(exchange_name) and CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
                 and self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]:
             return True
         else:
