@@ -21,7 +21,7 @@ RUN pip3 install -U setuptools
 RUN pip3 install -r requirements.txt
 
 # install evaluators
-RUN python3 start.py -p install all
+RUN python start.py -p install all
 
 # entry point
 ENTRYPOINT ["/python3"]
