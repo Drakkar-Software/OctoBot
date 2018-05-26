@@ -49,6 +49,7 @@ Changelog for 0.0.12-alpha
     - Cyclic logging
     - Evaluator & Service restarting management
     - Package Manager
+    - Windows installer
     
 # Bug fix :
     - Improve code quality
