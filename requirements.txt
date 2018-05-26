@@ -1,8 +1,13 @@
-matplotlib==2.2.2
+matplotlib == 2.2.2
+requests
 vaderSentiment
 pandas
 pytrends
 ccxt
+twisted
+
+python-binance
+
 TA-Lib
 numpy
 colorlog

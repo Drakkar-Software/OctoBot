@@ -29,11 +29,11 @@ class TelegramApp:
     def add_handlers(self):
         self.dispatcher.add_handler(CommandHandler("start", self.command_start))
         self.dispatcher.add_handler(CommandHandler("ping", self.command_ping))
-        self.dispatcher.add_handler(CommandHandler("portfolio", self.command_portfolio))
-        self.dispatcher.add_handler(CommandHandler("open_orders", self.command_open_orders))
-        self.dispatcher.add_handler(CommandHandler("profitability", self.command_profitability))
+        self.dispatcher.add_handler(CommandHandler(["portfolio", "pf"], self.command_portfolio))
+        self.dispatcher.add_handler(CommandHandler(["open_orders", "oo"], self.command_open_orders))
+        self.dispatcher.add_handler(CommandHandler(["profitability", "pb"], self.command_profitability))
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
-        self.dispatcher.add_handler(CommandHandler("market_status", self.command_market_status))
+        self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
         self.dispatcher.add_handler(CommandHandler("stop", self.command_stop))
         self.dispatcher.add_handler(CommandHandler("help", self.command_help))
 
@@ -48,12 +48,12 @@ class TelegramApp:
         message = "My CryptoBot skills:" + TelegramApp.EOL + TelegramApp.EOL
         message += "/start: Displays my startup message." + TelegramApp.EOL
         message += "/ping: Shows for how long I'm working." + TelegramApp.EOL
-        message += "/portfolio: Displays my current portfolio." + TelegramApp.EOL
-        message += "/open_orders: Displays my current open orders." + TelegramApp.EOL
-        message += "/profitability: Displays the profitability I made since I started." + TelegramApp.EOL
-        message += "/market_status: Displays my understanding of the market and my risk parameter." + TelegramApp.EOL
+        message += "/portfolio or /pf: Displays my current portfolio." + TelegramApp.EOL
+        message += "/open_orders or /oo: Displays my current open orders." + TelegramApp.EOL
+        message += "/profitability or /pb: Displays the profitability I made since I started." + TelegramApp.EOL
+        message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + TelegramApp.EOL
         message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
-        message += "/stop: Stop me." + TelegramApp.EOL
+        message += "/stop: Stops me." + TelegramApp.EOL
         message += "/help: Displays this help."
         update.message.reply_text(message)
 
@@ -87,16 +87,21 @@ class TelegramApp:
 
     @staticmethod
     def command_profitability(_, update):
-        real_global_profitability, simulated_global_profitability = get_global_profitability()
-        update.message.reply_text("Real global profitability : {0}".format(
-            PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
-                                                               None,
-                                                               get_reference_market())))
-
-        update.message.reply_text("Simulated global profitability : {0}".format(
-            PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
-                                                               None,
-                                                               get_reference_market())))
+        # to find profitabily bug out
+        try:
+            real_global_profitability, simulated_global_profitability = get_global_profitability()
+            profitability_string = "Real global profitability : {0}{1}".format(
+                PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
+                                                                   None,
+                                                                   get_reference_market()),
+                TelegramApp.EOL)
+            profitability_string += "Simulated global profitability : {0}".format(
+                PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
+                                                                   None,
+                                                                   get_reference_market()))
+            update.message.reply_text(profitability_string)
+        except Exception as e:
+            update.message.reply_text(e)
 
     @staticmethod
     def command_portfolio(_, update):
@@ -104,34 +109,36 @@ class TelegramApp:
         reference_market = get_reference_market()
         real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amounts()
 
-        update.message.reply_text("Portfolio real value : {0} {1}".format(portfolio_real_current_value,
-                                                                          reference_market))
-        update.message.reply_text("Global real portfolio : \n{0}"
-                                  .format(PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio)))
+        portfolios_string = "Portfolio real value : {0:f} {1}{2}".format(portfolio_real_current_value,
+                                                                         reference_market,
+                                                                         TelegramApp.EOL)
+        portfolios_string += "Global real portfolio : {1}{0}{1}{1}".format(
+            PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
+            TelegramApp.EOL)
 
-        update.message.reply_text("Portfolio simulated value : {0} {1}".format(portfolio_simulated_current_value,
-                                                                               reference_market))
-        update.message.reply_text("Global simulated portfolio : \n{0}"
-                                  .format(PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio)))
+        portfolios_string += "Portfolio simulated value : {0:f} {1}{2}".format(portfolio_simulated_current_value,
+                                                                               reference_market,
+                                                                               TelegramApp.EOL)
+        portfolios_string += "Global simulated portfolio : {1}{0}".format(
+            PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
+            TelegramApp.EOL)
+        update.message.reply_text(portfolios_string)
 
     @staticmethod
     def command_open_orders(_, update):
         portfolio_real_open_orders, portfolio_simulated_open_orders = get_open_orders()
 
-        portfolio_real_current_value_string = TelegramApp.EOL
+        orders_string = "Real open orders :" + TelegramApp.EOL
         for orders in portfolio_real_open_orders:
             for order in orders:
-                portfolio_real_current_value_string += PrettyPrinter.open_order_pretty_printer(order) + \
-                                                       TelegramApp.EOL
+                orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
 
-        portfolio_simulated_current_value_string = TelegramApp.EOL
+        orders_string += TelegramApp.EOL + "Simulated open orders :" + TelegramApp.EOL
         for orders in portfolio_simulated_open_orders:
             for order in orders:
-                portfolio_simulated_current_value_string += PrettyPrinter.open_order_pretty_printer(order) + \
-                                                            TelegramApp.EOL
+                orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
 
-        update.message.reply_text("Real open orders : {0}".format(portfolio_real_current_value_string))
-        update.message.reply_text("Simulated open orders : {0}".format(portfolio_simulated_current_value_string))
+        update.message.reply_text(orders_string)
 
     @staticmethod
     def command_market_status(_, update):
@@ -160,12 +167,12 @@ class TelegramApp:
         update.message.reply_text(update.message.text)
 
     @staticmethod
-    def enable(config):
+    def enable(config, is_enabled):
         if CONFIG_INTERFACES not in config:
             config[CONFIG_INTERFACES] = {}
         if CONFIG_INTERFACES_TELEGRAM not in config[CONFIG_INTERFACES]:
             config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM] = {}
-        config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION] = True
+        config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION] = is_enabled
 
     @staticmethod
     def is_enabled(config):

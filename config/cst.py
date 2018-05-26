@@ -1,7 +1,7 @@
 from enum import Enum
 
-SHORT_VERSION = "0.0.11"
-REV_VERSION = "1"
+SHORT_VERSION = "0.0.12"
+REV_VERSION = "0"
 VERSION_DEV_PHASE = "alpha"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
@@ -38,20 +38,22 @@ CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
+CONFIG_EXCHANGE_WEB_SOCKET = "web_socket"
+CONFIG_EXCHANGE_KEY = "api-key"
+CONFIG_EXCHANGE_SECRET = "api-secret"
 CONFIG_TRADER = "trader"
 CONFIG_SIMULATOR = "trader_simulator"
 CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
 CONFIG_TRADER_RISK = "risk"
 CONFIG_TRADER_RISK_MIN = 0.05
 CONFIG_TRADER_RISK_MAX = 1
-ORDER_REFRESHER_TIME = 5
-SIMULATOR_LAST_PRICES_TO_CHECK = 50
-# e-7
-MARKET_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
-CURRENCY_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
+ORDER_REFRESHER_TIME = 15
+SIMULATOR_LAST_PRICES_TO_CHECK = 15
+ORDER_CREATION_LAST_TRADES_TO_USE = 10
 CONFIG_TRADER_REFERENCE_MARKET = "reference_market"
 DEFAULT_REFERENCE_MARKET = "BTC"
 MARKET_SEPARATOR = "/"
+CURRENCY_DEFAULT_MAX_PRICE_DIGITS = 8
 
 CONFIG_PORTFOLIO_INFO = "info"
 CONFIG_PORTFOLIO_FREE = "free"
@@ -82,6 +84,10 @@ CONFIG_TOKEN = "token"
 
 # web
 CONFIG_WEB = "web"
+CONFIG_WEB_IP = "ip"
+CONFIG_WEB_PORT = "port"
+DEFAULT_SERVER_IP = '0.0.0.0'
+DEFAULT_SERVER_PORT = 5001
 
 # twitter
 CONFIG_TWITTERS_ACCOUNTS = "accounts"
@@ -102,6 +108,8 @@ START_PENDING_EVAL_NOTE = "0"  # force exception
 INIT_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
 MAX_TA_EVAL_TIME_SECONDS = 0.1
+DEFAULT_WEBSOCKET_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS = 1
+DEFAULT_REST_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS = 60
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
@@ -122,6 +130,20 @@ DIVERGENCE_USED_VALUE = 30
 CONFIG_INTERFACES = "interfaces"
 CONFIG_INTERFACES_WEB = "web"
 CONFIG_INTERFACES_TELEGRAM = "telegram"
+
+# Packages
+GITHUB = "github"
+GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
+GITHUB_BASE_URL = "https://github.com"
+PACKAGES_PUBLIC_REPOSITORY = "Trading-Bot/CryptoBot-Packages"
+PACKAGES_PUBLIC_LIST = "packages_list.json"
+PACKAGES_DEFAULT_BRANCH = "master"
+EVALUATOR_DEFAULT_FOLDER = "Default"
+EVALUATOR_ADVANCED_FOLDER = "Advanced"
+CONFIG_PACKAGES_KEY = "packages"
+PACKAGE_DESCRIPTION = "package_description"
+PACKAGE_DESCRIPTION_LOCALISATION = "localisation"
+PACKAGE_DESCRIPTION_IS_URL = "is_url"
 
 
 class EvaluatorMatrixTypes(Enum):
@@ -155,10 +177,10 @@ class PriceStrings(Enum):
 
 class PriceIndexes(Enum):
     IND_PRICE_TIME = 0
-    IND_PRICE_CLOSE = 4
     IND_PRICE_OPEN = 1
     IND_PRICE_HIGH = 2
     IND_PRICE_LOW = 3
+    IND_PRICE_CLOSE = 4
     IND_PRICE_VOL = 5
 
 
@@ -287,3 +309,26 @@ class ExchangeConstantsTickersInfoColumns(Enum):
     FIRST_ID = "firstId"
     LAST_ID = "lastId"
     COUNT = "count"
+
+
+class ExchangeConstantsMarketStatusColumns(Enum):
+    SYMBOL = "symbol"
+    ID = "id"
+    CURRENCY = "base"
+    MARKET = "quote"
+    ACTIVE = "active"
+    PRECISION = "precision"  # number of decimal digits "after the dot"
+    PRECISION_PRICE = "price"
+    PRECISION_AMOUNT = "amount"
+    PRECISION_COST = "cost"
+    LIMITS = "limits"  # value limits when placing orders on this market
+    LIMITS_AMOUNT = "amount"
+    LIMITS_AMOUNT_MIN = "min"  # order amount should be > min
+    LIMITS_AMOUNT_MAX = "max"  # order amount should be < max
+    LIMITS_PRICE = "price"  # same min/max limits for the price of the order
+    LIMITS_PRICE_MIN = "min"  # order price should be > min
+    LIMITS_PRICE_MAX = "max"  # order price should be < max
+    LIMITS_COST = "cost"  # same limits for order cost = price * amount
+    LIMITS_COST_MIN = "min"  # order cost should be > min
+    LIMITS_COST_MAX = "max"  # order cost should be < max
+    INFO = "info"

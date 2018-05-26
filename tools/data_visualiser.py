@@ -5,6 +5,8 @@ from mpl_finance import candlestick_ohlc
 from config.cst import PriceStrings
 
 
+# TO USE THIS TOOL PLEASE USE THIS SCRIPT
+# bash ./docs/install/install-matplotlib.sh
 class DataVisualiser:
     @staticmethod
     def show_dataframe_graph(dataframe, column):
@@ -107,21 +109,21 @@ class DataVisualiser:
     @staticmethod
     def get_plot_candlesticks_dataframe(data_frame, ax):
         candlestick_ohlc(ax,
-                          data_frame[PriceStrings.STR_PRICE_OPEN.value],
-                          data_frame[PriceStrings.STR_PRICE_HIGH.value],
-                          data_frame[PriceStrings.STR_PRICE_LOW.value],
-                          data_frame[PriceStrings.STR_PRICE_CLOSE.value],
-                          width=0.8,
-                          colorup='#008000',
-                          colordown='#FF0000',
-                          alpha=1)
+                         data_frame[PriceStrings.STR_PRICE_OPEN.value],
+                         data_frame[PriceStrings.STR_PRICE_HIGH.value],
+                         data_frame[PriceStrings.STR_PRICE_LOW.value],
+                         data_frame[PriceStrings.STR_PRICE_CLOSE.value],
+                         width=0.8,
+                         colorup='#008000',
+                         colordown='#FF0000',
+                         alpha=1)
 
         # xdate = [datetime.datetime.fromtimestamp(i) for i in dataframe[PriceStrings.STR_PRICE_TIME.value]]
         xdate = data_frame[PriceStrings.STR_PRICE_TIME.value].values
 
         ax.xaxis.set_major_locator(ticker.MaxNLocator(6))
 
-        def get_date(x, pos):
+        def get_date(x, _):
             try:
                 return xdate[int(x)]
             except IndexError:

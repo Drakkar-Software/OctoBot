@@ -8,6 +8,8 @@ from tools.asynchronous_server import AsynchronousServer
 class AbstractDispatcher(threading.Thread):
     __metaclass__ = ABCMeta
 
+    _SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC = 10
+
     def __init__(self, config):
         super().__init__()
         self.registered_list = []
@@ -24,8 +26,23 @@ class AbstractDispatcher(threading.Thread):
         self.registered_list.append(client)
 
     @abstractmethod
+    def _start_dispatcher(self):
+        raise NotImplementedError("start_dispatcher not implemented")
+
+    @abstractmethod
+    def _something_to_watch(self):
+        raise NotImplementedError("_something_to_watch not implemented")
+
+    @abstractmethod
+    def _get_data(self):
+        raise NotImplementedError("_get_data not implemented")
+
     def run(self):
-        raise NotImplementedError("run not implemented")
+        if self.is_setup_correctly:
+            if self._something_to_watch():
+                self._get_data()
+                self._start_dispatcher()
+        self.logger.warning("Nothing to monitor, dispatcher is going to sleep.")
 
     def get_is_setup_correctly(self):
         return self.is_setup_correctly
