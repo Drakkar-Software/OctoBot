@@ -48,10 +48,7 @@ class Trader:
 
     @staticmethod
     def enabled(config):
-        if config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]:
-            return True
-        else:
-            return False
+        return config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]
 
     def is_enabled(self):
         return self.enable
@@ -196,10 +193,7 @@ class Trader:
             # remove order to open_orders
             self.order_manager.remove_order_from_list(order)
 
-        if order_closed is not None:
-            profitability_activated = True
-        else:
-            profitability_activated = False
+        profitability_activated = order_closed is not None
 
         # update current order list with exchange
         if not self.simulate:

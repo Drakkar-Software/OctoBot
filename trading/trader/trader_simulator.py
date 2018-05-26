@@ -12,7 +12,4 @@ class TraderSimulator(Trader):
 
     @staticmethod
     def enabled(config):
-        if config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION]:
-            return True
-        else:
-            return False
+        return config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION]

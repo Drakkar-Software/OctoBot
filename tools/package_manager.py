@@ -188,4 +188,3 @@ class PackageManager:
                     pass
                 else:
                     commands.pop(0)
-                    pass
