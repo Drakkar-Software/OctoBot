@@ -267,7 +267,7 @@ class EvaluatorOrderCreator:
         return orders
 
     @staticmethod
-    def _adapt_order_quantity_because_price(limiting_value, max_value, quantity_to_adapt, price, symbol_market):
+    def _adapt_order_quantity_because_price(limiting_value, max_value, price, symbol_market):
         orders = []
         nb_full_orders = limiting_value // max_value
         rest_order_cost = limiting_value % max_value
@@ -338,8 +338,8 @@ class EvaluatorOrderCreator:
             nb_orders_according_to_cost = total_order_price / max_cost
             nb_orders_according_to_quantity = valid_quantity / max_quantity
             if nb_orders_according_to_cost > nb_orders_according_to_quantity:
-                return EvaluatorOrderCreator._adapt_order_quantity_because_price(total_order_price, max_cost, quantity,
-                                                                                 price, symbol_market)
+                return EvaluatorOrderCreator._adapt_order_quantity_because_price(total_order_price, max_cost,price,
+                                                                                 symbol_market)
             else:
                 return EvaluatorOrderCreator._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
                                                                                     quantity, price, symbol_market)
