@@ -5,15 +5,21 @@ set bot_location="../../../"
 set config_path=config
 set python_cmd=python
 
+REM dependencies url
+set TA_LIB_WIN32=https://github.com/Trading-Bot/CryptoBot/releases/download/0.0.12-alpha/TA_Lib-0.4.17-cp36-cp36m-win32.whl
+set TA_LIB_WIN64=https://github.com/Trading-Bot/CryptoBot/releases/download/0.0.12-alpha/TA_Lib-0.4.17-cp36-cp36m-win_amd64.whl
+set TWISTED_WIN32=https://github.com/Trading-Bot/CryptoBot/releases/download/0.0.12-alpha/Twisted-18.4.0-cp36-cp36m-win32.whl
+set TWISTED_WIN64=https://github.com/Trading-Bot/CryptoBot/releases/download/0.0.12-alpha/Twisted-18.4.0-cp36-cp36m-win_amd64.whl
+
 REM REQUIREMENTS
 echo **Installing dependencies...**
 REM ARCH AMD64
-%python_cmd% -m pip install wheels/Twisted-18.4.0-cp36-cp36m-win_amd64.whl
-%python_cmd% -m pip install wheels/Twisted-18.4.0-cp36-cp36m-win_amd64.whl
+%python_cmd% -m pip install %TA_LIB_WIN64%
+%python_cmd% -m pip install %TWISTED_WIN64%
 
 REM ARCH WIN32
-%python_cmd% -m pip install wheels/Twisted-18.4.0-cp36-cp36m-win32.whl
-%python_cmd% -m pip install wheels/Twisted-18.4.0-cp36-cp36m-win32.whl
+%python_cmd% -m pip install %TA_LIB_WIN32%
+%python_cmd% -m pip install %TWISTED_WIN32%
 
 REM BOT INSTALL
 cd %bot_location%
