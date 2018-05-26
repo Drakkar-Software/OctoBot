@@ -1,3 +1,5 @@
+import datetime
+
 from trading.trader.order import OrderConstants
 from trading.trader.portfolio import Portfolio
 
@@ -30,8 +32,11 @@ class PrettyPrinter:
         except KeyError:
             order_type_name = trade.get_order_type().__class__.__name__
 
-        return "{0} (on {1}) : {2:f} {3} at {4:f} {5}".format(
+        return "{0} {1}  (on {2}) : {3:f} {4} at {5:f} {6}".format(
             order_type_name,
+            datetime.datetime.fromtimestamp(
+                trade.get_filled_time()
+            ).strftime('%Y-%m-%d %H:%M:%S'),
             trade.get_exchange_name(),
             round(trade.get_quantity(), 7),
             currency,

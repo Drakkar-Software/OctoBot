@@ -279,12 +279,6 @@ class EvaluatorOrderCreator:
                                                          price=limit_price)
                     trader.create_order(limit, portfolio)
                     created_orders.append(limit)
-
-                    # ???????????
-                    # stop_quantity = EvaluatorOrderCreator\
-                    #     ._adapt_quantity(symbol_market, self._get_limit_quantity_from_risk(eval_note,
-                    #                                                                        trader,
-                    #                                                                        current_portfolio))
                     
                     stop_price = EvaluatorOrderCreator\
                         ._adapt_price(symbol_market, order_price * self._get_stop_price_from_risk(trader))
