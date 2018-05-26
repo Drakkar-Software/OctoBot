@@ -1,10 +1,8 @@
 import ccxt
 import pandas
 
-from backtesting.collector.data_collector import DataCollectorParser
-from backtesting.exchange_simulator import ExchangeSimulator
-from tools.data_visualiser import DataVisualiser
 from config.cst import TimeFrames
+from trading.exchanges.exchange_manager import ExchangeManager
 
 """
 Class containing data with known moves
@@ -26,7 +24,10 @@ class DataBank:
         self.config = config
         self.data_file = data_file if data_file else "tests/static/binance_BTC_USDT_20180428_121156.data"
         self.symbols = symbols if symbols else ["BTC"]
-        self.exchange_inst = ExchangeSimulator(self.config, ccxt.binance)
+
+        exchange_manager = ExchangeManager(self.config, ccxt.binance, is_simulated=True)
+        self.exchange_inst = exchange_manager.get_exchange()
+
         self.data_by_symbol_by_data_frame = None
         self._init_data()
 
@@ -76,14 +77,10 @@ class DataBank:
     def _init_data(self):
         self.data_by_symbol_by_data_frame = {symbol: self._get_symbol_data(symbol) for symbol in self.symbols}
 
-    @staticmethod
-    def show_data(data_frame):
-        DataVisualiser.show_candlesticks_dataframe(data_frame)
-
     def _get_symbol_data(self, symbol):
         return {time_frame: self.exchange_inst.get_symbol_prices(
             symbol,
             time_frame,
             data_frame=True)
             for time_frame in TimeFrames
-            if self.exchange_inst.has_data_for_time_frame(symbol, time_frame.value)}
+            if self.exchange_inst.get_exchange().has_data_for_time_frame(symbol, time_frame.value)}

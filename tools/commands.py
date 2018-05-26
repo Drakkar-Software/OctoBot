@@ -2,6 +2,8 @@ import os
 import subprocess
 
 from backtesting.collector.data_collector import DataCollector
+from config.cst import ORIGIN_URL
+from tools.package_manager import PackageManager
 
 
 class Commands:
@@ -15,6 +17,9 @@ class Commands:
 
             process_pull = subprocess.Popen(["git", "pull", "origin"], stdout=subprocess.PIPE)
             output = process_pull.communicate()[0]
+
+            process_checkout = subprocess.Popen(["git", "checkout", "beta"], stdout=subprocess.PIPE)
+            output = process_checkout.communicate()[0]
 
             logger.info("Updated")
         except Exception as e:
@@ -30,6 +35,15 @@ class Commands:
             data_collector_inst.join()
         except Exception as e:
             data_collector_inst.stop()
+            if not catch:
+                raise e
+
+    @staticmethod
+    def package_manager(config, commands, catch=False):
+        try:
+            package_manager_inst = PackageManager(config)
+            package_manager_inst.parse_commands(commands)
+        except Exception as e:
             if not catch:
                 raise e
 
