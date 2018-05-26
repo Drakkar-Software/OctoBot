@@ -56,7 +56,7 @@ class TelegramApp:
         message += "/ping: Shows for how long I'm working." + TelegramApp.EOL
         message += "/portfolio or /pf: Displays my current portfolio." + TelegramApp.EOL
         message += "/open_orders or /oo: Displays my current open orders." + TelegramApp.EOL
-        message += "/trades_history or /th: Displays my trades history since i started this execution." + TelegramApp.EOL
+        message += "/trades_history or /th: Displays my trades history since I started." + TelegramApp.EOL
         message += "/profitability or /pb: Displays the profitability I made since I started." + TelegramApp.EOL
         message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + TelegramApp.EOL
         message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
