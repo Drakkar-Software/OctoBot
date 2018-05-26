@@ -21,14 +21,6 @@ See live demo [here](https://twitter.com/HerklosBotCrypt)
 
 ## Install
 See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)
-<br>With python3 : 
-```
-git clone https://github.com/Trading-Bot/CryptoBot
-cd CryptoBot
-python -m pip install -r requirements.txt
-python start.py -p install all
-```
-See installation [troubleshoots page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)
 
 ## Configuration
 Create a **config.json** file in the **config folder** with the following example :
