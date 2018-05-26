@@ -12,7 +12,7 @@ from trading.trader.trades_manager import TradesManager
 
 
 class Trader:
-    def __init__(self, config, exchange):
+    def __init__(self, config, exchange, order_refresh_time=None):
         self.exchange = exchange
         self.config = config
         self.risk = None
@@ -29,6 +29,9 @@ class Trader:
         self.trades_manager = TradesManager(config, self)
 
         self.order_manager = OrdersManager(config, self)
+
+        if order_refresh_time is not None:
+            self.order_manager.set_order_refresh_time(order_refresh_time)
 
         if self.enable:
             if not self.simulate:

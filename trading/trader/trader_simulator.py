@@ -6,9 +6,9 @@ from trading.trader.trader import Trader
 
 
 class TraderSimulator(Trader):
-    def __init__(self, config, exchange):
+    def __init__(self, config, exchange, order_refresh_time=None):
         self.simulate = True
-        super().__init__(config, exchange)
+        super().__init__(config, exchange, order_refresh_time)
 
     @staticmethod
     def enabled(config):

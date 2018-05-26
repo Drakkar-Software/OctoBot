@@ -21,6 +21,7 @@ class OrdersManager(threading.Thread):
         self.trader = trader
         self.order_list = []
         self.last_symbol_prices = {}
+        self.order_refresh_time = ORDER_REFRESHER_TIME
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def add_order_to_list(self, order):
@@ -69,6 +70,9 @@ class OrdersManager(threading.Thread):
     def get_open_orders(self):
         return self.order_list
 
+    def set_order_refresh_time(self, seconds):
+        self.order_refresh_time = seconds
+
     # Will be called by Websocket to perform order status update if new data available
     # TODO : currently blocking, may implement queue if needed
     def force_update_order_status(self):
@@ -110,4 +114,4 @@ class OrdersManager(threading.Thread):
             self._update_orders_status()
 
             if not Backtesting.enabled(self.config):
-                sleep(ORDER_REFRESHER_TIME)
+                sleep(self.order_refresh_time)
