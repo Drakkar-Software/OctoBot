@@ -36,12 +36,17 @@ class TelegramApp:
         self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
         self.dispatcher.add_handler(CommandHandler("stop", self.command_stop))
         self.dispatcher.add_handler(CommandHandler("help", self.command_help))
+        self.dispatcher.add_handler(MessageHandler([Filters.command], self.command_unknown))
 
         # log all errors
         self.dispatcher.add_error_handler(self.command_error)
 
         # TEST : unhandled messages
         self.dispatcher.add_handler(MessageHandler(Filters.text, self.echo))
+
+    @staticmethod
+    def command_unknown(_, update):
+        update.message.reply_text("Unfortunately, I don't know the command: {0}".format(update.effective_message.text))
 
     @staticmethod
     def command_help(_, update):
