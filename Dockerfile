@@ -15,6 +15,7 @@ RUN bash ./docs/install/linux_installer.sh
 
 # configuration
 RUN cp ./config/default_config.json ./config/config.json
+RUN cp ./config/default_evaluator_config.json ./config/evaluator_config.json
 
 # python libs
 RUN pip3 install -U setuptools
