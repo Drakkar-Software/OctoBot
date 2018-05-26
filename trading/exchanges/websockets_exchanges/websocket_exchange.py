@@ -95,8 +95,7 @@ class WebSocketExchange(AbstractExchange):
                 self.client.init_ccxt_order_from_other_source(order)
 
     def init_candle_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_data_frame):
-        self.client.exchange_data.initialize_candles_data(symbol, time_frame, symbol_candle_data,
-                                                          symbol_candle_data_frame)
+        self.client.initialize_candles_data(symbol, time_frame, symbol_candle_data, symbol_candle_data_frame)
 
     def set_orders_are_initialized(self, value):
         self.client.set_orders_are_initialized(value)

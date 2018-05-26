@@ -87,8 +87,8 @@ class RESTExchange(AbstractExchange):
 
     def get_market_price(self, symbol):
         order_book = self.get_order_book(symbol)
-        bid = order_book['bids'][0][0] if len(order_book['bids']) > 0 else None
-        ask = order_book['asks'][0][0] if len(order_book['asks']) > 0 else None
+        bid = order_book['bids'][0][0] if order_book['bids'] else None
+        ask = order_book['asks'][0][0] if order_book['asks'] else None
         spread = (ask - bid) if (bid and ask) else None
         return {'bid': bid, 'ask': ask, 'spread': spread}
 

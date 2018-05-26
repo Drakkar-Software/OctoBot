@@ -116,10 +116,7 @@ class ExchangeSimulator(AbstractExchange):
         recent_trades_condition = trader.get_open_orders() and (
                                   self.fetched_trades_counter[symbol] > current_time_frame_updated_times)
 
-        if time_refresh_condition and (not trader.get_open_orders() or recent_trades_condition):
-            return True
-        else:
-            return False
+        return time_refresh_condition and (not trader.get_open_orders() or recent_trades_condition)
 
     def should_update_recent_trades(self, symbol):
         if symbol in self.fetched_trades_counter:

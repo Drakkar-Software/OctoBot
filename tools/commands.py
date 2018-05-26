@@ -13,13 +13,13 @@ class Commands:
         try:
             process_set_remote = subprocess.Popen(["git", "remote", "set-url", "origin", ORIGIN_URL],
                                                   stdout=subprocess.PIPE)
-            output = process_set_remote.communicate()[0]
+            _ = process_set_remote.communicate()[0]
 
             process_pull = subprocess.Popen(["git", "pull", "origin"], stdout=subprocess.PIPE)
-            output = process_pull.communicate()[0]
+            _ = process_pull.communicate()[0]
 
             process_checkout = subprocess.Popen(["git", "checkout", "beta"], stdout=subprocess.PIPE)
-            output = process_checkout.communicate()[0]
+            _ = process_checkout.communicate()[0]
 
             logger.info("Updated")
         except Exception as e:

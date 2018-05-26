@@ -61,7 +61,7 @@ class ExchangeDispatcher(AbstractExchange):
             if data_frame:
                 return candle_data_frame.tail(limit) if limit is not None else candle_data_frame
 
-        return candles[-limit:] if limit is not None else candles
+        return candles[-limit:] if limit else candles
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
