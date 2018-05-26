@@ -175,7 +175,7 @@ class TelegramApp:
             update.message.reply_text(message)
         except Exception:
             update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, " +
-                                      "please retry in a few seconds:")
+                                      "please retry in a few seconds.")
 
     @staticmethod
     def command_error(_, update):
