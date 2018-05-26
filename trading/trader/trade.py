@@ -46,3 +46,6 @@ class Trade:
 
     def get_creation_time(self):
         return self.creation_time
+
+    def get_order_type(self):
+        return self.order_type

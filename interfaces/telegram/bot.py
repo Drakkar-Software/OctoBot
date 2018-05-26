@@ -5,7 +5,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 
 from config.cst import *
 from interfaces import get_reference_market, get_bot
-from interfaces.trading_util import get_portfolio_current_value, get_open_orders, \
+from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_trades_history, \
     get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status
 from tools.commands import Commands
 from tools.pretty_printer import PrettyPrinter
@@ -31,6 +31,7 @@ class TelegramApp:
         self.dispatcher.add_handler(CommandHandler("ping", self.command_ping))
         self.dispatcher.add_handler(CommandHandler(["portfolio", "pf"], self.command_portfolio))
         self.dispatcher.add_handler(CommandHandler(["open_orders", "oo"], self.command_open_orders))
+        self.dispatcher.add_handler(CommandHandler(["trades_history", "th"], self.command_trades_history))
         self.dispatcher.add_handler(CommandHandler(["profitability", "pb"], self.command_profitability))
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
         self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
@@ -55,6 +56,7 @@ class TelegramApp:
         message += "/ping: Shows for how long I'm working." + TelegramApp.EOL
         message += "/portfolio or /pf: Displays my current portfolio." + TelegramApp.EOL
         message += "/open_orders or /oo: Displays my current open orders." + TelegramApp.EOL
+        message += "/trades_history or /th: Displays my trades history since i started this execution." + TelegramApp.EOL
         message += "/profitability or /pb: Displays the profitability I made since I started." + TelegramApp.EOL
         message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + TelegramApp.EOL
         message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
@@ -144,6 +146,22 @@ class TelegramApp:
                 orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
 
         update.message.reply_text(orders_string)
+
+    @staticmethod
+    def command_trades_history(_, update):
+        real_trades_history, simulated_trades_history = get_trades_history()
+
+        trades_history_string = "Real trades :" + TelegramApp.EOL
+        for trades in real_trades_history:
+            for trade in trades:
+                trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
+
+        trades_history_string += TelegramApp.EOL + "Simulated trades :" + TelegramApp.EOL
+        for trades in simulated_trades_history:
+            for trade in trades:
+                trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
+
+        update.message.reply_text(trades_history_string)
 
     @staticmethod
     def command_market_status(_, update):

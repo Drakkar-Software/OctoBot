@@ -21,6 +21,25 @@ class PrettyPrinter:
             market)
 
     @staticmethod
+    def trade_pretty_printer(trade):
+        currency = trade.get_currency()
+        market = trade.get_market()
+
+        try:
+            order_type_name = OrderConstants.TraderOrderTypeClasses[trade.get_order_type()].__name__
+        except KeyError:
+            order_type_name = trade.get_order_type().__class__.__name__
+
+        return "{0} (on {1}) : {2:f} {3} at {4:f} {5}".format(
+            order_type_name,
+            trade.get_exchange_name(),
+            round(trade.get_quantity(), 7),
+            currency,
+            round(trade.get_price(), 7),
+            market)
+
+
+    @staticmethod
     def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):
         return "CryptoBot ALERT : #{0}\n Symbol : #{1}\n Result : {2}\n Evaluation : {3}".format(
             crypto_currency,
