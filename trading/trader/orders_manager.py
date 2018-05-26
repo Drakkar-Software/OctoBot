@@ -4,6 +4,7 @@ from time import sleep
 
 from backtesting.backtesting import Backtesting
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus
+from trading.trader.order import Order
 
 """ OrdersManager class will perform the supervision of each open order of the exchange trader
 Data updating process is generic but a specific implementation is called for each type of order (TraderOrderTypeClasses)
@@ -43,7 +44,7 @@ class OrdersManager(threading.Thread):
     def _update_last_symbol_list(self):
         updated = []
         for order in self.order_list:
-            if order.get_order_symbol() not in updated:
+            if isinstance(order, Order) and order.get_order_symbol() not in updated:
                 self._update_last_symbol_prices(order.get_order_symbol())
 
                 updated.append(order.get_order_symbol())
