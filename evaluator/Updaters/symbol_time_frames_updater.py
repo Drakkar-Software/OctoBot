@@ -13,6 +13,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
         self.refreshed_times = {}
         self.time_frame_last_update = {}
         self.keep_running = True
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     # add a time frame to watch and its related evaluator thread manager
     def register_evaluator_thread_manager(self, time_frame, evaluator_thread_manager):
@@ -66,7 +67,11 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                     # if data from this time frame needs an update
                     elif now - self.time_frame_last_update[time_frame] >= \
                             TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                        self._refresh_data(time_frame)
+                        try:
+                            self._refresh_data(time_frame)
+                        except Exception as e:
+                            self.logger.error("error when refreshing data for time frame {0} for {1}: {2}"
+                                              .format(time_frame, evaluator_thread_manager.symbol, e))
                         self.time_frame_last_update[time_frame] = time.time()
 
                 if not back_testing_enabled:
@@ -74,4 +79,4 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                     if sleeping_time > 0:
                         time.sleep(sleeping_time)
         else:
-            logging.getLogger(self.__class__.__name__).warning("no time frames to monitor, going to sleep.")
+            self.logger.warning("no time frames to monitor, going to sleep.")

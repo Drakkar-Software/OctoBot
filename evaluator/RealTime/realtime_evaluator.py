@@ -62,7 +62,10 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
     def run(self):
         while self.keep_running:
             now = time.time()
-            self._refresh_data()
+            try:
+                self._refresh_data()
+            except Exception as e:
+                self.logger.error("error when refreshing data for {0}: {1}".format(self.symbol, e))
             self.eval()
 
             if not Backtesting.enabled(self.config):
