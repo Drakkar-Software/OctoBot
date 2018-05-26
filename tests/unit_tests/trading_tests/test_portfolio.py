@@ -17,7 +17,7 @@ class TestPortfolio:
         config = load_test_config()
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
         exchange_inst = exchange_manager.get_exchange()
-        trader_inst = TraderSimulator(config, exchange_inst)
+        trader_inst = TraderSimulator(config, exchange_inst, 1)
         portfolio_inst = Portfolio(config, trader_inst)
         trader_inst.stop_order_manager()
         return config, portfolio_inst, exchange_inst, trader_inst
