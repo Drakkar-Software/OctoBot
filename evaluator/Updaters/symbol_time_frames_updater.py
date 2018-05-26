@@ -27,14 +27,17 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
     # notify the time frame's evaluator thread manager to refresh its data
     def _refresh_data(self, time_frame, limit=None):
-        evaluator_thread_manager_to_notify = self.evaluator_threads_manager_by_time_frame[time_frame]
-        evaluator_thread_manager_to_notify.evaluator.set_data(
-            evaluator_thread_manager_to_notify.exchange.get_symbol_prices(
-                evaluator_thread_manager_to_notify.symbol,
-                evaluator_thread_manager_to_notify.time_frame,
-                limit=limit))
-        self.refreshed_times[time_frame] += 1
-        evaluator_thread_manager_to_notify.notify(self.__class__.__name__)
+        try:
+            evaluator_thread_manager_to_notify = self.evaluator_threads_manager_by_time_frame[time_frame]
+            evaluator_thread_manager_to_notify.evaluator.set_data(
+                evaluator_thread_manager_to_notify.exchange.get_symbol_prices(
+                    evaluator_thread_manager_to_notify.symbol,
+                    evaluator_thread_manager_to_notify.time_frame,
+                    limit=limit))
+            self.refreshed_times[time_frame] += 1
+            evaluator_thread_manager_to_notify.notify(self.__class__.__name__)
+        except Exception as e:
+            self.logger.error("An error occurred when updating data from exchange : {0}".format(str(e)))
 
     # start background refresher
     def run(self):
