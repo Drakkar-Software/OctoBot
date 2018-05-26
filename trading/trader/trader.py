@@ -135,6 +135,11 @@ class Trader:
     def cancel_order(self, order):
         with order as odr:
             odr.cancel_order()
+            self.logger.info("{0} {1} at {2} (ID : {3}) cancelled on {4}".format(odr.get_order_symbol(),
+                                                                                 odr.get_name(),
+                                                                                 odr.get_origin_price(),
+                                                                                 odr.get_id(),
+                                                                                 self.get_exchange().get_name()))
         self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
