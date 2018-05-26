@@ -45,6 +45,9 @@ class TradesManager:
     def get_reference(self):
         return self.reference_market
 
+    def get_trade_history(self):
+        return self.trade_history
+
     def add_new_trade_in_history(self, trade):
         if trade not in self.trade_history:
             self.trade_history.append(trade)
