@@ -98,13 +98,13 @@ class TelegramApp:
         try:
             real_global_profitability, simulated_global_profitability, \
                 real_percent_profitability, simulated_percent_profitability = get_global_profitability()
-            profitability_string = "Real global profitability : {0} ({1}%){2}".format(
+            profitability_string = "Real global profitability : {0} ({1:.3f}%){2}".format(
                 PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
                 real_percent_profitability,
                 TelegramApp.EOL)
-            profitability_string += "Simulated global profitability : {0} ({1}%)".format(
+            profitability_string += "Simulated global profitability : {0} ({1:.3f}%)".format(
                 PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
@@ -119,16 +119,16 @@ class TelegramApp:
         reference_market = get_reference_market()
         real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amounts()
 
-        portfolios_string = "Portfolio real value : {0:f} {1}{2}".format(portfolio_real_current_value,
-                                                                         reference_market,
-                                                                         TelegramApp.EOL)
+        portfolios_string = "Portfolio real value : {0:.7f} {1}{2}".format(portfolio_real_current_value,
+                                                                           reference_market,
+                                                                           TelegramApp.EOL)
         portfolios_string += "Global real portfolio : {1}{0}{1}{1}".format(
             PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
             TelegramApp.EOL)
 
-        portfolios_string += "Portfolio simulated value : {0:f} {1}{2}".format(portfolio_simulated_current_value,
-                                                                               reference_market,
-                                                                               TelegramApp.EOL)
+        portfolios_string += "Portfolio simulated value : {0:.7f} {1}{2}".format(portfolio_simulated_current_value,
+                                                                                 reference_market,
+                                                                                 TelegramApp.EOL)
         portfolios_string += "Global simulated portfolio : {1}{0}".format(
             PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
             TelegramApp.EOL)
