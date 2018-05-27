@@ -167,10 +167,6 @@ class Trader:
             self.cancel_order(order)
             _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
 
-            with self.portfolio as pf:
-                # ensure availability reset
-                pf.reset_portfolio_available()
-
         else:
             order_closed = order
             orders_canceled = order.get_linked_orders()
