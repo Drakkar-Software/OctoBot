@@ -14,8 +14,11 @@ class PrettyPrinter:
         except KeyError:
             order_type_name = order.get_order_type().__class__.__name__
 
-        return "{0} (on {1}) : {2:.7f} {3} at {4:.7f} {5}".format(
+        return "{0} {1} (on {2}) : {3:.7f} {4} at {5:.7f} {6}".format(
             order_type_name,
+            datetime.datetime.fromtimestamp(
+                order.get_creation_time()
+            ).strftime('%Y-%m-%d %H:%M:%S'),
             order.get_exchange().get_name(),
             round(order.get_origin_quantity(), 7),
             currency,
