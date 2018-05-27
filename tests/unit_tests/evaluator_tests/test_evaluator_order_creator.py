@@ -449,7 +449,8 @@ def _check_orders(orders, evaluation, state, nb_orders, market_status):
         elif state not in EvaluatorStates:
             assert orders is None
         else:
-            assert (not orders and nb_orders == 0) or (len(orders) == nb_orders)
+            assert (not orders and nb_orders == 0) or (len(orders) == nb_orders) \
+                or ((len(orders) == 0 or len(orders) == 1) and nb_orders == "unknown")
             if orders:
                 order = orders[0]
                 assert order.status == OrderStatus.OPEN
@@ -480,7 +481,7 @@ def _check_orders(orders, evaluation, state, nb_orders, market_status):
                 _check_order_limits(order, market_status)
 
 
-def _check_portfolio(portfolio, initial_portfolio, orders):
+def _check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False):
     if orders:
         orders_market_amount = 0
         orders_currency_amount = 0
@@ -496,17 +497,18 @@ def _check_portfolio(portfolio, initial_portfolio, orders):
             for symbol in portfolio.portfolio:
                 assert portfolio.portfolio[symbol][Portfolio.TOTAL] >= 0
                 assert portfolio.portfolio[symbol][Portfolio.AVAILABLE] >= 0
-                if order_symbol == symbol:
-                    assert initial_portfolio[symbol][Portfolio.TOTAL] == portfolio.portfolio[symbol][Portfolio.TOTAL]
-                    assert initial_portfolio[symbol][Portfolio.AVAILABLE] - orders_currency_amount \
-                        == portfolio.portfolio[symbol][Portfolio.AVAILABLE]
-                elif market == symbol:
-                    assert initial_portfolio[market][Portfolio.TOTAL] == portfolio.portfolio[market][Portfolio.TOTAL]
-                    assert initial_portfolio[market][Portfolio.AVAILABLE] - orders_market_amount \
-                        == portfolio.portfolio[market][Portfolio.AVAILABLE]
+                if not only_positivity:
+                    if order_symbol == symbol:
+                        assert initial_portfolio[symbol][Portfolio.TOTAL] == portfolio.portfolio[symbol][Portfolio.TOTAL]
+                        assert "{:f}".format(initial_portfolio[symbol][Portfolio.AVAILABLE] - orders_currency_amount) \
+                            == "{:f}".format(portfolio.portfolio[symbol][Portfolio.AVAILABLE])
+                    elif market == symbol:
+                        assert initial_portfolio[market][Portfolio.TOTAL] == portfolio.portfolio[market][Portfolio.TOTAL]
+                        assert "{:f}".format(initial_portfolio[market][Portfolio.AVAILABLE] - orders_market_amount) \
+                            == "{:f}".format(portfolio.portfolio[market][Portfolio.AVAILABLE])
 
 
-def test_create_order_using_a_lot_of_different_inputs():
+def test_create_order_using_a_lot_of_different_inputs_with_portfolio_reset():
     config, exchange, trader, symbol = _get_tools()
     portfolio = trader.get_portfolio()
     order_creator = EvaluatorOrderCreator()
@@ -549,3 +551,52 @@ def test_create_order_using_a_lot_of_different_inputs():
         orders = order_creator.create_new_order(math.nan, min_trigger_market, exchange, trader, portfolio, state)
         _check_orders(orders, math.nan, state, 0, market_status)
         _check_portfolio(portfolio, initial_portfolio, orders)
+
+
+def test_create_order_using_a_lot_of_different_inputs_without_portfolio_reset():
+    config, exchange, trader, symbol = _get_tools()
+    portfolio = trader.get_portfolio()
+    order_creator = EvaluatorOrderCreator()
+    gradient_step = 0.001
+    nb_orders = "unknown"
+    market_status = exchange.get_market_status(symbol)
+    # portfolio: "BTC": 10 "USD": 1000
+    min_trigger_market = "ADA/BNB"
+
+    _reset_portfolio(portfolio)
+    initial_portfolio = portfolio.portfolio
+    for state in _get_states_gradient_with_invald_states():
+        for evaluation in _get_evaluations_gradient(gradient_step):
+            # orders are possible
+            orders = order_creator.create_new_order(evaluation, symbol, exchange, trader, portfolio, state)
+            _check_orders(orders, evaluation, state, nb_orders, market_status)
+            _check_portfolio(portfolio, initial_portfolio, orders, True)
+            # orders are impossible
+            orders = order_creator.create_new_order(evaluation, min_trigger_market, exchange, trader, portfolio, state)
+            _check_orders(orders, evaluation, state, 0, market_status)
+            _check_portfolio(portfolio, initial_portfolio, orders, True)
+
+    _reset_portfolio(portfolio)
+    initial_portfolio = portfolio.portfolio
+    for state in _get_states_gradient_with_invald_states():
+        for evaluation in _get_irrationnal_numbers():
+            # orders are possible
+            orders = order_creator.create_new_order(evaluation, symbol, exchange, trader, portfolio, state)
+            _check_orders(orders, evaluation, state, nb_orders, market_status)
+            _check_portfolio(portfolio, initial_portfolio, orders, True)
+            # orders are impossible
+            orders = order_creator.create_new_order(evaluation, min_trigger_market, exchange, trader, portfolio, state)
+            _check_orders(orders, evaluation, state, 0, market_status)
+            _check_portfolio(portfolio, initial_portfolio, orders, True)
+
+    _reset_portfolio(portfolio)
+    initial_portfolio = portfolio.portfolio
+    for state in _get_states_gradient_with_invald_states():
+        # orders are possible
+        orders = order_creator.create_new_order(math.nan, symbol, exchange, trader, portfolio, state)
+        _check_orders(orders, math.nan, state, nb_orders, market_status)
+        _check_portfolio(portfolio, initial_portfolio, orders, True)
+        # orders are impossible
+        orders = order_creator.create_new_order(math.nan, min_trigger_market, exchange, trader, portfolio, state)
+        _check_orders(orders, math.nan, state, 0, market_status)
+        _check_portfolio(portfolio, initial_portfolio, orders, True)
