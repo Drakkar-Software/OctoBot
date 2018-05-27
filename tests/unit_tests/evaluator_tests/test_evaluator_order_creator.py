@@ -553,6 +553,15 @@ def test_create_order_using_a_lot_of_different_inputs_with_portfolio_reset():
         _check_portfolio(portfolio, initial_portfolio, orders)
 
 
+def _fill_orders(orders, trader):
+    if orders:
+        for order in orders:
+            order.filled_price = order.origin_price
+            order.filled_quantity = order.origin_quantity
+            trader.notify_order_close(order)
+            _check_portfolio(trader.portfolio, None, orders, True)
+
+
 def test_create_order_using_a_lot_of_different_inputs_without_portfolio_reset():
     config, exchange, trader, symbol = _get_tools()
     portfolio = trader.get_portfolio()
@@ -571,10 +580,12 @@ def test_create_order_using_a_lot_of_different_inputs_without_portfolio_reset():
             orders = order_creator.create_new_order(evaluation, symbol, exchange, trader, portfolio, state)
             _check_orders(orders, evaluation, state, nb_orders, market_status)
             _check_portfolio(portfolio, initial_portfolio, orders, True)
+            _fill_orders(orders, trader)
             # orders are impossible
             orders = order_creator.create_new_order(evaluation, min_trigger_market, exchange, trader, portfolio, state)
             _check_orders(orders, evaluation, state, 0, market_status)
             _check_portfolio(portfolio, initial_portfolio, orders, True)
+            _fill_orders(orders, trader)
 
     _reset_portfolio(portfolio)
     initial_portfolio = portfolio.portfolio
@@ -584,10 +595,12 @@ def test_create_order_using_a_lot_of_different_inputs_without_portfolio_reset():
             orders = order_creator.create_new_order(evaluation, symbol, exchange, trader, portfolio, state)
             _check_orders(orders, evaluation, state, nb_orders, market_status)
             _check_portfolio(portfolio, initial_portfolio, orders, True)
+            _fill_orders(orders, trader)
             # orders are impossible
             orders = order_creator.create_new_order(evaluation, min_trigger_market, exchange, trader, portfolio, state)
             _check_orders(orders, evaluation, state, 0, market_status)
             _check_portfolio(portfolio, initial_portfolio, orders, True)
+            _fill_orders(orders, trader)
 
     _reset_portfolio(portfolio)
     initial_portfolio = portfolio.portfolio
@@ -596,7 +609,9 @@ def test_create_order_using_a_lot_of_different_inputs_without_portfolio_reset():
         orders = order_creator.create_new_order(math.nan, symbol, exchange, trader, portfolio, state)
         _check_orders(orders, math.nan, state, nb_orders, market_status)
         _check_portfolio(portfolio, initial_portfolio, orders, True)
+        _fill_orders(orders, trader)
         # orders are impossible
         orders = order_creator.create_new_order(math.nan, min_trigger_market, exchange, trader, portfolio, state)
         _check_orders(orders, math.nan, state, 0, market_status)
         _check_portfolio(portfolio, initial_portfolio, orders, True)
+        _fill_orders(orders, trader)

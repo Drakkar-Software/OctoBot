@@ -110,10 +110,12 @@ class Portfolio:
             # Only for log purpose
             if order.get_side() == TradeOrderSide.BUY:
                 currency_portfolio_num = order.get_filled_quantity()
-                market_portfolio_num = -self.portfolio[market][Portfolio.TOTAL]
+                market_portfolio_num = -order.get_filled_quantity() * \
+                    order.get_filled_price() - order.get_market_total_fees()
             else:
                 currency_portfolio_num = -order.get_filled_quantity()
-                market_portfolio_num = self.portfolio[market][Portfolio.TOTAL]
+                market_portfolio_num = order.get_filled_quantity() * \
+                    order.get_filled_price() - order.get_market_total_fees()
 
             self.logger.info("Portfolio updated | {0} {1} | {2} {3} | Current Portfolio : {4}"
                              .format(currency,
@@ -144,12 +146,10 @@ class Portfolio:
     @staticmethod
     def _check_available_should_update(order):
         # stop losses and take profits aren't using available portfolio
-        if order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
-                                   OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],
-                                   OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
-                                   OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT]]:
-            return True
-        return False
+        return order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
+                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],
+                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT]]
 
     # Realise portfolio availability update
     def _update_portfolio_available(self, order, factor=1):
