@@ -175,3 +175,11 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
             locked = float(currency['l'])
             total = free + locked
             self.exchange_data.update_portfolio(currency['a'], total, free, locked)
+
+    # unimplemented methods
+    @staticmethod
+    def format_price_ticker(price_ticker):
+        pass
+
+    def init_all_currencies_prices_web_socket(self, time_frames, trader_pairs):
+        pass
