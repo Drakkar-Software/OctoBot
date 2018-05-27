@@ -72,6 +72,8 @@ def get_global_profitability():
     simulated_global_profitability = 0
     real_global_profitability = 0
     traders = get_traders()
+    simulated_full_origin_value = 0
+    real_full_origin_value = 0
 
     for trader in traders:
         trade_manager = trader.get_trades_manager()
@@ -80,11 +82,19 @@ def get_global_profitability():
         current_value, _, _ = trade_manager.get_profitability()
 
         if trader.get_simulate():
+            simulated_full_origin_value += trade_manager.get_portfolio_origin_value()
             simulated_global_profitability += current_value
         else:
+            real_full_origin_value += trade_manager.get_portfolio_origin_value()
             real_global_profitability += current_value
 
-    return real_global_profitability, simulated_global_profitability
+    simulated_percent_profitability = simulated_global_profitability * 100 / simulated_full_origin_value \
+        if simulated_full_origin_value > 0 else 0
+    real_percent_profitability = real_global_profitability * 100 / real_full_origin_value \
+        if real_full_origin_value > 0 else 0
+
+    return real_global_profitability, simulated_global_profitability, \
+        real_percent_profitability, simulated_percent_profitability
 
 
 def get_portfolios():

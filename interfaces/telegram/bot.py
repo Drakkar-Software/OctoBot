@@ -96,19 +96,22 @@ class TelegramApp:
     def command_profitability(_, update):
         # to find profitabily bug out
         try:
-            real_global_profitability, simulated_global_profitability = get_global_profitability()
-            profitability_string = "Real global profitability : {0}{1}".format(
+            real_global_profitability, simulated_global_profitability, \
+                real_percent_profitability, simulated_percent_profitability = get_global_profitability()
+            profitability_string = "Real global profitability : {0} ({1}%){2}".format(
                 PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
+                real_percent_profitability,
                 TelegramApp.EOL)
-            profitability_string += "Simulated global profitability : {0}".format(
+            profitability_string += "Simulated global profitability : {0} ({1}%)".format(
                 PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
                                                                    None,
-                                                                   get_reference_market()))
+                                                                   get_reference_market()),
+                simulated_percent_profitability)
             update.message.reply_text(profitability_string)
         except Exception as e:
-            update.message.reply_text(e)
+            update.message.reply_text(str(e))
 
     @staticmethod
     def command_portfolio(_, update):
