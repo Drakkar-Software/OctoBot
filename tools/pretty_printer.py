@@ -14,7 +14,7 @@ class PrettyPrinter:
         except KeyError:
             order_type_name = order.get_order_type().__class__.__name__
 
-        return "{0} (on {1}) : {2:f} {3} at {4:f} {5}".format(
+        return "{0} (on {1}) : {2:.7f} {3} at {4:.7f} {5}".format(
             order_type_name,
             order.get_exchange().get_name(),
             round(order.get_origin_quantity(), 7),
@@ -32,7 +32,7 @@ class PrettyPrinter:
         except KeyError:
             order_type_name = trade.get_order_type().__class__.__name__
 
-        return "{0} {1}  (on {2}) : {3:f} {4} at {5:f} {6}".format(
+        return "{0} {1}  (on {2}) : {3:.7f} {4} at {5:.7f} {6}".format(
             order_type_name,
             datetime.datetime.fromtimestamp(
                 trade.get_filled_time()
@@ -54,12 +54,12 @@ class PrettyPrinter:
 
     @staticmethod
     def global_portfolio_pretty_print(global_portfolio, separator="\n"):
-        result = ["{0} ({1}) {2}".format(amounts[Portfolio.TOTAL], amounts[Portfolio.AVAILABLE], currency)
+        result = ["{0:.7f} ({1:.7f}) {2}".format(amounts[Portfolio.TOTAL], amounts[Portfolio.AVAILABLE], currency)
                   for currency, amounts in global_portfolio.items()]
 
         return separator.join(result)
 
     @staticmethod
     def portfolio_profitability_pretty_print(profitability, profitability_percent, reference):
-        difference = "({0:f}%)".format(round(profitability_percent, 5)) if profitability_percent is not None else ""
+        difference = "({0:.7f}%)".format(round(profitability_percent, 5)) if profitability_percent is not None else ""
         return "{0:f} {1} {2}".format(round(profitability, 5), reference, difference)
