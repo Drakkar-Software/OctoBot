@@ -77,7 +77,7 @@ class EvaluatorOrderCreator:
 
             created_orders = []
             # TODO : temp
-            if state == EvaluatorStates.VERY_SHORT and eval_note > 0:
+            if state == EvaluatorStates.VERY_SHORT:
                 quantity = self._get_market_quantity_from_risk(eval_note,
                                                                trader,
                                                                current_portfolio)
@@ -92,7 +92,7 @@ class EvaluatorOrderCreator:
                     created_orders.append(market)
                 return created_orders
 
-            elif state == EvaluatorStates.SHORT and eval_note > 0:
+            elif state == EvaluatorStates.SHORT:
                 quantity = self._get_limit_quantity_from_risk(eval_note,
                                                               trader,
                                                               current_portfolio)
@@ -124,7 +124,7 @@ class EvaluatorOrderCreator:
                 pass
 
             # TODO : stop loss
-            elif state == EvaluatorStates.LONG and eval_note < 0:
+            elif state == EvaluatorStates.LONG:
                 quantity = self._get_limit_quantity_from_risk(eval_note,
                                                               trader,
                                                               market_quantity)
@@ -142,7 +142,7 @@ class EvaluatorOrderCreator:
                     created_orders.append(limit)
                 return created_orders
 
-            elif state == EvaluatorStates.VERY_LONG and eval_note < 0:
+            elif state == EvaluatorStates.VERY_LONG:
                 quantity = self._get_market_quantity_from_risk(eval_note,
                                                                trader,
                                                                market_quantity,
