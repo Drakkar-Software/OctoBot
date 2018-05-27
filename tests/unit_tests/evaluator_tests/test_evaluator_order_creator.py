@@ -442,13 +442,7 @@ def _check_orders(orders, evaluation, state, nb_orders, market_status):
     if state == EvaluatorStates.NEUTRAL:
         assert orders is None
     else:
-        if (state == EvaluatorStates.VERY_SHORT or state == EvaluatorStates.SHORT) and evaluation < 0:
-            assert orders is None
-        elif (state == EvaluatorStates.VERY_LONG or state == EvaluatorStates.LONG) and evaluation > 0:
-            assert orders is None
-        elif evaluation == 0:
-            assert orders is None
-        elif math.isnan(evaluation):
+        if math.isnan(evaluation):
             assert orders is None
         elif math.isnan(evaluation):
             assert orders is None
