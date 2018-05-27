@@ -32,9 +32,8 @@ class EvaluatorOrderCreator:
             / self.MAX_SUM_RESULT
 
     @staticmethod
-    def can_create_order(symbol, exchange, trader, state):
+    def can_create_order(symbol, exchange, state, portfolio):
         currency, market = split_symbol(symbol)
-        portfolio = trader.get_portfolio()
 
         # get symbol min amount when creating order
         symbol_limit = exchange.get_market_status(symbol)[Ecmsc.LIMITS.value]
@@ -43,13 +42,11 @@ class EvaluatorOrderCreator:
 
         # short cases => sell => need this currency
         if state == EvaluatorStates.VERY_SHORT or state == EvaluatorStates.SHORT:
-            with portfolio as pf:
-                return pf.get_currency_portfolio(currency) > symbol_min_amount
+            return portfolio.get_currency_portfolio(currency) > symbol_min_amount
 
         # long cases => buy => need money(aka other currency in the pair) to buy this currency
         elif state == EvaluatorStates.LONG or state == EvaluatorStates.VERY_LONG:
-            with portfolio as pf:
-                return pf.get_currency_portfolio(market) > order_min_amount
+            return portfolio.get_currency_portfolio(market) > order_min_amount
 
         # other cases like neutral state or unfulfilled previous conditions
         return False
