@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from config.cst import TimeFrames
 from tests.test_utils.config import load_test_config
 from trading.exchanges.websockets_exchanges import BinanceWebSocketClient
 
@@ -48,7 +49,7 @@ class TestBinanceWebSocketClient:
 
     @staticmethod
     def _kline_message(symbol, open_price, close_price, high_price, low_price, start_time, interval):
-        TestBinanceWebSocketClient.price_message_header("@kline", {
+        return TestBinanceWebSocketClient.price_message_header("@kline", {
             "e": "kline",  # Event type
             "E": 123456789,  # Event time
             "s": symbol,  # Symbol
@@ -201,12 +202,23 @@ class TestBinanceWebSocketClient:
     def test_update_order(self):
         _, binance_web_socket = self.init_default()
 
-        msg = self._update_order_message(None, None, None, None, None, None, None)
-        binance_web_socket.user_callback(msg)
+        # msg = self._update_order_message(None, None, None, None, None, None, None)
+        # binance_web_socket.user_callback(msg)
 
     def test_add_price(self):
         _, binance_web_socket = self.init_default()
-        # binance_web_socket.all_currencies_prices_callback(None)
+
+        # exchange_data = binance_web_socket.exchange_data
+        #
+        # exchange_data.symbol_prices = {"BTCUSDT": {TimeFrames.ONE_MINUTE.value,
+        #                                            TimeFrames.THIRTY_MINUTES.value},
+        #                                "ETHBTC": {TimeFrames.ONE_HOUR.value,
+        #                                           TimeFrames.TWO_HOURS.value,
+        #                                           TimeFrames.FOUR_HOURS.value},
+        #                                "XRPETH": {TimeFrames.ONE_DAY.value}}
+        #
+        # msg = self._kline_message("BTCUSDT", 60, 70, 80, 50, 100000, TimeFrames.ONE_MINUTE.value)
+        # binance_web_socket.all_currencies_prices_callback(msg)
 
     def test_set_ticker(self):
         _, binance_web_socket = self.init_default()
