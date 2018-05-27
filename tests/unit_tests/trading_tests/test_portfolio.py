@@ -697,3 +697,58 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
+
+        # Test sell order
+        limit_sell = SellLimitOrder(trader_inst)
+        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                       "BTC/USD",
+                       90,
+                       4,
+                       90)
+
+        portfolio_inst.update_portfolio_available(limit_sell, True)
+        # Test buy order
+        limit_buy = BuyLimitOrder(trader_inst)
+        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+                      "VEN/BTC",
+                      0.5,
+                      4,
+                      0.5)
+
+        portfolio_inst.update_portfolio_available(limit_buy, True)
+
+        # Test buy order
+        btc_limit_buy = BuyLimitOrder(trader_inst)
+        btc_limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+                          "BTC/USD",
+                          10,
+                          50,
+                          10)
+
+        portfolio_inst.update_portfolio_available(btc_limit_buy, True)
+
+        # Test buy order
+        btc_limit_buy2 = BuyLimitOrder(trader_inst)
+        btc_limit_buy2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+                           "BTC/USD",
+                           10,
+                           50,
+                           10)
+
+        portfolio_inst.update_portfolio_available(btc_limit_buy2, True)
+
+        # reset equivalent of the ven buy order
+        portfolio_inst.reset_portfolio_available("BTC", 4*0.5)
+
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 6
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 0
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
+
+        # reset equivalent of the btc buy orders 1 and 2
+        portfolio_inst.reset_portfolio_available("USD")
+
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 6
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000

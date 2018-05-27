@@ -236,23 +236,53 @@ class TestTrader:
         initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
 
         # Test buy order
-        limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
-                      "BQX/BTC",
-                      70,
-                      10,
-                      70)
+        limit_buy = trader_inst.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
+                                                      symbol="BQX/BTC",
+                                                      current_price=4,
+                                                      quantity=2,
+                                                      price=4)
 
-        # create order notifier to prevent None call
-        limit_buy.order_notifier = OrderNotifier(config, limit_buy)
-
-        trader_inst.get_order_manager().add_order_to_list(limit_buy)
+        trader_inst.create_order(limit_buy, trader_inst.portfolio)
 
         trader_inst.notify_order_close(limit_buy, True)
 
         assert limit_buy not in trader_inst.get_open_orders()
 
         assert initial_portfolio == trader_inst.portfolio.portfolio
+
+        self.stop(trader_inst)
+
+    def test_notify_sell_limit_order_cancel_one_in_two(self):
+        config, _, trader_inst = self.init_default()
+        initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
+
+        # Test buy order
+        limit_buy = trader_inst.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
+                                                      symbol="BQX/BTC",
+                                                      current_price=4,
+                                                      quantity=2,
+                                                      price=4)
+
+        trader_inst.create_order(limit_buy, trader_inst.portfolio)
+
+        # Test second buy order
+        second_limit_buy = trader_inst.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
+                                                             symbol="VEN/BTC",
+                                                             current_price=1,
+                                                             quantity=1.5,
+                                                             price=1)
+
+        trader_inst.create_order(second_limit_buy, trader_inst.portfolio)
+
+        # Cancel only 1st one
+        trader_inst.notify_order_close(limit_buy, True)
+
+        assert limit_buy not in trader_inst.get_open_orders()
+        assert second_limit_buy in trader_inst.get_open_orders()
+
+        assert initial_portfolio != trader_inst.portfolio.portfolio
+        assert trader_inst.portfolio.portfolio["BTC"][Portfolio.AVAILABLE] == 8.5
+        assert trader_inst.portfolio.portfolio["BTC"][Portfolio.TOTAL] == 10
 
         self.stop(trader_inst)
 
