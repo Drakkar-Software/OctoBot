@@ -1,4 +1,6 @@
 import ccxt
+import math
+import copy
 
 from evaluator.evaluator_order_creator import EvaluatorOrderCreator
 from trading.exchanges.exchange_manager import ExchangeManager
@@ -108,15 +110,16 @@ def _check_order_limits(order, market_status):
     maximal_volume_digits = market_status[Ecmsc.PRECISION.value][Ecmsc.PRECISION_AMOUNT.value]
     order_cost = order.origin_price*order.origin_quantity
 
+    # float("{0:.{1}f}".format(math.trunc(value * 10 ** digits) / (10 ** digits), digits))
+
     assert order_cost <= max_cost
     assert order_cost >= min_cost
     assert order.origin_price <= max_price
     assert order.origin_price >= min_price
-    assert (order.origin_price*10**maximal_price_digits).is_integer()  # rounded value using trading rules
+    assert str(order.origin_price)[::-1].find(".") <= maximal_price_digits
     assert order.origin_quantity <= max_quantity
     assert order.origin_quantity >= min_quantity
-    assert (order.origin_quantity*10**maximal_volume_digits/10*10).is_integer()  # rounded value using trading rules
-    # (/10*10 to remove python wtf rounding system)
+    assert str(order.origin_quantity)[::-1].find(".") <= maximal_volume_digits
 
 
 def _check_linked_order(order, linked_order, order_type, order_price, market_status):
@@ -411,3 +414,149 @@ def test_split_create_new_order():
         _check_order_limits(order, market_status)
 
         # assert len(order.linked_orders) == 1 # check linked orders when it will be developed
+
+
+def _get_evaluations_gradient(step):
+    nb_steps = 1/step
+    return [i/nb_steps for i in range(int(-nb_steps), int(nb_steps+1), 1)]
+
+
+def _get_states_gradient_with_invald_states():
+    states = [state for state in EvaluatorStates]
+    states += [None, 1, {'toto': 1}, math.nan]
+    return states
+
+
+def _get_irrationnal_numbers():
+    irrationals = [math.pi, math.sqrt(2), math.sqrt(3), math.sqrt(5), math.sqrt(7), math.sqrt(11), math.sqrt(73), 10/3]
+    return [1/i for i in irrationals]
+
+
+def _reset_portfolio(portfolio):
+    portfolio.set_starting_simulated_portfolio()
+    portfolio.portfolio["USDT"] = {
+        Portfolio.TOTAL: 2000,
+        Portfolio.AVAILABLE: 2000
+    }
+
+
+def _check_orders(orders, evaluation, state, nb_orders, market_status):
+
+    if state == EvaluatorStates.NEUTRAL:
+        assert orders is None
+    else:
+        if (state == EvaluatorStates.VERY_SHORT or state == EvaluatorStates.SHORT) and evaluation < 0:
+            assert orders is None
+        elif (state == EvaluatorStates.VERY_LONG or state == EvaluatorStates.LONG) and evaluation > 0:
+            assert orders is None
+        elif evaluation == 0:
+            assert orders is None
+        elif math.isnan(evaluation):
+            assert orders is None
+        elif math.isnan(evaluation):
+            assert orders is None
+        elif state not in EvaluatorStates:
+            assert orders is None
+        else:
+            assert (not orders and nb_orders == 0) or (len(orders) == nb_orders)
+            if orders:
+                order = orders[0]
+                assert order.status == OrderStatus.OPEN
+                assert order.is_simulated is True
+                assert order.linked_to is None
+                assert order.currency_total_fees == 0
+                assert order.market_total_fees == 0
+                assert order.filled_price == 0
+                assert order.filled_quantity == order.origin_quantity
+
+                if state == EvaluatorStates.VERY_SHORT:
+                    assert isinstance(order, SellMarketOrder)
+                    assert order.side == TradeOrderSide.SELL
+                    assert order.order_type == TraderOrderType.SELL_MARKET
+                elif state == EvaluatorStates.SHORT:
+                    assert isinstance(order, SellLimitOrder)
+                    assert order.side == TradeOrderSide.SELL
+                    assert order.order_type == TraderOrderType.SELL_LIMIT
+                elif state == EvaluatorStates.VERY_LONG:
+                    assert isinstance(order, BuyMarketOrder)
+                    assert order.side == TradeOrderSide.BUY
+                    assert order.order_type == TraderOrderType.BUY_MARKET
+                elif state == EvaluatorStates.LONG:
+                    assert isinstance(order, BuyLimitOrder)
+                    assert order.side == TradeOrderSide.BUY
+                    assert order.order_type == TraderOrderType.BUY_LIMIT
+
+                _check_order_limits(order, market_status)
+
+
+def _check_portfolio(portfolio, initial_portfolio, orders):
+    if orders:
+        orders_market_amount = 0
+        orders_currency_amount = 0
+        market = orders[0].market
+        order_symbol = orders[0].currency
+        for order in orders:
+            assert order.market == market
+            assert order.currency == order_symbol
+            if order.side == TradeOrderSide.BUY:
+                orders_market_amount += order.origin_quantity * order.origin_price
+            else:
+                orders_currency_amount += order.origin_quantity
+            for symbol in portfolio.portfolio:
+                assert portfolio.portfolio[symbol][Portfolio.TOTAL] >= 0
+                assert portfolio.portfolio[symbol][Portfolio.AVAILABLE] >= 0
+                if order_symbol == symbol:
+                    assert initial_portfolio[symbol][Portfolio.TOTAL] == portfolio.portfolio[symbol][Portfolio.TOTAL]
+                    assert initial_portfolio[symbol][Portfolio.AVAILABLE] - orders_currency_amount \
+                        == portfolio.portfolio[symbol][Portfolio.AVAILABLE]
+                elif market == symbol:
+                    assert initial_portfolio[market][Portfolio.TOTAL] == portfolio.portfolio[market][Portfolio.TOTAL]
+                    assert initial_portfolio[market][Portfolio.AVAILABLE] - orders_market_amount \
+                        == portfolio.portfolio[market][Portfolio.AVAILABLE]
+
+
+def test_create_order_using_a_lot_of_different_inputs():
+    config, exchange, trader, symbol = _get_tools()
+    portfolio = trader.get_portfolio()
+    order_creator = EvaluatorOrderCreator()
+    gradient_step = 0.001
+    nb_orders = 1
+    market_status = exchange.get_market_status(symbol)
+    initial_portfolio = copy.deepcopy(portfolio.portfolio)
+
+    # portfolio: "BTC": 10 "USD": 1000
+    min_trigger_market = "ADA/BNB"
+
+    # with
+    for state in _get_states_gradient_with_invald_states():
+        for evaluation in _get_evaluations_gradient(gradient_step):
+            _reset_portfolio(portfolio)
+            # orders are possible
+            orders = order_creator.create_new_order(evaluation, symbol, exchange, trader, portfolio, state)
+            _check_orders(orders, evaluation, state, nb_orders, market_status)
+            _check_portfolio(portfolio, initial_portfolio, orders)
+            # orders are impossible
+            orders = order_creator.create_new_order(evaluation, min_trigger_market, exchange, trader, portfolio, state)
+            _check_orders(orders, evaluation, state, 0, market_status)
+            _check_portfolio(portfolio, initial_portfolio, orders)
+
+        for evaluation in _get_irrationnal_numbers():
+            # orders are possible
+            _reset_portfolio(portfolio)
+            orders = order_creator.create_new_order(evaluation, symbol, exchange, trader, portfolio, state)
+            _check_orders(orders, evaluation, state, nb_orders, market_status)
+            _check_portfolio(portfolio, initial_portfolio, orders)
+            # orders are impossible
+            orders = order_creator.create_new_order(evaluation, min_trigger_market, exchange, trader, portfolio, state)
+            _check_orders(orders, evaluation, state, 0, market_status)
+            _check_portfolio(portfolio, initial_portfolio, orders)
+
+        _reset_portfolio(portfolio)
+        # orders are possible
+        orders = order_creator.create_new_order(math.nan, symbol, exchange, trader, portfolio, state)
+        _check_orders(orders, math.nan, state, nb_orders, market_status)
+        _check_portfolio(portfolio, initial_portfolio, orders)
+        # orders are impossible
+        orders = order_creator.create_new_order(math.nan, min_trigger_market, exchange, trader, portfolio, state)
+        _check_orders(orders, math.nan, state, 0, market_status)
+        _check_portfolio(portfolio, initial_portfolio, orders)
