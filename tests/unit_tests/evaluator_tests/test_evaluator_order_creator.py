@@ -35,6 +35,7 @@ def _get_tools():
 
 def test_can_create_order():
     config, exchange, trader, symbol = _get_tools()
+    portfolio = trader.get_portfolio()
     # portfolio: "BTC": 10 "USD": 1000
     not_owned_symbol = "ETH/BTC"
     not_owned_market = "BTC/ETH"
@@ -42,55 +43,56 @@ def test_can_create_order():
     min_trigger_market = "ADA/BNB"
 
     # order from neutral state => false
-    assert not EvaluatorOrderCreator.can_create_order(symbol, exchange, trader, EvaluatorStates.NEUTRAL)
+    assert not EvaluatorOrderCreator.can_create_order(symbol, exchange, EvaluatorStates.NEUTRAL, portfolio)
 
     # sell order using a currency with 0 available
-    assert not EvaluatorOrderCreator.can_create_order(not_owned_symbol, exchange, trader, EvaluatorStates.SHORT)
-    assert not EvaluatorOrderCreator.can_create_order(not_owned_symbol, exchange, trader, EvaluatorStates.VERY_SHORT)
+    assert not EvaluatorOrderCreator.can_create_order(not_owned_symbol, exchange, EvaluatorStates.SHORT, portfolio)
+    assert not EvaluatorOrderCreator.can_create_order(not_owned_symbol, exchange, EvaluatorStates.VERY_SHORT, portfolio)
 
     # sell order using a currency with < min available
-    assert not EvaluatorOrderCreator.can_create_order(min_trigger_symbol, exchange, trader, EvaluatorStates.SHORT)
-    assert not EvaluatorOrderCreator.can_create_order(min_trigger_symbol, exchange, trader, EvaluatorStates.VERY_SHORT)
+    assert not EvaluatorOrderCreator.can_create_order(min_trigger_symbol, exchange, EvaluatorStates.SHORT, portfolio)
+    assert not EvaluatorOrderCreator.can_create_order(min_trigger_symbol, exchange, EvaluatorStates.VERY_SHORT, portfolio)
 
     # sell order using a currency with > min available
-    assert EvaluatorOrderCreator.can_create_order(not_owned_market, exchange, trader, EvaluatorStates.SHORT)
-    assert EvaluatorOrderCreator.can_create_order(not_owned_market, exchange, trader, EvaluatorStates.VERY_SHORT)
+    assert EvaluatorOrderCreator.can_create_order(not_owned_market, exchange, EvaluatorStates.SHORT, portfolio)
+    assert EvaluatorOrderCreator.can_create_order(not_owned_market, exchange, EvaluatorStates.VERY_SHORT, portfolio)
 
     # buy order using a market with 0 available
-    assert not EvaluatorOrderCreator.can_create_order(not_owned_market, exchange, trader, EvaluatorStates.LONG)
-    assert not EvaluatorOrderCreator.can_create_order(not_owned_market, exchange, trader, EvaluatorStates.VERY_LONG)
+    assert not EvaluatorOrderCreator.can_create_order(not_owned_market, exchange, EvaluatorStates.LONG, portfolio)
+    assert not EvaluatorOrderCreator.can_create_order(not_owned_market, exchange, EvaluatorStates.VERY_LONG, portfolio)
 
     # buy order using a market with < min available
-    assert not EvaluatorOrderCreator.can_create_order(min_trigger_market, exchange, trader, EvaluatorStates.LONG)
-    assert not EvaluatorOrderCreator.can_create_order(min_trigger_market, exchange, trader, EvaluatorStates.VERY_LONG)
+    assert not EvaluatorOrderCreator.can_create_order(min_trigger_market, exchange, EvaluatorStates.LONG, portfolio)
+    assert not EvaluatorOrderCreator.can_create_order(min_trigger_market, exchange, EvaluatorStates.VERY_LONG, portfolio)
 
     # buy order using a market with > min available
-    assert EvaluatorOrderCreator.can_create_order(not_owned_symbol, exchange, trader, EvaluatorStates.LONG)
-    assert EvaluatorOrderCreator.can_create_order(not_owned_symbol, exchange, trader, EvaluatorStates.VERY_LONG)
+    assert EvaluatorOrderCreator.can_create_order(not_owned_symbol, exchange, EvaluatorStates.LONG, portfolio)
+    assert EvaluatorOrderCreator.can_create_order(not_owned_symbol, exchange, EvaluatorStates.VERY_LONG, portfolio)
 
 
 def test_can_create_order_unknown_symbols():
     config, exchange, trader, symbol = _get_tools()
+    portfolio = trader.get_portfolio()
     unknown_symbol = "VI?/BTC"
     unknown_market = "BTC/*s?"
     unknown_everything = "VI?/*s?"
 
     # buy order with unknown market
-    assert not EvaluatorOrderCreator.can_create_order(unknown_market, exchange, trader, EvaluatorStates.LONG)
-    assert not EvaluatorOrderCreator.can_create_order(unknown_market, exchange, trader, EvaluatorStates.VERY_LONG)
-    assert EvaluatorOrderCreator.can_create_order(unknown_market, exchange, trader, EvaluatorStates.SHORT)
-    assert EvaluatorOrderCreator.can_create_order(unknown_market, exchange, trader, EvaluatorStates.VERY_SHORT)
+    assert not EvaluatorOrderCreator.can_create_order(unknown_market, exchange, EvaluatorStates.LONG, portfolio)
+    assert not EvaluatorOrderCreator.can_create_order(unknown_market, exchange, EvaluatorStates.VERY_LONG, portfolio)
+    assert EvaluatorOrderCreator.can_create_order(unknown_market, exchange, EvaluatorStates.SHORT, portfolio)
+    assert EvaluatorOrderCreator.can_create_order(unknown_market, exchange, EvaluatorStates.VERY_SHORT, portfolio)
 
     # sell order with unknown symbol
-    assert not EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, trader, EvaluatorStates.SHORT)
-    assert not EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, trader, EvaluatorStates.VERY_SHORT)
-    assert EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, trader, EvaluatorStates.LONG)
-    assert EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, trader, EvaluatorStates.VERY_LONG)
+    assert not EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, EvaluatorStates.SHORT, portfolio)
+    assert not EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, EvaluatorStates.VERY_SHORT, portfolio)
+    assert EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, EvaluatorStates.LONG, portfolio)
+    assert EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, EvaluatorStates.VERY_LONG, portfolio)
 
     # neutral state with unknown symbol, market and everything
-    assert not EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, trader, EvaluatorStates.NEUTRAL)
-    assert not EvaluatorOrderCreator.can_create_order(unknown_market, exchange, trader, EvaluatorStates.NEUTRAL)
-    assert not EvaluatorOrderCreator.can_create_order(unknown_everything, exchange, trader, EvaluatorStates.NEUTRAL)
+    assert not EvaluatorOrderCreator.can_create_order(unknown_symbol, exchange, EvaluatorStates.NEUTRAL, portfolio)
+    assert not EvaluatorOrderCreator.can_create_order(unknown_market, exchange, EvaluatorStates.NEUTRAL, portfolio)
+    assert not EvaluatorOrderCreator.can_create_order(unknown_everything, exchange, EvaluatorStates.NEUTRAL, portfolio)
 
 
 def _check_order_limits(order, market_status):
