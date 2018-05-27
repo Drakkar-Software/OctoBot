@@ -77,7 +77,7 @@ class EvaluatorOrderCreator:
 
             created_orders = []
             # TODO : temp
-            if state == EvaluatorStates.VERY_SHORT:
+            if state == EvaluatorStates.VERY_SHORT and eval_note > 0:
                 quantity = self._get_market_quantity_from_risk(eval_note,
                                                                trader,
                                                                current_portfolio)
@@ -92,7 +92,7 @@ class EvaluatorOrderCreator:
                     created_orders.append(market)
                 return created_orders
 
-            elif state == EvaluatorStates.SHORT:
+            elif state == EvaluatorStates.SHORT and eval_note > 0:
                 quantity = self._get_limit_quantity_from_risk(eval_note,
                                                               trader,
                                                               current_portfolio)
@@ -124,7 +124,7 @@ class EvaluatorOrderCreator:
                 pass
 
             # TODO : stop loss
-            elif state == EvaluatorStates.LONG:
+            elif state == EvaluatorStates.LONG and eval_note < 0:
                 quantity = self._get_limit_quantity_from_risk(eval_note,
                                                               trader,
                                                               market_quantity)
@@ -142,7 +142,7 @@ class EvaluatorOrderCreator:
                     created_orders.append(limit)
                 return created_orders
 
-            elif state == EvaluatorStates.VERY_LONG:
+            elif state == EvaluatorStates.VERY_LONG and eval_note < 0:
                 quantity = self._get_market_quantity_from_risk(eval_note,
                                                                trader,
                                                                market_quantity,
@@ -157,6 +157,9 @@ class EvaluatorOrderCreator:
                     trader.create_order(market, portfolio)
                     created_orders.append(market)
                 return created_orders
+
+            # if nothing go returned, return None
+            return None
 
         except Exception as e:
             logging.getLogger(self.__class__.__name__).error("Failed to create order : {0}".format(e))
@@ -241,7 +244,8 @@ class EvaluatorOrderCreator:
 
     @staticmethod
     def _trunc_with_n_decimal_digits(value, digits):
-        return math.trunc(value*10**digits)/(10**digits)
+        # force exact representation
+        return float("{0:.{1}f}".format(math.trunc(value*10**digits)/(10**digits), digits))
 
     @staticmethod
     def _get_value_or_default(dictionary, key, default=math.nan):

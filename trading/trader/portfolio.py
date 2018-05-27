@@ -38,10 +38,13 @@ class Portfolio:
     def _load_portfolio(self):
         if self.is_enabled:
             if self.is_simulated:
-                for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
-                    self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
+                self.set_starting_simulated_portfolio()
             else:
                 self.update_portfolio_balance()
+
+    def set_starting_simulated_portfolio(self):
+        for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
+            self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
 
     def update_portfolio_balance(self):
         if not self.is_simulated and self.is_enabled:
