@@ -98,6 +98,8 @@ class EvaluatorOrderCreator:
                                                               current_portfolio)
                 limit_price = EvaluatorOrderCreator\
                     ._adapt_price(symbol_market, price * self._get_limit_price_from_risk(eval_note, trader))
+                stop_price = EvaluatorOrderCreator \
+                    ._adapt_price(symbol_market, price * self._get_stop_price_from_risk(trader))
                 for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity,
                                                                                                     limit_price,
                                                                                                     symbol_market):
@@ -109,8 +111,6 @@ class EvaluatorOrderCreator:
                     trader.create_order(limit, portfolio)
                     created_orders.append(limit)
 
-                    stop_price = EvaluatorOrderCreator\
-                        ._adapt_price(symbol_market, price * self._get_stop_price_from_risk(trader))
                     stop = trader.create_order_instance(order_type=TraderOrderType.STOP_LOSS,
                                                         symbol=symbol,
                                                         current_price=price,
