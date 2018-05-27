@@ -520,11 +520,9 @@ def test_create_order_using_a_lot_of_different_inputs():
     nb_orders = 1
     market_status = exchange.get_market_status(symbol)
     initial_portfolio = copy.deepcopy(portfolio.portfolio)
-
     # portfolio: "BTC": 10 "USD": 1000
     min_trigger_market = "ADA/BNB"
 
-    # with
     for state in _get_states_gradient_with_invald_states():
         for evaluation in _get_evaluations_gradient(gradient_step):
             _reset_portfolio(portfolio)
