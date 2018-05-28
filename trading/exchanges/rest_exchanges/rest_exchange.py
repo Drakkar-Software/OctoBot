@@ -118,9 +118,9 @@ class RESTExchange(AbstractExchange):
             return None
 
     # ORDERS
-    def get_order(self, order_id):
+    def get_order(self, order_id, symbol=None):
         if self.client.has['fetchOrder']:
-            return self.client.fetch_order(order_id)
+            return self.client.fetch_order(order_id, symbol)
         else:
             raise Exception("This exchange doesn't support fetchOrder")
 

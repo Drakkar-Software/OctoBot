@@ -215,7 +215,7 @@ class BuyMarketOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            result = self.exchange.get_order(self.order_id)
+            result = self.exchange.get_order(self.order_id, self.symbol)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
                 self.trader.parse_exchange_order_to_trade_instance(result)
@@ -236,7 +236,7 @@ class BuyLimitOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            result = self.exchange.get_order(self.order_id)
+            result = self.exchange.get_order(self.order_id, self.symbol)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
                 self.trader.parse_exchange_order_to_trade_instance(result)
@@ -258,7 +258,7 @@ class SellMarketOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            result = self.exchange.get_order(self.order_id)
+            result = self.exchange.get_order(self.order_id, self.symbol)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
                 self.trader.parse_exchange_order_to_trade_instance(result)
@@ -279,7 +279,7 @@ class SellLimitOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            result = self.exchange.get_order(self.order_id)
+            result = self.exchange.get_order(self.order_id, self.symbol)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
                 self.trader.parse_exchange_order_to_trade_instance(result)

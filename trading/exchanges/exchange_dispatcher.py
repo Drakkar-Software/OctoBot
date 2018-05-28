@@ -109,11 +109,11 @@ class ExchangeDispatcher(AbstractExchange):
         return self.exchange.get_market_status(symbol)
 
     # ORDERS
-    def get_order(self, order_id):
+    def get_order(self, order_id, symbol=None):
         if self._web_socket_available() and self.exchange_web_socket.get_client().has_order(order_id):
-            return self.exchange_web_socket.get_order(order_id)
+            return self.exchange_web_socket.get_order(order_id, symbol=symbol)
         else:
-            order = self.exchange.get_order(order_id=order_id)
+            order = self.exchange.get_order(order_id=order_id, symbol=symbol)
             if self._web_socket_available():
                 self.exchange_web_socket.init_orders_for_ws_if_possible([order])
             return order
