@@ -53,6 +53,9 @@ class Trader:
     def is_enabled(self):
         return self.enable
 
+    def set_enabled(self, enable):
+        self.enable = enable
+
     def get_risk(self):
         return self.risk
 
@@ -147,6 +150,12 @@ class Trader:
         # use a copy of the list (not the reference)
         for order in list(self.get_open_orders()):
             if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
+                self.notify_order_close(order, True)
+
+    def cancel_all_open_orders(self):
+        # use a copy of the list (not the reference)
+        for order in list(self.get_open_orders()):
+            if order.get_status() is not OrderStatus.CANCELED:
                 self.notify_order_close(order, True)
 
     def notify_order_cancel(self, order):
