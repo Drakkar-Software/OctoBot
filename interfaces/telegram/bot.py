@@ -63,6 +63,7 @@ class TelegramApp:
         message += "/profitability or /pb: Displays the profitability I made since I started." + TelegramApp.EOL
         message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + TelegramApp.EOL
         message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
+        message += "/pause or /resume: Pause or resume me." + TelegramApp.EOL
         message += "/stop: Stops me." + TelegramApp.EOL
         message += "/help: Displays this help."
         update.message.reply_text(message)
