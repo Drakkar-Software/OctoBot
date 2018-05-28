@@ -177,10 +177,5 @@ class RESTExchange(AbstractExchange):
                 str(order_type), str(symbol), str(quantity), str(price), str(stop_price))
             self.logger.error("Failed to create order : {0} ({1})".format(e, order_desc))
 
-    # override this method if exchange has a specific timestamp format
-    def get_uniform_timestamp(self, timestamp):
-        if self.exchange_type == binance:
-            # binance rest api doc: All time and timestamp related fields are in milliseconds.
-            return timestamp / 1000
-        else:
-            return super().get_uniform_timestamp(timestamp)
+    def get_uniform_timestamp(self):
+        return self.client.milliseconds() / 1000

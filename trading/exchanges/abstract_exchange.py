@@ -89,6 +89,6 @@ class AbstractExchange:
     def get_market_status(self, symbol):
         pass
 
-    # override this method if exchange has a specific timestamp format
-    def get_uniform_timestamp(self, timestamp):
-        return timestamp
+    @abstractmethod
+    def get_uniform_timestamp(self):
+        pass
