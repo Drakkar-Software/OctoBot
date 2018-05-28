@@ -90,5 +90,5 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_uniform_timestamp(self):
+    def get_uniform_timestamp(self, timestamp):
         pass
