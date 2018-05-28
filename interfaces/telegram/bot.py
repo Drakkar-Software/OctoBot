@@ -84,11 +84,12 @@ class TelegramApp:
 
     def command_pause_resume(self, _, update):
         if self.paused:
-            update.message.reply_text("Resuming...")
+            update.message.reply_text("Resuming...{0}I will restart trading when i see opportunities !"
+                                      .format(TelegramApp.EOL))
             set_enable_trading(True)
             self.paused = False
         else:
-            update.message.reply_text("Pausing...")
+            update.message.reply_text("Pausing...{}I'm cancelling my orders.".format(TelegramApp.EOL))
             cancel_all_open_orders()
             set_enable_trading(False)
             self.paused = True
@@ -113,17 +114,17 @@ class TelegramApp:
         try:
             real_global_profitability, simulated_global_profitability, \
                 real_percent_profitability, simulated_percent_profitability = get_global_profitability()
-            profitability_string = "Real global profitability : {0} ({1:.3f}%){2}".format(
+            profitability_string = "Real global profitability : {0} ({1}%){2}".format(
                 PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
-                real_percent_profitability,
+                PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2),
                 TelegramApp.EOL)
-            profitability_string += "Simulated global profitability : {0} ({1:.3f}%)".format(
+            profitability_string += "Simulated global profitability : {0} ({1}%)".format(
                 PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
-                simulated_percent_profitability)
+                PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2))
             update.message.reply_text(profitability_string)
         except Exception as e:
             update.message.reply_text(str(e))
@@ -134,16 +135,18 @@ class TelegramApp:
         reference_market = get_reference_market()
         real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amounts()
 
-        portfolios_string = "Portfolio real value : {0:.7f} {1}{2}".format(portfolio_real_current_value,
-                                                                           reference_market,
-                                                                           TelegramApp.EOL)
+        portfolios_string = "Portfolio real value : {0} {1}{2}".format(
+            PrettyPrinter.get_min_string_from_number(portfolio_real_current_value),
+            reference_market,
+            TelegramApp.EOL)
         portfolios_string += "Global real portfolio : {1}{0}{1}{1}".format(
             PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
             TelegramApp.EOL)
 
-        portfolios_string += "Portfolio simulated value : {0:.7f} {1}{2}".format(portfolio_simulated_current_value,
-                                                                                 reference_market,
-                                                                                 TelegramApp.EOL)
+        portfolios_string += "Portfolio simulated value : {0} {1}{2}".format(
+            PrettyPrinter.get_min_string_from_number(portfolio_simulated_current_value),
+            reference_market,
+            TelegramApp.EOL)
         portfolios_string += "Global simulated portfolio : {1}{0}".format(
             PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
             TelegramApp.EOL)
