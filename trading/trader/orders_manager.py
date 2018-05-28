@@ -110,8 +110,12 @@ class OrdersManager(threading.Thread):
     def run(self):
         while self.keep_running:
 
-            # call update status
-            self._update_orders_status()
+            try:
+                # call update status
+                self._update_orders_status()
+
+            except Exception as e:
+                self.logger.error("Error when updating orders: {0}".format(e))
 
             if not Backtesting.enabled(self.config):
                 sleep(self.order_refresh_time)

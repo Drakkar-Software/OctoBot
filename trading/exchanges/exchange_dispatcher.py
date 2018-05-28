@@ -1,5 +1,6 @@
 from trading import AbstractExchange
 from tools.data_frame_util import DataFrameUtil
+from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 
 
 class ExchangeDispatcher(AbstractExchange):
@@ -30,7 +31,7 @@ class ExchangeDispatcher(AbstractExchange):
     # total (free + used), by currency
     def get_balance(self):
         if self._web_socket_available() and self.exchange_web_socket.get_client().portfolio_is_initialized():
-            return self.exchange_web_socket.get_portfolio()
+            return self.exchange_web_socket.get_balance()
         else:
             return self.exchange.get_balance()
 

@@ -217,8 +217,8 @@ class BuyMarketOrder(Order):
         if not self.trader.simulate:
             result = self.exchange.get_order(self.order_id)
             new_status = self.trader.parse_status(result)
-            if new_status == OrderStatus.FILLED:
-                self.trader.parse_exchange_order_to_trade_instance(result)
+            if new_status == OrderStatus.FILLED or new_status == OrderStatus.CLOSED:
+                self.trader.parse_exchange_order_to_trade_instance(result, self)
             elif new_status == OrderStatus.CANCELED:
                 self.cancel_from_exchange()
         else:
@@ -239,7 +239,7 @@ class BuyLimitOrder(Order):
             result = self.exchange.get_order(self.order_id)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
-                self.trader.parse_exchange_order_to_trade_instance(result)
+                self.trader.parse_exchange_order_to_trade_instance(result, self)
             elif new_status == OrderStatus.CANCELED:
                 self.cancel_from_exchange()
         else:
@@ -261,7 +261,7 @@ class SellMarketOrder(Order):
             result = self.exchange.get_order(self.order_id)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
-                self.trader.parse_exchange_order_to_trade_instance(result)
+                self.trader.parse_exchange_order_to_trade_instance(result, self)
             elif new_status == OrderStatus.CANCELED:
                 self.cancel_from_exchange()
         else:
@@ -282,7 +282,7 @@ class SellLimitOrder(Order):
             result = self.exchange.get_order(self.order_id)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
-                self.trader.parse_exchange_order_to_trade_instance(result)
+                self.trader.parse_exchange_order_to_trade_instance(result, self)
             elif new_status == OrderStatus.CANCELED:
                 self.cancel_from_exchange()
         else:
