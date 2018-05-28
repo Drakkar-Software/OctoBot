@@ -233,7 +233,7 @@ class BuyLimitOrder(Order):
                 self.trader.parse_exchange_order_to_trade_instance(result)
         else:
             # ONLY FOR SIMULATION
-            if True or self.check_last_prices(self.origin_price, True):
+            if self.check_last_prices(self.origin_price, True):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
