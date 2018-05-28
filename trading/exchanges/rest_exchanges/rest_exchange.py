@@ -1,6 +1,7 @@
 import logging
 
 from ccxt import OrderNotFound, BaseError
+from ccxt.binance import binance
 
 from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
@@ -118,9 +119,6 @@ class RESTExchange(AbstractExchange):
 
     # ORDERS
     def get_order(self, order_id):
-        # if self.websocket_client and self.websocket_client.():
-        #     balance = self.websocket_client.exchange_data.portfolio
-        # else:
         if self.client.has['fetchOrder']:
             return self.client.fetch_order(order_id)
         else:
@@ -178,3 +176,11 @@ class RESTExchange(AbstractExchange):
             order_desc = "order_type: {0}, symbol: {1}, quantity: {2}, price: {3}, stop_price: {4}".format(
                 str(order_type), str(symbol), str(quantity), str(price), str(stop_price))
             self.logger.error("Failed to create order : {0} ({1})".format(e, order_desc))
+
+    # override this method if exchange has a specific timestamp format
+    def get_uniform_timestamp(self, timestamp):
+        if self.exchange_type == binance:
+            # binance rest api doc: All time and timestamp related fields are in milliseconds.
+            return timestamp / 1000
+        else:
+            return super().get_uniform_timestamp(timestamp)
