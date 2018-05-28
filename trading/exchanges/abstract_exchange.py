@@ -58,7 +58,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_order(self, order_id):
+    def get_order(self, order_id, symbol=None):
         pass
 
     @abstractmethod
