@@ -88,6 +88,9 @@ class WebSocketExchange(AbstractExchange):
     def get_market_status(self, symbol):
         pass
 
+    def get_uniform_timestamp(self):
+        pass
+
     # utility methods
     def init_orders_for_ws_if_possible(self, orders):
         if not self.client.orders_are_initialized():
