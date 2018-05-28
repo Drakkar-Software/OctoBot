@@ -4,7 +4,7 @@ from trading.trader.portfolio import Portfolio
 
 def get_traders():
     return [trader for trader in get_bot().get_exchange_traders().values()] + \
-              [trader for trader in get_bot().get_exchange_trader_simulators().values()]
+           [trader for trader in get_bot().get_exchange_trader_simulators().values()]
 
 
 def get_portfolio_current_value():
@@ -41,6 +41,16 @@ def get_open_orders():
             real_open_orders.append(trader.get_open_orders())
 
     return real_open_orders, simulated_open_orders
+
+
+def cancel_all_open_orders():
+    for trader in get_traders():
+        trader.cancel_all_open_orders()
+
+
+def set_enable_trading(enable):
+    for trader in get_traders():
+        trader.set_enabled(enable)
 
 
 def get_trades_history():
@@ -94,7 +104,7 @@ def get_global_profitability():
         if real_full_origin_value > 0 else 0
 
     return real_global_profitability, simulated_global_profitability, \
-        real_percent_profitability, simulated_percent_profitability
+           real_percent_profitability, simulated_percent_profitability
 
 
 def get_portfolios():

@@ -6,7 +6,8 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 from config.cst import *
 from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_trades_history, \
-    get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status
+    get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status, \
+    cancel_all_open_orders, set_enable_trading
 from tools.commands import Commands
 from tools.pretty_printer import PrettyPrinter
 
@@ -16,6 +17,7 @@ class TelegramApp:
 
     def __init__(self, config, telegram_service, telegram_updater):
         self.config = config
+        self.paused = False
         self.telegram_service = telegram_service
         self.telegram_updater = telegram_updater
         self.dispatcher = self.telegram_updater.dispatcher
@@ -37,6 +39,7 @@ class TelegramApp:
         self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
         self.dispatcher.add_handler(CommandHandler("stop", self.command_stop))
         self.dispatcher.add_handler(CommandHandler("help", self.command_help))
+        self.dispatcher.add_handler(CommandHandler(["pause", "resume"], self.command_pause_resume))
         self.dispatcher.add_handler(MessageHandler(Filters.command, self.command_unknown))
 
         # log all errors
@@ -77,6 +80,17 @@ class TelegramApp:
         # TODO add confirmation
         update.message.reply_text("I'm leaving this world...")
         Commands.stop_bot(get_bot())
+
+    def command_pause_resume(self, _, update):
+        if self.paused:
+            update.message.reply_text("Resuming...")
+            set_enable_trading(True)
+            self.paused = False
+        else:
+            update.message.reply_text("Pausing...")
+            cancel_all_open_orders()
+            set_enable_trading(True)
+            self.paused = True
 
     @staticmethod
     def command_ping(_, update):
