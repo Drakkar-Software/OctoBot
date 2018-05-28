@@ -90,7 +90,7 @@ class TelegramApp:
         else:
             update.message.reply_text("Pausing...")
             cancel_all_open_orders()
-            set_enable_trading(True)
+            set_enable_trading(False)
             self.paused = True
 
     @staticmethod
