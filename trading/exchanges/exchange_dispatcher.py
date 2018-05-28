@@ -110,11 +110,11 @@ class ExchangeDispatcher(AbstractExchange):
         return self.exchange.get_market_status(symbol)
 
     # ORDERS
-    def get_order(self, order_id):
+    def get_order(self, order_id, symbol=None):
         if self._web_socket_available() and self.exchange_web_socket.get_client().has_order(order_id):
-            return self.exchange_web_socket.get_order(order_id)
+            return self.exchange_web_socket.get_order(order_id, symbol=symbol)
         else:
-            order = self.exchange.get_order(order_id=order_id)
+            order = self.exchange.get_order(order_id=order_id, symbol=symbol)
             if self._web_socket_available():
                 self.exchange_web_socket.init_orders_for_ws_if_possible([order])
             return order
@@ -191,6 +191,5 @@ class ExchangeDispatcher(AbstractExchange):
         if self._web_socket_available():
             self.exchange_web_socket.stop()
 
-    # override this method if exchange has a specific timestamp format
-    def get_uniform_timestamp(self, timestamp):
-        return self.exchange.get_uniform_timestamp(timestamp)
+    def get_uniform_timestamp(self):
+        return self.exchange.get_uniform_timestamp()
