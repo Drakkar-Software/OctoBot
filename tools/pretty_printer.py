@@ -14,7 +14,8 @@ class PrettyPrinter:
         except KeyError:
             order_type_name = order.get_order_type().__class__.__name__
 
-        return "{0}: {1} {2} at {3} {4} on {5} {6} ".format(
+        return "[{0}] {1}: {2} {3} at {4} {5} on {6} {7} ".format(
+            "Simulator" if order.trader.simulate else "Real trader",
             order_type_name,
             PrettyPrinter.get_min_string_from_number(order.get_origin_quantity()),
             currency,
@@ -35,7 +36,8 @@ class PrettyPrinter:
         except KeyError:
             order_type_name = trade.get_order_type().__class__.__name__
 
-        return "{0}: {1} {2} at {3} {4} {5} on {6} ".format(
+        return "[{0}] {1}: {2} {3} at {4} {5} {6} on {7} ".format(
+            "Real trader" if trade.trader.simulate else "Simulated",
             order_type_name,
             PrettyPrinter.get_min_string_from_number(trade.get_quantity()),
             currency,
@@ -73,12 +75,12 @@ class PrettyPrinter:
                                     reference, difference)
 
     @staticmethod
-    def get_min_string_from_number(number, max_digits=7):
+    def get_min_string_from_number(number, max_digits=8):
         if round(number, max_digits) == 0.0:
             return "0"
         else:
             if number % 1 != 0:
-                number_str = "{:f}".format(round(number, max_digits))
+                number_str = "{:.{}f}".format(round(number, max_digits), max_digits)
                 if "." in number_str:
                     number_str = number_str.rstrip("0.")
                 return number_str

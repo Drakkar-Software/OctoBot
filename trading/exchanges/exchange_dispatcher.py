@@ -189,3 +189,7 @@ class ExchangeDispatcher(AbstractExchange):
     def stop(self):
         if self._web_socket_available():
             self.exchange_web_socket.stop()
+
+    # override this method if exchange has a specific timestamp format
+    def get_uniform_timestamp(self, timestamp):
+        return self.exchange.get_uniform_timestamp(timestamp)
