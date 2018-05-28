@@ -50,8 +50,8 @@ class WebSocketExchange(AbstractExchange):
         return self.client.get_recent_trades(symbol, since, limit)
 
     # ORDERS
-    def get_order(self, order_id):
-        return self.client.get_order(order_id)
+    def get_order(self, order_id, symbol=None):
+        return self.client.get_order(order_id, symbol=symbol)
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
         return self.client.get_all_orders(symbol, since, limit)
@@ -86,6 +86,9 @@ class WebSocketExchange(AbstractExchange):
         raise NotImplementedError("create_order not implemented")
 
     def get_market_status(self, symbol):
+        pass
+
+    def get_uniform_timestamp(self):
         pass
 
     # utility methods
