@@ -88,7 +88,7 @@ class WebSocketExchange(AbstractExchange):
     def get_market_status(self, symbol):
         pass
 
-    def get_uniform_timestamp(self):
+    def get_uniform_timestamp(self, timestamp):
         pass
 
     # utility methods

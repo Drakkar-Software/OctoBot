@@ -86,7 +86,7 @@ class AbstractWebSocketManager:
         else:
             raise NotImplementedError("get_recent_trades is not handled for this websocket exchange implementation")
 
-    def get_order(self, order_id):
+    def get_order(self, order_id, symbol=None):
         return self.exchange_data.orders[order_id]
 
     def get_all_orders(self, symbol=None, since=None, limit=None):

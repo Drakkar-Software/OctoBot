@@ -191,5 +191,5 @@ class ExchangeDispatcher(AbstractExchange):
         if self._web_socket_available():
             self.exchange_web_socket.stop()
 
-    def get_uniform_timestamp(self):
-        return self.exchange.get_uniform_timestamp()
+    def get_uniform_timestamp(self, timestamp):
+        return self.exchange.get_uniform_timestamp(timestamp)

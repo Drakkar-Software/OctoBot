@@ -177,5 +177,5 @@ class RESTExchange(AbstractExchange):
                 str(order_type), str(symbol), str(quantity), str(price), str(stop_price))
             self.logger.error("Failed to create order : {0} ({1})".format(e, order_desc))
 
-    def get_uniform_timestamp(self):
-        return self.client.milliseconds() / 1000
+    def get_uniform_timestamp(self, timestamp):
+        return timestamp / 1000

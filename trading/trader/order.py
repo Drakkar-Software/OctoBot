@@ -81,7 +81,7 @@ class Order:
             self.creation_time = time.time()
         else:
             # if we have a timestamp, it's a real trader => need to format timestamp if necessary
-            self.creation_time = self.exchange.get_uniform_timestamp()
+            self.creation_time = self.exchange.get_uniform_timestamp(timestamp)
 
         if status is None:
             self.status = OrderStatus.OPEN
