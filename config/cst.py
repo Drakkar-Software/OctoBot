@@ -246,7 +246,7 @@ class TradeOrderSide(Enum):
 
 
 class OrderStatus(Enum):
-    FILLED = "filled"
+    FILLED = "closed"
     OPEN = "open"
     PARTIALLY_FILLED = "partially_filled"
     CANCELED = "canceled"

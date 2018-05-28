@@ -37,7 +37,7 @@ class PrettyPrinter:
             order_type_name = trade.get_order_type().__class__.__name__
 
         return "[{0}] {1}: {2} {3} at {4} {5} {6} on {7} ".format(
-            "Real trader" if trade.trader.simulate else "Simulated",
+            "Simulated" if trade.get_simulated() else "Real trader",
             order_type_name,
             PrettyPrinter.get_min_string_from_number(trade.get_quantity()),
             currency,

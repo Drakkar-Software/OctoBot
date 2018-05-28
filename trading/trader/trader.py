@@ -241,10 +241,15 @@ class Trader:
                                           price=order["price"],
                                           timestamp=order["timestamp"])
 
-    def parse_exchange_order_to_trade_instance(self, order):
-        order_inst = self.parse_exchange_order_to_order_instance(order)
-        trade = Trade(self.exchange, order_inst)
-        self.trades_manager.add_new_trade_in_history(trade)
+    @staticmethod
+    def update_order_with_exchange_order(exchange_order, order):
+        order.status = Trader.parse_status(exchange_order)
+        order.filled_quantity = exchange_order["filled"]
+        order.filled_price = exchange_order["price"]
+        order.executed_time = order.trader.exchange.get_uniform_timestamp(exchange_order["timestamp"])  # to confirm
+
+    def parse_exchange_order_to_trade_instance(self, exchange_order, order):
+        self.update_order_with_exchange_order(exchange_order, order)
 
     @staticmethod
     def parse_status(order):
