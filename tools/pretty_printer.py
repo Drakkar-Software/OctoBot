@@ -63,7 +63,7 @@ class PrettyPrinter:
             PrettyPrinter.get_min_string_from_number(amounts[Portfolio.TOTAL]),
             PrettyPrinter.get_min_string_from_number(amounts[Portfolio.AVAILABLE]),
             currency)
-                  for currency, amounts in global_portfolio.items()]
+                  for currency, amounts in global_portfolio.items() if amounts[Portfolio.TOTAL] > 0]
 
         return separator.join(result)
 
