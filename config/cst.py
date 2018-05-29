@@ -6,7 +6,7 @@ VERSION_DEV_PHASE = "alpha"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
 
-ORIGIN_URL = "https://github.com/Drakkar-Software/Octobot.git"
+ORIGIN_URL = "https://github.com/Drakkar-Software/OctoBot.git"
 
 MSECONDS_TO_SECONDS = 1000
 MINUTE_TO_SECONDS = 60
@@ -63,8 +63,8 @@ CONFIG_PORTFOLIO_TOTAL = "total"
 # Notification
 CONFIG_NOTIFICATION_INSTANCE = "notifier"
 CONFIG_CATEGORY_NOTIFICATION = "notification"
-NOTIFICATION_STARTING_MESSAGE = "Octobot v{0} starting...".format(LONG_VERSION)
-NOTIFICATION_STOPPING_MESSAGE = "Octobot v{0} stopping...".format(LONG_VERSION)
+NOTIFICATION_STARTING_MESSAGE = "OctoBot v{0} starting...".format(LONG_VERSION)
+NOTIFICATION_STOPPING_MESSAGE = "OctoBot v{0} stopping...".format(LONG_VERSION)
 
 # DEBUG options
 CONFIG_DEBUG_OPTION_PERF = "performance_analyser"
@@ -135,7 +135,7 @@ CONFIG_INTERFACES_TELEGRAM = "telegram"
 GITHUB = "github"
 GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
 GITHUB_BASE_URL = "https://github.com"
-PACKAGES_PUBLIC_REPOSITORY = "Drakkar-Software/Octobot-Tentacles"
+PACKAGES_PUBLIC_REPOSITORY = "Drakkar-Software/OctoBot-Tentacles"
 PACKAGES_PUBLIC_LIST = "packages_list.json"
 PACKAGES_DEFAULT_BRANCH = "master"
 EVALUATOR_DEFAULT_FOLDER = "Default"

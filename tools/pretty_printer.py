@@ -50,7 +50,7 @@ class PrettyPrinter:
 
     @staticmethod
     def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):
-        return "Octobot ALERT : #{0}\n Symbol : #{1}\n Result : {2}\n Evaluation : {3}".format(
+        return "OctoBot ALERT : #{0}\n Symbol : #{1}\n Result : {2}\n Evaluation : {3}".format(
             crypto_currency,
             symbol.replace("/", ""),
             str(result).split(".")[1],

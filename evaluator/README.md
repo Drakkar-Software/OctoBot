@@ -1,9 +1,9 @@
 # Where are evaluators and strategies ?
-Because Octobot is modular, a wide range of evaluators and strategies are usable.
+Because OctoBot is modular, a wide range of evaluators and strategies are usable.
 
-Default evaluators and strategies are located here: [https://github.com/Drakkar-Software/Octobot-Packages](https://github.com/Drakkar-Software/Octobot-Packages).
+Default evaluators and strategies are located here: [https://github.com/Drakkar-Software/OctoBot-Packages](https://github.com/Drakkar-Software/OctoBot-Packages).
 
-To install default evaluators and strategies in your Octobot, run the command 
+To install default evaluators and strategies in your OctoBot, run the command 
 
 ```bash
 python start.py -p install all
@@ -15,4 +15,4 @@ It is also possible to specify which module(s) to install by naming it(them). In
 python start.py -p install forum_evaluator john_smith_macd_evaluator advanced_twitter_evaluator
 ```
 
-**You can find how to create your Octobot evaluators and strategies [here](https://github.com/Drakkar-Software/Octobot/wiki/Customize-your-Octobot).**
+**You can find how to create your OctoBot evaluators and strategies [here](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot).**
