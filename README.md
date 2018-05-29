@@ -14,7 +14,6 @@ and there you have your functional OctoBot !
 ## Interfaces
 ![Telegram Interface](../assets/telegram-interface.png)
 [![Twitter Interface](../assets/twitter-interface.png)](https://twitter.com/HerklosBotCrypt)
-![Web Candles Screenshot]()
 OctoBot is very customizable thanks to a lot of configuration and modules (tentacles).
 You can absolutely configure all your needs with your own 
 [configuration file](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration).
