@@ -54,7 +54,7 @@ class TelegramApp:
 
     @staticmethod
     def command_help(_, update):
-        message = "My CryptoBot skills:" + TelegramApp.EOL + TelegramApp.EOL
+        message = "My Octobot skills:" + TelegramApp.EOL + TelegramApp.EOL
         message += "/start: Displays my startup message." + TelegramApp.EOL
         message += "/ping: Shows for how long I'm working." + TelegramApp.EOL
         message += "/portfolio or /pf: Displays my current portfolio." + TelegramApp.EOL
@@ -74,7 +74,7 @@ class TelegramApp:
 
     @staticmethod
     def command_start(_, update):
-        update.message.reply_text("Hello, I'm CryptoBot, type /help to know my skills.")
+        update.message.reply_text("Hello, I'm Octobot, type /help to know my skills.")
 
     @staticmethod
     def command_stop(_, update):

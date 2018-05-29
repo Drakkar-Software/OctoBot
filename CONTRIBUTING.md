@@ -1,4 +1,4 @@
-# Contribute to CryptoBot
+# Contribute to Octobot
 
 Feel like our bot is missing a feature? We welcome your pull requests! Few pointers for contributions:
 
