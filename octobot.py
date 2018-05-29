@@ -18,11 +18,11 @@ from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 
-"""Main CryptoBot class:
+"""Main Octobot class:
 - Create all indicators and thread for each cryptocurrencies in config """
 
 
-class CryptoBot:
+class Octobot:
     """
     Constructor :
     - Load configs

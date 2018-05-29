@@ -1,6 +1,6 @@
-# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot) [![Coverage Status](https://coveralls.io/repos/github/Trading-Bot/CryptoBot/badge.svg?branch=dev)](https://coveralls.io/github/Trading-Bot/CryptoBot?branch=dev) [![Code Factor](https://www.codefactor.io/repository/github/trading-bot/cryptobot/badge)](https://www.codefactor.io/repository/github/trading-bot/cryptobot/overview/dev) [![Build Status](https://semaphoreci.com/api/v1/herklos/cryptobot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/cryptobot) [![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=Trading-Bot&repoName=CryptoBot&branch=dev&pipelineName=CryptoBot&accountName=herklos_marketplace&type=cf-1)]( https://g.codefresh.io/repositories/Trading-Bot/CryptoBot/builds?filter=trigger:build;branch:dev;service:5b06a377435197b088b1757a~CryptoBot)
+# Octobot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/Octobot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Drakkar-Software/Octobot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Drakkar-Software/Octobot.svg?branch=dev)](https://travis-ci.org/Drakkar-Software/Octobot) [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/Octobot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/Octobot?branch=dev) [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/Octobot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/Octobot/overview/dev) [![Build Status](https://semaphoreci.com/api/v1/herklos/Octobot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/Octobot) [![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=Drakkar-Software&repoName=Octobot&branch=dev&pipelineName=Octobot&accountName=herklos_marketplace&type=cf-1)]( https://g.codefresh.io/repositories/Drakkar-Software/Octobot/builds?filter=trigger:build;branch:dev;service:5b06a377435197b088b1757a~Octobot)
 
-#### Version 0.0.12-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/dev/docs/CHANGELOG.md))
+#### Version 0.0.12-alpha ([changelog](https://github.com/Drakkar-Software/Octobot/tree/dev/docs/CHANGELOG.md))
 
 *gif web candles*
 ![Web Candles Screenshot](/docs/static/images/web_candle_screenshot.png)
@@ -11,8 +11,8 @@
 *images interfaces*
 telegram|twitter|web
 ------- TODO : Personalisable (config, modules)
-[wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Configuration)
-[wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
+[wiki](https://github.com/Drakkar-Software/Octobot/wiki/Configuration)
+[wiki](https://github.com/Drakkar-Software/Octobot/wiki/Customize-your-Octobot)
 
 ## Exchanges
 binance|bitfinex|bittrex...
@@ -20,10 +20,10 @@ binance|bitfinex|bittrex...
 ------- TODO : lien wiki exchange + list supported
 
 ## Install
-**See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)**
+**See [installation wiki page](https://github.com/Drakkar-Software/Octobot/wiki/Installation)**
 
 ## Usage
-------- TODO : [usage wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Usage) 
+------- TODO : [usage wiki page](https://github.com/Drakkar-Software/Octobot/wiki/Usage) 
 
 ## Roadmap
 *image roadmap*
