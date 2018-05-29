@@ -1,6 +1,7 @@
 import logging
 
 from ccxt import OrderNotFound, BaseError
+from ccxt.binance import binance
 
 from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
@@ -87,8 +88,8 @@ class RESTExchange(AbstractExchange):
 
     def get_market_price(self, symbol):
         order_book = self.get_order_book(symbol)
-        bid = order_book['bids'][0][0] if len(order_book['bids']) > 0 else None
-        ask = order_book['asks'][0][0] if len(order_book['asks']) > 0 else None
+        bid = order_book['bids'][0][0] if order_book['bids'] else None
+        ask = order_book['asks'][0][0] if order_book['asks'] else None
         spread = (ask - bid) if (bid and ask) else None
         return {'bid': bid, 'ask': ask, 'spread': spread}
 
@@ -117,12 +118,9 @@ class RESTExchange(AbstractExchange):
             return None
 
     # ORDERS
-    def get_order(self, order_id):
-        # if self.websocket_client and self.websocket_client.():
-        #     balance = self.websocket_client.exchange_data.portfolio
-        # else:
+    def get_order(self, order_id, symbol=None):
         if self.client.has['fetchOrder']:
-            return self.client.fetch_order(order_id)
+            return self.client.fetch_order(order_id, symbol)
         else:
             raise Exception("This exchange doesn't support fetchOrder")
 
@@ -178,3 +176,6 @@ class RESTExchange(AbstractExchange):
             order_desc = "order_type: {0}, symbol: {1}, quantity: {2}, price: {3}, stop_price: {4}".format(
                 str(order_type), str(symbol), str(quantity), str(price), str(stop_price))
             self.logger.error("Failed to create order : {0} ({1})".format(e, order_desc))
+
+    def get_uniform_timestamp(self, timestamp):
+        return timestamp / 1000

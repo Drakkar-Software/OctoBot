@@ -2,6 +2,19 @@ Changelog for 0.1.0-beta
 ====================
 *Released date : June 1 2018*
 
+**Info** : 
+- Config : "packages" root key renamed to "tentacles"
+
+# Concerned issues :
+    #181 [Telegram] Pause and resume trading
+    #174 Renaming CryptoBot to Octobot
+
+# New features :
+    - Telegram pause / resume trading
+
+# Bug fix :
+    - Fix negative portfolio in simulation
+
 Changelog for 0.0.12-alpha
 ====================
 *Released date : May 26 2018*

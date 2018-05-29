@@ -38,10 +38,13 @@ class Portfolio:
     def _load_portfolio(self):
         if self.is_enabled:
             if self.is_simulated:
-                for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
-                    self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
+                self.set_starting_simulated_portfolio()
             else:
                 self.update_portfolio_balance()
+
+    def set_starting_simulated_portfolio(self):
+        for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
+            self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
 
     def update_portfolio_balance(self):
         if not self.is_simulated and self.is_enabled:
@@ -107,10 +110,12 @@ class Portfolio:
             # Only for log purpose
             if order.get_side() == TradeOrderSide.BUY:
                 currency_portfolio_num = order.get_filled_quantity()
-                market_portfolio_num = -self.portfolio[market][Portfolio.TOTAL]
+                market_portfolio_num = -order.get_filled_quantity() * \
+                    order.get_filled_price() - order.get_market_total_fees()
             else:
                 currency_portfolio_num = -order.get_filled_quantity()
-                market_portfolio_num = self.portfolio[market][Portfolio.TOTAL]
+                market_portfolio_num = order.get_filled_quantity() * \
+                    order.get_filled_price() - order.get_market_total_fees()
 
             self.logger.info("Portfolio updated | {0} {1} | {2} {3} | Current Portfolio : {4}"
                              .format(currency,
@@ -141,12 +146,10 @@ class Portfolio:
     @staticmethod
     def _check_available_should_update(order):
         # stop losses and take profits aren't using available portfolio
-        if order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
-                                   OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],
-                                   OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
-                                   OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT]]:
-            return True
-        return False
+        return order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
+                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],
+                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT]]
 
     # Realise portfolio availability update
     def _update_portfolio_available(self, order, factor=1):
@@ -162,6 +165,15 @@ class Portfolio:
             new_quantity = - order.get_origin_quantity() * factor
             self._update_portfolio_data(currency, new_quantity, False, True)
 
-    def reset_portfolio_available(self):
-        for currency in self.portfolio:
-            self.portfolio[currency][Portfolio.AVAILABLE] = self.portfolio[currency][Portfolio.TOTAL]
+    # Resets available amount with total amount CAREFUL: if no currency is give, resets all the portfolio !
+    def reset_portfolio_available(self, reset_currency=None, reset_quantity=None):
+        if not reset_currency:
+            for currency in self.portfolio:
+                self.portfolio[currency][Portfolio.AVAILABLE] = self.portfolio[currency][Portfolio.TOTAL]
+        else:
+            if reset_currency in self.portfolio:
+                if reset_quantity is None:
+                    self.portfolio[reset_currency][Portfolio.AVAILABLE] = \
+                        self.portfolio[reset_currency][Portfolio.TOTAL]
+                else:
+                    self.portfolio[reset_currency][Portfolio.AVAILABLE] += reset_quantity

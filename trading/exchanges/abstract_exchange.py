@@ -58,7 +58,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_order(self, order_id):
+    def get_order(self, order_id, symbol=None):
         pass
 
     @abstractmethod
@@ -87,4 +87,8 @@ class AbstractExchange:
 
     @abstractmethod
     def get_market_status(self, symbol):
+        pass
+
+    @abstractmethod
+    def get_uniform_timestamp(self, timestamp):
         pass

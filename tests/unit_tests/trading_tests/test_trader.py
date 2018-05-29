@@ -1,4 +1,5 @@
 import ccxt
+import copy
 
 from trading.exchanges.exchange_manager import ExchangeManager
 from config.cst import *
@@ -7,6 +8,7 @@ from trading.trader.order import *
 from trading.trader.order_notifier import OrderNotifier
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
+from trading.trader.portfolio import Portfolio
 
 
 class TestTrader:
@@ -17,7 +19,7 @@ class TestTrader:
         config = load_test_config()
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
         exchange_inst = exchange_manager.get_exchange()
-        trader_inst = TraderSimulator(config, exchange_inst)
+        trader_inst = TraderSimulator(config, exchange_inst, 2)
         return config, exchange_inst, trader_inst
 
     @staticmethod
@@ -226,6 +228,89 @@ class TestTrader:
         assert market_buy not in trader_inst.get_open_orders()
         assert limit_sell not in trader_inst.get_open_orders()
         assert stop_loss in trader_inst.get_open_orders()
+
+        self.stop(trader_inst)
+
+    def test_notify_sell_limit_order_cancel(self):
+        config, _, trader_inst = self.init_default()
+        initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
+
+        # Test buy order
+        limit_buy = trader_inst.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
+                                                      symbol="BQX/BTC",
+                                                      current_price=4,
+                                                      quantity=2,
+                                                      price=4)
+
+        trader_inst.create_order(limit_buy, trader_inst.portfolio)
+
+        trader_inst.notify_order_close(limit_buy, True)
+
+        assert limit_buy not in trader_inst.get_open_orders()
+
+        assert initial_portfolio == trader_inst.portfolio.portfolio
+
+        self.stop(trader_inst)
+
+    def test_notify_sell_limit_order_cancel_one_in_two(self):
+        config, _, trader_inst = self.init_default()
+        initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
+
+        # Test buy order
+        limit_buy = trader_inst.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
+                                                      symbol="BQX/BTC",
+                                                      current_price=4,
+                                                      quantity=2,
+                                                      price=4)
+
+        trader_inst.create_order(limit_buy, trader_inst.portfolio)
+
+        # Test second buy order
+        second_limit_buy = trader_inst.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
+                                                             symbol="VEN/BTC",
+                                                             current_price=1,
+                                                             quantity=1.5,
+                                                             price=1)
+
+        trader_inst.create_order(second_limit_buy, trader_inst.portfolio)
+
+        # Cancel only 1st one
+        trader_inst.notify_order_close(limit_buy, True)
+
+        assert limit_buy not in trader_inst.get_open_orders()
+        assert second_limit_buy in trader_inst.get_open_orders()
+
+        assert initial_portfolio != trader_inst.portfolio.portfolio
+        assert trader_inst.portfolio.portfolio["BTC"][Portfolio.AVAILABLE] == 8.5
+        assert trader_inst.portfolio.portfolio["BTC"][Portfolio.TOTAL] == 10
+
+        self.stop(trader_inst)
+
+    def test_notify_sell_limit_order_fill(self):
+        config, _, trader_inst = self.init_default()
+        initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
+
+        # Test buy order
+        limit_buy = trader_inst.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
+                                                      symbol="BQX/BTC",
+                                                      current_price=0.1,
+                                                      quantity=10,
+                                                      price=0.1)
+
+        trader_inst.create_order(limit_buy, trader_inst.portfolio)
+
+        limit_buy.filled_price = limit_buy.origin_price
+        limit_buy.filled_quantity = limit_buy.origin_quantity
+
+        trader_inst.notify_order_close(limit_buy)
+
+        assert limit_buy not in trader_inst.get_open_orders()
+
+        assert initial_portfolio != trader_inst.portfolio.portfolio
+        assert trader_inst.portfolio.portfolio["BTC"][Portfolio.AVAILABLE] == 9
+        assert trader_inst.portfolio.portfolio["BTC"][Portfolio.TOTAL] == 9
+        assert trader_inst.portfolio.portfolio["BQX"][Portfolio.AVAILABLE] == 10
+        assert trader_inst.portfolio.portfolio["BQX"][Portfolio.TOTAL] == 10
 
         self.stop(trader_inst)
 

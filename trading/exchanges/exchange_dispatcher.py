@@ -1,5 +1,6 @@
 from trading import AbstractExchange
 from tools.data_frame_util import DataFrameUtil
+from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 
 
 class ExchangeDispatcher(AbstractExchange):
@@ -30,7 +31,7 @@ class ExchangeDispatcher(AbstractExchange):
     # total (free + used), by currency
     def get_balance(self):
         if self._web_socket_available() and self.exchange_web_socket.get_client().portfolio_is_initialized():
-            return self.exchange_web_socket.get_portfolio()
+            return self.exchange_web_socket.get_balance()
         else:
             return self.exchange.get_balance()
 
@@ -61,7 +62,7 @@ class ExchangeDispatcher(AbstractExchange):
             if data_frame:
                 return candle_data_frame.tail(limit) if limit is not None else candle_data_frame
 
-        return candles[-limit:] if limit is not None else candles
+        return candles[-limit:] if limit else candles
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
@@ -109,11 +110,11 @@ class ExchangeDispatcher(AbstractExchange):
         return self.exchange.get_market_status(symbol)
 
     # ORDERS
-    def get_order(self, order_id):
+    def get_order(self, order_id, symbol=None):
         if self._web_socket_available() and self.exchange_web_socket.get_client().has_order(order_id):
-            return self.exchange_web_socket.get_order(order_id)
+            return self.exchange_web_socket.get_order(order_id, symbol=symbol)
         else:
-            order = self.exchange.get_order(order_id=order_id)
+            order = self.exchange.get_order(order_id=order_id, symbol=symbol)
             if self._web_socket_available():
                 self.exchange_web_socket.init_orders_for_ws_if_possible([order])
             return order
@@ -189,3 +190,6 @@ class ExchangeDispatcher(AbstractExchange):
     def stop(self):
         if self._web_socket_available():
             self.exchange_web_socket.stop()
+
+    def get_uniform_timestamp(self, timestamp):
+        return self.exchange.get_uniform_timestamp(timestamp)

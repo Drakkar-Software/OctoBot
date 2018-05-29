@@ -33,6 +33,9 @@ class ExchangeSimulator(AbstractExchange):
         self.DEFAULT_LIMIT = 100
         self.MIN_LIMIT = 20
 
+        # used to force price movement
+        self.recent_trades_multiplier_factor = 1
+
         self.MIN_ENABLED_TIME_FRAME = TimeFrameManager.find_min_time_frame(self.config_time_frames)
         self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR = self.MIN_ENABLED_TIME_FRAME
         self.DEFAULT_TIME_FRAME_TICKERS_CREATOR = self.MIN_ENABLED_TIME_FRAME
@@ -113,10 +116,7 @@ class ExchangeSimulator(AbstractExchange):
         recent_trades_condition = trader.get_open_orders() and (
                                   self.fetched_trades_counter[symbol] > current_time_frame_updated_times)
 
-        if time_refresh_condition and (not trader.get_open_orders() or recent_trades_condition):
-            return True
-        else:
-            return False
+        return time_refresh_condition and (not trader.get_open_orders() or recent_trades_condition)
 
     def should_update_recent_trades(self, symbol):
         if symbol in self.fetched_trades_counter:
@@ -148,7 +148,7 @@ class ExchangeSimulator(AbstractExchange):
         for trade in trades:
             created_trades.append(
                 {
-                    "price": trade
+                    "price": trade*self.recent_trades_multiplier_factor
                 }
             )
 
@@ -227,6 +227,9 @@ class ExchangeSimulator(AbstractExchange):
                 },
             },
         }
+
+    def set_recent_trades_multiplier_factor(self, factor):
+        self.recent_trades_multiplier_factor = factor
 
     # Unimplemented methods from AbstractExchange
     def cancel_order(self, order_id, symbol=None):

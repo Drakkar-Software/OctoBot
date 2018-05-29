@@ -27,11 +27,6 @@ class AbstractWebSocketManager:
     def convert_into_ccxt_order(order):
         raise NotImplementedError("convert_into_ccxt_order not implemented")
 
-    @staticmethod
-    @abstractmethod
-    def format_price_ticker(price_ticker):
-        raise NotImplementedError("format_price_ticker not implemented")
-
     @abstractmethod
     def get_last_price_ticker(self, symbol):
         raise NotImplementedError("get_last_price_ticker not implemented")
@@ -55,12 +50,11 @@ class AbstractWebSocketManager:
         raise NotImplementedError("get_websocket_client not implemented")
 
     @abstractmethod
-    def init_all_currencies_prices_web_socket(self, time_frames, trader_pairs):
-        raise NotImplementedError("init_all_currencies_klines_web_socket not implemented")
-
-    @abstractmethod
     def init_web_sockets(self, time_frames, trader_pairs):
         raise NotImplementedError("init_web_sockets not implemented")
+
+    def initialize_candles_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_data_frame):
+        self.exchange_data.initialize_candles_data(symbol, time_frame, symbol_candle_data, symbol_candle_data_frame)
 
     # Initialized methods
     def last_price_ticker_is_initialized(self, symbol):
@@ -92,7 +86,7 @@ class AbstractWebSocketManager:
         else:
             raise NotImplementedError("get_recent_trades is not handled for this websocket exchange implementation")
 
-    def get_order(self, order_id):
+    def get_order(self, order_id, symbol=None):
         return self.exchange_data.orders[order_id]
 
     def get_all_orders(self, symbol=None, since=None, limit=None):

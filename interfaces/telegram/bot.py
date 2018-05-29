@@ -5,8 +5,9 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 
 from config.cst import *
 from interfaces import get_reference_market, get_bot
-from interfaces.trading_util import get_portfolio_current_value, get_open_orders, \
-    get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status
+from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_trades_history, \
+    get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status, \
+    cancel_all_open_orders, set_enable_trading
 from tools.commands import Commands
 from tools.pretty_printer import PrettyPrinter
 
@@ -16,6 +17,7 @@ class TelegramApp:
 
     def __init__(self, config, telegram_service, telegram_updater):
         self.config = config
+        self.paused = False
         self.telegram_service = telegram_service
         self.telegram_updater = telegram_updater
         self.dispatcher = self.telegram_updater.dispatcher
@@ -31,11 +33,14 @@ class TelegramApp:
         self.dispatcher.add_handler(CommandHandler("ping", self.command_ping))
         self.dispatcher.add_handler(CommandHandler(["portfolio", "pf"], self.command_portfolio))
         self.dispatcher.add_handler(CommandHandler(["open_orders", "oo"], self.command_open_orders))
+        self.dispatcher.add_handler(CommandHandler(["trades_history", "th"], self.command_trades_history))
         self.dispatcher.add_handler(CommandHandler(["profitability", "pb"], self.command_profitability))
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
         self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
         self.dispatcher.add_handler(CommandHandler("stop", self.command_stop))
         self.dispatcher.add_handler(CommandHandler("help", self.command_help))
+        self.dispatcher.add_handler(CommandHandler(["pause", "resume"], self.command_pause_resume))
+        self.dispatcher.add_handler(MessageHandler(Filters.command, self.command_unknown))
 
         # log all errors
         self.dispatcher.add_error_handler(self.command_error)
@@ -44,15 +49,21 @@ class TelegramApp:
         self.dispatcher.add_handler(MessageHandler(Filters.text, self.echo))
 
     @staticmethod
+    def command_unknown(_, update):
+        update.message.reply_text("Unfortunately, I don't know the command: {0}".format(update.effective_message.text))
+
+    @staticmethod
     def command_help(_, update):
-        message = "My CryptoBot skills:" + TelegramApp.EOL + TelegramApp.EOL
+        message = "My OctoBot skills:" + TelegramApp.EOL + TelegramApp.EOL
         message += "/start: Displays my startup message." + TelegramApp.EOL
         message += "/ping: Shows for how long I'm working." + TelegramApp.EOL
         message += "/portfolio or /pf: Displays my current portfolio." + TelegramApp.EOL
         message += "/open_orders or /oo: Displays my current open orders." + TelegramApp.EOL
+        message += "/trades_history or /th: Displays my trades history since I started." + TelegramApp.EOL
         message += "/profitability or /pb: Displays the profitability I made since I started." + TelegramApp.EOL
         message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + TelegramApp.EOL
         message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
+        message += "/pause or /resume: Pause or resume me." + TelegramApp.EOL
         message += "/stop: Stops me." + TelegramApp.EOL
         message += "/help: Displays this help."
         update.message.reply_text(message)
@@ -63,13 +74,25 @@ class TelegramApp:
 
     @staticmethod
     def command_start(_, update):
-        update.message.reply_text("Hello, I'm CryptoBot, type /help to know my skills.")
+        update.message.reply_text("Hello, I'm OctoBot, type /help to know my skills.")
 
     @staticmethod
     def command_stop(_, update):
         # TODO add confirmation
         update.message.reply_text("I'm leaving this world...")
         Commands.stop_bot(get_bot())
+
+    def command_pause_resume(self, _, update):
+        if self.paused:
+            update.message.reply_text("Resuming...{0}I will restart trading when i see opportunities !"
+                                      .format(TelegramApp.EOL))
+            set_enable_trading(True)
+            self.paused = False
+        else:
+            update.message.reply_text("Pausing...{}I'm cancelling my orders.".format(TelegramApp.EOL))
+            cancel_all_open_orders()
+            set_enable_trading(False)
+            self.paused = True
 
     @staticmethod
     def command_ping(_, update):
@@ -89,19 +112,22 @@ class TelegramApp:
     def command_profitability(_, update):
         # to find profitabily bug out
         try:
-            real_global_profitability, simulated_global_profitability = get_global_profitability()
-            profitability_string = "Real global profitability : {0}{1}".format(
+            real_global_profitability, simulated_global_profitability, \
+                real_percent_profitability, simulated_percent_profitability = get_global_profitability()
+            profitability_string = "Real global profitability : {0} ({1}%){2}".format(
                 PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
+                PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2),
                 TelegramApp.EOL)
-            profitability_string += "Simulated global profitability : {0}".format(
+            profitability_string += "Simulated global profitability : {0} ({1}%)".format(
                 PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
                                                                    None,
-                                                                   get_reference_market()))
+                                                                   get_reference_market()),
+                PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2))
             update.message.reply_text(profitability_string)
         except Exception as e:
-            update.message.reply_text(e)
+            update.message.reply_text(str(e))
 
     @staticmethod
     def command_portfolio(_, update):
@@ -109,16 +135,18 @@ class TelegramApp:
         reference_market = get_reference_market()
         real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amounts()
 
-        portfolios_string = "Portfolio real value : {0:f} {1}{2}".format(portfolio_real_current_value,
-                                                                         reference_market,
-                                                                         TelegramApp.EOL)
+        portfolios_string = "Portfolio real value : {0} {1}{2}".format(
+            PrettyPrinter.get_min_string_from_number(portfolio_real_current_value),
+            reference_market,
+            TelegramApp.EOL)
         portfolios_string += "Global real portfolio : {1}{0}{1}{1}".format(
             PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
             TelegramApp.EOL)
 
-        portfolios_string += "Portfolio simulated value : {0:f} {1}{2}".format(portfolio_simulated_current_value,
-                                                                               reference_market,
-                                                                               TelegramApp.EOL)
+        portfolios_string += "Portfolio simulated value : {0} {1}{2}".format(
+            PrettyPrinter.get_min_string_from_number(portfolio_simulated_current_value),
+            reference_market,
+            TelegramApp.EOL)
         portfolios_string += "Global simulated portfolio : {1}{0}".format(
             PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
             TelegramApp.EOL)
@@ -141,6 +169,22 @@ class TelegramApp:
         update.message.reply_text(orders_string)
 
     @staticmethod
+    def command_trades_history(_, update):
+        real_trades_history, simulated_trades_history = get_trades_history()
+
+        trades_history_string = "Real trades :" + TelegramApp.EOL
+        for trades in real_trades_history:
+            for trade in trades:
+                trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
+
+        trades_history_string += TelegramApp.EOL + "Simulated trades :" + TelegramApp.EOL
+        for trades in simulated_trades_history:
+            for trade in trades:
+                trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
+
+        update.message.reply_text(trades_history_string)
+
+    @staticmethod
     def command_market_status(_, update):
         try:
             message = "My cryptocurrencies evaluations are:" + TelegramApp.EOL + TelegramApp.EOL
@@ -152,7 +196,7 @@ class TelegramApp:
             update.message.reply_text(message)
         except Exception:
             update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, " +
-                                      "please retry in a few seconds:")
+                                      "please retry in a few seconds.")
 
     @staticmethod
     def command_error(_, update):

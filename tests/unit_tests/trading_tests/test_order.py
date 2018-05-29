@@ -15,7 +15,7 @@ class TestOrder:
         config = load_test_config()
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
         exchange_inst = exchange_manager.get_exchange()
-        trader_inst = TraderSimulator(config, exchange_inst)
+        trader_inst = TraderSimulator(config, exchange_inst, 2)
         order_inst = Order(trader_inst)
         return config, order_inst, trader_inst, exchange_inst
 
@@ -153,7 +153,7 @@ class TestOrder:
         assert order_inst.origin_price == 0.12
 
         # with simulated trader
-        trader_sim_inst = TraderSimulator(config, exchange_inst)
+        trader_sim_inst = TraderSimulator(config, exchange_inst, 1)
         order_sim_inst = Order(trader_sim_inst)
 
         order_sim_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],

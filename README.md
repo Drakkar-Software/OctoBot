@@ -1,7 +1,32 @@
-# CryptoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/CryptoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Trading-Bot/CryptoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Trading-Bot/CryptoBot.svg?branch=dev)](https://travis-ci.org/Trading-Bot/CryptoBot) [![Coverage Status](https://coveralls.io/repos/github/Trading-Bot/CryptoBot/badge.svg?branch=dev)](https://coveralls.io/github/Trading-Bot/CryptoBot?branch=dev) [![Code Factor](https://www.codefactor.io/repository/github/trading-bot/cryptobot/badge)](https://www.codefactor.io/repository/github/trading-bot/cryptobot/overview/dev) [![Build Status](https://semaphoreci.com/api/v1/herklos/cryptobot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/cryptobot) [![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=Trading-Bot&repoName=CryptoBot&branch=dev&pipelineName=CryptoBot&accountName=herklos_marketplace&type=cf-1)]( https://g.codefresh.io/repositories/Trading-Bot/CryptoBot/builds?filter=trigger:build;branch:dev;service:5b06a377435197b088b1757a~CryptoBot)
+# OctoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/OctoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Drakkar-Software/OctoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Drakkar-Software/OctoBot.svg?branch=dev)](https://travis-ci.org/Drakkar-Software/OctoBot) [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/OctoBot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/overview/dev) [![Build Status](https://semaphoreci.com/api/v1/herklos/octobot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/octobot) [![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=Drakkar-Software&repoName=OctoBot&branch=dev&pipelineName=OctoBot&accountName=herklos_marketplace&type=cf-1)]( https://g.codefresh.io/repositories/Drakkar-Software/OctoBot/builds?filter=trigger:build;branch:dev;service:5b06a377435197b088b1757a~OctoBot)
 
-#### Version 0.0.12-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/dev/docs/CHANGELOG.md))
+#### Version 0.0.12-alpha ([changelog](https://github.com/Drakkar-Software/OctoBot/tree/dev/docs/CHANGELOG.md))
 
+*gif web candles*
+![Web Candles Screenshot](/docs/static/images/web_candle_screenshot.png)
+## Description
+------- TODO
+
+## Interfaces
+*images interfaces*
+telegram|twitter|web
+------- TODO : Personalisable (config, modules)
+[wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration)
+[wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot)
+
+## Exchanges
+binance|bitfinex|bittrex...
+*images exchanges*
+------- TODO : lien wiki exchange + list supported
+
+## Install
+**See [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation)**
+
+## Usage
+------- TODO : [usage wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Usage) 
+
+## Roadmap
+*image roadmap*
 ## Disclaimer
 This software is for educational purposes only. Do not risk money which 
 you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
@@ -14,57 +39,3 @@ expect.
 We strongly recommend you to have coding and Python knowledge. Do not 
 hesitate to read the source code and understand the mechanism of this bot.
 
-Moreover, we are in the **alpha** phase so you should not expect the bot to be stable.
-
-## Demo
-See live demo [here](https://twitter.com/HerklosBotCrypt)
-
-## Install
-**See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)**
-
-## Configuration
-Create a **config.json** file in the **config folder** with the following example :
-```
-Rename config/default_config.json to config/config.json
-```
-
-## Usage
-### Start the bot
-```bash
-python start.py
-```
-### Start the bot in simulation mode
-```bash
-python start.py --simulate
-```
-### Start the bot in backtesting mode
-```bash
-python start.py --backtesting
-```
-### Start the bot with interfaces (web / telegram)
-```bash
-python start.py --web 
-python start.py --telegram
-python start.py --web --telegram 
-```
-### Start the bot in data collector mode (for backtesting)
-```bash
-python start.py --data_collector
-```
-## Customize your CryptoBot !
-Information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
-
-## Screenshots
-![Web Candles Screenshot](/docs/static/images/web_candle_screenshot.png)
-
-## Testing
-Use *pytest* command in the root folder : 
-```bash
-pytest
-```
-
-## Changelog
-See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/alpha/docs/CHANGELOG.md)
-
-## More
-For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).
