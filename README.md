@@ -13,24 +13,32 @@ and there you have your functional OctoBot !
 ## Interfaces
 *images interfaces*
 telegram|[![Twitter Interface](../assets/twitter-interface.png)](https://twitter.com/HerklosBotCrypt)|web
-------- TODO : Personalisable (config, modules)
-[wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration)
-[wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot)
+OctoBot is very customizable thanks to a lot of configuration and modules (tentacles).
+You can absolutely configure all your needs with your own 
+[configuration file](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration).
+Moreover, an other important feature is the module-based architecture : 
+you can [install](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager), 
+modify, [create]([wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot))
+all the modules (tentacles) you want to create you perfect cryptocurrency trading bot.
 
 ## Exchanges
 binance|bitfinex|bittrex...
-*images exchanges*
-------- TODO : lien wiki exchange + list supported
+Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges) across many thanks 
+to [ccxt library](https://github.com/ccxt/ccxt). To activate trading on an exchange, 
+just configure OctoBot with your api keys as described [here]((https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges)).
 
 ## Install
-**See [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation)**
+The OctoBot installation is **very simple**... because **very documented** !
+Just follow the [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation) and it's done !
 
 ## Usage
-[usage wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Usage) 
+After the installation you should take a look at the 
+[usage wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Usage) to know all the features of the OctoBot.
 
 ## Roadmap
 [changelog](https://github.com/Drakkar-Software/OctoBot/tree/dev/docs/CHANGELOG.md)
-*image roadmap*
+*roadmap image*
+
 ## Disclaimer
 This software is for educational purposes only. Do not risk money which 
 you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
