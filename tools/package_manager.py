@@ -4,9 +4,9 @@ import os
 
 import requests
 
-from config.cst import PACKAGES_PUBLIC_LIST, PACKAGES_DEFAULT_BRANCH, PACKAGES_PUBLIC_REPOSITORY, PACKAGE_DESCRIPTION,\
-    GITHUB_RAW_CONTENT_URL, CONFIG_EVALUATOR, EVALUATOR_DEFAULT_FOLDER, CONFIG_PACKAGES_KEY, GITHUB_BASE_URL, GITHUB, \
-    PACKAGE_DESCRIPTION_LOCALISATION, PACKAGE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER
+from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLES_PUBLIC_REPOSITORY, TENTACLE_DESCRIPTION,\
+    GITHUB_RAW_CONTENT_URL, CONFIG_EVALUATOR, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, GITHUB_BASE_URL, GITHUB, \
+    TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER
 
 
 class PackageManager:
@@ -18,14 +18,14 @@ class PackageManager:
 
     def update_list(self):
         default_package_list_url = "{0}/{1}/{2}/{3}".format(GITHUB_BASE_URL,
-                                                            PACKAGES_PUBLIC_REPOSITORY,
-                                                            PACKAGES_DEFAULT_BRANCH,
-                                                            PACKAGES_PUBLIC_LIST)
+                                                            TENTACLES_PUBLIC_REPOSITORY,
+                                                            TENTACLES_DEFAULT_BRANCH,
+                                                            TENTACLES_PUBLIC_LIST)
 
         self.default_package = self._get_package_description(default_package_list_url)
 
-        if CONFIG_PACKAGES_KEY in self.config:
-            for package in self.config[CONFIG_PACKAGES_KEY]:
+        if CONFIG_TENTACLES_KEY in self.config:
+            for package in self.config[CONFIG_TENTACLES_KEY]:
                 # try with package as in configuration
                 try:
                     self.advanced_package_list.append(self._get_package_description(package))
@@ -38,13 +38,13 @@ class PackageManager:
     @staticmethod
     def _add_package_description_metadata(package_description, localisation, is_url):
         to_save_loc = str(localisation)
-        if localisation.endswith(PACKAGES_PUBLIC_LIST):
-            to_save_loc = localisation[0:-len(PACKAGES_PUBLIC_LIST)]
+        if localisation.endswith(TENTACLES_PUBLIC_LIST):
+            to_save_loc = localisation[0:-len(TENTACLES_PUBLIC_LIST)]
             while to_save_loc.endswith("/") or to_save_loc.endswith("\\"):
                 to_save_loc = to_save_loc[0:-1]
-        package_description[PACKAGE_DESCRIPTION] = {
-            PACKAGE_DESCRIPTION_LOCALISATION: to_save_loc,
-            PACKAGE_DESCRIPTION_IS_URL: is_url
+        package_description[TENTACLE_DESCRIPTION] = {
+            TENTACLE_DESCRIPTION_LOCALISATION: to_save_loc,
+            TENTACLE_DESCRIPTION_IS_URL: is_url
         }
 
     @staticmethod
@@ -59,10 +59,10 @@ class PackageManager:
                     package_url_or_path += "/"
                 # if checking on github, try adding branch and file
                 if GITHUB in package_url_or_path:
-                    package_url_or_path += "{0}/{1}".format(PACKAGES_DEFAULT_BRANCH, PACKAGES_PUBLIC_LIST)
+                    package_url_or_path += "{0}/{1}".format(TENTACLES_DEFAULT_BRANCH, TENTACLES_PUBLIC_LIST)
                 # else try adding file
                 else:
-                    package_url_or_path += PACKAGES_PUBLIC_LIST
+                    package_url_or_path += TENTACLES_PUBLIC_LIST
             downloaded_result = json.loads(requests.get(package_url_or_path).text)
             if "error" in downloaded_result and GITHUB_BASE_URL in package_url_or_path:
                 package_url_or_path = package_url_or_path.replace(GITHUB_BASE_URL, GITHUB_RAW_CONTENT_URL)
@@ -76,7 +76,7 @@ class PackageManager:
             if try_to_adapt:
                 if not package_url_or_path.endswith("/"):
                     package_url_or_path += "/"
-                package_url_or_path += PACKAGES_PUBLIC_LIST
+                package_url_or_path += TENTACLES_PUBLIC_LIST
             with open(package_url_or_path, "r") as package_description:
                 read_result = json.loads(package_description.read())
                 # add package metadata
@@ -131,12 +131,12 @@ class PackageManager:
         self._apply_module(package_type, module_name, module_version, module_file, target_folder)
 
     def _try_to_install_package(self, package, target_folder):
-        package_description = package[PACKAGE_DESCRIPTION]
-        package_localisation = package_description[PACKAGE_DESCRIPTION_LOCALISATION]
-        is_url = package_description[PACKAGE_DESCRIPTION_IS_URL]
+        package_description = package[TENTACLE_DESCRIPTION]
+        package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
+        is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
         for module in package:
             try:
-                if module != PACKAGE_DESCRIPTION:
+                if module != TENTACLE_DESCRIPTION:
                     self.install_module(package, module, package_localisation, is_url, target_folder)
             except Exception as e:
                 self.logger.error("Installation failed for module '{0}' ({1})".format(module, e))
@@ -158,9 +158,9 @@ class PackageManager:
                     commands.pop(0)
                     for component in commands:
                         if component in self.default_package:
-                            package_description = self.default_package[PACKAGE_DESCRIPTION]
-                            package_localisation = package_description[PACKAGE_DESCRIPTION_LOCALISATION]
-                            is_url = package_description[PACKAGE_DESCRIPTION_IS_URL]
+                            package_description = self.default_package[TENTACLE_DESCRIPTION]
+                            package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
+                            is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
                             try:
                                 self.install_module(self.default_package, component, package_localisation, is_url,
                                                     EVALUATOR_DEFAULT_FOLDER)
@@ -171,9 +171,9 @@ class PackageManager:
                             for advanced_package in self.advanced_package_list:
                                 if component in advanced_package:
                                     found = True
-                                    package_description = advanced_package[PACKAGE_DESCRIPTION]
-                                    package_localisation = package_description[PACKAGE_DESCRIPTION_LOCALISATION]
-                                    is_url = package_description[PACKAGE_DESCRIPTION_IS_URL]
+                                    package_description = advanced_package[TENTACLE_DESCRIPTION]
+                                    package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
+                                    is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
                                     try:
                                         self.install_module(advanced_package, component, package_localisation, is_url,
                                                             EVALUATOR_ADVANCED_FOLDER)
