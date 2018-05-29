@@ -2,31 +2,25 @@
 
 #### Version 0.0.12-alpha ([changelog](https://github.com/Trading-Bot/CryptoBot/tree/dev/docs/CHANGELOG.md))
 
-## Disclaimer
-This software is for educational purposes only. Do not risk money which 
-you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
-AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS. 
+*gif web candles*
+![Web Candles Screenshot](/docs/static/images/web_candle_screenshot.png)
+## Description
+------- TODO
 
-Always start by running a trading bot in simulation mode and do not engage money
-before you understand how it works and what profit/loss you should
-expect.
+## Interfaces
+*images interfaces*
+telegram|twitter|web
+------- TODO : Personalisable (config, modules)
+[wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Configuration)
+[wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
 
-We strongly recommend you to have coding and Python knowledge. Do not 
-hesitate to read the source code and understand the mechanism of this bot.
-
-Moreover, we are in the **alpha** phase so you should not expect the bot to be stable.
-
-## Demo
-See live demo [here](https://twitter.com/HerklosBotCrypt)
+## Exchanges
+binance|bitfinex|bittrex...
+*images exchanges*
+------- TODO : lien wiki exchange + list supported
 
 ## Install
 **See [installation wiki page](https://github.com/Trading-Bot/CryptoBot/wiki/Installation)**
-
-## Configuration
-Create a **config.json** file in the **config folder** with the following example :
-```
-Rename config/default_config.json to config/config.json
-```
 
 ## Usage
 ### Start the bot
@@ -51,20 +45,19 @@ python start.py --web --telegram
 ```bash
 python start.py --data_collector
 ```
-## Customize your CryptoBot !
-Information and examples on the [wiki](https://github.com/Trading-Bot/CryptoBot/wiki/Customize-your-CryptoBot)
 
-## Screenshots
-![Web Candles Screenshot](/docs/static/images/web_candle_screenshot.png)
 
-## Testing
-Use *pytest* command in the root folder : 
-```bash
-pytest
-```
+## Roadmap
+*image roadmap*
+## Disclaimer
+This software is for educational purposes only. Do not risk money which 
+you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
+AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS. 
 
-## Changelog
-See [changelog file](https://github.com/Trading-Bot/CryptoBot/tree/alpha/docs/CHANGELOG.md)
+Always start by running a trading bot in simulation mode and do not engage money
+before you understand how it works and what profit/loss you should
+expect.
 
-## More
-For more details see the [project wiki](https://github.com/Herklos-Bots/CryptoBot/wiki).
+We strongly recommend you to have coding and Python knowledge. Do not 
+hesitate to read the source code and understand the mechanism of this bot.
+
