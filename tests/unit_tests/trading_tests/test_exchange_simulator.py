@@ -18,7 +18,7 @@ class TestExchangeSimulator:
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
         exchange_inst = exchange_manager.get_exchange()
         exchange_simulator = exchange_inst.get_exchange()
-        trader_inst = TraderSimulator(config, exchange_inst)
+        trader_inst = TraderSimulator(config, exchange_inst, 1)
         return config, exchange_inst, exchange_simulator, trader_inst
 
     @staticmethod

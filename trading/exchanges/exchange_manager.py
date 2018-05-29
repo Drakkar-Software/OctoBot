@@ -74,11 +74,9 @@ class ExchangeManager:
             return True
 
     def check_web_socket_config(self, exchange_name):
-        if self.check_config(exchange_name) and CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
-                and self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]:
-            return True
-        else:
-            return False
+        return self.check_config(exchange_name) \
+               and CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
+               and self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]
 
     def enabled(self):
         # if we can get candlestick data
@@ -119,16 +117,10 @@ class ExchangeManager:
             self._raise_exchange_load_error()
 
     def symbol_exists(self, symbol):
-        if symbol in self.client_symbols:
-            return True
-        else:
-            return False
+        return symbol in self.client_symbols
 
     def time_frame_exists(self, time_frame):
-        if time_frame in self.client_time_frames:
-            return True
-        else:
-            return False
+        return time_frame in self.client_time_frames
 
     def get_client_symbols(self):
         return self.client_symbols

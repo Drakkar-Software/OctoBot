@@ -80,7 +80,8 @@ class Order:
         if timestamp is None:
             self.creation_time = time.time()
         else:
-            self.creation_time = timestamp
+            # if we have a timestamp, it's a real trader => need to format timestamp if necessary
+            self.creation_time = self.exchange.get_uniform_timestamp(timestamp)
 
         if status is None:
             self.status = OrderStatus.OPEN
@@ -117,6 +118,12 @@ class Order:
             self.exchange.cancel_order(self.order_id, self.symbol)
 
         self.trader.notify_order_cancel(self)
+
+    def cancel_from_exchange(self):
+        self.status = OrderStatus.CANCELED
+        self.canceled_time = time.time()
+        self.trader.notify_order_cancel(self)
+        self.trader.get_order_manager().remove_order_from_list(self)
 
     def close_order(self):
         self.trader.notify_order_close(self)
@@ -208,10 +215,12 @@ class BuyMarketOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            result = self.exchange.get_order(self.order_id)
+            result = self.exchange.get_order(self.order_id, self.symbol)
             new_status = self.trader.parse_status(result)
-            if new_status == OrderStatus.FILLED:
-                self.trader.parse_exchange_order_to_trade_instance(result)
+            if new_status == OrderStatus.FILLED or new_status == OrderStatus.CLOSED:
+                self.trader.parse_exchange_order_to_trade_instance(result, self)
+            elif new_status == OrderStatus.CANCELED:
+                self.cancel_from_exchange()
         else:
             # ONLY FOR SIMULATION
             self.status = OrderStatus.FILLED
@@ -227,10 +236,12 @@ class BuyLimitOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            result = self.exchange.get_order(self.order_id)
+            result = self.exchange.get_order(self.order_id, self.symbol)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
-                self.trader.parse_exchange_order_to_trade_instance(result)
+                self.trader.parse_exchange_order_to_trade_instance(result, self)
+            elif new_status == OrderStatus.CANCELED:
+                self.cancel_from_exchange()
         else:
             # ONLY FOR SIMULATION
             if self.check_last_prices(self.origin_price, True):
@@ -247,10 +258,12 @@ class SellMarketOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            result = self.exchange.get_order(self.order_id)
+            result = self.exchange.get_order(self.order_id, self.symbol)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
-                self.trader.parse_exchange_order_to_trade_instance(result)
+                self.trader.parse_exchange_order_to_trade_instance(result, self)
+            elif new_status == OrderStatus.CANCELED:
+                self.cancel_from_exchange()
         else:
             # ONLY FOR SIMULATION
             self.status = OrderStatus.FILLED
@@ -266,10 +279,12 @@ class SellLimitOrder(Order):
 
     def update_order_status(self):
         if not self.trader.simulate:
-            result = self.exchange.get_order(self.order_id)
+            result = self.exchange.get_order(self.order_id, self.symbol)
             new_status = self.trader.parse_status(result)
             if new_status == OrderStatus.FILLED:
-                self.trader.parse_exchange_order_to_trade_instance(result)
+                self.trader.parse_exchange_order_to_trade_instance(result, self)
+            elif new_status == OrderStatus.CANCELED:
+                self.cancel_from_exchange()
         else:
             # ONLY FOR SIMULATION
             if self.check_last_prices(self.origin_price, False):

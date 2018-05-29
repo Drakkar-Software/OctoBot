@@ -12,6 +12,8 @@ class Trade:
         self.canceled_time = order.get_canceled_time()
         self.filled_time = order.get_executed_time()
 
+        self.simulated = order.trader.simulate
+
         self.exchange = exchange
 
     def get_price(self):
@@ -46,3 +48,9 @@ class Trade:
 
     def get_creation_time(self):
         return self.creation_time
+
+    def get_order_type(self):
+        return self.order_type
+
+    def get_simulated(self):
+        return self.simulated

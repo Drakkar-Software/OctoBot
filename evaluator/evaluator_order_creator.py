@@ -21,15 +21,146 @@ class EvaluatorOrderCreator:
         self.QUANTITY_MARKET_MIN_PERCENT = 0.5
         self.QUANTITY_MARKET_MAX_PERCENT = 1
         self.QUANTITY_BUY_MARKET_ATTENUATION = 0.2
-        self.QUANTITY_MARKET_ATTENUATION = (
-                                                   self.QUANTITY_MARKET_MAX_PERCENT - self.QUANTITY_MARKET_MIN_PERCENT) / self.MAX_SUM_RESULT
+        self.QUANTITY_MARKET_ATTENUATION = (self.QUANTITY_MARKET_MAX_PERCENT - self.QUANTITY_MARKET_MIN_PERCENT) \
+            / self.MAX_SUM_RESULT
 
         self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.995
         self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.98
         self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
         self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
-        self.LIMIT_ORDER_ATTENUATION = (
-                                               self.BUY_LIMIT_ORDER_MAX_PERCENT - self.BUY_LIMIT_ORDER_MIN_PERCENT) / self.MAX_SUM_RESULT
+        self.LIMIT_ORDER_ATTENUATION = (self.BUY_LIMIT_ORDER_MAX_PERCENT - self.BUY_LIMIT_ORDER_MIN_PERCENT)\
+            / self.MAX_SUM_RESULT
+
+    @staticmethod
+    def can_create_order(symbol, exchange, state, portfolio):
+        currency, market = split_symbol(symbol)
+
+        # get symbol min amount when creating order
+        symbol_limit = exchange.get_market_status(symbol)[Ecmsc.LIMITS.value]
+        symbol_min_amount = symbol_limit[Ecmsc.LIMITS_AMOUNT.value][Ecmsc.LIMITS_AMOUNT_MIN.value]
+        order_min_amount = symbol_limit[Ecmsc.LIMITS_COST.value][Ecmsc.LIMITS_COST_MIN.value]
+
+        # short cases => sell => need this currency
+        if state == EvaluatorStates.VERY_SHORT or state == EvaluatorStates.SHORT:
+            return portfolio.get_currency_portfolio(currency) > symbol_min_amount
+
+        # long cases => buy => need money(aka other currency in the pair) to buy this currency
+        elif state == EvaluatorStates.LONG or state == EvaluatorStates.VERY_LONG:
+            return portfolio.get_currency_portfolio(market) > order_min_amount
+
+        # other cases like neutral state or unfulfilled previous conditions
+        return False
+
+    # creates a new order (or multiple split orders), always check EvaluatorOrderCreator.can_create_order() first.
+    def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
+        try:
+            last_prices = exchange.get_recent_trades(symbol)
+            reference_sum = 0
+
+            for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]:
+                reference_sum += float(last_price["price"])
+
+            reference = reference_sum / ORDER_CREATION_LAST_TRADES_TO_USE
+
+            currency, market = split_symbol(symbol)
+
+            current_portfolio = portfolio.get_currency_portfolio(currency)
+            current_market_quantity = portfolio.get_currency_portfolio(market)
+
+            market_quantity = current_market_quantity / reference
+
+            price = reference
+            symbol_market = exchange.get_market_status(symbol)
+
+            created_orders = []
+            # TODO : temp
+            if state == EvaluatorStates.VERY_SHORT:
+                quantity = self._get_market_quantity_from_risk(eval_note,
+                                                               trader,
+                                                               current_portfolio)
+                for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity, price,
+                                                                                                    symbol_market):
+                    market = trader.create_order_instance(order_type=TraderOrderType.SELL_MARKET,
+                                                          symbol=symbol,
+                                                          current_price=order_price,
+                                                          quantity=order_quantity,
+                                                          price=order_price)
+                    trader.create_order(market, portfolio)
+                    created_orders.append(market)
+                return created_orders
+
+            elif state == EvaluatorStates.SHORT:
+                quantity = self._get_limit_quantity_from_risk(eval_note,
+                                                              trader,
+                                                              current_portfolio)
+                limit_price = EvaluatorOrderCreator\
+                    ._adapt_price(symbol_market, price * self._get_limit_price_from_risk(eval_note, trader))
+                stop_price = EvaluatorOrderCreator \
+                    ._adapt_price(symbol_market, price * self._get_stop_price_from_risk(trader))
+                for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity,
+                                                                                                    limit_price,
+                                                                                                    symbol_market):
+                    limit = trader.create_order_instance(order_type=TraderOrderType.SELL_LIMIT,
+                                                         symbol=symbol,
+                                                         current_price=price,
+                                                         quantity=order_quantity,
+                                                         price=order_price)
+                    trader.create_order(limit, portfolio)
+                    created_orders.append(limit)
+
+                    stop = trader.create_order_instance(order_type=TraderOrderType.STOP_LOSS,
+                                                        symbol=symbol,
+                                                        current_price=price,
+                                                        quantity=order_quantity,
+                                                        price=stop_price,
+                                                        linked_to=limit)
+                    trader.create_order(stop, portfolio)
+                return created_orders
+
+            elif state == EvaluatorStates.NEUTRAL:
+                pass
+
+            # TODO : stop loss
+            elif state == EvaluatorStates.LONG:
+                quantity = self._get_limit_quantity_from_risk(eval_note,
+                                                              trader,
+                                                              market_quantity)
+                limit_price = EvaluatorOrderCreator\
+                    ._adapt_price(symbol_market, price * self._get_limit_price_from_risk(eval_note, trader))
+                for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity,
+                                                                                                    limit_price,
+                                                                                                    symbol_market):
+                    limit = trader.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
+                                                         symbol=symbol,
+                                                         current_price=price,
+                                                         quantity=order_quantity,
+                                                         price=order_price)
+                    trader.create_order(limit, portfolio)
+                    created_orders.append(limit)
+                return created_orders
+
+            elif state == EvaluatorStates.VERY_LONG:
+                quantity = self._get_market_quantity_from_risk(eval_note,
+                                                               trader,
+                                                               market_quantity,
+                                                               True)
+                for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity, price,
+                                                                                                    symbol_market):
+                    market = trader.create_order_instance(order_type=TraderOrderType.BUY_MARKET,
+                                                          symbol=symbol,
+                                                          current_price=order_price,
+                                                          quantity=order_quantity,
+                                                          price=order_price)
+                    trader.create_order(market, portfolio)
+                    created_orders.append(market)
+                return created_orders
+
+            # if nothing go returned, return None
+            return None
+
+        except Exception as e:
+            logging.getLogger(self.__class__.__name__).error("Failed to create order : {0}".format(e))
+            return None
 
     @staticmethod
     def _check_factor(min_val, max_val, factor):
@@ -109,31 +240,9 @@ class EvaluatorOrderCreator:
                                                    factor) * quantity
 
     @staticmethod
-    def can_create_order(symbol, exchange, trader, state):
-        currency, market = split_symbol(symbol)
-        portfolio = trader.get_portfolio()
-
-        # get symbol min amount when creating order
-        symbol_limit = exchange.get_market_status(symbol)[Ecmsc.LIMITS.value]
-        symbol_min_amount = symbol_limit[Ecmsc.LIMITS_AMOUNT.value][Ecmsc.LIMITS_AMOUNT_MIN.value]
-        order_min_amount = symbol_limit[Ecmsc.LIMITS_COST.value][Ecmsc.LIMITS_COST_MIN.value]
-
-        # short cases => sell => need this currency
-        if state == EvaluatorStates.VERY_SHORT or state == EvaluatorStates.SHORT:
-            with portfolio as pf:
-                return pf.get_currency_portfolio(currency) > symbol_min_amount
-
-        # long cases => buy => need money(aka other currency in the pair) to buy this currency
-        elif state == EvaluatorStates.LONG or state == EvaluatorStates.VERY_LONG:
-            with portfolio as pf:
-                return pf.get_currency_portfolio(market) > order_min_amount
-
-        # other cases like neutral state or unfulfilled previous conditions
-        return False
-
-    @staticmethod
     def _trunc_with_n_decimal_digits(value, digits):
-        return math.trunc(value*10**digits)/(10**digits)
+        # force exact representation
+        return float("{0:.{1}f}".format(math.trunc(value*10**digits)/(10**digits), digits))
 
     @staticmethod
     def _get_value_or_default(dictionary, key, default=math.nan):
@@ -143,7 +252,7 @@ class EvaluatorOrderCreator:
         return default
 
     @staticmethod
-    def _adapt_order_quantity(limiting_value, max_value, quantity_to_adapt, price, symbol_market):
+    def _adapt_order_quantity_because_quantity(limiting_value, max_value, quantity_to_adapt, price, symbol_market):
         orders = []
         nb_full_orders = limiting_value // max_value
         rest_order_quantity = limiting_value % max_value
@@ -156,6 +265,20 @@ class EvaluatorOrderCreator:
         other_orders_quantity = (after_rest_quantity_to_adapt + max_value)/(nb_full_orders+1)
         valid_other_orders_quantity = EvaluatorOrderCreator._adapt_quantity(symbol_market, other_orders_quantity)
         orders += [(valid_other_orders_quantity, price)]*int(nb_full_orders)
+        return orders
+
+    @staticmethod
+    def _adapt_order_quantity_because_price(limiting_value, max_value, price, symbol_market):
+        orders = []
+        nb_full_orders = limiting_value // max_value
+        rest_order_cost = limiting_value % max_value
+        if rest_order_cost > 0:
+            valid_last_order_quantity = EvaluatorOrderCreator._adapt_quantity(symbol_market, rest_order_cost/price)
+            orders.append((valid_last_order_quantity, price))
+
+        other_orders_quantity = max_value / price
+        valid_other_orders_quantity = EvaluatorOrderCreator._adapt_quantity(symbol_market, other_orders_quantity)
+        orders += [(valid_other_orders_quantity, price)] * int(nb_full_orders)
         return orders
 
     @staticmethod
@@ -216,124 +339,12 @@ class EvaluatorOrderCreator:
             nb_orders_according_to_cost = total_order_price / max_cost
             nb_orders_according_to_quantity = valid_quantity / max_quantity
             if nb_orders_according_to_cost > nb_orders_according_to_quantity:
-                return EvaluatorOrderCreator._adapt_order_quantity(total_order_price, max_cost, quantity,
-                                                                   price, symbol_market)
+                return EvaluatorOrderCreator._adapt_order_quantity_because_price(total_order_price, max_cost,price,
+                                                                                 symbol_market)
             else:
-                return EvaluatorOrderCreator._adapt_order_quantity(valid_quantity, max_quantity, quantity,
-                                                                   price, symbol_market)
+                return EvaluatorOrderCreator._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
+                                                                                    quantity, price, symbol_market)
 
         else:
             # valid order that can be handled wy the exchange
             return [(valid_quantity, valid_price)]
-
-    # creates a new order (or multiple split orders), always check EvaluatorOrderCreator.can_create_order() first.
-    def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
-        try:
-            last_prices = exchange.get_recent_trades(symbol)
-            reference_sum = 0
-
-            for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]:
-                reference_sum += float(last_price["price"])
-
-            reference = reference_sum / ORDER_CREATION_LAST_TRADES_TO_USE
-
-            currency, market = split_symbol(symbol)
-
-            current_portfolio = portfolio.get_currency_portfolio(currency)
-            current_market_quantity = portfolio.get_currency_portfolio(market)
-
-            market_quantity = current_market_quantity / reference
-
-            price = reference
-            symbol_market = exchange.get_market_status(symbol)
-
-            created_orders = []
-            # TODO : temp
-            if state == EvaluatorStates.VERY_SHORT:
-                quantity = self._get_market_quantity_from_risk(eval_note,
-                                                               trader,
-                                                               current_portfolio)
-                for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity, price,
-                                                                                                    symbol_market):
-                    market = trader.create_order_instance(order_type=TraderOrderType.SELL_MARKET,
-                                                          symbol=symbol,
-                                                          current_price=order_price,
-                                                          quantity=order_quantity,
-                                                          price=order_price)
-                    trader.create_order(market, portfolio)
-                    created_orders.append(market)
-                return created_orders
-
-            elif state == EvaluatorStates.SHORT:
-                quantity = self._get_limit_quantity_from_risk(eval_note,
-                                                              trader,
-                                                              current_portfolio)
-                for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity, price,
-                                                                                                    symbol_market):
-                    limit_price = EvaluatorOrderCreator\
-                        ._adapt_price(symbol_market, order_price * self._get_limit_price_from_risk(eval_note, trader))
-                    limit = trader.create_order_instance(order_type=TraderOrderType.SELL_LIMIT,
-                                                         symbol=symbol,
-                                                         current_price=order_price,
-                                                         quantity=order_quantity,
-                                                         price=limit_price)
-                    trader.create_order(limit, portfolio)
-                    created_orders.append(limit)
-
-                    # ???????????
-                    # stop_quantity = EvaluatorOrderCreator\
-                    #     ._adapt_quantity(symbol_market, self._get_limit_quantity_from_risk(eval_note,
-                    #                                                                        trader,
-                    #                                                                        current_portfolio))
-                    
-                    stop_price = EvaluatorOrderCreator\
-                        ._adapt_price(symbol_market, order_price * self._get_stop_price_from_risk(trader))
-                    stop = trader.create_order_instance(order_type=TraderOrderType.STOP_LOSS,
-                                                        symbol=symbol,
-                                                        current_price=order_price,
-                                                        quantity=order_quantity,
-                                                        price=stop_price,
-                                                        linked_to=limit)
-                    trader.create_order(stop, portfolio)
-                return created_orders
-
-            elif state == EvaluatorStates.NEUTRAL:
-                pass
-
-            # TODO : stop loss
-            elif state == EvaluatorStates.LONG:
-                quantity = self._get_limit_quantity_from_risk(eval_note,
-                                                              trader,
-                                                              market_quantity)
-                for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity, price,
-                                                                                                    symbol_market):
-                    limit_price = EvaluatorOrderCreator\
-                        ._adapt_price(symbol_market, order_price * self._get_limit_price_from_risk(eval_note, trader))
-                    limit = trader.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
-                                                         symbol=symbol,
-                                                         current_price=order_price,
-                                                         quantity=order_quantity,
-                                                         price=limit_price)
-                    trader.create_order(limit, portfolio)
-                    created_orders.append(limit)
-                return created_orders
-
-            elif state == EvaluatorStates.VERY_LONG:
-                quantity = self._get_market_quantity_from_risk(eval_note,
-                                                               trader,
-                                                               market_quantity,
-                                                               True)
-                for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity, price,
-                                                                                                    symbol_market):
-                    market = trader.create_order_instance(order_type=TraderOrderType.BUY_MARKET,
-                                                          symbol=symbol,
-                                                          current_price=order_price,
-                                                          quantity=order_quantity,
-                                                          price=order_price)
-                    trader.create_order(market, portfolio)
-                    created_orders.append(market)
-                return created_orders
-
-        except Exception as e:
-            logging.getLogger(self.__class__.__name__).error("Failed to create order : {0}".format(e))
-            return None

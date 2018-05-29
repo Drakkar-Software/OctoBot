@@ -50,8 +50,8 @@ class WebSocketExchange(AbstractExchange):
         return self.client.get_recent_trades(symbol, since, limit)
 
     # ORDERS
-    def get_order(self, order_id):
-        return self.client.get_order(order_id)
+    def get_order(self, order_id, symbol=None):
+        return self.client.get_order(order_id, symbol=symbol)
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
         return self.client.get_all_orders(symbol, since, limit)
@@ -88,6 +88,9 @@ class WebSocketExchange(AbstractExchange):
     def get_market_status(self, symbol):
         pass
 
+    def get_uniform_timestamp(self, timestamp):
+        pass
+
     # utility methods
     def init_orders_for_ws_if_possible(self, orders):
         if not self.client.orders_are_initialized():
@@ -95,8 +98,7 @@ class WebSocketExchange(AbstractExchange):
                 self.client.init_ccxt_order_from_other_source(order)
 
     def init_candle_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_data_frame):
-        self.client.exchange_data.initialize_candles_data(symbol, time_frame, symbol_candle_data,
-                                                          symbol_candle_data_frame)
+        self.client.initialize_candles_data(symbol, time_frame, symbol_candle_data, symbol_candle_data_frame)
 
     def set_orders_are_initialized(self, value):
         self.client.set_orders_are_initialized(value)
