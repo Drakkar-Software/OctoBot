@@ -17,14 +17,14 @@ def _log_uncaught_exceptions(ex_cls, ex, tb):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Octobot')
-    parser.add_argument('start', help='start the Octobot',
+    parser = argparse.ArgumentParser(description='OctoBot')
+    parser.add_argument('start', help='start the OctoBot',
                         action='store_true')
-    parser.add_argument('-s', '--simulate', help='start the Octobot with the trader simulator',
+    parser.add_argument('-s', '--simulate', help='start the OctoBot with the trader simulator',
                         action='store_true')
     parser.add_argument('-d', '--data_collector', help='start the data collector process to create data for backtesting',
                         action='store_true')
-    parser.add_argument('-u', '--update', help='update Octobot with the latest version available',
+    parser.add_argument('-u', '--update', help='update OctoBot with the latest version available',
                         action='store_true')
     parser.add_argument('-b', '--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
@@ -33,7 +33,7 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')
-    parser.add_argument('-p', '--packager', help='Start Octobot package manager: -p install all to install all '
+    parser.add_argument('-p', '--packager', help='Start OctoBot package manager: -p install all to install all '
                                                  'modules and -p install [modules] to install specific modules',
                         nargs='+')
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     fileConfig('config/logging_config.ini')
 
-    logger = logging.getLogger("Octobot Launcher")
+    logger = logging.getLogger("OctoBot Launcher")
 
     # Force new log file creation not to log at the previous one's end.
     logger.parent.handlers[1].doRollover()
@@ -62,8 +62,8 @@ if __name__ == '__main__':
         Commands.update(logger)
 
     else:
-        # In those cases load Octobot
-        from octobot import Octobot
+        # In those cases load OctoBot
+        from octobot import OctoBot
 
         config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
         WebService.enable(config, args.web)
 
-        bot = Octobot(config)
+        bot = OctoBot(config)
 
         import interfaces
         interfaces.__init__(bot, config)

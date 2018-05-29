@@ -120,4 +120,4 @@ backtesting/collector/data/**
 
 logs/matrix_history\.data
 
-logs/Octobot\.log\.*
+logs/OctoBot\.log\.*

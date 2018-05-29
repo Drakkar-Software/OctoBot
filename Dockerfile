@@ -6,8 +6,8 @@ RUN apt install git -y
 
 # Set up dev environment
 WORKDIR /bot
-RUN git clone https://github.com/Drakkar-Software/Octobot /bot/octobot
-WORKDIR /bot/octobot
+RUN git clone https://github.com/Drakkar-Software/OctoBot /bot/OctoBot
+WORKDIR /bot/OctoBot
 RUN git checkout dev
 
 # install dependencies

@@ -1,6 +1,6 @@
-# Octobot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/Octobot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Drakkar-Software/Octobot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Drakkar-Software/Octobot.svg?branch=dev)](https://travis-ci.org/Drakkar-Software/Octobot) [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/Octobot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/Octobot?branch=dev) [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/Octobot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/Octobot/overview/dev) [![Build Status](https://semaphoreci.com/api/v1/herklos/octobot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/octobot) [![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=Drakkar-Software&repoName=Octobot&branch=dev&pipelineName=Octobot&accountName=herklos_marketplace&type=cf-1)]( https://g.codefresh.io/repositories/Drakkar-Software/Octobot/builds?filter=trigger:build;branch:dev;service:5b06a377435197b088b1757a~Octobot)
+# OctoBot [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/OctoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Drakkar-Software/OctoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Drakkar-Software/OctoBot.svg?branch=dev)](https://travis-ci.org/Drakkar-Software/OctoBot) [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/OctoBot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/overview/dev) [![Build Status](https://semaphoreci.com/api/v1/herklos/OctoBot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/OctoBot) [![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=Drakkar-Software&repoName=OctoBot&branch=dev&pipelineName=OctoBot&accountName=herklos_marketplace&type=cf-1)]( https://g.codefresh.io/repositories/Drakkar-Software/OctoBot/builds?filter=trigger:build;branch:dev;service:5b06a377435197b088b1757a~OctoBot)
 
-#### Version 0.0.12-alpha ([changelog](https://github.com/Drakkar-Software/Octobot/tree/dev/docs/CHANGELOG.md))
+#### Version 0.0.12-alpha ([changelog](https://github.com/Drakkar-Software/OctoBot/tree/dev/docs/CHANGELOG.md))
 
 *gif web candles*
 ![Web Candles Screenshot](/docs/static/images/web_candle_screenshot.png)
@@ -11,8 +11,8 @@
 *images interfaces*
 telegram|twitter|web
 ------- TODO : Personalisable (config, modules)
-[wiki](https://github.com/Drakkar-Software/Octobot/wiki/Configuration)
-[wiki](https://github.com/Drakkar-Software/Octobot/wiki/Customize-your-Octobot)
+[wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration)
+[wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot)
 
 ## Exchanges
 binance|bitfinex|bittrex...
@@ -20,10 +20,10 @@ binance|bitfinex|bittrex...
 ------- TODO : lien wiki exchange + list supported
 
 ## Install
-**See [installation wiki page](https://github.com/Drakkar-Software/Octobot/wiki/Installation)**
+**See [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation)**
 
 ## Usage
-------- TODO : [usage wiki page](https://github.com/Drakkar-Software/Octobot/wiki/Usage) 
+------- TODO : [usage wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Usage) 
 
 ## Roadmap
 *image roadmap*
