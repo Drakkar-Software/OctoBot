@@ -12,8 +12,9 @@ You just have to use the [tentacle manager](https://github.com/Drakkar-Software/
 and there you have your functional OctoBot ! 
 
 ## Interfaces
-*images interfaces*
-telegram|[![Twitter Interface](../assets/twitter-interface.png)](https://twitter.com/HerklosBotCrypt)|web
+![Telegram Interface](../assets/telegram-interface.png)]|
+[![Twitter Interface](../assets/twitter-interface.png)](https://twitter.com/HerklosBotCrypt)|
+![Web Candles Screenshot](../assets/web_candle_screenshot.png)
 OctoBot is very customizable thanks to a lot of configuration and modules (tentacles).
 You can absolutely configure all your needs with your own 
 [configuration file](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration).
@@ -24,7 +25,9 @@ modify, [create]([wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Customi
 all the modules (tentacles) you want to create you perfect cryptocurrency trading bot.
 
 ## Exchanges
-binance|bitfinex|bittrex...
+[[![Binance](../assets/binance-logo.png)]](https://www.binance.com)|
+[[![Bitfinex](../assets/bitfinex-logo.png)]](https://www.bitfinex.com)|
+[[![Bittrex](../assets/bittrex-logo.png)]](https://bittrex.com)...
 Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges) across many thanks 
 to [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, 
