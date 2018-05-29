@@ -1,4 +1,4 @@
-# OctoBot 0.0.12-alpha
+# OctoBot [0.0.12-alpha](https://github.com/Drakkar-Software/OctoBot/tree/dev/docs/CHANGELOG.md)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/OctoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Drakkar-Software/OctoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Drakkar-Software/OctoBot.svg?branch=dev)](https://travis-ci.org/Drakkar-Software/OctoBot) [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/OctoBot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/overview/dev) [![Build Status](https://semaphoreci.com/api/v1/herklos/octobot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/octobot) [![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=Drakkar-Software&repoName=OctoBot&branch=dev&pipelineName=OctoBot&accountName=herklos_marketplace&type=cf-1)]( https://g.codefresh.io/repositories/Drakkar-Software/OctoBot/builds?filter=trigger:build;branch:dev;service:5b06a377435197b088b1757a~OctoBot)
 ![OctoBot logo](../assets/octopus.png)
 
@@ -29,7 +29,7 @@ all the modules (tentacles) you want to create you perfect cryptocurrency tradin
 [![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
 [![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
 
-Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges) across many thanks 
+Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges) thanks 
 to [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, 
 just configure OctoBot with your api keys as described [here]((https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges)).
@@ -44,7 +44,6 @@ After the installation you should take a look at the
 [usage wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Usage) to know all the features of the OctoBot.
 
 ## Roadmap
-[changelog](https://github.com/Drakkar-Software/OctoBot/tree/dev/docs/CHANGELOG.md)
 *roadmap image*
 
 ## Disclaimer
