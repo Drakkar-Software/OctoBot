@@ -48,10 +48,9 @@ class PrettyPrinter:
                 trade.get_filled_time()
             ).strftime('%Y-%m-%d %H:%M:%S'))
 
-
     @staticmethod
     def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):
-        return "CryptoBot ALERT : #{0}\n Symbol : #{1}\n Result : {2}\n Evaluation : {3}".format(
+        return "Octobot ALERT : #{0}\n Symbol : #{1}\n Result : {2}\n Evaluation : {3}".format(
             crypto_currency,
             symbol.replace("/", ""),
             str(result).split(".")[1],
@@ -63,7 +62,7 @@ class PrettyPrinter:
             PrettyPrinter.get_min_string_from_number(amounts[Portfolio.TOTAL]),
             PrettyPrinter.get_min_string_from_number(amounts[Portfolio.AVAILABLE]),
             currency)
-                  for currency, amounts in global_portfolio.items() if amounts[Portfolio.TOTAL] > 0]
+            for currency, amounts in global_portfolio.items() if amounts[Portfolio.TOTAL] > 0]
 
         return separator.join(result)
 

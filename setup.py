@@ -5,10 +5,10 @@ from config.cst import VERSION
 DESCRIPTION = open('README.md').read() + '\n\n' + open('docs/CHANGELOG.md').read()
 
 setup(
-    name='CryptoBot',
+    name='Octobot',
     version=VERSION,
     # TODO packages=[''],
-    url='https://github.com/Trading-Bot/CryptoBot',
+    url='https://github.com/Drakkar-Software/Octobot',
     license='MIT',
     author='Trading-Bot team',
     description='Cryptocurrencies alert / trading bot',
