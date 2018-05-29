@@ -7,6 +7,7 @@
 ## Description
 Octobot is a powerful open-source cryptocurrency trading bot fully modular (with tentacles). 
 This repository contains all the features of the Octobot (trading tools, interfaces...) without any modules (tentacles).
+
 You just have to use the [tentacle manager](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager) 
 and there you have your functional OctoBot ! 
 
@@ -16,6 +17,7 @@ telegram|[![Twitter Interface](../assets/twitter-interface.png)](https://twitter
 OctoBot is very customizable thanks to a lot of configuration and modules (tentacles).
 You can absolutely configure all your needs with your own 
 [configuration file](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration).
+
 Moreover, an other important feature is the module-based architecture : 
 you can [install](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager), 
 modify, [create]([wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot))
@@ -24,11 +26,13 @@ all the modules (tentacles) you want to create you perfect cryptocurrency tradin
 ## Exchanges
 binance|bitfinex|bittrex...
 Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges) across many thanks 
-to [ccxt library](https://github.com/ccxt/ccxt). To activate trading on an exchange, 
+to [ccxt library](https://github.com/ccxt/ccxt). 
+To activate trading on an exchange, 
 just configure OctoBot with your api keys as described [here]((https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges)).
 
 ## Install
 The OctoBot installation is **very simple**... because **very documented** !
+
 Just follow the [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation) and it's done !
 
 ## Usage
