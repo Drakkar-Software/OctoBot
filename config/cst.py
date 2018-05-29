@@ -131,19 +131,19 @@ CONFIG_INTERFACES = "interfaces"
 CONFIG_INTERFACES_WEB = "web"
 CONFIG_INTERFACES_TELEGRAM = "telegram"
 
-# Packages
+# Tentacles (packages)
 GITHUB = "github"
 GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
 GITHUB_BASE_URL = "https://github.com"
-PACKAGES_PUBLIC_REPOSITORY = "Drakkar-Software/OctoBot-Tentacles"
-PACKAGES_PUBLIC_LIST = "packages_list.json"
-PACKAGES_DEFAULT_BRANCH = "master"
+TENTACLES_PUBLIC_REPOSITORY = "Drakkar-Software/OctoBot-Tentacles"
+TENTACLES_PUBLIC_LIST = "tentacles_list.json"
+TENTACLES_DEFAULT_BRANCH = "master"
 EVALUATOR_DEFAULT_FOLDER = "Default"
 EVALUATOR_ADVANCED_FOLDER = "Advanced"
-CONFIG_PACKAGES_KEY = "packages"
-PACKAGE_DESCRIPTION = "package_description"
-PACKAGE_DESCRIPTION_LOCALISATION = "localisation"
-PACKAGE_DESCRIPTION_IS_URL = "is_url"
+CONFIG_TENTACLES_KEY = "tentacles"
+TENTACLE_DESCRIPTION = "tentacle_description"
+TENTACLE_DESCRIPTION_LOCALISATION = "localisation"
+TENTACLE_DESCRIPTION_IS_URL = "is_url"
 
 
 class EvaluatorMatrixTypes(Enum):

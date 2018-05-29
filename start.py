@@ -33,8 +33,8 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')
-    parser.add_argument('-p', '--packager', help='Start OctoBot package manager: -p install all to install all '
-                                                 'modules and -p install [modules] to install specific modules',
+    parser.add_argument('-p', '--packager', help='Start OctoBot tentacle (package) manager: -p install all to install '
+                                                 'all modules and -p install [modules] to install specific modules',
                         nargs='+')
 
     args = parser.parse_args()
