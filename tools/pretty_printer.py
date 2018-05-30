@@ -9,7 +9,13 @@ class PrettyPrinter:
     def open_order_pretty_printer(order):
         currency, market = order.get_currency_and_market()
 
-        order_type_name = order.get_order_type().name
+        try:
+            order_type_name = order.get_order_type().name
+        except AttributeError:
+            try:
+                order_type_name = OrderConstants.TraderOrderTypeClasses[order.get_order_type()].__name__
+            except KeyError:
+                order_type_name = order.get_order_type().__class__.__name__
 
         return "{0}: {1} {2} at {3} {4} on {5}: {6} ".format(
             order_type_name,
@@ -27,7 +33,13 @@ class PrettyPrinter:
         currency = trade.get_currency()
         market = trade.get_market()
 
-        order_type_name = trade.get_order_type().name
+        try:
+            order_type_name = trade.get_order_type().name
+        except AttributeError:
+            try:
+                order_type_name = OrderConstants.TraderOrderTypeClasses[trade.get_order_type()].__name__
+            except KeyError:
+                order_type_name = trade.get_order_type().__class__.__name__
 
         return "{0}: {1} {2} at {3} {4} on {5}: {6} ".format(
             order_type_name,
