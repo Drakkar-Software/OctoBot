@@ -139,7 +139,7 @@ class TelegramApp:
             PrettyPrinter.get_min_string_from_number(portfolio_real_current_value),
             reference_market,
             TelegramApp.EOL)
-        portfolios_string += "Global real portfolio : {1}{0}{1}{1}".format(
+        portfolios_string += "Real portfolio : {1}{0}{1}{1}".format(
             PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
             TelegramApp.EOL)
 
@@ -147,7 +147,7 @@ class TelegramApp:
             PrettyPrinter.get_min_string_from_number(portfolio_simulated_current_value),
             reference_market,
             TelegramApp.EOL)
-        portfolios_string += "Global simulated portfolio : {1}{0}".format(
+        portfolios_string += "Simulated portfolio : {1}{0}".format(
             PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
             TelegramApp.EOL)
         update.message.reply_text(portfolios_string)
