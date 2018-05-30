@@ -117,13 +117,18 @@ class Trader:
                                                        order.origin_stop_price)
                 order = self.parse_exchange_order_to_order_instance(new_order)
 
-        self.logger.info("Order creation : {0} | {1} | Price : {2} | Quantity : {3}".format(order.get_order_symbol(),
-                                                                                            order.get_order_type(),
-                                                                                            order.get_origin_price(),
-                                                                                            order.get_origin_quantity()))
+            # update the availability of the currency in the portfolio
+            portfolio.update_portfolio_available(order, is_new_order=True)
 
-        # update the availability of the currency in the portfolio
-        portfolio.update_portfolio_available(order, is_new_order=True)
+            title = "Order creation"
+        else:
+            title = "Order loaded"
+
+        self.logger.info("{0} : {1} | {2} | Price : {3} | Quantity : {4}".format(title,
+                                                                                 order.get_order_symbol(),
+                                                                                 order.get_order_type(),
+                                                                                 order.get_origin_price(),
+                                                                                 order.get_origin_quantity()))
 
         # notify order manager of a new open order
         self.order_manager.add_order_to_list(order)
