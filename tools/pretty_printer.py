@@ -9,12 +9,9 @@ class PrettyPrinter:
     def open_order_pretty_printer(order):
         currency, market = order.get_currency_and_market()
 
-        try:
-            order_type_name = OrderConstants.TraderOrderTypeClasses[order.get_order_type()].__name__
-        except KeyError:
-            order_type_name = order.get_order_type().__class__.__name__
+        order_type_name = order.get_order_type().name
 
-        return "[{0}] {1}: {2} {3} at {4} {5} on {6} {7} ".format(
+        return "[{0}] {1}: {2} {3} at {4} {5} on {6}: {7} ".format(
             "Simulator" if order.trader.simulate else "Real trader",
             order_type_name,
             PrettyPrinter.get_min_string_from_number(order.get_origin_quantity()),
@@ -24,19 +21,16 @@ class PrettyPrinter:
             order.get_exchange().get_name(),
             datetime.datetime.fromtimestamp(
                 order.get_creation_time()
-            ).strftime('%Y-%m-%d %H:%M:%S'))
+            ).strftime('%d/%m/%y %H:%M'))
 
     @staticmethod
     def trade_pretty_printer(trade):
         currency = trade.get_currency()
         market = trade.get_market()
 
-        try:
-            order_type_name = OrderConstants.TraderOrderTypeClasses[trade.get_order_type()].__name__
-        except KeyError:
-            order_type_name = trade.get_order_type().__class__.__name__
+        order_type_name = trade.get_order_type().name
 
-        return "[{0}] {1}: {2} {3} at {4} {5} {6} on {7} ".format(
+        return "[{0}] {1}: {2} {3} at {4} {5} on {6}: {7} ".format(
             "Simulated" if trade.get_simulated() else "Real trader",
             order_type_name,
             PrettyPrinter.get_min_string_from_number(trade.get_quantity()),
@@ -46,7 +40,7 @@ class PrettyPrinter:
             trade.get_exchange_name(),
             datetime.datetime.fromtimestamp(
                 trade.get_filled_time()
-            ).strftime('%Y-%m-%d %H:%M:%S'))
+            ).strftime('%d/%m/%y %H:%M'))
 
     @staticmethod
     def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):
