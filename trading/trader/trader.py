@@ -115,6 +115,8 @@ class Trader:
                                                        order.get_origin_quantity(),
                                                        order.get_origin_price(),
                                                        order.origin_stop_price)
+
+                # get real order from exchange
                 order = self.parse_exchange_order_to_order_instance(new_order)
 
             # update the availability of the currency in the portfolio

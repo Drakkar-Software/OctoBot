@@ -83,16 +83,14 @@ class OrdersManager(threading.Thread):
     Finally ask cancellation and filling process if it is required
     """
     def _update_orders_status(self):
-        # update all prices only if simulate
-        if self.trader.simulate:
-            self._update_last_symbol_list()
+        # update all prices
+        self._update_last_symbol_list()
 
         for order in self.order_list:
-            # update symbol prices from exchange only if simulate
-            if self.trader.simulate:
-                if order.get_order_symbol() in self.last_symbol_prices:
-                    with order as odr:
-                        odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
+            # symbol prices from exchange
+            if order.get_order_symbol() in self.last_symbol_prices:
+                with order as odr:
+                    odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
 
             # ask orders to update their status
             with order as odr:
