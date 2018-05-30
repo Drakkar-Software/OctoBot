@@ -3,7 +3,7 @@ import subprocess
 
 from backtesting.collector.data_collector import DataCollector
 from config.cst import ORIGIN_URL
-from tools.package_manager import PackageManager
+from tools.tentacle_manager import TentacleManager
 
 
 class Commands:
@@ -41,7 +41,7 @@ class Commands:
     @staticmethod
     def package_manager(config, commands, catch=False):
         try:
-            package_manager_inst = PackageManager(config)
+            package_manager_inst = TentacleManager(config)
             package_manager_inst.parse_commands(commands)
         except Exception as e:
             if not catch:
