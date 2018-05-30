@@ -16,6 +16,11 @@ class TelegramApp:
     EOL = "\n"
     REAL_TRADER_STR = "[Real Trader] "
     SIMULATOR_TRADER_STR = "[Simulator] "
+    NO_TRADER_MESSAGE = "No trader is activated in my config/config.json file.\n" \
+                        "See https://github.com/Drakkar-Software/OctoBot/wiki if you need help with my configuration."
+    NO_CURRENCIES_MESSAGE = "No cryptocurrencies are in my config/config.json file.\n" \
+                            "See https://github.com/Drakkar-Software/OctoBot/wiki/Configuration#cryptocurrencies " \
+                            "if you need help with my cryptocurrencies configuration."
 
     def __init__(self, config, telegram_service, telegram_updater):
         self.config = config
@@ -131,6 +136,8 @@ class TelegramApp:
                                                                    None,
                                                                    get_reference_market()),
                 PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2))
+        if not profitability_string:
+            profitability_string = TelegramApp.NO_TRADER_MESSAGE
         update.message.reply_text(profitability_string)
 
     @staticmethod
@@ -162,6 +169,9 @@ class TelegramApp:
                 TelegramApp.SIMULATOR_TRADER_STR,
                 PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
                 TelegramApp.EOL)
+
+        if not portfolios_string:
+            portfolios_string = TelegramApp.NO_TRADER_MESSAGE
         update.message.reply_text(portfolios_string)
 
     @staticmethod
@@ -182,6 +192,9 @@ class TelegramApp:
             for orders in portfolio_simulated_open_orders:
                 for order in orders:
                     orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
+
+        if not orders_string:
+            orders_string = TelegramApp.NO_TRADER_MESSAGE
 
         update.message.reply_text(orders_string)
 
@@ -204,16 +217,23 @@ class TelegramApp:
                 for trade in trades:
                     trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
 
+        if not trades_history_string:
+            trades_history_string = TelegramApp.NO_TRADER_MESSAGE
+
         update.message.reply_text(trades_history_string)
 
     @staticmethod
     def command_market_status(_, update):
         try:
             message = "My cryptocurrencies evaluations are:" + TelegramApp.EOL + TelegramApp.EOL
+            at_least_one_currency = False
             for currency_pair, currency_info in get_currencies_with_status().items():
+                at_least_one_currency = True
                 message += "- {0}:{1}".format(currency_pair, TelegramApp.EOL)
                 for exchange_name, evaluation in currency_info.items():
                     message += "=> {0}: {1}{2}".format(exchange_name, evaluation.name, TelegramApp.EOL)
+            if not at_least_one_currency:
+                message += TelegramApp.NO_CURRENCIES_MESSAGE + TelegramApp.EOL
             message += "{0}My current risk is: {1}".format(TelegramApp.EOL, get_risk())
             update.message.reply_text(message)
         except Exception:
