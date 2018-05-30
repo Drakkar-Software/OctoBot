@@ -11,22 +11,40 @@ def get_portfolio_current_value():
     simulated_value = 0
     real_value = 0
     traders = get_traders()
+    has_real_trader = False
+    has_simulated_trader = False
 
     for trader in traders:
-        trade_manager = trader.get_trades_manager()
+        if trader.enabled(trader.config):
+            trade_manager = trader.get_trades_manager()
 
-        current_value = trade_manager.get_portfolio_current_value()
+            current_value = trade_manager.get_portfolio_current_value()
 
-        # current_value might be 0 if no trades have been made / canceled => use origin value
-        if current_value == 0:
-            current_value = trade_manager.get_portfolio_origin_value()
+            # current_value might be 0 if no trades have been made / canceled => use origin value
+            if current_value == 0:
+                current_value = trade_manager.get_portfolio_origin_value()
 
-        if trader.get_simulate():
-            simulated_value += current_value
-        else:
-            real_value += current_value
+            if trader.get_simulate():
+                simulated_value += current_value
+                has_simulated_trader = True
+            else:
+                real_value += current_value
+                has_real_trader = True
 
-    return real_value, simulated_value
+    return has_real_trader, has_simulated_trader, real_value, simulated_value
+
+
+def has_real_and_or_simulated_traders():
+    has_real_trader = False
+    has_simulated_trader = False
+    traders = get_traders()
+    for trader in traders:
+        if trader.enabled(trader.config):
+            if trader.get_simulate():
+                has_simulated_trader = True
+            else:
+                has_real_trader = True
+    return has_real_trader, has_simulated_trader
 
 
 def get_open_orders():
@@ -50,7 +68,8 @@ def cancel_all_open_orders():
 
 def set_enable_trading(enable):
     for trader in get_traders():
-        trader.set_enabled(enable)
+        if trader.enabled(trader.config):
+            trader.set_enabled(enable)
 
 
 def get_trades_history():
@@ -84,27 +103,33 @@ def get_global_profitability():
     traders = get_traders()
     simulated_full_origin_value = 0
     real_full_origin_value = 0
+    has_real_trader = False
+    has_simulated_trader = False
 
     for trader in traders:
-        trade_manager = trader.get_trades_manager()
+        if trader.enabled(trader.config):
+            trade_manager = trader.get_trades_manager()
 
-        # TODO : use other return values
-        current_value, _, _ = trade_manager.get_profitability()
+            # TODO : use other return values
+            current_value, _, _ = trade_manager.get_profitability()
 
-        if trader.get_simulate():
-            simulated_full_origin_value += trade_manager.get_portfolio_origin_value()
-            simulated_global_profitability += current_value
-        else:
-            real_full_origin_value += trade_manager.get_portfolio_origin_value()
-            real_global_profitability += current_value
+            if trader.get_simulate():
+                simulated_full_origin_value += trade_manager.get_portfolio_origin_value()
+                simulated_global_profitability += current_value
+                has_simulated_trader = True
+            else:
+                real_full_origin_value += trade_manager.get_portfolio_origin_value()
+                real_global_profitability += current_value
+                has_real_trader = True
 
     simulated_percent_profitability = simulated_global_profitability * 100 / simulated_full_origin_value \
         if simulated_full_origin_value > 0 else 0
     real_percent_profitability = real_global_profitability * 100 / real_full_origin_value \
         if real_full_origin_value > 0 else 0
 
-    return real_global_profitability, simulated_global_profitability, \
-           real_percent_profitability, simulated_percent_profitability
+    return has_real_trader, has_simulated_trader, \
+        real_global_profitability, simulated_global_profitability, \
+        real_percent_profitability, simulated_percent_profitability
 
 
 def get_portfolios():
