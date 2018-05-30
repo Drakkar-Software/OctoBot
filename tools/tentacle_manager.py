@@ -9,7 +9,7 @@ from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLE
     TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER
 
 
-class PackageManager:
+class TentacleManager:
     def __init__(self, config):
         self.config = config
         self.default_package = None
@@ -68,7 +68,7 @@ class PackageManager:
                 package_url_or_path = package_url_or_path.replace(GITHUB_BASE_URL, GITHUB_RAW_CONTENT_URL)
                 downloaded_result = json.loads(requests.get(package_url_or_path).text)
             # add package metadata
-            PackageManager._add_package_description_metadata(downloaded_result, package_url_or_path, True)
+            TentacleManager._add_package_description_metadata(downloaded_result, package_url_or_path, True)
             return downloaded_result
 
         # if its a local path: return file content
@@ -80,7 +80,7 @@ class PackageManager:
             with open(package_url_or_path, "r") as package_description:
                 read_result = json.loads(package_description.read())
                 # add package metadata
-                PackageManager._add_package_description_metadata(read_result, package_url_or_path, False)
+                TentacleManager._add_package_description_metadata(read_result, package_url_or_path, False)
                 return read_result
 
     @staticmethod
