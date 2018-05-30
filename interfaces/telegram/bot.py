@@ -7,13 +7,15 @@ from config.cst import *
 from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_trades_history, \
     get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status, \
-    cancel_all_open_orders, set_enable_trading
+    cancel_all_open_orders, set_enable_trading, has_real_and_or_simulated_traders
 from tools.commands import Commands
 from tools.pretty_printer import PrettyPrinter
 
 
 class TelegramApp:
     EOL = "\n"
+    REAL_TRADER_STR = "[Real Trader] "
+    SIMULATOR_TRADER_STR = "[Simulator] "
 
     def __init__(self, config, telegram_service, telegram_updater):
         self.config = config
@@ -110,77 +112,97 @@ class TelegramApp:
 
     @staticmethod
     def command_profitability(_, update):
-        # to find profitabily bug out
-        try:
+        has_real_trader, has_simulated_trader, \
             real_global_profitability, simulated_global_profitability, \
-                real_percent_profitability, simulated_percent_profitability = get_global_profitability()
-            profitability_string = "Real global profitability : {0} ({1}%){2}".format(
+            real_percent_profitability, simulated_percent_profitability = get_global_profitability()
+        profitability_string = ""
+        if has_real_trader:
+            profitability_string = "{0}Global profitability : {1} ({2}%){3}".format(
+                TelegramApp.REAL_TRADER_STR,
                 PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
                 PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2),
                 TelegramApp.EOL)
-            profitability_string += "Simulated global profitability : {0} ({1}%)".format(
+        if has_simulated_trader:
+            profitability_string += "{0}Global profitability : {1} ({2}%)".format(
+                TelegramApp.SIMULATOR_TRADER_STR,
                 PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
                 PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2))
-            update.message.reply_text(profitability_string)
-        except Exception as e:
-            update.message.reply_text(str(e))
+        update.message.reply_text(profitability_string)
 
     @staticmethod
     def command_portfolio(_, update):
-        portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
+        has_real_trader, has_simulated_trader, \
+            portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
         reference_market = get_reference_market()
         real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amounts()
 
-        portfolios_string = "Portfolio real value : {0} {1}{2}".format(
-            PrettyPrinter.get_min_string_from_number(portfolio_real_current_value),
-            reference_market,
-            TelegramApp.EOL)
-        portfolios_string += "Real portfolio : {1}{0}{1}{1}".format(
-            PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
-            TelegramApp.EOL)
+        portfolios_string = ""
+        if has_real_trader:
+            portfolios_string += "{0}Portfolio value : {1} {2}{3}".format(
+                TelegramApp.REAL_TRADER_STR,
+                PrettyPrinter.get_min_string_from_number(portfolio_real_current_value),
+                reference_market,
+                TelegramApp.EOL)
+            portfolios_string += "{0}Portfolio : {2}{1}{2}{2}".format(
+                TelegramApp.REAL_TRADER_STR,
+                PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
+                TelegramApp.EOL)
 
-        portfolios_string += "Portfolio simulated value : {0} {1}{2}".format(
-            PrettyPrinter.get_min_string_from_number(portfolio_simulated_current_value),
-            reference_market,
-            TelegramApp.EOL)
-        portfolios_string += "Simulated portfolio : {1}{0}".format(
-            PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
-            TelegramApp.EOL)
+        if has_simulated_trader:
+            portfolios_string += "{0}Portfolio value : {1} {2}{3}".format(
+                TelegramApp.SIMULATOR_TRADER_STR,
+                PrettyPrinter.get_min_string_from_number(portfolio_simulated_current_value),
+                reference_market,
+                TelegramApp.EOL)
+            portfolios_string += "{0}Portfolio : {2}{1}".format(
+                TelegramApp.SIMULATOR_TRADER_STR,
+                PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
+                TelegramApp.EOL)
         update.message.reply_text(portfolios_string)
 
     @staticmethod
     def command_open_orders(_, update):
+        has_real_trader, has_simulated_trader = has_real_and_or_simulated_traders()
         portfolio_real_open_orders, portfolio_simulated_open_orders = get_open_orders()
 
-        orders_string = "Real open orders :" + TelegramApp.EOL
-        for orders in portfolio_real_open_orders:
-            for order in orders:
-                orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
+        orders_string = ""
+        if has_real_trader:
+            orders_string += "{0}Open orders :{1}".format(TelegramApp.REAL_TRADER_STR, TelegramApp.EOL)
+            for orders in portfolio_real_open_orders:
+                for order in orders:
+                    orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
 
-        orders_string += TelegramApp.EOL + "Simulated open orders :" + TelegramApp.EOL
-        for orders in portfolio_simulated_open_orders:
-            for order in orders:
-                orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
+        if has_simulated_trader:
+            orders_string += TelegramApp.EOL + "{0}Open orders :{1}".format(TelegramApp.SIMULATOR_TRADER_STR,
+                                                                            TelegramApp.EOL)
+            for orders in portfolio_simulated_open_orders:
+                for order in orders:
+                    orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
 
         update.message.reply_text(orders_string)
 
     @staticmethod
     def command_trades_history(_, update):
+        has_real_trader, has_simulated_trader = has_real_and_or_simulated_traders()
         real_trades_history, simulated_trades_history = get_trades_history()
 
-        trades_history_string = "Real trades :" + TelegramApp.EOL
-        for trades in real_trades_history:
-            for trade in trades:
-                trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
+        trades_history_string = ""
+        if has_real_trader:
+            trades_history_string += "{0}Trades :{1}".format(TelegramApp.REAL_TRADER_STR, TelegramApp.EOL)
+            for trades in real_trades_history:
+                for trade in trades:
+                    trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
 
-        trades_history_string += TelegramApp.EOL + "Simulated trades :" + TelegramApp.EOL
-        for trades in simulated_trades_history:
-            for trade in trades:
-                trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
+        if has_simulated_trader:
+            for trades in simulated_trades_history:
+                trades_history_string += TelegramApp.EOL + "{0}Trades :{1}".format(TelegramApp.SIMULATOR_TRADER_STR,
+                                                                                   TelegramApp.EOL)
+                for trade in trades:
+                    trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
 
         update.message.reply_text(trades_history_string)
 
