@@ -121,10 +121,10 @@ class EvaluatorNotification(Notification):
                     round(profitability_percent, 2)))
 
         alert_content = PrettyPrinter.cryptocurrency_alert(
-                    crypto_currency_evaluator.crypto_currency,
-                    symbol,
-                    result,
-                    final_eval)
+            crypto_currency_evaluator.crypto_currency,
+            symbol,
+            result,
+            final_eval)
 
         if self.twitter_notification_available():
             self.tweet_instance = self.twitter_notification_factory(alert_content)
@@ -168,31 +168,47 @@ class OrdersNotification(Notification):
                    portfolio_diff,
                    profitability=False):
 
-        content = ""
+        # split string to limit string size
+        filled_content = ""
+        canceled_content = ""
+        trade_content = ""
+        portfolio_content = ""
 
         if order_filled is not None:
-            content += "\nOrder(s) filled : \n- {0}".format(PrettyPrinter.open_order_pretty_printer(order_filled))
+            filled_content += "\nOrder(s) filled : \n- {0}".format(
+                PrettyPrinter.open_order_pretty_printer(order_filled))
 
         if orders_canceled is not None and len(orders_canceled) > 0:
-            content += "\nOrder(s) canceled :"
+            canceled_content += "\nOrder(s) canceled :"
             for order in orders_canceled:
-                content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
+                canceled_content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
 
         if trade_profitability is not None and profitability:
-            content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
-                                                                  round(trade_profitability * 100, 7))
+            trade_content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
+                                                                        round(trade_profitability * 100, 7))
 
         if portfolio_profitability is not None and profitability:
-            content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(round(portfolio_profitability, 5),
-                                                                                "+" if portfolio_diff >= 0 else "",
-                                                                                round(portfolio_diff, 7))
+            portfolio_content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(
+                round(portfolio_profitability, 5),
+                "+" if portfolio_diff >= 0 else "",
+                round(portfolio_diff, 7))
+
+        content = filled_content + canceled_content + trade_content + portfolio_content
 
         if self.twitter_notification_available() \
                 and self.evaluator_notification is not None \
                 and self.evaluator_notification.get_tweet_instance() is not None:
             tweet_instance = self.evaluator_notification.get_tweet_instance()
 
-            self.twitter_response_factory(tweet_instance, content)
+            # to limit tweet content size --> send multiple tweets
+            if filled_content:
+                self.twitter_response_factory(tweet_instance, filled_content)
+
+            if canceled_content:
+                self.twitter_response_factory(tweet_instance, canceled_content)
+
+            if trade_content or portfolio_content:
+                self.twitter_response_factory(tweet_instance, trade_content + portfolio_content)
 
         if self.telegram_notification_available():
             self.telegram_notification_factory(content)
