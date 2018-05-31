@@ -36,12 +36,19 @@ class TimeFrameManager:
                 return origin_time_frame
 
     @staticmethod
-    def find_min_time_frame(time_frames):
+    def find_min_time_frame(time_frames, min_time_frame=None):
+        tf_list = time_frames
+        if time_frames and isinstance(next(iter(time_frames)), TimeFrames):
+            tf_list = [t.value for t in time_frames]
+        min_index = 0
+        if min_time_frame:
+            min_index = TimeFrameManager.TimeFramesRank.index(min_time_frame)
         # TimeFramesRank is the ordered list of timeframes
-        for tf in TimeFrameManager.TimeFramesRank:
-            if tf in time_frames:
+        for index, tf in enumerate(TimeFrameManager.TimeFramesRank):
+            tf_val = tf.value
+            if index >= min_index and tf_val in tf_list:
                 try:
-                    return TimeFrames(tf)
+                    return TimeFrames(tf_val)
                 except ValueError:
                     pass
-        return TimeFrames.ONE_MINUTE
+        return min_time_frame
