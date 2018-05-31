@@ -29,7 +29,7 @@ all the modules (tentacles) you want to create you perfect cryptocurrency tradin
 [![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
 [![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
 
-Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges) thanks 
+Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges#octobot-official-supported-exchanges) thanks 
 to [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, 
 just configure OctoBot with your api keys as described [here]((https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges)).
