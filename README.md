@@ -4,8 +4,7 @@
 <img src="../assets/octopus.svg" alt="Octobot Logo" height="400" width="400">
 </p>
 
-*gif web interface*
-![Web Candles Screenshot](../assets/web_candle_screenshot.png)
+![Web Interface](../assets/web-interface.gif)
 ## Description
 Octobot is a powerful fully modular open-source cryptocurrency trading robot.
 

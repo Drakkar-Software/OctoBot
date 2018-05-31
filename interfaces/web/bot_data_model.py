@@ -52,7 +52,7 @@ def get_portfolio_currencies_update():
 
 
 def update_portfolio_history():
-    real_value, simulated_value = get_portfolio_current_value()
+    _, _, real_value, simulated_value = get_portfolio_current_value()
 
     add_to_portfolio_value_history(real_value, simulated_value)
 
