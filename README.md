@@ -12,14 +12,13 @@ This repository contains all the features of the bot (trading tools, interfaces,
 You just have to use the [integrated tentacle manager](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager) 
 and your OctoBot is ready ! 
 
-## Interfaces
+## Your Octobot
 ![Telegram Interface](../assets/telegram-interface.png)
 [![Twitter Interface](../assets/twitter-interface.png)](https://twitter.com/HerklosBotCrypt)
 
-OctoBot is highly customizable using its configuration and tentacles system. You can therefore build your own Octobot using the infinite [configuration](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration) possibilities.
+OctoBot is highly customizable using its configuration and tentacles system. You can therefore build your own bot using the infinite [configuration](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration) possibilities.
 
-Moreover, an other important feature is the module-based architecture : 
-you can [install](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager), 
+Octobot's main feature is **evolution** : you can [install](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager), 
 modify, [create]([wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot))
 all the modules (tentacles) you want to create you perfect cryptocurrency trading bot.
 
