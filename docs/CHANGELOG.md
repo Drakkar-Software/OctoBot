@@ -6,11 +6,23 @@ Changelog for 0.1.0-beta
 - Config : "packages" root key renamed to "tentacles"
 
 # Concerned issues :
-    #181 [Telegram] Pause and resume trading
+    #108 [RoadMap] format RoadMap into an attractive image
+    #109 [RoadMap] add RoadMap tracker on ReadMe.md
+    #136 [Tests] Improve trading tests coverage
+    #139 [Tests] Improve evaluator management tests coverage
+    #156 [Documentation] Add documentation for evaluator management classes
+    #163 [Exchanges Tests] implement web sockets for binance tests
+    #164 [ReadMe] make readme sexy !
     #174 Renaming CryptoBot to Octobot
+    #181 [Telegram] Pause and resume trading
+    #183 Can't create order when order already on exchange on bot start
+    #186 [Twitter Interface] Some notifications are not sent to Twitter website
 
 # New features :
     - Telegram pause / resume trading
+    - Beautiful README and logo
+    - Create roadmap
+    - Improve tests coverage
 
 # Bug fix :
     - Fix negative portfolio in simulation
