@@ -144,21 +144,23 @@ class OrdersNotification(Notification):
         self.evaluator_notification = None
 
     def notify_create(self, evaluator_notification, orders):
-        if evaluator_notification is not None:
-            self.evaluator_notification = evaluator_notification
+        if orders:
+            content = orders[0].trader.trader_type_str
+            if evaluator_notification is not None:
+                self.evaluator_notification = evaluator_notification
 
-        content = "Order(s) creation "
-        for order in orders:
-            content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
+            content += "Order(s) creation "
+            for order in orders:
+                content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
 
-        if self.twitter_notification_available() \
-                and self.evaluator_notification is not None \
-                and self.evaluator_notification.get_tweet_instance() is not None:
-            tweet_instance = self.evaluator_notification.get_tweet_instance()
-            self.twitter_response_factory(tweet_instance, content)
+            if self.twitter_notification_available() \
+                    and self.evaluator_notification is not None \
+                    and self.evaluator_notification.get_tweet_instance() is not None:
+                tweet_instance = self.evaluator_notification.get_tweet_instance()
+                self.twitter_response_factory(tweet_instance, content)
 
-        if self.telegram_notification_available():
-            self.telegram_notification_factory(content)
+            if self.telegram_notification_available():
+                self.telegram_notification_factory(content)
 
     def notify_end(self,
                    order_filled,
@@ -175,17 +177,19 @@ class OrdersNotification(Notification):
         portfolio_content = ""
 
         if order_filled is not None:
-            filled_content += "\nOrder(s) filled : \n- {0}".format(
+            filled_content += "\n{0}Order(s) filled : \n- {1}".format(
+                order_filled.trader.trader_type_str,
                 PrettyPrinter.open_order_pretty_printer(order_filled))
 
         if orders_canceled is not None and len(orders_canceled) > 0:
-            canceled_content += "\nOrder(s) canceled :"
+            canceled_content += "\n{0}Order(s) canceled :".format(orders_canceled[0].trader.trader_type_str)
             for order in orders_canceled:
                 canceled_content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
 
         if trade_profitability is not None and profitability:
-            trade_content += "\n\nTrade profitability : {0}{1}%".format("+" if trade_profitability >= 0 else "",
-                                                                        round(trade_profitability * 100, 7))
+            trade_content += "\n\nTrade profitability : {0}{1}%".format(
+                "+" if trade_profitability >= 0 else "",
+                round(trade_profitability * 100, 7))
 
         if portfolio_profitability is not None and profitability:
             portfolio_content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(
