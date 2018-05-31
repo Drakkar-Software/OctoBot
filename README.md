@@ -16,9 +16,7 @@ and your OctoBot is ready !
 ![Telegram Interface](../assets/telegram-interface.png)
 [![Twitter Interface](../assets/twitter-interface.png)](https://twitter.com/HerklosBotCrypt)
 
-OctoBot is highly customizable using its configuration system and tentacles.
-You can absolutely configure all your needs with your own 
-[configuration file](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration).
+OctoBot is highly customizable using its configuration and tentacles system. You can therefore build your own Octobot using the infinite [configuration](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration) possibilities.
 
 Moreover, an other important feature is the module-based architecture : 
 you can [install](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager), 
