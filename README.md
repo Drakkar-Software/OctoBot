@@ -5,8 +5,9 @@
 *gif web interface*
 ![Web Candles Screenshot](../assets/web_candle_screenshot.png)
 ## Description
-Octobot is a powerful open-source cryptocurrency trading bot fully modular (with tentacles). 
-This repository contains all the features of the Octobot (trading tools, interfaces...) without any modules (tentacles).
+Octobot is a powerful fully modular open-source cryptocurrency trading robot.
+
+This repository contains all the features of the bot (trading tools, interfaces, services, ...) without any modules (Octobot's tentacles).
 
 You just have to use the [tentacle manager](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager) 
 and there you have your functional OctoBot ! 
