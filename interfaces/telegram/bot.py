@@ -14,8 +14,6 @@ from tools.pretty_printer import PrettyPrinter
 
 class TelegramApp:
     EOL = "\n"
-    REAL_TRADER_STR = "[Real Trader] "
-    SIMULATOR_TRADER_STR = "[Simulator] "
     NO_TRADER_MESSAGE = "No trader is activated in my config/config.json file.\n" \
                         "See https://github.com/Drakkar-Software/OctoBot/wiki if you need help with my configuration."
     NO_CURRENCIES_MESSAGE = "No cryptocurrencies are in my config/config.json file.\n" \
@@ -123,7 +121,7 @@ class TelegramApp:
         profitability_string = ""
         if has_real_trader:
             profitability_string = "{0}Global profitability : {1} ({2}%){3}".format(
-                TelegramApp.REAL_TRADER_STR,
+                REAL_TRADER_STR,
                 PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
@@ -131,7 +129,7 @@ class TelegramApp:
                 TelegramApp.EOL)
         if has_simulated_trader:
             profitability_string += "{0}Global profitability : {1} ({2}%)".format(
-                TelegramApp.SIMULATOR_TRADER_STR,
+                SIMULATOR_TRADER_STR,
                 PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
                                                                    None,
                                                                    get_reference_market()),
@@ -150,23 +148,23 @@ class TelegramApp:
         portfolios_string = ""
         if has_real_trader:
             portfolios_string += "{0}Portfolio value : {1} {2}{3}".format(
-                TelegramApp.REAL_TRADER_STR,
+                REAL_TRADER_STR,
                 PrettyPrinter.get_min_string_from_number(portfolio_real_current_value),
                 reference_market,
                 TelegramApp.EOL)
             portfolios_string += "{0}Portfolio : {2}{1}{2}{2}".format(
-                TelegramApp.REAL_TRADER_STR,
+                REAL_TRADER_STR,
                 PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
                 TelegramApp.EOL)
 
         if has_simulated_trader:
             portfolios_string += "{0}Portfolio value : {1} {2}{3}".format(
-                TelegramApp.SIMULATOR_TRADER_STR,
+                SIMULATOR_TRADER_STR,
                 PrettyPrinter.get_min_string_from_number(portfolio_simulated_current_value),
                 reference_market,
                 TelegramApp.EOL)
             portfolios_string += "{0}Portfolio : {2}{1}".format(
-                TelegramApp.SIMULATOR_TRADER_STR,
+                SIMULATOR_TRADER_STR,
                 PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
                 TelegramApp.EOL)
 
@@ -181,13 +179,13 @@ class TelegramApp:
 
         orders_string = ""
         if has_real_trader:
-            orders_string += "{0}Open orders :{1}".format(TelegramApp.REAL_TRADER_STR, TelegramApp.EOL)
+            orders_string += "{0}Open orders :{1}".format(REAL_TRADER_STR, TelegramApp.EOL)
             for orders in portfolio_real_open_orders:
                 for order in orders:
                     orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
 
         if has_simulated_trader:
-            orders_string += TelegramApp.EOL + "{0}Open orders :{1}".format(TelegramApp.SIMULATOR_TRADER_STR,
+            orders_string += TelegramApp.EOL + "{0}Open orders :{1}".format(SIMULATOR_TRADER_STR,
                                                                             TelegramApp.EOL)
             for orders in portfolio_simulated_open_orders:
                 for order in orders:
@@ -205,14 +203,14 @@ class TelegramApp:
 
         trades_history_string = ""
         if has_real_trader:
-            trades_history_string += "{0}Trades :{1}".format(TelegramApp.REAL_TRADER_STR, TelegramApp.EOL)
+            trades_history_string += "{0}Trades :{1}".format(REAL_TRADER_STR, TelegramApp.EOL)
             for trades in real_trades_history:
                 for trade in trades:
                     trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
 
         if has_simulated_trader:
             for trades in simulated_trades_history:
-                trades_history_string += TelegramApp.EOL + "{0}Trades :{1}".format(TelegramApp.SIMULATOR_TRADER_STR,
+                trades_history_string += TelegramApp.EOL + "{0}Trades :{1}".format(SIMULATOR_TRADER_STR,
                                                                                    TelegramApp.EOL)
                 for trade in trades:
                     trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
