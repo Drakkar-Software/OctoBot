@@ -19,8 +19,7 @@ and your OctoBot is ready !
 OctoBot is highly customizable using its configuration and tentacles system. You can therefore build your own bot using the infinite [configuration](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration) possibilities.
 
 Octobot's main feature is **evolution** : you can [install](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager), 
-modify and even [create]([wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot))
-any tentacle you want and create your ideal cryptocurrency trading robot.
+[modify](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot) and even [create](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
 
 ## Exchanges
 [![Binance](../assets/binance-logo.png)](https://www.binance.com)
