@@ -1,10 +1,8 @@
 # OctoBot [0.0.12-alpha](https://github.com/Drakkar-Software/OctoBot/tree/dev/docs/CHANGELOG.md)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/OctoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Drakkar-Software/OctoBot&amp;utm_campaign=Badge_Grade) [![Build Status](https://api.travis-ci.org/Drakkar-Software/OctoBot.svg?branch=dev)](https://travis-ci.org/Drakkar-Software/OctoBot) [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/OctoBot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/overview/dev) [![Build Status](https://semaphoreci.com/api/v1/herklos/octobot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/octobot) [![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=Drakkar-Software&repoName=OctoBot&branch=dev&pipelineName=OctoBot&accountName=herklos_marketplace&type=cf-1)]( https://g.codefresh.io/repositories/Drakkar-Software/OctoBot/builds?filter=trigger:build;branch:dev;service:5b06a377435197b088b1757a~OctoBot)
-<div style="height: 500px;width: 500px">
 <p align="center">
-![OctoBot_logo](../assets/octopus.svg)
+<img src="../assets/octopus.svg" alt="Octobot Logo" height="500" width="500">
 </p>
-</div>
 
 *gif web interface*
 ![Web Candles Screenshot](../assets/web_candle_screenshot.png)
