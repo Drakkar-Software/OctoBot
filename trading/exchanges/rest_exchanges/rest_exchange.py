@@ -176,6 +176,7 @@ class RESTExchange(AbstractExchange):
             order_desc = "order_type: {0}, symbol: {1}, quantity: {2}, price: {3}, stop_price: {4}".format(
                 str(order_type), str(symbol), str(quantity), str(price), str(stop_price))
             self.logger.error("Failed to create order : {0} ({1})".format(e, order_desc))
+        return None
 
     def get_uniform_timestamp(self, timestamp):
         return timestamp / 1000

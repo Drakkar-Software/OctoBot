@@ -1,7 +1,7 @@
 from enum import Enum
 
 SHORT_VERSION = "0.0.12"
-REV_VERSION = "2"
+REV_VERSION = "3"
 VERSION_DEV_PHASE = "alpha"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
@@ -65,6 +65,8 @@ CONFIG_NOTIFICATION_INSTANCE = "notifier"
 CONFIG_CATEGORY_NOTIFICATION = "notification"
 NOTIFICATION_STARTING_MESSAGE = "OctoBot v{0} starting...".format(LONG_VERSION)
 NOTIFICATION_STOPPING_MESSAGE = "OctoBot v{0} stopping...".format(LONG_VERSION)
+REAL_TRADER_STR = "[Real Trader] "
+SIMULATOR_TRADER_STR = "[Simulator] "
 
 # DEBUG options
 CONFIG_DEBUG_OPTION_PERF = "performance_analyser"

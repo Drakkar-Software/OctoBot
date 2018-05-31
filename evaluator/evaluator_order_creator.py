@@ -73,7 +73,7 @@ class EvaluatorOrderCreator:
             symbol_market = exchange.get_market_status(symbol)
 
             created_orders = []
-            # TODO : temp
+
             if state == EvaluatorStates.VERY_SHORT:
                 quantity = self._get_market_quantity_from_risk(eval_note,
                                                                trader,
