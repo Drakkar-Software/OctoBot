@@ -65,6 +65,8 @@ CONFIG_NOTIFICATION_INSTANCE = "notifier"
 CONFIG_CATEGORY_NOTIFICATION = "notification"
 NOTIFICATION_STARTING_MESSAGE = "OctoBot v{0} starting...".format(LONG_VERSION)
 NOTIFICATION_STOPPING_MESSAGE = "OctoBot v{0} stopping...".format(LONG_VERSION)
+REAL_TRADER_STR = "[Real Trader] "
+SIMULATOR_TRADER_STR = "[Simulator] "
 
 # DEBUG options
 CONFIG_DEBUG_OPTION_PERF = "performance_analyser"
