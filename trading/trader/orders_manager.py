@@ -117,3 +117,5 @@ class OrdersManager(threading.Thread):
 
             if not Backtesting.enabled(self.config):
                 sleep(self.order_refresh_time)
+            else:
+                sleep(0)
