@@ -7,6 +7,7 @@ from trading import WebSocketExchange
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from trading.exchanges.websockets_exchanges import AbstractWebSocketManager
+from evaluator.RealTime.realtime_evaluator import RealTimeEvaluator
 
 
 class ExchangeManager:
@@ -91,7 +92,8 @@ class ExchangeManager:
             if self.time_frame_exists(time_frame.value):
                 self.time_frames.append(time_frame)
         # add shortest timeframe for realtime evaluators
-        client_shortest_time_frame = TimeFrameManager.find_min_time_frame(self.client_time_frames)
+        client_shortest_time_frame = TimeFrameManager.find_min_time_frame(self.client_time_frames,
+                                                                          RealTimeEvaluator.MIN_TIME_FRAME)
         if client_shortest_time_frame not in self.time_frames:
             self.time_frames.append(client_shortest_time_frame)
 

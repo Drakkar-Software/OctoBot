@@ -11,6 +11,7 @@ from tools.time_frame_manager import TimeFrameManager
 
 
 class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
+    MIN_TIME_FRAME = TimeFrames.FIVE_MINUTES
     __metaclass__ = AbstractEvaluator
 
     def __init__(self):
@@ -103,7 +104,7 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
 
     def set_default_config(self):
         time_frames = self.exchange.get_exchange_manager().get_config_time_frame()
-        min_time_frame = TimeFrameManager.find_min_time_frame(time_frames)
+        min_time_frame = TimeFrameManager.find_min_time_frame(time_frames, TimeFrames.FIVE_MINUTES)
         refresh_rate = DEFAULT_WEBSOCKET_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS if \
             self.exchange.get_exchange_manager().websocket_available() \
             else DEFAULT_REST_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS
