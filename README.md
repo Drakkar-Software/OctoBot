@@ -9,7 +9,7 @@ Octobot is a powerful fully modular open-source cryptocurrency trading robot.
 
 This repository contains all the features of the bot (trading tools, interfaces, services, ...) without any modules (Octobot's tentacles).
 
-You just have to use the [integrated tentacle manager](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager) 
+To install tentacle, you just have to use the [integrated tentacle manager](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager) 
 and your OctoBot is ready ! 
 
 ## Your Octobot
@@ -27,8 +27,7 @@ Octobot's main feature is **evolution** : you can [install](https://github.com/D
 [![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
 
 Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges#octobot-official-supported-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
-To activate trading on an exchange, 
-just configure OctoBot with your api keys as described [on the wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges).
+To activate trading on an exchange, just configure OctoBot with your api keys as described [on the wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges).
 
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** !
