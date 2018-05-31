@@ -26,18 +26,17 @@ Octobot's main feature is **evolution** : you can [install](https://github.com/D
 [![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
 [![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
 
-Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges#octobot-official-supported-exchanges) thanks 
-to [ccxt library](https://github.com/ccxt/ccxt). 
+Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges#octobot-official-supported-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, 
-just configure OctoBot with your api keys as described [here]((https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges)).
+just configure OctoBot with your api keys as described [on the wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges).
 
-## Install
-The OctoBot installation is **very simple**... because **very documented** !
+## Installation
+OctoBot's installation is **very simple**... because **very documented** !
 
 Just follow the [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation) and it's done !
 
 ## Usage
-After the installation you should take a look at the 
+After the installation have a look at the 
 [usage wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Usage) to know all the features of the OctoBot.
 
 ## Roadmap
