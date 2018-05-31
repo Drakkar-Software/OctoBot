@@ -4,5 +4,5 @@ from config.cst import CONFIG_EVALUATOR, CONFIG_EVALUATOR_FILE
 
 def load_test_config():
     config = load_config("tests/static/config.json")
-    config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
+    config[CONFIG_EVALUATOR] = load_config("tests/static/evaluator_config.json", False)
     return config
