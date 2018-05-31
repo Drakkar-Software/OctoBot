@@ -1,7 +1,7 @@
 import logging
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
-    CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType
+    CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.order import OrderConstants
 from trading.trader.order_notifier import OrderNotifier
@@ -29,6 +29,8 @@ class Trader:
         self.trades_manager = TradesManager(config, self)
 
         self.order_manager = OrdersManager(config, self)
+
+        self.trader_type_str = REAL_TRADER_STR
 
         if order_refresh_time is not None:
             self.order_manager.set_order_refresh_time(order_refresh_time)
