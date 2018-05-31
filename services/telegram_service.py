@@ -67,7 +67,7 @@ class TelegramService(AbstractService):
         self.telegram_api.send_message(chat_id=self.chat_id, text=content)
 
     def _get_bot_url(self):
-        return "https://web.telegram.org/#/im?p=@{0}".format(self.telegram_api.get_me().full_name)
+        return "https://web.telegram.org/#/im?p={0}".format(self.telegram_api.get_me().name)
 
     def get_successful_startup_message(self):
         return "Successfully initialized and accessible at: {0}.".format(self._get_bot_url())
