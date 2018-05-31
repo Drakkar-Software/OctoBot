@@ -44,7 +44,7 @@ After the installation you should take a look at the
 [usage wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Usage) to know all the features of the OctoBot.
 
 ## Roadmap
-*roadmap image*
+[![Roadmap](../assets/roadmap.png)](https://github.com/Drakkar-Software/OctoBot/tree/assets/roadmap.svg)
 
 ## Disclaimer
 Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
