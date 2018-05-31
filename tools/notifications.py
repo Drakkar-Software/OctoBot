@@ -170,49 +170,35 @@ class OrdersNotification(Notification):
                    portfolio_diff,
                    profitability=False):
 
-        # split string to limit string size
-        filled_content = ""
-        canceled_content = ""
-        trade_content = ""
-        portfolio_content = ""
+        content = ""
 
         if order_filled is not None:
-            filled_content += "\n{0}Order(s) filled : \n- {1}".format(
+            content += "\n{0}Order(s) filled : \n- {1}".format(
                 order_filled.trader.trader_type_str,
                 PrettyPrinter.open_order_pretty_printer(order_filled))
 
         if orders_canceled is not None and len(orders_canceled) > 0:
-            canceled_content += "\n{0}Order(s) canceled :".format(orders_canceled[0].trader.trader_type_str)
+            content += "\n{0}Order(s) canceled :".format(orders_canceled[0].trader.trader_type_str)
             for order in orders_canceled:
-                canceled_content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
+                content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
 
         if trade_profitability is not None and profitability:
-            trade_content += "\n\nTrade profitability : {0}{1}%".format(
+            content += "\n\nTrade profitability : {0}{1}%".format(
                 "+" if trade_profitability >= 0 else "",
                 round(trade_profitability * 100, 7))
 
         if portfolio_profitability is not None and profitability:
-            portfolio_content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(
+            content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(
                 round(portfolio_profitability, 5),
                 "+" if portfolio_diff >= 0 else "",
                 round(portfolio_diff, 7))
-
-        content = filled_content + canceled_content + trade_content + portfolio_content
 
         if self.twitter_notification_available() \
                 and self.evaluator_notification is not None \
                 and self.evaluator_notification.get_tweet_instance() is not None:
             tweet_instance = self.evaluator_notification.get_tweet_instance()
 
-            # to limit tweet content size --> send multiple tweets
-            if filled_content:
-                self.twitter_response_factory(tweet_instance, filled_content)
-
-            if canceled_content:
-                self.twitter_response_factory(tweet_instance, canceled_content)
-
-            if trade_content or portfolio_content:
-                self.twitter_response_factory(tweet_instance, trade_content + portfolio_content)
+            self.twitter_response_factory(tweet_instance, content)
 
         if self.telegram_notification_available():
             self.telegram_notification_factory(content)
