@@ -11,6 +11,10 @@ set TA_LIB_WIN64=https://github.com/Drakkar-Software/OctoBot/releases/download/0
 set TWISTED_WIN32=https://github.com/Drakkar-Software/OctoBot/releases/download/0.0.12-alpha/Twisted-18.4.0-cp36-cp36m-win32.whl
 set TWISTED_WIN64=https://github.com/Drakkar-Software/OctoBot/releases/download/0.0.12-alpha/Twisted-18.4.0-cp36-cp36m-win_amd64.whl
 
+REM TEST INSTALL
+python --version 2>NUL
+if errorlevel 1 goto errorNoPython
+
 REM REQUIREMENTS
 echo **Installing dependencies...**
 REM ARCH AMD64
@@ -38,3 +42,10 @@ REM BOT MODULES INSTALL
 echo **Installing modules...**
 cd ..
 %python_cmd% start.py -p install all
+
+REM Once done, exit the batch file -- skips executing the errorNoPython section
+goto:eof
+
+:errorNoPython
+echo.
+echo Error^: Python not installed (check https://github.com/Drakkar-Software/OctoBot/wiki/Installation)
