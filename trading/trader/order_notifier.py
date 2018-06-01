@@ -28,3 +28,6 @@ class OrderNotifier:
                                  portfolio_profitability,
                                  portfolio_diff,
                                  profitability)
+
+    def set_order(self, order):
+        self.order = order
