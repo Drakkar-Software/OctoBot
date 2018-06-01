@@ -1,8 +1,8 @@
 from enum import Enum
 
-SHORT_VERSION = "0.0.12"
-REV_VERSION = "3"
-VERSION_DEV_PHASE = "alpha"
+SHORT_VERSION = "0.1.0"
+REV_VERSION = "0"
+VERSION_DEV_PHASE = "beta"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
 
@@ -201,6 +201,9 @@ class TimeFrames(Enum):
     THREE_DAYS = "3d"
     ONE_WEEK = "1w"
     ONE_MONTH = "1M"
+
+
+MIN_EVAL_TIME_FRAME = TimeFrames.FIVE_MINUTES
 
 
 TimeFramesMinutes = {
