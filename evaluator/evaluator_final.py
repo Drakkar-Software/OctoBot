@@ -40,25 +40,26 @@ class FinalEvaluator(AsynchronousServer):
             # if new state is not neutral --> cancel orders and create new else keep orders
             if new_state is not EvaluatorStates.NEUTRAL:
 
-                # cancel open orders
-                if self.symbol_evaluator.get_trader(self.exchange).is_enabled():
-                    self.symbol_evaluator.get_trader(self.exchange).cancel_open_orders(self.symbol)
-                if self.symbol_evaluator.get_trader_simulator(self.exchange).is_enabled():
-                    self.symbol_evaluator.get_trader_simulator(self.exchange).cancel_open_orders(self.symbol)
+                with self.symbol_evaluator.get_trader(self.exchange).get_order_manager() as _:
+                    # cancel open orders
+                    if self.symbol_evaluator.get_trader(self.exchange).is_enabled():
+                        self.symbol_evaluator.get_trader(self.exchange).cancel_open_orders(self.symbol)
+                    if self.symbol_evaluator.get_trader_simulator(self.exchange).is_enabled():
+                        self.symbol_evaluator.get_trader_simulator(self.exchange).cancel_open_orders(self.symbol)
 
-                # create notification
-                evaluator_notification = None
-                if self.notifier.enabled():
-                    evaluator_notification = self.notifier.notify_state_changed(
-                        self.final_eval,
-                        self.symbol_evaluator.get_crypto_currency_evaluator(),
-                        self.symbol_evaluator.get_symbol(),
-                        self.symbol_evaluator.get_trader(self.exchange),
-                        self.state,
-                        self.symbol_evaluator.get_matrix(self.exchange).get_matrix())
+                    # create notification
+                    evaluator_notification = None
+                    if self.notifier.enabled():
+                        evaluator_notification = self.notifier.notify_state_changed(
+                            self.final_eval,
+                            self.symbol_evaluator.get_crypto_currency_evaluator(),
+                            self.symbol_evaluator.get_symbol(),
+                            self.symbol_evaluator.get_trader(self.exchange),
+                            self.state,
+                            self.symbol_evaluator.get_matrix(self.exchange).get_matrix())
 
-                # call orders creation method
-                self.create_final_state_orders(evaluator_notification)
+                    # call orders creation method
+                    self.create_final_state_orders(evaluator_notification)
 
     # create real and/or simulating orders in trader instances
     def create_final_state_orders(self, evaluator_notification):
