@@ -110,10 +110,12 @@ class Trader:
         return order
 
     def create_order(self, order, portfolio, loaded=False):
+        linked_to = None
+        
         # if this order is linked to another (ex : a sell limit order with a stop loss order)
         if order.linked_to is not None:
             order.linked_to.add_linked_order(order)
-            order.add_linked_order(order.linked_to)
+            linked_to = order.linked_to
 
         if not loaded:
             if not self.simulate and not self.check_if_self_managed(order.get_order_type()):
@@ -142,6 +144,10 @@ class Trader:
         # notify order manager of a new open order
         self.order_manager.add_order_to_list(order)
 
+        # if this order is linked to another
+        if linked_to is not None:
+            order.add_linked_order(linked_to)
+        
         return order
 
     def cancel_order(self, order):
