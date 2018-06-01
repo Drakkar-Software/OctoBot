@@ -151,7 +151,9 @@ class RESTExchange(AbstractExchange):
             return True
         except OrderNotFound:
             self.logger.error("Order {0} was not found".format(order_id))
-            return False
+        except Exception as e:
+            self.logger.error("Order {0} failed to cancel | {1}".format(order_id, e))
+        return False
 
     # todo { 'type': 'trailing-stop' }
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
