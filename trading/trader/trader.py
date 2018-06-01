@@ -152,18 +152,19 @@ class Trader:
         # if this order is linked to another
         if linked_to is not None:
             new_order.add_linked_order(linked_to)
-        
+
         return new_order
 
     def cancel_order(self, order):
-        with order as odr:
-            odr.cancel_order()
-            self.logger.info("{0} {1} at {2} (ID : {3}) cancelled on {4}".format(odr.get_order_symbol(),
-                                                                                 odr.get_name(),
-                                                                                 odr.get_origin_price(),
-                                                                                 odr.get_id(),
-                                                                                 self.get_exchange().get_name()))
-        self.order_manager.remove_order_from_list(order)
+        if not order.is_cancelled():
+            with order as odr:
+                odr.cancel_order()
+                self.logger.info("{0} {1} at {2} (ID : {3}) cancelled on {4}".format(odr.get_order_symbol(),
+                                                                                     odr.get_name(),
+                                                                                     odr.get_origin_price(),
+                                                                                     odr.get_id(),
+                                                                                     self.get_exchange().get_name()))
+            self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
     def cancel_open_orders(self, symbol):
@@ -183,7 +184,9 @@ class Trader:
         with self.portfolio as pf:
             pf.update_portfolio_available(order, is_new_order=False)
 
-    def notify_order_close(self, order, cancel=False):
+        self.notify_order_close(order, cancel_linked_only=True)
+
+    def notify_order_close(self, order, cancel=False, cancel_linked_only=False):
         # Cancel linked orders
         for linked_order in order.get_linked_orders():
             self.cancel_order(linked_order)
@@ -194,6 +197,12 @@ class Trader:
             orders_canceled = order.get_linked_orders() + [order]
 
             self.cancel_order(order)
+            _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
+
+        elif cancel_linked_only:
+            order_closed = None
+            orders_canceled = order.get_linked_orders()
+
             _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
 
         else:
