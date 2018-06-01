@@ -105,15 +105,15 @@ class EvaluatorOrderCreator:
                                                          current_price=price,
                                                          quantity=order_quantity,
                                                          price=order_price)
-                    trader.create_order(limit, portfolio)
-                    created_orders.append(limit)
+                    updated_limit = trader.create_order(limit, portfolio)
+                    created_orders.append(updated_limit)
 
                     stop = trader.create_order_instance(order_type=TraderOrderType.STOP_LOSS,
                                                         symbol=symbol,
                                                         current_price=price,
                                                         quantity=order_quantity,
                                                         price=stop_price,
-                                                        linked_to=limit)
+                                                        linked_to=updated_limit)
                     trader.create_order(stop, portfolio)
                 return created_orders
 
