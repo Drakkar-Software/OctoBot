@@ -1,0 +1,14 @@
+{
+  "subreddits" : {
+    "Bitcoin": ["Bitcoin"],
+    "Ethereum": ["ethereum"],
+    "NEO": ["NEO"],
+    "ICON": ["icon"],
+    "NANO": ["nanocurrency"],
+    "VeChain": ["Vechain"],
+    "Substratum": ["SubstratumNetwork"],
+    "Ethos": ["ethos_io"],
+    "Ontology": ["OntologyNetwork"],
+    "Binance Coin": []
+  }
+}

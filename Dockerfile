@@ -1,11 +1,29 @@
-#Download base image ubuntu 16.04
-FROM ubuntu:16.04
+FROM python:3
 
-# Update Ubuntu Software repository
+# Update Software repository
 RUN apt-get update
+RUN apt install git -y
 
-RUN bash ./docs/install/install-ta-lib.sh
+# Set up dev environment
+WORKDIR /bot
+RUN git clone https://github.com/Drakkar-Software/OctoBot /bot/octobot
+WORKDIR /bot/octobot
+RUN git checkout dev
 
-RUN cp ./docs/install/config_test.json ./config/config.json
+# install dependencies
+RUN bash ./docs/install/linux_installer.sh
 
-RUN python3 -m pip install -r requirements.txt
+# configuration
+RUN cp ./config/default_config.json ./config/config.json
+RUN cp ./config/default_evaluator_config.json ./config/evaluator_config.json
+
+# python libs
+RUN pip3 install -U setuptools
+RUN pip3 install -r requirements.txt
+
+# install evaluators
+RUN python start.py -p install all
+
+# entry point
+ENTRYPOINT ["python"]
+CMD ["start.py"]

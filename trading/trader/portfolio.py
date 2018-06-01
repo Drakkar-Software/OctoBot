@@ -1,4 +1,5 @@
 import logging
+from threading import Lock
 
 from config.cst import *
 from trading.trader.order import OrderConstants
@@ -17,17 +18,40 @@ class Portfolio:
 
     def __init__(self, config, trader):
         self.config = config
+        self.trader = trader
+        self.is_simulated = trader.simulate
+        self.is_enabled = trader.enable
         self.portfolio = {}
         self._load_portfolio()
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.trader = trader
-        self.exchange = self.trader.get_exchange()
+        self.lock = Lock()
+
+    # Disposable design pattern
+    def __enter__(self):
+        self.lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.lock.release()
 
     # Load exchange portfolio / simulated portfolio from config
     def _load_portfolio(self):
-        if CONFIG_SIMULATOR in self.config and CONFIG_STARTING_PORTFOLIO in self.config[CONFIG_SIMULATOR]:
-            for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
-                self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
+        if self.is_enabled:
+            if self.is_simulated:
+                self.set_starting_simulated_portfolio()
+            else:
+                self.update_portfolio_balance()
+
+    def set_starting_simulated_portfolio(self):
+        for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
+            self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
+
+    def update_portfolio_balance(self):
+        if not self.is_simulated and self.is_enabled:
+            balance = self.trader.get_exchange().get_balance()
+            for currency in balance:
+                self.portfolio[currency] = {Portfolio.AVAILABLE: balance[currency][CONFIG_PORTFOLIO_FREE],
+                                            Portfolio.TOTAL: balance[currency][CONFIG_PORTFOLIO_TOTAL]}
 
     def get_portfolio(self):
         return self.portfolio
@@ -57,71 +81,99 @@ class Portfolio:
     It is called only when an order is filled to update the real quantity of the currency to be set in "total" field
     Returns get_profitability() return
     """
+
     def update_portfolio(self, order):
-        currency, market = order.get_currency_and_market()
-
-        # update currency
-        if order.get_side() == TradeOrderSide.BUY:
-            new_quantity = order.get_filled_quantity() - order.get_currency_total_fees()
-        else:
-            new_quantity = -(order.get_filled_quantity() - order.get_currency_total_fees())
-        self._update_portfolio_data(currency, new_quantity, True, True)
-
-        # update market
-        if order.get_side() == TradeOrderSide.BUY:
-            new_quantity = -((order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees())
-        else:
-            new_quantity = (order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees()
-        self._update_portfolio_data(market, new_quantity, True, True)
-
-        # Only for log purpose
-        if order.get_side() == TradeOrderSide.BUY:
-            currency_portfolio_num = order.get_filled_quantity()
-            market_portfolio_num = -self.portfolio[market][Portfolio.TOTAL]
-        else:
-            currency_portfolio_num = -order.get_filled_quantity()
-            market_portfolio_num = self.portfolio[market][Portfolio.TOTAL]
-
-        self.logger.info("Portfolio updated | {0} {1} | {2} {3} | Current Portfolio : {4}".format(currency,
-                                                                                                  currency_portfolio_num,
-                                                                                                  market,
-                                                                                                  market_portfolio_num,
-                                                                                                  self.portfolio))
-
-        # debug purpose
-        profitability, profitability_percent, profitability_diff = self.trader.get_trades_manager().get_profitability()
-
-        self.logger.debug("Current portfolio profitability : {0} {1} ({2}%)".format(round(profitability, 2),
-                                                                                    self.trader.get_trades_manager().get_reference(),
-                                                                                    round(profitability_percent, 2)))
-
-        return profitability, profitability_percent, profitability_diff
-
-    """ update_portfolio_available performs the availability update of the concerned currency in the current portfolio
-    It is called when an order is filled, created or canceled to update the "available" filed of the portfolio
-    """
-    def update_portfolio_available(self, order, is_new_order=True):
-        # stop losses and take profits aren't using available portfolio
-        if order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
-                                   OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],
-                                   OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
-                                   OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT]]:
+        if self.is_simulated:
+            # stop losses and take profits aren't using available portfolio
+            if not self._check_available_should_update(order):
+                self._update_portfolio_available(order)
 
             currency, market = order.get_currency_and_market()
 
-            if is_new_order:
-                inverse = 1
-            else:
-                inverse = -1
-
+            # update currency
             if order.get_side() == TradeOrderSide.BUY:
-                new_quantity = -order.get_origin_quantity() * order.get_origin_price() * inverse
-                self._update_portfolio_data(market, new_quantity, False, True)
+                new_quantity = order.get_filled_quantity() - order.get_currency_total_fees()
+                self._update_portfolio_data(currency, new_quantity, True, True)
             else:
-                new_quantity = -order.get_origin_quantity() * inverse
-                self._update_portfolio_data(currency, new_quantity, False, True)
+                new_quantity = -(order.get_filled_quantity() - order.get_currency_total_fees())
+                self._update_portfolio_data(currency, new_quantity, True, False)
+
+            # update market
+            if order.get_side() == TradeOrderSide.BUY:
+                new_quantity = -(
+                        (order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees())
+                self._update_portfolio_data(market, new_quantity, True, False)
+            else:
+                new_quantity = (order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees()
+                self._update_portfolio_data(market, new_quantity, True, True)
+
+            # Only for log purpose
+            if order.get_side() == TradeOrderSide.BUY:
+                currency_portfolio_num = order.get_filled_quantity()
+                market_portfolio_num = -order.get_filled_quantity() * \
+                    order.get_filled_price() - order.get_market_total_fees()
+            else:
+                currency_portfolio_num = -order.get_filled_quantity()
+                market_portfolio_num = order.get_filled_quantity() * \
+                    order.get_filled_price() - order.get_market_total_fees()
+
+            self.logger.info("Portfolio updated | {0} {1} | {2} {3} | Current Portfolio : {4}"
+                             .format(currency,
+                                     currency_portfolio_num,
+                                     market,
+                                     market_portfolio_num,
+                                     self.portfolio))
+        else:
+            self.update_portfolio_balance()
+            self.logger.info("Portfolio updated | Current Portfolio : {0}".format(self.portfolio))
+
+    """ update_portfolio_available performs the availability update of the concerned currency in the current portfolio
+    It is called when an order is filled, created or canceled to update the "available" filed of the portfolio
+    is_new_order is True when portfolio needs an update after a new order and False when portfolio needs a rollback 
+    after an order is cancelled
+    """
+
+    def update_portfolio_available(self, order, is_new_order=False):
+        if self._check_available_should_update(order):
+            self._update_portfolio_available(order, 1 if is_new_order else -1)
 
             # debug purpose
-            self.logger.debug("Portfolio available updated after order on {0} | Current Portfolio : {1}".format(
-                                 order.get_order_symbol(),
-                                 self.portfolio))
+            # self.logger.debug("Portfolio available updated after order on {0} | Current Portfolio : {1}".format(
+            #     order.get_order_symbol(),
+            #     self.portfolio))
+
+    # Check if the order has impact on availability
+    @staticmethod
+    def _check_available_should_update(order):
+        # stop losses and take profits aren't using available portfolio
+        return order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
+                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],
+                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT]]
+
+    # Realise portfolio availability update
+    def _update_portfolio_available(self, order, factor=1):
+        currency, market = order.get_currency_and_market()
+
+        # when buy order
+        if order.get_side() == TradeOrderSide.BUY:
+            new_quantity = - order.get_origin_quantity() * order.get_origin_price() * factor
+            self._update_portfolio_data(market, new_quantity, False, True)
+
+        # when sell order
+        else:
+            new_quantity = - order.get_origin_quantity() * factor
+            self._update_portfolio_data(currency, new_quantity, False, True)
+
+    # Resets available amount with total amount CAREFUL: if no currency is give, resets all the portfolio !
+    def reset_portfolio_available(self, reset_currency=None, reset_quantity=None):
+        if not reset_currency:
+            for currency in self.portfolio:
+                self.portfolio[currency][Portfolio.AVAILABLE] = self.portfolio[currency][Portfolio.TOTAL]
+        else:
+            if reset_currency in self.portfolio:
+                if reset_quantity is None:
+                    self.portfolio[reset_currency][Portfolio.AVAILABLE] = \
+                        self.portfolio[reset_currency][Portfolio.TOTAL]
+                else:
+                    self.portfolio[reset_currency][Portfolio.AVAILABLE] += reset_quantity

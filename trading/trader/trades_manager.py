@@ -2,6 +2,7 @@ import logging
 
 from config.cst import CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
+from tools.symbol_util import merge_currencies
 
 """ TradesManager will store all trades performed by the exchange trader
 Another feature of TradesManager is the profitability calculation
@@ -21,7 +22,7 @@ class TradesManager:
         self.profitability_percent = 0
         self.profitability_diff = 0
 
-        self.currencies_prices = None
+        self.currencies_last_prices = {}
         self.origin_portfolio = None
         self.last_portfolio = None
 
@@ -44,6 +45,9 @@ class TradesManager:
     def get_reference(self):
         return self.reference_market
 
+    def get_trade_history(self):
+        return self.trade_history
+
     def add_new_trade_in_history(self, trade):
         if trade not in self.trade_history:
             self.trade_history.append(trade)
@@ -52,8 +56,8 @@ class TradesManager:
     and set currencies_prices attribute
     """
 
-    def _update_currencies_prices(self):
-        self.currencies_prices = self.exchange.get_all_currencies_price_ticker()
+    def _update_currencies_prices(self, symbol):
+        self.currencies_last_prices[symbol] = self.exchange.get_last_price_ticker(symbol)
 
     """ Get profitability calls get_currencies_prices to update required data
     Then calls get_portfolio_current_value to set the current value of portfolio_current_value attribute
@@ -61,18 +65,21 @@ class TradesManager:
     """
 
     def get_profitability(self):
-        self.profitability_diff = self.profitability
+        self.profitability_diff = self.profitability_percent
         self.profitability = 0
         self.profitability_percent = 0
 
         try:
-            self._update_currencies_prices()
             self._update_portfolio_current_value()
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
-            self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
+
+            if self.portfolio_origin_value > 0:
+                self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
+            else:
+                self.profitability_percent = 0
 
             # calculate difference with the last current portfolio
-            self.profitability_diff -= self.profitability
+            self.profitability_diff = self.profitability_percent - self.profitability_diff
         except Exception as e:
             self.logger.error(str(e))
 
@@ -80,6 +87,12 @@ class TradesManager:
 
     def get_profitability_without_update(self):
         return self.profitability, self.profitability_percent, self.profitability_diff
+
+    def get_portfolio_current_value(self):
+        return self.portfolio_current_value
+
+    def get_portfolio_origin_value(self):
+        return self.portfolio_origin_value
 
     # Currently unused method
     def get_trades_value(self):
@@ -89,28 +102,30 @@ class TradesManager:
         return self.trades_value
 
     def _update_portfolio_current_value(self):
-        self.last_portfolio = self.portfolio.get_portfolio()
+        with self.portfolio as pf:
+            self.last_portfolio = pf.get_portfolio()
         self.portfolio_current_value = self._evaluate_portfolio_value(self.last_portfolio)
 
     def _get_portfolio_origin_value(self):
-        self._update_currencies_prices()
-        self.origin_portfolio = self.portfolio.get_portfolio()
+        with self.portfolio as pf:
+            self.origin_portfolio = pf.get_portfolio()
         self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio)
 
     """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reference currency
     It will try to create the symbol that fit with the exchange logic
     Returns the value found of this currency quantity, if not found returns 0     
     """
-    # TODO : use ccxt method
     def _try_get_value_of_currency(self, currency, quantity):
-        symbol = self.exchange.merge_currencies(currency, self.reference_market)
-        symbol_inverted = self.exchange.merge_currencies(self.reference_market, currency)
-        if symbol in self.currencies_prices:
-            return self.currencies_prices[symbol][ExchangeConstantsTickersColumns.LAST.value] * quantity
-        elif symbol_inverted in self.currencies_prices:
-            return quantity / self.currencies_prices[symbol_inverted][ExchangeConstantsTickersColumns.LAST.value]
+        symbol = merge_currencies(currency, self.reference_market)
+        symbol_inverted = merge_currencies(self.reference_market, currency)
+        if self.exchange.get_exchange_manager().symbol_exists(symbol):
+            self._update_currencies_prices(symbol)
+            return self.currencies_last_prices[symbol] * quantity
+        elif self.exchange.get_exchange_manager().symbol_exists(symbol_inverted):
+            self._update_currencies_prices(symbol_inverted)
+            return quantity / self.currencies_last_prices[symbol_inverted]
         else:
-            # TODO : manage if currency/market does not exist
+            # TODO : manage if currency/market doesn't exist
             return 0
 
     """ evaluate_portfolio_value performs evaluate_value with a portfolio configuration
@@ -120,7 +135,8 @@ class TradesManager:
     def _evaluate_portfolio_value(self, portfolio):
         value = 0
         for currency in portfolio:
-            value += self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
+            if portfolio[currency][Portfolio.TOTAL] != 0:
+                value += self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
         return value
 
     # Evaluate value returns the currency quantity value in the reference (attribute) currency
