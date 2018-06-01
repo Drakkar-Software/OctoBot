@@ -64,7 +64,8 @@ class TelegramService(AbstractService):
                and "chat_id" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]
 
     def send_message(self, content):
-        self.telegram_api.send_message(chat_id=self.chat_id, text=content)
+        if content:
+            self.telegram_api.send_message(chat_id=self.chat_id, text=content)
 
     def _get_bot_url(self):
         return "https://web.telegram.org/#/im?p={0}".format(self.telegram_api.get_me().name)
