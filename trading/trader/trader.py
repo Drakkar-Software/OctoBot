@@ -111,44 +111,49 @@ class Trader:
 
     def create_order(self, order, portfolio, loaded=False):
         linked_to = None
-        
+
+        new_order = order
+
         # if this order is linked to another (ex : a sell limit order with a stop loss order)
-        if order.linked_to is not None:
-            order.linked_to.add_linked_order(order)
-            linked_to = order.linked_to
+        if new_order.linked_to is not None:
+            new_order.linked_to.add_linked_order(new_order)
+            linked_to = new_order.linked_to
 
         if not loaded:
-            if not self.simulate and not self.check_if_self_managed(order.get_order_type()):
-                new_order = self.exchange.create_order(order.get_order_type(),
-                                                       order.get_order_symbol(),
-                                                       order.get_origin_quantity(),
-                                                       order.get_origin_price(),
-                                                       order.origin_stop_price)
+            if not self.simulate and not self.check_if_self_managed(new_order.get_order_type()):
+                created_order = self.exchange.create_order(new_order.get_order_type(),
+                                                           new_order.get_order_symbol(),
+                                                           new_order.get_origin_quantity(),
+                                                           new_order.get_origin_price(),
+                                                           new_order.origin_stop_price)
 
                 # get real order from exchange
-                order = self.parse_exchange_order_to_order_instance(new_order)
+                new_order = self.parse_exchange_order_to_order_instance(created_order)
+
+                # rebind order notifier to new order instance
+                new_order.order_notifier = order.get_order_notifier()
 
             # update the availability of the currency in the portfolio
-            portfolio.update_portfolio_available(order, is_new_order=True)
+            portfolio.update_portfolio_available(new_order, is_new_order=True)
 
             title = "Order creation"
         else:
             title = "Order loaded"
 
         self.logger.info("{0} : {1} | {2} | Price : {3} | Quantity : {4}".format(title,
-                                                                                 order.get_order_symbol(),
-                                                                                 order.get_order_type(),
-                                                                                 order.get_origin_price(),
-                                                                                 order.get_origin_quantity()))
+                                                                                 new_order.get_order_symbol(),
+                                                                                 new_order.get_order_type(),
+                                                                                 new_order.get_origin_price(),
+                                                                                 new_order.get_origin_quantity()))
 
         # notify order manager of a new open order
-        self.order_manager.add_order_to_list(order)
+        self.order_manager.add_order_to_list(new_order)
 
         # if this order is linked to another
         if linked_to is not None:
-            order.add_linked_order(linked_to)
+            new_order.add_linked_order(linked_to)
         
-        return order
+        return new_order
 
     def cancel_order(self, order):
         with order as odr:
