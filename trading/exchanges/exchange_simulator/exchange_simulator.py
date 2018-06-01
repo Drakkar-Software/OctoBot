@@ -253,10 +253,10 @@ class ExchangeSimulator(AbstractExchange):
     def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         return []
 
-    def get_open_orders(self, symbol=None, since=None, limit=None):
+    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         return []
 
-    def get_order(self, order_id):
+    def get_order(self, order_id, symbol=None):
         raise NotImplementedError("get_order not implemented")
 
     def get_order_book(self, symbol, limit=30):

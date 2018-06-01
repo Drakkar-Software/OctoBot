@@ -1,6 +1,7 @@
 import logging
 import threading
 from time import sleep
+from threading import Lock
 
 from backtesting.backtesting import Backtesting
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus
@@ -23,6 +24,15 @@ class OrdersManager(threading.Thread):
         self.last_symbol_prices = {}
         self.order_refresh_time = ORDER_REFRESHER_TIME
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.lock = Lock()
+
+    # Disposable design pattern
+    def __enter__(self):
+        self.lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.lock.release()
 
     def add_order_to_list(self, order):
         self.order_list.append(order)
@@ -109,8 +119,9 @@ class OrdersManager(threading.Thread):
         while self.keep_running:
 
             try:
-                # call update status
-                self._update_orders_status()
+                with self as slf:
+                    # call update status
+                    slf._update_orders_status()
 
             except Exception as e:
                 self.logger.error("Error when updating orders: {0}".format(e))

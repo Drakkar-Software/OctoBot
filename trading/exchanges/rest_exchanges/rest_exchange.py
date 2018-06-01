@@ -130,7 +130,7 @@ class RESTExchange(AbstractExchange):
         else:
             raise Exception("This exchange doesn't support fetchOrders")
 
-    def get_open_orders(self, symbol=None, since=None, limit=None):
+    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         if self.client.has['fetchOpenOrders']:
             return self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit, params={})
         else:

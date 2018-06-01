@@ -132,8 +132,8 @@ class ExchangeDispatcher(AbstractExchange):
                 self.exchange_web_socket.init_orders_for_ws_if_possible(orders)
             return orders
 
-    def get_open_orders(self, symbol=None, since=None, limit=None):
-        if self._web_socket_available() and self.exchange_web_socket.orders_are_initialized():
+    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
+        if not force_rest and self._web_socket_available() and self.exchange_web_socket.orders_are_initialized():
             return self.exchange_web_socket.get_open_orders(symbol=symbol,
                                                             since=since,
                                                             limit=limit)

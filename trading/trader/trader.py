@@ -1,4 +1,5 @@
 import logging
+import time
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR
@@ -165,7 +166,7 @@ class Trader:
                                                                                      odr.get_origin_price(),
                                                                                      odr.get_id(),
                                                                                      self.get_exchange().get_name()))
-            self.order_manager.remove_order_from_list(order)
+                self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
     def cancel_open_orders(self, symbol):
@@ -252,7 +253,7 @@ class Trader:
 
     def update_open_orders(self):
         for symbol in self.exchange.get_exchange_manager().get_traded_pairs():
-            orders = self.exchange.get_open_orders(symbol=symbol)
+            orders = self.exchange.get_open_orders(symbol=symbol, force_rest=True)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)
                 with self.portfolio as pf:
