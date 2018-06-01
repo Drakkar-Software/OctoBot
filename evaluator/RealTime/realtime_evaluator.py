@@ -103,7 +103,7 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
 
     def set_default_config(self):
         time_frames = self.exchange.get_exchange_manager().get_config_time_frame()
-        min_time_frame = TimeFrameManager.find_min_time_frame(time_frames)
+        min_time_frame = TimeFrameManager.find_min_time_frame(time_frames, MIN_EVAL_TIME_FRAME)
         refresh_rate = DEFAULT_WEBSOCKET_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS if \
             self.exchange.get_exchange_manager().websocket_available() \
             else DEFAULT_REST_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS

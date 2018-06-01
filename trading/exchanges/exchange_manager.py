@@ -91,7 +91,7 @@ class ExchangeManager:
             if self.time_frame_exists(time_frame.value):
                 self.time_frames.append(time_frame)
         # add shortest timeframe for realtime evaluators
-        client_shortest_time_frame = TimeFrameManager.find_min_time_frame(self.client_time_frames)
+        client_shortest_time_frame = TimeFrameManager.find_min_time_frame(self.client_time_frames, MIN_EVAL_TIME_FRAME)
         if client_shortest_time_frame not in self.time_frames:
             self.time_frames.append(client_shortest_time_frame)
 
