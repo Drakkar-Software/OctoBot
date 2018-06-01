@@ -203,6 +203,9 @@ class TimeFrames(Enum):
     ONE_MONTH = "1M"
 
 
+MIN_EVAL_TIME_FRAME = TimeFrames.FIVE_MINUTES
+
+
 TimeFramesMinutes = {
     TimeFrames.ONE_MINUTE: 1,
     TimeFrames.THREE_MINUTES: 3,
