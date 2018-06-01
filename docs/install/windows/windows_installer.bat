@@ -12,7 +12,7 @@ set TWISTED_WIN32=https://github.com/Drakkar-Software/OctoBot/releases/download/
 set TWISTED_WIN64=https://github.com/Drakkar-Software/OctoBot/releases/download/0.0.12-alpha/Twisted-18.4.0-cp36-cp36m-win_amd64.whl
 
 REM TEST INSTALL
-python --version 2>NUL
+%python_cmd% --version 2>NUL
 if errorlevel 1 goto errorNoPython
 
 REM REQUIREMENTS
