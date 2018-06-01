@@ -132,6 +132,7 @@ class Trader:
 
                 # rebind order notifier to new order instance
                 new_order.order_notifier = order.get_order_notifier()
+                new_order.get_order_notifier().set_order(new_order)
 
             # update the availability of the currency in the portfolio
             portfolio.update_portfolio_available(new_order, is_new_order=True)
