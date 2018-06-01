@@ -1,3 +1,3 @@
 from .strategies_evaluator import *
-from .mixed_strategies_evaluator import *
+from .Default import *
 from .Advanced import *

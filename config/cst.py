@@ -1,84 +1,151 @@
 from enum import Enum
 
-VERSION = "0.0.8-alpha"
+SHORT_VERSION = "0.1.0"
+REV_VERSION = "0"
+VERSION_DEV_PHASE = "beta"
+VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
+LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
 
+ORIGIN_URL = "https://github.com/Drakkar-Software/OctoBot.git"
+
+MSECONDS_TO_SECONDS = 1000
 MINUTE_TO_SECONDS = 60
+HOURS_TO_SECONDS = MINUTE_TO_SECONDS * 60
+HOURS_TO_MSECONDS = MSECONDS_TO_SECONDS * MINUTE_TO_SECONDS * MINUTE_TO_SECONDS
+DAYS_TO_SECONDS = HOURS_TO_SECONDS * 24
+
+CONFIG_GLOBAL_UTILS = "global_utils"
+CONFIG_ENABLED_OPTION = "enabled"
+CONFIG_SYMBOL = "symbol"
+
+# Files
+CONFIG_FILE = "config/config.json"
+CONFIG_EVALUATOR_FILE = "config/evaluator_config.json"
+
+# Advanced
+CONFIG_ADVANCED_CLASSES = "advanced_classes"
+CONFIG_ADVANCED_INSTANCES = "advanced_instances"
+
+# Backtesting
+CONFIG_BACKTESTING = "backtesting"
+CONFIG_BACKTESTING_DATA_FILES = "files"
+
+# Data collector
+CONFIG_DATA_COLLECTOR = "data_collector"
+CONFIG_DATA_COLLECTOR_ZIPLINE = "zipline"
+DATA_COLLECTOR_REFRESHER_TIME = MINUTE_TO_SECONDS
+CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
+
+# Trading
+CONFIG_EXCHANGES = "exchanges"
+CONFIG_EXCHANGE_WEB_SOCKET = "web_socket"
+CONFIG_EXCHANGE_KEY = "api-key"
+CONFIG_EXCHANGE_SECRET = "api-secret"
+CONFIG_TRADER = "trader"
+CONFIG_SIMULATOR = "trader_simulator"
+CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
+CONFIG_TRADER_RISK = "risk"
+CONFIG_TRADER_RISK_MIN = 0.05
+CONFIG_TRADER_RISK_MAX = 1
+ORDER_REFRESHER_TIME = 15
+SIMULATOR_LAST_PRICES_TO_CHECK = 15
+ORDER_CREATION_LAST_TRADES_TO_USE = 10
+CONFIG_TRADER_REFERENCE_MARKET = "reference_market"
+DEFAULT_REFERENCE_MARKET = "BTC"
+MARKET_SEPARATOR = "/"
+CURRENCY_DEFAULT_MAX_PRICE_DIGITS = 8
+
+CONFIG_PORTFOLIO_INFO = "info"
+CONFIG_PORTFOLIO_FREE = "free"
+CONFIG_PORTFOLIO_USED = "used"
+CONFIG_PORTFOLIO_TOTAL = "total"
+
+# Notification
+CONFIG_NOTIFICATION_INSTANCE = "notifier"
+CONFIG_CATEGORY_NOTIFICATION = "notification"
+NOTIFICATION_STARTING_MESSAGE = "OctoBot v{0} starting...".format(LONG_VERSION)
+NOTIFICATION_STOPPING_MESSAGE = "OctoBot v{0} stopping...".format(LONG_VERSION)
+REAL_TRADER_STR = "[Real Trader] "
+SIMULATOR_TRADER_STR = "[Simulator] "
+
+# DEBUG options
+CONFIG_DEBUG_OPTION_PERF = "performance_analyser"
+CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN = 5
+CONFIG_DEBUG_OPTION = "DEBUG"
+
+# SERVICES
+CONFIG_CATEGORY_SERVICES = "services"
+CONFIG_SERVICE_INSTANCE = "service_instance"
+
+# gmail
+CONFIG_GMAIL = "gmail"
+
+# telegram
+CONFIG_TELEGRAM = "telegram"
+CONFIG_TOKEN = "token"
+
+# web
+CONFIG_WEB = "web"
+CONFIG_WEB_IP = "ip"
+CONFIG_WEB_PORT = "port"
+DEFAULT_SERVER_IP = '0.0.0.0'
+DEFAULT_SERVER_PORT = 5001
+
+# twitter
+CONFIG_TWITTERS_ACCOUNTS = "accounts"
+CONFIG_TWITTERS_HASHTAGS = "hashtags"
+CONFIG_TWITTER = "twitter"
+CONFIG_REDDIT = "reddit"
+CONFIG_REDDIT_SUBREDDITS = "subreddits"
+CONFIG_REDDIT_ENTRY = "entry"
+CONFIG_REDDIT_ENTRY_WEIGHT = "entry_weight"
+CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
+CONFIG_TWEET = "tweet"
+CONFIG_TWEET_DESCRIPTION = "tweet_description"
+
+# Evaluator
+CONFIG_EVALUATOR = "evaluator"
+SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
 START_PENDING_EVAL_NOTE = "0"  # force exception
 INIT_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
-MAX_TA_EVAL_TIME_SECONDS = 0.03
-
-MARKET_SEPARATOR = "/"
-
-CONFIG_FILE = "config/config.json"
-CONFIG_GLOBAL_UTILS = "global_utils"
-CONFIG_ADVANCED_CLASSES = "advanced_classes"
-CONFIG_ADVANCED_INSTANCES = "advanced_instances"
-SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
+MAX_TA_EVAL_TIME_SECONDS = 0.1
+DEFAULT_WEBSOCKET_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS = 1
+DEFAULT_REST_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS = 60
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
 CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
 CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
 CONFIG_CRYPTO_PAIRS = "pairs"
 
-# notification
-NOTIFICATION_STARTING_MESSAGE = "CryptoBot v{0} starting...".format(VERSION)
-NOTIFICATION_STOPPING_MESSAGE = "CryptoBot v{0} stopping...".format(VERSION)
-
-# gmail
-CONFIG_GMAIL = "gmail"
-
-# twitter
-CONFIG_TWITTERS_ACCOUNTS = "accounts"
-CONFIG_TWITTERS_HASHTAGS = "hashtags"
-CONFIG_TWITTER = "twitter"
-CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
-CONFIG_ADDITIONAL_RESOURCES = "additional_resources"
-CONFIG_TWEET = "tweet"
-CONFIG_TWEET_DESCRIPTION = "tweet_description"
-
-# DEBUG
-CONFIG_DEBUG_OPTION_PERF = "PERF"
-CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN = 5
-CONFIG_DEBUG_OPTION = "DEBUG"
-
-CONFIG_ENABLED_OPTION = "enabled"
-
-CONFIG_EXCHANGES = "exchanges"
-CONFIG_TRADER = "trader"
-CONFIG_SIMULATOR = "simulator"
-CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
-CONFIG_NOTIFICATION_INSTANCE = "notifier"
-CONFIG_CATEGORY_NOTIFICATION = "notification"
-CONFIG_CATEGORY_SERVICES = "services"
-CONFIG_SERVICE_INSTANCE = "service_instance"
-
-CONFIG_TRADER_RISK = "risk"
-CONFIG_TRADER_RISK_MIN = 0.05
-CONFIG_TRADER_RISK_MAX = 1
-
+# Socials
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
 
+# Stats
 STATS_EVALUATOR_HISTORY_TIME = "relevant_history_months"
 STATS_EVALUATOR_MAX_HISTORY_TIME = 3
 
-ORDER_REFRESHER_TIME = 5
-SIMULATOR_LAST_PRICES_TO_CHECK = 10
-
-CONFIG_TRADER_REFERENCE_MARKET = "reference_market"
-DEFAULT_REFERENCE_MARKET = "BTC"
-
+# Tools
 DIVERGENCE_USED_VALUE = 30
 
-# e-7
-MARKET_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
-CURRENCY_MIN_PORTFOLIO_CREATE_ORDER = 0.0000001
+# Interfaces
+CONFIG_INTERFACES = "interfaces"
+CONFIG_INTERFACES_WEB = "web"
+CONFIG_INTERFACES_TELEGRAM = "telegram"
 
-
-class EvaluatorRisk(Enum):
-    LOW = 1
-    MEDIUM = 2
-    HIGH = 3
+# Tentacles (packages)
+GITHUB = "github"
+GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
+GITHUB_BASE_URL = "https://github.com"
+TENTACLES_PUBLIC_REPOSITORY = "Drakkar-Software/OctoBot-Tentacles"
+TENTACLES_PUBLIC_LIST = "tentacles_list.json"
+TENTACLES_DEFAULT_BRANCH = "master"
+EVALUATOR_DEFAULT_FOLDER = "Default"
+EVALUATOR_ADVANCED_FOLDER = "Advanced"
+CONFIG_TENTACLES_KEY = "tentacles"
+TENTACLE_DESCRIPTION = "tentacle_description"
+TENTACLE_DESCRIPTION_LOCALISATION = "localisation"
+TENTACLE_DESCRIPTION_IS_URL = "is_url"
 
 
 class EvaluatorMatrixTypes(Enum):
@@ -110,6 +177,15 @@ class PriceStrings(Enum):
     STR_PRICE_VOL = "vol"
 
 
+class PriceIndexes(Enum):
+    IND_PRICE_TIME = 0
+    IND_PRICE_OPEN = 1
+    IND_PRICE_HIGH = 2
+    IND_PRICE_LOW = 3
+    IND_PRICE_CLOSE = 4
+    IND_PRICE_VOL = 5
+
+
 class TimeFrames(Enum):
     ONE_MINUTE = "1m"
     THREE_MINUTES = "3m"
@@ -125,6 +201,9 @@ class TimeFrames(Enum):
     THREE_DAYS = "3d"
     ONE_WEEK = "1w"
     ONE_MONTH = "1M"
+
+
+MIN_EVAL_TIME_FRAME = TimeFrames.FIVE_MINUTES
 
 
 TimeFramesMinutes = {
@@ -162,15 +241,21 @@ TimeFramesRelevance = {
     TimeFrames.ONE_MONTH: 5,
 }
 
+IMAGE_ENDINGS = ["png", "jpg", "jpeg", "gif", "jfif", "tiff", "bmp", "ppm", "pgm", "pbm", "pnm", "webp", "hdr", "heif",
+                 "bat", "bpg", "svg", "cgm"]
+
 
 class TradeOrderSide(Enum):
-    BUY = 1
-    SELL = 2
+    BUY = "buy"
+    SELL = "sell"
 
 
 class OrderStatus(Enum):
-    FILLED = 1
-    PENDING = 2
+    FILLED = "closed"
+    OPEN = "open"
+    PARTIALLY_FILLED = "partially_filled"
+    CANCELED = "canceled"
+    CLOSED = "closed"
 
 
 class TraderOrderType(Enum):
@@ -229,3 +314,26 @@ class ExchangeConstantsTickersInfoColumns(Enum):
     FIRST_ID = "firstId"
     LAST_ID = "lastId"
     COUNT = "count"
+
+
+class ExchangeConstantsMarketStatusColumns(Enum):
+    SYMBOL = "symbol"
+    ID = "id"
+    CURRENCY = "base"
+    MARKET = "quote"
+    ACTIVE = "active"
+    PRECISION = "precision"  # number of decimal digits "after the dot"
+    PRECISION_PRICE = "price"
+    PRECISION_AMOUNT = "amount"
+    PRECISION_COST = "cost"
+    LIMITS = "limits"  # value limits when placing orders on this market
+    LIMITS_AMOUNT = "amount"
+    LIMITS_AMOUNT_MIN = "min"  # order amount should be > min
+    LIMITS_AMOUNT_MAX = "max"  # order amount should be < max
+    LIMITS_PRICE = "price"  # same min/max limits for the price of the order
+    LIMITS_PRICE_MIN = "min"  # order price should be > min
+    LIMITS_PRICE_MAX = "max"  # order price should be < max
+    LIMITS_COST = "cost"  # same limits for order cost = price * amount
+    LIMITS_COST_MIN = "min"  # order cost should be > min
+    LIMITS_COST_MAX = "max"  # order cost should be < max
+    INFO = "info"

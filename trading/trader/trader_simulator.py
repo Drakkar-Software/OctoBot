@@ -1,8 +1,4 @@
-import logging
-
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
-from trading.trader.order import OrderConstants
-from trading.trader.order_notifier import OrderNotifier
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR, SIMULATOR_TRADER_STR
 from trading.trader.trader import Trader
 
 """ TraderSimulator has a role of exchange response simulator
@@ -10,41 +6,12 @@ from trading.trader.trader import Trader
 
 
 class TraderSimulator(Trader):
-    def __init__(self, config, exchange):
-        super().__init__(config, exchange)
-        self.logger = logging.getLogger(self.__class__.__name__)
+    def __init__(self, config, exchange, order_refresh_time=None):
         self.simulate = True
+        super().__init__(config, exchange, order_refresh_time)
 
-    def enabled(self):
-        if self.config["simulator"][CONFIG_ENABLED_OPTION]:
-            return True
-        else:
-            return False
+        self.trader_type_str = SIMULATOR_TRADER_STR
 
-    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None, linked_to=None):
-        self.logger.info("Order creation : {0} | {1} | Price : {2}".format(symbol, order_type, price))
-
-        # create new order instance
-        order_class = OrderConstants.TraderOrderTypeClasses[order_type]
-        order = order_class(self)
-
-        # manage order notifier
-        if linked_to is None:
-            order_notifier = OrderNotifier(self.config, order)
-        else:
-            order_notifier = linked_to.get_order_notifier()
-
-        order.new(order_type, symbol, quantity, price, stop_price, order_notifier)
-
-        # notify order manager of a new open order
-        self.order_manager.add_order_to_list(order)
-
-        # update the availability of the currency in the portfolio
-        self.portfolio.update_portfolio_available(order, True)
-
-        # if this order is linked to another (ex : a sell limit order with a stop loss order)
-        if linked_to is not None:
-            linked_to.add_linked_order(order)
-            order.add_linked_order(linked_to)
-
-        return order
+    @staticmethod
+    def enabled(config):
+        return config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION]

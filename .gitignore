@@ -104,10 +104,20 @@ ENV/
 .mypy_cache/
 
 # config
-config.json
+config/config.json
 
-# modules
+# evaluators
 /.gitmodules
 evaluator/.gitignore
+**/Default/*.*
 **/Advanced/*.*
 
+# Specific config
+config/evaluator_config.json
+
+# Data
+backtesting/collector/data/**
+
+logs/matrix_history\.data
+
+logs/OctoBot\.log\.*

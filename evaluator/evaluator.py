@@ -48,12 +48,12 @@ class Evaluator:
     def set_social_eval(self, new_social_list, evaluator_thread):
         self.social_eval_list = new_social_list
         for social_eval in self.social_eval_list:
-            social_eval.add_evaluator_thread(evaluator_thread)
+            social_eval.add_evaluator_thread_manager(evaluator_thread)
 
     def set_real_time_eval(self, new_real_time_list, evaluator_thread):
         self.real_time_eval_list = new_real_time_list
         for real_time_eval in self.real_time_eval_list:
-            real_time_eval.add_evaluator_thread(evaluator_thread)
+            real_time_eval.add_evaluator_thread_manager(evaluator_thread)
 
     def update_ta_eval(self, ignored_evaluator=None):
         # update only with new data
@@ -92,3 +92,6 @@ class Evaluator:
 
     def get_config(self):
         return self.config
+
+    def get_time_frame(self):
+        return self.time_frame

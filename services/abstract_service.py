@@ -32,6 +32,15 @@ class AbstractService:
     def get_is_enabled(self):
         return self.enabled
 
+    # implement locally if the service has thread(s) to stop
+    def stop(self):
+        pass
+
+    # implement locally if the service shouldn't raise warning at startup if configuration is not set
+    @staticmethod
+    def get_should_warn():
+        return True
+
     # Returns true if all the configuration is available
     @abstractmethod
     def has_required_configuration(self):
@@ -51,3 +60,11 @@ class AbstractService:
     @abstractmethod
     def prepare(self) -> None:
         raise NotImplementedError("prepare not implemented")
+
+    # Called by say_hello after service is prepared, return relevant service information
+    @abstractmethod
+    def get_successful_startup_message(self):
+        raise NotImplementedError("get_successful_startup_message not implemented")
+
+    def say_hello(self):
+        self.logger.info(self.get_successful_startup_message())

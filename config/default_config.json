@@ -1,24 +1,22 @@
 {
+  "time_frame": ["30m", "1h", "2h", "4h", "1d"],
   "crypto_currencies":{
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
     }
   },
   "exchanges": {
-    "binance": {
-      "api-key": "",
-      "api-secret": ""
-    }
   },
   "services": {},
   "notification":{
-    "enabled": false
+    "enabled": false,
+    "type": []
   },
   "trader":{
     "enabled": false,
     "risk": 0.5
   },
-  "simulator":{
+  "trader_simulator":{
     "enabled": true,
     "risk": 0.5,
     "starting_portfolio": {
