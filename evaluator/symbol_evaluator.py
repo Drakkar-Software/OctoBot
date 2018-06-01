@@ -2,7 +2,7 @@ from config.cst import EvaluatorMatrixTypes
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_final import FinalEvaluator
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from evaluator.evaluator_order_creator import EvaluatorOrderCreator
+from trading.trader.order_creation.abstract_order_creator import AbstractOrderCreator
 
 
 class SymbolEvaluator:
@@ -20,7 +20,7 @@ class SymbolEvaluator:
         self.strategies_eval_lists = {}
         self.finalize_enabled_list = {}
 
-        self.evaluator_order_creator = EvaluatorOrderCreator()
+        self.evaluator_order_creator = AbstractOrderCreator()
 
     def set_traders(self, trader):
         self.traders = trader

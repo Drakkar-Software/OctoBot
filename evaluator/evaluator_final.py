@@ -2,7 +2,7 @@ import logging
 from queue import Queue
 
 from config.cst import EvaluatorStates, INIT_EVAL_NOTE
-from evaluator.evaluator_order_creator import EvaluatorOrderCreator
+from trading.trader.order_creation.abstract_order_creator import AbstractOrderCreator
 from tools.asynchronous_server import AsynchronousServer
 from tools.notifications import EvaluatorNotification
 from tools.evaluators_util import check_valid_eval_note
@@ -75,7 +75,7 @@ class FinalEvaluator(AsynchronousServer):
     def _create_order_if_possible(self, evaluator_notification, trader):
         if trader.is_enabled():
             with trader.get_portfolio() as pf:
-                if EvaluatorOrderCreator.can_create_order(self.symbol, self.exchange, self.state, pf):
+                if AbstractOrderCreator.can_create_order(self.symbol, self.exchange, self.state, pf):
                     FinalEvaluator._push_order_notification_if_possible(
                         self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
                             self.final_eval,
