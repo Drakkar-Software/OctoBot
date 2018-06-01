@@ -1,4 +1,4 @@
 {
-  "refresh_rate_seconds" : 3600,
+  "refresh_rate_seconds" : 86400,
   "relevant_history_months" : 3
 }
