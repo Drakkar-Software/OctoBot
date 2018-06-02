@@ -1,0 +1,5 @@
+[run]
+omit =
+    tests/*
+    **/Default/*.*
+    **/Advanced/*.*
