@@ -186,8 +186,6 @@ class Trader:
         with self.portfolio as pf:
             pf.update_portfolio_available(order, is_new_order=False)
 
-        self.notify_order_close(order, cancel_linked_only=True)
-
     def notify_order_close(self, order, cancel=False, cancel_linked_only=False):
         # Cancel linked orders
         for linked_order in order.get_linked_orders():
