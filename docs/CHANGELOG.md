@@ -1,3 +1,10 @@
+Changelog for 0.1.0_1-beta
+====================
+*Released date : June 2 2018*
+
+# Bug fix :
+    #201 [Real trading] Fix bug when loading exchange current order
+
 Changelog for 0.1.0-beta
 ====================
 *Released date : June 1 2018*
