@@ -1,6 +1,6 @@
 {
   "accounts" : {
-    "Bitcoin": ["RedditBTC","BTCFoundation"],
+    "Bitcoin": ["BTCFoundation"],
     "Ethereum": ["ethereum","VitalikButerin"],
     "Neo": ["NEO_Blockchain","NEOnewstoday","NEO_council","neotogas","NEO_DevCon","RedditBTC","neonexchange","dahongfei"],
     "ICON": ["helloiconworld "],
