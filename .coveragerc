@@ -1,5 +1,9 @@
 [run]
 omit =
     tests/*
+    backtesting/*
+    interfaces/*
+    services/*
+    tools/*
     **/Default/*.*
     **/Advanced/*.*
