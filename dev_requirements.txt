@@ -3,3 +3,6 @@ pytest-pep8
 pytest-cov
 coverage
 coveralls
+
+tox
+tox-travis
