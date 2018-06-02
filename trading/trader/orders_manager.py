@@ -28,8 +28,14 @@ class OrdersManager(threading.Thread):
 
     def add_order_to_list(self, order):
         with self.list_lock:
-            if order not in self.order_list:
+            if order not in self.order_list and (self.trader.simulate or not self.has_order_id_in_list(order.get_id())):
                 self.order_list.append(order)
+
+    def has_order_id_in_list(self, order_id):
+        for order in self.order_list:
+            if order.get_id() == order_id:
+                return True
+        return False
 
     # Remove the specified order of the current open_order list (when the order is filled or canceled)
     def remove_order_from_list(self, order):
