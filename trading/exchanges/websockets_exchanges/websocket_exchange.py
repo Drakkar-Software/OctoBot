@@ -56,7 +56,7 @@ class WebSocketExchange(AbstractExchange):
     def get_all_orders(self, symbol=None, since=None, limit=None):
         return self.client.get_all_orders(symbol, since, limit)
 
-    def get_open_orders(self, symbol=None, since=None, limit=None):
+    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         return self.client.get_open_orders(symbol, since, limit)
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):

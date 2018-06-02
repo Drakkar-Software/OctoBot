@@ -114,7 +114,7 @@ class Order:
         self.canceled_time = time.time()
 
         # if real order
-        if not self.is_simulated:
+        if not self.is_simulated and not self.trader.check_if_self_managed(self.get_order_type()):
             self.exchange.cancel_order(self.order_id, self.symbol)
 
         self.trader.notify_order_cancel(self)
@@ -123,6 +123,7 @@ class Order:
         self.status = OrderStatus.CANCELED
         self.canceled_time = time.time()
         self.trader.notify_order_cancel(self)
+        self.trader.notify_order_close(self, cancel_linked_only=True)
         self.trader.get_order_manager().remove_order_from_list(self)
 
     def close_order(self):
@@ -190,6 +191,9 @@ class Order:
 
     def get_create_last_price(self):
         return self.created_last_price
+
+    def is_cancelled(self):
+        return self.status == OrderStatus.CANCELED
 
     def get_profitability(self):
         if self.get_filled_price() is not 0 and self.get_create_last_price() is not 0:

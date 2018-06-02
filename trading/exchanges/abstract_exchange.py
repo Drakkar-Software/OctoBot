@@ -66,7 +66,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_open_orders(self, symbol=None, since=None, limit=None):
+    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         pass
 
     @abstractmethod

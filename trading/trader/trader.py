@@ -1,4 +1,5 @@
 import logging
+import time
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR
@@ -132,6 +133,7 @@ class Trader:
 
                 # rebind order notifier to new order instance
                 new_order.order_notifier = order.get_order_notifier()
+                new_order.get_order_notifier().set_order(new_order)
 
             # update the availability of the currency in the portfolio
             portfolio.update_portfolio_available(new_order, is_new_order=True)
@@ -152,18 +154,19 @@ class Trader:
         # if this order is linked to another
         if linked_to is not None:
             new_order.add_linked_order(linked_to)
-        
+
         return new_order
 
     def cancel_order(self, order):
-        with order as odr:
-            odr.cancel_order()
-            self.logger.info("{0} {1} at {2} (ID : {3}) cancelled on {4}".format(odr.get_order_symbol(),
-                                                                                 odr.get_name(),
-                                                                                 odr.get_origin_price(),
-                                                                                 odr.get_id(),
-                                                                                 self.get_exchange().get_name()))
-        self.order_manager.remove_order_from_list(order)
+        if not order.is_cancelled():
+            with order as odr:
+                odr.cancel_order()
+                self.logger.info("{0} {1} at {2} (ID : {3}) cancelled on {4}".format(odr.get_order_symbol(),
+                                                                                     odr.get_name(),
+                                                                                     odr.get_origin_price(),
+                                                                                     odr.get_id(),
+                                                                                     self.get_exchange().get_name()))
+                self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
     def cancel_open_orders(self, symbol):
@@ -183,7 +186,7 @@ class Trader:
         with self.portfolio as pf:
             pf.update_portfolio_available(order, is_new_order=False)
 
-    def notify_order_close(self, order, cancel=False):
+    def notify_order_close(self, order, cancel=False, cancel_linked_only=False):
         # Cancel linked orders
         for linked_order in order.get_linked_orders():
             self.cancel_order(linked_order)
@@ -194,6 +197,12 @@ class Trader:
             orders_canceled = order.get_linked_orders() + [order]
 
             self.cancel_order(order)
+            _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
+
+        elif cancel_linked_only:
+            order_closed = None
+            orders_canceled = order.get_linked_orders()
+
             _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
 
         else:
@@ -222,7 +231,7 @@ class Trader:
 
         # update current order list with exchange
         if not self.simulate:
-            self.update_open_orders()
+            self.update_open_orders(order.get_order_symbol())
 
         # notification
         order.get_order_notifier().end(order_closed,
@@ -240,9 +249,15 @@ class Trader:
             for close_order in self.exchange.get_closed_orders(symbol):
                 self.parse_exchange_order_to_trade_instance(close_order)
 
-    def update_open_orders(self):
-        for symbol in self.exchange.get_exchange_manager().get_traded_pairs():
-            orders = self.exchange.get_open_orders(symbol=symbol)
+    def update_open_orders(self, symbol=None):
+        if symbol:
+            symbols = [symbol]
+        else:
+            symbols = self.exchange.get_exchange_manager().get_traded_pairs()
+
+        # get orders from exchange for the specified symbols
+        for symbol_traded in symbols:
+            orders = self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)
                 with self.portfolio as pf:
