@@ -123,6 +123,7 @@ class Order:
         self.status = OrderStatus.CANCELED
         self.canceled_time = time.time()
         self.trader.notify_order_cancel(self)
+        self.trader.notify_order_close(self, cancel_linked_only=True)
         self.trader.get_order_manager().remove_order_from_list(self)
 
     def close_order(self):
