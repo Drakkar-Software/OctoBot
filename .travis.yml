@@ -14,10 +14,8 @@ install:
   - pip3 install -r dev_requirements.txt
   - cp ./config/default_config.json ./config/config.json
   - python3 start.py -p install all
-jobs:
-  include:
-    - script: pytest --cov=. --cov-config=.coveragerc tests/unit_tests/
-    - script: pytest --cov=. --cov-config=.coveragerc tests/functional_tests/
+script:
+  - pytest --cov=. --cov-config=.coveragerc tests/
 after_success:
   - coveralls
 
