@@ -231,7 +231,7 @@ class Trader:
 
         # update current order list with exchange
         if not self.simulate:
-            self.update_open_orders()
+            self.update_open_orders(order.get_order_symbol())
 
         # notification
         order.get_order_notifier().end(order_closed,
@@ -249,8 +249,14 @@ class Trader:
             for close_order in self.exchange.get_closed_orders(symbol):
                 self.parse_exchange_order_to_trade_instance(close_order)
 
-    def update_open_orders(self):
-        for symbol in self.exchange.get_exchange_manager().get_traded_pairs():
+    def update_open_orders(self, symbol=None):
+        if symbol:
+            symbols = [symbol]
+        else:
+            symbols = self.exchange.get_exchange_manager().get_traded_pairs()
+
+        # get orders from exchange for the specified symbols
+        for symbol in symbols:
             orders = self.exchange.get_open_orders(symbol=symbol, force_rest=True)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)
