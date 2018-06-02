@@ -256,8 +256,8 @@ class Trader:
             symbols = self.exchange.get_exchange_manager().get_traded_pairs()
 
         # get orders from exchange for the specified symbols
-        for symbol in symbols:
-            orders = self.exchange.get_open_orders(symbol=symbol, force_rest=True)
+        for symbol_traded in symbols:
+            orders = self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)
                 with self.portfolio as pf:
