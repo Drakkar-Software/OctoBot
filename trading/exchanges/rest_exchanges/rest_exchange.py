@@ -130,7 +130,7 @@ class RESTExchange(AbstractExchange):
         else:
             raise Exception("This exchange doesn't support fetchOrders")
 
-    def get_open_orders(self, symbol=None, since=None, limit=None):
+    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         if self.client.has['fetchOpenOrders']:
             return self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit, params={})
         else:
@@ -151,7 +151,9 @@ class RESTExchange(AbstractExchange):
             return True
         except OrderNotFound:
             self.logger.error("Order {0} was not found".format(order_id))
-            return False
+        except Exception as e:
+            self.logger.error("Order {0} failed to cancel | {1}".format(order_id, e))
+        return False
 
     # todo { 'type': 'trailing-stop' }
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
