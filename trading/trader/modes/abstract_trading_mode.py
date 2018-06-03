@@ -8,16 +8,21 @@ class AbstractTradingMode:
         self.config = config
 
         self.decider = None
-        self.creator = None
+        self.creators = {}
 
     def set_decider(self, decider):
         self.decider = decider
 
-    def set_creator(self, creator):
-        self.creator = creator
+    def add_creator(self, creator, creator_key=None):
+        if not creator_key:
+            creator_key = creator.__class__.__name__
+        self.creators[creator_key] = creator
 
-    def get_creator(self):
-        return self.creator
+    def get_creator(self, creator_key):
+        return self.creators[creator_key]
+
+    def get_only_creator_key(self):
+        return next(iter(self.creators.keys()))
 
     def get_decider(self):
         return self.decider

@@ -96,9 +96,6 @@ class SymbolEvaluator:
     def get_strategies_eval_list(self, exchange):
         return self.strategies_eval_lists[exchange.get_name()]
 
-    def get_evaluator_order_creator(self, exchange):
-        return self.trading_mode_instances[exchange.get_name()].get_creator()
-
     def get_symbol(self):
         return self.symbol
 
