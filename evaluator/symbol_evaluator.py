@@ -43,8 +43,6 @@ class SymbolEvaluator:
             self.evaluator_thread_managers[exchange.get_name()][time_frame] = evaluator_thread
         else:
             self.evaluator_thread_managers[exchange.get_name()] = {time_frame: evaluator_thread}
-
-            # TODO use config
             self.trading_mode_instances[exchange.get_name()] = self.trading_mode_class(self.config, self, exchange,
                                                                                        symbol)
 
