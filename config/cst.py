@@ -1,7 +1,7 @@
 from enum import Enum
 
 SHORT_VERSION = "0.1.0"
-REV_VERSION = "1"
+REV_VERSION = "2"
 VERSION_DEV_PHASE = "beta"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
@@ -45,6 +45,7 @@ CONFIG_TRADER = "trader"
 CONFIG_SIMULATOR = "trader_simulator"
 CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
 CONFIG_TRADER_RISK = "risk"
+CONFIG_TRADER_MODE = "mode"
 CONFIG_TRADER_RISK_MIN = 0.05
 CONFIG_TRADER_RISK_MAX = 1
 ORDER_REFRESHER_TIME = 15
@@ -147,6 +148,15 @@ TENTACLE_DESCRIPTION = "tentacle_description"
 TENTACLE_DESCRIPTION_LOCALISATION = "localisation"
 TENTACLE_DESCRIPTION_IS_URL = "is_url"
 
+TENTACLE_TYPES = {"Evaluator": "evaluator",
+                  "Social": "Social",
+                  "RealTime": "RealTime",
+                  "Util": "Util",
+                  "TA": "TA",
+                  "Strategies": "Strategies",
+                  "Trading": "trading",
+                  "Mode": "trader/modes"}
+
 
 class EvaluatorMatrixTypes(Enum):
     TA = "TA"
@@ -204,7 +214,6 @@ class TimeFrames(Enum):
 
 
 MIN_EVAL_TIME_FRAME = TimeFrames.FIVE_MINUTES
-
 
 TimeFramesMinutes = {
     TimeFrames.ONE_MINUTE: 1,

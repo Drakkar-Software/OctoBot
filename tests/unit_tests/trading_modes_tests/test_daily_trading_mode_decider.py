@@ -2,9 +2,10 @@ import ccxt
 
 from trading.exchanges.exchange_manager import ExchangeManager
 from evaluator.symbol_evaluator import SymbolEvaluator
+from trading.trader.modes import DailyTradingModeDecider, DailyTradingMode
 from trading.trader.trader_simulator import TraderSimulator
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
-from evaluator.evaluator_final import FinalEvaluator
+from trading.trader.modes.abstract_mode_decider import AbstractTradingModeDecider
 from evaluator.evaluator_creator import EvaluatorCreator
 from tests.test_utils.config import load_test_config
 from evaluator.Util.advanced_manager import AdvancedManager
@@ -31,7 +32,11 @@ def _get_tools():
     symbol_evaluator.set_trader_simulators(exchange_traders)
     symbol_evaluator.set_traders(exchange_traders2)
     symbol_evaluator.strategies_eval_lists[exchange_inst.get_name()] = EvaluatorCreator.create_strategies_eval_list(config)
-    final_evaluator = FinalEvaluator(symbol_evaluator, exchange_inst, symbol)
+
+    trading_mode = DailyTradingMode(config, symbol_evaluator, exchange_inst, symbol)
+    final_evaluator = trading_mode.get_decider()
+    symbol_evaluator.trading_mode_instances[exchange_inst.get_name()] = trading_mode
+
     trader_inst.portfolio.portfolio["USDT"] = {
         Portfolio.TOTAL: 2000,
         Portfolio.AVAILABLE: 2000
@@ -85,7 +90,7 @@ def test_create_state():
     delta_risk = final_evaluator._get_delta_risk()
     for i in range(-100, 100, 1):
         final_evaluator.final_eval = i/100
-        final_evaluator._create_state()
+        final_evaluator.create_state()
         if final_evaluator.final_eval < final_evaluator.VERY_LONG_THRESHOLD + delta_risk:
             assert final_evaluator.state == EvaluatorStates.VERY_LONG
         elif final_evaluator.final_eval < final_evaluator.LONG_THRESHOLD + delta_risk:
@@ -104,7 +109,7 @@ def test_prepare():
     assert final_evaluator.state == EvaluatorStates.SHORT
     assert len(trader_inst.order_manager.order_list) == 2  # has stop loss
     final_evaluator.final_eval = None
-    final_evaluator._prepare()
+    final_evaluator.set_final_eval()
     assert final_evaluator.state == EvaluatorStates.SHORT  # ensure did not change EvaluatorStates
     assert len(trader_inst.order_manager.order_list) == 2  # ensure did not change orders
     assert final_evaluator.final_eval == INIT_EVAL_NOTE
