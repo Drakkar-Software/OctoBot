@@ -2,6 +2,7 @@ import ccxt
 
 from trading.exchanges.exchange_manager import ExchangeManager
 from evaluator.symbol_evaluator import SymbolEvaluator
+from trading.trader.modes import DailyTradingModeDecider, DailyTradingMode
 from trading.trader.trader_simulator import TraderSimulator
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
 from trading.trader.modes.abstract_mode_decider import AbstractTradingModeDecider
@@ -31,7 +32,11 @@ def _get_tools():
     symbol_evaluator.set_trader_simulators(exchange_traders)
     symbol_evaluator.set_traders(exchange_traders2)
     symbol_evaluator.strategies_eval_lists[exchange_inst.get_name()] = EvaluatorCreator.create_strategies_eval_list(config)
-    final_evaluator = AbstractTradingModeDecider(symbol_evaluator, exchange_inst, symbol)
+
+    trading_mode = DailyTradingMode(config, symbol_evaluator, exchange_inst, symbol)
+    final_evaluator = trading_mode.get_decider()
+    symbol_evaluator.trading_mode_instances[exchange_inst.get_name()] = trading_mode
+
     trader_inst.portfolio.portfolio["USDT"] = {
         Portfolio.TOTAL: 2000,
         Portfolio.AVAILABLE: 2000
