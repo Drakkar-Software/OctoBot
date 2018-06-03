@@ -1,16 +1,18 @@
 import logging
+from abc import *
 from queue import Queue
 
-from config.cst import EvaluatorStates, INIT_EVAL_NOTE
-from trading.trader.modes.abstract_mode_creator import AbstractTradingModeCreator
+from config.cst import INIT_EVAL_NOTE
 from tools.asynchronous_server import AsynchronousServer
 from tools.notifications import EvaluatorNotification
-from tools.evaluators_util import check_valid_eval_note
 
 
 class AbstractTradingModeDecider(AsynchronousServer):
-    def __init__(self, symbol_evaluator, exchange, symbol):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, trading_mode, symbol_evaluator, exchange, symbol):
         super().__init__(self.finalize)
+        self.trading_mode = trading_mode
         self.symbol_evaluator = symbol_evaluator
         self.config = symbol_evaluator.get_config()
         self.final_eval = INIT_EVAL_NOTE
@@ -31,39 +33,8 @@ class AbstractTradingModeDecider(AsynchronousServer):
         self.notifier = EvaluatorNotification(self.config)
         self.queue = Queue()
 
-    def _set_state(self, new_state):
-        if new_state != self.state:
-            # previous_state = self.state
-            self.state = new_state
-            self.logger.info("{0} ** NEW FINAL STATE ** : {1}".format(self.symbol, self.state))
-
-            # if new state is not neutral --> cancel orders and create new else keep orders
-            if new_state is not EvaluatorStates.NEUTRAL:
-
-                # cancel open orders
-                if self.symbol_evaluator.get_trader(self.exchange).is_enabled():
-                    self.symbol_evaluator.get_trader(self.exchange).cancel_open_orders(self.symbol)
-                if self.symbol_evaluator.get_trader_simulator(self.exchange).is_enabled():
-                    self.symbol_evaluator.get_trader_simulator(self.exchange).cancel_open_orders(self.symbol)
-
-                # create notification
-                evaluator_notification = None
-                if self.notifier.enabled():
-                    evaluator_notification = self.notifier.notify_state_changed(
-                        self.final_eval,
-                        self.symbol_evaluator.get_crypto_currency_evaluator(),
-                        self.symbol_evaluator.get_symbol(),
-                        self.symbol_evaluator.get_trader(self.exchange),
-                        self.state,
-                        self.symbol_evaluator.get_matrix(self.exchange).get_matrix())
-
-                # call orders creation method
-                self.create_final_state_orders(evaluator_notification)
-
     # create real and/or simulating orders in trader instances
     def create_final_state_orders(self, evaluator_notification):
-        # create orders
-
         # simulated trader
         self._create_order_if_possible(evaluator_notification,
                                        self.symbol_evaluator.get_trader_simulator(self.exchange))
@@ -72,11 +43,12 @@ class AbstractTradingModeDecider(AsynchronousServer):
         self._create_order_if_possible(evaluator_notification,
                                        self.symbol_evaluator.get_trader(self.exchange))
 
+    # for each trader call the creator to check if order creation is possible and create it
     def _create_order_if_possible(self, evaluator_notification, trader):
         if trader.is_enabled():
             with trader.get_portfolio() as pf:
-                if AbstractTradingModeCreator.can_create_order(self.symbol, self.exchange, self.state, pf):
-                    AbstractTradingModeDecider._push_order_notification_if_possible(
+                if self.trading_mode.get_creator().can_create_order(self.symbol, self.exchange, self.state, pf):
+                    self._push_order_notification_if_possible(
                         self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
                             self.final_eval,
                             self.symbol,
@@ -98,47 +70,28 @@ class AbstractTradingModeDecider(AsynchronousServer):
     def get_final_eval(self):
         return self.final_eval
 
-    def _prepare(self):
-        strategies_analysis_note_counter = 0
-        # Strategies analysis
-        for evaluated_strategies in self.symbol_evaluator.get_strategies_eval_list(self.exchange):
-            strategy_eval = evaluated_strategies.get_eval_note()
-            if check_valid_eval_note(strategy_eval):
-                self.final_eval += strategy_eval * evaluated_strategies.get_pertinence()
-                strategies_analysis_note_counter += evaluated_strategies.get_pertinence()
-
-        if strategies_analysis_note_counter > 0:
-            self.final_eval /= strategies_analysis_note_counter
-        else:
-            self.final_eval = INIT_EVAL_NOTE
-
-    def _get_delta_risk(self):
-        return self.RISK_THRESHOLD * self.symbol_evaluator.get_trader(self.exchange).get_risk()
-
-    def _create_state(self):
-        delta_risk = self._get_delta_risk()
-
-        if self.final_eval < self.VERY_LONG_THRESHOLD + delta_risk:
-            self._set_state(EvaluatorStates.VERY_LONG)
-
-        elif self.final_eval < self.LONG_THRESHOLD + delta_risk:
-            self._set_state(EvaluatorStates.LONG)
-
-        elif self.final_eval < self.NEUTRAL_THRESHOLD - delta_risk:
-            self._set_state(EvaluatorStates.NEUTRAL)
-
-        elif self.final_eval < self.SHORT_THRESHOLD - delta_risk:
-            self._set_state(EvaluatorStates.SHORT)
-
-        else:
-            self._set_state(EvaluatorStates.VERY_SHORT)
-
     def finalize(self):
         # reset previous note
         self.final_eval = INIT_EVAL_NOTE
 
-        self._prepare()
+        self._set_final_eval()
         self._create_state()
 
     def stop(self):
         self.keep_running = False
+
+    @abstractmethod
+    def _set_final_eval(self):
+        raise NotImplementedError("Set_final_eval not implemented")
+
+    @abstractmethod
+    def _get_delta_risk(self):
+        raise NotImplementedError("Get_delta_risk not implemented")
+
+    @abstractmethod
+    def _create_state(self):
+        raise NotImplementedError("Create_state not implemented")
+
+    @abstractmethod
+    def _set_state(self, new_state):
+        raise NotImplementedError("Set_state not implemented")

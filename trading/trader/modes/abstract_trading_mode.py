@@ -1,4 +1,9 @@
+from abc import *
+
+
 class AbstractTradingMode:
+    __metaclass__ = ABCMeta
+
     def __init__(self, config):
         self.config = config
 

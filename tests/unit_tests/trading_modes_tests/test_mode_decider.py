@@ -104,7 +104,7 @@ def test_prepare():
     assert final_evaluator.state == EvaluatorStates.SHORT
     assert len(trader_inst.order_manager.order_list) == 2  # has stop loss
     final_evaluator.final_eval = None
-    final_evaluator._prepare()
+    final_evaluator._set_final_eval()
     assert final_evaluator.state == EvaluatorStates.SHORT  # ensure did not change EvaluatorStates
     assert len(trader_inst.order_manager.order_list) == 2  # ensure did not change orders
     assert final_evaluator.final_eval == INIT_EVAL_NOTE
