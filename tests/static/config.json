@@ -42,7 +42,8 @@
   },
   "trader":{
     "enabled": false,
-    "risk": 1
+    "risk": 1,
+    "mode": "DailyTradingMode"
   },
   "trader_simulator":{
     "enabled": true,
