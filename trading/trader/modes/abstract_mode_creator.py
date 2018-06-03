@@ -35,7 +35,7 @@ class AbstractTradingModeCreator:
             / self.MAX_SUM_RESULT
 
     @staticmethod
-    def _check_factor(min_val, max_val, factor):
+    def check_factor(min_val, max_val, factor):
         if factor > max_val:
             return max_val
         elif factor < min_val:
@@ -44,59 +44,11 @@ class AbstractTradingModeCreator:
             return factor
 
     @staticmethod
-    def _trunc_with_n_decimal_digits(value, digits):
-        # force exact representation
-        return float("{0:.{1}f}".format(math.trunc(value*10**digits)/(10**digits), digits))
-
-    @staticmethod
-    def _get_value_or_default(dictionary, key, default=math.nan):
-        if key in dictionary:
-            value = dictionary[key]
-            return value if value is not None else default
-        return default
-
-    @staticmethod
-    def _adapt_order_quantity_because_quantity(limiting_value, max_value, quantity_to_adapt, price, symbol_market):
-        orders = []
-        nb_full_orders = limiting_value // max_value
-        rest_order_quantity = limiting_value % max_value
-        after_rest_quantity_to_adapt = quantity_to_adapt
-        if rest_order_quantity > 0:
-            after_rest_quantity_to_adapt -= rest_order_quantity
-            valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, rest_order_quantity)
-            orders.append((valid_last_order_quantity, price))
-
-        other_orders_quantity = (after_rest_quantity_to_adapt + max_value)/(nb_full_orders+1)
-        valid_other_orders_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, other_orders_quantity)
-        orders += [(valid_other_orders_quantity, price)]*int(nb_full_orders)
-        return orders
-
-    @staticmethod
-    def _adapt_order_quantity_because_price(limiting_value, max_value, price, symbol_market):
-        orders = []
-        nb_full_orders = limiting_value // max_value
-        rest_order_cost = limiting_value % max_value
-        if rest_order_cost > 0:
-            valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, rest_order_cost / price)
-            orders.append((valid_last_order_quantity, price))
-
-        other_orders_quantity = max_value / price
-        valid_other_orders_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, other_orders_quantity)
-        orders += [(valid_other_orders_quantity, price)] * int(nb_full_orders)
-        return orders
-
-    @staticmethod
-    def _adapt_price(symbol_market, price):
+    def adapt_price(symbol_market, price):
         maximal_price_digits = AbstractTradingModeCreator._get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
                                                                                 Ecmsc.PRECISION_PRICE.value,
                                                                                 CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
         return AbstractTradingModeCreator._trunc_with_n_decimal_digits(price, maximal_price_digits)
-
-    @staticmethod
-    def _adapt_quantity(symbol_market, quantity):
-        maximal_volume_digits = AbstractTradingModeCreator._get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
-                                                                                 Ecmsc.PRECISION_AMOUNT.value, 0)
-        return AbstractTradingModeCreator._trunc_with_n_decimal_digits(quantity, maximal_volume_digits)
 
     """
     Checks and adapts the quantity and price of the order to ensure it's exchange compliant:
@@ -112,7 +64,7 @@ class AbstractTradingModeCreator:
     """
 
     @staticmethod
-    def _check_and_adapt_order_details_if_necessary(quantity, price, symbol_market):
+    def check_and_adapt_order_details_if_necessary(quantity, price, symbol_market):
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
 
         limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
@@ -128,7 +80,7 @@ class AbstractTradingModeCreator:
 
         # adapt digits if necessary
         valid_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, quantity)
-        valid_price = AbstractTradingModeCreator._adapt_price(symbol_market, price)
+        valid_price = AbstractTradingModeCreator.adapt_price(symbol_market, price)
 
         total_order_price = valid_quantity * valid_price
 
@@ -176,20 +128,52 @@ class AbstractTradingModeCreator:
 
     @abstractmethod
     def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
-        raise NotImplementedError("Create_new_order not implemented")
+        raise NotImplementedError("create_new_order not implemented")
 
-    @abstractmethod
-    def _get_limit_price_from_risk(self, eval_note, trader):
-        raise NotImplementedError("Set_final_eval not implemented")
+    @staticmethod
+    def _adapt_quantity(symbol_market, quantity):
+        maximal_volume_digits = AbstractTradingModeCreator._get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
+                                                                                 Ecmsc.PRECISION_AMOUNT.value, 0)
+        return AbstractTradingModeCreator._trunc_with_n_decimal_digits(quantity, maximal_volume_digits)
 
-    @abstractmethod
-    def _get_stop_price_from_risk(self, trader):
-        raise NotImplementedError("Set_final_eval not implemented")
+    @staticmethod
+    def _trunc_with_n_decimal_digits(value, digits):
+        # force exact representation
+        return float("{0:.{1}f}".format(math.trunc(value*10**digits)/(10**digits), digits))
 
-    @abstractmethod
-    def _get_limit_quantity_from_risk(self, eval_note, trader, quantity):
-        raise NotImplementedError("Set_final_eval not implemented")
+    @staticmethod
+    def _get_value_or_default(dictionary, key, default=math.nan):
+        if key in dictionary:
+            value = dictionary[key]
+            return value if value is not None else default
+        return default
 
-    @abstractmethod
-    def _get_market_quantity_from_risk(self, eval_note, trader, quantity, buy=False):
-        raise NotImplementedError("Set_final_eval not implemented")
+    @staticmethod
+    def _adapt_order_quantity_because_quantity(limiting_value, max_value, quantity_to_adapt, price, symbol_market):
+        orders = []
+        nb_full_orders = limiting_value // max_value
+        rest_order_quantity = limiting_value % max_value
+        after_rest_quantity_to_adapt = quantity_to_adapt
+        if rest_order_quantity > 0:
+            after_rest_quantity_to_adapt -= rest_order_quantity
+            valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, rest_order_quantity)
+            orders.append((valid_last_order_quantity, price))
+
+        other_orders_quantity = (after_rest_quantity_to_adapt + max_value)/(nb_full_orders+1)
+        valid_other_orders_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, other_orders_quantity)
+        orders += [(valid_other_orders_quantity, price)]*int(nb_full_orders)
+        return orders
+
+    @staticmethod
+    def _adapt_order_quantity_because_price(limiting_value, max_value, price, symbol_market):
+        orders = []
+        nb_full_orders = limiting_value // max_value
+        rest_order_cost = limiting_value % max_value
+        if rest_order_cost > 0:
+            valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, rest_order_cost / price)
+            orders.append((valid_last_order_quantity, price))
+
+        other_orders_quantity = max_value / price
+        valid_other_orders_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, other_orders_quantity)
+        orders += [(valid_other_orders_quantity, price)] * int(nb_full_orders)
+        return orders
