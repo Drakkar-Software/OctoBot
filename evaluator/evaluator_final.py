@@ -2,7 +2,7 @@ import logging
 from queue import Queue
 
 from config.cst import EvaluatorStates, INIT_EVAL_NOTE
-from trading.trader.order_creation.abstract_order_creator import AbstractOrderCreator
+from trading.trader.modes.abstract_order_creator import AbstractOrderCreator
 from tools.asynchronous_server import AsynchronousServer
 from tools.notifications import EvaluatorNotification
 from tools.evaluators_util import check_valid_eval_note

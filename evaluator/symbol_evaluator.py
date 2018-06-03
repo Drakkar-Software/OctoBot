@@ -2,7 +2,7 @@ from config.cst import EvaluatorMatrixTypes
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_final import FinalEvaluator
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from trading.trader.order_creation.abstract_order_creator import AbstractOrderCreator
+from trading.trader.modes.abstract_order_creator import AbstractOrderCreator
 
 
 class SymbolEvaluator:

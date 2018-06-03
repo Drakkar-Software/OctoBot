@@ -1,7 +1,7 @@
 import ccxt
 import copy
 
-from trading.trader.order_creation.abstract_order_creator import AbstractOrderCreator
+from trading.trader.modes.abstract_order_creator import AbstractOrderCreator
 from trading.exchanges.exchange_manager import ExchangeManager
 from config.cst import EvaluatorStates
 from tests.test_utils.config import load_test_config
