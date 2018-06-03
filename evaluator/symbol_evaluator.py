@@ -1,8 +1,8 @@
 from config.cst import EvaluatorMatrixTypes
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_final import FinalEvaluator
+from trading.trader.modes.abstract_mode_decider import AbstractTradingModeDecider
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from trading.trader.modes.abstract_order_creator import AbstractOrderCreator
+from trading.trader.modes.abstract_mode_creator import AbstractTradingModeCreator
 
 
 class SymbolEvaluator:
@@ -20,7 +20,7 @@ class SymbolEvaluator:
         self.strategies_eval_lists = {}
         self.finalize_enabled_list = {}
 
-        self.evaluator_order_creator = AbstractOrderCreator()
+        self.evaluator_order_creator = AbstractTradingModeCreator()
 
     def set_traders(self, trader):
         self.traders = trader
@@ -33,7 +33,7 @@ class SymbolEvaluator:
             self.evaluator_thread_managers[exchange.get_name()][time_frame] = evaluator_thread
         else:
             self.evaluator_thread_managers[exchange.get_name()] = {time_frame: evaluator_thread}
-            self.final_evaluators[exchange.get_name()] = FinalEvaluator(self, exchange, symbol)
+            self.final_evaluators[exchange.get_name()] = AbstractTradingModeDecider(self, exchange, symbol)
             self.matrices[exchange.get_name()] = EvaluatorMatrix(self.config)
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
             self.finalize_enabled_list[exchange.get_name()] = False
