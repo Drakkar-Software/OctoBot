@@ -6,7 +6,7 @@ from config.cst import ExchangeConstantsMarketStatusColumns as Ecmsc
 from tools.symbol_util import split_symbol
 
 
-class AbstractOrderCreator:
+class AbstractTradingModeCreator:
     def __init__(self):
         self.MAX_SUM_RESULT = 2
 
@@ -93,9 +93,9 @@ class AbstractOrderCreator:
                 quantity = self._get_limit_quantity_from_risk(eval_note,
                                                               trader,
                                                               current_portfolio)
-                limit_price = AbstractOrderCreator\
+                limit_price = AbstractTradingModeCreator\
                     ._adapt_price(symbol_market, price * self._get_limit_price_from_risk(eval_note, trader))
-                stop_price = AbstractOrderCreator \
+                stop_price = AbstractTradingModeCreator \
                     ._adapt_price(symbol_market, price * self._get_stop_price_from_risk(trader))
                 for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity,
                                                                                                     limit_price,
@@ -125,7 +125,7 @@ class AbstractOrderCreator:
                 quantity = self._get_limit_quantity_from_risk(eval_note,
                                                               trader,
                                                               market_quantity)
-                limit_price = AbstractOrderCreator\
+                limit_price = AbstractTradingModeCreator\
                     ._adapt_price(symbol_market, price * self._get_limit_price_from_risk(eval_note, trader))
                 for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity,
                                                                                                     limit_price,
@@ -183,15 +183,15 @@ class AbstractOrderCreator:
         if eval_note > 0:
             factor = self.SELL_LIMIT_ORDER_MIN_PERCENT + \
                      ((1 - abs(eval_note) + 1 - trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
-            return AbstractOrderCreator._check_factor(self.SELL_LIMIT_ORDER_MIN_PERCENT,
-                                                      self.SELL_LIMIT_ORDER_MAX_PERCENT,
-                                                      factor)
+            return AbstractTradingModeCreator._check_factor(self.SELL_LIMIT_ORDER_MIN_PERCENT,
+                                                            self.SELL_LIMIT_ORDER_MAX_PERCENT,
+                                                            factor)
         else:
             factor = self.BUY_LIMIT_ORDER_MAX_PERCENT - \
                      ((1 - abs(eval_note) + 1 - trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
-            return AbstractOrderCreator._check_factor(self.BUY_LIMIT_ORDER_MIN_PERCENT,
-                                                      self.BUY_LIMIT_ORDER_MAX_PERCENT,
-                                                      factor)
+            return AbstractTradingModeCreator._check_factor(self.BUY_LIMIT_ORDER_MIN_PERCENT,
+                                                            self.BUY_LIMIT_ORDER_MAX_PERCENT,
+                                                            factor)
 
     """
     Starting point : self.STOP_LOSS_ORDER_MAX_PERCENT
@@ -201,9 +201,9 @@ class AbstractOrderCreator:
 
     def _get_stop_price_from_risk(self, trader):
         factor = self.STOP_LOSS_ORDER_MAX_PERCENT - (trader.get_risk() * self.STOP_LOSS_ORDER_ATTENUATION)
-        return AbstractOrderCreator._check_factor(self.STOP_LOSS_ORDER_MIN_PERCENT,
-                                                  self.STOP_LOSS_ORDER_MAX_PERCENT,
-                                                  factor)
+        return AbstractTradingModeCreator._check_factor(self.STOP_LOSS_ORDER_MIN_PERCENT,
+                                                        self.STOP_LOSS_ORDER_MAX_PERCENT,
+                                                        factor)
 
     """
     Starting point : self.QUANTITY_MIN_PERCENT
@@ -215,9 +215,9 @@ class AbstractOrderCreator:
 
     def _get_limit_quantity_from_risk(self, eval_note, trader, quantity):
         factor = self.QUANTITY_MIN_PERCENT + ((abs(eval_note) + trader.get_risk()) * self.QUANTITY_ATTENUATION)
-        return AbstractOrderCreator._check_factor(self.QUANTITY_MIN_PERCENT,
-                                                  self.QUANTITY_MAX_PERCENT,
-                                                  factor) * quantity
+        return AbstractTradingModeCreator._check_factor(self.QUANTITY_MIN_PERCENT,
+                                                        self.QUANTITY_MAX_PERCENT,
+                                                        factor) * quantity
 
     """
     Starting point : self.QUANTITY_MARKET_MIN_PERCENT
@@ -235,9 +235,9 @@ class AbstractOrderCreator:
         if buy:
             factor *= self.QUANTITY_BUY_MARKET_ATTENUATION
 
-        return AbstractOrderCreator._check_factor(self.QUANTITY_MARKET_MIN_PERCENT,
-                                                  self.QUANTITY_MARKET_MAX_PERCENT,
-                                                  factor) * quantity
+        return AbstractTradingModeCreator._check_factor(self.QUANTITY_MARKET_MIN_PERCENT,
+                                                        self.QUANTITY_MARKET_MAX_PERCENT,
+                                                        factor) * quantity
 
     @staticmethod
     def _trunc_with_n_decimal_digits(value, digits):
@@ -259,11 +259,11 @@ class AbstractOrderCreator:
         after_rest_quantity_to_adapt = quantity_to_adapt
         if rest_order_quantity > 0:
             after_rest_quantity_to_adapt -= rest_order_quantity
-            valid_last_order_quantity = AbstractOrderCreator._adapt_quantity(symbol_market, rest_order_quantity)
+            valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, rest_order_quantity)
             orders.append((valid_last_order_quantity, price))
 
         other_orders_quantity = (after_rest_quantity_to_adapt + max_value)/(nb_full_orders+1)
-        valid_other_orders_quantity = AbstractOrderCreator._adapt_quantity(symbol_market, other_orders_quantity)
+        valid_other_orders_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, other_orders_quantity)
         orders += [(valid_other_orders_quantity, price)]*int(nb_full_orders)
         return orders
 
@@ -273,26 +273,26 @@ class AbstractOrderCreator:
         nb_full_orders = limiting_value // max_value
         rest_order_cost = limiting_value % max_value
         if rest_order_cost > 0:
-            valid_last_order_quantity = AbstractOrderCreator._adapt_quantity(symbol_market, rest_order_cost / price)
+            valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, rest_order_cost / price)
             orders.append((valid_last_order_quantity, price))
 
         other_orders_quantity = max_value / price
-        valid_other_orders_quantity = AbstractOrderCreator._adapt_quantity(symbol_market, other_orders_quantity)
+        valid_other_orders_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, other_orders_quantity)
         orders += [(valid_other_orders_quantity, price)] * int(nb_full_orders)
         return orders
 
     @staticmethod
     def _adapt_price(symbol_market, price):
-        maximal_price_digits = AbstractOrderCreator._get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
-                                                                          Ecmsc.PRECISION_PRICE.value,
-                                                                          CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
-        return AbstractOrderCreator._trunc_with_n_decimal_digits(price, maximal_price_digits)
+        maximal_price_digits = AbstractTradingModeCreator._get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
+                                                                                Ecmsc.PRECISION_PRICE.value,
+                                                                                CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
+        return AbstractTradingModeCreator._trunc_with_n_decimal_digits(price, maximal_price_digits)
 
     @staticmethod
     def _adapt_quantity(symbol_market, quantity):
-        maximal_volume_digits = AbstractOrderCreator._get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
-                                                                           Ecmsc.PRECISION_AMOUNT.value, 0)
-        return AbstractOrderCreator._trunc_with_n_decimal_digits(quantity, maximal_volume_digits)
+        maximal_volume_digits = AbstractTradingModeCreator._get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
+                                                                                 Ecmsc.PRECISION_AMOUNT.value, 0)
+        return AbstractTradingModeCreator._trunc_with_n_decimal_digits(quantity, maximal_volume_digits)
 
     """
     Checks and adapts the quantity and price of the order to ensure it's exchange compliant:
@@ -315,16 +315,16 @@ class AbstractOrderCreator:
         limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
         limit_price = symbol_market_limits[Ecmsc.LIMITS_PRICE.value]
 
-        min_quantity = AbstractOrderCreator._get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
-        max_quantity = AbstractOrderCreator._get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value)
-        min_cost = AbstractOrderCreator._get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
-        max_cost = AbstractOrderCreator._get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value)
-        min_price = AbstractOrderCreator._get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value)
-        max_price = AbstractOrderCreator._get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value)
+        min_quantity = AbstractTradingModeCreator._get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
+        max_quantity = AbstractTradingModeCreator._get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value)
+        min_cost = AbstractTradingModeCreator._get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
+        max_cost = AbstractTradingModeCreator._get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value)
+        min_price = AbstractTradingModeCreator._get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value)
+        max_price = AbstractTradingModeCreator._get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value)
 
         # adapt digits if necessary
-        valid_quantity = AbstractOrderCreator._adapt_quantity(symbol_market, quantity)
-        valid_price = AbstractOrderCreator._adapt_price(symbol_market, price)
+        valid_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, quantity)
+        valid_price = AbstractTradingModeCreator._adapt_price(symbol_market, price)
 
         total_order_price = valid_quantity * valid_price
 
@@ -339,11 +339,11 @@ class AbstractOrderCreator:
             nb_orders_according_to_cost = total_order_price / max_cost
             nb_orders_according_to_quantity = valid_quantity / max_quantity
             if nb_orders_according_to_cost > nb_orders_according_to_quantity:
-                return AbstractOrderCreator._adapt_order_quantity_because_price(total_order_price, max_cost, price,
-                                                                                symbol_market)
+                return AbstractTradingModeCreator._adapt_order_quantity_because_price(total_order_price, max_cost, price,
+                                                                                      symbol_market)
             else:
-                return AbstractOrderCreator._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
-                                                                                   quantity, price, symbol_market)
+                return AbstractTradingModeCreator._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
+                                                                                         quantity, price, symbol_market)
 
         else:
             # valid order that can be handled wy the exchange

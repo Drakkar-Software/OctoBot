@@ -4,7 +4,7 @@ from trading.exchanges.exchange_manager import ExchangeManager
 from evaluator.symbol_evaluator import SymbolEvaluator
 from trading.trader.trader_simulator import TraderSimulator
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
-from evaluator.evaluator_final import FinalEvaluator
+from trading.trader.modes.abstract_mode_decider import AbstractTradingModeDecider
 from evaluator.evaluator_creator import EvaluatorCreator
 from tests.test_utils.config import load_test_config
 from evaluator.Util.advanced_manager import AdvancedManager
@@ -31,7 +31,7 @@ def _get_tools():
     symbol_evaluator.set_trader_simulators(exchange_traders)
     symbol_evaluator.set_traders(exchange_traders2)
     symbol_evaluator.strategies_eval_lists[exchange_inst.get_name()] = EvaluatorCreator.create_strategies_eval_list(config)
-    final_evaluator = FinalEvaluator(symbol_evaluator, exchange_inst, symbol)
+    final_evaluator = AbstractTradingModeDecider(symbol_evaluator, exchange_inst, symbol)
     trader_inst.portfolio.portfolio["USDT"] = {
         Portfolio.TOTAL: 2000,
         Portfolio.AVAILABLE: 2000
