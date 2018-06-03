@@ -47,5 +47,5 @@ def _get_tools():
 
 def test_init():
     symbol_evaluator, exchange_inst, time_frame, evaluator_thread_manager = _get_tools()
-    assert symbol_evaluator.evaluator_order_creator
+    assert symbol_evaluator.trading_mode_class
     assert symbol_evaluator.evaluator_thread_managers[exchange_inst.get_name()][time_frame] == evaluator_thread_manager
