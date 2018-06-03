@@ -1,8 +1,10 @@
-from config.cst import EvaluatorMatrixTypes
+import inspect
+import logging
+
+from config.cst import EvaluatorMatrixTypes, CONFIG_TRADER_MODE, CONFIG_TRADER
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_final import FinalEvaluator
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from evaluator.evaluator_order_creator import EvaluatorOrderCreator
+from trading.trader import modes
 
 
 class SymbolEvaluator:
@@ -13,14 +15,15 @@ class SymbolEvaluator:
         self.config = config
         self.traders = None
         self.trader_simulators = None
+        self.logger = logging.getLogger("{0} {1}".format(self.symbol, self.__class__.__name__))
 
         self.evaluator_thread_managers = {}
-        self.final_evaluators = {}
+        self.trading_mode_instances = {}
         self.matrices = {}
         self.strategies_eval_lists = {}
         self.finalize_enabled_list = {}
 
-        self.evaluator_order_creator = EvaluatorOrderCreator()
+        self.trading_mode_class = self.get_trading_mode_class()
 
     def set_traders(self, trader):
         self.traders = trader
@@ -28,12 +31,21 @@ class SymbolEvaluator:
     def set_trader_simulators(self, simulator):
         self.trader_simulators = simulator
 
+    def get_trading_mode_class(self):
+        if CONFIG_TRADER in self.config and CONFIG_TRADER_MODE in self.config[CONFIG_TRADER]:
+            if any(m[0] == self.config[CONFIG_TRADER][CONFIG_TRADER_MODE] for m in inspect.getmembers(modes)):
+                return getattr(modes, self.config[CONFIG_TRADER][CONFIG_TRADER_MODE])
+
+        raise Exception("Please specify a valid trading mode in your config file (trader -> mode)")
+
     def add_evaluator_thread_manager(self, exchange, symbol, time_frame, evaluator_thread):
         if exchange.get_name() in self.evaluator_thread_managers:
             self.evaluator_thread_managers[exchange.get_name()][time_frame] = evaluator_thread
         else:
             self.evaluator_thread_managers[exchange.get_name()] = {time_frame: evaluator_thread}
-            self.final_evaluators[exchange.get_name()] = FinalEvaluator(self, exchange, symbol)
+            self.trading_mode_instances[exchange.get_name()] = self.trading_mode_class(self.config, self, exchange,
+                                                                                       symbol)
+
             self.matrices[exchange.get_name()] = EvaluatorMatrix(self.config)
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
             self.finalize_enabled_list[exchange.get_name()] = False
@@ -52,7 +64,7 @@ class SymbolEvaluator:
             self._check_finalize(exchange)
 
         if self.finalize_enabled_list[exchange.get_name()]:
-            self.final_evaluators[exchange.get_name()].add_to_queue()
+            self.trading_mode_instances[exchange.get_name()].get_decider().add_to_queue()
 
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
@@ -67,10 +79,10 @@ class SymbolEvaluator:
         return self.trader_simulators[exchange.get_name()]
 
     def get_final(self, exchange):
-        return self.final_evaluators[exchange.get_name()]
+        return self.trading_mode_instances[exchange.get_name()].get_decider()
 
     def has_exchange(self, exchange):
-        return exchange.get_name() in self.final_evaluators
+        return exchange.get_name() in self.trading_mode_instances
 
     def get_matrix(self, exchange):
         return self.matrices[exchange.get_name()]
@@ -84,8 +96,8 @@ class SymbolEvaluator:
     def get_strategies_eval_list(self, exchange):
         return self.strategies_eval_lists[exchange.get_name()]
 
-    def get_evaluator_order_creator(self):
-        return self.evaluator_order_creator
+    def get_evaluator_order_creator(self, exchange):
+        return self.trading_mode_instances[exchange.get_name()].get_creator()
 
     def get_symbol(self):
         return self.symbol

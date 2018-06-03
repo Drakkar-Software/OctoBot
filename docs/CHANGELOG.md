@@ -1,3 +1,16 @@
+Changelog for 0.1.0_2-beta
+====================
+*Released date : June 3 2018*
+
+**Info** : 
+- Config : "mode" key added to "trader"
+
+# Concerned issues :
+    #198 [Order Creation] Implement new architecture
+   
+# New features :
+    - Trading modes
+
 Changelog for 0.1.0_1-beta
 ====================
 *Released date : June 2 2018*
