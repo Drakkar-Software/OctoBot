@@ -43,6 +43,32 @@ class AbstractTradingModeDecider(AsynchronousServer):
         self._create_order_if_possible(evaluator_notification,
                                        self.symbol_evaluator.get_trader(self.exchange))
 
+    def get_state(self):
+        return self.state
+
+    def get_final_eval(self):
+        return self.final_eval
+
+    def finalize(self):
+        # reset previous note
+        self.final_eval = INIT_EVAL_NOTE
+
+        self.set_final_eval()
+        self.create_state()
+
+    def stop(self):
+        self.keep_running = False
+
+    # called first by finalize => when any notification appears
+    @abstractmethod
+    def set_final_eval(self):
+        raise NotImplementedError("_set_final_eval not implemented")
+
+    # called after _set_final_eval by finalize => when any notification appears
+    @abstractmethod
+    def create_state(self):
+        raise NotImplementedError("_create_state not implemented")
+
     # for each trader call the creator to check if order creation is possible and create it
     def _create_order_if_possible(self, evaluator_notification, trader):
         if trader.is_enabled():
@@ -63,35 +89,3 @@ class AbstractTradingModeDecider(AsynchronousServer):
         if order_list:
             for order in order_list:
                 order.get_order_notifier().notify(notification)
-
-    def get_state(self):
-        return self.state
-
-    def get_final_eval(self):
-        return self.final_eval
-
-    def finalize(self):
-        # reset previous note
-        self.final_eval = INIT_EVAL_NOTE
-
-        self._set_final_eval()
-        self._create_state()
-
-    def stop(self):
-        self.keep_running = False
-
-    @abstractmethod
-    def _set_final_eval(self):
-        raise NotImplementedError("Set_final_eval not implemented")
-
-    @abstractmethod
-    def _get_delta_risk(self):
-        raise NotImplementedError("Get_delta_risk not implemented")
-
-    @abstractmethod
-    def _create_state(self):
-        raise NotImplementedError("Create_state not implemented")
-
-    @abstractmethod
-    def _set_state(self, new_state):
-        raise NotImplementedError("Set_state not implemented")
