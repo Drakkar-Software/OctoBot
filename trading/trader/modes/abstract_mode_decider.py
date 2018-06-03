@@ -44,6 +44,7 @@ class AbstractTradingModeDecider(AsynchronousServer):
         self._create_order_if_possible(evaluator_notification,
                                        self.symbol_evaluator.get_trader(self.exchange),
                                        creator_key)
+
     def get_state(self):
         return self.state
 
