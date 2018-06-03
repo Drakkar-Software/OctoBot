@@ -49,7 +49,7 @@ class AbstractTradingModeDecider(AsynchronousServer):
             with trader.get_portfolio() as pf:
                 if self.trading_mode.get_creator().can_create_order(self.symbol, self.exchange, self.state, pf):
                     self._push_order_notification_if_possible(
-                        self.symbol_evaluator.get_evaluator_order_creator().create_new_order(
+                        self.symbol_evaluator.get_evaluator_order_creator(self.exchange).create_new_order(
                             self.final_eval,
                             self.symbol,
                             self.exchange,

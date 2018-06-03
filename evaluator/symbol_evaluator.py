@@ -1,8 +1,7 @@
 from config.cst import EvaluatorMatrixTypes
 from evaluator.evaluator_creator import EvaluatorCreator
-from trading.trader.modes.abstract_mode_decider import AbstractTradingModeDecider
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from trading.trader.modes.abstract_mode_creator import AbstractTradingModeCreator
+from trading.trader.modes.Default.daily_trading_mode import DailyTradingMode
 
 
 class SymbolEvaluator:
@@ -15,12 +14,10 @@ class SymbolEvaluator:
         self.trader_simulators = None
 
         self.evaluator_thread_managers = {}
-        self.final_evaluators = {}
+        self.trading_mode_instances = {}
         self.matrices = {}
         self.strategies_eval_lists = {}
         self.finalize_enabled_list = {}
-
-        self.evaluator_order_creator = AbstractTradingModeCreator()
 
     def set_traders(self, trader):
         self.traders = trader
@@ -33,7 +30,10 @@ class SymbolEvaluator:
             self.evaluator_thread_managers[exchange.get_name()][time_frame] = evaluator_thread
         else:
             self.evaluator_thread_managers[exchange.get_name()] = {time_frame: evaluator_thread}
-            self.final_evaluators[exchange.get_name()] = AbstractTradingModeDecider(self, exchange, symbol)
+
+            # TODO use config
+            self.trading_mode_instances[exchange.get_name()] = DailyTradingMode(self.config, self, exchange, symbol)
+
             self.matrices[exchange.get_name()] = EvaluatorMatrix(self.config)
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
             self.finalize_enabled_list[exchange.get_name()] = False
@@ -52,7 +52,7 @@ class SymbolEvaluator:
             self._check_finalize(exchange)
 
         if self.finalize_enabled_list[exchange.get_name()]:
-            self.final_evaluators[exchange.get_name()].add_to_queue()
+            self.trading_mode_instances[exchange.get_name()].get_decider().add_to_queue()
 
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
@@ -67,10 +67,10 @@ class SymbolEvaluator:
         return self.trader_simulators[exchange.get_name()]
 
     def get_final(self, exchange):
-        return self.final_evaluators[exchange.get_name()]
+        return self.trading_mode_instances[exchange.get_name()].get_decider()
 
     def has_exchange(self, exchange):
-        return exchange.get_name() in self.final_evaluators
+        return exchange.get_name() in self.trading_mode_instances
 
     def get_matrix(self, exchange):
         return self.matrices[exchange.get_name()]
@@ -84,8 +84,8 @@ class SymbolEvaluator:
     def get_strategies_eval_list(self, exchange):
         return self.strategies_eval_lists[exchange.get_name()]
 
-    def get_evaluator_order_creator(self):
-        return self.evaluator_order_creator
+    def get_evaluator_order_creator(self, exchange):
+        return self.trading_mode_instances[exchange.get_name()].get_creator()
 
     def get_symbol(self):
         return self.symbol
