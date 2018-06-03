@@ -148,6 +148,15 @@ TENTACLE_DESCRIPTION = "tentacle_description"
 TENTACLE_DESCRIPTION_LOCALISATION = "localisation"
 TENTACLE_DESCRIPTION_IS_URL = "is_url"
 
+TENTACLE_TYPES = {"Evaluator": "evaluator",
+                  "Social": "Social",
+                  "RealTime": "RealTime",
+                  "Util": "Util",
+                  "TA": "TA",
+                  "Strategies": "Strategies",
+                  "Trading": "trading",
+                  "Mode": "trader/modes"}
+
 
 class EvaluatorMatrixTypes(Enum):
     TA = "TA"
@@ -205,7 +214,6 @@ class TimeFrames(Enum):
 
 
 MIN_EVAL_TIME_FRAME = TimeFrames.FIVE_MINUTES
-
 
 TimeFramesMinutes = {
     TimeFrames.ONE_MINUTE: 1,

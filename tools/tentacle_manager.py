@@ -4,9 +4,10 @@ import os
 
 import requests
 
-from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLES_PUBLIC_REPOSITORY, TENTACLE_DESCRIPTION,\
+from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLES_PUBLIC_REPOSITORY, \
+    TENTACLE_DESCRIPTION, \
     GITHUB_RAW_CONTENT_URL, CONFIG_EVALUATOR, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, GITHUB_BASE_URL, GITHUB, \
-    TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER
+    TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, TENTACLE_TYPES
 
 
 class TentacleManager:
@@ -52,7 +53,7 @@ class TentacleManager:
         package_url_or_path = str(url_or_path)
         # if its an url: download with requests.get and return text
         if package_url_or_path.startswith("https://") \
-            or package_url_or_path.startswith("http://") \
+                or package_url_or_path.startswith("http://") \
                 or package_url_or_path.startswith("ftp://"):
             if try_to_adapt:
                 if not package_url_or_path.endswith("/"):
@@ -92,34 +93,59 @@ class TentacleManager:
 
         return package_file
 
-    def _apply_module(self, module_type, module_name, module_version, module_file, target_folder):
-        file_dir = "{0}/{1}/{2}".format(CONFIG_EVALUATOR, module_type, target_folder)
+    def _apply_module(self, module_type, module_subtype, module_version, module_file, target_folder, module_name):
+        if module_subtype in TENTACLE_TYPES and (module_subtype or module_subtype in TENTACLE_TYPES):
+            # create path from types
+            if module_subtype:
+                file_dir = "{0}/{1}/{2}".format(TENTACLE_TYPES[module_type],
+                                                TENTACLE_TYPES[module_subtype],
+                                                target_folder)
+            else:
+                file_dir = "{0}/{1}".format(TENTACLE_TYPES[module_type],
+                                            target_folder)
 
-        # Install package in evaluator
-        with open("{0}/{1}.py".format(file_dir, module_name), "w") as installed_package:
-            installed_package.write(module_file)
+            # Install package in evaluator
+            with open("{0}/{1}.py".format(file_dir, module_name), "w") as installed_package:
+                installed_package.write(module_file)
 
-        # Update local __init__
-        new_line_in_init = "from .{0} import *\n".format(module_name)
-        init_content = ""
-        init_file = "{0}/{1}/{2}/__init__.py".format(CONFIG_EVALUATOR, module_type, target_folder)
+            # Update local __init__
+            new_line_in_init = "from .{0} import *\n".format(module_name)
+            init_content = ""
+            init_file = "{0}/{1}/{2}/__init__.py".format(TENTACLE_TYPES[module_type],
+                                                         TENTACLE_TYPES[module_subtype],
+                                                         target_folder)
 
-        if os.path.isfile(init_file):
-            with open(init_file, "r") as init_file_r:
-                init_content = init_file_r.read()
+            if os.path.isfile(init_file):
+                with open(init_file, "r") as init_file_r:
+                    init_content = init_file_r.read()
 
-        # check if line already exists
-        if init_content.find(new_line_in_init) == -1:
-            with open(init_file, "w") as init_file_w:
-                # add new package to init
-                init_file_w.write(init_content + new_line_in_init)
+            # check if line already exists
+            if init_content.find(new_line_in_init) == -1:
+                with open(init_file, "w") as init_file_w:
+                    # add new package to init
+                    init_file_w.write(init_content + new_line_in_init)
 
-        self.logger.info("{0} {1} successfully installed in: {2}"
-                         .format(module_name, module_version, file_dir))
+            self.logger.info("{0} {1} successfully installed in: {2}"
+                             .format(module_name, module_version, file_dir))
+
+        else:
+            raise Exception("Tentacle type not found")
 
     def install_module(self, package, module_name, package_localisation, is_url, target_folder):
         package_type = package[module_name]["type"]
-        module_loc = "{0}/{1}/{2}.py".format(package_localisation, package_type, module_name)
+        package_subtype = package[module_name]["subtype"]
+
+        # create path from types
+        if package_subtype:
+            module_loc = "{0}/{1}/{2}/{3}.py".format(package_localisation,
+                                                     package_type,
+                                                     package_subtype,
+                                                     module_name)
+        else:
+            module_loc = "{0}/{1}/{2}.py".format(package_localisation,
+                                                 package_type,
+                                                 module_name)
+
         module_version = package[module_name]["version"]
 
         if is_url:
@@ -128,7 +154,7 @@ class TentacleManager:
             with open(module_loc, "r") as module:
                 module_file = module.read()
 
-        self._apply_module(package_type, module_name, module_version, module_file, target_folder)
+        self._apply_module(package_type, package_subtype, module_version, module_file, target_folder, module_name)
 
     def _try_to_install_package(self, package, target_folder):
         package_description = package[TENTACLE_DESCRIPTION]
