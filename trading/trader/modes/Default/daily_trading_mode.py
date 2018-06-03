@@ -32,13 +32,13 @@ class DailyTradingModeCreator(AbstractTradingModeCreator):
         if eval_note > 0:
             factor = self.SELL_LIMIT_ORDER_MIN_PERCENT + \
                      ((1 - abs(eval_note) + 1 - trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
-            return AbstractTradingModeCreator._check_factor(self.SELL_LIMIT_ORDER_MIN_PERCENT,
+            return self._check_factor(self.SELL_LIMIT_ORDER_MIN_PERCENT,
                                                             self.SELL_LIMIT_ORDER_MAX_PERCENT,
                                                             factor)
         else:
             factor = self.BUY_LIMIT_ORDER_MAX_PERCENT - \
                      ((1 - abs(eval_note) + 1 - trader.get_risk()) * self.LIMIT_ORDER_ATTENUATION)
-            return AbstractTradingModeCreator._check_factor(self.BUY_LIMIT_ORDER_MIN_PERCENT,
+            return self._check_factor(self.BUY_LIMIT_ORDER_MIN_PERCENT,
                                                             self.BUY_LIMIT_ORDER_MAX_PERCENT,
                                                             factor)
 
@@ -50,7 +50,7 @@ class DailyTradingModeCreator(AbstractTradingModeCreator):
 
     def _get_stop_price_from_risk(self, trader):
         factor = self.STOP_LOSS_ORDER_MAX_PERCENT - (trader.get_risk() * self.STOP_LOSS_ORDER_ATTENUATION)
-        return AbstractTradingModeCreator._check_factor(self.STOP_LOSS_ORDER_MIN_PERCENT,
+        return self._check_factor(self.STOP_LOSS_ORDER_MIN_PERCENT,
                                                         self.STOP_LOSS_ORDER_MAX_PERCENT,
                                                         factor)
 
@@ -64,7 +64,7 @@ class DailyTradingModeCreator(AbstractTradingModeCreator):
 
     def _get_limit_quantity_from_risk(self, eval_note, trader, quantity):
         factor = self.QUANTITY_MIN_PERCENT + ((abs(eval_note) + trader.get_risk()) * self.QUANTITY_ATTENUATION)
-        return AbstractTradingModeCreator._check_factor(self.QUANTITY_MIN_PERCENT,
+        return self._check_factor(self.QUANTITY_MIN_PERCENT,
                                                         self.QUANTITY_MAX_PERCENT,
                                                         factor) * quantity
 
@@ -80,11 +80,11 @@ class DailyTradingModeCreator(AbstractTradingModeCreator):
         factor = self.QUANTITY_MARKET_MIN_PERCENT + (
                 (abs(eval_note) + trader.get_risk()) * self.QUANTITY_MARKET_ATTENUATION)
 
-        # if buy market --> limit market usage
+        # if buy market --> limit market usacge
         if buy:
             factor *= self.QUANTITY_BUY_MARKET_ATTENUATION
 
-        return AbstractTradingModeCreator._check_factor(self.QUANTITY_MARKET_MIN_PERCENT,
+        return self._check_factor(self.QUANTITY_MARKET_MIN_PERCENT,
                                                         self.QUANTITY_MARKET_MAX_PERCENT,
                                                         factor) * quantity
 
@@ -130,10 +130,8 @@ class DailyTradingModeCreator(AbstractTradingModeCreator):
                 quantity = self._get_limit_quantity_from_risk(eval_note,
                                                               trader,
                                                               current_portfolio)
-                limit_price = AbstractTradingModeCreator \
-                    ._adapt_price(symbol_market, price * self._get_limit_price_from_risk(eval_note, trader))
-                stop_price = AbstractTradingModeCreator \
-                    ._adapt_price(symbol_market, price * self._get_stop_price_from_risk(trader))
+                limit_price = self._adapt_price(symbol_market, price * self._get_limit_price_from_risk(eval_note, trader))
+                stop_price = self._adapt_price(symbol_market, price * self._get_stop_price_from_risk(trader))
                 for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity,
                                                                                                     limit_price,
                                                                                                     symbol_market):
@@ -162,8 +160,7 @@ class DailyTradingModeCreator(AbstractTradingModeCreator):
                 quantity = self._get_limit_quantity_from_risk(eval_note,
                                                               trader,
                                                               market_quantity)
-                limit_price = AbstractTradingModeCreator \
-                    ._adapt_price(symbol_market, price * self._get_limit_price_from_risk(eval_note, trader))
+                limit_price = self._adapt_price(symbol_market, price * self._get_limit_price_from_risk(eval_note, trader))
                 for order_quantity, order_price in self._check_and_adapt_order_details_if_necessary(quantity,
                                                                                                     limit_price,
                                                                                                     symbol_market):

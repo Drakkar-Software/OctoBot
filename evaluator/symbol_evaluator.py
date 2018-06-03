@@ -1,7 +1,10 @@
-from config.cst import EvaluatorMatrixTypes
+import inspect
+import logging
+
+from config.cst import EvaluatorMatrixTypes, CONFIG_TRADER_MODE
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from trading.trader.modes.Default.daily_trading_mode import DailyTradingMode
+from trading.trader import modes
 
 
 class SymbolEvaluator:
@@ -12,6 +15,7 @@ class SymbolEvaluator:
         self.config = config
         self.traders = None
         self.trader_simulators = None
+        self.logger = logging.getLogger("{0} {1}".format(self.symbol, self.__class__.__name__))
 
         self.evaluator_thread_managers = {}
         self.trading_mode_instances = {}
@@ -19,11 +23,20 @@ class SymbolEvaluator:
         self.strategies_eval_lists = {}
         self.finalize_enabled_list = {}
 
+        self.trading_mode_class = self.get_trading_mode_class()
+
     def set_traders(self, trader):
         self.traders = trader
 
     def set_trader_simulators(self, simulator):
         self.trader_simulators = simulator
+
+    def get_trading_mode_class(self):
+        if CONFIG_TRADER_MODE in self.config:
+            if CONFIG_TRADER_MODE in inspect.getmembers(modes):
+                return CONFIG_TRADER_MODE
+
+        raise Exception("Please specify a valid trading mode in your config file (trader -> mode)")
 
     def add_evaluator_thread_manager(self, exchange, symbol, time_frame, evaluator_thread):
         if exchange.get_name() in self.evaluator_thread_managers:
@@ -32,7 +45,8 @@ class SymbolEvaluator:
             self.evaluator_thread_managers[exchange.get_name()] = {time_frame: evaluator_thread}
 
             # TODO use config
-            self.trading_mode_instances[exchange.get_name()] = DailyTradingMode(self.config, self, exchange, symbol)
+            self.trading_mode_instances[exchange.get_name()] = self.trading_mode_class(self.config, self, exchange,
+                                                                                       symbol)
 
             self.matrices[exchange.get_name()] = EvaluatorMatrix(self.config)
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
