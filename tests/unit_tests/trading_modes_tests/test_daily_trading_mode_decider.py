@@ -90,7 +90,7 @@ def test_create_state():
     delta_risk = final_evaluator._get_delta_risk()
     for i in range(-100, 100, 1):
         final_evaluator.final_eval = i/100
-        final_evaluator._create_state()
+        final_evaluator.create_state()
         if final_evaluator.final_eval < final_evaluator.VERY_LONG_THRESHOLD + delta_risk:
             assert final_evaluator.state == EvaluatorStates.VERY_LONG
         elif final_evaluator.final_eval < final_evaluator.LONG_THRESHOLD + delta_risk:
@@ -109,7 +109,7 @@ def test_prepare():
     assert final_evaluator.state == EvaluatorStates.SHORT
     assert len(trader_inst.order_manager.order_list) == 2  # has stop loss
     final_evaluator.final_eval = None
-    final_evaluator._set_final_eval()
+    final_evaluator.set_final_eval()
     assert final_evaluator.state == EvaluatorStates.SHORT  # ensure did not change EvaluatorStates
     assert len(trader_inst.order_manager.order_list) == 2  # ensure did not change orders
     assert final_evaluator.final_eval == INIT_EVAL_NOTE
