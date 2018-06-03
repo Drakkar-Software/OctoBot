@@ -1,5 +1,6 @@
 import logging
 import math
+from abc import *
 
 from config.cst import *
 from config.cst import ExchangeConstantsMarketStatusColumns as Ecmsc
@@ -7,7 +8,10 @@ from tools.symbol_util import split_symbol
 
 
 class AbstractTradingModeCreator:
-    def __init__(self):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, trading_mode):
+        self.trading_mode = trading_mode
         self.MAX_SUM_RESULT = 2
 
         self.STOP_LOSS_ORDER_MAX_PERCENT = 0.99
