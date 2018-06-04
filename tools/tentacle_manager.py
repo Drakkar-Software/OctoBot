@@ -54,17 +54,15 @@ class TentacleManager:
             package_description = self.default_package[TENTACLE_DESCRIPTION]
             package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
             is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
-            return self.default_package, package_description, package_localisation, is_url
+            return self.default_package, package_description, package_localisation, is_url, EVALUATOR_DEFAULT_FOLDER
         else:
             for advanced_package in self.advanced_package_list:
                 if component in advanced_package:
                     package_description = advanced_package[TENTACLE_DESCRIPTION]
                     package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
-                    is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
-                    return advanced_package, package_description, package_localisation, is_url
-
-        self.logger.error("Cannot find installation for module '{0}'".format(component))
-        return None, None, None, None
+                    url = package_description[TENTACLE_DESCRIPTION_IS_URL]
+                    return advanced_package, package_description, package_localisation, url, EVALUATOR_ADVANCED_FOLDER
+        return None, None, None, None, None
 
     @staticmethod
     def _get_package_description(url_or_path, try_to_adapt=False):
@@ -208,7 +206,7 @@ class TentacleManager:
                            module_file, target_folder, module_name)
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
-            self._try_action_on_requirements(action, package[module_name], package, target_folder)
+            self._try_action_on_requirements(action, package[module_name])
 
     def _try_action_on_package(self, action, package, target_folder):
         package_description = package[TENTACLE_DESCRIPTION]
@@ -227,27 +225,22 @@ class TentacleManager:
                 elif action == TentacleManagerActions.UPDATE:
                     self.logger.error("Updating {0}".format(error))
 
-    def _try_action_on_requirements(self, action, module, package, target_folder):
+    def _try_action_on_requirements(self, action, module):
         success = True
         applied_modules = []
-        package_description = package[TENTACLE_DESCRIPTION]
-        package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
-        is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
+        module_name = module["name"]
         for requirement in module["requirements"]:
             try:
-                self.process_module(action, package, requirement, package_localisation, is_url, target_folder)
-                applied_modules.append(requirement)
+                req_package, description, localisation, is_url, destination = self._get_package_in_lists(requirement)
 
-                msg = "module requirement '{0}' of module {1}".format(requirement, module)
-                if action == TentacleManagerActions.INSTALL:
-                    self.logger.error("Successfully installed {0}".format(msg))
-                elif action == TentacleManagerActions.UNINSTALL:
-                    self.logger.error("Successfully uninstalled {0}".format(msg))
-                elif action == TentacleManagerActions.UPDATE:
-                    self.logger.error("Successfully updated {0}".format(msg))
+                if req_package:
+                    self.process_module(action, req_package, requirement, localisation, is_url, destination)
+                    applied_modules.append(requirement)
+                else:
+                    raise Exception("Module requirement '{0}' not found in package lists".format(requirement))
 
             except Exception as e:
-                error = "failed for module requirement '{0}' of module {1} ({2})".format(requirement, module, e)
+                error = "failed for module requirement '{0}' of module {1} ({2})".format(requirement, module_name, e)
                 if action == TentacleManagerActions.INSTALL:
                     self.logger.error("Installation {0}".format(error))
                 elif action == TentacleManagerActions.UNINSTALL:
@@ -305,19 +298,18 @@ class TentacleManager:
         else:
             for component in commands:
 
-                package, package_description, package_localisation, is_url = self._get_package_in_lists(component)
-
-                destination_folder = EVALUATOR_DEFAULT_FOLDER if package == self.default_package \
-                    else EVALUATOR_ADVANCED_FOLDER
+                package, description, localisation, is_url, destination = self._get_package_in_lists(component)
 
                 if package:
                     try:
                         self.process_module(TentacleManagerActions.INSTALL, package, component,
-                                            package_localisation, is_url, destination_folder)
+                                            localisation, is_url, destination)
 
                     except Exception as e:
                         self.logger.error("Installation failed for module '{0}'".format(component))
                         raise e
+                else:
+                    self.logger.error("No installation found for module '{0}'".format(component))
 
     def update_parser(self, commands, command_all=False):
         if command_all:
