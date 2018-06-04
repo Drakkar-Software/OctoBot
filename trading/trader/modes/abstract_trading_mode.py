@@ -24,5 +24,8 @@ class AbstractTradingMode:
     def get_only_creator_key(self):
         return next(iter(self.creators.keys()))
 
+    def get_creators(self):
+        return self.creators
+
     def get_decider(self):
         return self.decider

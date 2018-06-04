@@ -31,8 +31,8 @@ class SubPortfolio(Portfolio):
             # calculate for each currency the new quantity
             for currency in balance:
                 self.portfolio[currency] = {
-                    Portfolio.AVAILABLE: balance[currency][CONFIG_PORTFOLIO_FREE] * self.percent,
-                    Portfolio.TOTAL: balance[currency][CONFIG_PORTFOLIO_TOTAL] * self.percent}
+                    Portfolio.AVAILABLE: balance[currency][Portfolio.AVAILABLE] * self.percent,
+                    Portfolio.TOTAL: balance[currency][Portfolio.TOTAL] * self.percent}
 
     def get_parent_portfolio(self):
         return self.parent_portfolio
