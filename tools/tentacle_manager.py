@@ -1,12 +1,13 @@
 import json
 import logging
 import os
+from enum import Enum
 
 import requests
 
 from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLES_PUBLIC_REPOSITORY, \
     TENTACLE_DESCRIPTION, \
-    GITHUB_RAW_CONTENT_URL, CONFIG_EVALUATOR, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, GITHUB_BASE_URL, GITHUB, \
+    GITHUB_RAW_CONTENT_URL, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, GITHUB_BASE_URL, GITHUB, \
     TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, TENTACLE_TYPES
 
 
@@ -93,7 +94,9 @@ class TentacleManager:
 
         return package_file
 
-    def _apply_module(self, module_type, module_subtype, module_version, module_file, target_folder, module_name):
+    def _apply_module(self, action, module_type, module_subtype,
+                      module_version, module_file, target_folder, module_name):
+
         if module_subtype in TENTACLE_TYPES and (module_subtype or module_subtype in TENTACLE_TYPES):
             # create path from types
             if module_subtype:
@@ -104,12 +107,23 @@ class TentacleManager:
                 file_dir = "{0}/{1}".format(TENTACLE_TYPES[module_type],
                                             target_folder)
 
-            # Install package in evaluator
-            with open("{0}/{1}.py".format(file_dir, module_name), "w") as installed_package:
-                installed_package.write(module_file)
+            package_file_path = "{0}/{1}.py".format(file_dir, module_name)
+
+            # Write the new file in locations
+            if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
+                # Install package in evaluator
+                with open(package_file_path, "w") as installed_package:
+                    installed_package.write(module_file)
+
+            # remove package line from init file
+            elif action == TentacleManagerActions.UNINSTALL:
+                try:
+                    os.remove(package_file_path)
+                except OSError:
+                    pass
 
             # Update local __init__
-            new_line_in_init = "from .{0} import *\n".format(module_name)
+            line_in_init = "from .{0} import *\n".format(module_name)
             init_content = ""
             init_file = "{0}/{1}/{2}/__init__.py".format(TENTACLE_TYPES[module_type],
                                                          TENTACLE_TYPES[module_subtype],
@@ -120,52 +134,77 @@ class TentacleManager:
                     init_content = init_file_r.read()
 
             # check if line already exists
-            if init_content.find(new_line_in_init) == -1:
-                with open(init_file, "w") as init_file_w:
-                    # add new package to init
-                    init_file_w.write(init_content + new_line_in_init)
+            line_exists = False if init_content.find(line_in_init) == -1 else True
 
-            self.logger.info("{0} {1} successfully installed in: {2}"
-                             .format(module_name, module_version, file_dir))
+            # Add new package in init file
+            if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
+                if not line_exists:
+                    with open(init_file, "w") as init_file_w:
+                        # add new package to init
+                        init_file_w.write(init_content + line_in_init)
+
+            # remove package line from init file
+            elif action == TentacleManagerActions.UNINSTALL:
+                if line_exists:
+                    with open(init_file, "w") as init_file_w:
+                        # remove package to uninstall from init
+                        init_file_w.write(init_content.replace(line_in_init, ""))
+
+            if action == TentacleManagerActions.INSTALL:
+                self.logger.info("{0} {1} successfully installed in: {2}"
+                                 .format(module_name, module_version, file_dir))
+            elif action == TentacleManagerActions.UNINSTALL:
+                self.logger.info("{0} {1} successfully uninstalled in: {2}"
+                                 .format(module_name, module_version, file_dir))
+            elif action == TentacleManagerActions.UPDATE:
+                self.logger.info("{0} {1} successfully updated in: {2}"
+                                 .format(module_name, module_version, file_dir))
 
         else:
             raise Exception("Tentacle type not found")
 
-    def install_module(self, package, module_name, package_localisation, is_url, target_folder):
+    def process_module(self, action, package, module_name, package_localisation, is_url, target_folder):
         package_type = package[module_name]["type"]
         package_subtype = package[module_name]["subtype"]
-
-        # create path from types
-        if package_subtype:
-            module_loc = "{0}/{1}/{2}/{3}.py".format(package_localisation,
-                                                     package_type,
-                                                     package_subtype,
-                                                     module_name)
-        else:
-            module_loc = "{0}/{1}/{2}.py".format(package_localisation,
-                                                 package_type,
-                                                 module_name)
-
         module_version = package[module_name]["version"]
+        module_file = ""
 
-        if is_url:
-            module_file = self._get_package_from_url(module_loc)
-        else:
-            with open(module_loc, "r") as module:
-                module_file = module.read()
+        if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
+            # create path from types
+            if package_subtype:
+                module_loc = "{0}/{1}/{2}/{3}.py".format(package_localisation,
+                                                         package_type,
+                                                         package_subtype,
+                                                         module_name)
+            else:
+                module_loc = "{0}/{1}/{2}.py".format(package_localisation,
+                                                     package_type,
+                                                     module_name)
 
-        self._apply_module(package_type, package_subtype, module_version, module_file, target_folder, module_name)
+            if is_url:
+                module_file = self._get_package_from_url(module_loc)
+            else:
+                with open(module_loc, "r") as module:
+                    module_file = module.read()
 
-    def _try_to_install_package(self, package, target_folder):
+        self._apply_module(action, package_type, package_subtype, module_version,
+                           module_file, target_folder, module_name)
+
+    def _try_action_on_package(self, action, package, target_folder):
         package_description = package[TENTACLE_DESCRIPTION]
         package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
         is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
         for module in package:
             try:
                 if module != TENTACLE_DESCRIPTION:
-                    self.install_module(package, module, package_localisation, is_url, target_folder)
+                    self.process_module(action, package, module, package_localisation, is_url, target_folder)
             except Exception as e:
-                self.logger.error("Installation failed for module '{0}' ({1})".format(module, e))
+                if action == TentacleManagerActions.INSTALL:
+                    self.logger.error("Installation failed for module '{0}' ({1})".format(module, e))
+                elif action == TentacleManagerActions.UNINSTALL:
+                    self.logger.error("Uninstalling failed for module '{0}' ({1})".format(module, e))
+                elif action == TentacleManagerActions.UPDATE:
+                    self.logger.error("Updating failed for module '{0}' ({1})".format(module, e))
 
     @staticmethod
     def parse_version(version):
@@ -177,40 +216,87 @@ class TentacleManager:
             if commands[0] == "install":
 
                 if commands[1] == "all":
-                    self._try_to_install_package(self.default_package, EVALUATOR_DEFAULT_FOLDER)
-                    for package in self.advanced_package_list:
-                        self._try_to_install_package(package, EVALUATOR_ADVANCED_FOLDER)
+                    self.install_parser(commands, True)
                 else:
                     commands.pop(0)
-                    for component in commands:
-                        if component in self.default_package:
-                            package_description = self.default_package[TENTACLE_DESCRIPTION]
+                    self.install_parser(commands, False)
+
+            elif commands[0] == "update":
+                if commands[1] == "all":
+                    self.update_parser(commands, True)
+                else:
+                    commands.pop(0)
+                    self.update_parser(commands, False)
+
+            elif commands[0] == "uninstall":
+                if commands[1] == "all":
+                    self.uninstall_parser(commands, True)
+                else:
+                    commands.pop(0)
+                    self.uninstall_parser(commands, False)
+
+            else:
+                self.logger.error("Command not found")
+        else:
+            self.logger.error("Invalid arguments")
+
+    def install_parser(self, commands, command_all=False):
+        if command_all:
+            self._try_action_on_package(TentacleManagerActions.INSTALL, self.default_package, EVALUATOR_DEFAULT_FOLDER)
+            for package in self.advanced_package_list:
+                self._try_action_on_package(TentacleManagerActions.INSTALL, package, EVALUATOR_ADVANCED_FOLDER)
+        else:
+            for component in commands:
+                if component in self.default_package:
+                    package_description = self.default_package[TENTACLE_DESCRIPTION]
+                    package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
+                    is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
+                    try:
+                        self.process_module(TentacleManagerActions.INSTALL, self.default_package, component,
+                                            package_localisation, is_url, EVALUATOR_DEFAULT_FOLDER)
+                    except Exception:
+                        self.logger.error("Installation failed for module '{0}'".format(component))
+                else:
+                    found = False
+                    for advanced_package in self.advanced_package_list:
+                        if component in advanced_package:
+                            found = True
+                            package_description = advanced_package[TENTACLE_DESCRIPTION]
                             package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
                             is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
                             try:
-                                self.install_module(self.default_package, component, package_localisation, is_url,
-                                                    EVALUATOR_DEFAULT_FOLDER)
+                                self.process_module(advanced_package, component, package_localisation, is_url,
+                                                    EVALUATOR_ADVANCED_FOLDER)
+                                break
                             except Exception:
                                 self.logger.error("Installation failed for module '{0}'".format(component))
-                        else:
-                            found = False
-                            for advanced_package in self.advanced_package_list:
-                                if component in advanced_package:
-                                    found = True
-                                    package_description = advanced_package[TENTACLE_DESCRIPTION]
-                                    package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
-                                    is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
-                                    try:
-                                        self.install_module(advanced_package, component, package_localisation, is_url,
-                                                            EVALUATOR_ADVANCED_FOLDER)
-                                        break
-                                    except Exception:
-                                        self.logger.error("Installation failed for module '{0}'".format(component))
-                            if not found:
-                                self.logger.error("Cannot find installation for module '{0}'".format(component))
+                    if not found:
+                        self.logger.error("Cannot find installation for module '{0}'".format(component))
 
-            if commands[0] == "update":
-                if commands[1] == "all":
-                    pass
-                else:
-                    commands.pop(0)
+    def update_parser(self, commands, command_all=False):
+        if command_all:
+            # TODO check for each tentacle installed if update is available (with requirements)
+            pass
+        else:
+            # TODO check for each tentacle specified if update is available (with requirements)
+            pass
+
+    def uninstall_parser(self, commands, command_all=False):
+        if command_all:
+            self._try_action_on_package(TentacleManagerActions.UNINSTALL, self.default_package,
+                                        EVALUATOR_DEFAULT_FOLDER)
+            for package in self.advanced_package_list:
+                self._try_action_on_package(TentacleManagerActions.UNINSTALL, package, EVALUATOR_ADVANCED_FOLDER)
+        else:
+            for component in commands:
+                try:
+                    self.process_module(TentacleManagerActions.UNINSTALL, self.default_package,
+                                        component, "", "", EVALUATOR_DEFAULT_FOLDER)
+                except Exception:
+                    self.logger.error("Uninstalling failed for module '{0}'".format(component))
+
+
+class TentacleManagerActions(Enum):
+    INSTALL = 1
+    UNINSTALL = 2
+    UPDATE = 3
