@@ -9,7 +9,9 @@
   },
   "services": {},
   "notification":{
-    "enabled": false,
+    "global_info": true,
+    "price_alerts": true,
+    "trades": true,
     "type": []
   },
   "trader":{
