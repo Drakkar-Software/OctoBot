@@ -3,8 +3,9 @@ import pprint
 from abc import ABCMeta
 from enum import Enum
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
-    CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM
+from config.cst import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
+    CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
+    CONFIG_NOTIFICATION_TRADES
 from services import TwitterService, TelegramService
 from services.gmail_service import GmailService
 from tools.pretty_printer import PrettyPrinter
@@ -16,13 +17,20 @@ class Notification:
 
     def __init__(self, config):
         self.config = config
-        self.notification_type = self.config[CONFIG_CATEGORY_NOTIFICATION]["type"]
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.enable = self.enabled()
+        self.notification_type = self.config[CONFIG_CATEGORY_NOTIFICATION]["type"]
+        self._enable = self.config[CONFIG_CATEGORY_NOTIFICATION]
 
-    def enabled(self):
-        if self.config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION]:
-            return True
+    # return True if key is enabled
+    # if key is not given, return True if at least one key is enabled
+    def enabled(self, key=None):
+        if self._enable:
+            if not key:
+                return True in self._enable.values()
+            elif key in self._enable:
+                return self._enable[key]
+            else:
+                return False
         else:
             return False
 
@@ -39,8 +47,8 @@ class Notification:
         except Exception as e:
             self.logger.error("Failed to notify all : {0}".format(e))
 
-    def gmail_notification_available(self):
-        if self.enable and NotificationTypes.MAIL.value in self.notification_type:
+    def gmail_notification_available(self, key=None):
+        if self.enabled(key) and NotificationTypes.MAIL.value in self.notification_type:
             if GmailService.is_setup_correctly(self.config):
                 return True
         return False
@@ -54,8 +62,8 @@ class Notification:
         else:
             self.logger.debug("Mail disabled")
 
-    def telegram_notification_available(self):
-        if self.enable and NotificationTypes.TELEGRAM.value in self.notification_type:
+    def telegram_notification_available(self, key=None):
+        if self.enabled(key) and NotificationTypes.TELEGRAM.value in self.notification_type:
             if TelegramService.is_setup_correctly(self.config):
                 return True
         return False
@@ -69,8 +77,8 @@ class Notification:
         else:
             self.logger.debug("Telegram disabled")
 
-    def twitter_notification_available(self):
-        if self.enable and NotificationTypes.TWITTER.value in self.notification_type:
+    def twitter_notification_available(self, key=None):
+        if self.enabled(key) and NotificationTypes.TWITTER.value in self.notification_type:
             if TwitterService.is_setup_correctly(self.config):
                 return True
         return False
@@ -104,7 +112,7 @@ class EvaluatorNotification(Notification):
         self.tweet_instance = None
 
     def notify_state_changed(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
-        if self.gmail_notification_available():
+        if self.gmail_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
             profitability, profitability_percent, _ = trader.get_trades_manager().get_profitability()
 
             self.gmail_notification_factory(
@@ -126,10 +134,10 @@ class EvaluatorNotification(Notification):
             result,
             final_eval)
 
-        if self.twitter_notification_available():
+        if self.twitter_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
             self.tweet_instance = self.twitter_notification_factory(alert_content)
 
-        if self.telegram_notification_available():
+        if self.telegram_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
             self.telegram_notification_factory(alert_content)
 
         return self
@@ -153,13 +161,13 @@ class OrdersNotification(Notification):
             for order in orders:
                 content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
 
-            if self.twitter_notification_available() \
+            if self.twitter_notification_available(CONFIG_NOTIFICATION_TRADES) \
                     and self.evaluator_notification is not None \
                     and self.evaluator_notification.get_tweet_instance() is not None:
                 tweet_instance = self.evaluator_notification.get_tweet_instance()
                 self.twitter_response_factory(tweet_instance, content)
 
-            if self.telegram_notification_available():
+            if self.telegram_notification_available(CONFIG_NOTIFICATION_TRADES):
                 self.telegram_notification_factory(content)
 
     def notify_end(self,
@@ -193,14 +201,14 @@ class OrdersNotification(Notification):
                 "+" if portfolio_diff >= 0 else "",
                 round(portfolio_diff, 7))
 
-        if self.twitter_notification_available() \
+        if self.twitter_notification_available(CONFIG_NOTIFICATION_TRADES) \
                 and self.evaluator_notification is not None \
                 and self.evaluator_notification.get_tweet_instance() is not None:
             tweet_instance = self.evaluator_notification.get_tweet_instance()
 
             self.twitter_response_factory(tweet_instance, content)
 
-        if self.telegram_notification_available():
+        if self.telegram_notification_available(CONFIG_NOTIFICATION_TRADES):
             self.telegram_notification_factory(content)
 
 

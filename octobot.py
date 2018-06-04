@@ -53,7 +53,8 @@ class OctoBot:
         self.config[CONFIG_NOTIFICATION_INSTANCE] = Notification(self.config)
 
         # Notify starting
-        self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
+        if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
+            self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
 
         # Backtesting
         self.backtesting_enabled = None
@@ -193,7 +194,8 @@ class OctoBot:
 
     def stop_threads(self):
         # Notify stopping
-        self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE)
+        if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
+            self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE)
 
         self.logger.info("Stopping threads ...")
 
