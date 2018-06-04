@@ -4,7 +4,7 @@ from time import sleep
 from threading import Lock
 
 from backtesting.backtesting import Backtesting
-from config.cst import ORDER_REFRESHER_TIME, OrderStatus
+from config.cst import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS
 from trading.trader.order import Order
 
 """ OrdersManager class will perform the supervision of each open order of the exchange trader
@@ -22,9 +22,13 @@ class OrdersManager(threading.Thread):
         self.trader = trader
         self.order_list = []
         self.last_symbol_prices = {}
-        self.order_refresh_time = ORDER_REFRESHER_TIME
         self.logger = logging.getLogger(self.__class__.__name__)
         self.list_lock = threading.RLock()
+
+        if self.trader.get_exchange().is_websocket_available():
+            self.order_refresh_time = ORDER_REFRESHER_TIME_WS
+        else:
+            self.order_refresh_time = ORDER_REFRESHER_TIME
 
     def add_order_to_list(self, order):
         with self.list_lock:

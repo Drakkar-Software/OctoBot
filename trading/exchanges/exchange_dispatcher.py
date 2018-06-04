@@ -1,6 +1,5 @@
-from trading import AbstractExchange
 from tools.data_frame_util import DataFrameUtil
-from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
+from trading import AbstractExchange
 
 
 class ExchangeDispatcher(AbstractExchange):
@@ -18,6 +17,12 @@ class ExchangeDispatcher(AbstractExchange):
 
     def _web_socket_available(self):
         return self.exchange_web_socket
+
+    def is_websocket_available(self):
+        if self._web_socket_available():
+            return True
+        else:
+            return False
 
     def get_name(self):
         return self.exchange.get_name()
