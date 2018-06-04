@@ -1,7 +1,7 @@
 from enum import Enum
 
 SHORT_VERSION = "0.1.0"
-REV_VERSION = "2"
+REV_VERSION = "3"
 VERSION_DEV_PHASE = "beta"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
@@ -42,6 +42,8 @@ CONFIG_EXCHANGE_WEB_SOCKET = "web_socket"
 CONFIG_EXCHANGE_KEY = "api-key"
 CONFIG_EXCHANGE_SECRET = "api-secret"
 CONFIG_TRADER = "trader"
+CONFIG_TRADING = "trading"
+CONFIG_TRADER_MODES = "modes"
 CONFIG_SIMULATOR = "trader_simulator"
 CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
 CONFIG_TRADER_RISK = "risk"
@@ -159,7 +161,7 @@ TENTACLE_TYPES = {"Evaluator": "evaluator",
                   "TA": "TA",
                   "Strategies": "Strategies",
                   "Trading": "trading",
-                  "Mode": "trader/modes"}
+                  "Mode": "{0}/{1}".format(CONFIG_TRADER, CONFIG_TRADER_MODES)}
 
 
 class EvaluatorMatrixTypes(Enum):

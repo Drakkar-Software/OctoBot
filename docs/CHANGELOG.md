@@ -1,3 +1,18 @@
+Changelog for 0.1.1-beta
+====================
+*Released date : June 8 2018*
+
+# Concerned issues :
+    #197 Add evaluator specific config in tentacle installation
+    #211 [Order Management] set refresh period in OctoBot startup
+    #212 [Tentacles management] add dependancies management
+    #213 [Tentacles management] add tentacle removal system
+    #215 [Trading mode] Add config management
+    #217 [Trading Mode] Implement multiple mini creator (with part of pf)
+   
+# New features :
+    - Tentacle Management : uninstall, requirements, configuration files
+    
 Changelog for 0.1.0_2-beta
 ====================
 *Released date : June 3 2018*
