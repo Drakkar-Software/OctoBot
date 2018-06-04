@@ -42,6 +42,9 @@ class TradesManager:
         else:
             return DEFAULT_REFERENCE_MARKET
 
+    def get_origin_portfolio(self):
+        return self.origin_portfolio
+
     def get_reference(self):
         return self.reference_market
 
