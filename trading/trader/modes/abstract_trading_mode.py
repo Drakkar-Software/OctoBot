@@ -44,6 +44,13 @@ class AbstractTradingMode:
     def add_creator(self, creator, creator_key=None):
         if not creator_key:
             creator_key = creator.__class__.__name__
+            if creator_key in self.creators:
+                to_add_id = 2
+                proposed_creator_key = creator_key + str(to_add_id)
+                while proposed_creator_key in self.creators:
+                    to_add_id += 1
+                    proposed_creator_key = creator_key + str(to_add_id)
+                creator_key = proposed_creator_key
         self.creators[creator_key] = creator
 
     def get_creator(self, creator_key):
