@@ -24,7 +24,7 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
 
     @classmethod
     def get_config_file_name(cls):
-        return SPECIFIC_CONFIG_PATH + cls.get_name() + ".json"
+        return "{0}/{1}/{2}".format(CONFIG_EVALUATOR, CONFIG_EVALUATOR_REALTIME, cls.get_name() + CONFIG_FILE_EXT)
 
     def stop(self):
         self.keep_running = False
