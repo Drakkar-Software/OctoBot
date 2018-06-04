@@ -109,18 +109,47 @@ class TentacleManager:
 
         return package_file
 
+    @staticmethod
+    def _create_localization_from_type(localization, module_type, module_subtype, file):
+        # create path from types
+        if module_subtype:
+            return "{0}/{1}/{2}/{3}".format(localization,
+                                            module_type,
+                                            module_subtype,
+                                            file)
+        else:
+            return "{0}/{1}/{2}".format(localization,
+                                        module_type,
+                                        file)
+
+    @staticmethod
+    def _create_path_from_type(module_type, module_subtype, target_folder):
+        # create path from types
+        if module_subtype:
+            return "{0}/{1}/{2}".format(TENTACLE_TYPES[module_type],
+                                        TENTACLE_TYPES[module_subtype],
+                                        target_folder)
+        else:
+            return "{0}/{1}".format(TENTACLE_TYPES[module_type],
+                                    target_folder)
+
+    @staticmethod
+    def _parse_module(package, module_name):
+        return {
+            "name": package[module_name]["name"],
+            "type": package[module_name]["type"],
+            "subtype": package[module_name]["subtype"] if "subtype" in package[module_name] else None,
+            "version": package[module_name]["version"],
+            "requirements": package[module_name]["requirements"] if "requirements" in package[module_name] else None,
+            "config_files": package[module_name]["config_files"] if "config_files" in package[module_name] else None,
+        }
+
     def _apply_module(self, action, module_type, module_subtype,
                       module_version, module_file, target_folder, module_name):
 
         if module_subtype in TENTACLE_TYPES and (module_subtype or module_subtype in TENTACLE_TYPES):
-            # create path from types
-            if module_subtype:
-                file_dir = "{0}/{1}/{2}".format(TENTACLE_TYPES[module_type],
-                                                TENTACLE_TYPES[module_subtype],
-                                                target_folder)
-            else:
-                file_dir = "{0}/{1}".format(TENTACLE_TYPES[module_type],
-                                            target_folder)
+
+            file_dir = self._create_path_from_type(module_type, module_subtype, target_folder)
 
             package_file_path = "{0}/{1}.py".format(file_dir, module_name)
 
@@ -179,22 +208,16 @@ class TentacleManager:
             raise Exception("Tentacle type not found")
 
     def process_module(self, action, package, module_name, package_localisation, is_url, target_folder):
-        package_type = package[module_name]["type"]
-        package_subtype = package[module_name]["subtype"]
-        module_version = package[module_name]["version"]
+        parsed_module = self._parse_module(package, module_name)
+        package_type = parsed_module["type"]
+        package_subtype = parsed_module["subtype"]
         module_file = ""
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
-            # create path from types
-            if package_subtype:
-                module_loc = "{0}/{1}/{2}/{3}.py".format(package_localisation,
-                                                         package_type,
-                                                         package_subtype,
-                                                         module_name)
-            else:
-                module_loc = "{0}/{1}/{2}.py".format(package_localisation,
-                                                     package_type,
-                                                     module_name)
+            module_loc = "{0}.py".format(self._create_localization_from_type(package_localisation,
+                                                                             package_type,
+                                                                             package_subtype,
+                                                                             module_name))
 
             if is_url:
                 module_file = self._get_package_from_url(module_loc)
@@ -202,11 +225,14 @@ class TentacleManager:
                 with open(module_loc, "r") as module:
                     module_file = module.read()
 
-        self._apply_module(action, package_type, package_subtype, module_version,
+        # manage module config
+        self._try_action_on_config(action, package, module_name, is_url, target_folder, package_localisation)
+
+        self._apply_module(action, package_type, package_subtype, parsed_module["version"],
                            module_file, target_folder, module_name)
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
-            self._try_action_on_requirements(action, package[module_name])
+            self._try_action_on_requirements(action, package, module_name)
 
     def _try_action_on_package(self, action, package, target_folder):
         package_description = package[TENTACLE_DESCRIPTION]
@@ -225,39 +251,83 @@ class TentacleManager:
                 elif action == TentacleManagerActions.UPDATE:
                     self.logger.error("Updating {0}".format(error))
 
-    def _try_action_on_requirements(self, action, module):
+    def _try_action_on_requirements(self, action, package, module_name):
+        parsed_module = self._parse_module(package, module_name)
         success = True
-        module_name = module["name"]
+        module_name = parsed_module["name"]
         applied_modules = [module_name]
-        for requirement in module["requirements"]:
-            try:
-                req_package, description, localisation, is_url, destination = self._get_package_in_lists(requirement)
+        if parsed_module["requirements"]:
+            for requirement in parsed_module["requirements"]:
+                try:
+                    req_package, description, localisation, is_url, destination = self._get_package_in_lists(
+                        requirement)
 
-                if req_package:
-                    self.process_module(action, req_package, requirement, localisation, is_url, destination)
-                    applied_modules.append(requirement)
-                else:
-                    raise Exception("Module requirement '{0}' not found in package lists".format(requirement))
+                    if req_package:
+                        self.process_module(action, req_package, requirement, localisation, is_url, destination)
+                        applied_modules.append(requirement)
+                    else:
+                        raise Exception("Module requirement '{0}' not found in package lists".format(requirement))
 
-            except Exception as e:
-                error = "failed for module requirement '{0}' of module {1} ({2})".format(requirement, module_name, e)
+                except Exception as e:
+                    error = "failed for module requirement '{0}' of module {1} ({2})".format(requirement, module_name,
+                                                                                             e)
+                    if action == TentacleManagerActions.INSTALL:
+                        self.logger.error("Installation {0}".format(error))
+                    elif action == TentacleManagerActions.UNINSTALL:
+                        self.logger.error("Uninstalling {0}".format(error))
+                    elif action == TentacleManagerActions.UPDATE:
+                        self.logger.error("Updating {0}".format(error))
+                    success = False
+
+            # failed to install requirements
+            if not success:
+                # uninstall module and requirements
+                #  TODO : rollback to previous version (for UPDATE action)
+                for module in applied_modules:
+                    req_package, description, localisation, is_url, destination = self._get_package_in_lists(module)
+                    if req_package:
+                        self.process_module(TentacleManagerActions.UNINSTALL, req_package, module,
+                                            localisation, is_url, destination)
+
+    def _try_action_on_config(self, action, package, module_name, is_url, target_folder, package_localisation):
+        parsed_module = self._parse_module(package, module_name)
+
+        if parsed_module["config_files"]:
+            for config_file in parsed_module["config_files"]:
+
+                file_dir = self._create_path_from_type(parsed_module["type"], parsed_module["subtype"], target_folder)
+
+                config_file_path = "{0}/{1}".format(file_dir, config_file)
                 if action == TentacleManagerActions.INSTALL:
-                    self.logger.error("Installation {0}".format(error))
-                elif action == TentacleManagerActions.UNINSTALL:
-                    self.logger.error("Uninstalling {0}".format(error))
-                elif action == TentacleManagerActions.UPDATE:
-                    self.logger.error("Updating {0}".format(error))
-                success = False
 
-        # failed to install requirements
-        if not success:
-            # uninstall module and requirements
-            #  TODO : rollback to previous version (for UPDATE action)
-            for module in applied_modules:
-                req_package, description, localisation, is_url, destination = self._get_package_in_lists(module)
-                if req_package:
-                    self.process_module(TentacleManagerActions.UNINSTALL, req_package, module,
-                                        localisation, is_url, destination)
+                    try:
+                        # get config file content from localization
+                        module_loc = self._create_localization_from_type(package_localisation,
+                                                                         parsed_module["type"],
+                                                                         parsed_module["subtype"],
+                                                                         config_file)
+
+                        if is_url:
+                            config_file_content = self._get_package_from_url(module_loc)
+                        else:
+                            with open(module_loc, "r") as module:
+                                config_file_content = module.read()
+
+                        # install local config file content
+                        with open(config_file_path, "w") as new_config_file:
+                            new_config_file.write(config_file_content)
+
+                    except Exception as e:
+                        self.logger.error("Fail to install configuration for module '{0}' ({1})".format(module_name, e))
+
+                elif action == TentacleManagerActions.UNINSTALL:
+                    try:
+                        os.remove(config_file_path)
+                    except OSError:
+                        pass
+                elif action == TentacleManagerActions.UPDATE:
+                    # TODO warning about erasing file
+                    pass
 
     @staticmethod
     def parse_version(version):
