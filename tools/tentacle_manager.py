@@ -227,8 +227,8 @@ class TentacleManager:
 
     def _try_action_on_requirements(self, action, module):
         success = True
-        applied_modules = []
         module_name = module["name"]
+        applied_modules = [module_name]
         for requirement in module["requirements"]:
             try:
                 req_package, description, localisation, is_url, destination = self._get_package_in_lists(requirement)
@@ -253,8 +253,11 @@ class TentacleManager:
         if not success:
             # uninstall module and requirements
             #  TODO : rollback to previous version (for UPDATE action)
-            self.process_module(TentacleManagerActions.UNINSTALL, self.default_package,
-                                module, "", "", EVALUATOR_DEFAULT_FOLDER)
+            for module in applied_modules:
+                req_package, description, localisation, is_url, destination = self._get_package_in_lists(module)
+                if req_package:
+                    self.process_module(TentacleManagerActions.UNINSTALL, req_package, module,
+                                        localisation, is_url, destination)
 
     @staticmethod
     def parse_version(version):
