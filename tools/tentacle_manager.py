@@ -226,7 +226,7 @@ class TentacleManager:
                     module_file = module.read()
 
         # manage module config
-        self._try_action_on_config(action, package, module_name, is_url, target_folder, package_localisation)
+        self._try_action_on_config(action, package, module_name, is_url, package_localisation)
 
         self._apply_module(action, package_type, package_subtype, parsed_module["version"],
                            module_file, target_folder, module_name)
@@ -289,15 +289,15 @@ class TentacleManager:
                         self.process_module(TentacleManagerActions.UNINSTALL, req_package, module,
                                             localisation, is_url, destination)
 
-    def _try_action_on_config(self, action, package, module_name, is_url, target_folder, package_localisation):
+    def _try_action_on_config(self, action, package, module_name, is_url, package_localisation):
         parsed_module = self._parse_module(package, module_name)
 
         if parsed_module["config_files"]:
             for config_file in parsed_module["config_files"]:
 
-                file_dir = self._create_path_from_type(parsed_module["type"], parsed_module["subtype"], target_folder)
+                file_dir = self._create_path_from_type(parsed_module["type"], parsed_module["subtype"], "")
 
-                config_file_path = "{0}/{1}".format(file_dir, config_file)
+                config_file_path = "{0}{1}".format(file_dir, config_file)
                 if action == TentacleManagerActions.INSTALL:
 
                     try:
@@ -318,7 +318,7 @@ class TentacleManager:
                             new_config_file.write(config_file_content)
 
                     except Exception as e:
-                        self.logger.error("Fail to install configuration for module '{0}' ({1})".format(module_name, e))
+                        raise Exception("Fail to install configuration".format(e))
 
                 elif action == TentacleManagerActions.UNINSTALL:
                     try:
