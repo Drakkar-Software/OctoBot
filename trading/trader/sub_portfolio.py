@@ -19,7 +19,9 @@ class SubPortfolio(Portfolio):
     # overwrite parent update_portfolio_balance
     def update_portfolio_balance(self):
         if self.is_enabled:
-
+            
+            self.parent_portfolio.update_portfolio_balance()
+            
             # get the current portfolio if percent is relative or if we can't use the origin portfolio
             if self.is_relative or not self.trader.get_trades_manager().get_origin_portfolio():
                 balance = self.parent_portfolio.get_portfolio()
