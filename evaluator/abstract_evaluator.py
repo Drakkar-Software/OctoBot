@@ -33,7 +33,7 @@ class AbstractEvaluator:
     # Used to provide the global config
     def set_config(self, config):
         self.config = config
-        self.enabled = self.is_enabled(False)
+        self.enabled = self.is_enabled(config, False)
 
     # Symbol is the cryptocurrency symbol
     def set_symbol(self, symbol):
@@ -122,14 +122,15 @@ class AbstractEvaluator:
         else:
             self.eval_note += new_eval_note
 
-    def is_enabled(self, default):
-        if self.config[CONFIG_EVALUATOR] is not None:
-            if self.get_name() in self.config[CONFIG_EVALUATOR]:
-                return self.config[CONFIG_EVALUATOR][self.get_name()]
+    @classmethod
+    def is_enabled(cls, config, default):
+        if config[CONFIG_EVALUATOR] is not None:
+            if cls.get_name() in config[CONFIG_EVALUATOR]:
+                return config[CONFIG_EVALUATOR][cls.get_name()]
             else:
-                for parent in self.__class__.mro():
-                    if parent.__name__ in self.config[CONFIG_EVALUATOR]:
-                        return self.config[CONFIG_EVALUATOR][parent.__name__]
+                for parent in cls.mro():
+                    if parent.__name__ in config[CONFIG_EVALUATOR]:
+                        return config[CONFIG_EVALUATOR][parent.__name__]
                 return default
 
     # use only if the current evaluation is to stay for a pre-defined amount of seconds
