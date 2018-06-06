@@ -2,7 +2,7 @@ import os
 from abc import *
 
 from config.config import load_config
-from config.cst import CONFIG_FILE_EXT, CONFIG_TRADING, CONFIG_TRADER, CONFIG_TRADER_MODES
+from config.cst import CONFIG_FILE_EXT, CONFIG_TRADING, CONFIG_TRADER, CONFIG_TRADER_MODES, EVALUATOR_CONFIG_FOLDER
 
 
 class AbstractTradingMode:
@@ -24,8 +24,8 @@ class AbstractTradingMode:
 
     @classmethod
     def get_config_file_name(cls):
-        return "{0}/{1}/{2}/{3}".format(CONFIG_TRADING, CONFIG_TRADER, CONFIG_TRADER_MODES,
-                                        cls.get_name() + CONFIG_FILE_EXT)
+        return "{0}/{1}/{2}/{3}/{4}".format(CONFIG_TRADING, CONFIG_TRADER, CONFIG_TRADER_MODES, EVALUATOR_CONFIG_FOLDER,
+                                            cls.get_name() + CONFIG_FILE_EXT)
 
     def load_config(self):
         config_file = self.get_config_file_name()

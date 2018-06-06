@@ -8,7 +8,8 @@ import requests
 from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLES_PUBLIC_REPOSITORY, \
     TENTACLE_DESCRIPTION, \
     GITHUB_RAW_CONTENT_URL, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, GITHUB_BASE_URL, GITHUB, \
-    TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, TENTACLE_TYPES
+    TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, TENTACLE_TYPES, \
+    EVALUATOR_CONFIG_FOLDER
 
 
 class TentacleManager:
@@ -297,7 +298,7 @@ class TentacleManager:
 
                 file_dir = self._create_path_from_type(parsed_module["type"], parsed_module["subtype"], "")
 
-                config_file_path = "{0}{1}".format(file_dir, config_file)
+                config_file_path = "{0}{1}/{2}".format(file_dir, EVALUATOR_CONFIG_FOLDER, config_file)
                 if action == TentacleManagerActions.INSTALL:
 
                     try:

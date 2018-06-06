@@ -24,7 +24,8 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
 
     @classmethod
     def get_config_file_name(cls):
-        return "{0}/{1}/{2}".format(CONFIG_EVALUATOR, CONFIG_EVALUATOR_REALTIME, cls.get_name() + CONFIG_FILE_EXT)
+        return "{0}/{1}/{2}/{3}".format(CONFIG_EVALUATOR, CONFIG_EVALUATOR_REALTIME, EVALUATOR_CONFIG_FOLDER,
+                                        cls.get_name() + CONFIG_FILE_EXT)
 
     def stop(self):
         self.keep_running = False
