@@ -26,13 +26,6 @@ class AbstractEvaluator:
     def get_name(cls):
         return cls.__name__
 
-    @classmethod
-    def get_config_file_name(cls):
-        return "{0}/{1}/{2}/{3}".format(CONFIG_EVALUATOR,
-                                        CONFIG_EVALUATOR_SOCIAL,
-                                        EVALUATOR_CONFIG_FOLDER,
-                                        cls.get_name() + CONFIG_FILE_EXT)
-
     # Used to provide a new logger for this particular indicator
     def set_logger(self, logger):
         self.logger = logger
