@@ -44,13 +44,12 @@ class OrdersManager(threading.Thread):
     # Remove the specified order of the current open_order list (when the order is filled or canceled)
     def remove_order_from_list(self, order):
         try:
-            with self.list_lock:
-                if order in self.order_list:
-                    self.order_list.remove(order)
-                    self.logger.debug("{0} {1} (ID : {2}) removed on {3}".format(order.get_order_symbol(),
-                                                                                 order.get_name(),
-                                                                                 order.get_id(),
-                                                                                 self.trader.get_exchange().get_name()))
+            if order in self.order_list:
+                self.order_list.remove(order)
+                self.logger.debug("{0} {1} (ID : {2}) removed on {3}".format(order.get_order_symbol(),
+                                                                             order.get_name(),
+                                                                             order.get_id(),
+                                                                             self.trader.get_exchange().get_name()))
         except ValueError:
             pass
 
