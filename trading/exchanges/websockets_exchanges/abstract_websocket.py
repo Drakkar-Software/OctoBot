@@ -6,8 +6,9 @@ from ccxt.base.exchange import Exchange as ccxtExchange
 
 class AbstractWebSocket:
 
-    def __init__(self, config):
+    def __init__(self, config, exchange_manager):
         self.config = config
+        self.exchange_manager = exchange_manager
         self.client = None
         self.name = self.get_name()
         self.logger = logging.getLogger(self.name)
@@ -33,7 +34,7 @@ class AbstractWebSocket:
 
     @staticmethod
     @abstractmethod
-    def get_websocket_client(config):
+    def get_websocket_client(config, exchange_manager):
         raise NotImplementedError("get_websocket_client not implemented")
 
     @abstractmethod
@@ -82,3 +83,9 @@ class AbstractWebSocket:
     @abstractmethod
     def handles_price_ticker(cls):
         raise NotImplementedError("handles_price_ticker not implemented")
+
+    def get_symbol_data(self, symbol):
+        return self.exchange_manager.get_symbol_data(symbol)
+
+    def get_personal_data(self):
+        return self.exchange_manager.get_exchange_personal_data()
