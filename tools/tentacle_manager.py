@@ -6,10 +6,11 @@ from enum import Enum
 import requests
 
 from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLES_PUBLIC_REPOSITORY, \
-    TENTACLE_DESCRIPTION, \
-    GITHUB_RAW_CONTENT_URL, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, GITHUB_BASE_URL, GITHUB, \
-    TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, TENTACLE_TYPES, \
-    EVALUATOR_CONFIG_FOLDER
+    TENTACLE_DESCRIPTION, GITHUB_RAW_CONTENT_URL, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, GITHUB_BASE_URL, \
+    GITHUB, TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, TENTACLE_TYPES, \
+    EVALUATOR_CONFIG_FOLDER, TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR, TENTACLE_MODULE_NAME, \
+    TENTACLE_MODULE_TYPE, TENTACLE_MODULE_SUBTYPE, TENTACLE_MODULE_VERSION, TENTACLE_MODULE_CONFIG_FILES, \
+    TENTACLE_MODULE_REQUIREMENTS
 
 
 class TentacleManager:
@@ -18,6 +19,7 @@ class TentacleManager:
         self.default_package = None
         self.advanced_package_list = []
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.just_processed_packages = []
 
     def update_list(self):
         default_package_list_url = "{0}/{1}/{2}/{3}".format(GITHUB_BASE_URL,
@@ -137,12 +139,15 @@ class TentacleManager:
     @staticmethod
     def _parse_module(package, module_name):
         return {
-            "name": package[module_name]["name"],
-            "type": package[module_name]["type"],
-            "subtype": package[module_name]["subtype"] if "subtype" in package[module_name] else None,
-            "version": package[module_name]["version"],
-            "requirements": package[module_name]["requirements"] if "requirements" in package[module_name] else None,
-            "config_files": package[module_name]["config_files"] if "config_files" in package[module_name] else None,
+            TENTACLE_MODULE_NAME: package[module_name][TENTACLE_MODULE_NAME],
+            TENTACLE_MODULE_TYPE: package[module_name][TENTACLE_MODULE_TYPE],
+            TENTACLE_MODULE_SUBTYPE: package[module_name][TENTACLE_MODULE_SUBTYPE]
+            if TENTACLE_MODULE_SUBTYPE in package[module_name] else None,
+            TENTACLE_MODULE_VERSION: package[module_name][TENTACLE_MODULE_VERSION],
+            TENTACLE_MODULE_REQUIREMENTS: package[module_name][TENTACLE_MODULE_REQUIREMENTS]
+            if TENTACLE_MODULE_REQUIREMENTS in package[module_name] else None,
+            TENTACLE_MODULE_CONFIG_FILES: package[module_name][TENTACLE_MODULE_CONFIG_FILES]
+            if TENTACLE_MODULE_CONFIG_FILES in package[module_name] else None,
         }
 
     def _apply_module(self, action, module_type, module_subtype,
@@ -210,8 +215,8 @@ class TentacleManager:
 
     def process_module(self, action, package, module_name, package_localisation, is_url, target_folder):
         parsed_module = self._parse_module(package, module_name)
-        package_type = parsed_module["type"]
-        package_subtype = parsed_module["subtype"]
+        package_type = parsed_module[TENTACLE_MODULE_TYPE]
+        package_subtype = parsed_module[TENTACLE_MODULE_SUBTYPE]
         module_file = ""
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
@@ -229,7 +234,7 @@ class TentacleManager:
         # manage module config
         self._try_action_on_config(action, package, module_name, is_url, package_localisation)
 
-        self._apply_module(action, package_type, package_subtype, parsed_module["version"],
+        self._apply_module(action, package_type, package_subtype, parsed_module[TENTACLE_MODULE_VERSION],
                            module_file, target_folder, module_name)
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
@@ -255,10 +260,10 @@ class TentacleManager:
     def _try_action_on_requirements(self, action, package, module_name):
         parsed_module = self._parse_module(package, module_name)
         success = True
-        module_name = parsed_module["name"]
+        module_name = parsed_module[TENTACLE_MODULE_NAME]
         applied_modules = [module_name]
-        if parsed_module["requirements"]:
-            for requirement in parsed_module["requirements"]:
+        if parsed_module[TENTACLE_MODULE_REQUIREMENTS]:
+            for requirement in parsed_module[TENTACLE_MODULE_REQUIREMENTS]:
                 try:
                     req_package, description, localisation, is_url, destination = self._get_package_in_lists(
                         requirement)
@@ -293,10 +298,11 @@ class TentacleManager:
     def _try_action_on_config(self, action, package, module_name, is_url, package_localisation):
         parsed_module = self._parse_module(package, module_name)
 
-        if parsed_module["config_files"]:
-            for config_file in parsed_module["config_files"]:
+        if parsed_module[TENTACLE_MODULE_CONFIG_FILES]:
+            for config_file in parsed_module[TENTACLE_MODULE_CONFIG_FILES]:
 
-                file_dir = self._create_path_from_type(parsed_module["type"], parsed_module["subtype"], "")
+                file_dir = self._create_path_from_type(parsed_module[TENTACLE_MODULE_TYPE],
+                                                       parsed_module[TENTACLE_MODULE_SUBTYPE], "")
 
                 config_file_path = "{0}{1}/{2}".format(file_dir, EVALUATOR_CONFIG_FOLDER, config_file)
                 if action == TentacleManagerActions.INSTALL:
@@ -304,8 +310,8 @@ class TentacleManager:
                     try:
                         # get config file content from localization
                         module_loc = self._create_localization_from_type(package_localisation,
-                                                                         parsed_module["type"],
-                                                                         parsed_module["subtype"],
+                                                                         parsed_module[TENTACLE_MODULE_TYPE],
+                                                                         parsed_module[TENTACLE_MODULE_SUBTYPE],
                                                                          config_file)
 
                         if is_url:
@@ -332,7 +338,13 @@ class TentacleManager:
 
     @staticmethod
     def parse_version(version):
-        return int(version.replace(".", ""))
+        return [int(value) for value in version.split(".")]
+
+    @staticmethod
+    def parse_requirements(requirement):
+        requirement_info = requirement.split(TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR)
+        return {TENTACLE_MODULE_NAME: requirement_info[0],
+                TENTACLE_MODULE_VERSION: requirement_info[1] if len(requirement_info) > 1 else None}
 
     def parse_commands(self, commands):
         self.update_list()
