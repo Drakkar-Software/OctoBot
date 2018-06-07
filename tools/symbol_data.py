@@ -1,33 +1,46 @@
-import pandas
+class SymbolCandles:
+    def __init__(self, symbol, time_frame):
+        self.symbol = symbol
+        self.time_frame = time_frame
 
-from config.cst import *
-from tools.data_frame_util import DataFrameUtil
+
+class SymbolOrderBook:
+    def __init__(self, symbol):
+        self.symbol = symbol
 
 
-class ExchangeData:
 
-    ORDERS_KEY = "orders"
-    TIME_FRAME_CANDLE_TIME = "candle_time"
-    CANDLE_LIST = "data_list"
-    CANDLE_DATAFRAME = "dataframe"
-    TIME_FRAME_HAS_REACH_MAX_CANDLE_COUNT = "reached_max_candle_count"
 
-    _MAX_STORED_CANDLE_COUNT = 1000
 
-    # note: symbol keys are without /
-    def __init__(self):
-        self.symbol_prices = {}
-        self.symbol_tickers = {}
-        self.portfolio = {}
-        self.orders = {}
-        self.is_initialized = {
-            self.ORDERS_KEY: False
-        }
 
-    # insert methods
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def add_price(self, symbol, time_frame, start_candle_time, candle_data):
-
         # add price only if candles have been initialized by rest exchange
         if symbol in self.symbol_prices and time_frame in self.symbol_prices[symbol]:
             time_frame_data = self.symbol_prices[symbol][time_frame]
@@ -63,26 +76,14 @@ class ExchangeData:
                 time_frame_data[self.CANDLE_DATAFRAME][PriceStrings.STR_PRICE_VOL.value].iloc[-1] = \
                     candle_data[PriceIndexes.IND_PRICE_VOL.value]
 
-    def update_portfolio(self, currency, total, available, in_order):
-        self.portfolio[currency] = {
-            CONFIG_PORTFOLIO_FREE: available,
-            CONFIG_PORTFOLIO_USED: in_order,
-            CONFIG_PORTFOLIO_TOTAL: total
-        }
-
-    def set_ticker(self, symbol, ticker_data):
-        self.symbol_tickers[symbol] = ticker_data
-
-    # maybe later add an order remover to free up memory ?
-    def upsert_order(self, order_id, ccxt_order):
-        self.orders[order_id] = ccxt_order
-
     def initialize_candles_data(self, symbol, time_frame, symbol_candle_data, symbol_candle_data_frame):
         self._initialize_price_candles(self._adapt_symbol(symbol), time_frame.value,
                                        symbol_candle_data, symbol_candle_data_frame)
 
-    # select methods
+    def set_ticker(self, symbol, ticker_data):
+        self.symbol_tickers[symbol] = ticker_data
 
+    # select methods
     def candles_are_initialized(self, symbol, time_frame):
         adapted_symbol = self._adapt_symbol(symbol)
         return adapted_symbol in self.symbol_prices and time_frame.value in self.symbol_prices[adapted_symbol]
@@ -96,36 +97,6 @@ class ExchangeData:
             return wanted_candles[-actual_limit:].reset_index(drop=True) if data_frame \
                 else wanted_candles[-actual_limit:]
         return wanted_candles
-
-    # maybe implement later if required but can be very resource costly
-    def get_recent_trades(self, symbol, since=None, limit=None):
-        raise NotImplementedError("get_recent_trades not implemented")
-
-    def get_all_orders(self, symbol, since, limit):
-        return self._select_orders(None, symbol, since, limit)
-
-    def get_open_orders(self, symbol, since, limit):
-        return self._select_orders("open", symbol, since, limit)
-
-    def get_closed_orders(self, symbol, since, limit):
-        return self._select_orders("closed", symbol, since, limit)
-
-    # private methods
-
-    def _select_orders(self, state, symbol, since, limit):
-        orders = [
-            order
-            for order in self.orders.values()
-            if (
-                    (state is None or order["status"] == state) and
-                    (symbol is None or (symbol and order["symbol"] == symbol)) and
-                    (since is None or (since and order['timestamp'] < since))
-            )
-        ]
-        if limit is not None:
-            return orders[0:limit]
-        else:
-            return orders
 
     def _initialize_price_candles(self, symbol, time_frame, candle_data, candle_data_frame=None):
         if symbol not in self.symbol_prices:
