@@ -1,7 +1,6 @@
 import logging
 
 from ccxt import OrderNotFound, BaseError
-from ccxt.binance import binance
 
 from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
@@ -26,6 +25,12 @@ class RESTExchange(AbstractExchange):
         self.client.load_markets()
 
         self.all_currencies_price_ticker = None
+
+    def get_symbol_data(self, symbol):
+        self.exchange_manager.get_exchange().get_symbol_data(symbol)
+
+    def get_personal_data(self):
+        self.exchange_manager.get_exchange().get_exchange_personal_data()
 
     # ccxt exchange instance creation
     def create_client(self):
@@ -67,32 +72,32 @@ class RESTExchange(AbstractExchange):
         balance.pop(CONFIG_PORTFOLIO_USED, None)
         balance.pop(CONFIG_PORTFOLIO_TOTAL, None)
 
-        return balance
+        self.get_personal_data().set_portfolio(balance)
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         if limit:
-            return self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
+            candles = self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
         else:
-            return self.client.fetch_ohlcv(symbol, time_frame.value)
+            candles = self.client.fetch_ohlcv(symbol, time_frame.value)
+
+        self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
 
     # return up to ten bidasks on each side of the order book stack
     def get_order_book(self, symbol, limit=30):
-        return self.client.fetchOrderBook(symbol, limit)
+        self.get_symbol_data(symbol).update_order_book(self.client.fetchOrderBook(symbol, limit))
 
     def get_recent_trades(self, symbol):
         try:
-            return self.client.fetch_trades(symbol)
+            self.get_symbol_data(symbol).update_recent_trades(self.client.fetch_trades(symbol))
         except BaseError as e:
             self.logger.error("Failed to get recent trade {0}".format(e))
-            return None
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     def get_price_ticker(self, symbol):
         try:
-            return self.client.fetch_ticker(symbol)
+            self.get_symbol_data(symbol).update_symbol_ticker(self.client.fetch_ticker(symbol))
         except BaseError as e:
             self.logger.error("Failed to get_price_ticker {0}".format(e))
-            return None
 
     def get_all_currencies_price_ticker(self):
         try:
@@ -105,30 +110,30 @@ class RESTExchange(AbstractExchange):
     # ORDERS
     def get_order(self, order_id, symbol=None):
         if self.client.has['fetchOrder']:
-            return self.client.fetch_order(order_id, symbol)
+            self.get_personal_data().set_order(order_id, self.client.fetch_order(order_id, symbol))
         else:
             raise Exception("This exchange doesn't support fetchOrder")
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchOrders']:
-            return self.client.fetchOrders(symbol=symbol, since=since, limit=limit, params={})
+            self.get_personal_data().set_orders(self.client.fetchOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchOrders")
 
     def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         if self.client.has['fetchOpenOrders']:
-            return self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit, params={})
+            self.get_personal_data().set_orders(self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchOpenOrders")
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchClosedOrders']:
-            return self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit, params={})
+            self.get_personal_data().set_orders(self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchClosedOrders")
 
     def get_my_recent_trades(self, symbol=None, since=None, limit=None):
-        return self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit, params={})
+        return self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit)
 
     def cancel_order(self, order_id, symbol=None):
         try:
