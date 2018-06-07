@@ -2,7 +2,6 @@ from config.cst import *
 from trading.exchanges.websockets_exchanges.abstract_websocket_manager import AbstractWebSocketManager
 from binance.websockets import BinanceSocketManager
 from binance.client import Client, BinanceAPIException
-from twisted.internet import reactor
 
 from tools.symbol_util import merge_symbol
 
@@ -49,7 +48,6 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def stop_sockets(self):
         if self.socket_manager:
             self.socket_manager.close()
-        reactor.stop()
 
     def get_socket_manager(self):
         return self.socket_manager
