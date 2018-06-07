@@ -171,15 +171,17 @@ class Trader:
     # Should be called only if we want to cancel all symbol open orders (no filled)
     def cancel_open_orders(self, symbol):
         # use a copy of the list (not the reference)
-        for order in list(self.get_open_orders()):
-            if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
-                self.notify_order_close(order, True)
+        with self.order_manager.list_lock:
+            for order in list(self.get_open_orders()):
+                if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
+                    self.notify_order_close(order, True)
 
     def cancel_all_open_orders(self):
         # use a copy of the list (not the reference)
-        for order in list(self.get_open_orders()):
-            if order.get_status() is not OrderStatus.CANCELED:
-                self.notify_order_close(order, True)
+        with self.order_manager.list_lock:
+            for order in list(self.get_open_orders()):
+                if order.get_status() is not OrderStatus.CANCELED:
+                    self.notify_order_close(order, True)
 
     def notify_order_cancel(self, order):
         # update portfolio with ended order
