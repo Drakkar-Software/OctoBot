@@ -32,9 +32,6 @@ class BinanceWebSocketClient(AbstractWebSocket):
         ws_client.socket_manager = BinanceSocketManager(ws_client.client)
         return ws_client
 
-    def get_last_price_ticker(self, symbol):
-        return float(self.exchange_data.symbol_tickers[merge_symbol(symbol)]["c"])
-
     def init_web_sockets(self, time_frames, trader_pairs):
         try:
             self._init_price_sockets(time_frames, trader_pairs)
@@ -80,6 +77,14 @@ class BinanceWebSocketClient(AbstractWebSocket):
     @classmethod
     def handles_recent_trades(cls):
         return False
+
+    @classmethod
+    def handles_order_book(cls):
+        return False
+
+    @classmethod
+    def handles_price_ticker(cls):
+        return True
 
     @staticmethod
     def parse_order_status(status):
@@ -128,13 +133,13 @@ class BinanceWebSocketClient(AbstractWebSocket):
         else:
             msg_stream_type = msg["stream"]
             if self._TICKER_KEY in msg_stream_type:
-                self.exchange_data.set_ticker(msg["data"]["s"],
-                                              msg["data"])
+                self.exchange_manager.get_symbol_data.set_ticker(msg["data"])
             elif self._KLINE_KEY in msg_stream_type:
-                self.exchange_data.add_price(msg["data"]["s"],
-                                             msg["data"]["k"]["i"],
-                                             msg["data"]["k"]["t"],
-                                             self._create_candle(msg["data"]["k"]))
+                # TODO check symbol
+                self.get_symbol_data(msg["data"]["s"]).update_symbol_candles(msg["data"]["k"]["i"],
+                                                                             self._create_candle(msg["data"]["k"]),
+                                                                             start_candle_time=msg["data"]["k"]["t"],
+                                                                             replace_all=False)
 
     def user_callback(self, msg):
         if msg["e"] == "outboundAccountInfo":
@@ -174,7 +179,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
             free = float(currency['f'])
             locked = float(currency['l'])
             total = free + locked
-            self.exchange_data.update_portfolio(currency['a'], total, free, locked)
+            self.exchange_manager.get_personal_data().update_portfolio(currency['a'], total, free, locked)
 
     # unimplemented methods
     @staticmethod
