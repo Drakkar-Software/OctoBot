@@ -16,8 +16,18 @@ class ExchangePersonalData:
             CONFIG_PORTFOLIO_TOTAL: total
         }
 
+    def set_portfolio(self, portfolio):
+        self.portfolio = portfolio
+
     def get_portfolio(self):
         return self.portfolio
+
+    def set_order(self, order_id, order_data):
+        self.orders[order_id] = order_data
+
+    def set_orders(self, orders):
+        for order in orders:
+            self.set_order(order["id"], order)
 
     # maybe later add an order remover to free up memory ?
     def upsert_order(self, order_id, ccxt_order):
