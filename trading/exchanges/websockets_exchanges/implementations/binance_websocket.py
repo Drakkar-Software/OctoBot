@@ -1,13 +1,13 @@
-from config.cst import *
-from trading.exchanges.websockets_exchanges.abstract_websocket_manager import AbstractWebSocketManager
-from binance.websockets import BinanceSocketManager
 from binance.client import Client, BinanceAPIException
+from binance.websockets import BinanceSocketManager
 from twisted.internet import reactor
 
+from config.cst import *
 from tools.symbol_util import merge_symbol
+from trading.exchanges.websockets_exchanges.abstract_websocket import AbstractWebSocket
 
 
-class BinanceWebSocketClient(AbstractWebSocketManager):
+class BinanceWebSocketClient(AbstractWebSocket):
     _TICKER_KEY = "@ticker"
     _KLINE_KEY = "@kline"
     _MULTIPLEX_SOCKET_NAME = "multiplex"
@@ -88,12 +88,12 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
 
     @staticmethod
     def convert_into_ccxt_order(order):
-        status = AbstractWebSocketManager.safe_value(order, 'X')
+        status = AbstractWebSocket.safe_value(order, 'X')
         if status is not None:
             status = BinanceWebSocketClient.parse_order_status(status)
-        price = AbstractWebSocketManager.safe_float(order, "p")
-        amount = AbstractWebSocketManager.safe_float(order, "q")
-        filled = AbstractWebSocketManager.safe_float(order, "z", 0.0)
+        price = AbstractWebSocket.safe_float(order, "p")
+        amount = AbstractWebSocket.safe_float(order, "q")
+        filled = AbstractWebSocket.safe_float(order, "z", 0.0)
         cost = None
         remaining = None
         if filled is not None:
@@ -103,21 +103,21 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
                 cost = price * filled
         return {
             'info': order,
-            'id': AbstractWebSocketManager.safe_string(order, "i"),
+            'id': AbstractWebSocket.safe_string(order, "i"),
             'timestamp': order["T"],
-            'datetime': AbstractWebSocketManager.iso8601(order["T"]),
+            'datetime': AbstractWebSocket.iso8601(order["T"]),
             'lastTradeTimestamp': None,
             # TODO string has no / between currency and market => need to add it !!!
-            'symbol': AbstractWebSocketManager.safe_string(order, "s"),
-            'type': AbstractWebSocketManager.safe_lower_string(order, "o"),
-            'side': AbstractWebSocketManager.safe_lower_string(order, "S"),
+            'symbol': AbstractWebSocket.safe_string(order, "s"),
+            'type': AbstractWebSocket.safe_lower_string(order, "o"),
+            'side': AbstractWebSocket.safe_lower_string(order, "S"),
             'price': price,
             'amount': amount,
             'cost': cost,
             'filled': filled,
             'remaining': remaining,
             'status': status,
-            'fee': AbstractWebSocketManager.safe_float(order, "n", None),
+            'fee': AbstractWebSocket.safe_float(order, "n", None),
         }
 
     def all_currencies_prices_callback(self, msg):
@@ -162,11 +162,11 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def _create_candle(kline_data):
         return [
             kline_data["t"],  # time
-            AbstractWebSocketManager.safe_float(kline_data, "o"),  # open
-            AbstractWebSocketManager.safe_float(kline_data, "h"),  # high
-            AbstractWebSocketManager.safe_float(kline_data, "l"),  # low
-            AbstractWebSocketManager.safe_float(kline_data, "c"),  # close
-            AbstractWebSocketManager.safe_float(kline_data, "v"),  # vol
+            AbstractWebSocket.safe_float(kline_data, "o"),  # open
+            AbstractWebSocket.safe_float(kline_data, "h"),  # high
+            AbstractWebSocket.safe_float(kline_data, "l"),  # low
+            AbstractWebSocket.safe_float(kline_data, "c"),  # close
+            AbstractWebSocket.safe_float(kline_data, "v"),  # vol
         ]
 
     def _update_portfolio(self, msg):

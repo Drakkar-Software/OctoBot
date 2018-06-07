@@ -1,5 +1,6 @@
 from tools.symbol_data import SymbolData
 from trading import AbstractExchange
+from trading.exchanges.exchange_personal_data import ExchangePersonalData
 
 
 class ExchangeDispatcher(AbstractExchange):
@@ -10,6 +11,7 @@ class ExchangeDispatcher(AbstractExchange):
         self.exchange_web_socket = exchange_web_socket
 
         self.symbols_data = {}
+        self.exchange_personal_data = ExchangePersonalData()
 
         self.logger.info("online with {0}".format(
             "REST api{0}".format(
@@ -34,6 +36,9 @@ class ExchangeDispatcher(AbstractExchange):
 
     def get_exchange(self):
         return self.exchange
+
+    def get_exchange_personal_data(self):
+        return self.exchange_personal_data
 
     def get_symbol_data(self, symbol):
         if symbol not in self.symbols_data:

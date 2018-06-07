@@ -2,15 +2,12 @@ from config.cst import *
 
 
 class ExchangePersonalData:
-    ORDERS_KEY = "orders"
 
     # note: symbol keys are without /
     def __init__(self):
         self.portfolio = {}
         self.orders = {}
-        self.is_initialized = {
-            self.ORDERS_KEY: False
-        }
+        self.is_initialized = False
 
     def update_portfolio(self, currency, total, available, in_order):
         self.portfolio[currency] = {
@@ -22,10 +19,6 @@ class ExchangePersonalData:
     # maybe later add an order remover to free up memory ?
     def upsert_order(self, order_id, ccxt_order):
         self.orders[order_id] = ccxt_order
-
-    # maybe implement later if required but can be very resource costly
-    def get_recent_trades(self, symbol, since=None, limit=None):
-        raise NotImplementedError("get_recent_trades not implemented")
 
     def get_all_orders(self, symbol, since, limit):
         return self._select_orders(None, symbol, since, limit)
