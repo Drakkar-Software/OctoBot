@@ -6,7 +6,7 @@ from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
 from trading import WebSocketExchange
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
-from trading.exchanges.websockets_exchanges import AbstractWebSocketManager
+from trading.exchanges.websockets_exchanges import AbstractWebSocket
 
 
 class ExchangeManager:
@@ -47,7 +47,7 @@ class ExchangeManager:
 
             # create Websocket exchange if possible
             if self.check_web_socket_config(self.exchange.get_name()):
-                for socket_manager in AbstractWebSocketManager.__subclasses__():
+                for socket_manager in AbstractWebSocket.__subclasses__():
                     if socket_manager.get_name() == self.exchange.get_name():
                         self.exchange_web_socket = WebSocketExchange(self.config, self.exchange_type,
                                                                      self, socket_manager)
