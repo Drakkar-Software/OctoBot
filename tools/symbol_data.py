@@ -19,17 +19,17 @@ class SymbolData:
     '''
 
     # candle functions
-    def update_symbol_candles(self, time_frame, new_symbol_candles_data):
-        if time_frame not in self.symbol_candles:
+    def update_symbol_candles(self, time_frame, new_symbol_candles_data, start_candle_time=None, replace_all=False):
+        if time_frame not in self.symbol_candles or replace_all:
             self.symbol_candles[time_frame] = CandleData(new_symbol_candles_data)
 
         # else check if we should edit the last candle or move to a new one
-        elif self._has_candle_changed():
-            pass
+        elif start_candle_time is not None and self._has_candle_changed(time_frame, start_candle_time):
+            self.symbol_candles[time_frame] = CandleData(new_symbol_candles_data)
 
         # only need to edit the last candle
         else:
-            pass
+            self._edit_last_candle(time_frame, new_symbol_candles_data[-1])
 
     # ticker functions
     def update_symbol_ticker(self, new_symbol_ticker_data):
@@ -46,6 +46,11 @@ class SymbolData:
     '''
     Called by non-trade classes
     '''
+    # candle functions
+    def get_candle_data(self, time_frame):
+        if time_frame in self.symbol_candles:
+            return self.symbol_candles[time_frame]
+        return None
 
     # ticker functions
     def get_symbol_ticker(self):
@@ -60,15 +65,18 @@ class SymbolData:
         pass
 
     # private functions
-    def _has_candle_changed(self):
-        pass
+    def _has_candle_changed(self, time_frame, start_candle_time):
+        if self.symbol_candles[time_frame].get_symbol_time_candles(1) < start_candle_time:
+            return True
+        else:
+            return False
 
     def _edit_last_candle(self, time_frame, new_last_candle_data):
-        pass
+        self.symbol_candles[time_frame].set_last_candle(new_last_candle_data)
 
 
 class CandleData:
-    def __init__(self, all_candles_data):
+    def __init__(self, all_candles_data, create_arrays=False):
         self.close_candles_list = []
         self.open_candles_list = []
         self.high_candles_list = []
@@ -85,42 +93,57 @@ class CandleData:
 
         self.set_all_candles(all_candles_data)
 
+        if create_arrays:
+            self.create_all_arrays()
+
     # getters
     def get_symbol_close_candles(self, limit=None, return_list=False):
         if return_list:
-            return self.close_candles_list
+            return self.extract_limited_data(self.close_candles_list, limit)
         else:
-            return self.close_candles_array
+            if self.close_candles_array is None:
+                self.close_candles_array = self.convert_list_to_array(self.close_candles_list)
+            return self.extract_limited_data(self.close_candles_array, limit)
 
     def get_symbol_open_candles(self, limit=None, return_list=False):
         if return_list:
-            return self.open_candles_list
+            return self.extract_limited_data(self.open_candles_list, limit)
         else:
-            return self.open_candles_array
+            if self.open_candles_array is None:
+                self.open_candles_array = self.convert_list_to_array(self.open_candles_list)
+            return self.extract_limited_data(self.open_candles_array, limit)
 
     def get_symbol_high_candles(self, limit=None, return_list=False):
         if return_list:
-            return self.high_candles_list
+            return self.extract_limited_data(self.high_candles_list, limit)
         else:
-            return self.high_candles_array
+            if self.high_candles_array is None:
+                self.high_candles_array = self.convert_list_to_array(self.high_candles_list)
+            return self.extract_limited_data(self.high_candles_array, limit)
 
     def get_symbol_low_candles(self, limit=None, return_list=False):
         if return_list:
-            return self.low_candles_list
+            return self.extract_limited_data(self.low_candles_list, limit)
         else:
-            return self.low_candles_array
+            if self.low_candles_array is None:
+                self.low_candles_array = self.convert_list_to_array(self.low_candles_list)
+            return self.extract_limited_data(self.low_candles_array, limit)
 
     def get_symbol_time_candles(self, limit=None, return_list=False):
         if return_list:
-            return self.time_candles_list
+            return self.extract_limited_data(self.time_candles_list, limit)
         else:
-            return self.time_candles_array
+            if self.time_candles_array is None:
+                self.time_candles_array = self.convert_list_to_array(self.time_candles_list)
+            return self.extract_limited_data(self.time_candles_array, limit)
 
     def get_symbol_volume_candles(self, limit=None, return_list=False):
         if return_list:
-            return self.volume_candles_list
+            return self.extract_limited_data(self.volume_candles_list, limit)
         else:
-            return self.volume_candles_array
+            if self.volume_candles_array is None:
+                self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
+            return self.extract_limited_data(self.volume_candles_array, limit)
 
     # setters
     def set_last_candle(self, last_candle_data):
@@ -151,7 +174,6 @@ class CandleData:
             self.low_candles_list.append(candle_data[PriceStrings.STR_PRICE_LOW.value])
             self.time_candles_list.append(candle_data[PriceStrings.STR_PRICE_TIME.value])
             self.volume_candles_list.append(candle_data[PriceStrings.STR_PRICE_VOL.value])
-        self.create_all_arrays()
 
     def create_all_arrays(self):
         self.close_candles_array = self.convert_list_to_array(self.close_candles_list)
@@ -165,26 +187,9 @@ class CandleData:
     def convert_list_to_array(list_to_convert):
         return np.array(list_to_convert)
 
-    def add_price(self, symbol, time_frame, start_candle_time, candle_data):
-        # add price only if candles have been initialized by rest exchange
-        if symbol in self.symbol_prices and time_frame in self.symbol_prices[symbol]:
-            time_frame_data = self.symbol_prices[symbol][time_frame]
+    @staticmethod
+    def extract_limited_data(data, limit=None):
+        if limit is None:
+            return data
 
-            # add new candle if previous candle is done
-            if time_frame_data[self.CANDLE_LIST][-1][PriceIndexes.IND_PRICE_TIME.value] < start_candle_time:
-
-                # remove most ancient candle if max candle count reached
-                if time_frame_data[self.TIME_FRAME_HAS_REACH_MAX_CANDLE_COUNT]:
-                    time_frame_data[self.CANDLE_LIST].pop(0)
-                    time_frame_data[self.CANDLE_DATAFRAME].drop(0, inplace=True)
-                    time_frame_data[self.CANDLE_DATAFRAME].reset_index(drop=True, inplace=True)
-                elif len(time_frame_data[self.CANDLE_LIST]) + 1 >= self._MAX_STORED_CANDLE_COUNT:
-                    time_frame_data[self.TIME_FRAME_HAS_REACH_MAX_CANDLE_COUNT] = True
-
-                # add new candle
-                time_frame_data[self.CANDLE_LIST].append(candle_data)
-
-                # refresh dataframe
-                time_frame_data[self.CANDLE_DATAFRAME] = pandas.concat(
-                    [time_frame_data[self.CANDLE_DATAFRAME], DataFrameUtil.candles_array_to_data_frame([candle_data])],
-                    ignore_index=True)
+        return data[-min(limit, len(data)):]
