@@ -33,7 +33,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                 evaluator_thread_manager_to_notify.symbol,
                 evaluator_thread_manager_to_notify.time_frame,
                 limit=limit,
-                data_frame=False))
+                return_list=False))
         self.refreshed_times[time_frame] += 1
         evaluator_thread_manager_to_notify.notify(self.__class__.__name__)
 

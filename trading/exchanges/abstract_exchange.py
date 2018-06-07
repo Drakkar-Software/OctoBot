@@ -46,10 +46,6 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_last_price_ticker(self, symbol):
-        pass
-
-    @abstractmethod
     def get_price_ticker(self, symbol):
         pass
 
