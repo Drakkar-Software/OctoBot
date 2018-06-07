@@ -10,7 +10,6 @@ class ExchangeDispatcher(AbstractExchange):
         self.exchange_web_socket = exchange_web_socket
 
         self.symbols_data = {}
-        self.symbols_order_book = {}
 
         self.logger.info("online with {0}".format(
             "REST api{0}".format(
