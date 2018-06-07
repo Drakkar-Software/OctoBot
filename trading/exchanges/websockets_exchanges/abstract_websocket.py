@@ -3,6 +3,8 @@ from abc import *
 
 from ccxt.base.exchange import Exchange as ccxtExchange
 
+from config.cst import TimeFrames
+
 
 class AbstractWebSocket:
 
@@ -92,8 +94,16 @@ class AbstractWebSocket:
     def handles_price_ticker(cls):
         raise NotImplementedError("handles_price_ticker not implemented")
 
+    @staticmethod
+    def _adapt_symbol(symbol):
+        return symbol
+
+    @staticmethod
+    def _convert_time_frame(str_time_frame):
+        return TimeFrames(str_time_frame)
+
     def get_symbol_data(self, symbol):
-        return self.exchange_manager.get_symbol_data(symbol)
+        return self.exchange_manager.get_symbol_data(self._adapt_symbol(symbol))
 
     def get_personal_data(self):
         return self.exchange_manager.get_exchange_personal_data()
