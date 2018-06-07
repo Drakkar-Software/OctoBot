@@ -161,12 +161,12 @@ class CandleData:
 
     def get_symbol_prices(self, limit=None, return_list=False):
         symbol_prices = []
-        symbol_prices[PriceIndexes.IND_PRICE_CLOSE.value] = self.get_symbol_close_candles(limit, return_list)
-        symbol_prices[PriceIndexes.IND_PRICE_OPEN.value] = self.get_symbol_open_candles(limit, return_list)
-        symbol_prices[PriceIndexes.IND_PRICE_HIGH.value] = self.get_symbol_high_candles(limit, return_list)
-        symbol_prices[PriceIndexes.IND_PRICE_LOW.value] = self.get_symbol_low_candles(limit, return_list)
-        symbol_prices[PriceIndexes.IND_PRICE_TIME.value] = self.get_symbol_time_candles(limit, return_list)
-        symbol_prices[PriceIndexes.IND_PRICE_VOL.value] = self.get_symbol_volume_candles(limit, return_list)
+        symbol_prices.insert(PriceIndexes.IND_PRICE_CLOSE.value, self.get_symbol_close_candles(limit, return_list))
+        symbol_prices.insert(PriceIndexes.IND_PRICE_OPEN.value, self.get_symbol_open_candles(limit, return_list))
+        symbol_prices.insert(PriceIndexes.IND_PRICE_HIGH.value, self.get_symbol_high_candles(limit, return_list))
+        symbol_prices.insert(PriceIndexes.IND_PRICE_LOW.value, self.get_symbol_low_candles(limit, return_list))
+        symbol_prices.insert(PriceIndexes.IND_PRICE_TIME.value, self.get_symbol_time_candles(limit, return_list))
+        symbol_prices.insert(PriceIndexes.IND_PRICE_VOL.value, self.get_symbol_volume_candles(limit, return_list))
 
         if return_list:
             return symbol_prices
@@ -175,12 +175,12 @@ class CandleData:
 
     # setters
     def set_last_candle(self, last_candle_data):
-        self.close_candles_list[-1] = last_candle_data[PriceStrings.STR_PRICE_CLOSE.value]
-        self.open_candles_list[-1] = last_candle_data[PriceStrings.STR_PRICE_OPEN.value]
-        self.high_candles_list[-1] = last_candle_data[PriceStrings.STR_PRICE_HIGH.value]
-        self.low_candles_list[-1] = last_candle_data[PriceStrings.STR_PRICE_LOW.value]
-        self.time_candles_list[-1] = last_candle_data[PriceStrings.STR_PRICE_TIME.value]
-        self.volume_candles_list[-1] = last_candle_data[PriceStrings.STR_PRICE_VOL.value]
+        self.close_candles_list[-1] = last_candle_data[PriceIndexes.IND_PRICE_CLOSE.value]
+        self.open_candles_list[-1] = last_candle_data[PriceIndexes.IND_PRICE_OPEN.value]
+        self.high_candles_list[-1] = last_candle_data[PriceIndexes.IND_PRICE_HIGH.value]
+        self.low_candles_list[-1] = last_candle_data[PriceIndexes.IND_PRICE_LOW.value]
+        self.time_candles_list[-1] = last_candle_data[PriceIndexes.IND_PRICE_TIME.value]
+        self.volume_candles_list[-1] = last_candle_data[PriceIndexes.IND_PRICE_VOL.value]
 
         self.set_last_candle_arrays(self.close_candles_list, self.close_candles_array)
         self.set_last_candle_arrays(self.open_candles_list, self.open_candles_array)
@@ -196,12 +196,12 @@ class CandleData:
 
     def set_all_candles(self, new_candles_data):
         for candle_data in new_candles_data:
-            self.close_candles_list.append(candle_data[PriceStrings.STR_PRICE_CLOSE.value])
-            self.open_candles_list.append(candle_data[PriceStrings.STR_PRICE_OPEN.value])
-            self.high_candles_list.append(candle_data[PriceStrings.STR_PRICE_HIGH.value])
-            self.low_candles_list.append(candle_data[PriceStrings.STR_PRICE_LOW.value])
-            self.time_candles_list.append(candle_data[PriceStrings.STR_PRICE_TIME.value])
-            self.volume_candles_list.append(candle_data[PriceStrings.STR_PRICE_VOL.value])
+            self.close_candles_list.append(candle_data[PriceIndexes.IND_PRICE_CLOSE.value])
+            self.open_candles_list.append(candle_data[PriceIndexes.IND_PRICE_OPEN.value])
+            self.high_candles_list.append(candle_data[PriceIndexes.IND_PRICE_HIGH.value])
+            self.low_candles_list.append(candle_data[PriceIndexes.IND_PRICE_LOW.value])
+            self.time_candles_list.append(candle_data[PriceIndexes.IND_PRICE_TIME.value])
+            self.volume_candles_list.append(candle_data[PriceIndexes.IND_PRICE_VOL.value])
 
     def create_all_arrays(self):
         self.close_candles_array = self.convert_list_to_array(self.close_candles_list)
@@ -221,12 +221,12 @@ class CandleData:
         self.add_new_candle(new_last_candle_data)
 
     def add_new_candle(self, new_candle_data):
-        self.close_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_CLOSE.value])
-        self.open_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_OPEN.value])
-        self.high_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_HIGH.value])
-        self.low_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_LOW.value])
-        self.time_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_TIME.value])
-        self.volume_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_VOL.value])
+        self.close_candles_list.append(new_candle_data[PriceIndexes.IND_PRICE_CLOSE.value])
+        self.open_candles_list.append(new_candle_data[PriceIndexes.IND_PRICE_OPEN.value])
+        self.high_candles_list.append(new_candle_data[PriceIndexes.IND_PRICE_HIGH.value])
+        self.low_candles_list.append(new_candle_data[PriceIndexes.IND_PRICE_LOW.value])
+        self.time_candles_list.append(new_candle_data[PriceIndexes.IND_PRICE_TIME.value])
+        self.volume_candles_list.append(new_candle_data[PriceIndexes.IND_PRICE_VOL.value])
         self.update_lists()
 
     def update_lists(self):
