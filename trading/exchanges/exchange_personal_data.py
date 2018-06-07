@@ -16,6 +16,9 @@ class ExchangePersonalData:
             CONFIG_PORTFOLIO_TOTAL: total
         }
 
+    def get_portfolio(self):
+        return self.portfolio
+
     # maybe later add an order remover to free up memory ?
     def upsert_order(self, order_id, ccxt_order):
         self.orders[order_id] = ccxt_order
@@ -24,10 +27,17 @@ class ExchangePersonalData:
         return self._select_orders(None, symbol, since, limit)
 
     def get_open_orders(self, symbol, since, limit):
-        return self._select_orders("open", symbol, since, limit)
+        return self._select_orders(OrderStatus.OPEN.value, symbol, since, limit)
 
     def get_closed_orders(self, symbol, since, limit):
-        return self._select_orders("closed", symbol, since, limit)
+        return self._select_orders(OrderStatus.CLOSED.value, symbol, since, limit)
+
+    def get_my_recent_trades(self, symbol, since, limit):
+        # TODO
+        return None
+
+    def get_order(self, order_id):
+        return self.orders[order_id]
 
     # private methods
     def _select_orders(self, state, symbol, since, limit):

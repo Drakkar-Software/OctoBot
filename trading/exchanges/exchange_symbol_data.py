@@ -34,15 +34,15 @@ class SymbolData:
 
     # ticker functions
     def update_symbol_ticker(self, new_symbol_ticker_data):
-        pass
+        self.symbol_ticker = new_symbol_ticker_data
 
     # order book functions
     def update_order_book(self, new_order_book_data):
-        pass
+        self.order_book = new_order_book_data
 
     # recent trade functions
     def update_recent_trades(self, new_recent_trades_data):
-        pass
+        self.recent_trades = new_recent_trades_data
 
     '''
     Called by non-trade classes
@@ -56,15 +56,15 @@ class SymbolData:
 
     # ticker functions
     def get_symbol_ticker(self):
-        pass
+        return self.symbol_ticker
 
     # order book functions
     def get_symbol_order_book(self, limit=None):
-        pass
+        return self.order_book
 
     # recent trade functions
     def get_symbol_recent_trades(self, limit=None):
-        pass
+        return self.recent_trades
 
     # private functions
     def _has_candle_changed(self, time_frame, start_candle_time):
