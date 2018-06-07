@@ -25,11 +25,11 @@ class SymbolData:
 
         # else check if we should edit the last candle or move to a new one
         elif start_candle_time is not None and self._has_candle_changed(time_frame, start_candle_time):
-            self.symbol_candles[time_frame] = CandleData(new_symbol_candles_data)
+            self.symbol_candles[time_frame].change_current_candle(new_symbol_candles_data)
 
         # only need to edit the last candle
         else:
-            self._edit_last_candle(time_frame, new_symbol_candles_data[-1])
+            self.symbol_candles[time_frame].set_last_candle(new_symbol_candles_data)
 
     # ticker functions
     def update_symbol_ticker(self, new_symbol_ticker_data):
@@ -46,6 +46,7 @@ class SymbolData:
     '''
     Called by non-trade classes
     '''
+
     # candle functions
     def get_candle_data(self, time_frame):
         if time_frame in self.symbol_candles:
@@ -70,9 +71,6 @@ class SymbolData:
             return True
         else:
             return False
-
-    def _edit_last_candle(self, time_frame, new_last_candle_data):
-        self.symbol_candles[time_frame].set_last_candle(new_last_candle_data)
 
 
 class CandleData:
@@ -182,6 +180,38 @@ class CandleData:
         self.low_candles_array = self.convert_list_to_array(self.low_candles_list)
         self.time_candles_array = self.convert_list_to_array(self.time_candles_list)
         self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
+
+    def change_current_candle(self, new_last_candle_data):
+        self.close_candles_list.pop(0)
+        self.open_candles_list.pop(0)
+        self.high_candles_list.pop(0)
+        self.low_candles_list.pop(0)
+        self.time_candles_list.pop(0)
+        self.volume_candles_list.pop(0)
+        self.add_new_candle(new_last_candle_data)
+
+    def add_new_candle(self, new_candle_data):
+        self.close_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_CLOSE.value])
+        self.open_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_OPEN.value])
+        self.high_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_HIGH.value])
+        self.low_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_LOW.value])
+        self.time_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_TIME.value])
+        self.volume_candles_list.append(new_candle_data[PriceStrings.STR_PRICE_VOL.value])
+        self.update_lists()
+
+    def update_lists(self):
+        if self.close_candles_array is None:
+            self.close_candles_array = self.convert_list_to_array(self.close_candles_list)
+        if self.open_candles_array is None:
+            self.open_candles_array = self.convert_list_to_array(self.open_candles_list)
+        if self.high_candles_array is None:
+            self.high_candles_array = self.convert_list_to_array(self.high_candles_list)
+        if self.low_candles_array is None:
+            self.low_candles_array = self.convert_list_to_array(self.low_candles_list)
+        if self.time_candles_array is None:
+            self.time_candles_array = self.convert_list_to_array(self.time_candles_list)
+        if self.volume_candles_array is None:
+            self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
 
     @staticmethod
     def convert_list_to_array(list_to_convert):
