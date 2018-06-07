@@ -133,13 +133,13 @@ class BinanceWebSocketClient(AbstractWebSocket):
         else:
             msg_stream_type = msg["stream"]
             if self._TICKER_KEY in msg_stream_type:
-                self.exchange_manager.get_symbol_data.set_ticker(msg["data"])
+                self.exchange_manager.get_symbol_data(msg["data"]["s"]).update_symbol_ticker(msg["data"])
             elif self._KLINE_KEY in msg_stream_type:
-                # TODO check symbol
-                self.get_symbol_data(msg["data"]["s"]).update_symbol_candles(msg["data"]["k"]["i"],
-                                                                             self._create_candle(msg["data"]["k"]),
-                                                                             start_candle_time=msg["data"]["k"]["t"],
-                                                                             replace_all=False)
+                self.get_symbol_data(msg["data"]["s"]).update_symbol_candles(
+                    self._convert_time_frame(msg["data"]["k"]["i"]),
+                    self._create_candle(msg["data"]["k"]),
+                    start_candle_time=msg["data"]["k"]["t"],
+                    replace_all=False)
 
     def user_callback(self, msg):
         if msg["e"] == "outboundAccountInfo":
@@ -188,3 +188,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
 
     def init_all_currencies_prices_web_socket(self, time_frames, trader_pairs):
         pass
+
+    @staticmethod
+    def _adapt_symbol(symbol):
+        return symbol
