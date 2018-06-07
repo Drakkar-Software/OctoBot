@@ -31,7 +31,7 @@ class TestExchangeSimulator:
         test_df = exchange_inst.get_symbol_prices(
             self.DEFAULT_SYMBOL,
             TimeFrames.ONE_HOUR,
-            data_frame=True)
+            return_list=True)
 
         assert type(test_df) is DataFrame
 
@@ -43,7 +43,7 @@ class TestExchangeSimulator:
         test_list = exchange_inst.get_symbol_prices(
             self.DEFAULT_SYMBOL,
             TimeFrames.ONE_HOUR,
-            data_frame=False)
+            return_list=False)
 
         assert isinstance(test_list, list)
 
@@ -55,12 +55,12 @@ class TestExchangeSimulator:
         first_data = exchange_inst.get_symbol_prices(
             self.DEFAULT_SYMBOL,
             self.DEFAULT_TF,
-            data_frame=False)
+            return_list=False)
 
         second_data = exchange_inst.get_symbol_prices(
             self.DEFAULT_SYMBOL,
             self.DEFAULT_TF,
-            data_frame=False)
+            return_list=False)
 
         # different arrays
         assert first_data != second_data

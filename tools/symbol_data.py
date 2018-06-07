@@ -7,12 +7,13 @@ class SymbolData:
     MAX_ORDER_BOOK_ORDER_COUNT = 100
     MAX_RECENT_TRADES_COUNT = 100
 
-    def __init__(self, symbol, time_frame):
+    def __init__(self, symbol):
         self.symbol = symbol
-        self.time_frame = time_frame
 
-        # candle attributes
         self.symbol_candles = {}
+        self.order_book = []
+        self.recent_trades = []
+        self.symbol_ticker = None
 
     '''
     Called by exchange dispatcher
@@ -40,7 +41,7 @@ class SymbolData:
         pass
 
     # recent trade functions
-    def update_last_trades(self, new_recent_trades_data):
+    def update_recent_trades(self, new_recent_trades_data):
         pass
 
     '''
@@ -72,9 +73,20 @@ class SymbolData:
         else:
             return False
 
+    def candles_are_initialized(self, time_frame):
+        if time_frame in self.symbol_candles and self.symbol_candles[time_frame].is_initialized:
+            return True
+        return False
+
+    def price_ticker_is_initialized(self):
+        if self.symbol_ticker is not None:
+            return True
+        return False
+
 
 class CandleData:
     def __init__(self, all_candles_data, create_arrays=False):
+        self.is_initialized = False
         self.close_candles_list = []
         self.open_candles_list = []
         self.high_candles_list = []
@@ -90,6 +102,7 @@ class CandleData:
         self.volume_candles_array = None
 
         self.set_all_candles(all_candles_data)
+        self.is_initialized = True
 
         if create_arrays:
             self.create_all_arrays()

@@ -93,14 +93,6 @@ class RESTExchange(AbstractExchange):
         spread = (ask - bid) if (bid and ask) else None
         return {'bid': bid, 'ask': ask, 'spread': spread}
 
-    # A price ticker contains statistics for a particular market/symbol for the last instant
-    def get_last_price_ticker(self, symbol):
-        try:
-            return self.client.fetch_ticker(symbol)[ExchangeConstantsTickersColumns.LAST.value]
-        except BaseError as e:
-            self.logger.error("Failed to get_price_ticker {0}".format(e))
-            return None
-
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     def get_price_ticker(self, symbol):
         try:

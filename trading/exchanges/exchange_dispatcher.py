@@ -1,4 +1,4 @@
-from tools.data_frame_util import DataFrameUtil
+from tools.symbol_data import SymbolData
 from trading import AbstractExchange
 
 
@@ -35,6 +35,11 @@ class ExchangeDispatcher(AbstractExchange):
     def get_exchange(self):
         return self.exchange
 
+    def get_symbol_data(self, symbol):
+        if symbol not in self.symbols_data:
+            self.symbols_data[symbol] = SymbolData(symbol)
+        return self.symbols_data[symbol]
+
     # total (free + used), by currency
     def get_balance(self):
         if self._web_socket_available() and self.exchange_web_socket.get_client().portfolio_is_initialized():
@@ -42,68 +47,52 @@ class ExchangeDispatcher(AbstractExchange):
         else:
             return self.exchange.get_balance()
 
-    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
-        # if websocket is available --> get symbol price from WS
-        if self._web_socket_available() and self.exchange_web_socket.candles_are_initialized(symbol, time_frame):
+    def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
+        symbol_data = self.get_symbol_data(symbol)
 
-            candles = self.exchange_web_socket.get_symbol_prices(symbol=symbol,
-                                                                 time_frame=time_frame,
-                                                                 limit=limit,
-                                                                 data_frame=data_frame)
-            return candles
+        # if websocket is available --> candle data are constantly updated
+        if self._web_socket_available() and symbol_data.candles_are_initialized(time_frame):
+            return symbol_data
 
         # else get price from REST exchange and init websocket (if enabled)
-        needs_to_init_candles = self._web_socket_available() and not \
-            self.exchange_web_socket.candles_are_initialized(symbol, time_frame)
+        needs_to_init_candles = self._web_socket_available() and not symbol_data.candles_are_initialized(time_frame)
 
         candles = self.exchange.get_symbol_prices(symbol=symbol,
                                                   time_frame=time_frame,
                                                   limit=None if needs_to_init_candles else limit)
 
-        if needs_to_init_candles or data_frame:
-            candle_data_frame = DataFrameUtil.candles_array_to_data_frame(candles)
+        symbol_data.update_symbol_candles(time_frame, candles, replace_all=True)
 
-            if needs_to_init_candles:
-                self.exchange_web_socket.init_candle_data(symbol, time_frame, candles, candle_data_frame)
-
-            if data_frame:
-                return candle_data_frame.tail(limit) if limit is not None else candle_data_frame
-
-        return candles[-limit:] if limit else candles
+        return symbol_data
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
     def get_order_book(self, symbol, limit=50):
         # websocket service not implemented yet
         if self._web_socket_available():
+            # TODO
             pass
 
         return self.exchange.get_order_book(symbol, limit)
 
     def get_recent_trades(self, symbol):
         if self._web_socket_available() and self.exchange_web_socket.handles_recent_trades():
-            return self.exchange_web_socket.get_recent_trades(symbol=symbol)
+            # TODO
+            pass
 
         return self.exchange.get_recent_trades(symbol=symbol)
 
     def get_market_price(self, symbol):
         if self._web_socket_available():
+            # TODO
             pass
 
         return self.exchange.get_market_price(symbol=symbol)
 
-    # A price ticker contains statistics for a particular market/symbol for the last instant
-    def get_last_price_ticker(self, symbol):
-        if self._web_socket_available() and self.exchange_web_socket.get_client().last_price_ticker_is_initialized(
-                symbol):
-            return self.exchange_web_socket.get_last_price_ticker(symbol=symbol)
-        else:
-            return self.exchange.get_last_price_ticker(symbol=symbol)
-
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     def get_price_ticker(self, symbol):
-        if self._web_socket_available():
-            pass
+        if self._web_socket_available() and self.get_symbol_data(symbol).price_ticker_is_initialized():
+            return self.get_symbol_data(symbol)
 
         return self.exchange.get_price_ticker(symbol=symbol)
 
