@@ -4,7 +4,7 @@ import logging
 from ccxt.base.exchange import Exchange as ccxtExchange
 
 from tools.symbol_util import merge_symbol
-from trading.exchanges.websockets_exchanges.exchange_data import ExchangeData
+from trading.exchanges.websockets_exchanges.exchange_personnal_data import ExchangePersonalData
 
 
 class AbstractWebSocketManager:
@@ -12,7 +12,7 @@ class AbstractWebSocketManager:
     def __init__(self, config):
         self.config = config
         self.client = None
-        self.exchange_data = ExchangeData()
+        self.exchange_data = ExchangePersonalData()
         self.name = self.get_name()
         self.logger = logging.getLogger(self.name)
 
@@ -67,10 +67,10 @@ class AbstractWebSocketManager:
         return self.exchange_data.portfolio
 
     def orders_are_initialized(self):
-        return self.exchange_data.is_initialized[ExchangeData.ORDERS_KEY]
+        return self.exchange_data.is_initialized[ExchangePersonalData.ORDERS_KEY]
 
     def set_orders_are_initialized(self, value):
-        self.exchange_data.is_initialized[ExchangeData.ORDERS_KEY] = value
+        self.exchange_data.is_initialized[ExchangePersonalData.ORDERS_KEY] = value
 
     # Abstract exchange
 
