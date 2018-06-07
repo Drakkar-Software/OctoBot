@@ -24,15 +24,6 @@ class AbstractWebSocket:
         raise NotImplementedError("convert_into_ccxt_order not implemented")
 
     @abstractmethod
-    def get_last_price_ticker(self, symbol):
-        raise NotImplementedError("get_last_price_ticker not implemented")
-
-    @classmethod
-    @abstractmethod
-    def handles_recent_trades(cls):
-        raise NotImplementedError("handles_recent_trades not implemented")
-
-    @abstractmethod
     def start_sockets(self):
         raise NotImplementedError("start_sockets not implemented")
 
@@ -76,3 +67,18 @@ class AbstractWebSocket:
     @staticmethod
     def iso8601(value):
         return ccxtExchange.iso8601(value)
+
+    @classmethod
+    @abstractmethod
+    def handles_recent_trades(cls):
+        raise NotImplementedError("handles_recent_trades not implemented")
+
+    @classmethod
+    @abstractmethod
+    def handles_order_book(cls):
+        raise NotImplementedError("handles_order_book not implemented")
+
+    @classmethod
+    @abstractmethod
+    def handles_price_ticker(cls):
+        raise NotImplementedError("handles_price_ticker not implemented")
