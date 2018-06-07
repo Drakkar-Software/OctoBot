@@ -2,10 +2,9 @@ import logging
 
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
-from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
-from trading import WebSocketExchange
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
+from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
 from trading.exchanges.websockets_exchanges import AbstractWebSocket
 
 
@@ -49,8 +48,13 @@ class ExchangeManager:
             if self.check_web_socket_config(self.exchange.get_name()):
                 for socket_manager in AbstractWebSocket.__subclasses__():
                     if socket_manager.get_name() == self.exchange.get_name():
-                        self.exchange_web_socket = WebSocketExchange(self.config, self, socket_manager)
-                        break
+                        client = socket_manager.get_websocket_client(self.config, self)
+
+                        # init websocket
+                        client.init_web_sockets(self.get_config_time_frame(), self.get_traded_pairs())
+
+                        # start the websocket
+                        client.start_sockets()
 
         # if simulated : create exchange simulator instance
         else:
@@ -133,6 +137,12 @@ class ExchangeManager:
     # Getters
     def get_is_simulated(self):
         return self.is_simulated
+
+    def get_symbol_data(self, symbol):
+        return self.get_exchange().get_symbol_data(symbol)
+
+    def get_personal_data(self):
+        return self.get_exchange().get_exchange_personal_data()
 
     # Exceptions
     def _raise_exchange_load_error(self):

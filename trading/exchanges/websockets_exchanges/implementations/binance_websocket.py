@@ -19,16 +19,16 @@ class BinanceWebSocketClient(AbstractWebSocket):
         'CANCELED': 'canceled',
     }
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, exchange_manager):
+        super().__init__(config, exchange_manager)
         self.client = Client(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY],
                              self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET])
         self.socket_manager = None
         self.open_sockets_keys = {}
 
     @staticmethod
-    def get_websocket_client(config):
-        ws_client = BinanceWebSocketClient(config)
+    def get_websocket_client(config, exchange_manager):
+        ws_client = BinanceWebSocketClient(config, exchange_manager)
         ws_client.socket_manager = BinanceSocketManager(ws_client.client)
         return ws_client
 
