@@ -22,6 +22,9 @@ class ExchangePersonalData:
     def get_portfolio(self):
         return self.portfolio
 
+    def has_order(self, order_id):
+        return order_id in self.orders
+
     def set_order(self, order_id, order_data):
         self.orders[order_id] = order_data
 

@@ -41,6 +41,14 @@ class AbstractWebSocket:
     def init_web_sockets(self, time_frames, trader_pairs):
         raise NotImplementedError("init_web_sockets not implemented")
 
+    # ============== ccxt adaptation methods ==============
+    def init_ccxt_order_from_other_source(self, ccxt_order):
+        self.exchange_manager.get_exchange_personal_data().upsert_order(ccxt_order["id"], ccxt_order)
+
+    def _update_order(self, msg):
+        ccxt_order = self.convert_into_ccxt_order(msg)
+        self.exchange_manager.get_exchange_personal_data().upsert_order(ccxt_order["id"], ccxt_order)
+
     @staticmethod
     @abstractmethod
     def parse_order_status(status):
