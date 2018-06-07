@@ -1,6 +1,6 @@
 import numpy as np
 
-from config.cst import PriceStrings
+from config.cst import PriceStrings, PriceIndexes
 
 
 class SymbolData:
@@ -83,6 +83,9 @@ class SymbolData:
             return True
         return False
 
+    def get_symbol_prices(self, time_frame, limit=None, return_list=False):
+        self.get_candle_data(time_frame).get_symbol_prices(limit, return_list)
+
 
 class CandleData:
     def __init__(self, all_candles_data, create_arrays=False):
@@ -155,6 +158,20 @@ class CandleData:
             if self.volume_candles_array is None:
                 self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
             return self.extract_limited_data(self.volume_candles_array, limit)
+
+    def get_symbol_prices(self, limit=None, return_list=False):
+        symbol_prices = []
+        symbol_prices[PriceIndexes.IND_PRICE_CLOSE.value] = self.get_symbol_close_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_OPEN.value] = self.get_symbol_open_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_HIGH.value] = self.get_symbol_high_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_LOW.value] = self.get_symbol_low_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_TIME.value] = self.get_symbol_time_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_VOL.value] = self.get_symbol_volume_candles(limit, return_list)
+
+        if return_list:
+            return symbol_prices
+        else:
+            return np.array(symbol_prices)
 
     # setters
     def set_last_candle(self, last_candle_data):

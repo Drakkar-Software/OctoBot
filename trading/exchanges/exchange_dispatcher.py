@@ -57,7 +57,7 @@ class ExchangeDispatcher(AbstractExchange):
 
         self.exchange.get_symbol_prices(symbol=symbol, time_frame=time_frame, limit=limit)
 
-        return symbol_data
+        return symbol_data.get_symbol_prices(time_frame, limit, return_list)
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !

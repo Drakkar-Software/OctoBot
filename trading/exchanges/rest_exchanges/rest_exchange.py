@@ -27,10 +27,10 @@ class RESTExchange(AbstractExchange):
         self.all_currencies_price_ticker = None
 
     def get_symbol_data(self, symbol):
-        self.exchange_manager.get_exchange().get_symbol_data(symbol)
+        return self.exchange_manager.get_exchange().get_symbol_data(symbol)
 
     def get_personal_data(self):
-        self.exchange_manager.get_exchange().get_exchange_personal_data()
+        return self.exchange_manager.get_exchange().get_exchange_personal_data()
 
     # ccxt exchange instance creation
     def create_client(self):
