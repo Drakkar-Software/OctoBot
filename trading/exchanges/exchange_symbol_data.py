@@ -84,7 +84,7 @@ class SymbolData:
         return False
 
     def get_symbol_prices(self, time_frame, limit=None, return_list=False):
-        self.get_candle_data(time_frame).get_symbol_prices(limit, return_list)
+        return self.get_candle_data(time_frame).get_symbol_prices(limit, return_list)
 
 
 class CandleData:
