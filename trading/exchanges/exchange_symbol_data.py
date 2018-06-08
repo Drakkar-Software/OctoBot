@@ -6,6 +6,7 @@ from config.cst import PriceStrings, PriceIndexes
 class SymbolData:
     MAX_ORDER_BOOK_ORDER_COUNT = 100
     MAX_RECENT_TRADES_COUNT = 100
+    MAX_CANDLES_COUNT = 1000
 
     def __init__(self, symbol):
         self.symbol = symbol
@@ -195,6 +196,13 @@ class CandleData:
             array_to_update[-1] = list_updated[-1]
 
     def set_all_candles(self, new_candles_data):
+        self.close_candles_list = []
+        self.open_candles_list = []
+        self.high_candles_list = []
+        self.low_candles_list = []
+        self.time_candles_list = []
+        self.volume_candles_list = []
+        
         for candle_data in new_candles_data:
             self.close_candles_list.append(candle_data[PriceIndexes.IND_PRICE_CLOSE.value])
             self.open_candles_list.append(candle_data[PriceIndexes.IND_PRICE_OPEN.value])
@@ -212,12 +220,13 @@ class CandleData:
         self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
 
     def change_current_candle(self, new_last_candle_data):
-        self.close_candles_list.pop(0)
-        self.open_candles_list.pop(0)
-        self.high_candles_list.pop(0)
-        self.low_candles_list.pop(0)
-        self.time_candles_list.pop(0)
-        self.volume_candles_list.pop(0)
+        if len(self.time_candles_list) >= SymbolData.MAX_CANDLES_COUNT:
+            self.close_candles_list.pop(0)
+            self.open_candles_list.pop(0)
+            self.high_candles_list.pop(0)
+            self.low_candles_list.pop(0)
+            self.time_candles_list.pop(0)
+            self.volume_candles_list.pop(0)
         self.add_new_candle(new_last_candle_data)
 
     def add_new_candle(self, new_candle_data):
