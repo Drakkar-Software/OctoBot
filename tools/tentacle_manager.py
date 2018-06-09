@@ -50,7 +50,7 @@ class TentacleManager:
             return self.default_package, package_description, package_localisation, is_url, EVALUATOR_DEFAULT_FOLDER
         else:
             for advanced_package in self.advanced_package_list:
-                if self._has_required_package(self.advanced_package_list, component_name, component_version):
+                if self._has_required_package(advanced_package, component_name, component_version):
                     package_description = advanced_package[TENTACLE_DESCRIPTION]
                     package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
                     url = package_description[TENTACLE_DESCRIPTION_IS_URL]
@@ -162,11 +162,9 @@ class TentacleManager:
                     if is_required_version_installed:
                         self.logger.info("{0} dependency: {1} version {2} is satisfied."
                                          .format(requiring, module_name, module_version))
+                        return False
                     else:
-                        self.logger.warning("{0} requires version {1} of {2} but found version {3}. "
-                                            "This module may not work properly.".format(requiring, module_version,
-                                                                                        module_name, installed_version))
-                    return False
+                        return True
             else:
                 if requiring:
                     self.logger.error("can't find module: {0} required for {1} in installed Tentacles. "
@@ -205,43 +203,52 @@ class TentacleManager:
         applied_modules = [module_name]
         if parsed_module[TENTACLE_MODULE_REQUIREMENTS]:
             for requirement_data in parsed_module[TENTACLE_MODULE_REQUIREMENTS]:
-                requirement_module_name = requirement_data[TENTACLE_MODULE_NAME]
-                requirement_module_version = requirement_data[TENTACLE_MODULE_VERSION]
-                if not self._has_just_processed_module(requirement_module_name, requirement_module_version) and \
-                        self._should_do_something(action, requirement_module_name,
-                                                  requirement_module_version, True, module_name):
-                    try:
-                        req_package, description, localisation, is_url, destination = self._get_package_in_lists(
-                            requirement_module_name, requirement_module_version)
+                if success:
+                    requirement_module_name = requirement_data[TENTACLE_MODULE_NAME]
+                    requirement_module_version = requirement_data[TENTACLE_MODULE_VERSION]
+                    if not self._has_just_processed_module(requirement_module_name, requirement_module_version) and \
+                            self._should_do_something(action, requirement_module_name,
+                                                      requirement_module_version, True, module_name):
+                        try:
+                            req_package, description, localisation, is_url, destination = self._get_package_in_lists(
+                                requirement_module_name, requirement_module_version)
 
-                        if req_package:
-                            self.process_module(action, req_package, requirement_module_name,
-                                                localisation, is_url, destination)
-                            applied_modules.append(requirement_module_name)
-                        else:
-                            raise Exception("Module requirement '{0}' not found in package lists"
-                                            .format(requirement_data[TENTACLE_MODULE_REQUIREMENT_WITH_VERSION]))
+                            if req_package:
+                                self.process_module(action, req_package, requirement_module_name,
+                                                    localisation, is_url, destination)
+                                applied_modules.append(requirement_module_name)
+                            else:
+                                raise Exception("module requirement '{0}' not found in package lists"
+                                                .format(requirement_data[TENTACLE_MODULE_REQUIREMENT_WITH_VERSION]))
 
-                    except Exception as e:
-                        error = "failed for module requirement '{0}' of module {1} ({2})"\
-                            .format(requirement_module_name, module_name, e)
-                        if action == TentacleManagerActions.INSTALL:
-                            self.logger.error("Installation {0}".format(error))
-                        elif action == TentacleManagerActions.UNINSTALL:
-                            self.logger.error("Uninstalling {0}".format(error))
-                        elif action == TentacleManagerActions.UPDATE:
-                            self.logger.error("Updating {0}".format(error))
-                        success = False
+                        except Exception as e:
+                            error = "failed for module requirement '{0}' of module {1} ({2})"\
+                                .format(requirement_module_name, module_name, e)
+                            if action == TentacleManagerActions.INSTALL:
+                                self.logger.error("installation {0}".format(error))
+                            elif action == TentacleManagerActions.UNINSTALL:
+                                self.logger.error("uninstalling {0}".format(error))
+                            elif action == TentacleManagerActions.UPDATE:
+                                self.logger.error("updating {0}".format(error))
+                            success = False
 
             # failed to install requirements
             if not success:
-                # uninstall module and requirements
-                #  TODO : rollback to previous version (for UPDATE action)
-                for module in applied_modules:
-                    req_package, description, localisation, is_url, destination = self._get_package_in_lists(module)
+                if action == TentacleManagerActions.UPDATE:
+                    # uninstall module
+                    # TODO : rollback to previous version
+                    req_package, description, localisation, is_url, destination = self._get_package_in_lists(module_name)
                     if req_package:
-                        self.process_module(TentacleManagerActions.UNINSTALL, req_package, module,
+                        self.process_module(TentacleManagerActions.UNINSTALL, req_package, module_name,
                                             localisation, is_url, destination)
+
+                elif action == TentacleManagerActions.INSTALL:
+                    # uninstall module and requirements
+                    for module in applied_modules:
+                        req_package, description, localisation, is_url, destination = self._get_package_in_lists(module)
+                        if req_package:
+                            self.process_module(TentacleManagerActions.UNINSTALL, req_package, module,
+                                                localisation, is_url, destination)
 
     def _try_action_on_config(self, action, package, module_name, is_url, package_localisation):
         parsed_module = self._parse_module(package[module_name])
