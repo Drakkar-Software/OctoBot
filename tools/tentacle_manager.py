@@ -152,16 +152,20 @@ class TentacleManager:
         if action == TentacleManagerActions.UPDATE:
             if self._is_module_in_list(module_name, None, self.installed_modules):
                 installed_version = self.installed_modules[module_name][TENTACLE_MODULE_VERSION]
-                new_version_available = TentacleManager._is_first_version_superior(module_version, installed_version)
                 if not need_this_exact_version:
+                    new_version_available = TentacleManager._is_first_version_superior(module_version, installed_version)
                     if not new_version_available:
                         self.logger.info("{0} version {1} is already up to date".format(module_name, installed_version))
                     return new_version_available
                 else:
-                    is_required_version_installed = installed_version == module_version
+                    is_required_version_installed = True
+                    print_version = "any version"
+                    if module_version is not None:
+                        is_required_version_installed = installed_version == module_version
+                        print_version = "version {0}".format(module_version)
                     if is_required_version_installed:
-                        self.logger.info("{0} dependency: {1} version {2} is satisfied."
-                                         .format(requiring, module_name, module_version))
+                        self.logger.info("{0} dependency: {1} {2} is satisfied."
+                                         .format(requiring, module_name, print_version))
                         return False
                     else:
                         return True
