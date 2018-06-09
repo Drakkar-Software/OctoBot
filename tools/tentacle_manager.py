@@ -111,7 +111,7 @@ class TentacleManager:
                 self.logger.info("{0} {1} successfully installed in: {2}"
                                  .format(module_name, module_version, file_dir))
             elif action == TentacleManagerActions.UNINSTALL:
-                self.logger.info("{0} {1} successfully uninstalled in: {2}"
+                self.logger.info("{0} {1} successfully uninstalled (file: {2})"
                                  .format(module_name, module_version, file_dir))
             elif action == TentacleManagerActions.UPDATE:
                 self.logger.info("{0} successfully updated to version {1} in: {2}"
@@ -292,7 +292,7 @@ class TentacleManager:
                     except OSError:
                         pass
                 elif action == TentacleManagerActions.UPDATE:
-                    self.logger.warning("{0} configuration file for {1} module ignored to save the current "
+                    self.logger.info("{0} configuration file for {1} module ignored to save the current "
                                         "configuration. Re-install this module if you want to restore the default "
                                         "configuration.".format(config_file, module_name))
                     pass
@@ -331,10 +331,27 @@ class TentacleManager:
                     commands.pop(0)
                     self.uninstall_parser(commands, False)
 
+            elif commands[0] == "reset_tentacles":
+                pass
+
             else:
-                self.logger.error("Command not found")
+                commands_help = "- install: Install or re-install the given modules with their requirements if any. " \
+                                "Also reset modules configuration files if any.\n" \
+                                "- update: Update the given tentacles with their requirements if any. " \
+                                "Does not edit modules configuration files\n" \
+                                "- uninstall: Uninstall the given modules. " \
+                                "Also delete the module configuration\n" \
+                                "- reset_tentacles: Deletes all the installed tentacles, their modules and " \
+                                "configuration.\n" \
+                                "Note: install, update and uninstall commands can take 2 types of arguments: \n" \
+                                "   - all: applies the command to all the available modules in remote and " \
+                                "installed tentacles.\n" \
+                                "   - modules_name1, module_name2, ... : force to apply the command to the given " \
+                                "modules identified by their name and separated with a ' '."
+                self.logger.error("Command not found, commands are: \n{0}".format(commands_help))
         else:
-            self.logger.error("Invalid arguments")
+            arguments_help = "-p: activates the package manager."
+            self.logger.error("Invalid arguments, arguments are: {0}".format(arguments_help))
 
     def install_parser(self, commands, command_all=False):
         if command_all:
@@ -344,6 +361,7 @@ class TentacleManager:
         else:
             for component in commands:
 
+                component = self._check_format(component)
                 package, description, localisation, is_url, destination = self._get_package_in_lists(component)
 
                 if package:
@@ -367,6 +385,7 @@ class TentacleManager:
         else:
             for component in commands:
 
+                component = self._check_format(component)
                 package, description, localisation, is_url, destination = self._get_package_in_lists(component)
 
                 if package:
@@ -388,11 +407,24 @@ class TentacleManager:
                 self._try_action_on_package(TentacleManagerActions.UNINSTALL, package, EVALUATOR_ADVANCED_FOLDER)
         else:
             for component in commands:
-                try:
-                    self.process_module(TentacleManagerActions.UNINSTALL, self.default_package,
-                                        component, "", "", EVALUATOR_DEFAULT_FOLDER)
-                except Exception:
-                    self.logger.error("Uninstalling failed for module '{0}'".format(component))
+
+                component = self._check_format(component)
+                package, description, localisation, is_url, destination = self._get_package_in_lists(component)
+
+                if package:
+                    try:
+                        self.process_module(TentacleManagerActions.UNINSTALL, package,
+                                            component, "", "", destination)
+                    except Exception:
+                        self.logger.error("Uninstalling failed for module '{0}'".format(component))
+                else:
+                    self.logger.error("No module found for '{0}'".format(component))
+
+    @staticmethod
+    def _check_format(component):
+        purified_name = component.rstrip(",+.; ")
+        purified_name = purified_name.strip(",+.; ")
+        return purified_name
 
     @staticmethod
     def _add_package_description_metadata(package_description, localisation, is_url):
