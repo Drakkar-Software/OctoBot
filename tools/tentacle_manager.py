@@ -310,7 +310,6 @@ class TentacleManager:
         self.update_list()
         if commands:
             if commands[0] == "install":
-
                 if commands[1] == "all":
                     self.install_parser(commands, True)
                 else:
@@ -354,6 +353,10 @@ class TentacleManager:
             self.logger.error("Invalid arguments, arguments are: {0}".format(arguments_help))
 
     def install_parser(self, commands, command_all=False):
+        # first ensure the current tentacles architecture is setup correctly
+        self._create_missing_tentacles_arch()
+
+        # then process installations
         if command_all:
             self._try_action_on_package(TentacleManagerActions.INSTALL, self.default_package, EVALUATOR_DEFAULT_FOLDER)
             for package in self.advanced_package_list:
