@@ -332,7 +332,7 @@ class TentacleManager:
                     self.uninstall_parser(commands, False)
 
             elif commands[0] == "reset_tentacles":
-                pass
+                self.reset_tentacles()
 
             else:
                 commands_help = "- install: Install or re-install the given modules with their requirements if any. " \
@@ -419,6 +419,20 @@ class TentacleManager:
                         self.logger.error("Uninstalling failed for module '{0}'".format(component))
                 else:
                     self.logger.error("No module found for '{0}'".format(component))
+
+    def reset_tentacles(self):
+        self.logger.info("Removing tentacles.")
+        self._delete_tentacles_arch()
+        self._create_missing_tentacles_arch()
+        self.logger.info("Tentacles reset.")
+
+    @staticmethod
+    def _delete_tentacles_arch():
+        pass
+
+    @staticmethod
+    def _create_missing_tentacles_arch():
+        pass
 
     @staticmethod
     def _check_format(component):
