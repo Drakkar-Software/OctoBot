@@ -1,5 +1,6 @@
 from binance.client import Client, BinanceAPIException
 from binance.websockets import BinanceSocketManager
+from binance.client import Client, BinanceAPIException
 from twisted.internet import reactor
 
 from config.cst import *
@@ -46,7 +47,6 @@ class BinanceWebSocketClient(AbstractWebSocket):
     def stop_sockets(self):
         if self.socket_manager:
             self.socket_manager.close()
-        reactor.stop()
 
     def get_socket_manager(self):
         return self.socket_manager

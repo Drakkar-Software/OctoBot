@@ -147,25 +147,47 @@ CONFIG_INTERFACES_TELEGRAM = "telegram"
 GITHUB = "github"
 GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
 GITHUB_BASE_URL = "https://github.com"
+PYTHON_INIT_FILE = "__init__.py"
+TENTACLES_PATH = "tentacles"
+TENTACLES_EVALUATOR_PATH = "Evaluator"
+TENTACLES_TRADING_PATH = "Trading"
+TENTACLES_EVALUATOR_REALTIME_PATH = "RealTime"
+TENTACLES_EVALUATOR_TA_PATH = "TA"
+TENTACLES_EVALUATOR_SOCIAL_PATH = "Social"
+TENTACLES_EVALUATOR_STRATEGIES_PATH = "Strategies"
+TENTACLES_EVALUATOR_UTIL_PATH = "Util"
+TENTACLES_TRADING_MODE_PATH = "Mode"
+TENTACLES_PYTHON_INIT_CONTENT = "from .Default import *\nfrom .Advanced import *\n"
 TENTACLES_PUBLIC_REPOSITORY = "Drakkar-Software/OctoBot-Tentacles"
 TENTACLES_PUBLIC_LIST = "tentacles_list.json"
 TENTACLES_DEFAULT_BRANCH = "master"
 EVALUATOR_DEFAULT_FOLDER = "Default"
 EVALUATOR_ADVANCED_FOLDER = "Advanced"
+TENTACLES_INSTALL_FOLDERS = [EVALUATOR_DEFAULT_FOLDER, EVALUATOR_ADVANCED_FOLDER]
 EVALUATOR_CONFIG_FOLDER = "config"
 CONFIG_TENTACLES_KEY = "tentacles"
 TENTACLE_DESCRIPTION = "tentacle_description"
 TENTACLE_DESCRIPTION_LOCALISATION = "localisation"
 TENTACLE_DESCRIPTION_IS_URL = "is_url"
+TENTACLE_MODULE_DESCRIPTION = "$tentacle_description"
+TENTACLE_MODULE_REQUIREMENTS = "requirements"
+TENTACLE_MODULE_REQUIREMENT_WITH_VERSION = "requirement_with_version"
+TENTACLE_MODULE_REQUIREMENTS_SEPARATOR = ","
+TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR = "=="
+TENTACLE_MODULE_NAME = "name"
+TENTACLE_MODULE_TYPE = "type"
+TENTACLE_MODULE_SUBTYPE = "subtype"
+TENTACLE_MODULE_VERSION = "version"
+TENTACLE_MODULE_CONFIG_FILES = "config_files"
 
-TENTACLE_TYPES = {"Evaluator": "evaluator",
-                  "Social": "Social",
-                  "RealTime": "RealTime",
-                  "Util": "Util",
-                  "TA": "TA",
-                  "Strategies": "Strategies",
-                  "Trading": "trading",
-                  "Mode": "{0}/{1}".format(CONFIG_TRADER, CONFIG_TRADER_MODES)}
+TENTACLE_TYPES = {"Evaluator": TENTACLES_EVALUATOR_PATH,
+                  "Social": TENTACLES_EVALUATOR_SOCIAL_PATH,
+                  "RealTime": TENTACLES_EVALUATOR_REALTIME_PATH,
+                  "Util": TENTACLES_EVALUATOR_UTIL_PATH,
+                  "TA": TENTACLES_EVALUATOR_TA_PATH,
+                  "Strategies": TENTACLES_EVALUATOR_STRATEGIES_PATH,
+                  "Trading": TENTACLES_TRADING_PATH,
+                  "Mode": TENTACLES_TRADING_MODE_PATH}
 
 
 class EvaluatorMatrixTypes(Enum):

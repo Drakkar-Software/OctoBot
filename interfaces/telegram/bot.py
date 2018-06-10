@@ -42,6 +42,7 @@ class TelegramApp:
         self.dispatcher.add_handler(CommandHandler(["profitability", "pb"], self.command_profitability))
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
         self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
+        self.dispatcher.add_handler(CommandHandler(["configuration", "cf"], self.command_configuration))
         self.dispatcher.add_handler(CommandHandler("stop", self.command_stop))
         self.dispatcher.add_handler(CommandHandler("help", self.command_help))
         self.dispatcher.add_handler(CommandHandler(["pause", "resume"], self.command_pause_resume))
@@ -67,6 +68,7 @@ class TelegramApp:
         message += "/trades_history or /th: Displays my trades history since I started." + TelegramApp.EOL
         message += "/profitability or /pb: Displays the profitability I made since I started." + TelegramApp.EOL
         message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + TelegramApp.EOL
+        message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading mode." + TelegramApp.EOL
         message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
         message += "/pause or /resume: Pause or resume me." + TelegramApp.EOL
         message += "/stop: Stops me." + TelegramApp.EOL
@@ -219,6 +221,45 @@ class TelegramApp:
             trades_history_string = TelegramApp.NO_TRADER_MESSAGE
 
         update.message.reply_text(trades_history_string)
+
+    #Displays my trades, exchanges, evaluators, strategies and trading
+    @staticmethod
+    def command_configuration(_, update):
+        try:
+            message = "My configuration:{0}{0}".format(TelegramApp.EOL)
+
+            message += "Traders: " + TelegramApp.EOL
+            has_real_trader, has_simulated_trader = has_real_and_or_simulated_traders()
+            if has_real_trader:
+                message += "- Real trader" + TelegramApp.EOL
+            if has_simulated_trader:
+                message += "- Simulated trader" + TelegramApp.EOL
+
+            message += "{0}Exchanges:{0}".format(TelegramApp.EOL)
+            for exchange in get_bot().get_exchanges_list().values():
+                message += "- {0}{1}".format(exchange.get_name(), TelegramApp.EOL)
+
+            message += "{0}Evaluators:{0}".format(TelegramApp.EOL)
+            first_evaluator = next(iter(get_bot().get_symbols_threads_manager().values())).get_evaluator()
+            evaluators = first_evaluator.get_social_eval_list()
+            evaluators += first_evaluator.get_ta_eval_list()
+            evaluators += first_evaluator.get_real_time_eval_list()
+            for evaluator in evaluators:
+                message += "- {0}{1}".format(evaluator.get_name(), TelegramApp.EOL)
+
+            first_symbol_evaluator = next(iter(get_bot().get_symbol_evaluator_list().values()))
+            first_exchange = next(iter(get_bot().get_exchanges_list().values()))
+            message += "{0}Strategies:{0}".format(TelegramApp.EOL)
+            for strategy in first_symbol_evaluator.get_strategies_eval_list(first_exchange):
+                message += "- {0}{1}".format(strategy.get_name(), TelegramApp.EOL)
+
+            message += "{0}Trading mode:{0}".format(TelegramApp.EOL)
+            message += "- {0}{1}".format(first_symbol_evaluator.trading_mode_class.get_name(), TelegramApp.EOL)
+            update.message.reply_text(message)
+        except Exception:
+            update.message.reply_text("I'm unfortunately currently unable to show you my configuration. "
+                                      "Please wait for my initialization to complete.")
+
 
     @staticmethod
     def command_market_status(_, update):

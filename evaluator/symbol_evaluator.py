@@ -5,6 +5,7 @@ from config.cst import EvaluatorMatrixTypes, CONFIG_TRADER_MODE, CONFIG_TRADER
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from trading.trader import modes
+from trading.trader.modes import AbstractTradingMode
 
 
 class SymbolEvaluator:
@@ -33,7 +34,10 @@ class SymbolEvaluator:
 
     def get_trading_mode_class(self):
         if CONFIG_TRADER in self.config and CONFIG_TRADER_MODE in self.config[CONFIG_TRADER]:
-            if any(m[0] == self.config[CONFIG_TRADER][CONFIG_TRADER_MODE] for m in inspect.getmembers(modes)):
+            if any(m[0] == self.config[CONFIG_TRADER][CONFIG_TRADER_MODE] and
+                   hasattr(m[1], '__bases__') and
+                   AbstractTradingMode in m[1].__bases__
+                   for m in inspect.getmembers(modes)):
                 return getattr(modes, self.config[CONFIG_TRADER][CONFIG_TRADER_MODE])
 
         raise Exception("Please specify a valid trading mode in your config file (trader -> mode)")
