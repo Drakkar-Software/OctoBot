@@ -65,7 +65,7 @@ if __name__ == '__main__':
         # In those cases load OctoBot
         from octobot import OctoBot
 
-        config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE, False)
+        config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
 
         TelegramApp.enable(config, args.telegram)
 
