@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import shutil
+import copy
 from enum import Enum
 
 import requests
@@ -11,7 +13,10 @@ from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLE
     EVALUATOR_CONFIG_FOLDER, TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR, TENTACLE_MODULE_NAME, \
     TENTACLE_MODULE_TYPE, TENTACLE_MODULE_SUBTYPE, TENTACLE_MODULE_VERSION, TENTACLE_MODULE_CONFIG_FILES, \
     TENTACLE_MODULE_REQUIREMENTS, TENTACLE_MODULE_REQUIREMENTS_SEPARATOR, TENTACLE_MODULE_REQUIREMENT_WITH_VERSION, \
-    TENTACLE_MODULE_DESCRIPTION, TENTACLES_INSTALL_FOLDERS
+    TENTACLE_MODULE_DESCRIPTION, TENTACLES_INSTALL_FOLDERS, TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, \
+    TENTACLES_TRADING_PATH, TENTACLES_EVALUATOR_REALTIME_PATH, TENTACLES_EVALUATOR_TA_PATH, \
+    TENTACLES_EVALUATOR_SOCIAL_PATH, TENTACLES_EVALUATOR_STRATEGIES_PATH, TENTACLES_EVALUATOR_UTIL_PATH, \
+    TENTACLES_TRADING_MODE_PATH, TENTACLES_PYTHON_INIT_CONTENT, PYTHON_INIT_FILE
 
 
 class TentacleManager:
@@ -82,9 +87,11 @@ class TentacleManager:
             # Update local __init__
             line_in_init = "from .{0} import *\n".format(module_name)
             init_content = ""
-            init_file = "{0}/{1}/{2}/__init__.py".format(TENTACLE_TYPES[module_type],
-                                                         TENTACLE_TYPES[module_subtype],
-                                                         target_folder)
+            init_file = "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH,
+                                                     TENTACLE_TYPES[module_type],
+                                                     TENTACLE_TYPES[module_subtype],
+                                                     target_folder,
+                                                     PYTHON_INIT_FILE)
 
             if os.path.isfile(init_file):
                 with open(init_file, "r") as init_file_r:
@@ -431,11 +438,60 @@ class TentacleManager:
 
     @staticmethod
     def _delete_tentacles_arch():
-        pass
+        if os.path.exists(TENTACLES_PATH):
+            shutil.rmtree(TENTACLES_PATH)
 
     @staticmethod
     def _create_missing_tentacles_arch():
-        pass
+        tentacle_architecture, tentacle_extremity_architecture = TentacleManager._get_tentacles_arch()
+        for tentacle_root, subdir in tentacle_architecture.items():
+            TentacleManager._find_or_create(tentacle_root)
+            for tentacle_type_dir, types_subdir in subdir.items():
+                type_path = os.path.join(tentacle_root, tentacle_type_dir)
+                TentacleManager._find_or_create(type_path)
+                for module_type in types_subdir:
+                    module_path = os.path.join(type_path, module_type)
+                    TentacleManager._find_or_create(module_path)
+                    for extremity_folder in tentacle_extremity_architecture:
+                        module_content_path = os.path.join(module_path, extremity_folder)
+                        # add Advanced etc folders
+                        TentacleManager._find_or_create(module_content_path)
+                    init_path = os.path.join(module_path, PYTHON_INIT_FILE)
+                    # add init.py file
+                    TentacleManager._find_or_create(init_path, False)
+
+    @staticmethod
+    def _find_or_create(path, is_directory=True, file_content=TENTACLES_PYTHON_INIT_CONTENT):
+        if not os.path.exists(path):
+            if is_directory:
+                if not os.path.isdir(path):
+                    os.makedirs(path)
+            else:
+                if not os.path.isfile(path):
+                    # should be used for python init.py files only
+                    with open(path, "w+") as file:
+                        file.write(file_content)
+
+    @staticmethod
+    def _get_tentacles_arch():
+        tentacle_architecture = {
+            TENTACLES_PATH:
+                {
+                    TENTACLES_EVALUATOR_PATH: [
+                        TENTACLES_EVALUATOR_REALTIME_PATH,
+                        TENTACLES_EVALUATOR_SOCIAL_PATH,
+                        TENTACLES_EVALUATOR_TA_PATH,
+                        TENTACLES_EVALUATOR_STRATEGIES_PATH,
+                        TENTACLES_EVALUATOR_UTIL_PATH
+                    ],
+                    TENTACLES_TRADING_PATH: [
+                        TENTACLES_TRADING_MODE_PATH
+                    ]
+                }
+        }
+        tentacle_extremity_architecture = copy.deepcopy(TENTACLES_INSTALL_FOLDERS)
+        tentacle_extremity_architecture.append(EVALUATOR_CONFIG_FOLDER)
+        return tentacle_architecture, tentacle_extremity_architecture
 
     @staticmethod
     def _check_format(component):
@@ -527,12 +583,14 @@ class TentacleManager:
     def _create_path_from_type(module_type, module_subtype, target_folder):
         # create path from types
         if module_subtype:
-            return "{0}/{1}/{2}".format(TENTACLE_TYPES[module_type],
-                                        TENTACLE_TYPES[module_subtype],
-                                        target_folder)
+            return "{0}/{1}/{2}/{3}".format(TENTACLES_PATH,
+                                            TENTACLE_TYPES[module_type],
+                                            TENTACLE_TYPES[module_subtype],
+                                            target_folder)
         else:
-            return "{0}/{1}".format(TENTACLE_TYPES[module_type],
-                                    target_folder)
+            return "{0}/{1}/{2}".format(TENTACLES_PATH,
+                                        TENTACLE_TYPES[module_type],
+                                        target_folder)
 
     @staticmethod
     def _parse_module(package):
@@ -616,7 +674,8 @@ class TentacleManager:
     @staticmethod
     def _read_tentacles(path, description_list):
         for file_name in os.listdir(path):
-            if TentacleManager._check_path(path) and file_name.endswith(".py") and file_name != "__init__.py":
+            if TentacleManager._check_path(path) and file_name.endswith(".py") \
+                    and file_name != PYTHON_INIT_FILE:
                 with open("{0}/{1}".format(path, file_name), "r") as module:
                     TentacleManager._parse_module_file(module.read(), description_list)
             else:
