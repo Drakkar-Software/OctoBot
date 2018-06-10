@@ -1,23 +1,21 @@
-import logging
-
 from config.cst import TimeFramesMinutes, TimeFrames, CONFIG_TIME_FRAME
 
 
-class TimeFrameManager:
-    TimeFramesRank = sorted(TimeFramesMinutes, key=TimeFramesMinutes.__getitem__)
+def _sort_time_frames(time_frames):
+    return sorted(time_frames, key=TimeFramesMinutes.__getitem__)
 
+
+class TimeFrameManager:
+    TimeFramesRank = _sort_time_frames(TimeFramesMinutes)
+
+    # requires EvaluatorCreator.init_time_frames_from_strategies(self.config) to be called previously
     @staticmethod
     def get_config_time_frame(config):
-        if CONFIG_TIME_FRAME in config:
-            result = []
-            for time_frame in config[CONFIG_TIME_FRAME]:
-                try:
-                    result.append(TimeFrames(time_frame))
-                except ValueError:
-                    logging.warning("Time frame not found : {0}".format(time_frame))
-            return result
-        else:
-            return TimeFrames
+        return config[CONFIG_TIME_FRAME]
+
+    @staticmethod
+    def sort_time_frames(time_frames):
+        return _sort_time_frames(time_frames)
 
     @staticmethod
     def get_previous_time_frame(config_time_frames, time_frame, origin_time_frame):

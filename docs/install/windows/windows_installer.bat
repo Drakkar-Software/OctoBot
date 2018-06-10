@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 @echo off
 REM VARS
 set bot_location="../../../"

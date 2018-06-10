@@ -106,11 +106,6 @@ ENV/
 # config
 config/config.json
 
-# evaluators
-/.gitmodules
-**/Default/*.*
-**/Advanced/*.*
-
 # Specific config
 config/evaluator_config.json
 
@@ -120,3 +115,6 @@ backtesting/collector/data/**
 logs/matrix_history\.data
 
 logs/OctoBot\.log\.*
+
+# Tentacles
+tentacles

@@ -6,6 +6,8 @@ from evaluator.Strategies import StrategiesEvaluator
 from evaluator.TA import TAEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
+from config.cst import CONFIG_TIME_FRAME
+from tools.time_frame_manager import TimeFrameManager
 
 
 class EvaluatorCreator:
@@ -118,3 +120,13 @@ class EvaluatorCreator:
                 strategies_eval_list.append(strategies_eval_class_instance)
 
         return strategies_eval_list
+
+    @staticmethod
+    def init_time_frames_from_strategies(config):
+        time_frame_list = set()
+        for strategies_eval_class in AdvancedManager.create_advanced_evaluator_types_list(StrategiesEvaluator, config):
+            if strategies_eval_class.is_enabled(config, False):
+                for time_frame in strategies_eval_class.get_required_time_frames():
+                    time_frame_list.add(time_frame)
+        time_frame_list = TimeFrameManager.sort_time_frames(time_frame_list)
+        config[CONFIG_TIME_FRAME] = time_frame_list

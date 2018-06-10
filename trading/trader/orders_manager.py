@@ -51,8 +51,9 @@ class OrdersManager(threading.Thread):
                                                                                  order.get_name(),
                                                                                  order.get_id(),
                                                                                  self.trader.get_exchange().get_name()))
-        except ValueError:
-            pass
+
+        except Exception as e:
+            self.logger.error(str(e))
 
     def stop(self):
         self.keep_running = False

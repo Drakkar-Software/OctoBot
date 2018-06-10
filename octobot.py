@@ -44,6 +44,8 @@ class OctoBot:
         if CONFIG_DEBUG_OPTION_PERF in self.config and self.config[CONFIG_DEBUG_OPTION_PERF]:
             self.performance_analyser = PerformanceAnalyser()
 
+        # Init time frames using enabled strategies
+        EvaluatorCreator.init_time_frames_from_strategies(self.config)
         self.time_frames = TimeFrameManager.get_config_time_frame(self.config)
 
         # Add services to self.config[CONFIG_CATEGORY_SERVICES]
