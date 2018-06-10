@@ -19,7 +19,7 @@ CONFIG_ENABLED_OPTION = "enabled"
 CONFIG_SYMBOL = "symbol"
 
 # Files
-CONFIG_FILE = "config/config.json"
+CONFIG_FILE = "config.json"
 CONFIG_EVALUATOR_FILE = "config/evaluator_config.json"
 
 # Advanced
