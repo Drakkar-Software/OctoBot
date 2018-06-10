@@ -120,3 +120,6 @@ backtesting/collector/data/**
 logs/matrix_history\.data
 
 logs/OctoBot\.log\.*
+
+# Tentacles
+tentacles

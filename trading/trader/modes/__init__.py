@@ -1,2 +1,1 @@
-from .Default import *
-from .Advanced import *
+from tentacles.Trading.Mode import *
