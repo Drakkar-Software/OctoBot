@@ -106,11 +106,6 @@ ENV/
 # config
 config/config.json
 
-# evaluators
-/.gitmodules
-**/Default/*.*
-**/Advanced/*.*
-
 # Specific config
 config/evaluator_config.json
 
