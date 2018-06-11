@@ -34,7 +34,7 @@ echo **Installing requirements...**
 REM CONFIGURATION
 echo **Set default configuration...**
 cd %config_path%
-copy default_config.json config.json
+copy default_config.json ../config.json
 copy default_evaluator_config.json evaluator_config.json
 
 REM BOT MODULES INSTALL

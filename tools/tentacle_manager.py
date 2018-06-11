@@ -1,8 +1,8 @@
-import json
 import logging
 import os
 import shutil
 import copy
+import json
 from enum import Enum
 
 import requests
@@ -16,7 +16,8 @@ from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLE
     TENTACLE_MODULE_DESCRIPTION, TENTACLES_INSTALL_FOLDERS, TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, \
     TENTACLES_TRADING_PATH, TENTACLES_EVALUATOR_REALTIME_PATH, TENTACLES_EVALUATOR_TA_PATH, \
     TENTACLES_EVALUATOR_SOCIAL_PATH, TENTACLES_EVALUATOR_STRATEGIES_PATH, TENTACLES_EVALUATOR_UTIL_PATH, \
-    TENTACLES_TRADING_MODE_PATH, TENTACLES_PYTHON_INIT_CONTENT, PYTHON_INIT_FILE
+    TENTACLES_TRADING_MODE_PATH, TENTACLES_PYTHON_INIT_CONTENT, PYTHON_INIT_FILE, CONFIG_EVALUATOR_FILE_PATH, \
+    CONFIG_DEFAULT_EVALUATOR_FILE
 
 
 class TentacleManager:
@@ -86,33 +87,13 @@ class TentacleManager:
 
             # Update local __init__
             line_in_init = "from .{0} import *\n".format(module_name)
-            init_content = ""
             init_file = "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH,
                                                      TENTACLE_TYPES[module_type],
                                                      TENTACLE_TYPES[module_subtype],
                                                      target_folder,
                                                      PYTHON_INIT_FILE)
 
-            if os.path.isfile(init_file):
-                with open(init_file, "r") as init_file_r:
-                    init_content = init_file_r.read()
-
-            # check if line already exists
-            line_exists = False if init_content.find(line_in_init) == -1 else True
-
-            # Add new package in init file
-            if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
-                if not line_exists:
-                    with open(init_file, "w") as init_file_w:
-                        # add new package to init
-                        init_file_w.write(init_content + line_in_init)
-
-            # remove package line from init file
-            elif action == TentacleManagerActions.UNINSTALL:
-                if line_exists:
-                    with open(init_file, "w") as init_file_w:
-                        # remove package to uninstall from init
-                        init_file_w.write(init_content.replace(line_in_init, ""))
+            self._update_init_file(action, init_file, line_in_init)
 
             if action == TentacleManagerActions.INSTALL:
                 self.logger.info("{0} {1} successfully installed in: {2}"
@@ -181,8 +162,9 @@ class TentacleManager:
                     self.logger.error("can't find module: {0} required for {1} in installed Tentacles. "
                                       "Try to install the required Tentacle".format(module_name, requiring))
                 else:
-                    self.logger.info("new module found in Tentacles: {}. "
-                                     "You can install it using the install command.".format(module_name))
+                    self.logger.info("new module found in Tentacles: {0}. "
+                                     "You can install it using the command: {1}"
+                                     .format(module_name, "start.py -p install {0}".format(module_name)))
 
             return False
         else:
@@ -322,6 +304,7 @@ class TentacleManager:
                 else:
                     commands.pop(0)
                     self.install_parser(commands, False)
+                self._update_evaluator_config_file()
 
             elif commands[0] == "update":
                 if commands[1] == "all":
@@ -329,6 +312,7 @@ class TentacleManager:
                 else:
                     commands.pop(0)
                     self.update_parser(commands, False)
+                self._update_evaluator_config_file()
 
             elif commands[0] == "uninstall":
                 if commands[1] == "all":
@@ -336,6 +320,7 @@ class TentacleManager:
                 else:
                     commands.pop(0)
                     self.uninstall_parser(commands, False)
+                self._update_evaluator_config_file()
 
             elif commands[0] == "reset_tentacles":
                 self.reset_tentacles()
@@ -682,6 +667,103 @@ class TentacleManager:
                 file_name = "{0}/{1}".format(path, file_name)
                 if os.path.isdir(file_name) and not path.startswith('.'):
                     TentacleManager._read_tentacles(file_name, description_list)
+
+    @staticmethod
+    def _update_init_file(action, init_file, line_in_init):
+        init_content = ""
+        if os.path.isfile(init_file):
+            with open(init_file, "r") as init_file_r:
+                init_content = init_file_r.read()
+
+        # check if line already exists
+        line_exists = False if init_content.find(line_in_init) == -1 else True
+
+        # Add new package in init file
+        if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
+            if not line_exists:
+                with open(init_file, "w") as init_file_w:
+                    # add new package to init
+                    init_file_w.write(init_content + line_in_init)
+
+        # remove package line from init file
+        elif action == TentacleManagerActions.UNINSTALL:
+            if line_exists:
+                with open(init_file, "w") as init_file_w:
+                    # remove package to uninstall from init
+                    init_file_w.write(init_content.replace(line_in_init, ""))
+
+    @staticmethod
+    def _add_evaluator_to_evaluator_config_content(evaluator_type, evaluator_config_content,
+                                                   evaluator_list, activated=False):
+        from evaluator.Util.advanced_manager import AdvancedManager
+        changed_something = False
+        current_evaluator_list = AdvancedManager.create_default_evaluator_types_list(evaluator_type)
+        for eval_class in current_evaluator_list:
+            if not eval_class.get_name() in evaluator_config_content:
+                evaluator_config_content[eval_class.get_name()] = activated
+                changed_something = True
+        evaluator_list += current_evaluator_list
+        return changed_something
+
+    @staticmethod
+    def _update_evaluator_config_file(evaluator_config_file=CONFIG_EVALUATOR_FILE_PATH):
+
+        logger = logging.getLogger(TentacleManager.__name__)
+        try:
+            from evaluator.RealTime import RealTimeEvaluator
+            from evaluator.Social import SocialEvaluator
+            from evaluator.Strategies import StrategiesEvaluator
+            from evaluator.TA import TAEvaluator
+
+            logger.info("Updating {} using new data...".format(evaluator_config_file))
+            config_content = {}
+            changed_something = False
+            if os.path.isfile(evaluator_config_file):
+                with open(evaluator_config_file, "r") as evaluator_config_file_r:
+                    default_config_file_content = evaluator_config_file_r.read()
+                    try:
+                        config_content = json.loads(default_config_file_content)
+                    except Exception:
+                        pass
+            if os.path.isfile(CONFIG_DEFAULT_EVALUATOR_FILE):
+                with open(CONFIG_DEFAULT_EVALUATOR_FILE, "r") as default_evaluator_config_file_r:
+                    default_config_file_content = default_evaluator_config_file_r.read()
+                    default_config_content = json.loads(default_config_file_content)
+                    for key, val in default_config_content.items():
+                        if key not in config_content:
+                            config_content[key] = val
+                            changed_something = True
+
+            evaluator_list = []
+            evaluators_in_config = [TAEvaluator, SocialEvaluator, RealTimeEvaluator, StrategiesEvaluator]
+            for evaluator_in_config in evaluators_in_config:
+                changed_something = TentacleManager._add_evaluator_to_evaluator_config_content(
+                    evaluator_in_config, config_content, evaluator_list) or changed_something
+
+            to_remove = []
+            str_evaluator_list = [e.get_name() for e in evaluator_list]
+            for key in config_content.keys():
+                if key not in str_evaluator_list:
+                    to_remove.append(key)
+
+            for key_to_remove in to_remove:
+                config_content.pop(key_to_remove)
+                changed_something = True
+
+            if changed_something:
+                with open(evaluator_config_file, "w+") as evaluator_config_file_w:
+                    evaluator_config_file_w.write(json.dumps(config_content, indent=4, sort_keys=True))
+                    logger.info("{} has been updated".format(evaluator_config_file))
+            else:
+                logger.info("Nothing to update in {}".format(evaluator_config_file))
+        except ImportError as e:
+            logger.exception(e)
+            logger.error("It looks like a dependency of a module got deleted, Octobot might not work after this.\n"
+                         "If you should re-install the removed module(s).\nError: {0}".format(e))
+        except Exception as e:
+            logger.error("Something went wrong: {}.\nIf Octobot is now working after this, you should re-install your "
+                         "tentacles (start.py -p install all).\nIf this problem keeps appearing, try to reset all the "
+                         "tentacles (start.py -p reset_tentacles).".format(e))
 
 
 class TentacleManagerActions(Enum):
