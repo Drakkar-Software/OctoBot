@@ -65,6 +65,10 @@ class ExchangeManager:
 
         self.is_ready = True
 
+    # should be used only in specific case
+    def get_ccxt_exchange(self):
+        return self.exchange
+
     def get_exchange(self):
         return self.exchange_dispatcher
 
