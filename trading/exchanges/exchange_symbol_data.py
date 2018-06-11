@@ -16,6 +16,8 @@ class SymbolData:
         self.recent_trades = []
         self.symbol_ticker = None
 
+        self.are_recent_trades_initialized = False
+
     '''
     Called by exchange dispatcher
     '''
@@ -86,6 +88,12 @@ class SymbolData:
 
     def get_symbol_prices(self, time_frame, limit=None, return_list=False):
         return self.get_candle_data(time_frame).get_symbol_prices(limit, return_list)
+
+    def recent_trades_are_initialized(self):
+        return self.are_recent_trades_initialized
+
+    def init_recent_trades(self):
+        self.are_recent_trades_initialized = True
 
 
 class CandleData:
