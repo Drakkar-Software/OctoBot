@@ -282,9 +282,8 @@ class TentacleManager:
                         pass
                 elif action == TentacleManagerActions.UPDATE:
                     self.logger.info("{0} configuration file for {1} module ignored to save the current "
-                                        "configuration. Re-install this module if you want to restore the default "
-                                        "configuration.".format(config_file, module_name))
-                    pass
+                                     "configuration. Re-install this module if you want to restore the default "
+                                     "configuration.".format(config_file, module_name))
 
     def _has_just_processed_module(self, module_name, module_version):
         return self._is_module_in_list(module_name, module_version, self.just_processed_modules)
@@ -756,11 +755,8 @@ class TentacleManager:
                     logger.info("{} has been updated".format(evaluator_config_file))
             else:
                 logger.info("Nothing to update in {}".format(evaluator_config_file))
-        except ImportError as e:
-            logger.exception(e)
-            logger.error("It looks like a dependency of a module got deleted, Octobot might not work after this.\n"
-                         "If you should re-install the removed module(s).\nError: {0}".format(e))
         except Exception as e:
+            logger.exception(e)
             logger.error("Something went wrong: {}.\nIf Octobot is now working after this, you should re-install your "
                          "tentacles (start.py -p install all).\nIf this problem keeps appearing, try to reset all the "
                          "tentacles (start.py -p reset_tentacles).".format(e))
