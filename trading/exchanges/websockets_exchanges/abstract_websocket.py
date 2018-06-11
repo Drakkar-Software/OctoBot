@@ -21,9 +21,8 @@ class AbstractWebSocket:
     def get_name(cls):
         raise NotImplementedError("get_name not implemented")
 
-    @staticmethod
     @abstractmethod
-    def convert_into_ccxt_order(order):
+    def convert_into_ccxt_order(self, order):
         raise NotImplementedError("convert_into_ccxt_order not implemented")
 
     @abstractmethod
@@ -50,6 +49,13 @@ class AbstractWebSocket:
     def _update_order(self, msg):
         ccxt_order = self.convert_into_ccxt_order(msg)
         self.exchange_manager.get_exchange_personal_data().upsert_order(ccxt_order["id"], ccxt_order)
+
+    def _parse_symbol_from_ccxt(self, symbol):
+        try:
+            return self.exchange_manager.get_ccxt_exchange().get_client().markets_by_id[symbol]['symbol']
+        except Exception as e:
+            self.logger.error("Can't parse {} from ccxt exchange".format(symbol))
+            raise e
 
     @staticmethod
     @abstractmethod

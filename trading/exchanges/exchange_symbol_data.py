@@ -106,10 +106,11 @@ class CandleData:
         self.volume_candles_array = None
 
         self.set_all_candles(all_candles_data)
-        self.is_initialized = True
 
         if create_arrays:
             self.create_all_arrays()
+
+        self.is_initialized = True
 
     # getters
     def get_symbol_close_candles(self, limit=None, return_list=False):
