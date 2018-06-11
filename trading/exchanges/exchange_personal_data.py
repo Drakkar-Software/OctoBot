@@ -7,7 +7,9 @@ class ExchangePersonalData:
     def __init__(self):
         self.portfolio = {}
         self.orders = {}
-        self.is_initialized = False
+
+        self.portfolio_is_initialized = False
+        self.orders_are_initialized = False
 
     def update_portfolio(self, currency, total, available, in_order):
         self.portfolio[currency] = {
@@ -15,6 +17,18 @@ class ExchangePersonalData:
             CONFIG_PORTFOLIO_USED: in_order,
             CONFIG_PORTFOLIO_TOTAL: total
         }
+
+    def init_portfolio(self):
+        self.portfolio_is_initialized = True
+
+    def init_orders(self):
+        self.orders_are_initialized = True
+
+    def portfolio_is_initialized(self):
+        return self.portfolio_is_initialized
+
+    def orders_are_initialized(self):
+        return self.orders_are_initialized
 
     def set_portfolio(self, portfolio):
         self.portfolio = portfolio

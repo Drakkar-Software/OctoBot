@@ -128,15 +128,21 @@ class BinanceWebSocketClient(AbstractWebSocket):
             self.start_sockets()
         else:
             msg_stream_type = msg["stream"]
+
+            symbol_data = self.exchange_manager.get_symbol_data(self._adapt_symbol(msg["data"]["s"]))
+
             if self._TICKER_KEY in msg_stream_type:
-                self.exchange_manager.get_symbol_data(self._adapt_symbol(msg["data"]["s"])).update_symbol_ticker(
-                    msg["data"])
+                if symbol_data.price_ticker_is_initialized():
+                    symbol_data.update_symbol_ticker(msg["data"])
+
             elif self._KLINE_KEY in msg_stream_type:
-                self.get_symbol_data(self._adapt_symbol(msg["data"]["s"])).update_symbol_candles(
-                    self._convert_time_frame(msg["data"]["k"]["i"]),
-                    self._create_candle(msg["data"]["k"]),
-                    start_candle_time=msg["data"]["k"]["t"],
-                    replace_all=False)
+                time_frame = self._convert_time_frame(msg["data"]["k"]["i"])
+                if symbol_data.candles_are_initialized(time_frame):
+                    symbol_data.update_symbol_candles(
+                        time_frame,
+                        self._create_candle(msg["data"]["k"]),
+                        start_candle_time=msg["data"]["k"]["t"],
+                        replace_all=False)
 
     def user_callback(self, msg):
         if msg["e"] == "outboundAccountInfo":
@@ -172,12 +178,13 @@ class BinanceWebSocketClient(AbstractWebSocket):
         ]
 
     def _update_portfolio(self, msg):
-        for currency in msg['B']:
-            free = float(currency['f'])
-            locked = float(currency['l'])
-            total = free + locked
-            self.exchange_manager.get_personal_data().update_portfolio(self._adapt_symbol(currency['a']),
-                                                                       total, free, locked)
+        if self.exchange_manager.get_personal_data().portfolio_is_initialized():
+            for currency in msg['B']:
+                free = float(currency['f'])
+                locked = float(currency['l'])
+                total = free + locked
+                self.exchange_manager.get_personal_data().update_portfolio(self._adapt_symbol(currency['a']),
+                                                                           total, free, locked)
 
     # unimplemented methods
     @staticmethod
