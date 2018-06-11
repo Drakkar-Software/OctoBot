@@ -1,6 +1,6 @@
 import time
 from abc import *
-from config.cst import MAX_TA_EVAL_TIME_SECONDS
+from config.cst import MAX_TA_EVAL_TIME_SECONDS, START_PENDING_EVAL_NOTE
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 

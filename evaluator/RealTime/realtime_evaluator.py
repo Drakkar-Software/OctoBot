@@ -62,12 +62,14 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
 
     def run(self):
         while self.keep_running:
-            now = time.time()
-            try:
-                self._refresh_data()
-            except Exception as e:
-                self.logger.error("error when refreshing data for {0}: {1}".format(self.symbol, e))
-            self.eval()
+            if self.is_active:
+                now = time.time()
+                try:
+                    self.logger.info(self.symbol+" refresh RealTime")
+                    self._refresh_data()
+                except Exception as e:
+                    self.logger.error("error when refreshing data for {0}: {1}".format(self.symbol, e))
+                self.eval()
 
             if not Backtesting.enabled(self.config):
                 sleeping_time = self.refresh_time - (time.time() - now)

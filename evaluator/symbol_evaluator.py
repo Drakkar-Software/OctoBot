@@ -4,6 +4,9 @@ import logging
 from config.cst import EvaluatorMatrixTypes, CONFIG_TRADER_MODE, CONFIG_TRADER
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_matrix import EvaluatorMatrix
+from evaluator.TA import TAEvaluator
+from evaluator.RealTime import RealTimeTAEvaluator
+from evaluator.Social import SocialEvaluator
 from trading.trader import modes
 from trading.trader.modes import AbstractTradingMode
 
@@ -63,6 +66,57 @@ class SymbolEvaluator:
             new_matrix.set_eval(EvaluatorMatrixTypes.STRATEGIES, strategies_evaluator.get_name(),
                                 strategies_evaluator.get_eval_note())
 
+    @staticmethod
+    def _get_evaluators_from_strategy(strategy, TA_list, RT_list, social_list):
+        TA_subclasses = [subclass.__name__ for subclass in TAEvaluator.get_all_subclasses()]
+        RT_subclasses = [subclass.__name__ for subclass in RealTimeTAEvaluator.get_all_subclasses()]
+        social_subclasses = [subclass.__name__ for subclass in SocialEvaluator.get_all_subclasses()]
+        # add wildcard handling
+        for evaluator in strategy.get_required_evaluators():
+            if evaluator in TA_subclasses:
+                TA_list.add(evaluator)
+            elif evaluator in RT_subclasses:
+                RT_list.add(evaluator)
+            elif evaluator in social_subclasses:
+                social_list.add(evaluator)
+
+    @staticmethod
+    def _filter_and_deactivate_evaluator(to_change_eval, to_keep_eval, activate, evaluator_instances):
+        # add advanced classes management
+        evaluator_instances_names = [evaluator.__class__.__name__ for evaluator in evaluator_instances]
+        for evaluator in to_change_eval:
+            if activate or evaluator not in to_keep_eval:
+                eval_instance = evaluator_instances[evaluator_instances_names.index(evaluator)]
+                eval_instance.set_is_active(activate)
+                if activate:
+                    eval_instance.reset()
+
+    def activate_deactivate_strategies(self, strategies, exchange, activate=True):
+        to_change_social = set()
+        to_change_TA = set()
+        to_change_RT = set()
+        strategy_classes = [strat.__class__ for strat in self.get_strategies_eval_list(exchange)]
+        for strategy in strategies:
+            if strategy in strategy_classes:
+                self._get_evaluators_from_strategy(strategy, to_change_TA, to_change_RT, to_change_social)
+                self.get_strategies_eval_list(exchange)[strategy_classes.index(strategy)].set_is_active(activate)
+            else:
+                raise RuntimeError("{0} strategy to be activated or deactivated is not in {1} symbol evaluator's "
+                                   "strategies_eval_lists for {2} exchange.".format(strategy, self.symbol, exchange))
+
+        to_keep_TA = set()
+        to_keep_RT = set()
+        to_keep_social = set()
+        for strategy in self.get_strategies_eval_list(exchange, True):
+            self._get_evaluators_from_strategy(strategy, to_keep_TA, to_keep_RT, to_keep_social)
+
+        # only deactivate realtime evaluators and TA evaluators
+        for evaluator_thread_manager in self.evaluator_thread_managers[exchange.get_name()].values():
+            self._filter_and_deactivate_evaluator(to_change_TA, to_keep_TA, activate,
+                                                  evaluator_thread_manager.evaluator.get_ta_eval_list())
+        self._filter_and_deactivate_evaluator(to_change_RT, to_keep_RT, activate,
+                                              evaluator_thread_manager.evaluator.get_real_time_eval_list())
+
     def finalize(self, exchange):
         if not self.finalize_enabled_list[exchange.get_name()]:
             self._check_finalize(exchange)
@@ -97,8 +151,13 @@ class SymbolEvaluator:
     def get_config(self):
         return self.config
 
-    def get_strategies_eval_list(self, exchange):
-        return self.strategies_eval_lists[exchange.get_name()]
+    def get_strategies_eval_list(self, exchange, active_only=False):
+        if not active_only:
+            return self.strategies_eval_lists[exchange.get_name()]
+        else:
+            return [strategy
+                    for strategy in self.strategies_eval_lists[exchange.get_name()]
+                    if strategy.get_is_active()]
 
     def get_symbol(self):
         return self.symbol

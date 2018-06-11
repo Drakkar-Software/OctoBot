@@ -26,6 +26,16 @@ class CryptocurrencyEvaluator:
     def add_symbol_evaluator(self, symbol, symbol_evaluator):
         self.symbol_evaluator_list[symbol] = symbol_evaluator
 
+    def _activate_deactivate_strategies(self, strategies, exchange, activate=True):
+        for symbol_evaluator in self.symbol_evaluator_list.values():
+            symbol_evaluator.activate_deactivate_strategies(strategies, exchange, activate)
+
+    def deactivate_strategies(self, strategies, exchange):
+        self._activate_deactivate_strategies(strategies, exchange, False)
+
+    def activate_strategies(self, strategies, exchange):
+        self._activate_deactivate_strategies(strategies, exchange, True)
+
     def start_threads(self):
         self.social_evaluator_refresh.start()
 
