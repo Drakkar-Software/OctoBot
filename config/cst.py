@@ -18,10 +18,6 @@ CONFIG_GLOBAL_UTILS = "global_utils"
 CONFIG_ENABLED_OPTION = "enabled"
 CONFIG_SYMBOL = "symbol"
 
-# Files
-CONFIG_FILE = "config/config.json"
-CONFIG_EVALUATOR_FILE = "config/evaluator_config.json"
-
 # Advanced
 CONFIG_ADVANCED_CLASSES = "advanced_classes"
 CONFIG_ADVANCED_INSTANCES = "advanced_instances"
@@ -188,6 +184,12 @@ TENTACLE_TYPES = {"Evaluator": TENTACLES_EVALUATOR_PATH,
                   "Strategies": TENTACLES_EVALUATOR_STRATEGIES_PATH,
                   "Trading": TENTACLES_TRADING_PATH,
                   "Mode": TENTACLES_TRADING_MODE_PATH}
+
+# Files
+CONFIG_FILE = "config.json"
+CONFIG_EVALUATOR_FILE = "evaluator_config.json"
+CONFIG_EVALUATOR_FILE_PATH = "{}/{}/{}".format(TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, CONFIG_EVALUATOR_FILE)
+CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
 
 
 class EvaluatorMatrixTypes(Enum):
