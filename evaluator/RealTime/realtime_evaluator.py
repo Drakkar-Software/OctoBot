@@ -65,7 +65,7 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
             if self.is_active:
                 now = time.time()
                 try:
-                    self.logger.info(self.symbol+" refresh RealTime")
+                    # self.logger.info(self.symbol+" refresh RealTime")
                     self._refresh_data()
                 except Exception as e:
                     self.logger.error("error when refreshing data for {0}: {1}".format(self.symbol, e))
