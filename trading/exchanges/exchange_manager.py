@@ -48,13 +48,13 @@ class ExchangeManager:
             if self.check_web_socket_config(self.exchange.get_name()):
                 for socket_manager in AbstractWebSocket.__subclasses__():
                     if socket_manager.get_name() == self.exchange.get_name():
-                        client = socket_manager.get_websocket_client(self.config, self)
+                        self.exchange_web_socket = socket_manager.get_websocket_client(self.config, self)
 
                         # init websocket
-                        client.init_web_sockets(self.get_config_time_frame(), self.get_traded_pairs())
+                        self.exchange_web_socket.init_web_sockets(self.get_config_time_frame(), self.get_traded_pairs())
 
                         # start the websocket
-                        client.start_sockets()
+                        self.exchange_web_socket.start_sockets()
 
         # if simulated : create exchange simulator instance
         else:

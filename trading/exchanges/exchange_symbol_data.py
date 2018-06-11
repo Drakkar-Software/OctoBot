@@ -1,6 +1,8 @@
+import logging
+
 import numpy as np
 
-from config.cst import PriceStrings, PriceIndexes
+from config.cst import PriceIndexes
 
 
 class SymbolData:
@@ -17,23 +19,26 @@ class SymbolData:
         self.symbol_ticker = None
 
         self.are_recent_trades_initialized = False
+        self.logger = logging.getLogger("{0} - {1}".format(self.__class__.__name__, self.symbol))
 
     '''
     Called by exchange dispatcher
     '''
 
     # candle functions
-    def update_symbol_candles(self, time_frame, new_symbol_candles_data, start_candle_time=None, replace_all=False):
+    def update_symbol_candles(self, time_frame, new_symbol_candles_data, replace_all=False):
         if time_frame not in self.symbol_candles or replace_all:
             self.symbol_candles[time_frame] = CandleData(new_symbol_candles_data)
 
-        # else check if we should edit the last candle or move to a new one
-        elif start_candle_time is not None and self._has_candle_changed(time_frame, start_candle_time):
-            self.symbol_candles[time_frame].change_current_candle(new_symbol_candles_data)
-
-        # only need to edit the last candle
         else:
-            self.symbol_candles[time_frame].set_last_candle(new_symbol_candles_data)
+            candle_data = self.symbol_candles[time_frame]
+            # else check if we should edit the last candle or move to a new one
+            if candle_data.should_add_new_candle(new_symbol_candles_data[PriceIndexes.IND_PRICE_TIME.value]):
+                candle_data.change_current_candle(new_symbol_candles_data)
+
+            # only need to edit the last candle
+            else:
+                candle_data.set_last_candle(new_symbol_candles_data)
 
     # ticker functions
     def update_symbol_ticker(self, new_symbol_ticker_data):
@@ -70,8 +75,9 @@ class SymbolData:
         return self.recent_trades
 
     # private functions
-    def _has_candle_changed(self, time_frame, start_candle_time):
-        if self.symbol_candles[time_frame].get_symbol_time_candles(1) < start_candle_time:
+    @staticmethod
+    def _has_candle_changed(candle_data, start_candle_time):
+        if candle_data.time_candles_list[-1] < start_candle_time:
             return True
         else:
             return False
@@ -200,7 +206,7 @@ class CandleData:
         self.set_last_candle_arrays(self.volume_candles_list, self.volume_candles_array)
 
     @staticmethod
-    def set_last_candle_arrays(array_to_update, list_updated):
+    def set_last_candle_arrays(list_updated, array_to_update):
         if array_to_update is not None:
             array_to_update[-1] = list_updated[-1]
 
@@ -237,6 +243,9 @@ class CandleData:
             self.time_candles_list.pop(0)
             self.volume_candles_list.pop(0)
         self.add_new_candle(new_last_candle_data)
+
+    def should_add_new_candle(self, new_open_time):
+        return new_open_time not in self.time_candles_list
 
     def add_new_candle(self, new_candle_data):
         self.close_candles_list.append(new_candle_data[PriceIndexes.IND_PRICE_CLOSE.value])

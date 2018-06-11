@@ -122,6 +122,11 @@ class BinanceWebSocketClient(AbstractWebSocket):
         }
 
     def all_currencies_prices_callback(self, msg):
+
+        # TODO
+        # ORDER BOOK : Stream Name: <symbol>@depth<levels>
+        # Recent trades : Stream Name: <symbol>@trade
+
         if msg['data']['e'] == 'error':
             # close and restart the socket
             # self.close_sockets()
@@ -141,7 +146,6 @@ class BinanceWebSocketClient(AbstractWebSocket):
                     symbol_data.update_symbol_candles(
                         time_frame,
                         self._create_candle(msg["data"]["k"]),
-                        start_candle_time=msg["data"]["k"]["t"],
                         replace_all=False)
 
     def user_callback(self, msg):
