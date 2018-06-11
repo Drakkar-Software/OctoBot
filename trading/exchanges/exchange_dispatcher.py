@@ -8,7 +8,7 @@ class ExchangeDispatcher(AbstractExchange):
         super().__init__(config, exchange_type)
 
         self.exchange = exchange
-        self.exchange_web_socket = None
+        self.exchange_web_socket = exchange_web_socket
 
         self.symbols_data = {}
         self.exchange_personal_data = ExchangePersonalData()
@@ -156,7 +156,7 @@ class ExchangeDispatcher(AbstractExchange):
 
     def stop(self):
         if self._web_socket_available():
-            self.exchange_web_socket.stop()
+            self.exchange_web_socket.stop_sockets()
 
     def get_uniform_timestamp(self, timestamp):
         return self.exchange.get_uniform_timestamp(timestamp)
