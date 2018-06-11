@@ -45,6 +45,17 @@ class AbstractTradingModeDecider(AsynchronousServer):
                                        self.symbol_evaluator.get_trader(self.exchange),
                                        creator_key)
 
+    def cancel_symbol_open_orders(self):
+        cancel_loaded_orders = self.get_should_cancel_loaded_orders()
+
+        real_trader = self.symbol_evaluator.get_trader(self.exchange)
+        if real_trader.is_enabled():
+            real_trader.cancel_open_orders(self.symbol, cancel_loaded_orders)
+
+        trader_simulator = self.symbol_evaluator.get_trader_simulator(self.exchange)
+        if trader_simulator.is_enabled():
+            trader_simulator.cancel_open_orders(self.symbol, cancel_loaded_orders)
+
     def get_state(self):
         return self.state
 
@@ -60,6 +71,13 @@ class AbstractTradingModeDecider(AsynchronousServer):
 
     def stop(self):
         self.keep_running = False
+
+    # called by cancel_symbol_open_orders => return true if OctoBot should cancel all orders for a symbol including
+    # orders already existing when OctoBot started up
+    @classmethod
+    @abstractmethod
+    def get_should_cancel_loaded_orders(cls):
+        raise NotImplementedError("get_should_cancel_loaded_orders not implemented")
 
     # called first by finalize => when any notification appears
     @abstractmethod

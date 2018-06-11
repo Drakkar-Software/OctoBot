@@ -140,6 +140,7 @@ class Trader:
 
             title = "Order creation"
         else:
+            new_order.set_is_from_this_octobot(False)
             title = "Order loaded"
 
         self.logger.info("{0} : {1} | {2} | Price : {3} | Quantity : {4}".format(title,
@@ -169,12 +170,13 @@ class Trader:
                 self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
-    def cancel_open_orders(self, symbol):
+    def cancel_open_orders(self, symbol, cancel_loaded_orders=True):
         # use a copy of the list (not the reference)
         with self.order_manager.list_lock:
             for order in list(self.get_open_orders()):
                 if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
-                    self.notify_order_close(order, True)
+                    if cancel_loaded_orders or order.get_is_from_this_octobot():
+                        self.notify_order_close(order, True)
 
     def cancel_all_open_orders(self):
         # use a copy of the list (not the reference)
