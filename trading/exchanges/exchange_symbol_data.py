@@ -244,10 +244,11 @@ class CandleData:
     
     @staticmethod            
     def sanitize_last_candle(close_candle_data, high_candle_data, low_candle_data):
-        if low_candle_data[-1] > close_candle_data[-1]:
-            low_candle_data[-1] = close_candle_data[-1]
-        if high_candle_data[-1] < close_candle_data[-1]:
-            high_candle_data[-1] = close_candle_data[-1]
+        close_last_candle = close_candle_data[-1]
+        if low_candle_data[-1] > close_last_candle:
+            low_candle_data[-1] = close_last_candle
+        if high_candle_data[-1] < close_last_candle:
+            high_candle_data[-1] = close_last_candle
             
     @staticmethod
     def set_last_candle_arrays(list_updated, array_to_update):
