@@ -128,48 +128,42 @@ class CandleData:
         if return_list:
             return self.extract_limited_data(self.close_candles_list, limit)
         else:
-            if self.close_candles_array is None:
-                self.close_candles_array = self.convert_list_to_array(self.close_candles_list)
+            self.update_arrays()
             return self.extract_limited_data(self.close_candles_array, limit)
 
     def get_symbol_open_candles(self, limit=None, return_list=False):
         if return_list:
             return self.extract_limited_data(self.open_candles_list, limit)
         else:
-            if self.open_candles_array is None:
-                self.open_candles_array = self.convert_list_to_array(self.open_candles_list)
+            self.update_arrays()
             return self.extract_limited_data(self.open_candles_array, limit)
 
     def get_symbol_high_candles(self, limit=None, return_list=False):
         if return_list:
             return self.extract_limited_data(self.high_candles_list, limit)
         else:
-            if self.high_candles_array is None:
-                self.high_candles_array = self.convert_list_to_array(self.high_candles_list)
+            self.update_arrays()
             return self.extract_limited_data(self.high_candles_array, limit)
 
     def get_symbol_low_candles(self, limit=None, return_list=False):
         if return_list:
             return self.extract_limited_data(self.low_candles_list, limit)
         else:
-            if self.low_candles_array is None:
-                self.low_candles_array = self.convert_list_to_array(self.low_candles_list)
+            self.update_arrays()
             return self.extract_limited_data(self.low_candles_array, limit)
 
     def get_symbol_time_candles(self, limit=None, return_list=False):
         if return_list:
             return self.extract_limited_data(self.time_candles_list, limit)
         else:
-            if self.time_candles_array is None:
-                self.time_candles_array = self.convert_list_to_array(self.time_candles_list)
+            self.update_arrays()
             return self.extract_limited_data(self.time_candles_array, limit)
 
     def get_symbol_volume_candles(self, limit=None, return_list=False):
         if return_list:
             return self.extract_limited_data(self.volume_candles_list, limit)
         else:
-            if self.volume_candles_array is None:
-                self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
+            self.update_arrays()
             return self.extract_limited_data(self.volume_candles_array, limit)
 
     def get_symbol_prices(self, limit=None, return_list=False):
