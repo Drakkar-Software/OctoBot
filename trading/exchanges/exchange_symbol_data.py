@@ -232,6 +232,9 @@ class CandleData:
             self.low_candles_array = self.convert_list_to_array(self.low_candles_list)
             self.time_candles_array = self.convert_list_to_array(self.time_candles_list)
             self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
+            
+            if self.should_add_new_candle(self.time_candles_array[-1]):
+                self.update_arrays(self)
         else:
             self.set_last_candle_arrays(self.close_candles_list, self.close_candles_array)
             self.set_last_candle_arrays(self.high_candles_list, self.high_candles_array)
