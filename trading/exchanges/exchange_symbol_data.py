@@ -240,7 +240,15 @@ class CandleData:
             self.set_last_candle_arrays(self.high_candles_list, self.high_candles_array)
             self.set_last_candle_arrays(self.low_candles_list, self.low_candles_array)
             self.set_last_candle_arrays(self.volume_candles_list, self.volume_candles_array)
-
+            self.sanitize_last_candle(self.close_candles_array, self.high_candles_array, self.low_candles_array)
+    
+    @staticmethod            
+    def sanitize_last_candle(close_candle_data, high_candle_data, low_candle_data):
+        if low_candle_data[-1] > close_candle_data[-1]:
+            low_candle_data[-1] = close_candle_data[-1]
+        if high_candle_data[-1] < close_candle_data[-1]:
+            high_candle_data[-1] = close_candle_data[-1]
+            
     @staticmethod
     def set_last_candle_arrays(list_updated, array_to_update):
         if array_to_update is not None:
