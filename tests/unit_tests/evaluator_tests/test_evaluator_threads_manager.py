@@ -61,5 +61,5 @@ def test_default_values():
 def test_refresh_matrix():
     evaluator_thread_manager, time_frame, symbol_time_frame_updater_thread, symbol_evaluator = _get_tools()
     evaluator_thread_manager.matrix = None
-    evaluator_thread_manager._refresh_matrix()
+    evaluator_thread_manager.refresh_matrix()
     assert evaluator_thread_manager.matrix is not None

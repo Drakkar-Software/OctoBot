@@ -68,7 +68,7 @@ class EvaluatorThreadsManager:
         self.evaluator.update_ta_eval(ignored_evaluator)
 
         # update matrix
-        self._refresh_matrix()
+        self.refresh_matrix()
 
         # update strategies matrix
         self.symbol_evaluator.update_strategies_eval(self.matrix, self.exchange, ignored_evaluator)
@@ -77,26 +77,35 @@ class EvaluatorThreadsManager:
         self.symbol_evaluator.finalize(self.exchange)
         self.logger.debug("MATRIX : {0}".format(self.matrix.get_matrix()))
 
-    def _refresh_matrix(self):
+    def refresh_matrix(self):
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 
         for ta_eval in self.evaluator.get_ta_eval_list():
-            if ta_eval.is_active:
+            if ta_eval.get_is_active():
                 ta_eval.ensure_eval_note_is_not_expired()
                 self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
                                      ta_eval.get_eval_note(), self.time_frame)
+            else:
+                self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
+                                     START_PENDING_EVAL_NOTE, self.time_frame)
 
         for social_eval in self.evaluator.get_social_eval_list():
-            if social_eval.is_active:
+            if social_eval.get_is_active():
                 social_eval.ensure_eval_note_is_not_expired()
                 self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
                                      social_eval.get_eval_note(), None)
+            else:
+                self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
+                                     START_PENDING_EVAL_NOTE)
 
         for real_time_eval in self.evaluator.get_real_time_eval_list():
-            if real_time_eval.is_active:
+            if real_time_eval.get_is_active():
                 real_time_eval.ensure_eval_note_is_not_expired()
                 self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
                                      real_time_eval.get_eval_note())
+            else:
+                self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
+                                     START_PENDING_EVAL_NOTE)
 
     def start_threads(self):
         pass
