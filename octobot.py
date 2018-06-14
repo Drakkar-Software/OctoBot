@@ -127,8 +127,7 @@ class OctoBot:
 
                         # Verify that symbol exists on this exchange
                         if symbol in exchange.get_exchange_manager().get_traded_pairs():
-                            self._create_symbol_threads_managers(symbol,
-                                                                 exchange,
+                            self._create_symbol_threads_managers(exchange,
                                                                  symbol_evaluator)
 
                         # notify that exchange doesn't support this symbol
@@ -136,16 +135,15 @@ class OctoBot:
                             if not self.backtesting_enabled:
                                 self.logger.warning("{0} doesn't support {1}".format(exchange.get_name(), symbol))
 
-    def _create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
+    def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
         # Create real time TA evaluators
         real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
                                                                             exchange,
-                                                                            symbol)
+                                                                            symbol_evaluator.get_symbol())
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
             if exchange.get_exchange_manager().time_frame_exists(time_frame.value):
                 self.symbol_threads_manager[time_frame] = EvaluatorThreadsManager(self.config,
-                                                                                  symbol,
                                                                                   time_frame,
                                                                                   symbol_time_frame_updater_thread,
                                                                                   symbol_evaluator,

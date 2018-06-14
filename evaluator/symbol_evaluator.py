@@ -31,6 +31,8 @@ class SymbolEvaluator:
 
         self.trading_mode_class = self.get_trading_mode_class()
 
+        self.strategies_with_evaluators = {}
+
         self.all_TA_subclasses = None
         self.all_RT_subclasses = None
         self.all_social_subclasses = None
@@ -52,17 +54,17 @@ class SymbolEvaluator:
 
         raise Exception("Please specify a valid trading mode in your config file (trader -> mode)")
 
-    def add_evaluator_thread_manager(self, exchange, symbol, time_frame, evaluator_thread):
+    def add_evaluator_thread_manager(self, exchange, time_frame, evaluator_thread):
         if exchange.get_name() in self.evaluator_thread_managers:
             self.evaluator_thread_managers[exchange.get_name()][time_frame] = evaluator_thread
         else:
             self.evaluator_thread_managers[exchange.get_name()] = {time_frame: evaluator_thread}
-            self.trading_mode_instances[exchange.get_name()] = self.trading_mode_class(self.config, self, exchange,
-                                                                                       symbol)
 
             self.matrices[exchange.get_name()] = EvaluatorMatrix(self.config)
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
             self.finalize_enabled_list[exchange.get_name()] = False
+
+            self.trading_mode_instances[exchange.get_name()] = self.trading_mode_class(self.config, self, exchange)
 
     def update_strategies_eval(self, new_matrix, exchange, ignored_evaluator=None):
         for strategies_evaluator in self.get_strategies_eval_list(exchange):
@@ -134,29 +136,15 @@ class SymbolEvaluator:
                                                                                        evaluator_instances_names))
 
     def activate_deactivate_strategies(self, strategies, exchange, activate=True):
-        to_change_social = set()
         to_change_TA = set()
         to_change_RT = set()
-        strategy_classes = [strat.__class__ for strat in self.get_strategies_eval_list(exchange)]
-        strategy_classe_bases = set()
-        [strategy_classe_bases.update(s.get_parent_evaluator_classes()) for s in strategy_classes]
+        to_change_social = set()
+
         for strategy in strategies:
-            if strategy in strategy_classe_bases:
-                self._get_evaluators_from_strategy(strategy, to_change_TA, to_change_RT, to_change_social)
-
-                strategy_to_find = strategy
-                # get parent strategy if found in bases
-                if strategy not in strategy_classes:
-                    strategy_to_find = next(filter(lambda x: x in strategy_classes, strategy.get_all_subclasses()))
-
-                strat_inst = self.get_strategies_eval_list(exchange)[strategy_classes.index(strategy_to_find)]
-                strat_inst.set_is_active(activate)
-                if not activate and strat_inst.get_is_active():
-                    strat_inst.reset()
-            else:
-                raise RuntimeError("{0} strategy to be activated or deactivated is not in {1} symbol evaluator's "
-                                   "strategies_eval_lists for {2} exchange.".format(strategy.get_name(), self.symbol,
-                                                                                    exchange.get_name()))
+            self._get_evaluators_from_strategy(strategy, to_change_TA, to_change_RT, to_change_social)
+            strategy.set_is_active(activate)
+            if not activate and strategy.get_is_active():
+                strategy.reset()
 
         to_keep_TA = set()
         to_keep_RT = set()
@@ -184,7 +172,6 @@ class SymbolEvaluator:
         self.update_strategies_eval(next(iter(thread_managers.values())).matrix, exchange, None)
 
         self.logger.info("{} activated: {}".format([s.get_name() for s in strategies], activate))
-
 
     def finalize(self, exchange):
         if not self.finalize_enabled_list[exchange.get_name()]:

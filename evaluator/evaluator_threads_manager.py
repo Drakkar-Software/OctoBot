@@ -6,7 +6,6 @@ from evaluator.evaluator import Evaluator
 
 class EvaluatorThreadsManager:
     def __init__(self, config,
-                 symbol,
                  time_frame,
                  symbol_time_frame_updater_thread,
                  symbol_evaluator,
@@ -14,13 +13,13 @@ class EvaluatorThreadsManager:
                  real_time_ta_eval_list):
         self.config = config
         self.exchange = exchange
-        self.symbol = symbol
+        self.symbol = symbol_evaluator.get_symbol()
         self.time_frame = time_frame
         self.symbol_time_frame_updater_thread = symbol_time_frame_updater_thread
         self.symbol_evaluator = symbol_evaluator
 
         # notify symbol evaluator
-        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.symbol, self.time_frame, self)
+        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.time_frame, self)
 
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 
