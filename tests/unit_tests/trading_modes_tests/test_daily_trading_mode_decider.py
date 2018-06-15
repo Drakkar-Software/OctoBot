@@ -33,7 +33,7 @@ def _get_tools():
     symbol_evaluator.set_traders(exchange_traders2)
     symbol_evaluator.strategies_eval_lists[exchange_inst.get_name()] = EvaluatorCreator.create_strategies_eval_list(config)
 
-    trading_mode = DailyTradingMode(config, symbol_evaluator, exchange_inst, symbol)
+    trading_mode = DailyTradingMode(config, symbol_evaluator, exchange_inst)
     final_evaluator = trading_mode.get_decider()
     symbol_evaluator.trading_mode_instances[exchange_inst.get_name()] = trading_mode
 

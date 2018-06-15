@@ -1,3 +1,42 @@
+Changelog for 0.1.2-beta
+====================
+*Released date : June 16 2018*
+
+**Info** :
+- New pip package to install "tulipy"
+- config.json is now in Octobot's root folder
+
+# Concerned issues :
+    #214 [Time frames] Setup timeframes at OctoBot setup according to relevant strategies timeframe requirements
+    #220 [Tentacle Manager] Implement updating command
+    #224 [TA calulation] Study tulipindicators lib
+    #225 [Telegram] add get strategies and modes command
+    #226 [Data] Store symbol candles in dedicated class
+    #229 [Tentacle Manager] add cleanup and help
+    #230 [Architecture] Extract Tentacles and config from code folder
+    #231 [Architecture] evaluator_config.json updated by Tentacle Manager
+
+# New features :
+    - Tentacle Management : update, versions management
+    - Migrate from TA-lib indicators to tulipy
+    - Telegram Interface new command
+    - Architecture improvements
+
+Changelog for 0.1.1-beta
+====================
+*Released date : June 8 2018*
+
+# Concerned issues :
+    #197 Add evaluator specific config in tentacle installation
+    #211 [Order Management] set refresh period in OctoBot startup
+    #212 [Tentacles management] add dependancies management
+    #213 [Tentacles management] add tentacle removal system
+    #215 [Trading mode] Add config management
+    #217 [Trading Mode] Implement multiple mini creator (with part of pf)
+   
+# New features :
+    - Tentacle Management : uninstall, requirements, configuration files
+    
 Changelog for 0.1.0_2-beta
 ====================
 *Released date : June 3 2018*

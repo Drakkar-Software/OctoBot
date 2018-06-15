@@ -1,6 +1,7 @@
 import threading
 import time
 import logging
+import copy
 
 from backtesting.backtesting import Backtesting
 from config.cst import *
@@ -28,11 +29,14 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
     # notify the time frame's evaluator thread manager to refresh its data
     def _refresh_data(self, time_frame, limit=None):
         evaluator_thread_manager_to_notify = self.evaluator_threads_manager_by_time_frame[time_frame]
-        evaluator_thread_manager_to_notify.evaluator.set_data(
-            evaluator_thread_manager_to_notify.exchange.get_symbol_prices(
+        
+        numpy_candle_data = copy.deepcopy(evaluator_thread_manager_to_notify.exchange.get_symbol_prices(
                 evaluator_thread_manager_to_notify.symbol,
                 evaluator_thread_manager_to_notify.time_frame,
-                limit=limit))
+                limit=limit,
+                return_list=False))
+        
+        evaluator_thread_manager_to_notify.evaluator.set_data(numpy_candle_data)
         self.refreshed_times[time_frame] += 1
         evaluator_thread_manager_to_notify.notify(self.__class__.__name__)
 
@@ -72,6 +76,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                         except Exception as e:
                             self.logger.error("error when refreshing data for time frame {0} for {1}: {2}"
                                               .format(time_frame, evaluator_thread_manager.symbol, e))
+                            raise e
                         self.time_frame_last_update[time_frame] = time.time()
 
                 if not back_testing_enabled:

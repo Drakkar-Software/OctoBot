@@ -1,4 +1,5 @@
 import time
+import copy
 
 from config.cst import *
 from evaluator.Dispatchers.abstract_dispatcher import *
@@ -22,9 +23,19 @@ class AbstractEvaluator:
         self.eval_note_time_to_live = None
         self.eval_note_changed_time = None
 
+        self.is_active = True
+
     @classmethod
     def get_name(cls):
         return cls.__name__
+
+    @classmethod
+    def get_all_subclasses(cls):
+        subclasses_list = cls.__subclasses__()
+        if subclasses_list:
+            for subclass in copy.deepcopy(subclasses_list):
+                subclasses_list += subclass.get_all_subclasses()
+        return subclasses_list
 
     # Used to provide a new logger for this particular indicator
     def set_logger(self, logger):
@@ -33,11 +44,15 @@ class AbstractEvaluator:
     # Used to provide the global config
     def set_config(self, config):
         self.config = config
-        self.enabled = self.is_enabled(False)
+        self.enabled = self.is_enabled(config, False)
 
     # Symbol is the cryptocurrency symbol
     def set_symbol(self, symbol):
         self.symbol = symbol
+
+    # Active tells if this evalautor is currently activated (an evaluator can be paused)
+    def set_is_active(self, is_active):
+        self.is_active = is_active
 
     # history time represents the period of time of the indicator
     def set_history_time(self, history_time):
@@ -58,6 +73,10 @@ class AbstractEvaluator:
     # If the eval method is running
     def get_is_updating(self):
         return self.is_updating
+
+    # Active tells if this evalautor is currently activated (an evaluator can be paused)
+    def get_is_active(self):
+        return self.is_active
 
     # generic eval that will call the indicator eval()
     # and provide a safe execution by disabling multi-call
@@ -89,6 +108,10 @@ class AbstractEvaluator:
     @abstractmethod
     def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
+
+    # reset temporary parameters to enable fresh start
+    def reset(self) -> None:
+        self.eval_note = START_PENDING_EVAL_NOTE
 
     # explore up to the 1st parent
     @classmethod
@@ -122,14 +145,15 @@ class AbstractEvaluator:
         else:
             self.eval_note += new_eval_note
 
-    def is_enabled(self, default):
-        if self.config[CONFIG_EVALUATOR] is not None:
-            if self.get_name() in self.config[CONFIG_EVALUATOR]:
-                return self.config[CONFIG_EVALUATOR][self.get_name()]
+    @classmethod
+    def is_enabled(cls, config, default):
+        if config[CONFIG_EVALUATOR] is not None:
+            if cls.get_name() in config[CONFIG_EVALUATOR]:
+                return config[CONFIG_EVALUATOR][cls.get_name()]
             else:
-                for parent in self.__class__.mro():
-                    if parent.__name__ in self.config[CONFIG_EVALUATOR]:
-                        return self.config[CONFIG_EVALUATOR][parent.__name__]
+                for parent in cls.mro():
+                    if parent.__name__ in config[CONFIG_EVALUATOR]:
+                        return config[CONFIG_EVALUATOR][parent.__name__]
                 return default
 
     # use only if the current evaluation is to stay for a pre-defined amount of seconds

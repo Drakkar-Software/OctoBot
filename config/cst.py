@@ -1,7 +1,7 @@
 from enum import Enum
 
-SHORT_VERSION = "0.1.0"
-REV_VERSION = "2"
+SHORT_VERSION = "0.1.2"
+REV_VERSION = "0"
 VERSION_DEV_PHASE = "beta"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
@@ -17,10 +17,6 @@ DAYS_TO_SECONDS = HOURS_TO_SECONDS * 24
 CONFIG_GLOBAL_UTILS = "global_utils"
 CONFIG_ENABLED_OPTION = "enabled"
 CONFIG_SYMBOL = "symbol"
-
-# Files
-CONFIG_FILE = "config/config.json"
-CONFIG_EVALUATOR_FILE = "config/evaluator_config.json"
 
 # Advanced
 CONFIG_ADVANCED_CLASSES = "advanced_classes"
@@ -42,6 +38,8 @@ CONFIG_EXCHANGE_WEB_SOCKET = "web_socket"
 CONFIG_EXCHANGE_KEY = "api-key"
 CONFIG_EXCHANGE_SECRET = "api-secret"
 CONFIG_TRADER = "trader"
+CONFIG_TRADING = "trading"
+CONFIG_TRADER_MODES = "modes"
 CONFIG_SIMULATOR = "trader_simulator"
 CONFIG_STARTING_PORTFOLIO = "starting_portfolio"
 CONFIG_TRADER_RISK = "risk"
@@ -49,6 +47,7 @@ CONFIG_TRADER_MODE = "mode"
 CONFIG_TRADER_RISK_MIN = 0.05
 CONFIG_TRADER_RISK_MAX = 1
 ORDER_REFRESHER_TIME = 15
+ORDER_REFRESHER_TIME_WS = 1
 SIMULATOR_LAST_PRICES_TO_CHECK = 15
 ORDER_CREATION_LAST_TRADES_TO_USE = 10
 CONFIG_TRADER_REFERENCE_MARKET = "reference_market"
@@ -64,6 +63,9 @@ CONFIG_PORTFOLIO_TOTAL = "total"
 # Notification
 CONFIG_NOTIFICATION_INSTANCE = "notifier"
 CONFIG_CATEGORY_NOTIFICATION = "notification"
+CONFIG_NOTIFICATION_GLOBAL_INFO = "global_info"
+CONFIG_NOTIFICATION_PRICE_ALERTS = "price_alerts"
+CONFIG_NOTIFICATION_TRADES = "trades"
 NOTIFICATION_STARTING_MESSAGE = "OctoBot v{0} starting...".format(LONG_VERSION)
 NOTIFICATION_STOPPING_MESSAGE = "OctoBot v{0} stopping...".format(LONG_VERSION)
 REAL_TRADER_STR = "[Real Trader] "
@@ -106,7 +108,10 @@ CONFIG_TWEET_DESCRIPTION = "tweet_description"
 
 # Evaluator
 CONFIG_EVALUATOR = "evaluator"
-SPECIFIC_CONFIG_PATH = "config/specific_evaluator_config/"
+CONFIG_EVALUATOR_SOCIAL = "Social"
+CONFIG_EVALUATOR_REALTIME = "RealTime"
+CONFIG_EVALUATOR_TA = "TA"
+CONFIG_EVALUATOR_STRATEGIES = "Strategies"
 START_PENDING_EVAL_NOTE = "0"  # force exception
 INIT_EVAL_NOTE = 0
 START_EVAL_PERTINENCE = 1
@@ -118,6 +123,7 @@ CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FILE_EXT = ".json"
 CONFIG_CRYPTO_CURRENCIES = "crypto_currencies"
 CONFIG_CRYPTO_PAIRS = "pairs"
+CONFIG_EVALUATORS_WILDCARD = "*"
 
 # Socials
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
@@ -138,24 +144,53 @@ CONFIG_INTERFACES_TELEGRAM = "telegram"
 GITHUB = "github"
 GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
 GITHUB_BASE_URL = "https://github.com"
+PYTHON_INIT_FILE = "__init__.py"
+TENTACLES_PATH = "tentacles"
+TENTACLES_EVALUATOR_PATH = "Evaluator"
+TENTACLES_TRADING_PATH = "Trading"
+TENTACLES_EVALUATOR_REALTIME_PATH = "RealTime"
+TENTACLES_EVALUATOR_TA_PATH = "TA"
+TENTACLES_EVALUATOR_SOCIAL_PATH = "Social"
+TENTACLES_EVALUATOR_STRATEGIES_PATH = "Strategies"
+TENTACLES_EVALUATOR_UTIL_PATH = "Util"
+TENTACLES_TRADING_MODE_PATH = "Mode"
+TENTACLES_PYTHON_INIT_CONTENT = "from .Default import *\nfrom .Advanced import *\n"
 TENTACLES_PUBLIC_REPOSITORY = "Drakkar-Software/OctoBot-Tentacles"
 TENTACLES_PUBLIC_LIST = "tentacles_list.json"
 TENTACLES_DEFAULT_BRANCH = "master"
 EVALUATOR_DEFAULT_FOLDER = "Default"
 EVALUATOR_ADVANCED_FOLDER = "Advanced"
+TENTACLES_INSTALL_FOLDERS = [EVALUATOR_DEFAULT_FOLDER, EVALUATOR_ADVANCED_FOLDER]
+EVALUATOR_CONFIG_FOLDER = "config"
 CONFIG_TENTACLES_KEY = "tentacles"
 TENTACLE_DESCRIPTION = "tentacle_description"
 TENTACLE_DESCRIPTION_LOCALISATION = "localisation"
 TENTACLE_DESCRIPTION_IS_URL = "is_url"
+TENTACLE_MODULE_DESCRIPTION = "$tentacle_description"
+TENTACLE_MODULE_REQUIREMENTS = "requirements"
+TENTACLE_MODULE_REQUIREMENT_WITH_VERSION = "requirement_with_version"
+TENTACLE_MODULE_REQUIREMENTS_SEPARATOR = ","
+TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR = "=="
+TENTACLE_MODULE_NAME = "name"
+TENTACLE_MODULE_TYPE = "type"
+TENTACLE_MODULE_SUBTYPE = "subtype"
+TENTACLE_MODULE_VERSION = "version"
+TENTACLE_MODULE_CONFIG_FILES = "config_files"
 
-TENTACLE_TYPES = {"Evaluator": "evaluator",
-                  "Social": "Social",
-                  "RealTime": "RealTime",
-                  "Util": "Util",
-                  "TA": "TA",
-                  "Strategies": "Strategies",
-                  "Trading": "trading",
-                  "Mode": "trader/modes"}
+TENTACLE_TYPES = {"Evaluator": TENTACLES_EVALUATOR_PATH,
+                  "Social": TENTACLES_EVALUATOR_SOCIAL_PATH,
+                  "RealTime": TENTACLES_EVALUATOR_REALTIME_PATH,
+                  "Util": TENTACLES_EVALUATOR_UTIL_PATH,
+                  "TA": TENTACLES_EVALUATOR_TA_PATH,
+                  "Strategies": TENTACLES_EVALUATOR_STRATEGIES_PATH,
+                  "Trading": TENTACLES_TRADING_PATH,
+                  "Mode": TENTACLES_TRADING_MODE_PATH}
+
+# Files
+CONFIG_FILE = "config.json"
+CONFIG_EVALUATOR_FILE = "evaluator_config.json"
+CONFIG_EVALUATOR_FILE_PATH = "{}/{}/{}".format(TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, CONFIG_EVALUATOR_FILE)
+CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
 
 
 class EvaluatorMatrixTypes(Enum):

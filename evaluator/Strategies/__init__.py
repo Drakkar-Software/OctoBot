@@ -1,3 +1,2 @@
-from .strategies_evaluator import *
-from .Default import *
-from .Advanced import *
+from evaluator.Strategies.strategies_evaluator import *
+from tentacles.Evaluator.Strategies import *

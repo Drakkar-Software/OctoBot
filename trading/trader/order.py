@@ -39,6 +39,7 @@ class Order:
         self.created_last_price = None
         self.order_profitability = None
         self.linked_to = None
+        self.is_from_this_octobot = True
 
         self.order_notifier = None
 
@@ -194,6 +195,12 @@ class Order:
 
     def is_cancelled(self):
         return self.status == OrderStatus.CANCELED
+
+    def get_is_from_this_octobot(self):
+        return self.is_from_this_octobot
+
+    def set_is_from_this_octobot(self, is_from_this_octobot):
+        self.is_from_this_octobot = is_from_this_octobot
 
     def get_profitability(self):
         if self.get_filled_price() is not 0 and self.get_create_last_price() is not 0:
