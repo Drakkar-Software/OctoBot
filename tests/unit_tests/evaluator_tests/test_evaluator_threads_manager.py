@@ -35,7 +35,7 @@ def _get_tools():
     symbol_evaluator.set_trader_simulators(exchange_traders)
     symbol_evaluator.set_traders(exchange_traders2)
     symbol_evaluator.strategies_eval_lists[exchange_inst.get_name()] = EvaluatorCreator.create_strategies_eval_list(config)
-    evaluator_thread_manager = EvaluatorThreadsManager(config, symbol, time_frame, symbol_time_frame_updater_thread,
+    evaluator_thread_manager = EvaluatorThreadsManager(config, time_frame, symbol_time_frame_updater_thread,
                                                        symbol_evaluator, exchange_inst, [])
     trader_inst.portfolio.portfolio["USDT"] = {
         Portfolio.TOTAL: 2000,
@@ -61,5 +61,5 @@ def test_default_values():
 def test_refresh_matrix():
     evaluator_thread_manager, time_frame, symbol_time_frame_updater_thread, symbol_evaluator = _get_tools()
     evaluator_thread_manager.matrix = None
-    evaluator_thread_manager._refresh_matrix()
+    evaluator_thread_manager.refresh_matrix()
     assert evaluator_thread_manager.matrix is not None

@@ -33,6 +33,11 @@ class StrategiesEvaluator(AbstractEvaluator):
     def get_required_time_frames(cls):
         raise NotImplementedError("Get_required_time_frames not implemented")
 
+    @classmethod
+    @abstractmethod
+    def get_required_evaluators(cls):
+        raise NotImplementedError("Get_required_evaluators not implemented")
+
 
 class MixedStrategiesEvaluator(StrategiesEvaluator):
     __metaclass__ = StrategiesEvaluator

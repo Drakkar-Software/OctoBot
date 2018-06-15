@@ -295,6 +295,19 @@ class TentacleManager:
                 TentacleManager._read_tentacles(root_dir, self.installed_modules)
 
     def parse_commands(self, commands):
+        help = "- install: Install or re-install the given modules with their requirements if any. " \
+                                "Also reset modules configuration files if any.\n" \
+                                "- update: Update the given tentacles with their requirements if any. " \
+                                "Does not edit modules configuration files\n" \
+                                "- uninstall: Uninstall the given modules. " \
+                                "Also delete the module configuration\n" \
+                                "- reset_tentacles: Deletes all the installed tentacles, their modules and " \
+                                "configuration.\n" \
+                                "Note: install, update and uninstall commands can take 2 types of arguments: \n" \
+                                "   - all: applies the command to all the available modules in remote and " \
+                                "installed tentacles.\n" \
+                                "   - modules_name1, module_name2, ... : force to apply the command to the given " \
+                                "modules identified by their name and separated with a ' '."
         self.update_list()
         if commands:
             if commands[0] == "install":
@@ -324,21 +337,11 @@ class TentacleManager:
             elif commands[0] == "reset_tentacles":
                 self.reset_tentacles()
 
+            elif commands[0] == "help":
+                self.logger.info("Welcome in Tentacle Manager, commands are:\n{0}".format(help))
+
             else:
-                commands_help = "- install: Install or re-install the given modules with their requirements if any. " \
-                                "Also reset modules configuration files if any.\n" \
-                                "- update: Update the given tentacles with their requirements if any. " \
-                                "Does not edit modules configuration files\n" \
-                                "- uninstall: Uninstall the given modules. " \
-                                "Also delete the module configuration\n" \
-                                "- reset_tentacles: Deletes all the installed tentacles, their modules and " \
-                                "configuration.\n" \
-                                "Note: install, update and uninstall commands can take 2 types of arguments: \n" \
-                                "   - all: applies the command to all the available modules in remote and " \
-                                "installed tentacles.\n" \
-                                "   - modules_name1, module_name2, ... : force to apply the command to the given " \
-                                "modules identified by their name and separated with a ' '."
-                self.logger.error("Command not found, commands are: \n{0}".format(commands_help))
+                self.logger.error("Command not found, commands are:\n{0}".format(help))
         else:
             arguments_help = "-p: activates the package manager."
             self.logger.error("Invalid arguments, arguments are: {0}".format(arguments_help))

@@ -10,7 +10,7 @@ from tools.notifications import EvaluatorNotification
 class AbstractTradingModeDecider(AsynchronousServer):
     __metaclass__ = ABCMeta
 
-    def __init__(self, trading_mode, symbol_evaluator, exchange, symbol):
+    def __init__(self, trading_mode, symbol_evaluator, exchange):
         super().__init__(self.finalize)
         self.trading_mode = trading_mode
         self.symbol_evaluator = symbol_evaluator
@@ -19,7 +19,7 @@ class AbstractTradingModeDecider(AsynchronousServer):
         self.state = None
         self.keep_running = True
         self.exchange = exchange
-        self.symbol = symbol
+        self.symbol = symbol_evaluator.get_symbol()
         self.is_computing = False
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -55,6 +55,14 @@ class AbstractTradingModeDecider(AsynchronousServer):
         trader_simulator = self.symbol_evaluator.get_trader_simulator(self.exchange)
         if trader_simulator.is_enabled():
             trader_simulator.cancel_open_orders(self.symbol, cancel_loaded_orders)
+
+    def activate_deactivate_strategies(self, strategy_list, activate):
+        for strategy in strategy_list:
+            if strategy not in self.trading_mode.get_strategy_instances_by_classes():
+                raise KeyError("{} not in trading mode's strategy instances.".format(strategy))
+        strategy_instances_list = [self.trading_mode.get_strategy_instances_by_classes()[strategy_class]
+                                   for strategy_class in strategy_list]
+        self.symbol_evaluator.activate_deactivate_strategies(strategy_instances_list, self.exchange, activate)
 
     def get_state(self):
         return self.state
