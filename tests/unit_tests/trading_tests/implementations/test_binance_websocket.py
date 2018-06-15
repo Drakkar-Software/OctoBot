@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from config.cst import TimeFrames
 from tests.test_utils.config import load_test_config
-from tools.data_frame_util import DataFrameUtil
+from tools.data_util import DataUtil
 from trading.exchanges.websockets_exchanges import BinanceWebSocketClient
 
 
