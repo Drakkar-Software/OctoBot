@@ -26,6 +26,7 @@ cd %bot_location%
 REM BOT REQUIREMENTS
 echo **Installing requirements...**
 %python_cmd% -m pip install -r requirements.txt
+python3 -m pip install tulipy
 
 REM CONFIGURATION
 echo **Set default configuration...**
