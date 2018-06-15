@@ -6,7 +6,6 @@ from evaluator.evaluator import Evaluator
 
 class EvaluatorThreadsManager:
     def __init__(self, config,
-                 symbol,
                  time_frame,
                  symbol_time_frame_updater_thread,
                  symbol_evaluator,
@@ -14,13 +13,13 @@ class EvaluatorThreadsManager:
                  real_time_ta_eval_list):
         self.config = config
         self.exchange = exchange
-        self.symbol = symbol
+        self.symbol = symbol_evaluator.get_symbol()
         self.time_frame = time_frame
         self.symbol_time_frame_updater_thread = symbol_time_frame_updater_thread
         self.symbol_evaluator = symbol_evaluator
 
         # notify symbol evaluator
-        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.symbol, self.time_frame, self)
+        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.time_frame, self)
 
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 
@@ -68,7 +67,7 @@ class EvaluatorThreadsManager:
         self.evaluator.update_ta_eval(ignored_evaluator)
 
         # update matrix
-        self._refresh_matrix()
+        self.refresh_matrix()
 
         # update strategies matrix
         self.symbol_evaluator.update_strategies_eval(self.matrix, self.exchange, ignored_evaluator)
@@ -77,23 +76,35 @@ class EvaluatorThreadsManager:
         self.symbol_evaluator.finalize(self.exchange)
         self.logger.debug("MATRIX : {0}".format(self.matrix.get_matrix()))
 
-    def _refresh_matrix(self):
+    def refresh_matrix(self):
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 
         for ta_eval in self.evaluator.get_ta_eval_list():
-            ta_eval.ensure_eval_note_is_not_expired()
-            self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
-                                 ta_eval.get_eval_note(), self.time_frame)
+            if ta_eval.get_is_active():
+                ta_eval.ensure_eval_note_is_not_expired()
+                self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
+                                     ta_eval.get_eval_note(), self.time_frame)
+            else:
+                self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
+                                     START_PENDING_EVAL_NOTE, self.time_frame)
 
         for social_eval in self.evaluator.get_social_eval_list():
-            social_eval.ensure_eval_note_is_not_expired()
-            self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
-                                 social_eval.get_eval_note(), None)
+            if social_eval.get_is_active():
+                social_eval.ensure_eval_note_is_not_expired()
+                self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
+                                     social_eval.get_eval_note(), None)
+            else:
+                self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
+                                     START_PENDING_EVAL_NOTE)
 
         for real_time_eval in self.evaluator.get_real_time_eval_list():
-            real_time_eval.ensure_eval_note_is_not_expired()
-            self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
-                                 real_time_eval.get_eval_note())
+            if real_time_eval.get_is_active():
+                real_time_eval.ensure_eval_note_is_not_expired()
+                self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
+                                     real_time_eval.get_eval_note())
+            else:
+                self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
+                                     START_PENDING_EVAL_NOTE)
 
     def start_threads(self):
         pass
