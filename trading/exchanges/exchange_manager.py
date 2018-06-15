@@ -2,11 +2,10 @@ import logging
 
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
-from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
-from trading import WebSocketExchange
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
-from trading.exchanges.websockets_exchanges import AbstractWebSocketManager
+from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
+from trading.exchanges.websockets_exchanges import AbstractWebSocket
 
 
 class ExchangeManager:
@@ -47,11 +46,15 @@ class ExchangeManager:
 
             # create Websocket exchange if possible
             if self.check_web_socket_config(self.exchange.get_name()):
-                for socket_manager in AbstractWebSocketManager.__subclasses__():
+                for socket_manager in AbstractWebSocket.__subclasses__():
                     if socket_manager.get_name() == self.exchange.get_name():
-                        self.exchange_web_socket = WebSocketExchange(self.config, self.exchange_type,
-                                                                     self, socket_manager)
-                        break
+                        self.exchange_web_socket = socket_manager.get_websocket_client(self.config, self)
+
+                        # init websocket
+                        self.exchange_web_socket.init_web_sockets(self.get_config_time_frame(), self.get_traded_pairs())
+
+                        # start the websocket
+                        self.exchange_web_socket.start_sockets()
 
         # if simulated : create exchange simulator instance
         else:
@@ -61,6 +64,10 @@ class ExchangeManager:
                                                       self.exchange, self.exchange_web_socket)
 
         self.is_ready = True
+
+    # should be used only in specific case
+    def get_ccxt_exchange(self):
+        return self.exchange
 
     def get_exchange(self):
         return self.exchange_dispatcher
@@ -134,6 +141,12 @@ class ExchangeManager:
     # Getters
     def get_is_simulated(self):
         return self.is_simulated
+
+    def get_symbol_data(self, symbol):
+        return self.get_exchange().get_symbol_data(symbol)
+
+    def get_personal_data(self):
+        return self.get_exchange().get_exchange_personal_data()
 
     # Exceptions
     def _raise_exchange_load_error(self):

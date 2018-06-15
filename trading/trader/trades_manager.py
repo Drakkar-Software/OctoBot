@@ -60,7 +60,7 @@ class TradesManager:
     """
 
     def _update_currencies_prices(self, symbol):
-        self.currencies_last_prices[symbol] = self.exchange.get_last_price_ticker(symbol)
+        self.currencies_last_prices[symbol] = self.exchange.get_price_ticker(symbol)[ExchangeConstantsTickersColumns.LAST.value]
 
     """ Get profitability calls get_currencies_prices to update required data
     Then calls get_portfolio_current_value to set the current value of portfolio_current_value attribute
