@@ -1,3 +1,16 @@
+Changelog for 0.1.2-beta
+====================
+*Released date : June 16 2018*
+
+**Info** :
+- New pip package to install "tulipy"
+
+# Concerned issues :
+
+# New features :
+    - Tentacle Management : update, versions management
+    - Migrate from TA-lib indicators to tulipy
+
 Changelog for 0.1.1-beta
 ====================
 *Released date : June 8 2018*
