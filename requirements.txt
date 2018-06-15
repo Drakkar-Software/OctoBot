@@ -1,15 +1,15 @@
-tulipy
+numpy
+pandas
 matplotlib==2.2.2
 requests
 vaderSentiment
-pandas
 pytrends
+tulipy
 ccxt
 twisted==18.4.0
 
 python-binance
 
-numpy
 colorlog
 Python-Twitter
 psutil
