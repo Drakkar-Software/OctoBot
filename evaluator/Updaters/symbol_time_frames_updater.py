@@ -76,7 +76,6 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                         except Exception as e:
                             self.logger.error("error when refreshing data for time frame {0} for {1}: {2}"
                                               .format(time_frame, evaluator_thread_manager.symbol, e))
-                            raise e
                         self.time_frame_last_update[time_frame] = time.time()
 
                 if not back_testing_enabled:
