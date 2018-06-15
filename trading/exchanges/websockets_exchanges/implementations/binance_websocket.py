@@ -1,13 +1,12 @@
-from config.cst import *
-from trading.exchanges.websockets_exchanges.abstract_websocket_manager import AbstractWebSocketManager
-from binance.websockets import BinanceSocketManager
 from binance.client import Client, BinanceAPIException
-from twisted.internet import reactor
+from binance.websockets import BinanceSocketManager
 
+from config.cst import *
 from tools.symbol_util import merge_symbol
+from trading.exchanges.websockets_exchanges.abstract_websocket import AbstractWebSocket
 
 
-class BinanceWebSocketClient(AbstractWebSocketManager):
+class BinanceWebSocketClient(AbstractWebSocket):
     _TICKER_KEY = "@ticker"
     _KLINE_KEY = "@kline"
     _MULTIPLEX_SOCKET_NAME = "multiplex"
@@ -19,21 +18,18 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
         'CANCELED': 'canceled',
     }
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, exchange_manager):
+        super().__init__(config, exchange_manager)
         self.client = Client(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY],
                              self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET])
         self.socket_manager = None
         self.open_sockets_keys = {}
 
     @staticmethod
-    def get_websocket_client(config):
-        ws_client = BinanceWebSocketClient(config)
+    def get_websocket_client(config, exchange_manager):
+        ws_client = BinanceWebSocketClient(config, exchange_manager)
         ws_client.socket_manager = BinanceSocketManager(ws_client.client)
         return ws_client
-
-    def get_last_price_ticker(self, symbol):
-        return float(self.exchange_data.symbol_tickers[merge_symbol(symbol)]["c"])
 
     def init_web_sockets(self, time_frames, trader_pairs):
         try:
@@ -49,7 +45,6 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def stop_sockets(self):
         if self.socket_manager:
             self.socket_manager.close()
-        reactor.stop()
 
     def get_socket_manager(self):
         return self.socket_manager
@@ -81,19 +76,26 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def handles_recent_trades(cls):
         return False
 
+    @classmethod
+    def handles_order_book(cls):
+        return False
+
+    @classmethod
+    def handles_price_ticker(cls):
+        return True
+
     @staticmethod
     def parse_order_status(status):
         return BinanceWebSocketClient._STATUSES[status] if status in BinanceWebSocketClient._STATUSES \
             else status.lower()
 
-    @staticmethod
-    def convert_into_ccxt_order(order):
-        status = AbstractWebSocketManager.safe_value(order, 'X')
+    def convert_into_ccxt_order(self, order):
+        status = self.safe_value(order, 'X')
         if status is not None:
-            status = BinanceWebSocketClient.parse_order_status(status)
-        price = AbstractWebSocketManager.safe_float(order, "p")
-        amount = AbstractWebSocketManager.safe_float(order, "q")
-        filled = AbstractWebSocketManager.safe_float(order, "z", 0.0)
+            status = self.parse_order_status(status)
+        price = self.safe_float(order, "p")
+        amount = self.safe_float(order, "q")
+        filled = self.safe_float(order, "z", 0.0)
         cost = None
         remaining = None
         if filled is not None:
@@ -103,38 +105,48 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
                 cost = price * filled
         return {
             'info': order,
-            'id': AbstractWebSocketManager.safe_string(order, "i"),
+            'id': self.safe_string(order, "i"),
             'timestamp': order["T"],
-            'datetime': AbstractWebSocketManager.iso8601(order["T"]),
+            'datetime': self.iso8601(order["T"]),
             'lastTradeTimestamp': None,
-            # TODO string has no / between currency and market => need to add it !!!
-            'symbol': AbstractWebSocketManager.safe_string(order, "s"),
-            'type': AbstractWebSocketManager.safe_lower_string(order, "o"),
-            'side': AbstractWebSocketManager.safe_lower_string(order, "S"),
+            'symbol': self._adapt_symbol(self.safe_string(order, "s")),
+            'type': self.safe_lower_string(order, "o"),
+            'side': self.safe_lower_string(order, "S"),
             'price': price,
             'amount': amount,
             'cost': cost,
             'filled': filled,
             'remaining': remaining,
             'status': status,
-            'fee': AbstractWebSocketManager.safe_float(order, "n", None),
+            'fee': self.safe_float(order, "n", None),
         }
 
     def all_currencies_prices_callback(self, msg):
+
+        # TODO
+        # ORDER BOOK : Stream Name: <symbol>@depth<levels>
+        # Recent trades : Stream Name: <symbol>@trade
+
         if msg['data']['e'] == 'error':
             # close and restart the socket
             # self.close_sockets()
             self.start_sockets()
         else:
             msg_stream_type = msg["stream"]
+
+            symbol_data = self.exchange_manager.get_symbol_data(self._adapt_symbol(msg["data"]["s"]))
+
             if self._TICKER_KEY in msg_stream_type:
-                self.exchange_data.set_ticker(msg["data"]["s"],
-                                              msg["data"])
+                if symbol_data.price_ticker_is_initialized():
+                    symbol_data.update_symbol_ticker(msg["data"])
+
             elif self._KLINE_KEY in msg_stream_type:
-                self.exchange_data.add_price(msg["data"]["s"],
-                                             msg["data"]["k"]["i"],
-                                             msg["data"]["k"]["t"],
-                                             self._create_candle(msg["data"]["k"]))
+                time_frame = self._convert_time_frame(msg["data"]["k"]["i"])
+                if symbol_data.candles_are_initialized(time_frame):
+                    symbol_data.update_symbol_candles(
+                        time_frame,
+                        self._create_candle(msg["data"]["k"]),
+                        replace_all=False)
 
     def user_callback(self, msg):
         if msg["e"] == "outboundAccountInfo":
@@ -162,19 +174,21 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
     def _create_candle(kline_data):
         return [
             kline_data["t"],  # time
-            AbstractWebSocketManager.safe_float(kline_data, "o"),  # open
-            AbstractWebSocketManager.safe_float(kline_data, "h"),  # high
-            AbstractWebSocketManager.safe_float(kline_data, "l"),  # low
-            AbstractWebSocketManager.safe_float(kline_data, "c"),  # close
-            AbstractWebSocketManager.safe_float(kline_data, "v"),  # vol
+            AbstractWebSocket.safe_float(kline_data, "o"),  # open
+            AbstractWebSocket.safe_float(kline_data, "h"),  # high
+            AbstractWebSocket.safe_float(kline_data, "l"),  # low
+            AbstractWebSocket.safe_float(kline_data, "c"),  # close
+            AbstractWebSocket.safe_float(kline_data, "v"),  # vol
         ]
 
     def _update_portfolio(self, msg):
-        for currency in msg['B']:
-            free = float(currency['f'])
-            locked = float(currency['l'])
-            total = free + locked
-            self.exchange_data.update_portfolio(currency['a'], total, free, locked)
+        if self.exchange_manager.get_personal_data().portfolio_is_initialized():
+            for currency in msg['B']:
+                free = float(currency['f'])
+                locked = float(currency['l'])
+                total = free + locked
+                self.exchange_manager.get_personal_data().update_portfolio(self._adapt_symbol(currency['a']),
+                                                                           total, free, locked)
 
     # unimplemented methods
     @staticmethod
@@ -183,3 +197,12 @@ class BinanceWebSocketClient(AbstractWebSocketManager):
 
     def init_all_currencies_prices_web_socket(self, time_frames, trader_pairs):
         pass
+
+    def _adapt_symbol(self, symbol):
+        if "USD" in symbol and not "USDT" in symbol:
+            symbol += "T"
+
+        if "/" in symbol:
+            symbol = merge_symbol(symbol)
+
+        return self._parse_symbol_from_ccxt(symbol)

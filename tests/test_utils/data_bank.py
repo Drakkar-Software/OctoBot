@@ -81,6 +81,6 @@ class DataBank:
         return {time_frame: self.exchange_inst.get_symbol_prices(
             symbol,
             time_frame,
-            data_frame=True)
+            return_list=True)
             for time_frame in TimeFrames
             if self.exchange_inst.get_exchange().has_data_for_time_frame(symbol, time_frame.value)}

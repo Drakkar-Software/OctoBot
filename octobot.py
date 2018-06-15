@@ -44,6 +44,8 @@ class OctoBot:
         if CONFIG_DEBUG_OPTION_PERF in self.config and self.config[CONFIG_DEBUG_OPTION_PERF]:
             self.performance_analyser = PerformanceAnalyser()
 
+        # Init time frames using enabled strategies
+        EvaluatorCreator.init_time_frames_from_strategies(self.config)
         self.time_frames = TimeFrameManager.get_config_time_frame(self.config)
 
         # Add services to self.config[CONFIG_CATEGORY_SERVICES]
@@ -53,7 +55,8 @@ class OctoBot:
         self.config[CONFIG_NOTIFICATION_INSTANCE] = Notification(self.config)
 
         # Notify starting
-        self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
+        if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
+            self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
 
         # Backtesting
         self.backtesting_enabled = None
@@ -124,8 +127,7 @@ class OctoBot:
 
                         # Verify that symbol exists on this exchange
                         if symbol in exchange.get_exchange_manager().get_traded_pairs():
-                            self._create_symbol_threads_managers(symbol,
-                                                                 exchange,
+                            self._create_symbol_threads_managers(exchange,
                                                                  symbol_evaluator)
 
                         # notify that exchange doesn't support this symbol
@@ -133,16 +135,15 @@ class OctoBot:
                             if not self.backtesting_enabled:
                                 self.logger.warning("{0} doesn't support {1}".format(exchange.get_name(), symbol))
 
-    def _create_symbol_threads_managers(self, symbol, exchange, symbol_evaluator):
+    def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
         # Create real time TA evaluators
         real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
                                                                             exchange,
-                                                                            symbol)
+                                                                            symbol_evaluator.get_symbol())
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
             if exchange.get_exchange_manager().time_frame_exists(time_frame.value):
                 self.symbol_threads_manager[time_frame] = EvaluatorThreadsManager(self.config,
-                                                                                  symbol,
                                                                                   time_frame,
                                                                                   symbol_time_frame_updater_thread,
                                                                                   symbol_evaluator,
@@ -193,7 +194,8 @@ class OctoBot:
 
     def stop_threads(self):
         # Notify stopping
-        self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE)
+        if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
+            self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE)
 
         self.logger.info("Stopping threads ...")
 

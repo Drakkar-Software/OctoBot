@@ -1,3 +1,2 @@
 from .social_evaluator import *
-from .Default import *
-from .Advanced import *
+from tentacles.Evaluator.Social import *

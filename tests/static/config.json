@@ -37,7 +37,9 @@
     }
   },
   "notification":{
-    "enabled": false,
+    "global_info": false,
+    "price_alerts": false,
+    "trades": false,
     "type": 1
   },
   "trader":{

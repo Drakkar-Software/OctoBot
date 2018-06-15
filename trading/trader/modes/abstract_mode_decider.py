@@ -10,7 +10,7 @@ from tools.notifications import EvaluatorNotification
 class AbstractTradingModeDecider(AsynchronousServer):
     __metaclass__ = ABCMeta
 
-    def __init__(self, trading_mode, symbol_evaluator, exchange, symbol):
+    def __init__(self, trading_mode, symbol_evaluator, exchange):
         super().__init__(self.finalize)
         self.trading_mode = trading_mode
         self.symbol_evaluator = symbol_evaluator
@@ -19,7 +19,7 @@ class AbstractTradingModeDecider(AsynchronousServer):
         self.state = None
         self.keep_running = True
         self.exchange = exchange
-        self.symbol = symbol
+        self.symbol = symbol_evaluator.get_symbol()
         self.is_computing = False
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -34,14 +34,35 @@ class AbstractTradingModeDecider(AsynchronousServer):
         self.queue = Queue()
 
     # create real and/or simulating orders in trader instances
-    def create_final_state_orders(self, evaluator_notification):
+    def create_final_state_orders(self, evaluator_notification, creator_key):
         # simulated trader
         self._create_order_if_possible(evaluator_notification,
-                                       self.symbol_evaluator.get_trader_simulator(self.exchange))
+                                       self.symbol_evaluator.get_trader_simulator(self.exchange),
+                                       creator_key)
 
         # real trader
         self._create_order_if_possible(evaluator_notification,
-                                       self.symbol_evaluator.get_trader(self.exchange))
+                                       self.symbol_evaluator.get_trader(self.exchange),
+                                       creator_key)
+
+    def cancel_symbol_open_orders(self):
+        cancel_loaded_orders = self.get_should_cancel_loaded_orders()
+
+        real_trader = self.symbol_evaluator.get_trader(self.exchange)
+        if real_trader.is_enabled():
+            real_trader.cancel_open_orders(self.symbol, cancel_loaded_orders)
+
+        trader_simulator = self.symbol_evaluator.get_trader_simulator(self.exchange)
+        if trader_simulator.is_enabled():
+            trader_simulator.cancel_open_orders(self.symbol, cancel_loaded_orders)
+
+    def activate_deactivate_strategies(self, strategy_list, activate):
+        for strategy in strategy_list:
+            if strategy not in self.trading_mode.get_strategy_instances_by_classes():
+                raise KeyError("{} not in trading mode's strategy instances.".format(strategy))
+        strategy_instances_list = [self.trading_mode.get_strategy_instances_by_classes()[strategy_class]
+                                   for strategy_class in strategy_list]
+        self.symbol_evaluator.activate_deactivate_strategies(strategy_instances_list, self.exchange, activate)
 
     def get_state(self):
         return self.state
@@ -59,6 +80,13 @@ class AbstractTradingModeDecider(AsynchronousServer):
     def stop(self):
         self.keep_running = False
 
+    # called by cancel_symbol_open_orders => return true if OctoBot should cancel all orders for a symbol including
+    # orders already existing when OctoBot started up
+    @classmethod
+    @abstractmethod
+    def get_should_cancel_loaded_orders(cls):
+        raise NotImplementedError("get_should_cancel_loaded_orders not implemented")
+
     # called first by finalize => when any notification appears
     @abstractmethod
     def set_final_eval(self):
@@ -70,12 +98,13 @@ class AbstractTradingModeDecider(AsynchronousServer):
         raise NotImplementedError("_create_state not implemented")
 
     # for each trader call the creator to check if order creation is possible and create it
-    def _create_order_if_possible(self, evaluator_notification, trader):
+    def _create_order_if_possible(self, evaluator_notification, trader, creator_key):
         if trader.is_enabled():
             with trader.get_portfolio() as pf:
-                if self.trading_mode.get_creator().can_create_order(self.symbol, self.exchange, self.state, pf):
+                order_creator = self.trading_mode.get_creator(creator_key)
+                if order_creator.can_create_order(self.symbol, self.exchange, self.state, pf):
                     self._push_order_notification_if_possible(
-                        self.symbol_evaluator.get_evaluator_order_creator(self.exchange).create_new_order(
+                        order_creator.create_new_order(
                             self.final_eval,
                             self.symbol,
                             self.exchange,
