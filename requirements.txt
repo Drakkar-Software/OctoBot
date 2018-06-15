@@ -16,6 +16,7 @@ plotly
 newspaper3k
 praw
 python-telegram-bot
+tulipy
 
 dash
 dash-table-experiments

@@ -6,7 +6,7 @@ import dash
 import flask
 import pandas
 
-from config.cst import PriceStrings
+from config.cst import PriceStrings, PriceIndexes
 
 server_instance = flask.Flask(__name__)
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
@@ -51,8 +51,8 @@ def add_to_symbol_data_history(symbol, data, time_frame):
         # find index from where data is new
         new_data_index = 0
         for i in range(1, len(data)):
-            if data.iloc[-i][PriceStrings.STR_PRICE_TIME.value] > \
-                    symbol_data_history[symbol][time_frame].iloc[-1][PriceStrings.STR_PRICE_TIME.value]:
+            if data[-i][PriceIndexes.IND_PRICE_TIME.value] > \
+                    symbol_data_history[symbol][time_frame][-1][PriceIndexes.IND_PRICE_TIME.value]:
                 new_data_index = i
             else:
                 break
