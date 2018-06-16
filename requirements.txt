@@ -1,6 +1,6 @@
 numpy
 pandas
-Cython==0.28.1
+Cython
 matplotlib==2.2.2
 requests
 vaderSentiment
