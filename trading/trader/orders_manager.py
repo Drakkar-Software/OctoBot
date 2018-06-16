@@ -1,7 +1,6 @@
 import logging
 import threading
 from time import sleep
-from threading import Lock
 
 from backtesting.backtesting import Backtesting
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS
