@@ -8,7 +8,7 @@ notifications:
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
   email: false
 install:
-  - sudo ./docs/install/linux_dependencies.sh
+  - sudo bash ./docs/install/linux_dependencies.sh
   - python3 setup.py install
   - python3 setup.py test
   - cp ./config/default_config.json ./config.json
