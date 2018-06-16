@@ -10,8 +10,8 @@ notifications:
 install:
   - sudo bash ./docs/install/linux_dependencies.sh
   - pip install --only-binary=Cython,numpy
-  - python3 setup.py install
-  - python3 setup.py test
+  - pip3 install -r requirements.txt
+  - pip3 install -r dev_requirements.txt
   - cp ./config/default_config.json ./config.json
   - python3 start.py -p install all
 script:
