@@ -1,16 +1,15 @@
 import ccxt
 
-from trading.exchanges.exchange_manager import ExchangeManager
-from evaluator.symbol_evaluator import SymbolEvaluator
-from trading.trader.modes import DailyTradingModeDecider, DailyTradingMode
-from trading.trader.trader_simulator import TraderSimulator
-from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
-from trading.trader.modes.abstract_mode_decider import AbstractTradingModeDecider
-from evaluator.evaluator_creator import EvaluatorCreator
-from tests.test_utils.config import load_test_config
-from evaluator.Util.advanced_manager import AdvancedManager
 from config.cst import EvaluatorStates, INIT_EVAL_NOTE
+from evaluator.Util.advanced_manager import AdvancedManager
+from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
+from evaluator.evaluator_creator import EvaluatorCreator
+from evaluator.symbol_evaluator import SymbolEvaluator
+from tests.test_utils.config import load_test_config
+from trading.exchanges.exchange_manager import ExchangeManager
+from trading.trader.modes import DailyTradingMode
 from trading.trader.portfolio import Portfolio
+from trading.trader.trader_simulator import TraderSimulator
 
 
 def _get_tools():
