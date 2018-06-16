@@ -8,7 +8,7 @@ notifications:
   email: false
 install:
   - sudo bash ./docs/install/linux_dependencies.sh
-  - pip3 install ccxt praw flask flask-compress pandas
+  - pip3 install ccxt praw flask flask-compress pandas jieba3k
   - python3 setup.py install
   - python3 setup.py test
   - cp ./config/default_config.json ./config.json
