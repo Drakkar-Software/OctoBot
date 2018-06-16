@@ -114,4 +114,4 @@ class AbstractWebSocket:
         return self.exchange_manager.get_symbol_data(self._adapt_symbol(symbol))
 
     def get_personal_data(self):
-        return self.exchange_manager.get_exchange_personal_data()
+        return self.exchange_manager.get_personal_data()

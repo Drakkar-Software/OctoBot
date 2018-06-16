@@ -24,7 +24,7 @@ class ExchangePersonalData:
     def init_orders(self):
         self.orders_are_initialized = True
 
-    def portfolio_is_initialized(self):
+    def get_portfolio_is_initialized(self):
         return self.portfolio_is_initialized
 
     def orders_are_initialized(self):

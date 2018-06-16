@@ -1,17 +1,19 @@
-import time
 from copy import deepcopy
+import ccxt
 
 from config.cst import TimeFrames
 from tests.test_utils.config import load_test_config
 from tools.data_util import DataUtil
 from trading.exchanges.websockets_exchanges import BinanceWebSocketClient
+from trading.exchanges.exchange_manager import ExchangeManager
 
 
 class TestBinanceWebSocketClient:
     @staticmethod
     def init_default():
         config = load_test_config()
-        binance_web_socket = BinanceWebSocketClient(config)
+        exchange_manager = ExchangeManager(config, ccxt.binance, True)
+        binance_web_socket = BinanceWebSocketClient(config, exchange_manager)
         return config, binance_web_socket
 
     @staticmethod
@@ -137,11 +139,13 @@ class TestBinanceWebSocketClient:
     def test_update_portfolio(self):
         _, binance_web_socket = self.init_default()
 
-        origin_pf = deepcopy(binance_web_socket.get_portfolio())
+        binance_web_socket.get_personal_data().init_portfolio()
+
+        origin_pf = deepcopy(binance_web_socket.get_personal_data().get_portfolio())
 
         # test with empty request
         binance_web_socket.user_callback(self._update_portfolio_message([]))
-        new_pf = binance_web_socket.get_portfolio()
+        new_pf = binance_web_socket.get_personal_data().get_portfolio()
         assert origin_pf == new_pf
 
         # test with not empty request
@@ -150,14 +154,14 @@ class TestBinanceWebSocketClient:
             "free": 0.5,
             "locked": 1,
         }]))
-        new_pf = binance_web_socket.get_portfolio()
+        new_pf = binance_web_socket.get_personal_data().get_portfolio()
         assert origin_pf != new_pf
 
-        new_origin_pf = deepcopy(binance_web_socket.get_portfolio())
+        new_origin_pf = deepcopy(binance_web_socket.get_personal_data().get_portfolio())
 
         # test with empty request
         binance_web_socket.user_callback(self._update_portfolio_message([]))
-        new_pf = binance_web_socket.get_portfolio()
+        new_pf = binance_web_socket.get_personal_data().get_portfolio()
         assert new_origin_pf == new_pf
 
         # test with not empty request and not empty pf
@@ -166,9 +170,9 @@ class TestBinanceWebSocketClient:
             "free": 0.2,
             "locked": 15,
         }]))
-        new_pf = binance_web_socket.get_portfolio()
+        new_pf = binance_web_socket.get_personal_data().get_portfolio()
         assert new_origin_pf != new_pf
-        new_origin_pf = deepcopy(binance_web_socket.get_portfolio())
+        new_origin_pf = deepcopy(binance_web_socket.get_personal_data().get_portfolio())
 
         # test with not empty request and diff symbol
         binance_web_socket.user_callback(self._update_portfolio_message([{
@@ -176,9 +180,9 @@ class TestBinanceWebSocketClient:
             "free": 25.69,
             "locked": 31547,
         }]))
-        new_pf = binance_web_socket.get_portfolio()
+        new_pf = binance_web_socket.get_personal_data().get_portfolio()
         assert new_origin_pf["BTC"] == new_pf["BTC"]
-        new_origin_pf = deepcopy(binance_web_socket.get_portfolio())
+        new_origin_pf = deepcopy(binance_web_socket.get_personal_data().get_portfolio())
 
         # test with not empty request and multiple symbol
         binance_web_socket.user_callback(self._update_portfolio_message([{
@@ -194,7 +198,7 @@ class TestBinanceWebSocketClient:
             "free": 0.00015,
             "locked": 0.1055456,
         }]))
-        new_pf = binance_web_socket.get_portfolio()
+        new_pf = binance_web_socket.get_personal_data().get_portfolio()
         assert new_origin_pf["BTC"] == new_pf["BTC"]
         assert new_origin_pf["ETH"] == new_pf["ETH"]
         assert new_pf["XRP"]["free"] == 25978
@@ -234,13 +238,16 @@ class TestBinanceWebSocketClient:
     def test_set_ticker(self):
         _, binance_web_socket = self.init_default()
 
-        exchange_data = binance_web_socket.exchange_data
+        symbol = "BTCUSDT"
 
-        msg = self._ticker_message("BTCUSDT")
+        symbol_data = binance_web_socket.get_symbol_data(symbol)
+        symbol_data.update_symbol_ticker({})
+
+        msg = self._ticker_message(symbol)
         binance_web_socket.all_currencies_prices_callback(msg)
 
-        assert "BTCUSDT" in exchange_data.symbol_tickers
-        assert exchange_data.symbol_tickers["BTCUSDT"] == msg["data"]
+        assert symbol == symbol_data.symbol_ticker["s"]
+        assert symbol_data.symbol_ticker == msg["data"]
 
     def test_close_and_restart_socket(self):
         _, binance_web_socket = self.init_default()
