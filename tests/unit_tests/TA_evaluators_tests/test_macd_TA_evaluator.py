@@ -19,7 +19,7 @@ class TestMACDTAEvaluator(AbstractTATest):
 
     @staticmethod
     def test_reactions_to_dump(evaluator_tester):
-        evaluator_tester.run_test_reactions_to_dump(0.3, 0.2, -0.5, -0.7, -0.7)
+        evaluator_tester.run_test_reactions_to_dump(0.3, 0.25, -0.15, -0.3, -0.5)
 
     @staticmethod
     def test_reactions_to_pump(evaluator_tester):
@@ -27,11 +27,11 @@ class TestMACDTAEvaluator(AbstractTATest):
 
     @staticmethod
     def test_reaction_to_rise_after_over_sold(evaluator_tester):
-        evaluator_tester.run_test_reactions_to_rise_after_over_sold(0, -0.5, -0.65, -0.4, -0.1)
+        evaluator_tester.run_test_reactions_to_rise_after_over_sold(0, -0.5, -0.65, -0.4, -0.08)
 
     @staticmethod
     def test_reaction_to_over_bought_then_dip(evaluator_tester):
-        evaluator_tester.run_test_reactions_to_over_bought_then_dip(-0.6, 0.1, 0.7, 0.7, -0.4, -0.65)
+        evaluator_tester.run_test_reactions_to_over_bought_then_dip(-0.6, 0.1, 0.6, 0.7, -0.35, -0.65)
 
     @staticmethod
     def test_reaction_to_flat_trend(evaluator_tester):
@@ -45,8 +45,8 @@ class TestMACDTAEvaluator(AbstractTATest):
             # eval_micro_down3, eval_back_normal3, eval_micro_down4, eval_back_normal4,
             -0.25, -0.1, -0.1, 0.2,
             # eval_micro_down5, eval_back_up5, eval_micro_up6, eval_back_down6,
-            -0.5, -0.6, 0.25, 0.3,
+            -0.5, -0.6, 0.25, 0.35,
             # eval_back_normal6, eval_micro_down7, eval_back_up7, eval_micro_down8,
             0.5, -0.1, -0.4, -0.3,
             # eval_back_up8, eval_micro_down9, eval_back_up9
-            -0.3, -0.7, 0.1)
+            -0.31, -0.7, 0.1)

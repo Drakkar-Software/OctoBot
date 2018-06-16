@@ -44,6 +44,12 @@ class ExchangeSimulator(AbstractExchange):
         self.backtesting = Backtesting(self.config, self)
         self._prepare()
 
+    def get_symbol_data(self, symbol):
+        return self.exchange_manager.get_symbol_data(symbol)
+
+    def get_personal_data(self):
+        return self.exchange_manager.get_exchange_personal_data()
+
     # todo merge multiple file with the same symbol
     def _get_symbol_list(self):
         self.symbols = []
@@ -174,8 +180,7 @@ class ExchangeSimulator(AbstractExchange):
     def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
         result = self._extract_data_with_limit(symbol, time_frame)
         self.time_frame_get_times[time_frame.value] += 1
-
-        return result
+        self.get_symbol_data(symbol).update_symbol_candles(time_frame, result, replace_all=True)
 
     def get_recent_trades(self, symbol):
         return self._create_recent_trades(symbol,
