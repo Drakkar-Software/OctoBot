@@ -44,8 +44,16 @@ setup(
                       'dash-core-components',
                       'cryptography >= 2.2.1'],
     setup_requires=['pytest-runner'],
-    # TODO  tests_require=[],
-    # TODO  extras_require={},
+    tests_require=[
+        'pytest',
+        'pytest-pep8',
+        'pytest-cov',
+        'coverage',
+        'coveralls',
+        'tox',
+        'tox-travis'
+    ],
+    test_suite="tests",
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
