@@ -9,7 +9,7 @@ notifications:
   email: false
 install:
   - sudo bash ./docs/install/linux_dependencies.sh
-  - pip install --only-binary=Cython,numpy
+  - pip3 install --only-binary=Cython,numpy
   - pip3 install -r requirements.txt
   - pip3 install -r dev_requirements.txt
   - cp ./config/default_config.json ./config.json
