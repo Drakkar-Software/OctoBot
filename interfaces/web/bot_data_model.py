@@ -132,8 +132,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
 
                     # data.loc[:, PriceStrings.STR_PRICE_TIME.value] /= 1000
 
-                    X = data[PriceIndexes.IND_PRICE_TIME.value]
-                    Y = data[PriceIndexes.IND_PRICE_CLOSE.value]
+                    data_x = data[PriceIndexes.IND_PRICE_TIME.value]
+                    data_y = data[PriceIndexes.IND_PRICE_CLOSE.value]
 
                     # Candlestick
                     ohlc_graph = go.Ohlc(x=data[PriceIndexes.IND_PRICE_TIME.value],
@@ -162,9 +162,9 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                     return {'data': [ohlc_graph, real_trades_points, simulated_trades_points],
                             'layout': go.Layout(
                                 title="{} real time data (per time frame)".format(cryptocurrency_name),
-                                xaxis=dict(range=[min(X), max(X)],
+                                xaxis=dict(range=[min(data_x), max(data_x)],
                                            title=TIME_AXIS_TITLE),
-                                yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02],
+                                yaxis=dict(range=[min(data_y) * 0.98, max(data_y) * 1.02],
                                            title=pair_tag)
                             )}
     return None

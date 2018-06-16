@@ -93,20 +93,20 @@ class SymbolEvaluator:
             self.all_strategies_subclasses = [subclass.__name__ for subclass in StrategiesEvaluator.get_all_subclasses()
                                               if subclass.is_enabled(self.config, False)]
 
-    def _get_evaluators_from_strategy(self, strategy, TA_list, RT_list, social_list):
+    def _get_evaluators_from_strategy(self, strategy, ta_list, rt_list, social_list):
         self._init_all_evaluator_classes_name_list_if_necessary()
         # add wildcard handling
         required_evaluators = strategy.get_required_evaluators()
         if required_evaluators == CONFIG_EVALUATORS_WILDCARD:
-            TA_list.update(self.all_TA_subclasses)
-            RT_list.update(self.all_RT_subclasses)
+            ta_list.update(self.all_TA_subclasses)
+            rt_list.update(self.all_RT_subclasses)
             social_list.update(self.all_social_subclasses)
         else:
             for evaluator in strategy.get_required_evaluators():
                 if evaluator in self.all_TA_subclasses:
-                    TA_list.add(evaluator)
+                    ta_list.add(evaluator)
                 elif evaluator in self.all_RT_subclasses:
-                    RT_list.add(evaluator)
+                    rt_list.add(evaluator)
                 elif evaluator in self.all_social_subclasses:
                     social_list.add(evaluator)
 
@@ -136,31 +136,31 @@ class SymbolEvaluator:
                                                                                        evaluator_instances_names))
 
     def activate_deactivate_strategies(self, strategies, exchange, activate=True):
-        to_change_TA = set()
-        to_change_RT = set()
+        to_change_ta = set()
+        to_change_rt = set()
         to_change_social = set()
 
         for strategy in strategies:
-            self._get_evaluators_from_strategy(strategy, to_change_TA, to_change_RT, to_change_social)
+            self._get_evaluators_from_strategy(strategy, to_change_ta, to_change_rt, to_change_social)
             strategy.set_is_active(activate)
             if not activate and strategy.get_is_active():
                 strategy.reset()
 
-        to_keep_TA = set()
-        to_keep_RT = set()
+        to_keep_ta = set()
+        to_keep_rt = set()
         to_keep_social = set()
         for strategy in self.get_strategies_eval_list(exchange, True):
-            self._get_evaluators_from_strategy(strategy, to_keep_TA, to_keep_RT, to_keep_social)
+            self._get_evaluators_from_strategy(strategy, to_keep_ta, to_keep_rt, to_keep_social)
 
         thread_managers = self.evaluator_thread_managers[exchange.get_name()]
         if thread_managers:
             self._filter_and_activate_or_deactivate_evaluator(
-                self.symbol, to_change_RT, to_keep_RT, activate,
+                self.symbol, to_change_rt, to_keep_rt, activate,
                 next(iter(thread_managers.values())).evaluator.get_real_time_eval_list())
 
         # only deactivate realtime evaluators and TA evaluators
         for evaluator_thread_manager in thread_managers.values():
-            self._filter_and_activate_or_deactivate_evaluator(self.symbol, to_change_TA, to_keep_TA, activate,
+            self._filter_and_activate_or_deactivate_evaluator(self.symbol, to_change_ta, to_keep_ta, activate,
                                                               evaluator_thread_manager.evaluator.get_ta_eval_list())
             # force refresh TA eval
             if activate:

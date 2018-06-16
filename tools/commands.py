@@ -1,5 +1,5 @@
-import os
 import subprocess
+import sys
 
 from backtesting.collector.data_collector import DataCollector
 from config.cst import ORIGIN_URL
@@ -63,4 +63,5 @@ class Commands:
     @staticmethod
     def stop_bot(bot):
         bot.stop_threads()
-        os._exit(0)
+        sys.exit(0)
+
