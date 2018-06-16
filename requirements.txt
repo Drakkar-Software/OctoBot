@@ -17,7 +17,6 @@ plotly
 newspaper3k
 praw
 python-telegram-bot
-tulipy
 
 dash
 dash-table-experiments
@@ -25,3 +24,5 @@ flask
 dash-renderer
 dash-html-components
 dash-core-components
+
+tulipy
