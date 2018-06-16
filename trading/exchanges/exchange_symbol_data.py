@@ -167,13 +167,13 @@ class CandleData:
             return self.extract_limited_data(self.volume_candles_array, limit)
 
     def get_symbol_prices(self, limit=None, return_list=False):
-        symbol_prices = []
-        symbol_prices.insert(PriceIndexes.IND_PRICE_CLOSE.value, self.get_symbol_close_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_OPEN.value, self.get_symbol_open_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_HIGH.value, self.get_symbol_high_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_LOW.value, self.get_symbol_low_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_TIME.value, self.get_symbol_time_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_VOL.value, self.get_symbol_volume_candles(limit, return_list))
+        symbol_prices = [None]*len(PriceIndexes)
+        symbol_prices[PriceIndexes.IND_PRICE_CLOSE.value] = self.get_symbol_close_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_OPEN.value] = self.get_symbol_open_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_HIGH.value] = self.get_symbol_high_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_LOW.value] = self.get_symbol_low_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_TIME.value] = self.get_symbol_time_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_VOL.value] = self.get_symbol_volume_candles(limit, return_list)
 
         if return_list:
             return symbol_prices
