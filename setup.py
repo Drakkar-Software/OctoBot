@@ -43,7 +43,7 @@ setup(
                       'dash-core-components',
                       'cryptography >= 2.2.1',
                       'tulipy'],
-    setup_requires=['Cython', 'numpy', 'pytest-runner'],
+    setup_requires=['pytest-runner'],
     tests_require=[
         'pytest',
         'pytest-pep8',
