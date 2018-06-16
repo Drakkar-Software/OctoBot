@@ -20,7 +20,7 @@ setup(
     },
     install_requires=['numpy',
                       'pandas',
-                      'Cython',
+                      'Cython==0.28.1',
                       'matplotlib==2.2.2',
                       'requests',
                       'vaderSentiment',
@@ -43,7 +43,7 @@ setup(
                       'dash-core-components',
                       'cryptography >= 2.2.1',
                       'tulipy'],
-    setup_requires=['pytest-runner'],
+    setup_requires=['Cython', 'numpy', 'pytest-runner'],
     tests_require=[
         'pytest',
         'pytest-pep8',
