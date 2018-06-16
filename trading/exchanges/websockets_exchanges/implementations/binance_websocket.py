@@ -187,8 +187,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
                 free = float(currency['f'])
                 locked = float(currency['l'])
                 total = free + locked
-                self.exchange_manager.get_personal_data().update_portfolio(self._adapt_symbol(currency['a']),
-                                                                           total, free, locked)
+                self.exchange_manager.get_personal_data().update_portfolio(currency['a'], total, free, locked)
 
     # unimplemented methods
     @staticmethod
