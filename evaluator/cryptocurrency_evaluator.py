@@ -3,10 +3,11 @@ import logging
 from backtesting.backtesting import Backtesting
 from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
 from evaluator.evaluator_creator import EvaluatorCreator
+from config.cst import CONFIG_EVALUATORS_WILDCARD
 
 
 class CryptocurrencyEvaluator:
-    def __init__(self, config, crypto_currency, dispatchers_list):
+    def __init__(self, config, crypto_currency, dispatchers_list, relevant_evaluators=CONFIG_EVALUATORS_WILDCARD):
         self.config = config
         self.crypto_currency = crypto_currency
         self.dispatchers_list = dispatchers_list
@@ -19,7 +20,8 @@ class CryptocurrencyEvaluator:
         else:
             self.social_eval_list = EvaluatorCreator.create_social_eval(self.config,
                                                                         self.crypto_currency,
-                                                                        self.dispatchers_list)
+                                                                        self.dispatchers_list,
+                                                                        relevant_evaluators)
 
             self.social_not_threaded_list = EvaluatorCreator.create_social_not_threaded_list(self.social_eval_list)
 

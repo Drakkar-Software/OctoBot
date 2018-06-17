@@ -6,7 +6,7 @@ from evaluator.Strategies import StrategiesEvaluator
 from evaluator.TA import TAEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
-from config.cst import CONFIG_TIME_FRAME
+from config.cst import CONFIG_TIME_FRAME, CONFIG_EVALUATORS_WILDCARD
 from tools.time_frame_manager import TimeFrameManager
 
 
@@ -17,12 +17,12 @@ class EvaluatorCreator:
         return cls.__name__
 
     @staticmethod
-    def create_ta_eval_list(evaluator):
+    def create_ta_eval_list(evaluator, relevant_evaluators):
         ta_eval_instance_list = []
         for ta_eval_class in AdvancedManager.create_advanced_evaluator_types_list(TAEvaluator, evaluator.get_config()):
             ta_eval_class_instance = ta_eval_class()
             ta_eval_class_instance.set_config(evaluator.config)
-            if ta_eval_class_instance.get_is_enabled():
+            if EvaluatorCreator.should_create_this_evaluator(ta_eval_class_instance, relevant_evaluators):
                 ta_eval_class_instance.set_logger(logging.getLogger(ta_eval_class.get_name()))
                 ta_eval_class_instance.set_data(evaluator.data)
                 ta_eval_class_instance.set_symbol(evaluator.get_symbol())
@@ -40,12 +40,12 @@ class EvaluatorCreator:
         return dispatchers_list
 
     @staticmethod
-    def create_social_eval(config, symbol, dispatchers_list):
+    def create_social_eval(config, symbol, dispatchers_list, relevant_evaluators):
         social_eval_list = []
         for social_eval_class in AdvancedManager.create_advanced_evaluator_types_list(SocialEvaluator, config):
             social_eval_class_instance = social_eval_class()
             social_eval_class_instance.set_config(config)
-            if social_eval_class_instance.get_is_enabled():
+            if EvaluatorCreator.should_create_this_evaluator(social_eval_class_instance, relevant_evaluators):
                 is_evaluator_to_be_used = True
                 social_eval_class_instance.set_logger(logging.getLogger(social_eval_class.get_name()))
                 social_eval_class_instance.set_symbol(symbol)
@@ -81,12 +81,12 @@ class EvaluatorCreator:
         return False
 
     @staticmethod
-    def create_real_time_ta_evals(config, exchange_inst, symbol):
+    def create_real_time_ta_evals(config, exchange_inst, symbol, relevant_evaluators):
         real_time_ta_eval_list = []
         for real_time_eval_class in AdvancedManager.create_advanced_evaluator_types_list(RealTimeEvaluator, config):
             real_time_eval_class_instance = real_time_eval_class(exchange_inst, symbol)
             real_time_eval_class_instance.set_config(config)
-            if real_time_eval_class_instance.get_is_enabled():
+            if EvaluatorCreator.should_create_this_evaluator(real_time_eval_class_instance, relevant_evaluators):
                 real_time_eval_class_instance.set_logger(logging.getLogger(real_time_eval_class.get_name()))
 
                 # start refreshing thread
@@ -130,3 +130,27 @@ class EvaluatorCreator:
                     time_frame_list.add(time_frame)
         time_frame_list = TimeFrameManager.sort_time_frames(time_frame_list)
         config[CONFIG_TIME_FRAME] = time_frame_list
+
+    @staticmethod
+    def get_relevant_evaluators_from_strategies(config):
+        evaluator_list = set()
+        for strategies_eval_class in AdvancedManager.create_advanced_evaluator_types_list(StrategiesEvaluator, config):
+            if strategies_eval_class.is_enabled(config, False):
+                required_evaluators = strategies_eval_class.get_required_evaluators()
+                if required_evaluators == CONFIG_EVALUATORS_WILDCARD:
+                    return CONFIG_EVALUATORS_WILDCARD
+                else:
+                    for evaluator in required_evaluators:
+                        evaluator_list.add(evaluator)
+        return evaluator_list
+
+    @staticmethod
+    def should_create_this_evaluator(evaluator_instance, relevant_evaluators):
+        if evaluator_instance.get_is_enabled():
+            if relevant_evaluators == CONFIG_EVALUATORS_WILDCARD or \
+                    evaluator_instance.get_name() in relevant_evaluators:
+                return True
+            else:
+                parent_classes_names = [e.get_name() for e in evaluator_instance.get_parent_evaluator_classes()]
+                return not relevant_evaluators.isdisjoint(parent_classes_names)
+        return False

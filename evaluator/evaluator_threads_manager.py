@@ -10,7 +10,8 @@ class EvaluatorThreadsManager:
                  symbol_time_frame_updater_thread,
                  symbol_evaluator,
                  exchange,
-                 real_time_ta_eval_list):
+                 real_time_ta_eval_list,
+                 relevant_evaluators=CONFIG_EVALUATORS_WILDCARD):
         self.config = config
         self.exchange = exchange
         self.symbol = symbol_evaluator.get_symbol()
@@ -44,7 +45,8 @@ class EvaluatorThreadsManager:
         self.evaluator.set_real_time_eval(real_time_ta_eval_list, self)
 
         # Create static evaluators
-        self.evaluator.set_ta_eval_list(self.evaluator.get_creator().create_ta_eval_list(self.evaluator))
+        self.evaluator.set_ta_eval_list(self.evaluator.get_creator().create_ta_eval_list(self.evaluator,
+                                                                                         relevant_evaluators))
 
         # Register in refreshing threads
         self.symbol_time_frame_updater_thread.register_evaluator_thread_manager(self.time_frame, self)
