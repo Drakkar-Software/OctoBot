@@ -48,6 +48,9 @@ class OctoBot:
         EvaluatorCreator.init_time_frames_from_strategies(self.config)
         self.time_frames = TimeFrameManager.get_config_time_frame(self.config)
 
+        # Init relevant evaluator names list using enabled strategies
+        self.relevant_evaluators = EvaluatorCreator.get_relevant_evaluators_from_strategies(self.config)
+
         # Add services to self.config[CONFIG_CATEGORY_SERVICES]
         ServiceCreator.create_services(self.config)
 
@@ -108,7 +111,8 @@ class OctoBot:
         for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
 
             # create crypto_currency evaluator
-            crypto_currency_evaluator = CryptocurrencyEvaluator(self.config, crypto_currency, self.dispatchers_list)
+            crypto_currency_evaluator = CryptocurrencyEvaluator(self.config, crypto_currency,
+                                                                self.dispatchers_list, self.relevant_evaluators)
             self.crypto_currency_evaluator_list[crypto_currency] = crypto_currency_evaluator
 
             # create TA evaluators
@@ -139,7 +143,8 @@ class OctoBot:
         # Create real time TA evaluators
         real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
                                                                             exchange,
-                                                                            symbol_evaluator.get_symbol())
+                                                                            symbol_evaluator.get_symbol(),
+                                                                            self.relevant_evaluators)
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
             if exchange.get_exchange_manager().time_frame_exists(time_frame.value):
@@ -148,7 +153,8 @@ class OctoBot:
                                                                                   symbol_time_frame_updater_thread,
                                                                                   symbol_evaluator,
                                                                                   exchange,
-                                                                                  real_time_ta_eval_list)
+                                                                                  real_time_ta_eval_list,
+                                                                                  self.relevant_evaluators)
         self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
 
     def start_threads(self):
