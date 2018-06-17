@@ -232,7 +232,8 @@ class CandleData:
             self.low_candles_array = self.convert_list_to_array(self.low_candles_list)
             self.time_candles_array = self.convert_list_to_array(self.time_candles_list)
             self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
-            
+
+            # used only when a new candle was created during the previous execution
             if self.should_add_new_candle(self.time_candles_array[-1]):
                 self.update_arrays()
         else:
@@ -240,6 +241,8 @@ class CandleData:
             self.set_last_candle_arrays(self.high_candles_list, self.high_candles_array)
             self.set_last_candle_arrays(self.low_candles_list, self.low_candles_array)
             self.set_last_candle_arrays(self.volume_candles_list, self.volume_candles_array)
+
+            # used only when a new update was preformed during the previous execution
             self.sanitize_last_candle(self.close_candles_array, self.high_candles_array, self.low_candles_array)
     
     @staticmethod            
