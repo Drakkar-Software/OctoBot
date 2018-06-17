@@ -19,7 +19,7 @@ class TestADXTAEvaluator(AbstractTATest):
 
     @staticmethod
     def test_reactions_to_dump(evaluator_tester):
-        evaluator_tester.run_test_reactions_to_dump(0.2, 0.3, -0.1, -0.1, -0.4)
+        evaluator_tester.run_test_reactions_to_dump(0.2, 0.35, -0.2, -0.1, 0)
 
     @staticmethod
     def test_reactions_to_pump(evaluator_tester):
@@ -27,7 +27,7 @@ class TestADXTAEvaluator(AbstractTATest):
 
     @staticmethod
     def test_reaction_to_rise_after_over_sold(evaluator_tester):
-        evaluator_tester.run_test_reactions_to_rise_after_over_sold(0.8, -0.1, -0.5, -0.52, -0.8)
+        evaluator_tester.run_test_reactions_to_rise_after_over_sold(0.8, -0.1, -0.5, -0.52, 0.8)
 
     @staticmethod
     def test_reaction_to_over_bought_then_dip(evaluator_tester):

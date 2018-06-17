@@ -10,7 +10,8 @@ class EvaluatorThreadsManager:
                  symbol_time_frame_updater_thread,
                  symbol_evaluator,
                  exchange,
-                 real_time_ta_eval_list):
+                 real_time_ta_eval_list,
+                 relevant_evaluators=CONFIG_EVALUATORS_WILDCARD):
         self.config = config
         self.exchange = exchange
         self.symbol = symbol_evaluator.get_symbol()
@@ -22,9 +23,6 @@ class EvaluatorThreadsManager:
         self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.time_frame, self)
 
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
-
-        # Exchange
-        # TODO : self.exchange.update_balance(self.symbol)
 
         self.thread_name = "TA THREAD MANAGER - {0} - {1} - {2}".format(self.symbol,
                                                                         self.exchange.get_name(),
@@ -40,11 +38,13 @@ class EvaluatorThreadsManager:
         self.evaluator.set_symbol_evaluator(self.symbol_evaluator)
 
         # Add threaded evaluators that can notify the current thread
-        self.evaluator.set_social_eval(self.symbol_evaluator.get_crypto_currency_evaluator().get_social_eval_list(), self)
+        self.evaluator.set_social_eval(self.symbol_evaluator.get_crypto_currency_evaluator().get_social_eval_list(),
+                                       self)
         self.evaluator.set_real_time_eval(real_time_ta_eval_list, self)
 
         # Create static evaluators
-        self.evaluator.set_ta_eval_list(self.evaluator.get_creator().create_ta_eval_list(self.evaluator))
+        self.evaluator.set_ta_eval_list(self.evaluator.get_creator().create_ta_eval_list(self.evaluator,
+                                                                                         relevant_evaluators), self)
 
         # Register in refreshing threads
         self.symbol_time_frame_updater_thread.register_evaluator_thread_manager(self.time_frame, self)
@@ -122,3 +122,6 @@ class EvaluatorThreadsManager:
 
     def get_exchange(self):
         return self.exchange
+
+    def get_symbol_evaluator(self):
+        return self.symbol_evaluator

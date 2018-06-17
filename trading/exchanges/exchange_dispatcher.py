@@ -47,8 +47,8 @@ class ExchangeDispatcher(AbstractExchange):
 
     # total (free + used), by currency
     def get_balance(self):
-        if not self._web_socket_available() or not self.exchange_personal_data.portfolio_is_initialized():
-            if not self.exchange_personal_data.portfolio_is_initialized():
+        if not self._web_socket_available() or not self.exchange_personal_data.get_portfolio_is_initialized():
+            if not self.exchange_personal_data.get_portfolio_is_initialized():
                 self.exchange_personal_data.init_portfolio()
 
             self.exchange.get_balance()
@@ -98,14 +98,14 @@ class ExchangeDispatcher(AbstractExchange):
 
     # ORDERS
     def get_order(self, order_id, symbol=None):
-        if not self._web_socket_available() or not self.exchange_personal_data.orders_are_initialized():
+        if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
             self.exchange.get_order(order_id, symbol=symbol)
 
         return self.exchange_personal_data.get_order(order_id)
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
-        if not self._web_socket_available() or not self.exchange_personal_data.orders_are_initialized():
-            if not self.exchange_personal_data.orders_are_initialized():
+        if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
+            if not self.exchange_personal_data.get_orders_are_initialized():
                 self.exchange_personal_data.init_orders()
 
             self.exchange.get_all_orders(symbol=symbol,
@@ -115,10 +115,7 @@ class ExchangeDispatcher(AbstractExchange):
         return self.exchange_personal_data.get_all_orders(symbol, since, limit)
 
     def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
-        if not self._web_socket_available() or not self.exchange_personal_data.orders_are_initialized():
-            if not self.exchange_personal_data.orders_are_initialized():
-                self.exchange_personal_data.init_orders()
-
+        if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
             self.exchange.get_open_orders(symbol=symbol,
                                           since=since,
                                           limit=limit)
@@ -126,7 +123,7 @@ class ExchangeDispatcher(AbstractExchange):
         return self.exchange_personal_data.get_open_orders(symbol, since, limit)
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):
-        if not self._web_socket_available() or not self.exchange_personal_data.orders_are_initialized():
+        if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
             self.exchange.get_closed_orders(symbol=symbol,
                                             since=since,
                                             limit=limit)

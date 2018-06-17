@@ -42,18 +42,25 @@ class Evaluator:
     def set_symbol_evaluator(self, symbol_evaluator):
         self.symbol_evaluator = symbol_evaluator
 
-    def set_ta_eval_list(self, new_ta_list):
+    def set_ta_eval_list(self, new_ta_list, evaluator_thread):
         self.ta_eval_list = new_ta_list
+        for ta_eval in self.ta_eval_list:
+            evaluator_thread.get_symbol_evaluator()\
+                .add_evaluator_instance_to_strategy_instances_list(ta_eval, evaluator_thread.get_exchange())
 
     def set_social_eval(self, new_social_list, evaluator_thread):
         self.social_eval_list = new_social_list
         for social_eval in self.social_eval_list:
             social_eval.add_evaluator_thread_manager(evaluator_thread)
+            evaluator_thread.get_symbol_evaluator()\
+                .add_evaluator_instance_to_strategy_instances_list(social_eval, evaluator_thread.get_exchange())
 
     def set_real_time_eval(self, new_real_time_list, evaluator_thread):
         self.real_time_eval_list = new_real_time_list
         for real_time_eval in self.real_time_eval_list:
             real_time_eval.add_evaluator_thread_manager(evaluator_thread)
+            evaluator_thread.get_symbol_evaluator()\
+                .add_evaluator_instance_to_strategy_instances_list(real_time_eval, evaluator_thread.get_exchange())
 
     def update_ta_eval(self, ignored_evaluator=None):
         # update only with new data

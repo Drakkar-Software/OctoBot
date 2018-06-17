@@ -56,7 +56,7 @@ class RedditDispatcher(AbstractDispatcher):
             # check if we are in the 100 history or if it's a new entry (new posts are more valuables)
             # the older the entry is, the les weight it gets
             entry_age_when_dispatcher_started_in_sec = start_time - entry.created_utc
-            entry_weight = 0
+            # entry_weight = 0
             if entry_age_when_dispatcher_started_in_sec > 0:
                 # entry in history => weight proportional to entry's age
                 # last 12 hours: weight = 4

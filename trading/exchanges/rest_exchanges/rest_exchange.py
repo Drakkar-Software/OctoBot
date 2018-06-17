@@ -30,7 +30,7 @@ class RESTExchange(AbstractExchange):
         return self.exchange_manager.get_symbol_data(symbol)
 
     def get_personal_data(self):
-        return self.exchange_manager.get_exchange_personal_data()
+        return self.exchange_manager.get_personal_data()
 
     # ccxt exchange instance creation
     def create_client(self):

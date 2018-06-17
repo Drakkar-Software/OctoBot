@@ -1,5 +1,4 @@
 import logging
-import time
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR
@@ -42,7 +41,7 @@ class Trader:
                 # self.update_close_orders()
 
                 # can current orders received: start using websocket for orders if available
-                self.exchange.set_orders_are_initialized(True)
+                self.exchange.get_exchange_personal_data().init_orders()
 
             self.order_manager.start()
             self.logger.debug("Enabled on {0}".format(self.exchange.get_name()))

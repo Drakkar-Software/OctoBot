@@ -48,7 +48,7 @@ print_result("candles_array_to_data_frame", time.time() - start_time, len(candle
 
 new_candles = [
     gen_candle(val, int(index))
-    for index, val in enumerate([float(100 * random.random()) for i in range(1000)])
+    for index, val in enumerate([float(100 * random.random()) for _ in range(1000)])
 ]
 
 start_time = time.time()
@@ -73,7 +73,7 @@ print_result("list to df", time.time() - start_time, len(candles2), len(df3))
 
 mega_candles = [
     gen_candle(val, int(index))
-    for index, val in enumerate([float(100 * random.random()) for i in range(200000)])
+    for index, val in enumerate([float(100 * random.random()) for _ in range(200000)])
 ]
 start_time = time.time()
 df = candles_array_to_data_frame(mega_candles)

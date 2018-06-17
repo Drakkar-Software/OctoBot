@@ -2,7 +2,7 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.Strategies import StrategiesEvaluator
 from tests.test_utils.config import load_test_config
 from evaluator.Util.advanced_manager import AdvancedManager
-from config.cst import TimeFrames
+from config.cst import TimeFrames, CONFIG_EVALUATORS_WILDCARD
 from evaluator.evaluator import Evaluator
 from evaluator.TA import TAEvaluator
 from evaluator.Social import SocialEvaluator
@@ -36,19 +36,19 @@ def test_create_dispatchers():
 
 def test_create_ta_eval_list():
     evaluator, config = _get_tools()
-    ta_list = EvaluatorCreator.create_ta_eval_list(evaluator)
+    ta_list = EvaluatorCreator.create_ta_eval_list(evaluator, CONFIG_EVALUATORS_WILDCARD)
     _assert_created_instances(ta_list, TAEvaluator, config)
 
 
 def test_create_social_eval_list():
     evaluator, config = _get_tools()
-    so_list = EvaluatorCreator.create_social_eval(config, evaluator.symbol, [])
+    so_list = EvaluatorCreator.create_social_eval(config, evaluator.symbol, [], CONFIG_EVALUATORS_WILDCARD)
     _assert_created_instances(so_list, SocialEvaluator, config)
 
 
 def test_create_social_not_threaded_list():
     evaluator, config = _get_tools()
-    so_list = EvaluatorCreator.create_social_eval(config, evaluator.symbol, [])
+    so_list = EvaluatorCreator.create_social_eval(config, evaluator.symbol, [], CONFIG_EVALUATORS_WILDCARD)
     not_thread_so_list = EvaluatorCreator.create_social_not_threaded_list(so_list)
     for evalator in not_thread_so_list:
         assert not evalator.is_threaded
@@ -63,5 +63,6 @@ def test_create_strategies_eval_list():
 # not tested for now
 # def test_create_real_time_ta_evals():
 #     evaluator, config = _get_tools()
-#     ta_list = EvaluatorCreator.create_real_time_ta_evals(config, evaluator.exchange, evaluator.symbol)
+#     ta_list = EvaluatorCreator.create_real_time_ta_evals(config, evaluator.exchange,
+#                                                          evaluator.symbol, CONFIG_EVALUATORS_WILDCARD)
 #     _assert_created_instances(ta_list, RealTimeEvaluator, config)
