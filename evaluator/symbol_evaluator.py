@@ -149,7 +149,6 @@ class SymbolEvaluator:
         # finally, refresh strategies
         self.update_strategies_eval(next(iter(thread_managers.values())).matrix, exchange, None)
 
-        self.logger.info(self.get_matrix(exchange).get_matrix())
         self.logger.info("{} activated: {}".format([s.get_name() for s in strategies], activate))
 
     def finalize(self, exchange):
