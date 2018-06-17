@@ -1,6 +1,6 @@
 import datetime
 import logging
-import os
+import sys
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
@@ -88,7 +88,7 @@ class TelegramApp:
         # TODO add confirmation
         update.message.reply_text("I'm leaving this world...")
         get_bot().stop_threads()
-        os._exit(0)
+        sys.exit(0)
 
     def command_pause_resume(self, _, update):
         if self.paused:

@@ -1,15 +1,15 @@
-tulipy
+numpy
+pandas
+Cython
 matplotlib==2.2.2
 requests
 vaderSentiment
-pandas
 pytrends
 ccxt
 twisted==18.4.0
 
 python-binance
 
-numpy
 colorlog
 Python-Twitter
 psutil
@@ -24,3 +24,5 @@ flask
 dash-renderer
 dash-html-components
 dash-core-components
+
+tulipy

@@ -23,8 +23,8 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
 
     @classmethod
     def get_config_file_name(cls):
-        return "{0}/{1}/{2}/{3}".format(CONFIG_EVALUATOR, CONFIG_EVALUATOR_SOCIAL, EVALUATOR_CONFIG_FOLDER,
-                                        cls.get_name() + CONFIG_FILE_EXT)
+        return "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, CONFIG_EVALUATOR_SOCIAL
+                                            , EVALUATOR_CONFIG_FOLDER, cls.get_name() + CONFIG_FILE_EXT)
 
     def stop(self):
         self.keep_running = False

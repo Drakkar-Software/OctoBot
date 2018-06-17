@@ -1,6 +1,6 @@
 import logging
+
 import twitter
-import time
 
 from config.cst import *
 from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher

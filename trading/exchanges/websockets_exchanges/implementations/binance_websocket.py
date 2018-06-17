@@ -182,13 +182,12 @@ class BinanceWebSocketClient(AbstractWebSocket):
         ]
 
     def _update_portfolio(self, msg):
-        if self.exchange_manager.get_personal_data().portfolio_is_initialized():
+        if self.exchange_manager.get_personal_data().get_portfolio_is_initialized():
             for currency in msg['B']:
                 free = float(currency['f'])
                 locked = float(currency['l'])
                 total = free + locked
-                self.exchange_manager.get_personal_data().update_portfolio(self._adapt_symbol(currency['a']),
-                                                                           total, free, locked)
+                self.exchange_manager.get_personal_data().update_portfolio(currency['a'], total, free, locked)
 
     # unimplemented methods
     @staticmethod
@@ -205,4 +204,8 @@ class BinanceWebSocketClient(AbstractWebSocket):
         if "/" in symbol:
             symbol = merge_symbol(symbol)
 
-        return self._parse_symbol_from_ccxt(symbol)
+        if not self.exchange_manager.get_is_simulated():
+            return self._parse_symbol_from_ccxt(symbol)
+        else:
+            # used only for tests
+            return symbol

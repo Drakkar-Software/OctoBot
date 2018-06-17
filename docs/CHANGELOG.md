@@ -1,3 +1,16 @@
+Changelog for 0.1.2_1-beta
+====================
+*Released date : June 18 2018*
+
+# Concerned issues :
+    #216 Enable start/stop of strategies and their evaluators on demand
+
+# New features :
+    - Strategy linked tentacles activation and deactivation
+
+# Bug fix :
+    - Update order status deadlock when canceling order
+
 Changelog for 0.1.2-beta
 ====================
 *Released date : June 16 2018*

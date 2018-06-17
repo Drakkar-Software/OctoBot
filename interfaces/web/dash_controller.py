@@ -1,4 +1,5 @@
 from dash.dependencies import Output, Event, Input
+import logging, json
 
 from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME
 from interfaces import global_config
@@ -61,7 +62,6 @@ def update_symbol_dropdown_options(exchange_name, cryptocurrency_name):
                 "label": symbol,
                 "value": symbol
             })
-
     return symbol_list
 
 
@@ -77,7 +77,6 @@ def update_symbol_dropdown_value(exchange_name, cryptocurrency_name):
                 "label": symbol,
                 "value": symbol
             }
-
     return None
 
 
@@ -91,8 +90,8 @@ def update_time_frame_dropdown_options(exchange_name, symbol):
     for time_frame in global_config[CONFIG_TIME_FRAME]:
         if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value):
             time_frame_list.append({
-                "label": time_frame,
-                "value": time_frame
+                "label": time_frame.value,
+                "value": time_frame.value
             })
     if time_frame_list:
         set_default_time_frame_for_this_symbol(time_frame_list[0]["value"])
@@ -108,8 +107,8 @@ def update_time_frame_dropdown_value(exchange_name, symbol):
     for time_frame in global_config[CONFIG_TIME_FRAME]:
         if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value):
             return {
-                "label": time_frame,
-                "value": time_frame
+                "label": time_frame.value,
+                "value": time_frame.value
             }
     return None
 

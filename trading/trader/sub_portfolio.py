@@ -1,4 +1,3 @@
-from config.cst import CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_TOTAL
 from trading.trader.portfolio import Portfolio
 
 

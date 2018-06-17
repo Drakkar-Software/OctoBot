@@ -44,11 +44,11 @@ class AbstractWebSocket:
 
     # ============== ccxt adaptation methods ==============
     def init_ccxt_order_from_other_source(self, ccxt_order):
-        if self.exchange_manager.get_personal_data().orders_are_initialized():
+        if self.exchange_manager.get_personal_data().get_orders_are_initialized():
             self.exchange_manager.get_personal_data().upsert_order(ccxt_order["id"], ccxt_order)
 
     def _update_order(self, msg):
-        if self.exchange_manager.get_personal_data().orders_are_initialized():
+        if self.exchange_manager.get_personal_data().get_orders_are_initialized():
             ccxt_order = self.convert_into_ccxt_order(msg)
             self.exchange_manager.get_personal_data().upsert_order(ccxt_order["id"], ccxt_order)
 
@@ -114,4 +114,4 @@ class AbstractWebSocket:
         return self.exchange_manager.get_symbol_data(self._adapt_symbol(symbol))
 
     def get_personal_data(self):
-        return self.exchange_manager.get_exchange_personal_data()
+        return self.exchange_manager.get_personal_data()

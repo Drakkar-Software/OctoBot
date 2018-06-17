@@ -167,13 +167,13 @@ class CandleData:
             return self.extract_limited_data(self.volume_candles_array, limit)
 
     def get_symbol_prices(self, limit=None, return_list=False):
-        symbol_prices = []
-        symbol_prices.insert(PriceIndexes.IND_PRICE_CLOSE.value, self.get_symbol_close_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_OPEN.value, self.get_symbol_open_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_HIGH.value, self.get_symbol_high_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_LOW.value, self.get_symbol_low_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_TIME.value, self.get_symbol_time_candles(limit, return_list))
-        symbol_prices.insert(PriceIndexes.IND_PRICE_VOL.value, self.get_symbol_volume_candles(limit, return_list))
+        symbol_prices = [None]*len(PriceIndexes)
+        symbol_prices[PriceIndexes.IND_PRICE_CLOSE.value] = self.get_symbol_close_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_OPEN.value] = self.get_symbol_open_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_HIGH.value] = self.get_symbol_high_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_LOW.value] = self.get_symbol_low_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_TIME.value] = self.get_symbol_time_candles(limit, return_list)
+        symbol_prices[PriceIndexes.IND_PRICE_VOL.value] = self.get_symbol_volume_candles(limit, return_list)
 
         if return_list:
             return symbol_prices
@@ -232,14 +232,17 @@ class CandleData:
             self.low_candles_array = self.convert_list_to_array(self.low_candles_list)
             self.time_candles_array = self.convert_list_to_array(self.time_candles_list)
             self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
-            
+
+            # used only when a new candle was created during the previous execution
             if self.should_add_new_candle(self.time_candles_array[-1]):
-                self.update_arrays(self)
+                self.update_arrays()
         else:
             self.set_last_candle_arrays(self.close_candles_list, self.close_candles_array)
             self.set_last_candle_arrays(self.high_candles_list, self.high_candles_array)
             self.set_last_candle_arrays(self.low_candles_list, self.low_candles_array)
             self.set_last_candle_arrays(self.volume_candles_list, self.volume_candles_array)
+
+            # used only when a new update was preformed during the previous execution
             self.sanitize_last_candle(self.close_candles_array, self.high_candles_array, self.low_candles_array)
     
     @staticmethod            

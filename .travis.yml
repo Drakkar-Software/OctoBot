@@ -1,19 +1,20 @@
 sudo: enabled
 language: python
 python:
-  - 3.5
   - 3.6
+  - 3.5
 
 notifications:
   slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
   email: false
 install:
-  - sudo ./docs/install/linux_installer.sh
-  - pip3 install -r requirements.txt
-  - pip3 install -r dev_requirements.txt
+  - sudo bash ./docs/install/linux_dependencies.sh
+  - pip3 install ccxt jieba3k service-identity
+  - python3 setup.py install
   - cp ./config/default_config.json ./config.json
   - python3 start.py -p install all
 script:
+  - pip3 install -r dev_requirements.txt
   - pytest --cov=. --cov-config=.coveragerc tests/
 after_success:
   - coveralls

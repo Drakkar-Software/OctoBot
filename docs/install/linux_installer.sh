@@ -10,7 +10,6 @@ echo **Set default configuration...**
 cd %config_path%
 cp default_config.json ../config.json
 
-REM BOT MODULES INSTALL
 echo **Installing modules...**
 cd ..
 python3 start.py -p install all

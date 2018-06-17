@@ -1,7 +1,7 @@
 from abc import *
 import math
 
-from config.cst import *
+from config.cst import START_PENDING_EVAL_NOTE
 from tests.test_utils.config import load_test_config
 from tests.test_utils.data_bank import DataBank
 
@@ -68,9 +68,9 @@ class AbstractTATest:
             for key, current_time_frame_data in time_framed_data_list.items():
                 # start with 0 data dataframe and goes onwards the end of the data
                 not_neutral_evaluation_count = 0
-                for current_time_in_frame in range(len(current_time_frame_data)):
-
-                    self.evaluator.set_data(current_time_frame_data[0:current_time_in_frame])
+                for current_time_in_frame in range(30, len(current_time_frame_data[0])):
+                    self.evaluator.set_data(DataBank.reduce_data(current_time_frame_data, 0, current_time_in_frame))
+                    # self.evaluator.set_data(current_time_frame_data[0:current_time_in_frame])
                     if reset_eval_to_none_before_each_eval:
                         # force None value if possible to make sure eval_note is set during eval_impl()
                         self.evaluator.eval_note = None
@@ -94,16 +94,16 @@ class AbstractTATest:
         dump_data, pre_dump, start_dump, heavy_dump, end_dump = self.data_bank.get_sudden_dump()
 
         # not dumped yet
-        self._set_data_and_check_eval(dump_data[0:pre_dump], pre_dump_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(dump_data, 0, pre_dump), pre_dump_eval, False)
 
         # starts dumping
-        self._set_data_and_check_eval(dump_data[0:start_dump], slight_dump_started_eval, True)
+        self._set_data_and_check_eval(DataBank.reduce_data(dump_data, 0, start_dump), slight_dump_started_eval, True)
 
         # real dumping
-        self._set_data_and_check_eval(dump_data[0:heavy_dump], heavy_dump_started_eval, True)
+        self._set_data_and_check_eval(DataBank.reduce_data(dump_data, 0, heavy_dump), heavy_dump_started_eval, True)
 
         # end dumping
-        self._set_data_and_check_eval(dump_data[0:end_dump], end_dump_eval, True)
+        self._set_data_and_check_eval(DataBank.reduce_data(dump_data, 0, end_dump), end_dump_eval, True)
 
         # stopped dumping
         self._set_data_and_check_eval(dump_data, after_dump_eval, True)
@@ -121,22 +121,22 @@ class AbstractTATest:
         pump_data, pre_pump, start_dump, heavy_pump, max_pump, change_trend, dipping = self.data_bank.get_sudden_pump()
 
         # not pumped yet
-        self._set_data_and_check_eval(pump_data[0:pre_pump], pre_pump_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(pump_data, 0, pre_pump), pre_pump_eval, False)
 
         # starts pumping
-        self._set_data_and_check_eval(pump_data[0:start_dump], start_pump_started_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(pump_data, 0, start_dump), start_pump_started_eval, False)
 
         # real pumping
-        self._set_data_and_check_eval(pump_data[0:heavy_pump], heavy_pump_started_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(pump_data, 0, heavy_pump), heavy_pump_started_eval, False)
 
         # max pumping
-        self._set_data_and_check_eval(pump_data[0:max_pump], max_pump_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(pump_data, 0, max_pump), max_pump_eval, False)
 
         # trend reversing
-        self._set_data_and_check_eval(pump_data[0:change_trend], stop_pump_eval, True)
+        self._set_data_and_check_eval(DataBank.reduce_data(pump_data, 0, change_trend), stop_pump_eval, True)
 
         # starts dipping
-        self._set_data_and_check_eval(pump_data[0:dipping], start_dip_eval, True)
+        self._set_data_and_check_eval(DataBank.reduce_data(pump_data, 0, dipping), start_dip_eval, True)
 
         # dipped
         self._set_data_and_check_eval(pump_data, dipped_eval, True)
@@ -151,16 +151,16 @@ class AbstractTATest:
         sell_then_buy_data, pre_sell, start_sell, max_sell, start_rise = self.data_bank.get_rise_after_over_sold()
 
         # not started
-        self._set_data_and_check_eval(sell_then_buy_data[0:pre_sell], pre_sell_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(sell_then_buy_data, 0, pre_sell), pre_sell_eval, False)
 
         # starts selling
-        self._set_data_and_check_eval(sell_then_buy_data[0:start_sell], started_sell_eval, True)
+        self._set_data_and_check_eval(DataBank.reduce_data(sell_then_buy_data, 0, start_sell), started_sell_eval, True)
 
         # max selling
-        self._set_data_and_check_eval(sell_then_buy_data[0:max_sell], max_sell_eval, True)
+        self._set_data_and_check_eval(DataBank.reduce_data(sell_then_buy_data, 0, max_sell), max_sell_eval, True)
 
         # start buying
-        self._set_data_and_check_eval(sell_then_buy_data[0:start_rise], start_rise_eval, True)
+        self._set_data_and_check_eval(DataBank.reduce_data(sell_then_buy_data, 0, start_rise), start_rise_eval, True)
 
         # bought
         self._set_data_and_check_eval(sell_then_buy_data, after_rise_eval, True)
@@ -178,19 +178,19 @@ class AbstractTATest:
             self.data_bank.get_dip_after_over_bought()
 
         # not started
-        self._set_data_and_check_eval(buy_then_sell_data[0:pre_buy], pre_buy_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(buy_then_sell_data, 0, pre_buy), pre_buy_eval, False)
 
         # starts buying
-        self._set_data_and_check_eval(buy_then_sell_data[0:start_buy], started_buy_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(buy_then_sell_data, 0, start_buy), started_buy_eval, False)
 
         # max buying
-        self._set_data_and_check_eval(buy_then_sell_data[0:max_buy], max_buy_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(buy_then_sell_data, 0, max_buy), max_buy_eval, False)
 
         # start dipping
-        self._set_data_and_check_eval(buy_then_sell_data[0:start_dip], start_dip_eval, False)
+        self._set_data_and_check_eval(DataBank.reduce_data(buy_then_sell_data, 0, start_dip), start_dip_eval, False)
 
         # max dip
-        self._set_data_and_check_eval(buy_then_sell_data[0:max_dip], max_dip_eval, True)
+        self._set_data_and_check_eval(DataBank.reduce_data(buy_then_sell_data, 0, max_dip), max_dip_eval, True)
 
         # back normal
         self._set_data_and_check_eval(buy_then_sell_data, after_dip_eval, False)
@@ -215,7 +215,8 @@ class AbstractTATest:
 
         # start_move_ending_up_in_a_rise
         self._set_data_and_check_eval(
-            up_then_flat_data[0:start_move_ending_up_in_a_rise], eval_start_move_ending_up_in_a_rise, False)
+            DataBank.reduce_data(up_then_flat_data, 0, start_move_ending_up_in_a_rise),
+            eval_start_move_ending_up_in_a_rise, False)
         #  reaches_flat_trend
         self._move_and_set_data_and_check_eval(up_then_flat_data, reaches_flat_trend, eval_reaches_flat_trend, False)
         #  first_micro_up_p1
@@ -267,11 +268,11 @@ class AbstractTATest:
 
         if eval_index > 0:
             # move up to next evaluation
-            for i in range(eval_index - self.previous_move_stop - 1):
-                self.evaluator.set_data(data[0:self.previous_move_stop + i])
+            for i in range(30, eval_index - self.previous_move_stop - 1):
+                self.evaluator.set_data(DataBank.reduce_data(data, 0, self.previous_move_stop + i))
                 self.evaluator.eval_impl()
 
-        self._set_data_and_check_eval(data[0:eval_index], expected_eval_note, check_inferior)
+        self._set_data_and_check_eval(DataBank.reduce_data(data, 0, eval_index), expected_eval_note, check_inferior)
         self.previous_move_stop = eval_index
 
     def _set_data_and_check_eval(self, data, expected_eval_note, check_inferior):

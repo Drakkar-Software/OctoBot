@@ -3,7 +3,7 @@ import time
 import plotly
 import plotly.graph_objs as go
 
-from config.cst import PriceStrings, TimeFrames, EvaluatorMatrixTypes
+from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
@@ -123,24 +123,24 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
 
             if time_frame in evaluator_thread_managers:
                 evaluator_thread_manager = evaluator_thread_managers[time_frame]
-                df = evaluator_thread_manager.get_evaluator().get_data()
+                data = evaluator_thread_manager.get_evaluator().get_data()
 
-                if df is not None:
+                if data is not None:
                     _, pair_tag = split_symbol(symbol)
-                    add_to_symbol_data_history(symbol, df, time_frame)
-                    df = get_symbol_data_history(symbol, time_frame)
+                    add_to_symbol_data_history(symbol, data, time_frame)
+                    data = get_symbol_data_history(symbol, time_frame)
 
-                    # df.loc[:, PriceStrings.STR_PRICE_TIME.value] /= 1000
+                    # data.loc[:, PriceStrings.STR_PRICE_TIME.value] /= 1000
 
-                    X = df[PriceStrings.STR_PRICE_TIME.value]
-                    Y = df[PriceStrings.STR_PRICE_CLOSE.value]
+                    data_x = data[PriceIndexes.IND_PRICE_TIME.value]
+                    data_y = data[PriceIndexes.IND_PRICE_CLOSE.value]
 
                     # Candlestick
-                    data = go.Ohlc(x=df[PriceStrings.STR_PRICE_TIME.value],
-                                   open=df[PriceStrings.STR_PRICE_OPEN.value],
-                                   high=df[PriceStrings.STR_PRICE_HIGH.value],
-                                   low=df[PriceStrings.STR_PRICE_LOW.value],
-                                   close=df[PriceStrings.STR_PRICE_CLOSE.value])
+                    ohlc_graph = go.Ohlc(x=data[PriceIndexes.IND_PRICE_TIME.value],
+                                         open=data[PriceIndexes.IND_PRICE_OPEN.value],
+                                         high=data[PriceIndexes.IND_PRICE_HIGH.value],
+                                         low=data[PriceIndexes.IND_PRICE_LOW.value],
+                                         close=data[PriceIndexes.IND_PRICE_CLOSE.value])
 
                     real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times = \
                         get_trades_by_times_and_prices()
@@ -159,12 +159,12 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         name='markers'
                     )
 
-                    return {'data': [data, real_trades_points, simulated_trades_points],
+                    return {'data': [ohlc_graph, real_trades_points, simulated_trades_points],
                             'layout': go.Layout(
                                 title="{} real time data (per time frame)".format(cryptocurrency_name),
-                                xaxis=dict(range=[min(X), max(X)],
+                                xaxis=dict(range=[min(data_x), max(data_x)],
                                            title=TIME_AXIS_TITLE),
-                                yaxis=dict(range=[min(Y) * 0.98, max(Y) * 1.02],
+                                yaxis=dict(range=[min(data_y) * 0.98, max(data_y) * 1.02],
                                            title=pair_tag)
                             )}
     return None

@@ -1,0 +1,27 @@
+environment:
+
+  matrix:
+
+    # For Python versions available on Appveyor, see
+    # http://www.appveyor.com/docs/installed-software#python
+    # The list here is complete (excluding Python 2.6, which
+    # isn't covered by this document) at the time of writing.
+
+    - PYTHON: "C:\\Python35-x64"
+    - PYTHON: "C:\\Python36-x64"
+
+install:
+  # We need wheel installed to build wheels
+  - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
+
+build: off
+
+test_script:
+  # Put your test command here.
+  # If you don't need to build C extensions on 64-bit Python 3.3 or 3.4,
+  # you can remove "build.cmd" from the front of the command, as it's
+  # only needed to support those cases.
+  # Note that you must use the environment variable %PYTHON% to refer to
+  # the interpreter you're using - Appveyor does not do anything special
+  # to put the Python version you want to use on PATH.
+    - "%PYTHON%\\python.exe -m pytest tests"

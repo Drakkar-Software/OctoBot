@@ -33,10 +33,7 @@ class SymbolEvaluator:
 
         self.strategies_with_evaluators = {}
 
-        self.all_TA_subclasses = None
-        self.all_RT_subclasses = None
-        self.all_social_subclasses = None
-        self.all_strategies_subclasses = None
+        self.evaluator_instances_by_strategies = {}
 
     def set_traders(self, trader):
         self.traders = trader
@@ -64,7 +61,31 @@ class SymbolEvaluator:
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
             self.finalize_enabled_list[exchange.get_name()] = False
 
+            self.init_evaluator_instances_by_strategies()
+
             self.trading_mode_instances[exchange.get_name()] = self.trading_mode_class(self.config, self, exchange)
+
+    def init_evaluator_instances_by_strategies(self):
+        for exchange, strategy_list in self.strategies_eval_lists.items():
+            if exchange not in self.evaluator_instances_by_strategies:
+                self.evaluator_instances_by_strategies[exchange] = {}
+            for strategy in strategy_list:
+                strategy_class = strategy.__class__
+                if strategy_class not in self.evaluator_instances_by_strategies[exchange]:
+                    self.evaluator_instances_by_strategies[exchange][strategy_class] = {
+                        TAEvaluator: set(),
+                        SocialEvaluator: set(),
+                        RealTimeTAEvaluator: set()
+                    }
+
+    def add_evaluator_instance_to_strategy_instances_list(self, evaluator, exchange):
+        exchange_name = exchange.get_exchange().get_name()
+        for strategy in self.evaluator_instances_by_strategies[exchange_name].keys():
+            if EvaluatorCreator.is_relevant_evaluator(evaluator, strategy.get_required_evaluators()):
+                evaluator_parents = evaluator.get_parent_evaluator_classes()
+                for evaluator_type in self.evaluator_instances_by_strategies[exchange_name][strategy].keys():
+                    if evaluator_type in evaluator_parents:
+                        self.evaluator_instances_by_strategies[exchange_name][strategy][evaluator_type].add(evaluator)
 
     def update_strategies_eval(self, new_matrix, exchange, ignored_evaluator=None):
         for strategies_evaluator in self.get_strategies_eval_list(exchange):
@@ -79,89 +100,46 @@ class SymbolEvaluator:
                 new_matrix.set_eval(EvaluatorMatrixTypes.STRATEGIES, strategies_evaluator.get_name(),
                                     START_PENDING_EVAL_NOTE)
 
-    def _init_all_evaluator_classes_name_list_if_necessary(self):
-        if self.all_TA_subclasses is None:
-            self.all_TA_subclasses = [subclass.__name__ for subclass in TAEvaluator.get_all_subclasses()
-                                      if subclass.is_enabled(self.config, False)]
-        if self.all_RT_subclasses is None:
-            self.all_RT_subclasses = [subclass.__name__ for subclass in RealTimeTAEvaluator.get_all_subclasses()
-                                      if subclass.is_enabled(self.config, False)]
-        if self.all_social_subclasses is None:
-            self.all_social_subclasses = [subclass.__name__ for subclass in SocialEvaluator.get_all_subclasses()
-                                          if subclass.is_enabled(self.config, False)]
-        if self.all_strategies_subclasses is None:
-            self.all_strategies_subclasses = [subclass.__name__ for subclass in StrategiesEvaluator.get_all_subclasses()
-                                              if subclass.is_enabled(self.config, False)]
-
-    def _get_evaluators_from_strategy(self, strategy, TA_list, RT_list, social_list):
-        self._init_all_evaluator_classes_name_list_if_necessary()
-        # add wildcard handling
-        required_evaluators = strategy.get_required_evaluators()
-        if required_evaluators == CONFIG_EVALUATORS_WILDCARD:
-            TA_list.update(self.all_TA_subclasses)
-            RT_list.update(self.all_RT_subclasses)
-            social_list.update(self.all_social_subclasses)
-        else:
-            for evaluator in strategy.get_required_evaluators():
-                if evaluator in self.all_TA_subclasses:
-                    TA_list.add(evaluator)
-                elif evaluator in self.all_RT_subclasses:
-                    RT_list.add(evaluator)
-                elif evaluator in self.all_social_subclasses:
-                    social_list.add(evaluator)
+    def _get_evaluators_from_strategy(self, strategy, ta_list, rt_list, social_list):
+        for exchange, strategy_classes in self.evaluator_instances_by_strategies.items():
+            for strategy_class in strategy_classes:
+                if strategy.__class__ == strategy_class:
+                    strategy_instances = self.evaluator_instances_by_strategies[exchange][strategy_class]
+                    ta_list.update(strategy_instances[TAEvaluator])
+                    rt_list.update(strategy_instances[RealTimeTAEvaluator])
+                    social_list.update(strategy_instances[SocialEvaluator])
 
     @staticmethod
-    def _filter_and_activate_or_deactivate_evaluator(symbol, to_change_eval, to_keep_eval, activate, evaluator_instances):
-        # add advanced classes management
-        evaluator_instances_names = [evaluator.get_name() for evaluator in evaluator_instances]
+    def _filter_and_activate_or_deactivate_evaluator(to_change_eval, to_keep_eval, activate):
         for evaluator in to_change_eval:
             if activate or evaluator not in to_keep_eval:
-                evaluator_name_identifier = evaluator
-                if evaluator not in evaluator_instances_names:
-                    # try advanced classes
-                    for instance in evaluator_instances:
-                        bases = [base.__name__ for base in instance.get_parent_evaluator_classes()]
-                        eval_name = instance.get_name()
-                        if evaluator in bases and eval_name in evaluator_instances_names:
-                            evaluator_name_identifier = eval_name
-                if evaluator_name_identifier in evaluator_instances_names:
-                    eval_instance = evaluator_instances[evaluator_instances_names.index(evaluator_name_identifier)]
-                    if not activate and eval_instance.get_is_active():
-                        eval_instance.reset()
-                    eval_instance.set_is_active(activate)
-                else:
-                    logging.getLogger(SymbolEvaluator.__class__.__name__).error("error: {}{} not found in {}".
-                                                                                format(symbol,
-                                                                                       evaluator_name_identifier,
-                                                                                       evaluator_instances_names))
+                if not activate and evaluator.get_is_active():
+                    evaluator.reset()
+                evaluator.set_is_active(activate)
 
     def activate_deactivate_strategies(self, strategies, exchange, activate=True):
-        to_change_TA = set()
-        to_change_RT = set()
+        to_change_ta = set()
+        to_change_rt = set()
         to_change_social = set()
 
         for strategy in strategies:
-            self._get_evaluators_from_strategy(strategy, to_change_TA, to_change_RT, to_change_social)
+            self._get_evaluators_from_strategy(strategy, to_change_ta, to_change_rt, to_change_social)
             strategy.set_is_active(activate)
             if not activate and strategy.get_is_active():
                 strategy.reset()
 
-        to_keep_TA = set()
-        to_keep_RT = set()
+        to_keep_ta = set()
+        to_keep_rt = set()
         to_keep_social = set()
         for strategy in self.get_strategies_eval_list(exchange, True):
-            self._get_evaluators_from_strategy(strategy, to_keep_TA, to_keep_RT, to_keep_social)
-
-        thread_managers = self.evaluator_thread_managers[exchange.get_name()]
-        if thread_managers:
-            self._filter_and_activate_or_deactivate_evaluator(
-                self.symbol, to_change_RT, to_keep_RT, activate,
-                next(iter(thread_managers.values())).evaluator.get_real_time_eval_list())
+            self._get_evaluators_from_strategy(strategy, to_keep_ta, to_keep_rt, to_keep_social)
 
         # only deactivate realtime evaluators and TA evaluators
+        self._filter_and_activate_or_deactivate_evaluator(to_change_rt, to_keep_rt, activate)
+        self._filter_and_activate_or_deactivate_evaluator(to_change_ta, to_keep_ta, activate)
+
+        thread_managers = self.evaluator_thread_managers[exchange.get_name()]
         for evaluator_thread_manager in thread_managers.values():
-            self._filter_and_activate_or_deactivate_evaluator(self.symbol, to_change_TA, to_keep_TA, activate,
-                                                              evaluator_thread_manager.evaluator.get_ta_eval_list())
             # force refresh TA eval
             if activate:
                 evaluator_thread_manager.get_evaluator().data_changed = True
