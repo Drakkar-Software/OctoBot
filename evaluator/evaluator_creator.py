@@ -22,7 +22,7 @@ class EvaluatorCreator:
         for ta_eval_class in AdvancedManager.create_advanced_evaluator_types_list(TAEvaluator, evaluator.get_config()):
             ta_eval_class_instance = ta_eval_class()
             ta_eval_class_instance.set_config(evaluator.config)
-            if EvaluatorCreator.should_create_this_evaluator(ta_eval_class_instance, relevant_evaluators):
+            if EvaluatorCreator.is_relevant_evaluator(ta_eval_class_instance, relevant_evaluators):
                 ta_eval_class_instance.set_logger(logging.getLogger(ta_eval_class.get_name()))
                 ta_eval_class_instance.set_data(evaluator.data)
                 ta_eval_class_instance.set_symbol(evaluator.get_symbol())
@@ -45,7 +45,7 @@ class EvaluatorCreator:
         for social_eval_class in AdvancedManager.create_advanced_evaluator_types_list(SocialEvaluator, config):
             social_eval_class_instance = social_eval_class()
             social_eval_class_instance.set_config(config)
-            if EvaluatorCreator.should_create_this_evaluator(social_eval_class_instance, relevant_evaluators):
+            if EvaluatorCreator.is_relevant_evaluator(social_eval_class_instance, relevant_evaluators):
                 is_evaluator_to_be_used = True
                 social_eval_class_instance.set_logger(logging.getLogger(social_eval_class.get_name()))
                 social_eval_class_instance.set_symbol(symbol)
@@ -86,7 +86,7 @@ class EvaluatorCreator:
         for real_time_eval_class in AdvancedManager.create_advanced_evaluator_types_list(RealTimeEvaluator, config):
             real_time_eval_class_instance = real_time_eval_class(exchange_inst, symbol)
             real_time_eval_class_instance.set_config(config)
-            if EvaluatorCreator.should_create_this_evaluator(real_time_eval_class_instance, relevant_evaluators):
+            if EvaluatorCreator.is_relevant_evaluator(real_time_eval_class_instance, relevant_evaluators):
                 real_time_eval_class_instance.set_logger(logging.getLogger(real_time_eval_class.get_name()))
 
                 # start refreshing thread
@@ -145,12 +145,15 @@ class EvaluatorCreator:
         return evaluator_list
 
     @staticmethod
-    def should_create_this_evaluator(evaluator_instance, relevant_evaluators):
+    def is_relevant_evaluator(evaluator_instance, relevant_evaluators):
         if evaluator_instance.get_is_enabled():
             if relevant_evaluators == CONFIG_EVALUATORS_WILDCARD or \
                     evaluator_instance.get_name() in relevant_evaluators:
                 return True
             else:
                 parent_classes_names = [e.get_name() for e in evaluator_instance.get_parent_evaluator_classes()]
-                return not relevant_evaluators.isdisjoint(parent_classes_names)
+                to_check_set = relevant_evaluators
+                if not isinstance(relevant_evaluators, set):
+                    to_check_set = set(relevant_evaluators)
+                return not to_check_set.isdisjoint(parent_classes_names)
         return False
