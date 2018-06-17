@@ -1,6 +1,7 @@
 import logging
 import threading
 from time import sleep
+import copy
 
 from backtesting.backtesting import Backtesting
 from config.cst import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS
@@ -30,9 +31,8 @@ class OrdersManager(threading.Thread):
             self.order_refresh_time = ORDER_REFRESHER_TIME
 
     def add_order_to_list(self, order):
-        with self.list_lock:
-            if order not in self.order_list and (self.trader.simulate or not self.has_order_id_in_list(order.get_id())):
-                self.order_list.append(order)
+        if order not in self.order_list and (self.trader.simulate or not self.has_order_id_in_list(order.get_id())):
+            self.order_list.append(order)
 
     def has_order_id_in_list(self, order_id):
         for order in self.order_list:
@@ -103,24 +103,23 @@ class OrdersManager(threading.Thread):
         # update all prices
         self._update_last_symbol_list()
 
-        with self.list_lock:
-            for order in self.order_list:
-                # symbol prices from exchange
-                if order.get_order_symbol() in self.last_symbol_prices:
-                    with order as odr:
-                        odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
-
-                # ask orders to update their status
+        for order in copy.copy(self.order_list):
+            # symbol prices from exchange
+            if order.get_order_symbol() in self.last_symbol_prices:
                 with order as odr:
-                    odr.update_order_status()
+                    odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
 
-                    if odr.get_status() == OrderStatus.FILLED:
-                        self.logger.info("{0} {1} (ID : {2}) filled on {3} at {4}".format(odr.get_order_symbol(),
-                                                                                          odr.get_name(),
-                                                                                          odr.get_id(),
-                                                                                          self.trader.get_exchange().get_name(),
-                                                                                          odr.get_filled_price()))
-                        odr.close_order()
+            # ask orders to update their status
+            with order as odr:
+                odr.update_order_status()
+
+                if odr.get_status() == OrderStatus.FILLED:
+                    self.logger.info("{0} {1} (ID : {2}) filled on {3} at {4}".format(odr.get_order_symbol(),
+                                                                                      odr.get_name(),
+                                                                                      odr.get_id(),
+                                                                                      self.trader.get_exchange().get_name(),
+                                                                                      odr.get_filled_price()))
+                    odr.close_order()
 
     # Threading method that will periodically update orders status with update_orders_status
     def run(self):
