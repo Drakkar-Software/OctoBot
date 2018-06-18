@@ -14,9 +14,9 @@ install:
   - "%PYTHON%\\python.exe -m pip install -r pre_requirements.txt"
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
   - copy config/default_config.json config.json
-
-build:
   - "%PYTHON%\\python.exe start.py -p install all"
+
+build: off
 
 test_script:
   - "%PYTHON%\\python.exe setup.py test"
