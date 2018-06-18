@@ -7,6 +7,7 @@ cryptography >= 2.2.1
 python-binance
 tulipy
 ccxt
+pandas
 
 colorlog
 Python-Twitter
