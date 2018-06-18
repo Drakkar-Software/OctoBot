@@ -1,7 +1,8 @@
 import ccxt
-import numpy as np
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS, PriceIndexes
+from backtesting.collector.data_parser import DataCollectorParser
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS, PriceIndexes, \
+    CONFIG_BACKTESTING_DATA_FILES
 from tests.test_utils.config import load_test_config
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader_simulator import TraderSimulator
@@ -18,34 +19,17 @@ class TestExchangeSimulator:
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
         exchange_inst = exchange_manager.get_exchange()
         exchange_simulator = exchange_inst.get_exchange()
+
+        # use legacy data
+        exchange_simulator.data[TestExchangeSimulator.DEFAULT_SYMBOL] = DataCollectorParser.parse(
+            config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES][0], use_legacy_parsing=True)
+
         trader_inst = TraderSimulator(config, exchange_inst, 1)
         return config, exchange_inst, exchange_simulator, trader_inst
 
     @staticmethod
     def stop(trader):
         trader.stop_order_manager()
-
-    def test_get_symbol_prices_array(self):
-        _, exchange_inst, _, trader_inst = self.init_default()
-        self.stop(trader_inst)
-
-        test_array = exchange_inst.get_symbol_prices(
-            self.DEFAULT_SYMBOL,
-            TimeFrames.ONE_HOUR,
-            return_list=False)
-
-        assert type(test_array) is np.ndarray
-
-    def test_get_symbol_prices_list(self):
-        _, exchange_inst, _, trader_inst = self.init_default()
-        self.stop(trader_inst)
-
-        test_list = exchange_inst.get_symbol_prices(
-            self.DEFAULT_SYMBOL,
-            TimeFrames.ONE_HOUR,
-            return_list=True)
-
-        assert isinstance(test_list, list)
 
     def test_multiple_get_symbol_prices(self):
         _, exchange_inst, _, trader_inst = self.init_default()
@@ -66,13 +50,13 @@ class TestExchangeSimulator:
 
         # second is first with DEFAULT_TF difference
         assert first_data[PriceIndexes.IND_PRICE_CLOSE.value][1] == second_data[PriceIndexes.IND_PRICE_CLOSE.value][0]
-        assert first_data[PriceIndexes.IND_PRICE_TIME.value][0] + HOURS_TO_MSECONDS == \
-            second_data[PriceIndexes.IND_PRICE_TIME.value][0]
+        assert first_data[PriceIndexes.IND_PRICE_TIME.value][0] + HOURS_TO_MSECONDS == second_data[
+            PriceIndexes.IND_PRICE_TIME.value][0]
 
         # end is end -1 with DEFAULT_TF difference
         assert first_data[PriceIndexes.IND_PRICE_CLOSE.value][-1] == second_data[PriceIndexes.IND_PRICE_CLOSE.value][-2]
-        assert first_data[PriceIndexes.IND_PRICE_TIME.value][-1] + HOURS_TO_MSECONDS == \
-            second_data[PriceIndexes.IND_PRICE_TIME.value][-1]
+        assert first_data[PriceIndexes.IND_PRICE_TIME.value][-1] + HOURS_TO_MSECONDS == second_data[
+            PriceIndexes.IND_PRICE_TIME.value][-1]
 
     def test_get_recent_trades(self):
         _, exchange_inst, _, trader_inst = self.init_default()
