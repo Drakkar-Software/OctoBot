@@ -30,7 +30,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
+    def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         pass
 
     @abstractmethod
