@@ -12,12 +12,12 @@ from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLE
     GITHUB, TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, TENTACLE_TYPES, \
     EVALUATOR_CONFIG_FOLDER, TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR, TENTACLE_MODULE_NAME, \
     TENTACLE_MODULE_TYPE, TENTACLE_MODULE_SUBTYPE, TENTACLE_MODULE_VERSION, TENTACLE_MODULE_CONFIG_FILES, \
-    TENTACLE_MODULE_REQUIREMENTS, TENTACLE_MODULE_REQUIREMENTS_SEPARATOR, TENTACLE_MODULE_REQUIREMENT_WITH_VERSION, \
+    TENTACLE_MODULE_REQUIREMENTS, TENTACLE_MODULE_LIST_SEPARATOR, TENTACLE_MODULE_REQUIREMENT_WITH_VERSION, \
     TENTACLE_MODULE_DESCRIPTION, TENTACLES_INSTALL_FOLDERS, TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, \
     TENTACLES_TRADING_PATH, TENTACLES_EVALUATOR_REALTIME_PATH, TENTACLES_EVALUATOR_TA_PATH, \
     TENTACLES_EVALUATOR_SOCIAL_PATH, TENTACLES_EVALUATOR_STRATEGIES_PATH, TENTACLES_EVALUATOR_UTIL_PATH, \
     TENTACLES_TRADING_MODE_PATH, TENTACLES_PYTHON_INIT_CONTENT, PYTHON_INIT_FILE, CONFIG_EVALUATOR_FILE_PATH, \
-    CONFIG_DEFAULT_EVALUATOR_FILE
+    CONFIG_DEFAULT_EVALUATOR_FILE, TENTACLE_MODULE_TESTS, TENTACLES_TEST_PATH
 
 
 class TentacleManager:
@@ -46,7 +46,7 @@ class TentacleManager:
                     try:
                         self.advanced_package_list.append(self._get_package_description(package, True))
                     except Exception:
-                        self.logger.error("Impossible to get a OctoBot Tentacle at : {0}".format(package))
+                        self.logger.error("Impossible to get an OctoBot Tentacles Package at : {0}".format(package))
 
     def _get_package_in_lists(self, component_name, component_version=None):
         if self._has_required_package(self.default_package, component_name, component_version):
@@ -64,10 +64,11 @@ class TentacleManager:
         return None, None, None, None, None
 
     def _apply_module(self, action, module_type, module_subtype,
-                      module_version, module_file, target_folder, module_name):
+                      module_version, module_file, module_test_files, target_folder, module_name):
 
         if module_subtype in TENTACLE_TYPES and (module_subtype or module_subtype in TENTACLE_TYPES):
 
+            # Update module file
             file_dir = self._create_path_from_type(module_type, module_subtype, target_folder)
 
             package_file_path = "{0}/{1}.py".format(file_dir, module_name)
@@ -78,7 +79,7 @@ class TentacleManager:
                 with open(package_file_path, "w") as installed_package:
                     installed_package.write(module_file)
 
-            # remove package line from init file
+            # Remove package line from init file
             elif action == TentacleManagerActions.UNINSTALL:
                 try:
                     os.remove(package_file_path)
@@ -94,6 +95,24 @@ class TentacleManager:
                                                      PYTHON_INIT_FILE)
 
             self._update_init_file(action, init_file, line_in_init)
+
+            # Update module test files
+            test_file_dir = self._create_path_from_type(module_type, module_subtype, target_folder, True)
+            for test_file, test_file_content in module_test_files.items():
+                package_test_file_path = "{0}/{1}.py".format(test_file_dir, test_file)
+
+                # Write the new file in locations
+                if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
+                    # Install package in evaluator
+                    with open(package_test_file_path, "w") as installed_package_test:
+                        installed_package_test.write(test_file_content)
+
+                # Remove package line from init file
+                elif action == TentacleManagerActions.UNINSTALL:
+                    try:
+                        os.remove(package_test_file_path)
+                    except OSError:
+                        pass
 
             if action == TentacleManagerActions.INSTALL:
                 self.logger.info("{0} {1} successfully installed in: {2}"
@@ -113,7 +132,9 @@ class TentacleManager:
         parsed_module = self._parse_module(package[module_name])
         package_type = parsed_module[TENTACLE_MODULE_TYPE]
         package_subtype = parsed_module[TENTACLE_MODULE_SUBTYPE]
+        package_tests = parsed_module[TENTACLE_MODULE_TESTS]
         module_file = ""
+        module_test_files = {test: "" for test in package_tests} if package_tests else {}
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
             module_loc = "{0}.py".format(self._create_localization_from_type(package_localisation,
@@ -127,11 +148,25 @@ class TentacleManager:
                 with open(module_loc, "r") as module:
                     module_file = module.read()
 
+            if module_test_files:
+                for test in package_tests:
+                    test_loc = "{0}.py".format(self._create_localization_from_type(package_localisation,
+                                                                                   package_type,
+                                                                                   package_subtype,
+                                                                                   test,
+                                                                                   True))
+
+                    if is_url:
+                        module_test_files[test] = self._get_package_from_url(test_loc)
+                    else:
+                        with open(test_loc, "r") as module:
+                            module_test_files[test] = module.read()
+
         # manage module config
         self._try_action_on_config(action, package, module_name, is_url, package_localisation)
 
         self._apply_module(action, package_type, package_subtype, parsed_module[TENTACLE_MODULE_VERSION],
-                           module_file, target_folder, module_name)
+                           module_file, module_test_files, target_folder, module_name)
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
             self._try_action_on_requirements(action, package, module_name)
@@ -433,19 +468,35 @@ class TentacleManager:
         tentacle_architecture, tentacle_extremity_architecture = TentacleManager._get_tentacles_arch()
         for tentacle_root, subdir in tentacle_architecture.items():
             TentacleManager._find_or_create(tentacle_root)
-            for tentacle_type_dir, types_subdir in subdir.items():
-                type_path = os.path.join(tentacle_root, tentacle_type_dir)
-                TentacleManager._find_or_create(type_path)
-                for module_type in types_subdir:
-                    module_path = os.path.join(type_path, module_type)
-                    TentacleManager._find_or_create(module_path)
-                    for extremity_folder in tentacle_extremity_architecture:
-                        module_content_path = os.path.join(module_path, extremity_folder)
-                        # add Advanced etc folders
-                        TentacleManager._find_or_create(module_content_path)
-                    init_path = os.path.join(module_path, PYTHON_INIT_FILE)
-                    # add init.py file
-                    TentacleManager._find_or_create(init_path, False)
+            for tentacle_dir in subdir:
+                for tentacle_type_dir, types_subdir in tentacle_dir.items():
+                    type_path = os.path.join(tentacle_root, tentacle_type_dir)
+                    TentacleManager._find_or_create(type_path)
+                    if isinstance(types_subdir, dict):
+                        for tentacle_subtype_dir, types_subsubdir in types_subdir.items():
+                            test_type_path = os.path.join(type_path, tentacle_subtype_dir)
+                            TentacleManager._find_or_create(test_type_path)
+                            TentacleManager._create_arch_module_extremity(tentacle_extremity_architecture,
+                                                                          types_subsubdir, test_type_path, False)
+                    else:
+                        TentacleManager._create_arch_module_extremity(tentacle_extremity_architecture,
+                                                                      types_subdir, type_path)
+
+    @staticmethod
+    def _create_arch_module_extremity(architecture, types_subdir, type_path, with_init_and_config=True):
+        for module_type in types_subdir:
+            path = os.path.join(type_path, module_type)
+            TentacleManager._find_or_create(path)
+            for extremity_folder in architecture:
+                module_content_path = os.path.join(path, extremity_folder)
+                # add Advanced etc folders
+                TentacleManager._find_or_create(module_content_path)
+            init_path = os.path.join(path, PYTHON_INIT_FILE)
+            # add init.py file
+            if with_init_and_config:
+                module_config_path = os.path.join(path, EVALUATOR_CONFIG_FOLDER)
+                TentacleManager._find_or_create(module_config_path)
+                TentacleManager._find_or_create(init_path, False)
 
     @staticmethod
     def _find_or_create(path, is_directory=True, file_content=TENTACLES_PYTHON_INIT_CONTENT):
@@ -461,9 +512,7 @@ class TentacleManager:
 
     @staticmethod
     def _get_tentacles_arch():
-        tentacle_architecture = {
-            TENTACLES_PATH:
-                {
+        tentacles_content_folder = {
                     TENTACLES_EVALUATOR_PATH: [
                         TENTACLES_EVALUATOR_REALTIME_PATH,
                         TENTACLES_EVALUATOR_SOCIAL_PATH,
@@ -475,9 +524,10 @@ class TentacleManager:
                         TENTACLES_TRADING_MODE_PATH
                     ]
                 }
+        tentacle_architecture = {
+            TENTACLES_PATH: [tentacles_content_folder, {TENTACLES_TEST_PATH: tentacles_content_folder}]
         }
         tentacle_extremity_architecture = copy.deepcopy(TENTACLES_INSTALL_FOLDERS)
-        tentacle_extremity_architecture.append(EVALUATOR_CONFIG_FOLDER)
         return tentacle_architecture, tentacle_extremity_architecture
 
     @staticmethod
@@ -554,30 +604,40 @@ class TentacleManager:
         return package_file
 
     @staticmethod
-    def _create_localization_from_type(localization, module_type, module_subtype, file):
+    def _create_localization_from_type(localization, module_type, module_subtype, file, tests=False):
         # create path from types
+        test_folder_if_required = ""
+        if tests:
+            test_folder_if_required = "/{0}".format(TENTACLES_TEST_PATH)
         if module_subtype:
-            return "{0}/{1}/{2}/{3}".format(localization,
-                                            module_type,
-                                            module_subtype,
-                                            file)
+            return "{0}{1}/{2}/{3}/{4}".format(localization,
+                                               test_folder_if_required,
+                                               module_type,
+                                               module_subtype,
+                                               file)
         else:
-            return "{0}/{1}/{2}".format(localization,
-                                        module_type,
-                                        file)
+            return "{0}{1}/{2}/{3}".format(localization,
+                                           test_folder_if_required,
+                                           module_type,
+                                           file)
 
     @staticmethod
-    def _create_path_from_type(module_type, module_subtype, target_folder):
+    def _create_path_from_type(module_type, module_subtype, target_folder, tests=False):
         # create path from types
+        test_folder_if_required = ""
+        if tests:
+            test_folder_if_required = "/{0}".format(TENTACLES_TEST_PATH)
         if module_subtype:
-            return "{0}/{1}/{2}/{3}".format(TENTACLES_PATH,
-                                            TENTACLE_TYPES[module_type],
-                                            TENTACLE_TYPES[module_subtype],
-                                            target_folder)
+            return "{0}{1}/{2}/{3}/{4}".format(TENTACLES_PATH,
+                                               test_folder_if_required,
+                                               TENTACLE_TYPES[module_type],
+                                               TENTACLE_TYPES[module_subtype],
+                                               target_folder)
         else:
-            return "{0}/{1}/{2}".format(TENTACLES_PATH,
-                                        TENTACLE_TYPES[module_type],
-                                        target_folder)
+            return "{0}{1}/{2}/{4}".format(TENTACLES_PATH,
+                                           test_folder_if_required,
+                                           TENTACLE_TYPES[module_type],
+                                           target_folder)
 
     @staticmethod
     def _parse_module(package):
@@ -587,7 +647,8 @@ class TentacleManager:
             TENTACLE_MODULE_SUBTYPE: package[TENTACLE_MODULE_SUBTYPE]
             if TENTACLE_MODULE_SUBTYPE in package else None,
             TENTACLE_MODULE_VERSION: package[TENTACLE_MODULE_VERSION],
-            TENTACLE_MODULE_REQUIREMENTS: TentacleManager._extract_package_requirements(package),
+            TENTACLE_MODULE_REQUIREMENTS: TentacleManager._extract_tentacle_requirements(package),
+            TENTACLE_MODULE_TESTS: TentacleManager._extract_tentacle_tests(package),
             TENTACLE_MODULE_CONFIG_FILES: package[TENTACLE_MODULE_CONFIG_FILES]
             if TENTACLE_MODULE_CONFIG_FILES in package else None
         }
@@ -614,11 +675,20 @@ class TentacleManager:
         return first_version_data != second_version_data
 
     @staticmethod
-    def _extract_package_requirements(module):
+    def _extract_tentacle_tests(module):
+        if TENTACLE_MODULE_TESTS in module:
+            tests = []
+            for component in module[TENTACLE_MODULE_TESTS]:
+                tests = tests + component.split(TENTACLE_MODULE_LIST_SEPARATOR)
+            return [test.strip() for test in tests]
+        return None
+
+    @staticmethod
+    def _extract_tentacle_requirements(module):
         if TENTACLE_MODULE_REQUIREMENTS in module:
             requirements = []
             for component in module[TENTACLE_MODULE_REQUIREMENTS]:
-                requirements = requirements + component.split(TENTACLE_MODULE_REQUIREMENTS_SEPARATOR)
+                requirements = requirements + component.split(TENTACLE_MODULE_LIST_SEPARATOR)
             return [TentacleManager._parse_requirements(req.strip()) for req in requirements]
         return None
 
