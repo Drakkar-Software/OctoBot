@@ -12,7 +12,7 @@ environment:
 
 install:
   # We need wheel installed to build wheels
-  - "%PYTHON%\\python.exe setup.py install"
+  - "%PYTHON%\\python.exe setup.py install --install-lib temp/"
   - "copy ./config/default_config.json ./config.json"
   - "%PYTHON%\\python.exe start.py -p install all"
 

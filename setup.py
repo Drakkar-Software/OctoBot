@@ -18,8 +18,7 @@ setup(
             'start = start:main',
         ],
     },
-    install_requires=['ccxt',
-                      'numpy',
+    install_requires=['numpy',
                       'pandas',
                       'matplotlib==2.2.2',
                       'requests',
@@ -42,7 +41,7 @@ setup(
                       'dash-core-components',
                       'cryptography >= 2.2.1',
                       'tulipy'],
-    setup_requires=['numpy', 'Cython', 'pytest-runner'],
+    setup_requires=['numpy', 'Cython', 'ccxt', 'pytest-runner'],
     tests_require=[
         'pytest',
         'pytest-pep8',
