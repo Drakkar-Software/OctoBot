@@ -13,12 +13,11 @@ environment:
 install:
   - "%PYTHON%\\python.exe -m pip install -r pre_requirements.txt"
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
-  - "cd config"
-  - "copy default_config.json ../config.json"
+  - copy config\default_config.json config.json
   - "%PYTHON%\\python.exe start.py -p install all"
 
 build: off
 
 test_script:
-  - "%PYTHON%\\python.exe setup.py test"
+  - "%PYTHON%\\python.exe -m pip install -r dev_requirements.txt"
   - "%PYTHON%\\python.exe -m pytest tests"
