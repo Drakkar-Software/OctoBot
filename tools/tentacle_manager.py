@@ -238,7 +238,7 @@ class TentacleManager:
                             self._should_do_something(action, requirement_module_name,
                                                       requirement_module_version, True, module_name):
                         try:
-                            req_package, description, localisation, is_url, destination = self._get_package_in_lists(
+                            req_package, _, localisation, is_url, destination = self._get_package_in_lists(
                                 requirement_module_name, requirement_module_version)
 
                             if req_package:
@@ -308,7 +308,7 @@ class TentacleManager:
                             new_config_file.write(config_file_content)
 
                     except Exception as e:
-                        raise Exception("Fail to install configuration".format(e))
+                        raise Exception("Fail to install configuration : {}".format(e))
 
                 elif action == TentacleManagerActions.UNINSTALL:
                     try:
@@ -394,7 +394,7 @@ class TentacleManager:
             for component in commands:
 
                 component = self._check_format(component)
-                package, description, localisation, is_url, destination = self._get_package_in_lists(component)
+                package, _, localisation, is_url, destination = self._get_package_in_lists(component)
 
                 if package:
                     try:
@@ -441,7 +441,7 @@ class TentacleManager:
             for component in commands:
 
                 component = self._check_format(component)
-                package, description, localisation, is_url, destination = self._get_package_in_lists(component)
+                package, _, _, _, destination = self._get_package_in_lists(component)
 
                 if package:
                     try:
