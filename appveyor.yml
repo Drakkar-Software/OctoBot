@@ -19,5 +19,5 @@ install:
 build: off
 
 test_script:
-  - "%PYTHON%\\python.exe setup.py test"
+  - "%PYTHON%\\python.exe -m pip install -r dev_requirements.txt"
   - "%PYTHON%\\python.exe -m pytest tests"
