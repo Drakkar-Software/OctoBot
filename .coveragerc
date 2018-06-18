@@ -5,5 +5,5 @@ omit =
     interfaces/*
     services/*
     tools/*
-    **/Default/*.*
-    **/Advanced/*.*
+    setup.py
+    start.py
