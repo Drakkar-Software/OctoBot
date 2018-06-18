@@ -1,5 +1,4 @@
 from dash.dependencies import Output, Event, Input
-import logging, json
 
 from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME
 from interfaces import global_config
