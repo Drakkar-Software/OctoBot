@@ -41,7 +41,10 @@ setup(
                       'dash-core-components',
                       'cryptography >= 2.2.1',
                       'tulipy'],
-    setup_requires=['numpy', 'Cython', 'ccxt', 'pytest-runner'],
+    setup_requires=['numpy', 'Cython', 'pytest-runner'],
+    dependency_links=[
+        'https://github.com/ccxt/ccxt.git'
+    ],
     tests_require=[
         'pytest',
         'pytest-pep8',
