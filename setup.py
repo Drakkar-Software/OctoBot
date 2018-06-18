@@ -43,8 +43,7 @@ setup(
                       'tulipy'],
     setup_requires=['numpy', 'Cython', 'pytest-runner'],
     dependency_links=[
-        'https://github.com/ccxt/ccxt.git',
-        'https://github.com/fxsjy/jieba.git'
+        'https://github.com/ccxt/ccxt.git'
     ],
     tests_require=[
         'pytest',
@@ -56,6 +55,7 @@ setup(
         'tox-travis'
     ],
     test_suite="tests",
+    zip_safe=False,
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
