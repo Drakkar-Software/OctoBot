@@ -468,14 +468,20 @@ class TentacleManager:
         tentacle_architecture, tentacle_extremity_architecture = TentacleManager._get_tentacles_arch()
         for tentacle_root, subdir in tentacle_architecture.items():
             TentacleManager._find_or_create(tentacle_root)
+            init_path = os.path.join(tentacle_root, PYTHON_INIT_FILE)
+            TentacleManager._find_or_create(init_path, False, "")
             for tentacle_dir in subdir:
                 for tentacle_type_dir, types_subdir in tentacle_dir.items():
                     type_path = os.path.join(tentacle_root, tentacle_type_dir)
                     TentacleManager._find_or_create(type_path)
+                    init_path = os.path.join(type_path, PYTHON_INIT_FILE)
+                    TentacleManager._find_or_create(init_path, False, "")
                     if isinstance(types_subdir, dict):
                         for tentacle_subtype_dir, types_subsubdir in types_subdir.items():
                             test_type_path = os.path.join(type_path, tentacle_subtype_dir)
                             TentacleManager._find_or_create(test_type_path)
+                            init_path = os.path.join(test_type_path, PYTHON_INIT_FILE)
+                            TentacleManager._find_or_create(init_path, False, "")
                             TentacleManager._create_arch_module_extremity(tentacle_extremity_architecture,
                                                                           types_subsubdir, test_type_path, False)
                     else:
@@ -483,7 +489,7 @@ class TentacleManager:
                                                                       types_subdir, type_path)
 
     @staticmethod
-    def _create_arch_module_extremity(architecture, types_subdir, type_path, with_init_and_config=True):
+    def _create_arch_module_extremity(architecture, types_subdir, type_path, with_init_config=True):
         for module_type in types_subdir:
             path = os.path.join(type_path, module_type)
             TentacleManager._find_or_create(path)
@@ -491,12 +497,14 @@ class TentacleManager:
                 module_content_path = os.path.join(path, extremity_folder)
                 # add Advanced etc folders
                 TentacleManager._find_or_create(module_content_path)
-            init_path = os.path.join(path, PYTHON_INIT_FILE)
+                init_path = os.path.join(module_content_path, PYTHON_INIT_FILE)
+                TentacleManager._find_or_create(init_path, False, "")
             # add init.py file
-            if with_init_and_config:
+            init_path = os.path.join(path, PYTHON_INIT_FILE)
+            TentacleManager._find_or_create(init_path, False)
+            if with_init_config:
                 module_config_path = os.path.join(path, EVALUATOR_CONFIG_FOLDER)
                 TentacleManager._find_or_create(module_config_path)
-                TentacleManager._find_or_create(init_path, False)
 
     @staticmethod
     def _find_or_create(path, is_directory=True, file_content=TENTACLES_PYTHON_INIT_CONTENT):
