@@ -74,7 +74,7 @@ class RESTExchange(AbstractExchange):
 
         self.get_personal_data().set_portfolio(balance)
 
-    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
+    def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         if limit:
             candles = self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
         else:
