@@ -9,6 +9,7 @@ notifications:
   email: false
 install:
   - sudo bash ./docs/install/linux_dependencies.sh
+  - python3 setup.py sdist
   - python3 setup.py install
   - cp ./config/default_config.json ./config.json
   - python3 start.py -p install all

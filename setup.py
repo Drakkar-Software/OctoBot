@@ -18,6 +18,7 @@ setup(
             'start = start:main',
         ],
     },
+    zip_safe=False,
     install_requires=['numpy',
                       'pandas',
                       'matplotlib==2.2.2',
@@ -55,7 +56,6 @@ setup(
         'tox-travis'
     ],
     test_suite="tests",
-    zip_safe=True,
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
