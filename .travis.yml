@@ -9,7 +9,8 @@ notifications:
   email: false
 install:
   - sudo bash ./docs/install/linux_dependencies.sh
-  - pip3 install -r pre_requirements.txt -r requirements.txt
+  - pip3 install -r pre_requirements.txt
+  - pip3 install -r requirements.txt
   - cp ./config/default_config.json ./config.json
   - python3 start.py -p install all
 script:

@@ -25,7 +25,8 @@ cd %bot_location%
 
 REM BOT REQUIREMENTS
 echo **Installing requirements...**
-%python_cmd% -m pip install -r pre_requirements.txt -r requirements.txt
+%python_cmd% -m pip install -r pre_requirements.txt
+%python_cmd% -m pip install -r requirements.txt
 
 REM CONFIGURATION
 echo **Set default configuration...**
