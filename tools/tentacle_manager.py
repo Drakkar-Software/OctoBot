@@ -230,7 +230,7 @@ class TentacleManager:
                 if action == TentacleManagerActions.UPDATE:
                     # uninstall module
                     # TODO : rollback to previous version
-                    req_package, description, localisation, is_url, destination = self._get_package_in_lists(module_name)
+                    req_package, _, localisation, is_url, destination = self._get_package_in_lists(module_name)
                     if req_package:
                         self.process_module(TentacleManagerActions.UNINSTALL, req_package, module_name,
                                             localisation, is_url, destination)
@@ -238,7 +238,7 @@ class TentacleManager:
                 elif action == TentacleManagerActions.INSTALL:
                     # uninstall module and requirements
                     for module in applied_modules:
-                        req_package, description, localisation, is_url, destination = self._get_package_in_lists(module)
+                        req_package, _, localisation, is_url, destination = self._get_package_in_lists(module)
                         if req_package:
                             self.process_module(TentacleManagerActions.UNINSTALL, req_package, module,
                                                 localisation, is_url, destination)
@@ -383,7 +383,7 @@ class TentacleManager:
             for component in commands:
 
                 component = self._check_format(component)
-                package, description, localisation, is_url, destination = self._get_package_in_lists(component)
+                package, _, localisation, is_url, destination = self._get_package_in_lists(component)
 
                 if package:
                     try:

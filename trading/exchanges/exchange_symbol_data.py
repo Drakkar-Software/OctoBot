@@ -77,10 +77,7 @@ class SymbolData:
     # private functions
     @staticmethod
     def _has_candle_changed(candle_data, start_candle_time):
-        if candle_data.time_candles_list[-1] < start_candle_time:
-            return True
-        else:
-            return False
+        return candle_data.time_candles_list[-1] < start_candle_time
 
     def candles_are_initialized(self, time_frame):
         if time_frame in self.symbol_candles and self.symbol_candles[time_frame].is_initialized:
