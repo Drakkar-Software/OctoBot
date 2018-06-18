@@ -177,7 +177,7 @@ class ExchangeSimulator(AbstractExchange):
     def _extract_data_with_limit(self, symbol, time_frame):
         return self._extract_indexes(self.data[symbol][time_frame.value], self.time_frame_get_times[time_frame.value])
 
-    def get_symbol_prices(self, symbol, time_frame, limit=None, data_frame=True):
+    def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         result = self._extract_data_with_limit(symbol, time_frame)
         self.time_frame_get_times[time_frame.value] += 1
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, result, replace_all=True)
@@ -191,12 +191,13 @@ class ExchangeSimulator(AbstractExchange):
         return self.data
 
     def get_price_ticker(self, symbol):
-        return {
+        result = {
             "symbol": symbol,
             ExchangeConstantsTickersColumns.LAST.value: self._create_ticker(
                 symbol,
                 self.time_frame_get_times[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value])
         }
+        self.get_symbol_data(symbol).update_symbol_ticker(result)
 
     def get_last_price_ticker(self, symbol):
         return self.get_price_ticker(symbol)[ExchangeConstantsTickersColumns.LAST.value]
@@ -267,3 +268,6 @@ class ExchangeSimulator(AbstractExchange):
 
     def get_order_book(self, symbol, limit=30):
         raise NotImplementedError("get_order_book not implemented")
+
+    def get_uniform_timestamp(self, timestamp):
+        return timestamp
