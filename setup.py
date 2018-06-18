@@ -4,12 +4,15 @@ from config.cst import VERSION
 
 DESCRIPTION = open('README.md').read() + '\n\n' + open('docs/CHANGELOG.md').read()
 
+REQUIRED = open('requirements.txt').read()
+REQUIRED_DEV = open('dev_requirements.txt').read()
+
 setup(
     name='OctoBot',
     version=VERSION,
     packages=['backtesting', 'config', 'docs', 'evaluator', 'interfaces', 'services', 'tests', 'tools', 'trading'],
     url='https://github.com/Drakkar-Software/OctoBot',
-    license='MIT',
+    license='Apache-2.0',
     author='Trading-Bot team',
     description='Cryptocurrencies alert / trading bot',
     long_description=DESCRIPTION,
@@ -18,40 +21,9 @@ setup(
             'start = start:main',
         ],
     },
-    install_requires=['ccxt',
-                      'numpy',
-                      'pandas',
-                      'matplotlib==2.2.2',
-                      'requests',
-                      'vaderSentiment',
-                      'pytrends',
-                      'twisted==18.4.0',
-                      'python-binance',
-                      'colorlog',
-                      'Python-Twitter',
-                      'psutil',
-                      'plotly',
-                      'newspaper3k',
-                      'praw',
-                      'python-telegram-bot',
-                      'dash',
-                      'dash-table-experiments',
-                      'flask',
-                      'dash-renderer',
-                      'dash-html-components',
-                      'dash-core-components',
-                      'cryptography >= 2.2.1',
-                      'tulipy'],
-    setup_requires=['Cython', 'pytest-runner'],
-    tests_require=[
-        'pytest',
-        'pytest-pep8',
-        'pytest-cov',
-        'coverage',
-        'coveralls',
-        'tox',
-        'tox-travis'
-    ],
+    install_requires=REQUIRED,
+    setup_requires=['pytest-runner'],
+    tests_require=REQUIRED_DEV,
     test_suite="tests",
     classifiers=[
         'Development Status :: 4 - Beta',

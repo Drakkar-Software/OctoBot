@@ -1,14 +1,13 @@
-numpy
-pandas
-Cython
 matplotlib==2.2.2
 requests
 vaderSentiment
 pytrends
-ccxt
 twisted==18.4.0
-
+cryptography >= 2.2.1
 python-binance
+tulipy
+ccxt
+pandas
 
 colorlog
 Python-Twitter
@@ -24,5 +23,3 @@ flask
 dash-renderer
 dash-html-components
 dash-core-components
-
-tulipy

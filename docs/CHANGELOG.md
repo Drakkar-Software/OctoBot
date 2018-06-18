@@ -1,3 +1,16 @@
+Changelog for 0.1.2_2-beta
+====================
+*Released date : June 19 2018*
+
+# Concerned issues :
+    #243 [Config] Fix Exception description
+
+# New features :
+    -
+
+# Bug fix :
+    -
+
 Changelog for 0.1.2_1-beta
 ====================
 *Released date : June 18 2018*
