@@ -4,6 +4,8 @@ from config.cst import VERSION
 
 DESCRIPTION = open('README.md').read() + '\n\n' + open('docs/CHANGELOG.md').read()
 
+REQUIRED = open('requirements.txt').read()
+
 setup(
     name='OctoBot',
     version=VERSION,
@@ -19,29 +21,7 @@ setup(
         ],
     },
     zip_safe=False,
-    install_requires=['numpy',
-                      'pandas',
-                      'matplotlib==2.2.2',
-                      'requests',
-                      'vaderSentiment',
-                      'pytrends',
-                      'twisted==18.4.0',
-                      'python-binance',
-                      'colorlog',
-                      'Python-Twitter',
-                      'psutil',
-                      'plotly',
-                      'newspaper3k',
-                      'praw',
-                      'python-telegram-bot',
-                      'dash',
-                      'dash-table-experiments',
-                      'flask',
-                      'dash-renderer',
-                      'dash-html-components',
-                      'dash-core-components',
-                      'cryptography >= 2.2.1',
-                      'tulipy'],
+    install_requires=REQUIRED,
     setup_requires=['numpy', 'Cython', 'pytest-runner'],
     dependency_links=[
         'https://github.com/ccxt/ccxt.git'
