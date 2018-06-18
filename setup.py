@@ -43,7 +43,8 @@ setup(
                       'tulipy'],
     setup_requires=['numpy', 'Cython', 'pytest-runner'],
     dependency_links=[
-        'https://github.com/ccxt/ccxt.git'
+        'https://github.com/ccxt/ccxt.git',
+        'https://github.com/codelucas/newspaper.git'
     ],
     tests_require=[
         'pytest',
