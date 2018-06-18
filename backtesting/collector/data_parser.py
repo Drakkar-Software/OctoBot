@@ -6,13 +6,17 @@ from config.cst import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes
 
 class DataCollectorParser:
     @staticmethod
-    def parse(file):
+    def parse(file, use_legacy_parsing=False):
         if os.path.isfile(CONFIG_DATA_COLLECTOR_PATH + file):
             with open(CONFIG_DATA_COLLECTOR_PATH + file) as file_to_parse:
-                file_content = DataCollectorParser.merge_arrays(json.loads(file_to_parse.read()))
+                file_content = json.loads(file_to_parse.read())
+                if not use_legacy_parsing:
+                    file_content = DataCollectorParser.merge_arrays(file_content)
         else:
             with open(file) as file_to_parse:
-                file_content = DataCollectorParser.merge_arrays(json.loads(file_to_parse.read()))
+                file_content = json.loads(file_to_parse.read())
+                if not use_legacy_parsing:
+                    file_content = DataCollectorParser.merge_arrays(file_content)
         return file_content
 
     @staticmethod
