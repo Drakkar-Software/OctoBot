@@ -14,7 +14,7 @@ install:
   - "%PYTHON%\\python.exe -m pip install -r pre_requirements.txt"
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
   - copy config/default_config.json config.json
-  - "%PYTHON%\\python.exe C:\projects\octobot\start.py -p install all"
+  - "%PYTHON%\\python.exe C:\\projects\\octobot\\start.py -p install all"
 
 build: off
 
