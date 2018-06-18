@@ -1,6 +1,3 @@
-numpy
-pandas
-Cython
 matplotlib==2.2.2
 requests
 vaderSentiment
