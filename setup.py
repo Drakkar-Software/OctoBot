@@ -55,7 +55,7 @@ setup(
         'tox-travis'
     ],
     test_suite="tests",
-    zip_safe=False,
+    zip_safe=True,
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
