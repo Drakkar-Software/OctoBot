@@ -29,8 +29,8 @@ class AbstractTradingModeCreator:
         return AbstractTradingModeCreator._trunc_with_n_decimal_digits(price, maximal_price_digits)
 
     @staticmethod
-    def get_additional_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_portfolio):
-        remaining_portfolio_amount = current_portfolio-quantity
+    def get_additional_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
+        remaining_portfolio_amount = current_symbol_holding-quantity
         remaining_max_total_order_price = remaining_portfolio_amount*price
 
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
