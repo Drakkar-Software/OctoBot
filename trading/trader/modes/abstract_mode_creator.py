@@ -11,28 +11,6 @@ class AbstractTradingModeCreator:
 
     def __init__(self, trading_mode):
         self.trading_mode = trading_mode
-        self.MAX_SUM_RESULT = 2
-
-        self.STOP_LOSS_ORDER_MAX_PERCENT = 0.99
-        self.STOP_LOSS_ORDER_MIN_PERCENT = 0.95
-        self.STOP_LOSS_ORDER_ATTENUATION = (self.STOP_LOSS_ORDER_MAX_PERCENT - self.STOP_LOSS_ORDER_MIN_PERCENT)
-
-        self.QUANTITY_MIN_PERCENT = 0.1
-        self.QUANTITY_MAX_PERCENT = 0.9
-        self.QUANTITY_ATTENUATION = (self.QUANTITY_MAX_PERCENT - self.QUANTITY_MIN_PERCENT) / self.MAX_SUM_RESULT
-
-        self.QUANTITY_MARKET_MIN_PERCENT = 0.5
-        self.QUANTITY_MARKET_MAX_PERCENT = 1
-        self.QUANTITY_BUY_MARKET_ATTENUATION = 0.2
-        self.QUANTITY_MARKET_ATTENUATION = (self.QUANTITY_MARKET_MAX_PERCENT - self.QUANTITY_MARKET_MIN_PERCENT) \
-            / self.MAX_SUM_RESULT
-
-        self.BUY_LIMIT_ORDER_MAX_PERCENT = 0.995
-        self.BUY_LIMIT_ORDER_MIN_PERCENT = 0.98
-        self.SELL_LIMIT_ORDER_MIN_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MAX_PERCENT)
-        self.SELL_LIMIT_ORDER_MAX_PERCENT = 1 + (1 - self.BUY_LIMIT_ORDER_MIN_PERCENT)
-        self.LIMIT_ORDER_ATTENUATION = (self.BUY_LIMIT_ORDER_MAX_PERCENT - self.BUY_LIMIT_ORDER_MIN_PERCENT)\
-            / self.MAX_SUM_RESULT
 
     @staticmethod
     def check_factor(min_val, max_val, factor):
