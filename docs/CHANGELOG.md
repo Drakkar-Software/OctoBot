@@ -3,13 +3,16 @@ Changelog for 0.1.2_2-beta
 *Released date : June 19 2018*
 
 # Concerned issues :
+    #232 added performance tests for evaluator stress test
+    #235 added progress info in tentacles manager
     #243 [Config] Fix Exception description
+    #245 [TentacleManager] add confirm before delete files
 
 # New features :
     -
 
 # Bug fix :
-    -
+    - Fix backtesting
 
 Changelog for 0.1.2_1-beta
 ====================
