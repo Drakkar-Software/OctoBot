@@ -34,9 +34,10 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')
     parser.add_argument('-p', '--packager', help='Start OctoBot Tentacles Manager. examples: -p install all '
-                                                 'to install all modules and -p install [modules] to install specific '
-                                                 'modules. Tentacles Manager allows to install, update, uninstall '
-                                                 'and reset tentacles. Use: -p help to get the Tentacle Manager help.',
+                                                 'to install all tentacles packages and -p install [tentacle] to '
+                                                 'install specific tentacle. Tentacles Manager allows to install, '
+                                                 'update, uninstall and reset tentacles. Use: -p help to get the '
+                                                 'Tentacle Manager help.',
                         nargs='+')
 
     args = parser.parse_args()
