@@ -68,6 +68,8 @@ class TentacleManager:
 
         if module_subtype in TENTACLE_TYPES and (module_subtype or module_subtype in TENTACLE_TYPES):
 
+            did_something = False
+
             # Update module file
             module_file_dir = self._create_path_from_type(module_type, module_subtype, target_folder)
 
@@ -78,13 +80,15 @@ class TentacleManager:
                 # Install package in evaluator
                 with open(module_file_path, "w") as module_file:
                     module_file.write(module_file_content)
+                    did_something = True
 
             # Remove package line from init file
             elif action == TentacleManagerActions.UNINSTALL:
                 try:
                     os.remove(module_file_path)
+                    did_something = True
                 except OSError:
-                    pass
+                    did_something = False
 
             # Update local __init__
             line_in_init = "from .{0} import *\n".format(module_name)
@@ -124,6 +128,7 @@ class TentacleManager:
                 self.logger.info("{0} successfully updated to version {1} in: {2}"
                                  .format(module_name, module_version, module_file_dir))
             self.just_processed_modules.append(TentacleManager._get_full_module_identifier(module_name, module_version))
+            return did_something
 
         else:
             raise Exception("Tentacle type not found")
@@ -162,11 +167,10 @@ class TentacleManager:
                         with open(test_loc, "r") as module_file:
                             module_test_files[test] = module_file.read()
 
-        # manage module config
-        self._try_action_on_config(action, package, module_name, is_url, package_localisation)
-
-        self._process_action_on_module(action, module_type, module_subtype, parsed_module[TENTACLE_MODULE_VERSION],
-                                       module_file_content, module_test_files, target_folder, module_name)
+        if self._process_action_on_module(action, module_type, module_subtype, parsed_module[TENTACLE_MODULE_VERSION],
+                                          module_file_content, module_test_files, target_folder, module_name):
+            # manage module config
+            self._try_action_on_config(action, package, module_name, is_url, package_localisation)
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
             self._try_action_on_requirements(action, package, module_name)
@@ -289,7 +293,9 @@ class TentacleManager:
                                                        parsed_module[TENTACLE_MODULE_SUBTYPE], "")
 
                 config_file_path = "{0}{1}/{2}".format(file_dir, EVALUATOR_CONFIG_FOLDER, config_file)
-                if action == TentacleManagerActions.INSTALL:
+                default_config_file_path = "{0}{1}/{2}/{3}".format(file_dir, EVALUATOR_CONFIG_FOLDER,
+                                                                   EVALUATOR_DEFAULT_FOLDER, config_file)
+                if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
 
                     try:
                         # get config file content from localization
@@ -301,12 +307,20 @@ class TentacleManager:
                         if is_url:
                             config_file_content = self._get_package_from_url(module_loc)
                         else:
-                            with open(module_loc, "r") as module:
-                                config_file_content = module.read()
+                            with open(module_loc, "r") as module_file:
+                                config_file_content = module_file.read()
 
                         # install local config file content
-                        with open(config_file_path, "w") as new_config_file:
-                            new_config_file.write(config_file_content)
+                        if action == TentacleManagerActions.INSTALL:
+                            with open(config_file_path, "w") as new_config_file:
+                                new_config_file.write(config_file_content)
+                        with open(default_config_file_path, "w") as new_default_config_file:
+                            new_default_config_file.write(config_file_content)
+
+                        if action == TentacleManagerActions.UPDATE:
+                            self.logger.info("{0} configuration file for {1} module ignored to save the current "
+                                             "configuration. The default configuration file has been updated in: {2}."
+                                             .format(config_file, module_name, default_config_file_path))
 
                     except Exception as e:
                         raise Exception("Fail to install configuration : {}".format(e))
@@ -316,10 +330,6 @@ class TentacleManager:
                         os.remove(config_file_path)
                     except OSError:
                         pass
-                elif action == TentacleManagerActions.UPDATE:
-                    self.logger.info("{0} configuration file for {1} module ignored to save the current "
-                                     "configuration. Re-install this module if you want to restore the default "
-                                     "configuration.".format(config_file, module_name))
 
     def _has_just_processed_module(self, module_name, module_version):
         return self._is_module_in_list(module_name, module_version, self.just_processed_modules)
@@ -329,6 +339,15 @@ class TentacleManager:
         for root_dir in os.listdir(os.getcwd()):
             if os.path.isdir(root_dir) and not root_dir.startswith('.'):
                 TentacleManager._read_tentacles(root_dir, self.installed_modules)
+
+    def _confirm_action(self, action):
+        confirmation = ["yes", "ye", "y", "oui", "o"]
+        user_input = input("{0} Y/N".format(action)).lower()
+        if user_input in confirmation:
+            return True
+        else:
+            self.logger.info("Action aborted.")
+            return False
 
     def parse_commands(self, commands):
         help = "- install: Install or re-install the given tentacles modules with their requirements if any. " \
@@ -363,15 +382,18 @@ class TentacleManager:
                 self._update_evaluator_config_file()
 
             elif commands[0] == "uninstall":
-                if commands[1] == "all":
-                    self.uninstall_parser(commands, True)
-                else:
-                    commands.pop(0)
-                    self.uninstall_parser(commands, False)
-                self._update_evaluator_config_file()
+                if self._confirm_action("Uninstall tentacle(s) and remove uninstalled tentacle(s) configuration ?"):
+                    if commands[1] == "all":
+                        self.uninstall_parser(commands, True)
+                    else:
+                        commands.pop(0)
+                        self.uninstall_parser(commands, False)
+                    self._update_evaluator_config_file()
 
             elif commands[0] == "reset_tentacles":
-                self.reset_tentacles()
+                if self._confirm_action("Reset ALL the tentacles ? "
+                                        "This will delete all tentacle files and configuration in tentacles folder."):
+                    self.reset_tentacles()
 
             elif commands[0] == "help":
                 self.logger.info("Welcome in Tentacle Manager, commands are:\n{0}".format(help))
@@ -383,30 +405,36 @@ class TentacleManager:
             self.logger.error("Invalid arguments, arguments are: {0}".format(arguments_help))
 
     def install_parser(self, commands, command_all=False):
+        should_install = True
         # first ensure the current tentacles architecture is setup correctly
-        self._create_missing_tentacles_arch()
+        if self._create_missing_tentacles_arch():
+            should_install = self._confirm_action("Tentacles installation found on this OctoBot, this action will "
+                                                  "replace every local file and configuration by their remote "
+                                                  "equivalent, continue ?")
+        if should_install:
+            # then process installations
+            if command_all:
+                self._try_action_on_tentacles_package(TentacleManagerActions.INSTALL, self.default_package,
+                                                      EVALUATOR_DEFAULT_FOLDER)
+                for package in self.advanced_package_list:
+                    self._try_action_on_tentacles_package(TentacleManagerActions.INSTALL, package,
+                                                          EVALUATOR_ADVANCED_FOLDER)
+            else:
+                for component in commands:
 
-        # then process installations
-        if command_all:
-            self._try_action_on_tentacles_package(TentacleManagerActions.INSTALL, self.default_package, EVALUATOR_DEFAULT_FOLDER)
-            for package in self.advanced_package_list:
-                self._try_action_on_tentacles_package(TentacleManagerActions.INSTALL, package, EVALUATOR_ADVANCED_FOLDER)
-        else:
-            for component in commands:
+                    component = self._check_format(component)
+                    package, _, localisation, is_url, destination = self._get_package_in_lists(component)
 
-                component = self._check_format(component)
-                package, _, localisation, is_url, destination = self._get_package_in_lists(component)
+                    if package:
+                        try:
+                            self.process_module(TentacleManagerActions.INSTALL, package, component,
+                                                localisation, is_url, destination)
 
-                if package:
-                    try:
-                        self.process_module(TentacleManagerActions.INSTALL, package, component,
-                                            localisation, is_url, destination)
-
-                    except Exception as e:
-                        self.logger.error("Installation failed for module '{0}'".format(component))
-                        raise e
-                else:
-                    self.logger.error("No installation found for module '{0}'".format(component))
+                        except Exception as e:
+                            self.logger.error("Installation failed for module '{0}'".format(component))
+                            raise e
+                    else:
+                        self.logger.error("No installation found for module '{0}'".format(component))
 
     def update_parser(self, commands, command_all=False):
         self._init_installed_modules()
@@ -466,9 +494,10 @@ class TentacleManager:
 
     @staticmethod
     def _create_missing_tentacles_arch():
+        found_existing_installation = False
         tentacle_architecture, tentacle_extremity_architecture = TentacleManager._get_tentacles_arch()
         for tentacle_root, subdir in tentacle_architecture.items():
-            TentacleManager._find_or_create(tentacle_root)
+            found_existing_installation = not TentacleManager._find_or_create(tentacle_root)
             init_path = os.path.join(tentacle_root, PYTHON_INIT_FILE)
             TentacleManager._find_or_create(init_path, False, "")
             for tentacle_dir in subdir:
@@ -488,6 +517,7 @@ class TentacleManager:
                     else:
                         TentacleManager._create_arch_module_extremity(tentacle_extremity_architecture,
                                                                       types_subdir, type_path)
+        return found_existing_installation
 
     @staticmethod
     def _create_arch_module_extremity(architecture, types_subdir, type_path, with_init_config=True):
@@ -506,6 +536,8 @@ class TentacleManager:
             if with_init_config:
                 module_config_path = os.path.join(path, EVALUATOR_CONFIG_FOLDER)
                 TentacleManager._find_or_create(module_config_path)
+                module_default_config_path = os.path.join(module_config_path, EVALUATOR_DEFAULT_FOLDER)
+                TentacleManager._find_or_create(module_default_config_path)
 
     @staticmethod
     def _find_or_create(path, is_directory=True, file_content=TENTACLES_PYTHON_INIT_CONTENT):
@@ -518,6 +550,8 @@ class TentacleManager:
                     # should be used for python init.py files only
                     with open(path, "w+") as file:
                         file.write(file_content)
+            return True
+        return False
 
     @staticmethod
     def _get_tentacles_arch():
@@ -643,7 +677,7 @@ class TentacleManager:
                                                TENTACLE_TYPES[module_subtype],
                                                target_folder)
         else:
-            return "{0}{1}/{2}/{4}".format(TENTACLES_PATH,
+            return "{0}{1}/{2}/{3}".format(TENTACLES_PATH,
                                            test_folder_if_required,
                                            TENTACLE_TYPES[module_type],
                                            target_folder)
