@@ -8,11 +8,9 @@ Changelog for 0.1.2_2-beta
     #243 [Config] Fix Exception description
     #245 [TentacleManager] add confirm before delete files
 
-# New features :
-    -
-
 # Bug fix :
     - Fix backtesting
+    - Fix Rest exchange to support additional exchanges
 
 Changelog for 0.1.2_1-beta
 ====================
