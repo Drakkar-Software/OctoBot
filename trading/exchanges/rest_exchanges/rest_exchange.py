@@ -4,6 +4,7 @@ from ccxt import OrderNotFound, BaseError
 
 from config.cst import *
 from trading.exchanges.abstract_exchange import AbstractExchange
+from config.cst import ExchangeConstantsMarketStatusColumns as Ecmsc
 
 
 class RESTExchange(AbstractExchange):
@@ -48,10 +49,28 @@ class RESTExchange(AbstractExchange):
 
     def get_market_status(self, symbol):
         if symbol in self.client.markets:
-            return self.client.markets[symbol]
+            return self.fix_market_status(self.client.markets[symbol])
         else:
             self.logger.error("Fail to get market status of {0}".format(symbol))
             return []
+
+    @staticmethod
+    def fix_market_status(market_status):
+        # check precision
+        if Ecmsc.PRECISION.value in market_status:
+            market_precision = market_status[Ecmsc.PRECISION.value]
+            if Ecmsc.PRECISION_COST.value not in market_precision:
+                if Ecmsc.PRECISION_PRICE.value in market_precision:
+                    market_precision[Ecmsc.PRECISION_COST.value] = market_precision[Ecmsc.PRECISION_PRICE.value]
+
+        # check limits
+        if Ecmsc.LIMITS.value in market_status:
+            market_limit = market_status[Ecmsc.LIMITS.value]
+            if Ecmsc.LIMITS_COST.value not in market_limit:
+                if Ecmsc.LIMITS_PRICE.value in market_limit:
+                    market_limit[Ecmsc.LIMITS_COST.value] = market_limit[Ecmsc.LIMITS_PRICE.value]
+
+        return market_status
 
     def get_client(self):
         return self.client

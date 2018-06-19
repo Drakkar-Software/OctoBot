@@ -1,8 +1,6 @@
 import ccxt
 
-from backtesting.collector.data_parser import DataCollectorParser
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS, PriceIndexes, \
-    CONFIG_BACKTESTING_DATA_FILES
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS, PriceIndexes
 from tests.test_utils.config import load_test_config
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader_simulator import TraderSimulator
@@ -19,10 +17,6 @@ class TestExchangeSimulator:
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
         exchange_inst = exchange_manager.get_exchange()
         exchange_simulator = exchange_inst.get_exchange()
-
-        # use legacy data
-        exchange_simulator.data[TestExchangeSimulator.DEFAULT_SYMBOL] = DataCollectorParser.parse(
-            config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES][0], use_legacy_parsing=True)
 
         trader_inst = TraderSimulator(config, exchange_inst, 1)
         return config, exchange_inst, exchange_simulator, trader_inst
