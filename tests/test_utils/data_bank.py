@@ -2,6 +2,7 @@ import ccxt
 import pandas
 import numpy as np
 
+from backtesting.collector.data_parser import DataCollectorParser
 from config.cst import TimeFrames, PriceIndexes
 from trading.exchanges.exchange_manager import ExchangeManager
 
