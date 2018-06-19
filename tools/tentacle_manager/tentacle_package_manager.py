@@ -19,6 +19,8 @@ class TentaclePackageManager:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.just_processed_modules = []
         self.installed_modules = {}
+        self.max_steps = None
+        self.current_step = 1
 
     def _process_action_on_module(self, action, module_type, module_subtype,
                                   module_version, module_file_content, module_test_files, target_folder, module_name):
@@ -77,15 +79,15 @@ class TentaclePackageManager:
                         pass
 
             if action == TentacleManagerActions.INSTALL:
-                self.logger.info("{0} {1} successfully installed in: {2}"
-                                 .format(module_name, module_version, module_file_dir))
+                self.logger.info("{0}{1} {2} successfully installed in: {3}"
+                                 .format(self._format_current_step(), module_name, module_version, module_file_dir))
             elif action == TentacleManagerActions.UNINSTALL:
                 if did_something:
-                    self.logger.info("{0} {1} successfully uninstalled (file: {2})"
-                                     .format(module_name, module_version, module_file_dir))
+                    self.logger.info("{0}{1} {2} successfully uninstalled (file: {3})"
+                                     .format(self._format_current_step(), module_name, module_version, module_file_dir))
             elif action == TentacleManagerActions.UPDATE:
-                self.logger.info("{0} successfully updated to version {1} in: {2}"
-                                 .format(module_name, module_version, module_file_dir))
+                self.logger.info("{0}{1} successfully updated to version {2} in: {3}"
+                                 .format(self._format_current_step(), module_name, module_version, module_file_dir))
             self.just_processed_modules.append(TentacleUtil.get_full_module_identifier(module_name, module_version))
             return did_something
 
@@ -141,7 +143,8 @@ class TentaclePackageManager:
                 if not need_this_exact_version:
                     new_version_available = TentacleUtil.is_first_version_superior(module_version, installed_version)
                     if not new_version_available:
-                        self.logger.info("{0} version {1} is already up to date".format(module_name, installed_version))
+                        self.logger.info("{0}{1} version {2} is already up to date"
+                                         .format(self._format_current_step(), module_name, installed_version))
                     return new_version_available
                 else:
                     is_required_version_installed = True
@@ -188,6 +191,7 @@ class TentaclePackageManager:
                     self.logger.error("Uninstalling {0}".format(error))
                 elif action == TentacleManagerActions.UPDATE:
                     self.logger.error("Updating {0}".format(error))
+            self.inc_current_step()
 
     def _try_action_on_requirements(self, action, package, module_name):
         parsed_module = TentacleUtil.parse_module_header(package[module_name])
@@ -307,6 +311,15 @@ class TentaclePackageManager:
         for root_dir in os.listdir(os.getcwd()):
             if os.path.isdir(root_dir) and not root_dir.startswith('.'):
                 TentaclePackageUtil.read_tentacles(root_dir, self.installed_modules)
+
+    def _format_current_step(self):
+        return "{0}/{1}: ".format(self.current_step, self.max_steps) if self.max_steps is not None else ""
+
+    def set_max_steps(self, max_steps):
+        self.max_steps = max_steps
+
+    def inc_current_step(self):
+        self.current_step += 1
 
     @staticmethod
     def update_init_file(action, init_file, line_in_init):
