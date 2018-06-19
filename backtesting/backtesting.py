@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 
 from backtesting import get_bot
@@ -6,10 +7,11 @@ from config.cst import *
 
 
 class Backtesting:
-    def __init__(self, config, exchange_simulator):
+    def __init__(self, config, exchange_simulator, exit_at_end=True):
         self.config = config
         self.begin_time = time.time()
         self.time_delta = 0
+        self.force_exit_at_end = exit_at_end
         self.exchange_simulator = exchange_simulator
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -20,8 +22,11 @@ class Backtesting:
             self.report(symbol)
 
         # make sure to wait the end of threads process
-        time.sleep(3)
-        raise Exception("End of simulation in {0} sec".format(time.time() - self.begin_time))
+        backtesting_time = time.time() - self.begin_time
+        time.sleep(5)
+        self.logger.info("Simulation lasted {0} sec".format(backtesting_time))
+        if self.force_exit_at_end:
+            os._exit(0)
 
     def report(self, symbol):
         market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
@@ -39,7 +44,7 @@ class Backtesting:
 
         # log
         self.logger.info(
-            "Profitability : Market {0}% | Crypto bot {1}%".format(market_delta * 100, total_profitability))
+            "Profitability : Market {0}% | OctoBot : {1}%".format(market_delta * 100, total_profitability))
 
     @staticmethod
     def get_market_delta(market_data):

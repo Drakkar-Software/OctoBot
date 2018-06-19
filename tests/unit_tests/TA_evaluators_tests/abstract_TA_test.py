@@ -1,5 +1,6 @@
 from abc import *
 import math
+from timeit import default_timer as timer
 
 from config.cst import START_PENDING_EVAL_NOTE
 from tests.test_utils.config import load_test_config
@@ -58,11 +59,13 @@ class AbstractTATest:
         raise NotImplementedError("test_reaction_to_flat_trend not implemented")
 
     # runs stress test and assert that neutral evaluation ratio is under required_not_neutral_evaluation_ratio and
-    # resets eval_note between each run if reset_eval_to_none_before_each_eval set to True
+    # resets eval_note between each run if reset_eval_to_none_before_each_eval set to True. Also ensure the execution
+    # time is bellow or equal to the given limit
     def run_stress_test_without_exceptions(self,
                                            required_not_neutral_evaluation_ratio=0.75,
-                                           reset_eval_to_none_before_each_eval=True):
-
+                                           reset_eval_to_none_before_each_eval=True,
+                                           time_limit_seconds=2):
+        start_time = timer()
         for symbol in self.test_symbols:
             time_framed_data_list = self.data_bank.get_all_data_for_all_available_time_frames_for_symbol(symbol)
             for key, current_time_frame_data in time_framed_data_list.items():
@@ -81,8 +84,12 @@ class AbstractTATest:
                         assert not math.isnan(self.evaluator.eval_note)
                     if self.evaluator.eval_note != START_PENDING_EVAL_NOTE:
                         not_neutral_evaluation_count += 1
+
                 assert not_neutral_evaluation_count/len(current_time_frame_data) \
                     >= required_not_neutral_evaluation_ratio
+        process_time = timer() - start_time
+
+        assert process_time <= time_limit_seconds
 
     # test reaction to dump
     def run_test_reactions_to_dump(self, pre_dump_eval,

@@ -1,3 +1,4 @@
+import copy
 import logging
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
@@ -171,18 +172,16 @@ class Trader:
     # Should be called only if we want to cancel all symbol open orders (no filled)
     def cancel_open_orders(self, symbol, cancel_loaded_orders=True):
         # use a copy of the list (not the reference)
-        with self.order_manager.list_lock:
-            for order in list(self.get_open_orders()):
-                if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
-                    if cancel_loaded_orders or order.get_is_from_this_octobot():
-                        self.notify_order_close(order, True)
+        for order in copy.copy(self.get_open_orders()):
+            if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
+                if cancel_loaded_orders or order.get_is_from_this_octobot():
+                    self.notify_order_close(order, True)
 
     def cancel_all_open_orders(self):
         # use a copy of the list (not the reference)
-        with self.order_manager.list_lock:
-            for order in list(self.get_open_orders()):
-                if order.get_status() is not OrderStatus.CANCELED:
-                    self.notify_order_close(order, True)
+        for order in copy.copy(self.get_open_orders()):
+            if order.get_status() is not OrderStatus.CANCELED:
+                self.notify_order_close(order, True)
 
     def notify_order_cancel(self, order):
         # update portfolio with ended order

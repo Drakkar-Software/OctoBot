@@ -1,6 +1,5 @@
 import datetime
 import logging
-import sys
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
@@ -9,6 +8,7 @@ from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_trades_history, \
     get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status, \
     cancel_all_open_orders, set_enable_trading, has_real_and_or_simulated_traders
+from tools.commands import Commands
 from tools.pretty_printer import PrettyPrinter
 
 
@@ -88,7 +88,7 @@ class TelegramApp:
         # TODO add confirmation
         update.message.reply_text("I'm leaving this world...")
         get_bot().stop_threads()
-        sys.exit(0)
+        Commands.stop_bot(get_bot())
 
     def command_pause_resume(self, _, update):
         if self.paused:

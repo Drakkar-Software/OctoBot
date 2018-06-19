@@ -28,6 +28,24 @@ class AbstractTradingModeCreator:
                                                                                 CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
         return AbstractTradingModeCreator._trunc_with_n_decimal_digits(price, maximal_price_digits)
 
+    @staticmethod
+    def get_additional_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
+        remaining_portfolio_amount = current_symbol_holding-quantity
+        remaining_max_total_order_price = remaining_portfolio_amount*price
+
+        symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
+
+        limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
+        limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
+
+        min_quantity = AbstractTradingModeCreator._get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
+        min_cost = AbstractTradingModeCreator._get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
+
+        if remaining_max_total_order_price < min_cost or remaining_portfolio_amount < min_quantity:
+            return remaining_portfolio_amount
+        else:
+            return 0
+
     """
     Checks and adapts the quantity and price of the order to ensure it's exchange compliant:
     - are the quantity and price of the order compliant with the exchange's number of digits requirement

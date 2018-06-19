@@ -3,13 +3,19 @@ Changelog for 0.1.2_2-beta
 *Released date : June 19 2018*
 
 # Concerned issues :
+    #193 [Bittrex] Test OctoBot on different exchanges
+    #232 added performance tests for evaluator stress test
+    #235 added progress info in tentacles manager
     #243 [Config] Fix Exception description
+    #245 [TentacleManager] add confirm before delete files
+    #247 [OrderCreator] test get_additional_dusts_to_quantity_if_necessary function
 
 # New features :
-    -
+    - OrderCreator : Take in account potentiel dust when creating order
 
 # Bug fix :
-    -
+    - Fix backtesting
+    - Fix Rest exchange to support additional exchanges
 
 Changelog for 0.1.2_1-beta
 ====================
