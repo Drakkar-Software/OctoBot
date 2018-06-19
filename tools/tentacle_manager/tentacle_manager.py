@@ -82,6 +82,8 @@ class TentacleManager:
         if should_install:
             # then process installations
             if command_all:
+
+                self.tentacle_package_manager.set_max_steps(self._get_package_count())
                 self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL,
                                                                               self.default_package,
                                                                               EVALUATOR_DEFAULT_FOLDER)
@@ -89,6 +91,7 @@ class TentacleManager:
                     self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL,
                                                                                   package, EVALUATOR_ADVANCED_FOLDER)
             else:
+                self.tentacle_package_manager.set_max_steps(len(commands))
                 for component in commands:
 
                     component = TentacleUtil.check_format(component)
@@ -104,12 +107,14 @@ class TentacleManager:
                             raise e
                     else:
                         self.logger.error("No installation found for tentacle module '{0}'".format(component))
+                    self.tentacle_package_manager.inc_current_step()
 
             TentaclePackageManager.update_evaluator_config_file()
 
     def update_parser(self, commands, command_all=False):
         self.tentacle_package_manager.init_installed_modules()
         if command_all:
+            self.tentacle_package_manager.set_max_steps(self._get_package_count())
             self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UPDATE,
                                                                           self.default_package,
                                                                           EVALUATOR_DEFAULT_FOLDER)
@@ -118,6 +123,7 @@ class TentacleManager:
                                                                               EVALUATOR_ADVANCED_FOLDER)
 
         else:
+            self.tentacle_package_manager.set_max_steps(len(commands))
             for component in commands:
 
                 component = TentacleUtil.check_format(component)
@@ -133,9 +139,11 @@ class TentacleManager:
                         raise e
                 else:
                     self.logger.error("No tentacle found for '{0}'".format(component))
+                self.tentacle_package_manager.inc_current_step()
 
     def uninstall_parser(self, commands, command_all=False):
         if command_all:
+            self.tentacle_package_manager.set_max_steps(self._get_package_count())
             self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UNINSTALL,
                                                                           self.default_package,
                                                                           EVALUATOR_DEFAULT_FOLDER)
@@ -143,6 +151,7 @@ class TentacleManager:
                 self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UNINSTALL,
                                                                               package, EVALUATOR_ADVANCED_FOLDER)
         else:
+            self.tentacle_package_manager.set_max_steps(len(commands))
             for component in commands:
 
                 component = TentacleUtil.check_format(component)
@@ -156,6 +165,7 @@ class TentacleManager:
                         self.logger.error("Uninstalling failed for module '{0}'".format(component))
                 else:
                     self.logger.error("No module found for '{0}'".format(component))
+                self.tentacle_package_manager.inc_current_step()
 
     def reset_tentacles(self):
         self.logger.info("Removing tentacles.")
@@ -211,3 +221,10 @@ class TentacleManager:
 
     def set_force_actions(self, force_actions):
         self.force_actions = force_actions
+
+    def _get_package_count(self):
+        count = len(self.default_package)
+        for advanced_package in self.advanced_package_list:
+            count += len(advanced_package)
+        # remove 1 for tentacle description for each tentacles package
+        return count - 1*(1+len(self.advanced_package_list)) + 1
