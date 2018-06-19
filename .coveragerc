@@ -5,5 +5,6 @@ omit =
     interfaces/*
     services/*
     tools/*
+    tests/*
     setup.py
     start.py
