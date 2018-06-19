@@ -22,19 +22,19 @@ class DataCollectorParser:
             data = arrays[time_frame]
             time_frames_data[time_frame] = []
             for i in range(len(data[PriceIndexes.IND_PRICE_TIME.value])):
-                time_frames_data[time_frame].insert(i, [])
-                time_frames_data[time_frame][i].insert(PriceIndexes.IND_PRICE_CLOSE.value,
-                                                       data[PriceIndexes.IND_PRICE_CLOSE.value][i])
-                time_frames_data[time_frame][i].insert(PriceIndexes.IND_PRICE_OPEN.value,
-                                                       data[PriceIndexes.IND_PRICE_OPEN.value][i])
-                time_frames_data[time_frame][i].insert(PriceIndexes.IND_PRICE_HIGH.value,
-                                                       data[PriceIndexes.IND_PRICE_HIGH.value][i])
-                time_frames_data[time_frame][i].insert(PriceIndexes.IND_PRICE_LOW.value,
-                                                       data[PriceIndexes.IND_PRICE_LOW.value][i])
-                time_frames_data[time_frame][i].insert(PriceIndexes.IND_PRICE_TIME.value,
-                                                       data[PriceIndexes.IND_PRICE_TIME.value][i])
-                time_frames_data[time_frame][i].insert(PriceIndexes.IND_PRICE_VOL.value,
-                                                       data[PriceIndexes.IND_PRICE_VOL.value][i])
+                time_frames_data[time_frame].insert(i, [None]*len(PriceIndexes))
+                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_CLOSE.value] = \
+                    data[PriceIndexes.IND_PRICE_CLOSE.value][i]
+                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_OPEN.value] = \
+                    data[PriceIndexes.IND_PRICE_OPEN.value][i]
+                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_HIGH.value] = \
+                    data[PriceIndexes.IND_PRICE_HIGH.value][i]
+                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_LOW.value] = \
+                    data[PriceIndexes.IND_PRICE_LOW.value][i]
+                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_TIME.value] = \
+                    data[PriceIndexes.IND_PRICE_TIME.value][i]
+                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_VOL.value] = \
+                    data[PriceIndexes.IND_PRICE_VOL.value][i]
 
         return time_frames_data
 
