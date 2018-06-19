@@ -1,7 +1,6 @@
 import logging
 import os
 import json
-import shutil
 
 import tools.tentacle_manager.tentacle_package_util as TentaclePackageUtil
 import tools.tentacle_manager.tentacle_util as TentacleUtil
@@ -103,9 +102,9 @@ class TentaclePackageManager:
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
             module_loc = "{0}.py".format(TentacleUtil.create_localization_from_type(package_localisation,
-                                                                             module_type,
-                                                                             module_subtype,
-                                                                             module_name))
+                                                                                    module_type,
+                                                                                    module_subtype,
+                                                                                    module_name))
 
             if is_url:
                 module_file_content = TentaclePackageUtil.get_package_file_content_from_url(module_loc)
@@ -116,10 +115,10 @@ class TentaclePackageManager:
             if module_test_files:
                 for test in module_tests:
                     test_loc = "{0}.py".format(TentacleUtil.create_localization_from_type(package_localisation,
-                                                                                   module_type,
-                                                                                   module_subtype,
-                                                                                   test,
-                                                                                   True))
+                                                                                          module_type,
+                                                                                          module_subtype,
+                                                                                          test,
+                                                                                          True))
 
                     if is_url:
                         module_test_files[test] = TentaclePackageUtil.get_package_file_content_from_url(test_loc)
@@ -204,8 +203,8 @@ class TentaclePackageManager:
                             self._should_do_something(action, requirement_module_name,
                                                       requirement_module_version, True, module_name):
                         try:
-                            req_package, _, localisation, is_url, destination = self.tentacle_manager.get_package_in_lists(
-                                requirement_module_name, requirement_module_version)
+                            req_package, _, localisation, is_url, destination = self.tentacle_manager.\
+                                get_package_in_lists(requirement_module_name, requirement_module_version)
 
                             if req_package:
                                 self.process_module(action, req_package, requirement_module_name,
@@ -230,7 +229,8 @@ class TentaclePackageManager:
             if not success:
                 if action == TentacleManagerActions.UPDATE:
                     # uninstall module
-                    req_package, _, localisation, is_url, destination = self.tentacle_manager.get_package_in_lists(module_name)
+                    req_package, _, localisation, is_url, destination = self.tentacle_manager.\
+                        get_package_in_lists(module_name)
                     if req_package:
                         self.process_module(TentacleManagerActions.UNINSTALL, req_package, module_name,
                                             localisation, is_url, destination)
@@ -238,7 +238,8 @@ class TentaclePackageManager:
                 elif action == TentacleManagerActions.INSTALL:
                     # uninstall module and requirements
                     for module_to_remove in applied_modules:
-                        req_package, _, localisation, is_url, destination = self.tentacle_manager.get_package_in_lists(module_to_remove)
+                        req_package, _, localisation, is_url, destination = self.tentacle_manager.\
+                            get_package_in_lists(module_to_remove)
                         if req_package:
                             self.process_module(TentacleManagerActions.UNINSTALL, req_package, module_to_remove,
                                                 localisation, is_url, destination)
@@ -250,7 +251,7 @@ class TentaclePackageManager:
             for config_file in parsed_module[TENTACLE_MODULE_CONFIG_FILES]:
 
                 file_dir = TentacleUtil.create_path_from_type(parsed_module[TENTACLE_MODULE_TYPE],
-                                                       parsed_module[TENTACLE_MODULE_SUBTYPE], "")
+                                                              parsed_module[TENTACLE_MODULE_SUBTYPE], "")
 
                 config_file_path = "{0}{1}/{2}".format(file_dir, EVALUATOR_CONFIG_FOLDER, config_file)
                 default_config_file_path = "{0}{1}/{2}/{3}".format(file_dir, EVALUATOR_CONFIG_FOLDER,
@@ -260,9 +261,9 @@ class TentaclePackageManager:
                     try:
                         # get config file content from localization
                         module_loc = TentacleUtil.create_localization_from_type(package_localisation,
-                                                                         parsed_module[TENTACLE_MODULE_TYPE],
-                                                                         parsed_module[TENTACLE_MODULE_SUBTYPE],
-                                                                         config_file)
+                                                                                parsed_module[TENTACLE_MODULE_TYPE],
+                                                                                parsed_module[TENTACLE_MODULE_SUBTYPE],
+                                                                                config_file)
 
                         if is_url:
                             config_file_content = TentaclePackageUtil.get_package_file_content_from_url(module_loc)
@@ -307,7 +308,6 @@ class TentaclePackageManager:
             if os.path.isdir(root_dir) and not root_dir.startswith('.'):
                 TentaclePackageUtil.read_tentacles(root_dir, self.installed_modules)
 
-
     @staticmethod
     def update_init_file(action, init_file, line_in_init):
         init_content = ""
@@ -331,7 +331,6 @@ class TentaclePackageManager:
                 with open(init_file, "w") as init_file_w:
                     # remove package to uninstall from init
                     init_file_w.write(init_content.replace(line_in_init, ""))
-
 
     @staticmethod
     def update_evaluator_config_file(evaluator_config_file=CONFIG_EVALUATOR_FILE_PATH):
