@@ -31,7 +31,8 @@ class DataBank:
         self.exchange_inst = exchange_manager.get_exchange()
 
         # use legacy data
-        self.exchange_inst.data[self.symbols[0]] = DataCollectorParser.parse(self.data_file, use_legacy_parsing=True)
+        self.exchange_inst.get_exchange().data[self.symbols[0]] = DataCollectorParser.parse(self.data_file,
+                                                                                            use_legacy_parsing=True)
 
         self.data_by_symbol_by_data_frame = None
         self._init_data()

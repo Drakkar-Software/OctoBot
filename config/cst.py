@@ -195,6 +195,12 @@ CONFIG_EVALUATOR_FILE_PATH = "{}/{}/{}".format(TENTACLES_PATH, TENTACLES_EVALUAT
 CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
 
 
+class TentacleManagerActions(Enum):
+    INSTALL = 1
+    UNINSTALL = 2
+    UPDATE = 3
+
+
 class EvaluatorMatrixTypes(Enum):
     TA = "TA"
     SOCIAL = "SOCIAL"

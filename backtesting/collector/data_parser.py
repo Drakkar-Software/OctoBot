@@ -24,7 +24,7 @@ class DataCollectorParser:
         time_frames_data = {}
         for time_frame in arrays:
             data = arrays[time_frame]
-            time_frames_data[time_frame] = []
+            time_frames_data[time_frame] = [None]*len(PriceIndexes)
             for i in range(len(data[PriceIndexes.IND_PRICE_TIME.value])):
                 time_frames_data[time_frame].insert(i, [])
                 time_frames_data[time_frame][i].insert(PriceIndexes.IND_PRICE_CLOSE.value,
