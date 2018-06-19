@@ -54,10 +54,9 @@ def create_missing_tentacles_arch():
                         init_path = os.path.join(test_type_path, PYTHON_INIT_FILE)
                         _find_or_create(init_path, False, "")
                         _create_arch_module_extremity(tentacle_extremity_architecture,
-                                                                      types_subsubdir, test_type_path, False)
+                                                      types_subsubdir, test_type_path, False)
                 else:
-                    _create_arch_module_extremity(tentacle_extremity_architecture,
-                                                                  types_subdir, type_path)
+                    _create_arch_module_extremity(tentacle_extremity_architecture, types_subdir, type_path)
     return found_existing_installation
 
 
@@ -167,7 +166,6 @@ def parse_module_file(module_file_content, description_list):
             description_list[module_description[TENTACLE_MODULE_NAME]] = module_description
 
 
-
 def create_localization_from_type(localization, module_type, module_subtype, file, tests=False):
     # create path from types
     test_folder_if_required = ""
@@ -184,6 +182,7 @@ def create_localization_from_type(localization, module_type, module_subtype, fil
                                        test_folder_if_required,
                                        module_type,
                                        file)
+
 
 def create_path_from_type(module_type, module_subtype, target_folder, tests=False):
     # create path from types
