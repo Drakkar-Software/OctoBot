@@ -1,12 +1,11 @@
 import json
 import requests
 import os
-import logging
 
 from tools.tentacle_manager import tentacle_util as TentacleUtil
 from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLE_DESCRIPTION, GITHUB_RAW_CONTENT_URL, \
-    GITHUB_BASE_URL, GITHUB, TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, TENTACLES_INSTALL_FOLDERS, \
-    PYTHON_INIT_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_DEFAULT_EVALUATOR_FILE, TentacleManagerActions
+    GITHUB_BASE_URL, GITHUB, TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, \
+    TENTACLES_INSTALL_FOLDERS, PYTHON_INIT_FILE
 
 
 def get_package_description(url_or_path, try_to_adapt=False):
@@ -84,7 +83,7 @@ def check_path(path):
 
 
 def add_evaluator_to_evaluator_config_content(evaluator_type, evaluator_config_content,
-                                               evaluator_list, activated=False):
+                                              evaluator_list, activated=False):
     from evaluator.Util.advanced_manager import AdvancedManager
     changed_something = False
     current_evaluator_list = AdvancedManager.create_default_evaluator_types_list(evaluator_type)

@@ -1,5 +1,4 @@
 import logging
-import os
 
 import tools.tentacle_manager.tentacle_package_util as TentaclePackageUtil
 import tools.tentacle_manager.tentacle_util as TentacleUtil
@@ -83,11 +82,12 @@ class TentacleManager:
         if should_install:
             # then process installations
             if command_all:
-                self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL, self.default_package,
-                                                      EVALUATOR_DEFAULT_FOLDER)
+                self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL,
+                                                                              self.default_package,
+                                                                              EVALUATOR_DEFAULT_FOLDER)
                 for package in self.advanced_package_list:
-                    self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL, package,
-                                                          EVALUATOR_ADVANCED_FOLDER)
+                    self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL,
+                                                                                  package, EVALUATOR_ADVANCED_FOLDER)
             else:
                 for component in commands:
 
@@ -96,8 +96,8 @@ class TentacleManager:
 
                     if package:
                         try:
-                            self.tentacle_package_manager.process_module(TentacleManagerActions.INSTALL, package, component,
-                                                localisation, is_url, destination)
+                            self.tentacle_package_manager.process_module(TentacleManagerActions.INSTALL, package,
+                                                                         component, localisation, is_url, destination)
 
                         except Exception as e:
                             self.logger.error("Installation failed for tentacle module '{0}'".format(component))
@@ -110,9 +110,12 @@ class TentacleManager:
     def update_parser(self, commands, command_all=False):
         self.tentacle_package_manager.init_installed_modules()
         if command_all:
-            self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UPDATE, self.default_package, EVALUATOR_DEFAULT_FOLDER)
+            self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UPDATE,
+                                                                          self.default_package,
+                                                                          EVALUATOR_DEFAULT_FOLDER)
             for package in self.advanced_package_list:
-                self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UPDATE, package, EVALUATOR_ADVANCED_FOLDER)
+                self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UPDATE, package,
+                                                                              EVALUATOR_ADVANCED_FOLDER)
 
         else:
             for component in commands:
@@ -123,7 +126,7 @@ class TentacleManager:
                 if package:
                     try:
                         self.tentacle_package_manager.process_module(TentacleManagerActions.UPDATE, package, component,
-                                            localisation, is_url, destination)
+                                                                     localisation, is_url, destination)
 
                     except Exception as e:
                         self.logger.error("Update failed for tentacle module '{0}'".format(component))
@@ -133,10 +136,12 @@ class TentacleManager:
 
     def uninstall_parser(self, commands, command_all=False):
         if command_all:
-            self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UNINSTALL, self.default_package,
-                                                  EVALUATOR_DEFAULT_FOLDER)
+            self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UNINSTALL,
+                                                                          self.default_package,
+                                                                          EVALUATOR_DEFAULT_FOLDER)
             for package in self.advanced_package_list:
-                self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UNINSTALL, package, EVALUATOR_ADVANCED_FOLDER)
+                self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UNINSTALL,
+                                                                              package, EVALUATOR_ADVANCED_FOLDER)
         else:
             for component in commands:
 
@@ -146,7 +151,7 @@ class TentacleManager:
                 if package:
                     try:
                         self.tentacle_package_manager.process_module(TentacleManagerActions.UNINSTALL, package,
-                                            component, "", "", destination)
+                                                                     component, "", "", destination)
                     except Exception:
                         self.logger.error("Uninstalling failed for module '{0}'".format(component))
                 else:
