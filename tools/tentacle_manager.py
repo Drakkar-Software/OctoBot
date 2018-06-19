@@ -391,7 +391,7 @@ class TentacleManager:
                     self._update_evaluator_config_file()
 
             elif commands[0] == "reset_tentacles":
-                if self._confirm_action("Reset ALL the tentacles ? "
+                if self._confirm_action("Reset ALL tentacles ? "
                                         "This will delete all tentacle files and configuration in tentacles folder."):
                     self.reset_tentacles()
 
@@ -874,7 +874,7 @@ class TentacleManager:
         except Exception as e:
             logger.exception(e)
             logger.error("Something went wrong: {}.\nIf Octobot is now working after this, you should re-install your "
-                         "tentacles (start.py -p install all).\nIf this problem keeps appearing, try to reset all the "
+                         "tentacles (start.py -p install all).\nIf this problem keeps appearing, try to reset all "
                          "tentacles (start.py -p reset_tentacles).".format(e))
 
 
