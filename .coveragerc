@@ -6,5 +6,6 @@ omit =
     services/*
     tools/*
     tests/*
+    tentacles/*
     setup.py
     start.py
