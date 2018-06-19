@@ -28,6 +28,10 @@ class TentacleManager:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.just_processed_modules = []
         self.installed_modules = {}
+        self.force_actions = False
+
+    def set_force_actions(self, force_actions):
+        self.force_actions = force_actions
 
     def update_list(self):
         default_package_list_url = "{0}/{1}/{2}/{3}".format(GITHUB_BASE_URL,
@@ -341,13 +345,16 @@ class TentacleManager:
                 TentacleManager._read_tentacles(root_dir, self.installed_modules)
 
     def _confirm_action(self, action):
-        confirmation = ["yes", "ye", "y", "oui", "o"]
-        user_input = input("{0} Y/N".format(action)).lower()
-        if user_input in confirmation:
+        if self.force_actions:
             return True
         else:
-            self.logger.info("Action aborted.")
-            return False
+            confirmation = ["yes", "ye", "y", "oui", "o"]
+            user_input = input("{0} Y/N".format(action)).lower()
+            if user_input in confirmation:
+                return True
+            else:
+                self.logger.info("Action aborted.")
+                return False
 
     def parse_commands(self, commands):
         help = "- install: Install or re-install the given tentacles modules with their requirements if any. " \
