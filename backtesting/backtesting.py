@@ -39,7 +39,7 @@ class Backtesting:
 
         # log
         self.logger.info(
-            "Profitability : Market {0}% | Crypto bot {1}%".format(market_delta * 100, total_profitability))
+            "Profitability : Market {0}% | OctoBot : {1}%".format(market_delta * 100, total_profitability))
 
     @staticmethod
     def get_market_delta(market_data):

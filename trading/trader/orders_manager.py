@@ -23,7 +23,6 @@ class OrdersManager(threading.Thread):
         self.order_list = []
         self.last_symbol_prices = {}
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.list_lock = threading.RLock()
 
         if self.trader.get_exchange().is_websocket_available():
             self.order_refresh_time = ORDER_REFRESHER_TIME_WS
@@ -43,13 +42,12 @@ class OrdersManager(threading.Thread):
     # Remove the specified order of the current open_order list (when the order is filled or canceled)
     def remove_order_from_list(self, order):
         try:
-            with self.list_lock:
-                if order in self.order_list:
-                    self.order_list.remove(order)
-                    self.logger.debug("{0} {1} (ID : {2}) removed on {3}".format(order.get_order_symbol(),
-                                                                                 order.get_name(),
-                                                                                 order.get_id(),
-                                                                                 self.trader.get_exchange().get_name()))
+            if order in self.order_list:
+                self.order_list.remove(order)
+                self.logger.debug("{0} {1} (ID : {2}) removed on {3}".format(order.get_order_symbol(),
+                                                                             order.get_name(),
+                                                                             order.get_id(),
+                                                                             self.trader.get_exchange().get_name()))
 
         except Exception as e:
             self.logger.error(str(e))
