@@ -332,6 +332,7 @@ class TentacleManager:
                 elif action == TentacleManagerActions.UNINSTALL:
                     try:
                         os.remove(config_file_path)
+                        os.remove(default_config_file_path)
                     except OSError:
                         pass
 
@@ -378,7 +379,6 @@ class TentacleManager:
                 else:
                     commands.pop(0)
                     self.install_parser(commands, False)
-                self._update_evaluator_config_file()
 
             elif commands[0] == "update":
                 if commands[1] == "all":
@@ -416,8 +416,8 @@ class TentacleManager:
         # first ensure the current tentacles architecture is setup correctly
         if self._create_missing_tentacles_arch():
             should_install = self._confirm_action("Tentacles installation found on this OctoBot, this action will "
-                                                  "replace every local file and configuration by their remote "
-                                                  "equivalent, continue ?")
+                                                  "replace every local tentacle file and their configuration by their "
+                                                  "remote equivalent for the command's tentacles, continue ?")
         if should_install:
             # then process installations
             if command_all:
@@ -438,10 +438,12 @@ class TentacleManager:
                                                 localisation, is_url, destination)
 
                         except Exception as e:
-                            self.logger.error("Installation failed for module '{0}'".format(component))
+                            self.logger.error("Installation failed for tentacle module '{0}'".format(component))
                             raise e
                     else:
-                        self.logger.error("No installation found for module '{0}'".format(component))
+                        self.logger.error("No installation found for tentacle module '{0}'".format(component))
+
+            self._update_evaluator_config_file()
 
     def update_parser(self, commands, command_all=False):
         self._init_installed_modules()
@@ -462,10 +464,10 @@ class TentacleManager:
                                             localisation, is_url, destination)
 
                     except Exception as e:
-                        self.logger.error("Update failed for module '{0}'".format(component))
+                        self.logger.error("Update failed for tentacle module '{0}'".format(component))
                         raise e
                 else:
-                    self.logger.error("No module found for '{0}'".format(component))
+                    self.logger.error("No tentacle found for '{0}'".format(component))
 
     def uninstall_parser(self, commands, command_all=False):
         if command_all:
@@ -832,12 +834,13 @@ class TentacleManager:
 
         logger = logging.getLogger(TentacleManager.__name__)
         try:
+            logger.info("Updating {} using new data...".format(evaluator_config_file))
+
             from evaluator.RealTime import RealTimeEvaluator
             from evaluator.Social import SocialEvaluator
             from evaluator.Strategies import StrategiesEvaluator
             from evaluator.TA import TAEvaluator
 
-            logger.info("Updating {} using new data...".format(evaluator_config_file))
             config_content = {}
             changed_something = False
             if os.path.isfile(evaluator_config_file):
@@ -880,9 +883,9 @@ class TentacleManager:
                 logger.info("Nothing to update in {}".format(evaluator_config_file))
         except Exception as e:
             logger.exception(e)
-            logger.error("Something went wrong: {}.\nIf Octobot is now working after this, you should re-install your "
-                         "tentacles (start.py -p install all).\nIf this problem keeps appearing, try to reset all "
-                         "tentacles (start.py -p reset_tentacles).".format(e))
+            logger.error("Something went wrong when checking installed tentacles: {}.\nIf Octobot is now working after "
+                         "this, you should re-install your tentacles (start.py -p install all).\nIf this problem keeps "
+                         "appearing, try to reset all tentacles (start.py -p reset_tentacles).".format(e))
 
 
 class TentacleManagerActions(Enum):
