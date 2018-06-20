@@ -26,6 +26,10 @@ class AbstractWebSocket:
         raise NotImplementedError("convert_into_ccxt_order not implemented")
 
     @abstractmethod
+    def convert_into_ccxt_ticker(self, ticker):
+        raise NotImplementedError("convert_into_ccxt_ticker not implemented")
+
+    @abstractmethod
     def start_sockets(self):
         raise NotImplementedError("start_sockets not implemented")
 
@@ -78,6 +82,10 @@ class AbstractWebSocket:
     @staticmethod
     def safe_float(dictionary, key, default_value=None):
         return ccxtExchange.safe_float(dictionary, key, default_value)
+
+    @staticmethod
+    def safe_integer(dictionary, key, default_value=None):
+        return ccxtExchange.safe_integer(dictionary, key, default_value)
 
     @staticmethod
     def safe_value(dictionary, key, default_value=None):
