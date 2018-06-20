@@ -89,6 +89,34 @@ class BinanceWebSocketClient(AbstractWebSocket):
         return BinanceWebSocketClient._STATUSES[status] if status in BinanceWebSocketClient._STATUSES \
             else status.lower()
 
+    def convert_into_ccxt_ticker(self, ticker):
+        timestamp = self.safe_integer(ticker, 'C')
+        iso8601 = None if (timestamp is None) else self.iso8601(timestamp)
+        symbol = self._adapt_symbol(self.safe_string(ticker, 's'))
+        last = self.safe_float(ticker, 'c')
+        return {
+            'symbol': symbol,
+            'timestamp': timestamp,
+            'datetime': iso8601,
+            'high': self.safe_float(ticker, 'h'),
+            'low': self.safe_float(ticker, 'l'),
+            'bid': self.safe_float(ticker, 'b'),
+            'bidVolume': self.safe_float(ticker, 'B'),
+            'ask': self.safe_float(ticker, 'a'),
+            'askVolume': self.safe_float(ticker, 'A'),
+            'vwap': self.safe_float(ticker, 'w'),
+            'open': self.safe_float(ticker, 'o'),
+            'close': last,
+            'last': last,
+            'previousClose': self.safe_float(ticker, 'x'),  # previous day close
+            'change': self.safe_float(ticker, 'p'),
+            'percentage': self.safe_float(ticker, 'P'),
+            'average': None,
+            'baseVolume': self.safe_float(ticker, 'v'),
+            'quoteVolume': self.safe_float(ticker, 'q'),
+            'info': ticker,
+        }
+
     def convert_into_ccxt_order(self, order):
         status = self.safe_value(order, 'X')
         if status is not None:
@@ -138,7 +166,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
 
             if self._TICKER_KEY in msg_stream_type:
                 if symbol_data.price_ticker_is_initialized():
-                    symbol_data.update_symbol_ticker(msg["data"])
+                    symbol_data.update_symbol_ticker(self.convert_into_ccxt_ticker(msg["data"]))
 
             elif self._KLINE_KEY in msg_stream_type:
                 time_frame = self._convert_time_frame(msg["data"]["k"]["i"])

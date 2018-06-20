@@ -1,10 +1,9 @@
-import random
-
 import ccxt
 
-from trading.exchanges.exchange_manager import ExchangeManager
-from config.cst import TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK
+from config.cst import TraderOrderType
 from tests.test_utils.config import load_test_config
+from tests.test_utils.order_util import fill_limit_or_stop_order, fill_market_order
+from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.order import BuyMarketOrder, OrderConstants, SellLimitOrder, BuyLimitOrder, SellMarketOrder, \
     StopLossOrder
 from trading.trader.portfolio import Portfolio
@@ -21,25 +20,6 @@ class TestPortfolio:
         portfolio_inst = Portfolio(config, trader_inst)
         trader_inst.stop_order_manager()
         return config, portfolio_inst, exchange_inst, trader_inst
-
-    @staticmethod
-    def fill_limit_or_stop_order(limit_or_stop_order, min_price, max_price):
-        last_prices = []
-        for i in range(0, SIMULATOR_LAST_PRICES_TO_CHECK):
-            last_prices.insert(i, {})
-            last_prices[i]["price"] = random.uniform(min_price, max_price)
-
-        limit_or_stop_order.last_prices = last_prices
-        limit_or_stop_order.update_order_status()
-
-    @staticmethod
-    def fill_market_order(market_order, price):
-        last_prices = [{
-            "price": price
-        }]
-
-        market_order.last_prices = last_prices
-        market_order.update_order_status()
 
     def test_load_portfolio(self):
         _, portfolio_inst, _, trader_inst = self.init_default()
@@ -124,7 +104,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 300
 
-        self.fill_limit_or_stop_order(limit_buy, 69, 71)
+        fill_limit_or_stop_order(limit_buy, 69, 71)
 
         portfolio_inst.update_portfolio(limit_buy)
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 20
@@ -145,7 +125,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 12
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 300
 
-        self.fill_market_order(market_sell, 80)
+        fill_market_order(market_sell, 80)
 
         # when filling market sell
         portfolio_inst.update_portfolio(market_sell)
@@ -165,7 +145,7 @@ class TestPortfolio:
                         3,
                         70)
 
-        self.fill_market_order(market_sell, 70)
+        fill_market_order(market_sell, 70)
 
         # Test sell order
         limit_sell = SellLimitOrder(trader_inst)
@@ -194,7 +174,7 @@ class TestPortfolio:
                       2,
                       50)
 
-        self.fill_limit_or_stop_order(limit_buy, 49, 51)
+        fill_limit_or_stop_order(limit_buy, 49, 51)
 
         # update portfolio with creations
         portfolio_inst.update_portfolio_available(market_sell, True)
@@ -312,7 +292,7 @@ class TestPortfolio:
                       4,
                       60)
 
-        self.fill_limit_or_stop_order(stop_loss, 59, 61)
+        fill_limit_or_stop_order(stop_loss, 59, 61)
 
         portfolio_inst.update_portfolio_available(stop_loss, True)
         portfolio_inst.update_portfolio_available(limit_sell, True)
@@ -414,10 +394,10 @@ class TestPortfolio:
         portfolio_inst.update_portfolio_available(limit_buy, False)
 
         # filling
-        self.fill_limit_or_stop_order(stop_loss_2, 9, 11)
-        self.fill_limit_or_stop_order(limit_sell, 89, 91)
-        self.fill_limit_or_stop_order(limit_sell_3, 19, 21)
-        self.fill_limit_or_stop_order(limit_buy_2, 49, 51)
+        fill_limit_or_stop_order(stop_loss_2, 9, 11)
+        fill_limit_or_stop_order(limit_sell, 89, 91)
+        fill_limit_or_stop_order(limit_sell_3, 19, 21)
+        fill_limit_or_stop_order(limit_buy_2, 49, 51)
 
         portfolio_inst.update_portfolio(stop_loss_2)
         portfolio_inst.update_portfolio(limit_sell)
@@ -583,15 +563,15 @@ class TestPortfolio:
         portfolio_inst.update_portfolio_available(limit_sell_4, False)
 
         # filling
-        self.fill_limit_or_stop_order(stop_loss_2, 9, 11)
-        self.fill_limit_or_stop_order(limit_sell, 89, 91)
-        self.fill_limit_or_stop_order(limit_sell_3, 19, 21)
-        self.fill_limit_or_stop_order(limit_buy_2, 49, 51)
-        self.fill_limit_or_stop_order(limit_sell_5, 9, 12)
-        self.fill_limit_or_stop_order(stop_loss_4, 44, 46)
-        self.fill_limit_or_stop_order(limit_buy_4, 40, 42)
-        self.fill_limit_or_stop_order(limit_buy_5, 0.2122426, 0.2122428)
-        self.fill_limit_or_stop_order(limit_buy_6, 429, 431)
+        fill_limit_or_stop_order(stop_loss_2, 9, 11)
+        fill_limit_or_stop_order(limit_sell, 89, 91)
+        fill_limit_or_stop_order(limit_sell_3, 19, 21)
+        fill_limit_or_stop_order(limit_buy_2, 49, 51)
+        fill_limit_or_stop_order(limit_sell_5, 9, 12)
+        fill_limit_or_stop_order(stop_loss_4, 44, 46)
+        fill_limit_or_stop_order(limit_buy_4, 40, 42)
+        fill_limit_or_stop_order(limit_buy_5, 0.2122426, 0.2122428)
+        fill_limit_or_stop_order(limit_buy_6, 429, 431)
 
         portfolio_inst.update_portfolio(stop_loss_2)
         portfolio_inst.update_portfolio(limit_buy_4)
@@ -626,7 +606,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("ETH", Portfolio.TOTAL) == 0
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
 
-        self.fill_market_order(market_buy, 7)
+        fill_market_order(market_buy, 7)
 
         portfolio_inst.update_portfolio(market_buy)
         assert portfolio_inst.get_currency_portfolio("ETH", Portfolio.AVAILABLE) == 100
@@ -649,7 +629,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("LTC", Portfolio.TOTAL) == 0
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
 
-        self.fill_market_order(market_buy, 0.0135222)
+        fill_market_order(market_buy, 0.0135222)
 
         portfolio_inst.update_portfolio(market_buy)
         assert portfolio_inst.get_currency_portfolio("LTC", Portfolio.AVAILABLE) == 100
