@@ -1,5 +1,6 @@
 import threading
 import logging
+import traceback
 from queue import Queue
 
 
@@ -9,6 +10,7 @@ class AsynchronousServer:
         self.is_computing = False
         self.queue = Queue()
         self.callback_method = callback_method
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def add_to_queue(self, *data):
         self.queue.put(data)
@@ -24,6 +26,6 @@ class AsynchronousServer:
             while not self.queue.empty():
                 self.callback_method(*self.queue.get())
         except Exception as e:
-            logging.getLogger(self.__class__.__name__).error("Error while processing queue: {0}".format(e))
+            self.logger.exception(e)
         finally:
             self.is_computing = False
