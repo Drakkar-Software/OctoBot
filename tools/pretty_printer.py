@@ -53,10 +53,11 @@ class PrettyPrinter:
             ).strftime('%d/%m/%y %H:%M'))
 
     @staticmethod
-    def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):
-        return "OctoBot ALERT : #{0}\n Symbol : #{1}\n Result : {2}\n Evaluation : {3}".format(
+    def cryptocurrency_alert(trading_mode, crypto_currency, symbol, result, final_eval):
+        return "OctoBot ALERT : #{0}\n Symbol : #{1}\n Mode : #{2}\n Result : {3}\n Evaluation : {4}".format(
             crypto_currency,
             symbol.replace("/", ""),
+            trading_mode,
             str(result).split(".")[1],
             final_eval)
 
