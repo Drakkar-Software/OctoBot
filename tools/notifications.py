@@ -111,7 +111,7 @@ class EvaluatorNotification(Notification):
         super().__init__(config)
         self.tweet_instance = None
 
-    def notify_state_changed(self, trading_mode, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
+    def notify_state_changed(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
         if self.gmail_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
             profitability, profitability_percent, _ = trader.get_trades_manager().get_profitability()
 
@@ -129,7 +129,6 @@ class EvaluatorNotification(Notification):
                     round(profitability_percent, 2)))
 
         alert_content = PrettyPrinter.cryptocurrency_alert(
-            trading_mode,
             crypto_currency_evaluator.crypto_currency,
             symbol,
             result,
