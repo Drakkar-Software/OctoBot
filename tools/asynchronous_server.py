@@ -26,6 +26,7 @@ class AsynchronousServer:
             while not self.queue.empty():
                 self.callback_method(*self.queue.get())
         except Exception as e:
+            self.logger.error("Error while processing queue")
             self.logger.exception(e)
         finally:
             self.is_computing = False
