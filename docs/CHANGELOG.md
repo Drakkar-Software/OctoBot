@@ -1,3 +1,22 @@
+Changelog for 0.1.2_3-beta
+====================
+*Released date : June 21 2018*
+
+# Concerned issues :
+    #232 [Performances] Add performance tests for evaluators
+    #233 [Tentacles tests] add tentacles testing framework
+    #234 [TentacleManager] harmonize packages, tentacles and modules naming
+    #235 [TentacleManager] add progress info
+    #250 [Trade creator] check market price orders in simulator
+    #251 [Tests] Improve tests coverage
+
+# New features :
+    - Improvements in Tentacle Manager
+
+# Bug fix :
+    - Fix market order in simulator mode
+    - Fix Rest exchange to support additional exchanges
+
 Changelog for 0.1.2_2-beta
 ====================
 *Released date : June 19 2018*

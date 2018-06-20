@@ -1,6 +1,5 @@
-import threading
 import logging
-import traceback
+import threading
 from queue import Queue
 
 
