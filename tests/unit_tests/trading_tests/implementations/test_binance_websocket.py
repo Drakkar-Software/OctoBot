@@ -246,8 +246,8 @@ class TestBinanceWebSocketClient:
         msg = self._ticker_message(symbol)
         binance_web_socket.all_currencies_prices_callback(msg)
 
-        assert symbol == symbol_data.symbol_ticker["s"]
-        assert symbol_data.symbol_ticker == msg["data"]
+        assert symbol == symbol_data.symbol_ticker["symbol"]
+        assert symbol_data.symbol_ticker["info"] == msg["data"]
 
     def test_close_and_restart_socket(self):
         _, binance_web_socket = self.init_default()
