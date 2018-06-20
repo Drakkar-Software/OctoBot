@@ -18,22 +18,23 @@ class SubPortfolio(Portfolio):
     # overwrite parent update_portfolio_balance
     def update_portfolio_balance(self):
         if self.is_enabled:
-            
             self.parent_portfolio.update_portfolio_balance()
-            
-            # get the current portfolio if percent is relative or if we can't use the origin portfolio
-            if self.is_relative or not self.trader.get_trades_manager().get_origin_portfolio():
-                balance = self.parent_portfolio.get_portfolio()
+            self.update_from_parent()
 
-            # the percent is applied to the origin portfolio (when not relative)
-            else:
-                balance = self.trader.get_trades_manager().get_origin_portfolio()
+    def update_from_parent(self):
+        # get the current portfolio if percent is relative or if we can't use the origin portfolio
+        if self.is_relative or not self.trader.get_trades_manager().get_origin_portfolio():
+            balance = self.parent_portfolio.get_portfolio()
 
-            # calculate for each currency the new quantity
-            for currency in balance:
-                self.portfolio[currency] = {
-                    Portfolio.AVAILABLE: balance[currency][Portfolio.AVAILABLE] * self.percent,
-                    Portfolio.TOTAL: balance[currency][Portfolio.TOTAL] * self.percent}
+        # the percent is applied to the origin portfolio (when not relative)
+        else:
+            balance = self.trader.get_trades_manager().get_origin_portfolio()
+
+        # calculate for each currency the new quantity
+        for currency in balance:
+            self.portfolio[currency] = {
+                Portfolio.AVAILABLE: balance[currency][Portfolio.AVAILABLE] * self.percent,
+                Portfolio.TOTAL: balance[currency][Portfolio.TOTAL] * self.percent}
 
     def get_parent_portfolio(self):
         return self.parent_portfolio
@@ -48,15 +49,13 @@ class SubPortfolio(Portfolio):
         self.is_relative = is_relative
 
     def update_portfolio(self, order):
-        super().update_portfolio(order)
         self.parent_portfolio.update_portfolio(order)
+        self.update_from_parent()
 
     def update_portfolio_available(self, order, is_new_order=False):
-        super().update_portfolio_available(order, is_new_order=is_new_order)
         self.parent_portfolio.update_portfolio_available(order, is_new_order=is_new_order)
+        self.update_from_parent()
 
     def reset_portfolio_available(self, reset_currency=None, reset_quantity=None):
-        super().reset_portfolio_available(reset_currency=reset_currency, reset_quantity=reset_quantity)
-
-        # TODO for parent
-        # self.parent_portfolio.reset_portfolio_available(reset_currency=reset_currency, reset_quantity=reset_quantity)
+        self.parent_portfolio.reset_portfolio_available(reset_currency=reset_currency, reset_quantity=reset_quantity)
+        self.update_from_parent()
