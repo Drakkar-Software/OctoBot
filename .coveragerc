@@ -5,7 +5,7 @@ omit =
     interfaces/*
     services/*
     tools/*
-    tests/*
+    evaluator/Dispatchers/*
     tentacles/*
     setup.py
     start.py
