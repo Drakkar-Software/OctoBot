@@ -89,11 +89,14 @@ class RedditDispatcher(AbstractDispatcher):
             except OAuthException as e:
                 self.logger.error("Error when receiving Reddit feed: '{0}' this may mean {1}"
                                   .format(e, "that reddit login info in config.json are wrong."))
+                self.logger.exception(e)
                 self.keep_running = False
             except ResponseException as e:
                 self.logger.error("Error when receiving Reddit feed: '{0}' this may mean {1}"
                                   .format(e, "that reddit configuration in config.json are wrong."))
+                self.logger.exception(e)
                 self.keep_running = False
             except Exception as e:
                 self.logger.error("Error when receiving Reddit feed: '{0}'".format(e))
+                self.logger.exception(e)
                 self.keep_running = False
