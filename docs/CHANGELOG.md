@@ -1,5 +1,19 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.2_4-beta
+====================
+*Released date : June 22 2018*
+
+# Concerned issues :
+    #256 Implement multi decider trading mode
+
+# New features :
+    - Multi-decider management for trading modes
+
+# Bug fix :
+    - Fix linux installer
+    - Fix Subportfolio
+
 Changelog for 0.1.2_3-beta
 ====================
 *Released date : June 21 2018*
