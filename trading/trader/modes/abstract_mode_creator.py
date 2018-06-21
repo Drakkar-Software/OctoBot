@@ -4,6 +4,7 @@ from abc import *
 from config.cst import *
 from config.cst import ExchangeConstantsMarketStatusColumns as Ecmsc
 from tools.symbol_util import split_symbol
+from trading.trader.sub_portfolio import SubPortfolio
 
 
 class AbstractTradingModeCreator:
@@ -30,8 +31,8 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     def get_additional_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
-        remaining_portfolio_amount = current_symbol_holding-quantity
-        remaining_max_total_order_price = remaining_portfolio_amount*price
+        remaining_portfolio_amount = current_symbol_holding - quantity
+        remaining_max_total_order_price = remaining_portfolio_amount * price
 
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
 
@@ -91,7 +92,8 @@ class AbstractTradingModeCreator:
             nb_orders_according_to_cost = total_order_price / max_cost
             nb_orders_according_to_quantity = valid_quantity / max_quantity
             if nb_orders_according_to_cost > nb_orders_according_to_quantity:
-                return AbstractTradingModeCreator._adapt_order_quantity_because_price(total_order_price, max_cost, price,
+                return AbstractTradingModeCreator._adapt_order_quantity_because_price(total_order_price, max_cost,
+                                                                                      price,
                                                                                       symbol_market)
             else:
                 return AbstractTradingModeCreator._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
@@ -122,6 +124,28 @@ class AbstractTradingModeCreator:
         # other cases like neutral state or unfulfilled previous conditions
         return False
 
+    @staticmethod
+    def get_pre_order_data(exchange, symbol, portfolio):
+        last_prices = exchange.get_recent_trades(symbol)
+        reference_sum = 0
+
+        for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]:
+            reference_sum += float(last_price["price"])
+
+        reference = reference_sum / ORDER_CREATION_LAST_TRADES_TO_USE
+
+        currency, market = split_symbol(symbol)
+
+        current_symbol_holding = portfolio.get_currency_portfolio(currency)
+        current_market_quantity = portfolio.get_currency_portfolio(market)
+
+        market_quantity = current_market_quantity / reference
+
+        price = reference
+        symbol_market = exchange.get_market_status(symbol)
+
+        return current_symbol_holding, current_market_quantity, market_quantity, price, symbol_market
+
     @abstractmethod
     def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
         raise NotImplementedError("create_new_order not implemented")
@@ -135,7 +159,7 @@ class AbstractTradingModeCreator:
     @staticmethod
     def _trunc_with_n_decimal_digits(value, digits):
         # force exact representation
-        return float("{0:.{1}f}".format(math.trunc(value*10**digits)/(10**digits), digits))
+        return float("{0:.{1}f}".format(math.trunc(value * 10 ** digits) / (10 ** digits), digits))
 
     @staticmethod
     def _get_value_or_default(dictionary, key, default=math.nan):
@@ -155,9 +179,9 @@ class AbstractTradingModeCreator:
             valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, rest_order_quantity)
             orders.append((valid_last_order_quantity, price))
 
-        other_orders_quantity = (after_rest_quantity_to_adapt + max_value)/(nb_full_orders+1)
+        other_orders_quantity = (after_rest_quantity_to_adapt + max_value) / (nb_full_orders + 1)
         valid_other_orders_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, other_orders_quantity)
-        orders += [(valid_other_orders_quantity, price)]*int(nb_full_orders)
+        orders += [(valid_other_orders_quantity, price)] * int(nb_full_orders)
         return orders
 
     @staticmethod
@@ -166,10 +190,48 @@ class AbstractTradingModeCreator:
         nb_full_orders = limiting_value // max_value
         rest_order_cost = limiting_value % max_value
         if rest_order_cost > 0:
-            valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, rest_order_cost / price)
+            valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market,
+                                                                                   rest_order_cost / price)
             orders.append((valid_last_order_quantity, price))
 
         other_orders_quantity = max_value / price
         valid_other_orders_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, other_orders_quantity)
         orders += [(valid_other_orders_quantity, price)] * int(nb_full_orders)
         return orders
+
+
+class AbstractTradingModeCreatorWithBot(AbstractTradingModeCreator):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, trading_mode, trader, sub_portfolio_percent):
+        super().__init__(trading_mode)
+        self.trader = trader
+        self.parent_portfolio = self.trader.get_portfolio()
+        self.sub_portfolio = SubPortfolio(self.trading_mode.config,
+                                          self.trader,
+                                          self.parent_portfolio,
+                                          sub_portfolio_percent,
+                                          is_relative=True)
+
+    @abstractmethod
+    def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
+        raise NotImplementedError("create_new_order not implemented")
+
+    def get_trader(self):
+        return self.trader
+
+    def get_parent_portfolio(self):
+        return self.parent_portfolio
+
+    def get_sub_portfolio(self):
+        return self.sub_portfolio
+
+    # Can be overwritten
+    def can_create_order(self, symbol, exchange, state, portfolio):
+        return super().can_create_order(symbol, exchange, state, self.get_portfolio())
+
+    # force portfolio update
+    def get_portfolio(self, force_update=False):
+        if force_update:
+            self.sub_portfolio.update_from_parent()
+        return self.sub_portfolio

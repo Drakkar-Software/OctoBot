@@ -22,7 +22,8 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('-s', '--simulate', help='start the OctoBot with the trader simulator',
                         action='store_true')
-    parser.add_argument('-d', '--data_collector', help='start the data collector process to create data for backtesting',
+    parser.add_argument('-d', '--data_collector',
+                        help='start the data collector process to create data for backtesting',
                         action='store_true')
     parser.add_argument('-u', '--update', help='update OctoBot with the latest version available',
                         action='store_true')
@@ -38,6 +39,11 @@ if __name__ == '__main__':
                                                  'install specific tentacle. Tentacles Manager allows to install, '
                                                  'update, uninstall and reset tentacles. Use: -p help to get the '
                                                  'Tentacle Manager help.',
+                        nargs='+')
+
+    parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c strategy test '
+                                                'to create a new strategy tentacles. Use: -c help to get the '
+                                                'Tentacle Creator help.',
                         nargs='+')
 
     args = parser.parse_args()
@@ -61,6 +67,9 @@ if __name__ == '__main__':
     if args.packager:
         Commands.package_manager(config, args.packager)
 
+    elif args.creator:
+        Commands.tentacle_creator(config, args.creator)
+
     elif args.update:
         Commands.update(logger)
 
@@ -77,6 +86,7 @@ if __name__ == '__main__':
         bot = OctoBot(config)
 
         import interfaces
+
         interfaces.__init__(bot, config)
 
         if args.data_collector:
@@ -86,6 +96,7 @@ if __name__ == '__main__':
         else:
             if args.backtesting:
                 import backtesting
+
                 backtesting.__init__(bot)
 
                 config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True

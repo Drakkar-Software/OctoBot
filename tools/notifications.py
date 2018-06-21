@@ -111,7 +111,16 @@ class EvaluatorNotification(Notification):
         super().__init__(config)
         self.tweet_instance = None
 
-    def notify_state_changed(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
+    def notify_state_changed(self, notify_content):
+        if self.twitter_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
+            self.tweet_instance = self.twitter_notification_factory(notify_content)
+
+        if self.telegram_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
+            self.telegram_notification_factory(notify_content)
+
+        return self
+
+    def notify_alert(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
         if self.gmail_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
             profitability, profitability_percent, _ = trader.get_trades_manager().get_profitability()
 
