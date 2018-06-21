@@ -85,7 +85,9 @@ class TwitterDispatcher(AbstractDispatcher):
                 self._start_listener()
             except twitter.error.TwitterError as e:
                 self.logger.error("Error when receiving Twitter feed: {0} ({1})".format(e.message, e))
+                self.logger.exception(e)
                 self.keep_running = False
             except Exception as e:
                 self.logger.error("Error when receiving Twitter feed: {0} ({1})".format(e.message, e))
+                self.logger.exception(e)
                 self.keep_running = False
