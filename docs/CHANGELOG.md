@@ -1,3 +1,6 @@
+### Global Information
+*It is strongly advised to perform an update of your tentacles after updating OctoBot.*
+
 Changelog for 0.1.2_3-beta
 ====================
 *Released date : June 21 2018*
