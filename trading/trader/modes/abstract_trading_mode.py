@@ -41,7 +41,7 @@ class AbstractTradingMode:
         all_strategy_classes = [s.__class__ for s in all_strategy_instances]
         for required_class in self.get_required_strategies():
             if required_class in all_strategy_classes:
-                self.strategy_instances_by_classes[required_class] =\
+                self.strategy_instances_by_classes[required_class] = \
                     all_strategy_instances[all_strategy_classes.index(required_class)]
             else:
                 subclass = AdvancedManager.get_class(self.config, required_class)
