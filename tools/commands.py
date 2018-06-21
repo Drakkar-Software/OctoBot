@@ -3,6 +3,7 @@ import subprocess
 
 from backtesting.collector.data_collector import DataCollector
 from config.cst import ORIGIN_URL
+from tools.tentacle_creation.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
 
 
@@ -43,6 +44,15 @@ class Commands:
         try:
             package_manager_inst = TentacleManager(config)
             package_manager_inst.parse_commands(commands)
+        except Exception as e:
+            if not catch:
+                raise e
+
+    @staticmethod
+    def tentacle_creator(config, commands, catch=False):
+        try:
+            tentacle_creator_inst = TentacleCreator(config)
+            tentacle_creator_inst.parse_commands(commands)
         except Exception as e:
             if not catch:
                 raise e
