@@ -67,8 +67,12 @@ class AbstractTradingModeDecider(AsynchronousServer):
         # reset previous note
         self.final_eval = INIT_EVAL_NOTE
 
-        self.set_final_eval()
-        self.create_state()
+        try:
+            self.set_final_eval()
+            self.create_state()
+        except Exception as e:
+            self.logger.error("Error when finalizing: {0}".format(e))
+            self.logger.exception(e)
 
     def stop(self):
         self.keep_running = False
@@ -96,15 +100,15 @@ class AbstractTradingModeDecider(AsynchronousServer):
             with trader.get_portfolio() as pf:
                 order_creator = self.trading_mode.get_creator(creator_key)
                 if order_creator.can_create_order(self.symbol, self.exchange, self.state, pf):
-                    self._push_order_notification_if_possible(
-                        order_creator.create_new_order(
-                            self.final_eval,
-                            self.symbol,
-                            self.exchange,
-                            trader,
-                            pf,
-                            self.state),
-                        evaluator_notification)
+                    new_orders = order_creator.create_new_order(
+                        self.final_eval,
+                        self.symbol,
+                        self.exchange,
+                        trader,
+                        pf,
+                        self.state)
+                    if evaluator_notification is not None:
+                        self._push_order_notification_if_possible(new_orders, evaluator_notification)
 
     @staticmethod
     def _push_order_notification_if_possible(order_list, notification):
