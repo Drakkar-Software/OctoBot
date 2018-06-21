@@ -29,14 +29,14 @@ class AbstractTradingModeDecider(AsynchronousServer):
     # create real and/or simulating orders in trader instances
     def create_final_state_orders(self, evaluator_notification, creator_key):
         # simulated trader
-        self._create_order_if_possible(evaluator_notification,
-                                       self.symbol_evaluator.get_trader_simulator(self.exchange),
-                                       creator_key)
+        self.create_order_if_possible(evaluator_notification,
+                                      self.symbol_evaluator.get_trader_simulator(self.exchange),
+                                      creator_key)
 
         # real trader
-        self._create_order_if_possible(evaluator_notification,
-                                       self.symbol_evaluator.get_trader(self.exchange),
-                                       creator_key)
+        self.create_order_if_possible(evaluator_notification,
+                                      self.symbol_evaluator.get_trader(self.exchange),
+                                      creator_key)
 
     def cancel_symbol_open_orders(self):
         cancel_loaded_orders = self.get_should_cancel_loaded_orders()
@@ -67,8 +67,12 @@ class AbstractTradingModeDecider(AsynchronousServer):
         # reset previous note
         self.final_eval = INIT_EVAL_NOTE
 
-        self.set_final_eval()
-        self.create_state()
+        try:
+            self.set_final_eval()
+            self.create_state()
+        except Exception as e:
+            self.logger.error("Error when finalizing: {0}".format(e))
+            self.logger.exception(e)
 
     def stop(self):
         self.keep_running = False
@@ -91,23 +95,51 @@ class AbstractTradingModeDecider(AsynchronousServer):
         raise NotImplementedError("_create_state not implemented")
 
     # for each trader call the creator to check if order creation is possible and create it
-    def _create_order_if_possible(self, evaluator_notification, trader, creator_key):
+    def create_order_if_possible(self, evaluator_notification, trader, creator_key):
         if trader.is_enabled():
             with trader.get_portfolio() as pf:
                 order_creator = self.trading_mode.get_creator(creator_key)
                 if order_creator.can_create_order(self.symbol, self.exchange, self.state, pf):
-                    self._push_order_notification_if_possible(
-                        order_creator.create_new_order(
-                            self.final_eval,
-                            self.symbol,
-                            self.exchange,
-                            trader,
-                            pf,
-                            self.state),
-                        evaluator_notification)
+                    new_orders = order_creator.create_new_order(
+                        self.final_eval,
+                        self.symbol,
+                        self.exchange,
+                        trader,
+                        pf,
+                        self.state)
+                    if evaluator_notification is not None:
+                        self._push_order_notification_if_possible(new_orders, evaluator_notification)
 
     @staticmethod
     def _push_order_notification_if_possible(order_list, notification):
         if order_list:
             for order in order_list:
                 order.get_order_notifier().notify(notification)
+
+
+class AbstractTradingModeDeciderWithBot(AbstractTradingModeDecider):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, trading_mode, symbol_evaluator, exchange, trader, creators):
+        super().__init__(trading_mode, symbol_evaluator, exchange)
+        self.trader = trader
+        self.creators = creators
+
+    @classmethod
+    @abstractmethod
+    def get_should_cancel_loaded_orders(cls):
+        raise NotImplementedError("get_should_cancel_loaded_orders not implemented")
+
+    @abstractmethod
+    def set_final_eval(self):
+        raise NotImplementedError("_set_final_eval not implemented")
+
+    @abstractmethod
+    def create_state(self):
+        raise NotImplementedError("_create_state not implemented")
+
+    def get_creators(self):
+        return self.creators
+
+    def get_trader(self):
+        return self.trader
