@@ -27,18 +27,16 @@ class AbstractTradingModeDecider(AsynchronousServer):
         self.queue = Queue()
 
     # create real and/or simulating orders in trader instances
-    def create_final_state_orders(self, evaluator_notification, creator_key, specific_portfolio=None):
+    def create_final_state_orders(self, evaluator_notification, creator_key):
         # simulated trader
         self._create_order_if_possible(evaluator_notification,
                                        self.symbol_evaluator.get_trader_simulator(self.exchange),
-                                       creator_key,
-                                       specific_portfolio=specific_portfolio)
+                                       creator_key)
 
         # real trader
         self._create_order_if_possible(evaluator_notification,
                                        self.symbol_evaluator.get_trader(self.exchange),
-                                       creator_key,
-                                       specific_portfolio=specific_portfolio)
+                                       creator_key)
 
     def cancel_symbol_open_orders(self):
         cancel_loaded_orders = self.get_should_cancel_loaded_orders()
@@ -97,10 +95,9 @@ class AbstractTradingModeDecider(AsynchronousServer):
         raise NotImplementedError("_create_state not implemented")
 
     # for each trader call the creator to check if order creation is possible and create it
-    def _create_order_if_possible(self, evaluator_notification, trader, creator_key, specific_portfolio=None):
+    def _create_order_if_possible(self, evaluator_notification, trader, creator_key):
         if trader.is_enabled():
-            portfolio = specific_portfolio if specific_portfolio is not None else trader.get_portfolio()
-            with portfolio as pf:
+            with trader.get_portfolio() as pf:
                 order_creator = self.trading_mode.get_creator(creator_key)
                 if order_creator.can_create_order(self.symbol, self.exchange, self.state, pf):
                     new_orders = order_creator.create_new_order(
