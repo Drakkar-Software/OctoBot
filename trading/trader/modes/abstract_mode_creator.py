@@ -122,6 +122,28 @@ class AbstractTradingModeCreator:
         # other cases like neutral state or unfulfilled previous conditions
         return False
 
+    @staticmethod
+    def get_pre_order_data(exchange, symbol, portfolio):
+        last_prices = exchange.get_recent_trades(symbol)
+        reference_sum = 0
+
+        for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]:
+            reference_sum += float(last_price["price"])
+
+        reference = reference_sum / ORDER_CREATION_LAST_TRADES_TO_USE
+
+        currency, market = split_symbol(symbol)
+
+        current_symbol_holding = portfolio.get_currency_portfolio(currency)
+        current_market_quantity = portfolio.get_currency_portfolio(market)
+
+        market_quantity = current_market_quantity / reference
+
+        price = reference
+        symbol_market = exchange.get_market_status(symbol)
+
+        return current_symbol_holding, current_market_quantity, market_quantity, price, symbol_market
+
     @abstractmethod
     def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
         raise NotImplementedError("create_new_order not implemented")
