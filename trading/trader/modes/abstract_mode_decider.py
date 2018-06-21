@@ -115,3 +115,31 @@ class AbstractTradingModeDecider(AsynchronousServer):
         if order_list:
             for order in order_list:
                 order.get_order_notifier().notify(notification)
+
+
+class AbstractTradingModeDeciderWithBot(AbstractTradingModeDecider):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, trading_mode, symbol_evaluator, exchange, trader, creators):
+        super().__init__(trading_mode, symbol_evaluator, exchange)
+        self.trader = trader
+        self.creators = creators
+
+    @classmethod
+    @abstractmethod
+    def get_should_cancel_loaded_orders(cls):
+        raise NotImplementedError("get_should_cancel_loaded_orders not implemented")
+
+    @abstractmethod
+    def set_final_eval(self):
+        raise NotImplementedError("_set_final_eval not implemented")
+
+    @abstractmethod
+    def create_state(self):
+        raise NotImplementedError("_create_state not implemented")
+
+    def get_creators(self):
+        return self.creators
+
+    def get_trader(self):
+        return self.trader
