@@ -73,7 +73,7 @@ class TestSubPortfolio:
         # test buy order creation
         sub_portfolio_inst.update_portfolio_available(market_buy, True)
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10 * self.DEFAULT_PERCENT
-        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == (1000-700)*self.DEFAULT_PERCENT
+        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000*self.DEFAULT_PERCENT-700
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10 * self.DEFAULT_PERCENT
         assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000 * self.DEFAULT_PERCENT
         # test parent
@@ -106,7 +106,7 @@ class TestSubPortfolio:
         # test sub
         # test sell order creation
         sub_portfolio_inst.update_portfolio_available(limit_sell, True)
-        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == (10-8) * self.DEFAULT_PERCENT
+        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10 * self.DEFAULT_PERCENT - 8
         assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000 * self.DEFAULT_PERCENT
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10 * self.DEFAULT_PERCENT
         assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000 * self.DEFAULT_PERCENT
@@ -143,7 +143,7 @@ class TestSubPortfolio:
         # update portfolio with creations
         sub_portfolio_inst.update_portfolio_available(limit_buy, True)
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10 * self.DEFAULT_PERCENT
-        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == (1000-700)*self.DEFAULT_PERCENT
+        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000*self.DEFAULT_PERCENT - 700
 
         # test parent
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
@@ -152,10 +152,10 @@ class TestSubPortfolio:
         fill_limit_or_stop_order(limit_buy, 69, 71)
 
         sub_portfolio_inst.update_portfolio(limit_buy)
-        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == (10 * self.DEFAULT_PERCENT)*2
-        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == (1000-700)*self.DEFAULT_PERCENT
-        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == (10 * self.DEFAULT_PERCENT)*2
-        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == (1000-700) * self.DEFAULT_PERCENT
+        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == (10 * self.DEFAULT_PERCENT)+10
+        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000*self.DEFAULT_PERCENT-700
+        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == (10 * self.DEFAULT_PERCENT) + 10
+        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000 * self.DEFAULT_PERCENT - 700
 
         # test parent
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 20
@@ -173,8 +173,8 @@ class TestSubPortfolio:
 
         # update portfolio with creations
         sub_portfolio_inst.update_portfolio_available(market_sell, True)
-        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == ((10*2)-8)*self.DEFAULT_PERCENT
-        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == (1000-700)*self.DEFAULT_PERCENT
+        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10*self.DEFAULT_PERCENT + 2
+        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000*self.DEFAULT_PERCENT-700
 
         # test parent
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 12
@@ -184,10 +184,10 @@ class TestSubPortfolio:
 
         # when filling market sell
         sub_portfolio_inst.update_portfolio(market_sell)
-        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == ((10*2)-8)*self.DEFAULT_PERCENT
-        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == (300+8*80)*self.DEFAULT_PERCENT
-        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == ((10*2)-8)*self.DEFAULT_PERCENT
-        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == (300+8*80)*self.DEFAULT_PERCENT
+        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10*self.DEFAULT_PERCENT + 2
+        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000*self.DEFAULT_PERCENT-60
+        assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10*self.DEFAULT_PERCENT + 2
+        assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000*self.DEFAULT_PERCENT-60
 
         # test parent
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 12

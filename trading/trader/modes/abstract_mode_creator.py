@@ -231,6 +231,7 @@ class AbstractTradingModeCreatorWithBot(AbstractTradingModeCreator):
         return super().can_create_order(symbol, exchange, state, self.get_portfolio())
 
     # force portfolio update
-    def get_portfolio(self):
-        self.sub_portfolio.update_from_parent()
+    def get_portfolio(self, force_update=False):
+        if force_update:
+            self.sub_portfolio.update_from_parent()
         return self.sub_portfolio
