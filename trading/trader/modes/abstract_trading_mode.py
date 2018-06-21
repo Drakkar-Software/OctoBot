@@ -13,9 +13,10 @@ class AbstractTradingMode:
     def __init__(self, config, symbol_evaluator, exchange):
         self.config = config
 
-        self.decider = None
         self.trading_config = None
         self.creators = {}
+        self.deciders = {}
+        self.deciders_without_keys = []
         self.strategy_instances_by_classes = {}
         self._init_strategies_instances(symbol_evaluator.get_strategies_eval_list(exchange))
 
@@ -23,9 +24,6 @@ class AbstractTradingMode:
     @abstractmethod
     def get_required_strategies():
         raise NotImplementedError("get_required_strategies not implemented")
-
-    def set_decider(self, decider):
-        self.decider = decider
 
     @classmethod
     def get_name(cls):
@@ -70,6 +68,20 @@ class AbstractTradingMode:
     def set_default_config(self):
         pass
 
+    def add_decider(self, decider, decider_key=None):
+        if not decider_key:
+            decider_key = decider.__class__.__name__
+            if decider_key in self.creators:
+                to_add_id = 2
+                proposed_decider_key = decider_key + str(to_add_id)
+                while proposed_decider_key in self.deciders:
+                    to_add_id += 1
+                    proposed_decider_key = decider_key + str(to_add_id)
+                decider_key = proposed_decider_key
+        self.deciders[decider_key] = decider
+        self.deciders_without_keys.append(decider)
+        return decider_key
+
     def add_creator(self, creator, creator_key=None):
         if not creator_key:
             creator_key = creator.__class__.__name__
@@ -81,15 +93,28 @@ class AbstractTradingMode:
                     proposed_creator_key = creator_key + str(to_add_id)
                 creator_key = proposed_creator_key
         self.creators[creator_key] = creator
+        return creator_key
 
     def get_creator(self, creator_key):
         return self.creators[creator_key]
 
-    def get_only_creator_key(self):
-        return next(iter(self.creators.keys()))
-
     def get_creators(self):
         return self.creators
 
-    def get_decider(self):
-        return self.decider
+    def get_only_creator_key(self):
+        return next(iter(self.creators.keys()))
+
+    def get_only_decider_key(self, with_keys=False):
+        if with_keys:
+            return next(iter(self.deciders.keys()))
+        else:
+            return self.deciders_without_keys[0]
+
+    def get_decider(self, decider_key):
+        return self.deciders[decider_key]
+
+    def get_deciders(self, with_keys=False):
+        if with_keys:
+            return self.deciders
+        else:
+            return self.deciders_without_keys

@@ -156,7 +156,8 @@ class SymbolEvaluator:
             self._check_finalize(exchange)
 
         if self.finalize_enabled_list[exchange.get_name()]:
-            self.trading_mode_instances[exchange.get_name()].get_decider().add_to_queue()
+            for decider in self.trading_mode_instances[exchange.get_name()].get_deciders():
+                decider.add_to_queue()
 
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
