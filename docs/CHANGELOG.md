@@ -1,5 +1,17 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.3-beta
+====================
+*Released date : June 23 2018*
+
+# Concerned issues :
+    #251 [Tests] Improve tests coverage
+    #254 [Tool] Tentacle creation tool
+
+# New features :
+    - Tentacle creation tool
+    - High Frequency trading basics [see public tentacle](https://github.com/Drakkar-Software/OctoBot-Tentacles/issues/2)
+
 Changelog for 0.1.2_4-beta
 ====================
 *Released date : June 22 2018*
