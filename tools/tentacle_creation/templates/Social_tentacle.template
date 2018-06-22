@@ -1,0 +1,22 @@
+from config.cst import CONFIG_REFRESH_RATE
+from evaluator.Social.social_evaluator import NewsSocialEvaluator
+
+
+class {{ big_name }}NewsEvaluator(NewsSocialEvaluator):
+    def __init__(self):
+        super().__init__()
+        self.is_threaded = False
+
+    def get_data(self):
+        pass
+
+    def eval_impl(self):
+        self.notify_evaluator_thread_managers(self.__class__.__name__)
+
+    def run(self):
+        pass
+
+    def set_default_config(self):
+        self.social_config = {
+            CONFIG_REFRESH_RATE: 2
+        }
