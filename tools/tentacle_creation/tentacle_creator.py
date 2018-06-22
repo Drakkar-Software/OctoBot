@@ -1,31 +1,60 @@
 import logging
+import os
 
-from config.cst import TENTACLE_TYPES, TENTACLES_PATH
+from jinja2.nativetypes import NativeEnvironment
+
+from config.cst import TENTACLES_PATH, TENTACLE_CREATOR_PATH, TENTACLE_TEMPLATE_PATH, TOOLS_PATH, \
+    TENTACLE_TEMPLATE_DESCRIPTION, TENTACLE_TEMPLATE_EXT, TENTACLE_TEMPLATE_PRE_EXT, TENTACLE_PARENTS, TENTACLE_SONS, \
+    EVALUATOR_ADVANCED_FOLDER
 
 
 class TentacleCreator:
     def __init__(self, config):
         self.config = config
+        self.templates = {}
         self.logger = logging.getLogger(self.__class__.__name__)
 
+    @staticmethod
+    def get_template_path(name):
+        return "{0}/{1}/{2}/{3}{4}{5}".format(TOOLS_PATH,
+                                              TENTACLE_CREATOR_PATH,
+                                              TENTACLE_TEMPLATE_PATH,
+                                              name,
+                                              TENTACLE_TEMPLATE_PRE_EXT,
+                                              TENTACLE_TEMPLATE_EXT)
+
+    def get_templates(self):
+        return self.templates
+
+    def load_templates(self):
+        self.templates["Description"] = open(self.get_template_path(TENTACLE_TEMPLATE_DESCRIPTION), "r").read()
+        for tentacle_type in TENTACLE_SONS:
+            try:
+                self.templates[tentacle_type] = open(self.get_template_path(tentacle_type), "r").read()
+            except FileNotFoundError:
+                pass
+
     def parse_commands(self, commands):
-        command_help = "- strategy: Create a new strategy tentacle"
+        command_help = ""
+        for tentacle_type in TENTACLE_PARENTS:
+            command_help += "- {0}: Create a new {0} tentacle\n".format(tentacle_type)
 
         if commands:
             if commands[0] == "help":
-                self.logger.info("Welcome in Tentacle Manager, commands are:\n{0}".format(command_help))
+                self.logger.info("Welcome in Tentacle Creator, commands are:\n{0}".format(command_help))
             else:
-                self.logger.error("TENTACLE CREATOR IS IN DEVELOPMENT")
-                # for command in commands:
-                #     self.create_tentacle(command)
+                self.load_templates()
+                self.logger.warning("TENTACLE CREATOR IS IN DEVELOPMENT")
+                for command in commands:
+                    self.create_tentacle(command)
         else:
             arguments_help = "-c: activates the tentacle creator."
             self.logger.error("Invalid arguments, arguments are: {0}".format(arguments_help))
 
     def create_tentacle(self, tentacle_type):
-        if tentacle_type in TENTACLE_TYPES:
+        if tentacle_type in TENTACLE_PARENTS:
             try:
-                new_tentacle = CreatedTentacle(self.config, tentacle_type)
+                new_tentacle = CreatedTentacle(self.config, tentacle_type, self)
                 new_tentacle.ask_description()
                 new_tentacle.create_file()
                 self.logger.info("{0} tentacle successfully created in {1}".format(new_tentacle.get_name(),
@@ -38,45 +67,52 @@ class TentacleCreator:
 
 class CreatedTentacle:
     DEFAULT_TENTACLE_VERSION = "1.0.0"
-    TENTACLE_DESCRIPTION_SEPARATOR = '"""'
 
-    def __init__(self, config, tentacle_type):
+    def __init__(self, config, tentacle_type, tentacle_creator):
         self.config = config
+        self.tentacle_creator = tentacle_creator
 
-        self.t_type = "#TODO"
-        self.subtype = tentacle_type
+        self.t_type = tentacle_type
+        self.subtype = ""
         self.name = ""
         self.version = self.DEFAULT_TENTACLE_VERSION
         self.requirements = []
         self.tests = []
 
-    def get_path(self):
-        return "{0}/{1}/{2}/{3}.py".format(TENTACLES_PATH, self.t_type, self.subtype, self.name)
+        self.logger = logging.getLogger(self.__class__.__name__)
 
-    def get_file_description(self):
-        return 'OctoBot Tentacle \n\
-                $tentacle_description: { \n\
-                    "name": "{0}", \n\
-                    "type": "{1}", \n\
-                    "subtype": "{2}", \n\
-                    "version": "{3}", \n\
-                    "requirements": {4}, \n\
-                    "tests": {5} \n\
-                }'.format(self.name,
-                          self.t_type,
-                          self.subtype,
-                          self.version,
-                          self.requirements,
-                          self.tests)
+    def get_path(self):
+        return "{0}/{1}/{2}/{3}/{4}.py".format(TENTACLES_PATH, self.t_type, self.subtype,
+                                               EVALUATOR_ADVANCED_FOLDER, self.name)
 
     def get_name(self):
         return self.name
 
     def ask_description(self):
-        self.name = input("Enter your new {0} tentacle name".format(self.subtype))
+        self.name = input("Enter your new {0} tentacle name : ".format(self.t_type))
+        while self.subtype == "":
+            new_subtype = input("Choose your tentacle type in {} : ".format([t for t in TENTACLE_SONS.keys()]))
+            if new_subtype in TENTACLE_SONS:
+                self.subtype = new_subtype
+            else:
+                self.logger.warning("Invalid tentacle type")
 
     def create_file(self):
-        with open(self.get_path()) as tentacle_file:
-            tentacle_file.write(self.TENTACLE_DESCRIPTION_SEPARATOR)
-            tentacle_file.write(self.get_file_description())
-            tentacle_file.write(self.TENTACLE_DESCRIPTION_SEPARATOR)
+        try:
+            template = NativeEnvironment().from_string(self.tentacle_creator.get_templates()[self.subtype])
+            if not os.path.isfile(self.get_path()):
+                with open(self.get_path(), "w") as tentacle_file:
+                    tentacle_file.write(self.tentacle_creator.get_templates()["Description"])
+                    tentacle_file.write(template.render(name=self.name,
+                                                        big_name=self.name.title(),
+                                                        t_type=self.t_type,
+                                                        subtype=self.subtype,
+                                                        version=self.version,
+                                                        requirements=self.requirements,
+                                                        tests=self.tests))
+
+                # TODO add __init__.py management
+            else:
+                raise Exception("A tentacle with this name already exists")
+        except Exception as e:
+            raise e

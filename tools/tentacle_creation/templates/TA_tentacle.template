@@ -1,0 +1,9 @@
+from evaluator.TA.TA_evaluator import MomentumEvaluator
+
+
+class {{ big_name }}MomentumEvaluator(MomentumEvaluator):
+    def __init__(self):
+        super().__init__()
+
+    def eval_impl(self):
+        pass
