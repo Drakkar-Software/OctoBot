@@ -186,11 +186,11 @@ TENTACLE_TEMPLATE_PRE_EXT = "_tentacle"
 TENTACLE_TEMPLATE_EXT = ".template"
 
 TENTACLE_SONS = {"Social": TENTACLES_EVALUATOR_SOCIAL_PATH,
-                  "RealTime": TENTACLES_EVALUATOR_REALTIME_PATH,
-                  "Util": TENTACLES_EVALUATOR_UTIL_PATH,
-                  "TA": TENTACLES_EVALUATOR_TA_PATH,
-                  "Strategies": TENTACLES_EVALUATOR_STRATEGIES_PATH,
-                  "Mode": TENTACLES_TRADING_MODE_PATH}
+                 "RealTime": TENTACLES_EVALUATOR_REALTIME_PATH,
+                 "Util": TENTACLES_EVALUATOR_UTIL_PATH,
+                 "TA": TENTACLES_EVALUATOR_TA_PATH,
+                 "Strategies": TENTACLES_EVALUATOR_STRATEGIES_PATH,
+                 "Mode": TENTACLES_TRADING_MODE_PATH}
 
 TENTACLE_PARENTS = {
     "Evaluator": TENTACLES_EVALUATOR_PATH,
