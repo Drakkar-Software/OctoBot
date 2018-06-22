@@ -8,7 +8,7 @@ python-binance
 tulipy
 ccxt
 pandas
-
+jinja2
 colorlog
 Python-Twitter
 psutil
