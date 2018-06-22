@@ -1,10 +1,10 @@
 from enum import Enum
 
 SHORT_VERSION = "0.1.3"
-REV_VERSION = "0"
+MINOR_VERSION = "0"
 VERSION_DEV_PHASE = "beta"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
-LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, REV_VERSION, VERSION_DEV_PHASE)
+LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, MINOR_VERSION, VERSION_DEV_PHASE)
 
 ORIGIN_URL = "https://github.com/Drakkar-Software/OctoBot.git"
 
