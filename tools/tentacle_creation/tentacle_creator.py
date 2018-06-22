@@ -41,10 +41,10 @@ class TentacleCreator:
 
         if commands:
             if commands[0] == "help":
-                self.logger.info("Welcome in Tentacle Manager, commands are:\n{0}".format(command_help))
+                self.logger.info("Welcome in Tentacle Creator, commands are:\n{0}".format(command_help))
             else:
                 self.load_templates()
-                # self.logger.error("TENTACLE CREATOR IS IN DEVELOPMENT")
+                self.logger.warning("TENTACLE CREATOR IS IN DEVELOPMENT")
                 for command in commands:
                     self.create_tentacle(command)
         else:
