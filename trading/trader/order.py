@@ -40,6 +40,7 @@ class Order:
         self.order_profitability = None
         self.linked_to = None
         self.is_from_this_octobot = True
+        self.linked_portfolio = None
 
         self.order_notifier = None
 
@@ -63,7 +64,8 @@ class Order:
             order_id=None,
             quantity_filled=None,
             timestamp=None,
-            linked_to=None):
+            linked_to=None,
+            linked_portfolio=None):
 
         self.order_id = order_id
         self.origin_price = price
@@ -77,6 +79,7 @@ class Order:
         self.currency, self.market = split_symbol(symbol)
         self.filled_quantity = quantity_filled
         self.linked_to = linked_to
+        self.linked_portfolio = linked_portfolio
 
         if timestamp is None:
             self.creation_time = time.time()
@@ -192,6 +195,9 @@ class Order:
 
     def get_create_last_price(self):
         return self.created_last_price
+
+    def get_linked_portfolio(self):
+        return self.linked_portfolio
 
     def is_cancelled(self):
         return self.status == OrderStatus.CANCELED
@@ -309,7 +315,8 @@ class StopLossOrder(Order):
                                                                 symbol=self.symbol,
                                                                 current_price=self.origin_price,
                                                                 quantity=self.origin_quantity,
-                                                                price=self.origin_price)
+                                                                price=self.origin_price,
+                                                                linked_portfolio=self.linked_portfolio)
                 with self.trader.get_portfolio() as pf:
                     self.trader.create_order(market_sell, pf)
 
