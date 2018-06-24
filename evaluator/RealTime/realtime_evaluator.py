@@ -53,6 +53,10 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
         raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
+    def _should_eval(self):
+        raise NotImplementedError("Eval_impl not implemented")
+
+    @abstractmethod
     def _define_refresh_time(self):
         raise NotImplementedError("Eval_impl not implemented")
 
@@ -68,7 +72,9 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
                     self._refresh_data()
                 except Exception as e:
                     self.logger.error("error when refreshing data for {0}: {1}".format(self.symbol, e))
-                self.eval()
+
+                if self._should_eval():
+                    self.eval()
 
             if not Backtesting.enabled(self.config):
                 sleeping_time = self.specific_config[CONFIG_REFRESH_RATE] - (time.time() - now)
@@ -102,6 +108,19 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
 
     def _define_refresh_time(self):
         self.refresh_time = self.valid_refresh_time(self.specific_config[CONFIG_REFRESH_RATE])
+
+    def _get_data_from_exchange(self, time_frame, limit=None, return_list=False):
+        return self.exchange.get_symbol_prices(self.symbol, time_frame,
+                                               limit=limit, return_list=return_list)
+
+    @staticmethod
+    def _compare_data(new_data, old_data):
+        try:
+            if new_data[PriceIndexes.IND_PRICE_CLOSE.value][-1] != old_data[PriceIndexes.IND_PRICE_CLOSE.value][-1]:
+                return False
+            return True
+        except Exception:
+            return False
 
     def set_default_config(self):
         time_frames = self.exchange.get_exchange_manager().get_config_time_frame()
