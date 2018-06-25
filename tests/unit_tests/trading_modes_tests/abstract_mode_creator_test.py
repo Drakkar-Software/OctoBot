@@ -295,6 +295,41 @@ class TestAbstractTradingModeCreator:
         price = 5
         assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
 
+        symbol_market = {
+            Ecmsc.LIMITS.value: {
+                Ecmsc.LIMITS_AMOUNT.value: {
+                    Ecmsc.LIMITS_AMOUNT_MIN.value: 0.0000005,
+                    Ecmsc.LIMITS_AMOUNT_MAX.value: 100,
+                },
+                Ecmsc.LIMITS_COST.value: {
+                    Ecmsc.LIMITS_COST_MIN.value: 0.00000001,
+                    Ecmsc.LIMITS_COST_MAX.value: 10
+                },
+                Ecmsc.LIMITS_PRICE.value: {
+                    Ecmsc.LIMITS_PRICE_MIN.value: 0.000005,
+                    Ecmsc.LIMITS_PRICE_MAX.value: 50
+                },
+            },
+            Ecmsc.PRECISION.value: {
+                Ecmsc.PRECISION_PRICE.value: 8,
+                Ecmsc.PRECISION_AMOUNT.value: 8
+            }
+        }
+
+        # correct quantity
+        quantity = 5000
+        price = 0.001
+        expected = [(100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001),
+                    (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001),
+                    (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001),
+                    (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001),
+                    (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001),
+                    (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001),
+                    (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001),
+                    (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001),
+                    (100.0, 0.001), (100.0, 0.001)]
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == expected
+
     def test_get_pre_order_data(self):
         pass
 
