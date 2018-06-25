@@ -317,6 +317,7 @@ class TestAbstractTradingModeCreator:
         }
 
         # correct quantity
+        # to test _adapt_order_quantity_because_quantity
         quantity = 5000
         price = 0.001
         expected = [(100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001), (100.0, 0.001),
