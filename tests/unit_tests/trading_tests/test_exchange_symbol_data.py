@@ -1,7 +1,7 @@
 from random import randint
 
 from config.cst import TimeFrames, PriceIndexes
-from trading.exchanges.exchange_symbol_data import SymbolData
+from trading.exchanges.exchange_symbol_data import SymbolData, CandleData
 
 
 class TestExchangeSymbolData:
@@ -35,20 +35,20 @@ class TestExchangeSymbolData:
         assert candle_data.get_symbol_high_candles()[-2] == fake_candle_1[PriceIndexes.IND_PRICE_HIGH.value]
 
         # test new candle
-        fake_candle_4 = self.create_fake_candle(12)
+        fake_candle_4 = self.create_fake_candle(20)
         test_inst.update_symbol_candles(tf_1, fake_candle_4, replace_all=False)
         candle_data = test_inst.get_candle_data(tf_1)
         assert candle_data.get_symbol_close_candles()[-1] == fake_candle_4[PriceIndexes.IND_PRICE_CLOSE.value]
         assert candle_data.get_symbol_time_candles()[-1] == fake_candle_4[PriceIndexes.IND_PRICE_TIME.value]
-        assert candle_data.get_symbol_low_candles()[-1] == fake_candle_4[PriceIndexes.IND_PRICE_LOW.value]
         assert candle_data.get_symbol_volume_candles()[-1] == fake_candle_4[PriceIndexes.IND_PRICE_VOL.value]
+        assert candle_data.get_symbol_open_candles()[-1] == fake_candle_4[PriceIndexes.IND_PRICE_OPEN.value]
 
         # test limit
-        fake_candle_5 = self.create_fake_candle(12)
+        fake_candle_5 = self.create_fake_candle(30)
         test_inst.update_symbol_candles(tf_1, fake_candle_5, replace_all=False)
         assert len(candle_data.get_symbol_volume_candles(limit=3)) == 3
 
-        # test arrays
+        # test lists
         fake_candle_6 = self.create_fake_candle(12)
         test_inst.update_symbol_candles(tf_2, fake_candle_6, replace_all=False)
         fake_candle_7 = self.create_fake_candle(13)
@@ -69,7 +69,7 @@ class TestExchangeSymbolData:
         assert tf1_data_vol[-1] == fake_candle_5[PriceIndexes.IND_PRICE_VOL.value]
 
         # test replace
-        fake_candle_9 = self.create_fake_candle(12)
+        fake_candle_9 = self.create_fake_candle(40)
         test_inst.update_symbol_candles(tf_1, fake_candle_9, replace_all=True)
         tf1_data_low = test_inst.get_candle_data(tf_1).get_symbol_low_candles(return_list=True)
         assert tf1_data_low[-1] == fake_candle_9[PriceIndexes.IND_PRICE_LOW.value]

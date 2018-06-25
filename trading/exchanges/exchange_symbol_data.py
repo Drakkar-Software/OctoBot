@@ -191,14 +191,12 @@ class CandleData:
         self.low_candles_list = []
         self.time_candles_list = []
         self.volume_candles_list = []
-        
-        for candle_data in new_candles_data:
-            self.close_candles_list.append(candle_data[PriceIndexes.IND_PRICE_CLOSE.value])
-            self.open_candles_list.append(candle_data[PriceIndexes.IND_PRICE_OPEN.value])
-            self.high_candles_list.append(candle_data[PriceIndexes.IND_PRICE_HIGH.value])
-            self.low_candles_list.append(candle_data[PriceIndexes.IND_PRICE_LOW.value])
-            self.time_candles_list.append(candle_data[PriceIndexes.IND_PRICE_TIME.value])
-            self.volume_candles_list.append(candle_data[PriceIndexes.IND_PRICE_VOL.value])
+
+        if isinstance(new_candles_data[-1], list):
+            for candle_data in new_candles_data:
+                self.add_new_candle(candle_data)
+        else:
+            self.add_new_candle(new_candles_data)
 
     def change_current_candle(self, new_last_candle_data):
         if len(self.time_candles_list) >= SymbolData.MAX_CANDLES_COUNT:
@@ -222,7 +220,7 @@ class CandleData:
         self.volume_candles_list.append(new_candle_data[PriceIndexes.IND_PRICE_VOL.value])            
         
     def update_arrays(self):
-        if self.time_candles_array is None or self.should_add_new_candle(self.time_candles_array[-1]):
+        if self.time_candles_array is None or self.time_candles_array[-1] != self.time_candles_list[-1]:
             self.close_candles_array = self.convert_list_to_array(self.close_candles_list)
             self.open_candles_array = self.convert_list_to_array(self.open_candles_list)
             self.high_candles_array = self.convert_list_to_array(self.high_candles_list)
@@ -231,7 +229,7 @@ class CandleData:
             self.volume_candles_array = self.convert_list_to_array(self.volume_candles_list)
 
             # used only when a new candle was created during the previous execution
-            if self.should_add_new_candle(self.time_candles_array[-1]):
+            if self.time_candles_array[-1] != self.time_candles_list[-1]:
                 self.update_arrays()
         else:
             self.set_last_candle_arrays(self.close_candles_list, self.close_candles_array)
