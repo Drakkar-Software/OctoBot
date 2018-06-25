@@ -1,6 +1,6 @@
 import logging
 import time
-from prawcore.exceptions import RequestException, ResponseException, OAuthException
+from prawcore.exceptions import RequestException, ResponseException, OAuthException, InvalidToken
 
 from config.cst import *
 from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
@@ -85,6 +85,12 @@ class RedditDispatcher(AbstractDispatcher):
                 self._start_listener()
             except RequestException:
                 # probably a connexion loss, try again
+                time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
+            except InvalidToken:
+                # expired, try again
+                self.logger.error("Error when receiving Reddit feed: '{0}'".format(e))
+                self.logger.exception(e)
+                self.logger.info("Try to continue after some time.")
                 time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except OAuthException as e:
                 self.logger.error("Error when receiving Reddit feed: '{0}' this may mean {1}"
