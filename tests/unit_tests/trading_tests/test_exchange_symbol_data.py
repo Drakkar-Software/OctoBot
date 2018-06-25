@@ -1,7 +1,7 @@
 from random import randint
 
 from config.cst import TimeFrames, PriceIndexes
-from trading.exchanges.exchange_symbol_data import SymbolData, CandleData
+from trading.exchanges.exchange_symbol_data import SymbolData
 
 
 class TestExchangeSymbolData:
@@ -46,6 +46,7 @@ class TestExchangeSymbolData:
         # test limit
         fake_candle_5 = self.create_fake_candle(30)
         test_inst.update_symbol_candles(tf_1, fake_candle_5, replace_all=False)
+        candle_data = test_inst.get_candle_data(tf_1)
         assert len(candle_data.get_symbol_volume_candles(limit=3)) == 3
 
         # test lists
@@ -73,6 +74,25 @@ class TestExchangeSymbolData:
         test_inst.update_symbol_candles(tf_1, fake_candle_9, replace_all=True)
         tf1_data_low = test_inst.get_candle_data(tf_1).get_symbol_low_candles(return_list=True)
         assert tf1_data_low[-1] == fake_candle_9[PriceIndexes.IND_PRICE_LOW.value]
+
+    def test_max_symbol_candles(self):
+        symbol = "BTC/USDT"
+        tf = TimeFrames.ONE_DAY
+        test_inst = SymbolData(symbol)
+
+        fake_candles = [self.create_fake_candle(i) for i in range(SymbolData.MAX_CANDLES_COUNT)]
+        test_inst.update_symbol_candles(tf, fake_candles, replace_all=True)
+        assert len(test_inst.get_candle_data(tf).get_symbol_volume_candles()) == SymbolData.MAX_CANDLES_COUNT
+
+        # test to add new one
+        fake_candle = self.create_fake_candle(1000)
+        test_inst.update_symbol_candles(tf, fake_candle, replace_all=False)
+        candle_data = test_inst.get_candle_data(tf)
+        assert len(candle_data.get_symbol_volume_candles()) == SymbolData.MAX_CANDLES_COUNT
+        assert candle_data.get_symbol_close_candles()[-1] == fake_candle[PriceIndexes.IND_PRICE_CLOSE.value]
+        assert candle_data.get_symbol_time_candles()[-1] == fake_candle[PriceIndexes.IND_PRICE_TIME.value]
+        assert candle_data.get_symbol_volume_candles()[-1] == fake_candle[PriceIndexes.IND_PRICE_VOL.value]
+        assert candle_data.get_symbol_open_candles()[-1] == fake_candle[PriceIndexes.IND_PRICE_OPEN.value]
 
     @staticmethod
     def create_fake_candle(time):

@@ -54,6 +54,7 @@ class TestExchangePersonalData:
             {"id": 20},
             {"id": 15}
         ])
+        assert test_inst.get_order(15)
         assert test_inst.has_order(15)
         assert test_inst.has_order(20)
         assert test_inst.has_order(10)
