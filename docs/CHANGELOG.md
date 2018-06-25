@@ -1,5 +1,17 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.3_1-beta
+====================
+*Released date : June 25 2018*
+
+# Concerned issues :
+    #251 [Tests] Improve tests coverage
+
+# Bug fix :
+    - Fix telegram commands
+    - Fix exchange symbol data
+    - Fix reddit watcher
+
 Changelog for 0.1.3-beta
 ====================
 *Released date : June 23 2018*

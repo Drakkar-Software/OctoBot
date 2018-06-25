@@ -76,6 +76,12 @@ class Trader:
     def get_portfolio(self):
         return self.portfolio
 
+    def get_order_portfolio(self, order):
+        if order.get_linked_portfolio() is not None:
+            return order.get_linked_portfolio()
+        else:
+            return self.portfolio
+
     def create_order_instance(self, order_type, symbol, current_price, quantity,
                               price=None,
                               stop_price=None,
@@ -83,7 +89,8 @@ class Trader:
                               status=None,
                               order_id=None,
                               quantity_filled=None,
-                              timestamp=None):
+                              timestamp=None,
+                              linked_portfolio=None):
 
         # create new order instance
         order_class = OrderConstants.TraderOrderTypeClasses[order_type]
@@ -106,7 +113,8 @@ class Trader:
                   status=status,
                   quantity_filled=quantity_filled,
                   timestamp=timestamp,
-                  linked_to=linked_to)
+                  linked_to=linked_to,
+                  linked_portfolio=linked_portfolio)
 
         return order
 
@@ -131,9 +139,10 @@ class Trader:
                 # get real order from exchange
                 new_order = self.parse_exchange_order_to_order_instance(created_order)
 
-                # rebind order notifier to new order instance
+                # rebind order notifier and linked portfolio to new order instance
                 new_order.order_notifier = order.get_order_notifier()
                 new_order.get_order_notifier().set_order(new_order)
+                new_order.linked_portfolio = portfolio
 
             # update the availability of the currency in the portfolio
             portfolio.update_portfolio_available(new_order, is_new_order=True)
@@ -185,7 +194,7 @@ class Trader:
 
     def notify_order_cancel(self, order):
         # update portfolio with ended order
-        with self.portfolio as pf:
+        with self.get_order_portfolio(order) as pf:
             pf.update_portfolio_available(order, is_new_order=False)
 
     def notify_order_close(self, order, cancel=False, cancel_linked_only=False):
@@ -212,7 +221,7 @@ class Trader:
             orders_canceled = order.get_linked_orders()
 
             # update portfolio with ended order
-            with self.portfolio as pf:
+            with self.get_order_portfolio(order) as pf:
                 pf.update_portfolio(order)
 
             # debug purpose
