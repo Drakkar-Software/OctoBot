@@ -50,19 +50,19 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
 
     @abstractmethod
     def _refresh_data(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("_refresh_data not implemented")
 
     @abstractmethod
     def _should_eval(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("_should_eval not implemented")
 
     @abstractmethod
     def _define_refresh_time(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("_define_refresh_time not implemented")
 
     @abstractmethod
     def eval_impl(self) -> None:
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("eval_impl not implemented")
 
     def run(self):
         while self.keep_running:
@@ -93,11 +93,11 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
 
     @abstractmethod
     def _refresh_data(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("_refresh_data not implemented")
 
     @abstractmethod
     def eval_impl(self):
-        raise NotImplementedError("Eval_impl not implemented")
+        raise NotImplementedError("eval_impl not implemented")
 
     def valid_refresh_time(self, config_refresh_time):
         if config_refresh_time > self.exchange.get_exchange_manager().get_rate_limit() or \
