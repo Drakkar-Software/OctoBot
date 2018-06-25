@@ -38,7 +38,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_recent_trades(self, symbol):
+    def get_recent_trades(self, symbol, limit=50):
         pass
 
     @abstractmethod
