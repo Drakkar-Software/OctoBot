@@ -1,5 +1,6 @@
 import datetime
 import logging
+import copy
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
@@ -242,7 +243,7 @@ class TelegramApp:
 
             message += "{0}Evaluators:{0}".format(TelegramApp.EOL)
             first_evaluator = next(iter(get_bot().get_symbols_threads_manager().values())).get_evaluator()
-            evaluators = first_evaluator.get_social_eval_list()
+            evaluators = copy.copy(first_evaluator.get_social_eval_list())
             evaluators += first_evaluator.get_ta_eval_list()
             evaluators += first_evaluator.get_real_time_eval_list()
             for evaluator in evaluators:
@@ -271,7 +272,7 @@ class TelegramApp:
                 at_least_one_currency = True
                 message += "- {0}:{1}".format(currency_pair, TelegramApp.EOL)
                 for exchange_name, evaluation in currency_info.items():
-                    message += "=> {0}: {1}{2}".format(exchange_name, evaluation.name, TelegramApp.EOL)
+                    message += "=> {0}: {1}{2}".format(exchange_name, evaluation, TelegramApp.EOL)
             if not at_least_one_currency:
                 message += TelegramApp.NO_CURRENCIES_MESSAGE + TelegramApp.EOL
             message += "{0}My current risk is: {1}".format(TelegramApp.EOL, get_risk())

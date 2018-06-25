@@ -150,7 +150,10 @@ def get_currencies_with_status():
     symbol_with_evaluation = {}
     for symbol_evaluator in get_bot().get_symbol_evaluator_list().values():
         symbol_with_evaluation[symbol_evaluator.get_symbol()] = \
-            {exchange.get_name(): symbol_evaluator.get_final(exchange).get_state()
+            {exchange.get_name():
+                ",".join([
+                    dec.get_state().name
+                    for dec in symbol_evaluator.get_deciders(exchange)])
              for exchange in get_bot().get_exchanges_list().values()
              if symbol_evaluator.has_exchange(exchange)}
     return symbol_with_evaluation
