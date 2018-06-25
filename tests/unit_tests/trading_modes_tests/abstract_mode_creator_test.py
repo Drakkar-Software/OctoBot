@@ -158,22 +158,167 @@ class TestAbstractTradingModeCreator:
         # assert AbstractTradingModeCreator.adapt_price(symbol_market, 1251.0000014576121234854513) == 1251.00000145
 
     def test_get_additional_dusts_to_quantity_if_necessary(self):
-        pass
+        symbol_market = {Ecmsc.LIMITS.value: {
+            Ecmsc.LIMITS_AMOUNT.value: {
+                Ecmsc.LIMITS_AMOUNT_MIN.value: 0.5
+            },
+            Ecmsc.LIMITS_COST.value: {
+                Ecmsc.LIMITS_COST_MIN.value: 1
+            }
+        }}
+
+        current_symbol_holding = 5
+        quantity = 4
+        price = 1
+        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
+                                                                                        price,
+                                                                                        symbol_market,
+                                                                                        current_symbol_holding) == 0
+
+        current_symbol_holding = 5
+        quantity = 4.5
+        price = 1
+        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
+                                                                                        price,
+                                                                                        symbol_market,
+                                                                                        current_symbol_holding) == 0.5
+
+        symbol_market = {Ecmsc.LIMITS.value: {
+            Ecmsc.LIMITS_AMOUNT.value: {
+                Ecmsc.LIMITS_AMOUNT_MIN.value: 0.005
+            },
+            Ecmsc.LIMITS_COST.value: {
+                Ecmsc.LIMITS_COST_MIN.value: 0.00005
+            }
+        }}
+
+        current_symbol_holding = 0.99000000001
+        quantity = 0.9
+        price = 0.5
+        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
+                                                                                        price,
+                                                                                        symbol_market,
+                                                                                        current_symbol_holding) == 0
+
+        current_symbol_holding = 0.99000000001
+        quantity = 0.0215245845
+        price = 0.5
+        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
+                                                                                        price,
+                                                                                        symbol_market,
+                                                                                        current_symbol_holding) == 0
+
+        # ROUNDING BUG SEE  #261
+        # current_symbol_holding = 0.99999999
+        # quantity = 0.99999
+        # price = 0.5
+        # exp = 0.00000999
+        # assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
+        #                                                                                 price,
+        #                                                                                 symbol_market,
+        #                                                                                 current_symbol_holding) == exp
 
     def test_check_and_adapt_order_details_if_necessary(self):
-        pass
+        atmc = AbstractTradingModeCreator
+
+        symbol_market = {
+            Ecmsc.LIMITS.value: {
+                Ecmsc.LIMITS_AMOUNT.value: {
+                    Ecmsc.LIMITS_AMOUNT_MIN.value: 0.5,
+                    Ecmsc.LIMITS_AMOUNT_MAX.value: 100,
+                },
+                Ecmsc.LIMITS_COST.value: {
+                    Ecmsc.LIMITS_COST_MIN.value: 1,
+                    Ecmsc.LIMITS_COST_MAX.value: 200
+                },
+                Ecmsc.LIMITS_PRICE.value: {
+                    Ecmsc.LIMITS_PRICE_MIN.value: 0.5,
+                    Ecmsc.LIMITS_PRICE_MAX.value: 50
+                },
+            },
+            Ecmsc.PRECISION.value: {
+                Ecmsc.PRECISION_PRICE.value: 8,
+                Ecmsc.PRECISION_AMOUNT.value: 8
+            }
+        }
+
+        # correct min
+        quantity = 0.5
+        price = 2
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(quantity, price)]
+
+        # correct max
+        quantity = 100
+        price = 2
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(quantity, price)]
+
+        # correct
+        quantity = 10
+        price = 0.6
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(quantity, price)]
+
+        # correct
+        quantity = 3
+        price = 49.9
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(quantity, price)]
+
+        # invalid price >
+        quantity = 1
+        price = 100
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
+
+        # invalid price <
+        quantity = 1
+        price = 0.1
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
+
+        # invalid cost <
+        quantity = 0.5
+        price = 1
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
+
+        # TODO not splitted ?
+        # invalid cost >
+        quantity = 10
+        price = 50
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
+
+        # invalid amount >
+        quantity = 200
+        price = 5
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(40.0, 5), (40.0, 5),
+                                                                                                   (40.0, 5), (40.0, 5),
+                                                                                                   (40.0, 5)]
+
+        # invalid amount <
+        quantity = 0.4
+        price = 5
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
 
     def test_get_pre_order_data(self):
         pass
 
     def test_adapt_quantity(self):
-        pass
+        # will use symbol market
+        symbol_market = {Ecmsc.PRECISION.value: {Ecmsc.PRECISION_AMOUNT.value: 4}}
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.0001) == 0.0001
+        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.00015) == 0.00015
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.005) == 0.005
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 1) == 1.0000000000000000000000001
 
-    def test_adapt_order_quantity_because_quantity(self):
-        pass
+        # TODO : digit number is not only after comma ?
+        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 56.5128597145) == 56.5128
+        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 1251.0000014576121234854513) == 1251.0000
 
-    def test_adapt_order_quantity_because_price(self):
-        pass
+        # will use default (CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.0001) == 0.0001
+        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.00015) == 0.00015
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.005) == 0.005
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 1) == 1.0000000000000000000000001
+
+        # TODO : digit number is not only after comma ?
+        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 56.5128597145) == 56.51285971
+        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 1251.0000014576121234854513) == 1251.00000145
 
     @staticmethod
     def test_trunc_with_n_decimal_digits():
