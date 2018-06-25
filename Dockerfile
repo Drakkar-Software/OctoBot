@@ -22,6 +22,7 @@ RUN pip3 install -U setuptools
 RUN pip3 install -r requirements.txt
 
 # install evaluators
+RUN rm -rf ./tentacles
 RUN python start.py -p install all
 
 # entry point

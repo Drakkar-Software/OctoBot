@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+config_path="config"
+
 echo **Installing dependencies...**
 apt install -y wget python3 python3-dev python3-pip python3-tk -y
 bash ./docs/install/linux_dependencies.sh
@@ -8,7 +10,7 @@ python3 -m pip install -r pre_requirements.txt
 python3 -m pip install -r requirements.txt
 
 echo **Set default configuration...**
-cd %config_path%
+cd $config_path
 cp default_config.json ../config.json
 
 echo **Installing modules...**
