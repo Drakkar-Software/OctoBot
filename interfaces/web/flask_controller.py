@@ -8,3 +8,12 @@ from interfaces.web import server_instance
 def home():
     return render_template('index.html')
 
+
+@server_instance.route("/config")
+def config():
+    return render_template('config.html')
+
+
+@server_instance.route("/portfolio")
+def portfolio():
+    return render_template('portfolio.html')
