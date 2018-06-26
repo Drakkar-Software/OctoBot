@@ -8,11 +8,15 @@ from services import RedditService
 
 
 class RedditDispatcher(AbstractDispatcher):
+
+    MAX_CONNECTION_ATTEMPTS = 3
+
     def __init__(self, config):
         super().__init__(config)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.subreddits = None
         self.counter = 0
+        self.connect_attempts = 0
         self.social_config = {}
 
         # check presence of twitter instance
@@ -52,6 +56,7 @@ class RedditDispatcher(AbstractDispatcher):
         subreddit = self.reddit_service.get_endpoint().subreddit(self.subreddits)
         start_time = time.time()
         for entry in subreddit.stream.submissions():
+            self.connect_attempts = 0
             self.counter += 1
             # check if we are in the 100 history or if it's a new entry (new posts are more valuables)
             # the older the entry is, the les weight it gets
@@ -80,7 +85,7 @@ class RedditDispatcher(AbstractDispatcher):
                                                           CONFIG_REDDIT_ENTRY_WEIGHT: entry_weight})
 
     def _start_dispatcher(self):
-        while self.keep_running:
+        while self.keep_running and self.connect_attempts < self.MAX_CONNECTION_ATTEMPTS:
             try:
                 self._start_listener()
             except RequestException:
@@ -101,7 +106,7 @@ class RedditDispatcher(AbstractDispatcher):
                 self.logger.error("Error when receiving Reddit feed: '{0}' this may mean {1}"
                                   .format(e, "that reddit configuration in config.json are wrong."))
                 self.logger.exception(e)
-                self.keep_running = False
+                self.connect_attempts += 1
             except Exception as e:
                 self.logger.error("Error when receiving Reddit feed: '{0}'".format(e))
                 self.logger.exception(e)
