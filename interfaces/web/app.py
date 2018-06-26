@@ -28,8 +28,6 @@ class WebApp(threading.Thread):
         self.app = app_instance
 
         self.app.layout = html.Div(children=[
-            html.H1('OctoBot Dashboard'),
-
             dcc.Graph(id='portfolio-value-graph', animate=True),
 
             dt.DataTable(

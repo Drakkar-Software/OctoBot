@@ -9,6 +9,11 @@ def home():
     return render_template('index.html')
 
 
+@server_instance.route("/dash")
+def dash():
+    return render_template('dashboard.html')
+
+
 @server_instance.route("/config")
 def config():
     return render_template('config.html')
