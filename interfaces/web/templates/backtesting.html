@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block body %}
+<h1>Backtesting</h1>
+<br>
+<h2>Backtesting Data</h2>
+  <table class="table">
+    <caption>List of backtesting data</caption>
+  <thead>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Exchange</th>
+        <th scope="col">Symbol</th>
+        <th scope="col">Starting Date</th>
+        <th scope="col">Ending Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+        <th scope="row">1</th>
+        <td>Binance</td>
+        <td>BTC/USDT</td>
+        <td>10/10/2017</td>
+        <td>11/10/2017</td>
+    </tr>
+    <tr>
+        <th scope="row">2</th>
+        <td>Bitfinex</td>
+        <td>ETH/USDT</td>
+        <td>10/10/2017</td>
+        <td>11/10/2017</td>
+    </tr>
+  </tbody>
+  </table>
+<br>
+<button type="button" class="btn btn-primary">Get new data</button>
+<br>
+<h2>Backtesting settings</h2>
+
+<br>
+<button type="button" class="btn btn-primary">Start a backtesting</button>
+{% endblock %}
