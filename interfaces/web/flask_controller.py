@@ -37,3 +37,13 @@ def orders():
 @server_instance.route("/trades")
 def trades():
     return render_template('trades.html')
+
+
+@server_instance.route("/backtesting")
+def backtesting():
+    return render_template('backtesting.html')
+
+
+@server_instance.route("/tentacle_manager")
+def tentacle_manager():
+    return render_template('tentacle_manager.html')

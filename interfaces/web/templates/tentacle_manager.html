@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block body %}
+<h1>Tentacle Manager</h1>
+<br>
+<h2>Registered packages</h2>
+<br>
+<h2>Tentacles installation</h2>
+<button type="button" class="btn btn-primary">Install tentacle</button>
+<button type="button" class="btn btn-primary">Add new package repository</button>
+<br>
+<h2>Installed tentacles</h2>
+<table class="table">
+    <caption>List of installed tentacles</caption>
+  <thead>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Package</th>
+        <th scope="col">Tentacle Name</th>
+        <th scope="col">Version</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+        <th scope="row">1</th>
+        <td>OctoBot-Tentacles</td>
+        <td>DailyTradingMode</td>
+        <td>1.0.0</td>
+    </tr>
+    <tr>
+        <th scope="row">2</th>
+        <td>OctoBot-Tentacles</td>
+        <td>RSIMomentumEvaluator</td>
+        <td>1.0.0</td>
+    </tr>
+  </tbody>
+  </table>
+<br>
+{% endblock %}
