@@ -1,5 +1,18 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.3_2-beta
+====================
+*Released date : June 27 2018*
+
+# Concerned issues :
+    #264 [Web Interface] Create web architecture
+
+# New features :
+    - Web interface skeleton
+
+# Bug fix :
+    - Fix reddit reconnexion
+
 Changelog for 0.1.3_1-beta
 ====================
 *Released date : June 25 2018*
