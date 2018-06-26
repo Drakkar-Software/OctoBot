@@ -86,4 +86,4 @@ def load_callbacks():
 
 
 def load_routes():
-    from .flask_controller import index
+    from .flask_controller import home

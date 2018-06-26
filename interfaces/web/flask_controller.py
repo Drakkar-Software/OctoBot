@@ -4,5 +4,7 @@ from interfaces.web import server_instance
 
 
 @server_instance.route("/")
-def index():
+@server_instance.route("/home")
+def home():
     return render_template('index.html')
+
