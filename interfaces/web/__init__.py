@@ -87,5 +87,6 @@ def load_callbacks():
 
 def load_routes():
     from .flask_controller import home
+    from .flask_controller import dash
     from .flask_controller import config
     from .flask_controller import portfolio
