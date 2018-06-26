@@ -90,3 +90,5 @@ def load_routes():
     from .flask_controller import dash
     from .flask_controller import config
     from .flask_controller import portfolio
+    from .flask_controller import tentacles
+    from .flask_controller import orders
