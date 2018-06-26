@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block body %}
+<h1>Trades</h1>
+<br>
+<div class="table-responsive">
+  <table class="table">
+    <caption>List of trades</caption>
+  <thead>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Exchange</th>
+        <th scope="col">Symbol</th>
+        <th scope="col">Price</th>
+        <th scope="col">Quantity</th>
+        <th scope="col">Creation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+        <th scope="row">1</th>
+        <td>Binance</td>
+        <td>BTC/USDT</td>
+        <td>5500</td>
+        <td>2.1</td>
+        <td>124545484</td>
+    </tr>
+    <tr>
+        <th scope="row">2</th>
+        <td>Bitfinex</td>
+        <td>ETH/USDT</td>
+        <td>450</td>
+        <td>10.15</td>
+        <td>124545484</td>
+    </tr>
+  </tbody>
+  </table>
+</div>
+
+{% endblock %}

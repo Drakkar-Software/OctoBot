@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block body %}
+<h1>Orders</h1>
+<br>
+<h2>Open orders</h2>
+<div class="table-responsive">
+  <table class="table">
+    <caption>List of open orders</caption>
+  <thead>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Exchange</th>
+        <th scope="col">Symbol</th>
+        <th scope="col">Price</th>
+        <th scope="col">Quantity</th>
+        <th scope="col">Status</th>
+        <th scope="col">Creation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+        <th scope="row">1</th>
+        <td>Binance</td>
+        <td>BTC/USDT</td>
+        <td>5500</td>
+        <td>2.1</td>
+        <td>OPEN</td>
+        <td>124545484</td>
+    </tr>
+    <tr>
+        <th scope="row">2</th>
+        <td>Bitfinex</td>
+        <td>ETH/USDT</td>
+        <td>450</td>
+        <td>10.15</td>
+        <td>OPEN</td>
+        <td>124545484</td>
+    </tr>
+  </tbody>
+  </table>
+</div>
+<br>
+<h2>Order history</h2>
+<div class="table-responsive">
+  <table class="table">
+    <caption>List of order history</caption>
+  <thead>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Exchange</th>
+        <th scope="col">Symbol</th>
+        <th scope="col">Price</th>
+        <th scope="col">Quantity</th>
+        <th scope="col">Status</th>
+        <th scope="col">Creation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+        <th scope="row">1</th>
+        <td>Binance</td>
+        <td>BTC/USDT</td>
+        <td>6000</td>
+        <td>1</td>
+        <td>FILLED</td>
+        <td>124545484</td>
+    </tr>
+    <tr>
+        <th scope="row">2</th>
+        <td>Bitfinex</td>
+        <td>ETH/USDT</td>
+        <td>500</td>
+        <td>5</td>
+        <td>CANCELED</td>
+        <td>124545484</td>
+    </tr>
+  </tbody>
+  </table>
+</div>
+
+{% endblock %}
