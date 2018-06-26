@@ -9,7 +9,7 @@
 
          <!-- Bootstrap CSS -->
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
-
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -26,10 +26,10 @@
                     <a class="nav-link" href="{{ url_for('/dashboard') }}">Dashboard</a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link disabled" href="#">Configuration</a>
+                    <a class="nav-link" href="{{ url_for('config') }}">Configuration</a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link disabled" href="#">Portfolio</a>
+                    <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
                   </li>
                 </ul>
             </div>

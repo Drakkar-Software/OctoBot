@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% block body %}
+<h1>Configuration</h1>
+<br>
+<div class="accordion" id="accordionConfiguration">
+    <div class="card">
+        <div class="card-header" id="headingExchanges">
+          <h5 class="mb-0">
+            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseExchanges" aria-expanded="true" aria-controls="collapseExchanges">
+              Exchanges
+            </button>
+          </h5>
+        </div>
+
+        <div id="collapseExchanges" class="collapse show" aria-labelledby="headingExchanges" data-parent="#accordionConfiguration">
+          <div class="card-body">
+            EXCHANGE CONFIG
+          </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header" id="headingTrading">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTrading" aria-expanded="false" aria-controls="collapseTrading">
+              Trading
+            </button>
+          </h5>
+        </div>
+        <div id="collapseTrading" class="collapse" aria-labelledby="headingTrading" data-parent="#accordionConfiguration">
+          <div class="card-body">
+            TRADING CONFIG
+          </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header" id="headingNotifications">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseNotifications" aria-expanded="false" aria-controls="collapseNotifications">
+              Notifications
+            </button>
+          </h5>
+        </div>
+        <div id="collapseNotifications" class="collapse" aria-labelledby="headingNotifications" data-parent="#accordionConfiguration">
+          <div class="card-body">
+            NOTIFICATIONS CONFIG
+          </div>
+        </div>
+    </div>
+    <br>
+    <button type="button" class="btn btn-primary">Save config</button>
+</div>
+{% endblock %}
