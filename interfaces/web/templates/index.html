@@ -1,4 +1,17 @@
 {% extends "layout.html" %}
 {% block body %}
 
+<script>
+    $(document).ready(function () {
+        $.notify({
+            title: "Welcome:",
+            message: "Welcome to OctoBot web interface"
+        });
+        $.notify({
+            title: "Orders:",
+            message: "New order created"
+        });
+    });
+</script>
+
 {% endblock %}
