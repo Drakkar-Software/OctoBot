@@ -5,8 +5,9 @@ from enum import Enum
 
 from config.cst import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
-    CONFIG_NOTIFICATION_TRADES
-from services import TwitterService, TelegramService
+    CONFIG_NOTIFICATION_TRADES, CONFIG_ENABLED_OPTION, CONFIG_WEB
+from interfaces.web import add_notification
+from services import TwitterService, TelegramService, WebService
 from services.gmail_service import GmailService
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.trades_manager import TradesManager
@@ -105,6 +106,19 @@ class Notification:
             self.logger.debug("Twitter notification disabled")
         return None
 
+    def web_interface_notification_available(self, key=None):
+        if self.enabled(key) and WebService.is_setup_correctly(self.config):
+            if self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_ENABLED_OPTION]:
+                return True
+        return False
+
+    def web_interface_notification_factory(self, level, title, message):
+        if self.web_interface_notification_available():
+            add_notification(level, title, message)
+        else:
+            self.logger.debug("Web interface notification disabled")
+        return None
+
 
 class EvaluatorNotification(Notification):
     def __init__(self, config):
@@ -118,16 +132,20 @@ class EvaluatorNotification(Notification):
         if self.telegram_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
             self.telegram_notification_factory(notify_content)
 
+        if self.web_interface_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
+            self.web_interface_notification_factory(InterfaceLevel.INFO, "STATE CHANGED", notify_content)
+
         return self
 
     def notify_alert(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
+        title = "OCTOBOT ALERT : {0} / {1}".format(crypto_currency_evaluator.crypto_currency, result)
+
         if self.gmail_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
             profitability, profitability_percent, _ = trader.get_trades_manager().get_profitability()
 
             self.gmail_notification_factory(
-                "CRYPTO BOT ALERT : {0} / {1}".format(crypto_currency_evaluator.crypto_currency,
-                                                      result),
-                "CRYPTO BOT ALERT : {0} / {1} \n {2} \n Current portfolio "
+                title,
+                "OCTOBOT ALERT : {0} / {1} \n {2} \n Current portfolio "
                 "profitability : {3} "
                 "{4} ({5}%)".format(
                     crypto_currency_evaluator.crypto_currency,
@@ -149,6 +167,9 @@ class EvaluatorNotification(Notification):
         if self.telegram_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
             self.telegram_notification_factory(alert_content)
 
+        if self.web_interface_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
+            self.web_interface_notification_factory(InterfaceLevel.INFO, title, alert_content)
+
         return self
 
     def get_tweet_instance(self):
@@ -166,7 +187,8 @@ class OrdersNotification(Notification):
             if evaluator_notification is not None:
                 self.evaluator_notification = evaluator_notification
 
-            content += "Order(s) creation "
+            title = "Order(s) creation "
+            content += title
             for order in orders:
                 content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
 
@@ -179,6 +201,9 @@ class OrdersNotification(Notification):
             if self.telegram_notification_available(CONFIG_NOTIFICATION_TRADES):
                 self.telegram_notification_factory(content)
 
+            if self.web_interface_notification_available(CONFIG_NOTIFICATION_TRADES):
+                self.web_interface_notification_factory(InterfaceLevel.INFO, title, content)
+
     def notify_end(self,
                    order_filled,
                    orders_canceled,
@@ -187,6 +212,7 @@ class OrdersNotification(Notification):
                    portfolio_diff,
                    profitability=False):
 
+        title = "Order status updated"
         content = ""
 
         if order_filled is not None:
@@ -220,8 +246,18 @@ class OrdersNotification(Notification):
         if self.telegram_notification_available(CONFIG_NOTIFICATION_TRADES):
             self.telegram_notification_factory(content)
 
+        if self.web_interface_notification_available(CONFIG_NOTIFICATION_TRADES):
+            self.web_interface_notification_factory(InterfaceLevel.INFO, title, content)
+
 
 class NotificationTypes(Enum):
     MAIL = 1
     TWITTER = 2
     TELEGRAM = 3
+
+
+class InterfaceLevel(Enum):
+    DANGER = "danger"
+    WARNING = "warning"
+    INFO = "info"
+    SUCCESS = "success"

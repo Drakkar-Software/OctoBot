@@ -105,7 +105,7 @@ class RESTExchange(AbstractExchange):
     def get_order_book(self, symbol, limit=30):
         self.get_symbol_data(symbol).update_order_book(self.client.fetchOrderBook(symbol, limit))
 
-    def get_recent_trades(self, symbol):
+    def get_recent_trades(self, symbol, limit=50):
         try:
             self.get_symbol_data(symbol).update_recent_trades(self.client.fetch_trades(symbol))
         except BaseError as e:

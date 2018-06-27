@@ -8,7 +8,7 @@ import dash_table_experiments as dt
 
 from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_WEB, CONFIG_CATEGORY_SERVICES, CONFIG_WEB_IP, CONFIG_WEB_PORT
 from interfaces import get_bot
-from interfaces.web import app_instance, load_callbacks, load_routes
+from interfaces.web import app_instance, load_callbacks, load_routes, load_advanced_routes
 
 
 class WebApp(threading.Thread):
@@ -28,8 +28,6 @@ class WebApp(threading.Thread):
         self.app = app_instance
 
         self.app.layout = html.Div(children=[
-            html.H1('OctoBot Dashboard'),
-
             dcc.Graph(id='portfolio-value-graph', animate=True),
 
             dt.DataTable(
@@ -98,6 +96,7 @@ class WebApp(threading.Thread):
 
         load_callbacks()
         load_routes()
+        load_advanced_routes()
         self.app.run_server(host=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP],
                             port=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT],
                             debug=False,
