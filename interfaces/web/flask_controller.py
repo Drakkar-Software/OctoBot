@@ -1,5 +1,3 @@
-from random import randint
-
 from flask import render_template, json
 
 from interfaces.web import server_instance, get_notifications, flush_notifications
