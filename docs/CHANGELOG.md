@@ -6,9 +6,14 @@ Changelog for 0.1.3_2-beta
 
 # Concerned issues :
     #264 [Web Interface] Create web architecture
+    #267 [Web interface] Manage octobot status
+    #268 [Web Interface] Manage notification from bot
+    #269 [Tool] Implement ConfigManager
+    #270 [Web interface] Create advanced web interface
 
 # New features :
     - Web interface skeleton
+    - Notifications in web interface
 
 # Bug fix :
     - Fix reddit reconnexion
