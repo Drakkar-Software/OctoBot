@@ -1,6 +1,8 @@
-from flask import render_template
+from random import randint
 
-from interfaces.web import server_instance
+from flask import render_template, json
+
+from interfaces.web import server_instance, get_notifications, flush_notifications
 
 
 @server_instance.route("/")
@@ -51,4 +53,6 @@ def tentacle_manager():
 
 @server_instance.route("/update")
 def update():
-    return ""
+    notifications_result = json.dumps(get_notifications(), ensure_ascii=False)
+    flush_notifications()
+    return notifications_result
