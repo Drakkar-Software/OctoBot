@@ -51,6 +51,11 @@ def tentacle_manager():
     return render_template('tentacle_manager.html')
 
 
+@server_instance.route("/commands")
+def commands():
+    return render_template('commands.html')
+
+
 @server_instance.route("/update")
 def update():
     notifications_result = json.dumps(get_notifications(), ensure_ascii=False)

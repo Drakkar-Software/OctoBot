@@ -113,3 +113,4 @@ def load_routes():
     from .flask_controller import backtesting
     from .flask_controller import tentacle_manager
     from .flask_controller import update
+    from .flask_controller import commands
