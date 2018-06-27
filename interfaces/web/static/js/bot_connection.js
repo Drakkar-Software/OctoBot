@@ -62,12 +62,31 @@ function manage_alert(raw_data){
     })
 }
 
-function create_alert(a_level, a_title, a_msg){
+function create_alert(a_level, a_title, a_msg, url="_blank"){
     $.notify({
         title: a_title,
         message: a_msg
     },{
-        type: a_level
+        element: "body",
+	    position: null,
+        type: a_level,
+        allow_dismiss: true,
+	    newest_on_top: true,
+	    placement: {
+            from: "top",
+            align: "right"
+	    },
+	    showProgressbar: false,
+	    offset: 20,
+        spacing: 10,
+        z_index: 1031,
+        url_target: url,
+	    delay: 5000,
+	    timer: 1000,
+	    animate: {
+            enter: "animated fadeInDown",
+            exit: "animated fadeOutUp"
+	    }
     });
 }
 
