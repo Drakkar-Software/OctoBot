@@ -26,6 +26,11 @@ function update_status(status){
     icon_status = $("#navbar-bot-status")
     icon_reboot = $("#navbar-bot-reboot")
 
+    // if refreshed page
+    if (icon_status.hasClass("fa-spinner")){
+        icon_status.removeClass("fa-spinner fa-spin")
+    }
+
     // create alert if required
     if (status && icon_status.hasClass("icon-red")){
         create_alert("success", "Connected with Octobot", "");
