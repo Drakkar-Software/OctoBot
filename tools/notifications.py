@@ -5,9 +5,9 @@ from enum import Enum
 
 from config.cst import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
-    CONFIG_NOTIFICATION_TRADES
+    CONFIG_NOTIFICATION_TRADES, CONFIG_ENABLED_OPTION, CONFIG_WEB
 from interfaces.web import add_notification
-from services import TwitterService, TelegramService
+from services import TwitterService, TelegramService, WebService
 from services.gmail_service import GmailService
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.trades_manager import TradesManager
@@ -107,9 +107,9 @@ class Notification:
         return None
 
     def web_interface_notification_available(self, key=None):
-        # TODO check if web interface started
-        if self.enabled(key):
-            return True
+        if self.enabled(key) and WebService.is_setup_correctly(self.config):
+            if self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_ENABLED_OPTION]:
+                return True
         return False
 
     def web_interface_notification_factory(self, level, title, message):

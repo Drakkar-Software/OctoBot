@@ -1,4 +1,6 @@
-from flask import render_template, jsonify
+import json
+
+from flask import render_template
 
 from interfaces.web import server_instance, get_notifications, flush_notifications
 
@@ -56,6 +58,6 @@ def commands():
 
 @server_instance.route("/update")
 def update():
-    notifications_result = jsonify(get_notifications())
+    notifications_result = json.dumps(get_notifications(), ensure_ascii=False)
     flush_notifications()
     return notifications_result
