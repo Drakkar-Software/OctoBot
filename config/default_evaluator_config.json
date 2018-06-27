@@ -6,7 +6,7 @@
   "ADXMomentumEvaluator": true,
 
 
-  "InstantFluctuationsEvaluator": true,
+  "InstantFluctuationsEvaluator": false,
 
 
   "TwitterNewsEvaluator": true,
