@@ -7,11 +7,18 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-         <!-- Bootstrap CSS -->
+        <!-- Bootstrap CSS -->
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
 
+        <!-- Fontawesome CSS -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+
+        <!-- Jquery -->
         <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+
+        <!-- Own static -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+        <script src="{{ url_for('static', filename='js/bot_connection.js') }}"></script>
     </head>
     <body>
         <nav class="navbar navbar-expand-md navbar-dark bg-primary">
@@ -47,7 +54,7 @@
                 </ul>
             </div>
             <div class="mx-auto order-0">
-                <a class="navbar-brand mx-auto" href="#">OctoBot</a>
+                <a class="navbar-brand mx-auto" href="#">OctoBot <i id="navbar-bot-status" class="fas"></i></a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".dual-collapse2">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -55,10 +62,13 @@
             <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item">
-                        <a class="nav-link disabled" href="#">Tutorial</a>
+                        <a class="nav-link" href="#">Tutorial</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link disabled" href="#">About</a>
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i id="navbar-bot-reboot" class="fas fa-sync"></i></a>
                     </li>
                 </ul>
             </div>
