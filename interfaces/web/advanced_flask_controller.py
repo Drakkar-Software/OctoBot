@@ -1,6 +1,6 @@
 from flask import render_template, Blueprint
 
-advanced = Blueprint('advanced', __name__, url_prefix='/advanced', template_folder="advanced_template")
+advanced = Blueprint('advanced', __name__, url_prefix='/advanced', template_folder="advanced_templates")
 
 
 def get_advanced_blueprint():
