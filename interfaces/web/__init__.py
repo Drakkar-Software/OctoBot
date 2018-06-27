@@ -16,6 +16,8 @@ app_instance.config['suppress_callback_exceptions'] = True
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
+notifications = []
+
 matrix_history = []
 symbol_data_history = {}
 portfolio_value_history = {
@@ -61,6 +63,18 @@ def add_to_symbol_data_history(symbol, data, time_frame):
                 [symbol_data_history[symbol][time_frame], data[-new_data_index:]], ignore_index=True)
 
 
+def add_notification(level, title, message):
+    notifications.append({
+        "Level": level.value,
+        "Title": title,
+        "Message": message
+    })
+
+
+def flush_notifications():
+    notifications.clear()
+
+
 def get_matrix_history():
     return matrix_history
 
@@ -71,6 +85,10 @@ def get_portfolio_value_history():
 
 def get_symbol_data_history(symbol, time_frame):
     return symbol_data_history[symbol][time_frame]
+
+
+def get_notifications():
+    return notifications
 
 
 def load_callbacks():

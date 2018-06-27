@@ -1,15 +1,14 @@
 function get_update(){
     $.ajax({
       url: "/update",
-    }).done(function() {
+    }).done(function(data) {
         unlock_ui();
-        console.log("success");
 
-    }).fail(function() {
+    }).fail(function(data) {
         lock_ui();
 
-    }).always(function() {
-        console.log("updated");
+    }).always(function(data) {
+        manage_alert(data);
   });
 }
 
@@ -43,7 +42,23 @@ function update_status(status){
     }
 }
 
+function manage_alert(raw_data){
+    data = JSON.parse(raw_data)
+    $.each(data, function(i, item) {
+        create_alert(data[i].Level, data[i].Title, data[i].Message);
+    })
+}
+
+function create_alert(a_level, a_title, a_msg){
+    $.notify({
+        title: a_title,
+        message: a_msg
+    },{
+        type: a_level
+    });
+}
+
 // Updater
 $(document).ready(function () {
-    setInterval(function(){ get_update(); }, 1000);
+    setInterval(function(){ get_update(); }, 500);
 });
