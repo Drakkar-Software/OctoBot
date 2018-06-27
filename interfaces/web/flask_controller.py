@@ -47,3 +47,8 @@ def backtesting():
 @server_instance.route("/tentacle_manager")
 def tentacle_manager():
     return render_template('tentacle_manager.html')
+
+
+@server_instance.route("/update")
+def update():
+    return ""
