@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block body %}
+<h1>Tentacles</h1>
+<br>
+<h2>TradingModes</h2>
+<div class="list-group">
+  <a class="list-group-item list-group-item-action" id="DailyTradingMode">DailyTradingMode</a>
+  <a class="list-group-item list-group-item-action" id="HighFrequencyMode">HighFrequencyMode</a>
+  <a class="list-group-item list-group-item-action" id="HybridMode">HybridMode</a>
+</div>
+<br>
+<h2>Strategies</h2>
+<div class="list-group">
+  <a class="list-group-item list-group-item-action" id="FullStrategy">FullStrategy</a>
+  <a class="list-group-item list-group-item-action" id="MAHighFrequencyStrategy">MAHighFrequencyStrategy</a>
+</div>
+<br>
+<button type="button" class="btn btn-primary">Apply</button>
+
+<script>
+$(document).ready(function () {
+    $(".list-group-item").click(function(){
+        if ($(this).hasClass("active")){
+            $(this).removeClass("active");
+        }else{
+            $(this).toggleClass("active");
+        }
+    });
+});
+</script>
+{% endblock %}

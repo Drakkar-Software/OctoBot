@@ -6,15 +6,22 @@ import dash
 import flask
 import pandas
 
-from config.cst import PriceStrings, PriceIndexes
+from config.cst import PriceIndexes
+from interfaces.web.advanced_flask_controller import get_advanced_blueprint
 
 server_instance = flask.Flask(__name__)
+
+server_instance.register_blueprint(get_advanced_blueprint())
+
+# dash
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
 app_instance.config['suppress_callback_exceptions'] = True
 
 # disable Flask logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
+
+notifications = []
 
 matrix_history = []
 symbol_data_history = {}
@@ -61,6 +68,18 @@ def add_to_symbol_data_history(symbol, data, time_frame):
                 [symbol_data_history[symbol][time_frame], data[-new_data_index:]], ignore_index=True)
 
 
+def add_notification(level, title, message):
+    notifications.append({
+        "Level": level.value,
+        "Title": title,
+        "Message": message
+    })
+
+
+def flush_notifications():
+    notifications.clear()
+
+
 def get_matrix_history():
     return matrix_history
 
@@ -71,6 +90,10 @@ def get_portfolio_value_history():
 
 def get_symbol_data_history(symbol, time_frame):
     return symbol_data_history[symbol][time_frame]
+
+
+def get_notifications():
+    return notifications
 
 
 def load_callbacks():
@@ -86,4 +109,17 @@ def load_callbacks():
 
 
 def load_routes():
-    from .flask_controller import index
+    from .flask_controller import home
+    from .flask_controller import dash
+    from .flask_controller import config
+    from .flask_controller import portfolio
+    from .flask_controller import tentacles
+    from .flask_controller import orders
+    from .flask_controller import backtesting
+    from .flask_controller import tentacle_manager
+    from .flask_controller import update
+    from .flask_controller import commands
+
+
+def load_advanced_routes():
+    from .advanced_flask_controller import home

@@ -1,14 +1,12 @@
 import inspect
 import logging
 
-from config.cst import EvaluatorMatrixTypes, CONFIG_TRADER_MODE, CONFIG_TRADER, CONFIG_EVALUATORS_WILDCARD, \
-    START_PENDING_EVAL_NOTE
-from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_matrix import EvaluatorMatrix
-from evaluator.TA import TAEvaluator
+from config.cst import EvaluatorMatrixTypes, CONFIG_TRADER_MODE, CONFIG_TRADER, START_PENDING_EVAL_NOTE
 from evaluator.RealTime import RealTimeTAEvaluator
 from evaluator.Social import SocialEvaluator
-from evaluator.Strategies import StrategiesEvaluator
+from evaluator.TA import TAEvaluator
+from evaluator.evaluator_creator import EvaluatorCreator
+from evaluator.evaluator_matrix import EvaluatorMatrix
 from trading.trader import modes
 from trading.trader.modes import AbstractTradingMode
 
