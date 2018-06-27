@@ -107,8 +107,7 @@ class AbstractTradingModeDecider(AsynchronousServer):
                         trader,
                         pf,
                         self.state)
-                    if evaluator_notification is not None:
-                        self._push_order_notification_if_possible(new_orders, evaluator_notification)
+                    self._push_order_notification_if_possible(new_orders, evaluator_notification)
 
     @staticmethod
     def _push_order_notification_if_possible(order_list, notification):
