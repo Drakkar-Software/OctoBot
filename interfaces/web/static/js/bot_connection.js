@@ -23,8 +23,17 @@ function unlock_ui(){
 }
 
 function update_status(status){
-    // update central status
     icon_status = $("#navbar-bot-status")
+    icon_reboot = $("#navbar-bot-reboot")
+
+    // create alert if required
+    if (status && icon_status.hasClass("icon-red")){
+        create_alert("success", "Connected with Octobot", "");
+    }else if(!status && icon_status.hasClass("icon-green")){
+        create_alert("danger", "Connection lost with Octobot", "<br>Reconnecting...");
+    }
+
+    // update central status
     if (status){
         icon_status.removeClass("fa-times-circle icon-red");
         icon_status.addClass("fa-check-circle icon-green");
@@ -34,7 +43,6 @@ function update_status(status){
     }
 
     // update reboot status
-    icon_reboot = $("#navbar-bot-reboot")
     if (status){
         icon_reboot.removeClass("fa-spin");
     }else{
