@@ -60,6 +60,9 @@ if __name__ == '__main__':
     # Version
     logger.info("Version : {0}".format(LONG_VERSION))
 
+    # Test update
+    Commands.check_bot_update(logger)
+
     logger.info("Loading config files...")
     config = load_config()
 

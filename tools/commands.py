@@ -43,6 +43,17 @@ class Commands:
                 raise e
 
     @staticmethod
+    def check_bot_update(logger):
+        repo = Repo(os.getcwd())
+        index = repo.index
+        diff = index.diff(GIT_ORIGIN)
+
+        if diff is not None:
+            logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
+        else:
+            logger.info("Octobot is up to date :)")
+
+    @staticmethod
     def data_collector(config, catch=False):
         data_collector_inst = None
         try:
@@ -88,4 +99,3 @@ class Commands:
     def stop_bot(bot):
         bot.stop_threads()
         os._exit(0)
-
