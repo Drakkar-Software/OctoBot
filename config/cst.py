@@ -6,6 +6,7 @@ VERSION_DEV_PHASE = "beta"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, MINOR_VERSION, VERSION_DEV_PHASE)
 
+GIT_ORIGIN = "origin"
 ORIGIN_URL = "https://github.com/Drakkar-Software/OctoBot.git"
 
 MSECONDS_TO_SECONDS = 1000
