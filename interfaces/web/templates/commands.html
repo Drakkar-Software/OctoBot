@@ -2,5 +2,22 @@
 {% block body %}
 <h1>Commands</h1>
 <br>
+<button id="update" type="button" class="btn btn-success">Update Octobot</button>
 <button type="button" class="btn btn-danger">Restart Octobot</button>
+
+<!--temp location-->
+<script>
+$(document).ready(function() {
+    $(".btn").click(function(){
+        $.ajax({
+          url: "{{ url_for('commands', cmd="update") }}",
+        }).done(function(data) {
+            console.log(data);
+
+        }).fail(function(data) {
+            console.log(data);
+        });
+    });
+});
+</script>
 {% endblock %}
