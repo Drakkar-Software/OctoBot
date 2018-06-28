@@ -61,59 +61,59 @@ if __name__ == '__main__':
     logger.info("Version : {0}".format(LONG_VERSION))
 
     # Test update
-    Commands.check_bot_update(logger)
-
-    logger.info("Loading config files...")
-    config = load_config()
-
-    # Handle utility methods before bot initializing if possible
-    if args.packager:
-        Commands.package_manager(config, args.packager)
-
-    elif args.creator:
-        Commands.tentacle_creator(config, args.creator)
-
-    elif args.update:
+    if args.update:
         Commands.update(logger)
-
     else:
-        # In those cases load OctoBot
-        from octobot import OctoBot
+        Commands.check_bot_update(logger)
 
-        config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
+        logger.info("Loading config files...")
+        config = load_config()
 
-        TelegramApp.enable(config, args.telegram)
+        # Handle utility methods before bot initializing if possible
+        if args.packager:
+            Commands.package_manager(config, args.packager)
 
-        WebService.enable(config, args.web)
+        elif args.creator:
+            Commands.tentacle_creator(config, args.creator)
 
-        bot = OctoBot(config)
-
-        import interfaces
-
-        interfaces.__init__(bot, config)
-
-        if args.data_collector:
-            Commands.data_collector(config)
-
-        # start crypto bot options
         else:
-            if args.backtesting:
-                import backtesting
+            # In those cases load OctoBot
+            from octobot import OctoBot
 
-                backtesting.__init__(bot)
+            config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
 
-                config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-                config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
+            TelegramApp.enable(config, args.telegram)
 
-                config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-                config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+            WebService.enable(config, args.web)
 
-            if args.simulate:
-                config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-                config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+            bot = OctoBot(config)
 
-            if args.risk is not None and 0 < args.risk <= 1:
-                config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
+            import interfaces
 
-            if args.start:
-                Commands.start_bot(bot, logger)
+            interfaces.__init__(bot, config)
+
+            if args.data_collector:
+                Commands.data_collector(config)
+
+            # start crypto bot options
+            else:
+                if args.backtesting:
+                    import backtesting
+
+                    backtesting.__init__(bot)
+
+                    config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
+                    config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
+
+                    config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+                    config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+                if args.simulate:
+                    config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+                    config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+                if args.risk is not None and 0 < args.risk <= 1:
+                    config[CONFIG_TRADER][CONFIG_TRADER_RISK] = args.risk
+
+                if args.start:
+                    Commands.start_bot(bot, logger)
