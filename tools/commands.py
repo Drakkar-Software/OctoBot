@@ -51,7 +51,7 @@ class Commands:
         repo = Repo(os.getcwd())
 
         try:
-            diff = list(repo.iter_commits('{0}..origin/{0}'.format(repo.active_branch.name)))
+            diff = list(repo.iter_commits('{0}..{1}/{0}'.format(repo.active_branch.name, GIT_ORIGIN)))
             if diff:
                 if log:
                     logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")

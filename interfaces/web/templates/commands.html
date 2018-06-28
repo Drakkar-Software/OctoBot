@@ -2,30 +2,29 @@
 {% block body %}
 <h1>Commands</h1>
 <br>
-<button id="{{ url_for('commands', cmd='update') }}" type="button" class="btn btn-success">Update Octobot</button>
-<button id="{{ url_for('commands', cmd='restart') }}" type="button" class="btn btn-warning">Restart Octobot</button>
-<button id="{{ url_for('commands', cmd='stop') }}" type="button" class="btn btn-danger">Stop Octobot</button>
+<table style="width: 100%">
+    <tr>
+        <td><button route="{{ url_for('commands', cmd='update') }}" type="button" class="btn btn-success">Update Octobot</button></td>
+        <td><button route="{{ url_for('commands', cmd='restart') }}" type="button" class="btn btn-warning">Restart Octobot</button></td>
+        <td><button route="{{ url_for('commands', cmd='stop') }}" type="button" class="btn btn-danger">Stop Octobot</button></td>
+    </tr>
+</table>
+<br>
 
 <!--temp location-->
 <script>
 $(document).ready(function() {
     $(".btn").click(function(){
         button = $(this)
-        command = button.attr('id');
+        command = button.attr('route');
         origin_val = button.text();
         $.ajax({
             url: command,
             beforeSend: function() {
                 button.html("<i class='fas fa-circle-notch fa-spin'></i>");
             },
-            success: function(data) {
-                button.html(origin_val);
-            },
-            error: function(xhr) {
-                button.html("Failed");
-            },
             complete: function() {
-               // pass
+               button.html(origin_val);
             }
         });
     });
