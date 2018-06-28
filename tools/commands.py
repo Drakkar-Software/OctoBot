@@ -3,7 +3,7 @@ import subprocess
 
 from backtesting.collector.data_collector import DataCollector
 from config.cst import ORIGIN_URL
-from tools.tentacle_creation.tentacle_creator import TentacleCreator
+from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
 
 

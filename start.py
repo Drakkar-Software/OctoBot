@@ -41,7 +41,7 @@ if __name__ == '__main__':
                                                  'Tentacle Manager help.',
                         nargs='+')
 
-    parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c strategy test '
+    parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c Evaluator '
                                                 'to create a new strategy tentacles. Use: -c help to get the '
                                                 'Tentacle Creator help.',
                         nargs='+')
