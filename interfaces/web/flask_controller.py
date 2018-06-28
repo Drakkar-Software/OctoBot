@@ -1,9 +1,12 @@
 import json
+import logging
 
 from flask import render_template
+from tools.commands import Commands
 
 from interfaces.web import server_instance, get_notifications, flush_notifications
 
+logger = logging.getLogger("ServerInstance Controller")
 
 @server_instance.route("/")
 @server_instance.route("/home")
@@ -52,8 +55,11 @@ def tentacle_manager():
 
 
 @server_instance.route("/commands")
-def commands():
-    return render_template('commands.html')
+@server_instance.route('/commands/<cmd>', methods=['POST'])
+def commands(cmd):
+    if cmd == "update":
+        Commands.update(logger)
+    return render_template('commands.html', cmd=cmd)
 
 
 @server_instance.route("/update")
