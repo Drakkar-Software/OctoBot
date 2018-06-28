@@ -18,10 +18,10 @@ class Commands:
             git = repo.git
 
             # check origin
-            if GIT_ORIGIN not in repo.remotes:
-                origin = repo.create_remote(GIT_ORIGIN, url=ORIGIN_URL)
-            else:
+            try:
                 origin = repo.remote(GIT_ORIGIN)
+            except Exception:
+                origin = repo.create_remote(GIT_ORIGIN, url=ORIGIN_URL)
 
             if origin.exists():
                 # update
@@ -29,10 +29,10 @@ class Commands:
                     print("Updated %s to %s" % (fetch_info.ref, fetch_info.commit))
 
                 # checkout
-                if VERSION_DEV_PHASE not in repo.branches:
-                    repo.create_head(VERSION_DEV_PHASE, origin.refs.VERSION_DEV_PHASE)
-
-                git.branch(VERSION_DEV_PHASE)
+                # try:
+                #     git.branch(VERSION_DEV_PHASE)
+                # except Exception:
+                #     repo.create_head(VERSION_DEV_PHASE, origin.refs.VERSION_DEV_PHASE)
 
                 logger.info("Updated")
             else:
