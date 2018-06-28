@@ -1,3 +1,5 @@
+import time
+
 from config.cst import CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_USED, CONFIG_PORTFOLIO_TOTAL, OrderStatus
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
 
@@ -32,13 +34,13 @@ class TestExchangePersonalData:
         assert test_inst.has_order(10)
         assert not test_inst.has_order(153)
 
-    def test_set_order(self):
+    def test_upsert_order(self):
         test_inst = ExchangePersonalData()
 
         # without orders
         test_inst.orders = {}
         assert not test_inst.has_order(10)
-        test_inst.set_order(10, None)
+        test_inst.upsert_order(10, None)
         assert test_inst.has_order(10)
 
     def test_set_orders(self):
@@ -48,7 +50,7 @@ class TestExchangePersonalData:
         test_inst.orders = {}
         assert not test_inst.has_order(10)
         assert not test_inst.has_order(20)
-        test_inst.set_orders([
+        test_inst.upsert_orders([
             {"id": 15},
             {"id": 10},
             {"id": 20},
@@ -60,6 +62,27 @@ class TestExchangePersonalData:
         assert test_inst.has_order(10)
         assert not test_inst.has_order(12)
         assert not test_inst.has_order(30)
+
+    def test_set_more_than_max_count_orders(self):
+        test_inst = ExchangePersonalData()
+        test_inst.orders = {}
+        test_inst._MAX_ORDERS_COUNT = 500
+        nb_max_stored_orders = test_inst._MAX_ORDERS_COUNT
+
+        max_timestamp = 0
+        for i in range(nb_max_stored_orders):
+            time_stamp = time.time()
+            test_inst.upsert_order(i, {"id": i, "timestamp": time_stamp})
+            if i == nb_max_stored_orders/2:
+                max_timestamp = time_stamp
+            time.sleep(0.000000001)
+
+        assert len(test_inst.orders) == nb_max_stored_orders
+        test_inst.upsert_order(nb_max_stored_orders+1, {"id": nb_max_stored_orders+1, "timestamp": time.time()})
+
+        assert not [order for order in test_inst.orders.values() if order["timestamp"] < max_timestamp]
+
+        assert len(test_inst.orders) == nb_max_stored_orders/2+1
 
     @staticmethod
     def create_fake_order(o_id, status, symbol, timestamp):
@@ -84,13 +107,13 @@ class TestExchangePersonalData:
         assert test_inst.get_closed_orders(symbol_3, None, None) == []
 
         order_1 = self.create_fake_order(10, OrderStatus.CLOSED.value, symbol_1, 0)
-        test_inst.set_order(10, order_1)
+        test_inst.upsert_order(10, order_1)
         assert test_inst.get_all_orders(symbol_1, None, None) == [order_1]
         assert test_inst.get_open_orders(symbol_1, None, None) == []
         assert test_inst.get_closed_orders(symbol_1, None, None) == [order_1]
 
         order_2 = self.create_fake_order(100, OrderStatus.OPEN.value, symbol_3, 0)
-        test_inst.set_order(100, order_2)
+        test_inst.upsert_order(100, order_2)
         assert test_inst.get_all_orders(symbol_3, None, None) == [order_2]
         assert test_inst.get_open_orders(symbol_3, None, None) == [order_2]
         assert test_inst.get_closed_orders(symbol_3, None, None) == []
@@ -102,7 +125,7 @@ class TestExchangePersonalData:
         assert test_inst.get_closed_orders(None, None, None) == [order_1]
 
         order_3 = self.create_fake_order(10, OrderStatus.OPEN.value, symbol_2, 0)
-        test_inst.set_order(10, order_3)
+        test_inst.upsert_order(10, order_3)
         assert test_inst.get_all_orders(symbol_2, None, None) == [order_3]
         assert test_inst.get_open_orders(symbol_2, None, None) == [order_3]
         assert test_inst.get_closed_orders(symbol_2, None, None) == []
@@ -119,7 +142,7 @@ class TestExchangePersonalData:
         order_4 = self.create_fake_order(11, OrderStatus.OPEN.value, symbol_1, 100)
         order_5 = self.create_fake_order(12, OrderStatus.CLOSED.value, symbol_2, 1000)
         order_6 = self.create_fake_order(13, OrderStatus.CLOSED.value, symbol_3, 50)
-        test_inst.set_orders([order_4, order_5, order_6])
+        test_inst.upsert_orders([order_4, order_5, order_6])
         assert test_inst.get_all_orders(symbol_1, None, None) == [order_4]
         assert test_inst.get_open_orders(symbol_1, None, None) == [order_4]
         assert test_inst.get_closed_orders(symbol_1, None, None) == []
