@@ -1,8 +1,7 @@
 import os
-import sys
 import subprocess
+import sys
 import threading
-from time import sleep
 
 from git import Repo
 
