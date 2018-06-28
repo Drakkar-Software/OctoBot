@@ -10,6 +10,7 @@ from interfaces.web import server_instance, get_notifications, flush_notificatio
 
 logger = logging.getLogger("ServerInstance Controller")
 
+
 @server_instance.route("/")
 @server_instance.route("/home")
 def home():
