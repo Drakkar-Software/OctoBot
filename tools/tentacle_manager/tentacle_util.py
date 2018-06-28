@@ -36,7 +36,7 @@ def has_required_package(package, component_name, component_version=None):
 
 def create_missing_tentacles_arch():
     found_existing_installation = False
-    tentacle_architecture, tentacle_extremity_architecture = _get_tentacles_arch()
+    tentacle_architecture, tentacle_extremity_architecture = get_tentacles_arch()
     for tentacle_root, subdir in tentacle_architecture.items():
         found_existing_installation = not _find_or_create(tentacle_root)
         init_path = os.path.join(tentacle_root, PYTHON_INIT_FILE)
@@ -80,7 +80,7 @@ def _create_arch_module_extremity(architecture, types_subdir, type_path, with_in
             _find_or_create(module_default_config_path)
 
 
-def _get_tentacles_arch():
+def get_tentacles_arch():
     tentacles_content_folder = {
                 TENTACLES_EVALUATOR_PATH: [
                     TENTACLES_EVALUATOR_REALTIME_PATH,
