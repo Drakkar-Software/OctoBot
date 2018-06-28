@@ -1,5 +1,18 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.4-beta
+====================
+*Released date : June 30 2018*
+
+**Info** :
+- New pip package to install "gitpython"
+
+# Concerned issues :
+
+# New features :
+
+# Bug fix :
+
 Changelog for 0.1.3_2-beta
 ====================
 *Released date : June 27 2018*
