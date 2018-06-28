@@ -10,14 +10,23 @@
 <script>
 $(document).ready(function() {
     $(".btn").click(function(){
-        command = $(this).attr('id');
+        button = $(this)
+        command = button.attr('id');
+        origin_val = button.text();
         $.ajax({
-          url: command,
-        }).done(function(data) {
-            console.log(data);
-
-        }).fail(function(data) {
-            console.log(data);
+            url: command,
+            beforeSend: function() {
+                button.html("<i class='fas fa-circle-notch fa-spin'></i>");
+            },
+            success: function(data) {
+                button.html(origin_val);
+            },
+            error: function(xhr) {
+                button.html("Failed");
+            },
+            complete: function() {
+               // pass
+            }
         });
     });
 });
