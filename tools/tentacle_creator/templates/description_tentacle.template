@@ -1,13 +1,11 @@
-"""
 OctoBot Tentacle
 
 $tentacle_description: {
     "name": "{{ name }}",
-    "type": "{{ t_type }}"",
+    "type": "{{ t_type }}",
     "subtype": "{{ subtype }}",
     "version": "{{ version }}",
     "requirements": {{ requirements }},
     "config_files": [],
     "tests": []
 }
-"""
