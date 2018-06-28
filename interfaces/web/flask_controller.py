@@ -58,7 +58,7 @@ def tentacle_manager():
 @server_instance.route('/commands/<cmd>', methods=['GET', 'POST'])
 def commands(cmd=None):
     if cmd == "update":
-        # Commands.update(logger)
+        Commands.update(logger)
         return jsonify("Success")
     return render_template('commands.html', cmd=cmd)
 
