@@ -3,7 +3,7 @@ Because OctoBot is modular, a wide range of evaluators and strategies are usable
 
 Default evaluators and strategies are located here: [https://github.com/Drakkar-Software/OctoBot-Packages](https://github.com/Drakkar-Software/OctoBot-Packages).
 
-To install default evaluators and strategies in your OctoBot, run the command 
+To install default evaluators and strategies in your OctoBot, run the following command: 
 
 ```bash
 python start.py -p install all
