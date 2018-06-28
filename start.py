@@ -21,13 +21,6 @@ def start_octobot(starting_args):
     if starting_args.pause_time is not None:
         sleep(starting_args.pause_time)
 
-    parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c Evaluator '
-                                                'to create a new evaluator tentacles. Use: -c help to get the '
-                                                'Tentacle Creator help.',
-                        nargs='+')
-
-    args = parser.parse_args()
-
     fileConfig('config/logging_config.ini')
 
     logger = logging.getLogger("OctoBot Launcher")
@@ -125,8 +118,8 @@ if __name__ == '__main__':
                                                  'Tentacle Manager help.',
                         nargs='+')
 
-    parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c strategy test '
-                                                'to create a new strategy tentacles. Use: -c help to get the '
+    parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c Evaluator '
+                                                'to create a new evaluator tentacles. Use: -c help to get the '
                                                 'Tentacle Creator help.',
                         nargs='+')
 

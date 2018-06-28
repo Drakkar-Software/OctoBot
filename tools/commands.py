@@ -116,7 +116,7 @@ class Commands:
     @staticmethod
     def start_new_bot(args=""):
         python_command = "{0}/{1} ".format(os.getcwd(), "start.py")
-        command_args = "--pause_time=5"
+        command_args = "--pause_time=3"
         subprocess.call([sys.executable, python_command, command_args, args])
 
     @staticmethod
