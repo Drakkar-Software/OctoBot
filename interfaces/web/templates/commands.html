@@ -2,15 +2,17 @@
 {% block body %}
 <h1>Commands</h1>
 <br>
-<button id="update" type="button" class="btn btn-success">Update Octobot</button>
-<button type="button" class="btn btn-danger">Restart Octobot</button>
+<button id="{{ url_for('commands', cmd='update') }}" type="button" class="btn btn-success">Update Octobot</button>
+<button id="{{ url_for('commands', cmd='restart') }}" type="button" class="btn btn-warning">Restart Octobot</button>
+<button id="{{ url_for('commands', cmd='stop') }}" type="button" class="btn btn-danger">Stop Octobot</button>
 
 <!--temp location-->
 <script>
 $(document).ready(function() {
     $(".btn").click(function(){
+        command = $(this).attr('id');
         $.ajax({
-          url: "{{ url_for('commands', cmd="update") }}",
+          url: command,
         }).done(function(data) {
             console.log(data);
 

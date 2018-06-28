@@ -8,10 +8,14 @@ Changelog for 0.1.4-beta
 - New pip package to install "gitpython"
 
 # Concerned issues :
+    #263 [TentacleCreator] review tentacle creation
+    #273 [Web interface] Implement commands
 
 # New features :
+    - Update / Restart / Stop Octobot from Web interface
 
 # Bug fix :
+    - Fix tentacle Creator (-c)
 
 Changelog for 0.1.3_2-beta
 ====================
