@@ -64,7 +64,9 @@ class TentacleCreator:
             except Exception as e:
                 self.logger.error("Tentacle creation failed : {0}".format(e))
         else:
-            self.logger.warning("This tentacle type doesn't exist. Tentacle types are: {0}".format(TENTACLE_PARENTS))
+            self.logger.warning("This tentacle type '{0}' doesn't exist. Tentacle types are: {1}"
+                                .format(tentacle_type,
+                                        list(TENTACLE_PARENTS.keys())))
 
 
 class CreatedTentacle:
@@ -74,6 +76,7 @@ class CreatedTentacle:
         self.config = config
         self.tentacle_creator = tentacle_creator
 
+        self.header_separator = '"""\n'
         self.t_type = tentacle_type
         self.subtype = ""
         self.name = ""
@@ -105,17 +108,26 @@ class CreatedTentacle:
 
     def create_file(self):
         try:
-            template = NativeEnvironment().from_string(self.tentacle_creator.get_templates()[self.subtype])
+            desc_template = NativeEnvironment().from_string(self.tentacle_creator.get_templates()["Description"])
+            impl_template = NativeEnvironment().from_string(self.tentacle_creator.get_templates()[self.subtype])
             if not os.path.isfile(self.get_path()):
                 with open(self.get_path(), "w") as tentacle_file:
-                    tentacle_file.write(self.tentacle_creator.get_templates()["Description"])
-                    tentacle_file.write(template.render(name=self.name,
-                                                        big_name=self.name.title(),
-                                                        t_type=self.t_type,
-                                                        subtype=self.subtype,
-                                                        version=self.version,
-                                                        requirements=self.requirements,
-                                                        tests=self.tests))
+                    tentacle_file.write(self.header_separator)
+                    tentacle_file.write(desc_template.render(name=self.name,
+                                                             big_name=self.name.title(),
+                                                             t_type=self.t_type,
+                                                             subtype=self.subtype,
+                                                             version=self.version,
+                                                             requirements=self.requirements,
+                                                             tests=self.tests))
+                    tentacle_file.write("\n"+self.header_separator)
+                    tentacle_file.write(impl_template.render(name=self.name,
+                                                             big_name=self.name.title(),
+                                                             t_type=self.t_type,
+                                                             subtype=self.subtype,
+                                                             version=self.version,
+                                                             requirements=self.requirements,
+                                                             tests=self.tests))
 
                 # TODO add __init__.py management
             else:

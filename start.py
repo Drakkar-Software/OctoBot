@@ -42,7 +42,7 @@ if __name__ == '__main__':
                         nargs='+')
 
     parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c Evaluator '
-                                                'to create a new strategy tentacles. Use: -c help to get the '
+                                                'to create a new evaluator tentacles. Use: -c help to get the '
                                                 'Tentacle Creator help.',
                         nargs='+')
 
