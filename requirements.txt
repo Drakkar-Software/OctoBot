@@ -16,7 +16,7 @@ plotly
 newspaper3k
 praw
 python-telegram-bot
-
+gitpython
 dash
 dash-table-experiments
 flask

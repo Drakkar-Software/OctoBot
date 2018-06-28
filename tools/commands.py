@@ -1,8 +1,10 @@
 import os
-import subprocess
+
+from git import Repo
 
 from backtesting.collector.data_collector import DataCollector
-from config.cst import ORIGIN_URL
+from config.cst import ORIGIN_URL, VERSION_DEV_PHASE, GIT_ORIGIN
+from tools.console_tools import FetchProgressBar
 from tools.tentacle_creation.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
 
@@ -12,19 +14,31 @@ class Commands:
     def update(logger, catch=False):
         logger.info("Updating...")
         try:
-            process_set_remote = subprocess.Popen(["git", "remote", "set-url", "origin", ORIGIN_URL],
-                                                  stdout=subprocess.PIPE)
-            _ = process_set_remote.communicate()[0]
+            repo = Repo(os.getcwd())
+            git = repo.git
 
-            process_pull = subprocess.Popen(["git", "pull", "origin"], stdout=subprocess.PIPE)
-            _ = process_pull.communicate()[0]
+            # check origin
+            if GIT_ORIGIN not in repo.remotes:
+                origin = repo.create_remote(GIT_ORIGIN, url=ORIGIN_URL)
+            else:
+                origin = repo.remote(GIT_ORIGIN)
 
-            process_checkout = subprocess.Popen(["git", "checkout", "beta"], stdout=subprocess.PIPE)
-            _ = process_checkout.communicate()[0]
+            if origin.exists():
+                # update
+                for fetch_info in origin.pull(progress=FetchProgressBar()):
+                    print("Updated %s to %s" % (fetch_info.ref, fetch_info.commit))
 
-            logger.info("Updated")
+                # checkout
+                if VERSION_DEV_PHASE not in repo.branches:
+                    repo.create_head(VERSION_DEV_PHASE, origin.refs.VERSION_DEV_PHASE)
+
+                git.branch(VERSION_DEV_PHASE)
+
+                logger.info("Updated")
+            else:
+                raise Exception("Cannot connect to origin")
         except Exception as e:
-            logger.info("Exception raised during updating process...")
+            logger.info("Exception raised during updating process... ({})".format(e))
             if not catch:
                 raise e
 
