@@ -9,7 +9,7 @@ from git import Repo
 from backtesting.collector.data_collector import DataCollector
 from config.cst import ORIGIN_URL, GIT_ORIGIN
 from tools.console_tools import FetchProgressBar
-from tools.tentacle_creation.tentacle_creator import TentacleCreator
+from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
 
 
