@@ -1,4 +1,5 @@
 # Where are evaluators and strategies ?
+
 Because OctoBot is modular, a wide range of evaluators and strategies are usable.
 
 Default evaluators and strategies are located here: [https://github.com/Drakkar-Software/OctoBot-Packages](https://github.com/Drakkar-Software/OctoBot-Packages).
