@@ -1,9 +1,13 @@
 import os
+import sys
+import subprocess
+import threading
+from time import sleep
 
 from git import Repo
 
 from backtesting.collector.data_collector import DataCollector
-from config.cst import ORIGIN_URL, VERSION_DEV_PHASE, GIT_ORIGIN
+from config.cst import ORIGIN_URL, GIT_ORIGIN
 from tools.console_tools import FetchProgressBar
 from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
@@ -15,7 +19,7 @@ class Commands:
         logger.info("Updating...")
         try:
             repo = Repo(os.getcwd())
-            git = repo.git
+            # git = repo.git
 
             # check origin
             try:
@@ -107,3 +111,15 @@ class Commands:
     def stop_bot(bot):
         bot.stop_threads()
         os._exit(0)
+
+    @staticmethod
+    def start_new_bot(args=""):
+        python_command = "{0}/{1} ".format(os.getcwd(), "start.py")
+        command_args = "--pause_time=3"
+        subprocess.call([sys.executable, python_command, command_args, args])
+
+    @staticmethod
+    def restart_bot(bot, args=""):
+        start_new_bot_thread = threading.Thread(target=Commands.start_new_bot, args=(args,))
+        start_new_bot_thread.start()
+        Commands.stop_bot(bot)
