@@ -45,11 +45,10 @@ class Commands:
     @staticmethod
     def check_bot_update(logger, log=True):
         repo = Repo(os.getcwd())
-        index = repo.index
 
         try:
-            diff = index.diff(GIT_ORIGIN)
-            if diff is not None:
+            diff = list(repo.iter_commits('{0}..origin/{0}'.format(repo.active_branch.name)))
+            if diff:
                 if log:
                     logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
                 return False
@@ -57,7 +56,7 @@ class Commands:
                 if log:
                     logger.info("Octobot is up to date :)")
                 return True
-        except Exception:
+        except Exception as e:
             if log:
                 logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
             return False
