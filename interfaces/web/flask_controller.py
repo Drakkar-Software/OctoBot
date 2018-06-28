@@ -2,6 +2,8 @@ import json
 import logging
 
 from flask import render_template, jsonify
+
+from interfaces import get_bot
 from tools.commands import Commands
 
 from interfaces.web import server_instance, get_notifications, flush_notifications
@@ -60,6 +62,15 @@ def commands(cmd=None):
     if cmd == "update":
         Commands.update(logger)
         return jsonify("Success")
+
+    elif cmd == "restart":
+        Commands.restart_bot(get_bot(), args="--web")
+        return jsonify("Success")
+
+    elif cmd == "stop":
+        Commands.stop_bot(get_bot())
+        return jsonify("Success")
+
     return render_template('commands.html', cmd=cmd)
 
 
