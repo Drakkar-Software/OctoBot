@@ -72,7 +72,7 @@ class TestExchangePersonalData:
         max_timestamp = 0
         for i in range(nb_max_stored_orders):
             time_stamp = time.time()
-            test_inst.upsert_order(i, {"id": i, 
+            test_inst.upsert_order(i, {"id": i,
                                        "timestamp": time_stamp,
                                        "status": OrderStatus.CLOSED.value})
             if i == nb_max_stored_orders/2:
@@ -80,7 +80,7 @@ class TestExchangePersonalData:
             time.sleep(0.000000001)
 
         assert len(test_inst.orders) == nb_max_stored_orders
-        test_inst.upsert_order(nb_max_stored_orders+1, {"id": nb_max_stored_orders+1, 
+        test_inst.upsert_order(nb_max_stored_orders+1, {"id": nb_max_stored_orders+1,
                                                         "timestamp": time.time(),
                                                         "status": OrderStatus.CLOSED.value})
 
