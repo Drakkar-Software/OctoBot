@@ -62,6 +62,25 @@ function manage_alert(raw_data){
     })
 }
 
+function handle_route_button(){
+    $(".btn").click(function(){
+        button = $(this)
+        if (button[0].hasAttribute('route')){
+            command = button.attr('route');
+            origin_val = button.text();
+            $.ajax({
+                url: command,
+                beforeSend: function() {
+                    button.html("<i class='fas fa-circle-notch fa-spin'></i>");
+                },
+                complete: function() {
+                   button.html(origin_val);
+                }
+            });
+         }
+    });
+}
+
 function create_alert(a_level, a_title, a_msg, url="_blank"){
     $.notify({
         title: a_title,
@@ -90,7 +109,8 @@ function create_alert(a_level, a_title, a_msg, url="_blank"){
     });
 }
 
-// Updater
+
 $(document).ready(function () {
+    handle_route_button();
     setInterval(function(){ get_update(); }, 500);
 });

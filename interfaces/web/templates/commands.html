@@ -10,24 +10,4 @@
     </tr>
 </table>
 <br>
-
-<!--temp location-->
-<script>
-$(document).ready(function() {
-    $(".btn").click(function(){
-        button = $(this)
-        command = button.attr('route');
-        origin_val = button.text();
-        $.ajax({
-            url: command,
-            beforeSend: function() {
-                button.html("<i class='fas fa-circle-notch fa-spin'></i>");
-            },
-            complete: function() {
-               button.html(origin_val);
-            }
-        });
-    });
-});
-</script>
 {% endblock %}
