@@ -33,20 +33,28 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('config') }}">Configuration</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownTrading" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Trading
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="{{ url_for('portfolio') }}">Portfolio</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{{ url_for('orders') }}">Orders</a>
+                            <a class="dropdown-item" href="{{ url_for('trades') }}">Trades</a>
+                        </div>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('tentacles') }}">Tentacles</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('orders') }}">Orders</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('trades') }}">Trades</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('tentacle_manager') }}">Tentacle Manager</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownTentacles" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Tentacles
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="{{ url_for('tentacles') }}">Tentacles</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{{ url_for('tentacle_manager') }}">Tentacle Manager</a>
+                        </div>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('backtesting') }}">Backtesting</a>
