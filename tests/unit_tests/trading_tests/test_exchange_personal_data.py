@@ -74,8 +74,7 @@ class TestExchangePersonalData:
             time_stamp = time.time()
             test_inst.upsert_order(i, {"id": i, 
                                        "timestamp": time_stamp,
-                                       "status": OrderStatus.CLOSED.value
-                                      })
+                                       "status": OrderStatus.CLOSED.value})
             if i == nb_max_stored_orders/2:
                 max_timestamp = time_stamp
             time.sleep(0.000000001)
