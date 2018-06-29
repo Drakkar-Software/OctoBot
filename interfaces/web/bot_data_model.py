@@ -179,7 +179,7 @@ def get_evaluator_graph_in_matrix_history(symbol,
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
     exchange_list = get_bot().get_exchanges_list()
 
-    if evaluator_name is not None and len(symbol_evaluator_list) > 0:
+    if evaluator_name is not None and exchange_name and len(symbol_evaluator_list) > 0:
         matrix = symbol_evaluator_list[symbol].get_matrix(exchange_list[exchange_name])
         add_to_matrix_history(matrix)
 
