@@ -10,12 +10,14 @@ Changelog for 0.1.4-beta
 # Concerned issues :
     #263 [TentacleCreator] review tentacle creation
     #273 [Web interface] Implement commands
+    #276 [Bug] Web interface exception when no exchange specified
 
 # New features :
     - Update / Restart / Stop Octobot from Web interface
 
 # Bug fix :
     - Fix tentacle Creator (-c)
+    - Fix config no exchange or no cryptocurrency specified (web)
 
 Changelog for 0.1.3_2-beta
 ====================
