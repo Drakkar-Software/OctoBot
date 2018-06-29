@@ -27,6 +27,17 @@ class WebApp(threading.Thread):
         # Define the WSGI application object
         self.app = app_instance
 
+        # Get default values
+        try:
+            first_exchange = next(iter(get_bot().get_exchanges_list().keys()))
+        except StopIteration:
+            first_exchange = ""
+
+        try:
+            first_cryptocurrency = next(iter(self.config[CONFIG_CRYPTO_CURRENCIES].keys()))
+        except StopIteration:
+            first_cryptocurrency = ""
+
         self.app.layout = html.Div(children=[
             dcc.Graph(id='portfolio-value-graph', animate=True),
 
@@ -49,14 +60,14 @@ class WebApp(threading.Thread):
                 dcc.Dropdown(id='exchange-name',
                              options=[{'label': s, 'value': s}
                                       for s in get_bot().get_exchanges_list().keys()],
-                             value=next(iter(get_bot().get_exchanges_list().keys())),
+                             value=first_exchange,
                              multi=False,
                              ),
                 html.Label('Currency'),
                 dcc.Dropdown(id='cryptocurrency-name',
                              options=[{'label': s, 'value': s}
                                       for s in self.config[CONFIG_CRYPTO_CURRENCIES].keys()],
-                             value=next(iter(self.config[CONFIG_CRYPTO_CURRENCIES].keys()))
+                             value=first_cryptocurrency
                              if self.config[CONFIG_CRYPTO_CURRENCIES] else "",
                              multi=False,
                              ),

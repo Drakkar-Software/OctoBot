@@ -32,5 +32,8 @@ def get_default_time_frame():
 def get_reference_market():
     global reference_market
     if reference_market is None:
-        reference_market = next(iter(get_bot().get_exchange_traders().values())).get_trades_manager().get_reference()
+        try:
+            reference_market = next(iter(get_bot().get_exchange_traders().values())).get_trades_manager().get_reference()
+        except StopIteration:
+            reference_market = None
     return reference_market
