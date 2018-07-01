@@ -24,9 +24,9 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     def adapt_price(symbol_market, price):
-        maximal_price_digits = AbstractTradingModeCreator._get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
-                                                                                Ecmsc.PRECISION_PRICE.value,
-                                                                                CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
+        maximal_price_digits = AbstractTradingModeCreator.get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
+                                                                               Ecmsc.PRECISION_PRICE.value,
+                                                                               CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
         return AbstractTradingModeCreator._trunc_with_n_decimal_digits(price, maximal_price_digits)
 
     @staticmethod
@@ -39,8 +39,8 @@ class AbstractTradingModeCreator:
         limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
         limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
 
-        min_quantity = AbstractTradingModeCreator._get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
-        min_cost = AbstractTradingModeCreator._get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
+        min_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
+        min_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
 
         if remaining_max_total_order_price < min_cost or remaining_portfolio_amount < min_quantity:
             return remaining_portfolio_amount
@@ -68,12 +68,12 @@ class AbstractTradingModeCreator:
         limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
         limit_price = symbol_market_limits[Ecmsc.LIMITS_PRICE.value]
 
-        min_quantity = AbstractTradingModeCreator._get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
-        max_quantity = AbstractTradingModeCreator._get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value)
-        min_cost = AbstractTradingModeCreator._get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
-        max_cost = AbstractTradingModeCreator._get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value)
-        min_price = AbstractTradingModeCreator._get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value)
-        max_price = AbstractTradingModeCreator._get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value)
+        min_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
+        max_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value)
+        min_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
+        max_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value)
+        min_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value)
+        max_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value)
 
         # adapt digits if necessary
         valid_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, quantity)
@@ -152,8 +152,8 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     def _adapt_quantity(symbol_market, quantity):
-        maximal_volume_digits = AbstractTradingModeCreator._get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
-                                                                                 Ecmsc.PRECISION_AMOUNT.value, 0)
+        maximal_volume_digits = AbstractTradingModeCreator.get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
+                                                                                Ecmsc.PRECISION_AMOUNT.value, 0)
         return AbstractTradingModeCreator._trunc_with_n_decimal_digits(quantity, maximal_volume_digits)
 
     @staticmethod
@@ -162,7 +162,7 @@ class AbstractTradingModeCreator:
         return float("{0:.{1}f}".format(math.trunc(value * 10 ** digits) / (10 ** digits), digits))
 
     @staticmethod
-    def _get_value_or_default(dictionary, key, default=math.nan):
+    def get_value_or_default(dictionary, key, default=math.nan):
         if key in dictionary:
             value = dictionary[key]
             return value if value is not None else default
