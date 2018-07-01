@@ -1,7 +1,7 @@
 from enum import Enum
 
 SHORT_VERSION = "0.1.4"
-MINOR_VERSION = "0"
+MINOR_VERSION = "1"
 VERSION_DEV_PHASE = "beta"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, MINOR_VERSION, VERSION_DEV_PHASE)
@@ -382,6 +382,8 @@ class ExchangeConstantsTickersInfoColumns(Enum):
 
 
 class ExchangeConstantsMarketStatusColumns(Enum):
+    TAKER = "taker"
+    MAKER = "maker"
     SYMBOL = "symbol"
     ID = "id"
     CURRENCY = "base"

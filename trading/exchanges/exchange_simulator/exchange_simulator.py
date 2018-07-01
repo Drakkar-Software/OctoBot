@@ -175,11 +175,14 @@ class ExchangeSimulator(AbstractExchange):
             return array[index:index + max_count]
 
     def _extract_data_with_limit(self, symbol, time_frame):
-        return self._extract_indexes(self.data[symbol][time_frame.value], self.time_frame_get_times[time_frame.value])
+        to_use_timeframe = time_frame.value if time_frame is not None else next(iter(self.data[symbol]))
+        return self._extract_indexes(self.data[symbol][to_use_timeframe],
+                                     self.time_frame_get_times[to_use_timeframe])
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         result = self._extract_data_with_limit(symbol, time_frame)
-        self.time_frame_get_times[time_frame.value] += 1
+        if time_frame is not None:
+            self.time_frame_get_times[time_frame.value] += 1
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, result, replace_all=True)
 
     def get_recent_trades(self, symbol):
@@ -213,6 +216,9 @@ class ExchangeSimulator(AbstractExchange):
 
     def get_market_status(self, symbol):
         return {
+            # fees
+            ExchangeConstantsMarketStatusColumns.TAKER.value: 0.001,
+            ExchangeConstantsMarketStatusColumns.MAKER.value: 0.001,
             # number of decimal digits "after the dot"
             ExchangeConstantsMarketStatusColumns.PRECISION.value: {
                 ExchangeConstantsMarketStatusColumns.PRECISION_AMOUNT.value: 8,

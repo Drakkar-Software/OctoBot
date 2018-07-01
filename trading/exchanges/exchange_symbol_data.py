@@ -27,7 +27,7 @@ class SymbolData:
 
     # candle functions
     def update_symbol_candles(self, time_frame, new_symbol_candles_data, replace_all=False):
-        if time_frame not in self.symbol_candles or replace_all:
+        if time_frame is not None and time_frame not in self.symbol_candles or replace_all:
             self.symbol_candles[time_frame] = CandleData(new_symbol_candles_data)
 
         else:
@@ -60,6 +60,8 @@ class SymbolData:
     def get_candle_data(self, time_frame):
         if time_frame in self.symbol_candles:
             return self.symbol_candles[time_frame]
+        elif time_frame is None:
+            return self.symbol_candles[next(iter(self.symbol_candles))]
         return None
 
     # ticker functions
@@ -81,6 +83,8 @@ class SymbolData:
 
     def candles_are_initialized(self, time_frame):
         if time_frame in self.symbol_candles and self.symbol_candles[time_frame].is_initialized:
+            return True
+        elif time_frame is None:
             return True
         return False
 
