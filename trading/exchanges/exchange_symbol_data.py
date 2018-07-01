@@ -27,7 +27,7 @@ class SymbolData:
 
     # candle functions
     def update_symbol_candles(self, time_frame, new_symbol_candles_data, replace_all=False):
-        if time_frame not in self.symbol_candles or replace_all:
+        if time_frame is not None and time_frame not in self.symbol_candles or replace_all:
             self.symbol_candles[time_frame] = CandleData(new_symbol_candles_data)
 
         else:
