@@ -1,5 +1,12 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.4_1-beta
+====================
+*Released date : July 1 2018*
+
+# Concerned issues :
+    #279 [Trading Modes] prepare bot for high frequency treading mode 
+
 Changelog for 0.1.4-beta
 ====================
 *Released date : July 1 2018*
