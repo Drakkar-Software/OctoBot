@@ -213,6 +213,9 @@ class ExchangeSimulator(AbstractExchange):
 
     def get_market_status(self, symbol):
         return {
+            # fees
+            ExchangeConstantsMarketStatusColumns.TAKER.value: 0.001,
+            ExchangeConstantsMarketStatusColumns.MAKER.value: 0.001,
             # number of decimal digits "after the dot"
             ExchangeConstantsMarketStatusColumns.PRECISION.value: {
                 ExchangeConstantsMarketStatusColumns.PRECISION_AMOUNT.value: 8,

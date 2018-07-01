@@ -1,6 +1,7 @@
 from trading.exchanges.exchange_symbol_data import SymbolData
 from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
+from config.cst import ExchangeConstantsMarketStatusColumns as ecmsc
 
 
 class ExchangeDispatcher(AbstractExchange):
@@ -163,4 +164,4 @@ class ExchangeDispatcher(AbstractExchange):
     def get_fees(self, symbol):
         #TODO temporary implementation waiting for more accurate fee management
         market_status = self.exchange.get_market_status(symbol)
-        return market_status["taker"], market_status["maker"]
+        return market_status[ecmsc.TAKER.value], market_status[ecmsc.MAKER.value]
