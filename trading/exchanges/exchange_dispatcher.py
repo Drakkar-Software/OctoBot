@@ -158,3 +158,9 @@ class ExchangeDispatcher(AbstractExchange):
 
     def get_uniform_timestamp(self, timestamp):
         return self.exchange.get_uniform_timestamp(timestamp)
+
+    # returns (taker, maker) tuple
+    def get_fees(self, symbol):
+        #TODO temporary implementation waiting for more accurate fee management
+        market_status = self.exchange.get_market_status(symbol)
+        return market_status["taker"], market_status["maker"]
