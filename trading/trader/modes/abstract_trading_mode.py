@@ -18,6 +18,7 @@ class AbstractTradingMode:
         self.deciders = {}
         self.deciders_without_keys = []
         self.strategy_instances_by_classes = {}
+        self.symbol = symbol_evaluator.get_symbol()
         self._init_strategies_instances(symbol_evaluator.get_strategies_eval_list(exchange))
 
     @staticmethod
