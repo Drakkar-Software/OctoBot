@@ -8,6 +8,7 @@ Changelog for 0.1.4-beta
 - New pip package to install "gitpython"
 
 # Concerned issues :
+    #188 [Exchange data] clean order list (closed and canceled) and other old data after 1 day
     #263 [TentacleCreator] review tentacle creation
     #273 [Web interface] Implement commands
     #274 installation issue
