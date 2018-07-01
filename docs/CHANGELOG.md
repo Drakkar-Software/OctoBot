@@ -1,5 +1,26 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.4-beta
+====================
+*Released date : July 1 2018*
+
+**Info** :
+- New pip package to install "gitpython"
+
+# Concerned issues :
+    #188 [Exchange data] clean order list (closed and canceled) and other old data after 1 day
+    #263 [TentacleCreator] review tentacle creation
+    #273 [Web interface] Implement commands
+    #274 installation issue
+    #276 [Bug] Web interface exception when no exchange specified
+
+# New features :
+    - Update / Restart / Stop Octobot from Web interface
+
+# Bug fix :
+    - Fix tentacle Creator (-c)
+    - Fix config no exchange or no cryptocurrency specified (web)
+
 Changelog for 0.1.3_2-beta
 ====================
 *Released date : June 27 2018*

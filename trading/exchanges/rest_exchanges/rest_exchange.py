@@ -129,25 +129,25 @@ class RESTExchange(AbstractExchange):
     # ORDERS
     def get_order(self, order_id, symbol=None):
         if self.client.has['fetchOrder']:
-            self.get_personal_data().set_order(order_id, self.client.fetch_order(order_id, symbol))
+            self.get_personal_data().upsert_order(order_id, self.client.fetch_order(order_id, symbol))
         else:
             raise Exception("This exchange doesn't support fetchOrder")
 
     def get_all_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchOrders']:
-            self.get_personal_data().set_orders(self.client.fetchOrders(symbol=symbol, since=since, limit=limit))
+            self.get_personal_data().upsert_orders(self.client.fetchOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchOrders")
 
     def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         if self.client.has['fetchOpenOrders']:
-            self.get_personal_data().set_orders(self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit))
+            self.get_personal_data().upsert_orders(self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchOpenOrders")
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchClosedOrders']:
-            self.get_personal_data().set_orders(self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit))
+            self.get_personal_data().upsert_orders(self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchClosedOrders")
 
