@@ -1,9 +1,14 @@
 import os
 import subprocess
+import sys
+import threading
+
+from git import Repo
 
 from backtesting.collector.data_collector import DataCollector
-from config.cst import ORIGIN_URL
-from tools.tentacle_creation.tentacle_creator import TentacleCreator
+from config.cst import ORIGIN_URL, GIT_ORIGIN
+from tools.console_tools import FetchProgressBar
+from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
 
 
@@ -12,21 +17,52 @@ class Commands:
     def update(logger, catch=False):
         logger.info("Updating...")
         try:
-            process_set_remote = subprocess.Popen(["git", "remote", "set-url", "origin", ORIGIN_URL],
-                                                  stdout=subprocess.PIPE)
-            _ = process_set_remote.communicate()[0]
+            repo = Repo(os.getcwd())
+            # git = repo.git
 
-            process_pull = subprocess.Popen(["git", "pull", "origin"], stdout=subprocess.PIPE)
-            _ = process_pull.communicate()[0]
+            # check origin
+            try:
+                origin = repo.remote(GIT_ORIGIN)
+            except Exception:
+                origin = repo.create_remote(GIT_ORIGIN, url=ORIGIN_URL)
 
-            process_checkout = subprocess.Popen(["git", "checkout", "beta"], stdout=subprocess.PIPE)
-            _ = process_checkout.communicate()[0]
+            if origin.exists():
+                # update
+                for fetch_info in origin.pull(progress=FetchProgressBar()):
+                    print("Updated %s to %s" % (fetch_info.ref, fetch_info.commit))
 
-            logger.info("Updated")
+                # checkout
+                # try:
+                #     git.branch(VERSION_DEV_PHASE)
+                # except Exception:
+                #     repo.create_head(VERSION_DEV_PHASE, origin.refs.VERSION_DEV_PHASE)
+
+                logger.info("Updated")
+            else:
+                raise Exception("Cannot connect to origin")
         except Exception as e:
-            logger.info("Exception raised during updating process...")
+            logger.info("Exception raised during updating process... ({})".format(e))
             if not catch:
                 raise e
+
+    @staticmethod
+    def check_bot_update(logger, log=True):
+        repo = Repo(os.getcwd())
+
+        try:
+            diff = list(repo.iter_commits('{0}..{1}/{0}'.format(repo.active_branch.name, GIT_ORIGIN)))
+            if diff:
+                if log:
+                    logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
+                return False
+            else:
+                if log:
+                    logger.info("Octobot is up to date :)")
+                return True
+        except Exception as e:
+            if log:
+                logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
+            return False
 
     @staticmethod
     def data_collector(config, catch=False):
@@ -75,3 +111,14 @@ class Commands:
         bot.stop_threads()
         os._exit(0)
 
+    @staticmethod
+    def start_new_bot(args=""):
+        python_command = "{0}/{1} ".format(os.getcwd(), "start.py")
+        command_args = "--pause_time=3"
+        subprocess.call([sys.executable, python_command, command_args, args])
+
+    @staticmethod
+    def restart_bot(bot, args=""):
+        start_new_bot_thread = threading.Thread(target=Commands.start_new_bot, args=(args,))
+        start_new_bot_thread.start()
+        Commands.stop_bot(bot)

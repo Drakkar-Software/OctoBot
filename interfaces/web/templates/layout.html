@@ -21,7 +21,7 @@
         <script src="{{ url_for('static', filename='js/bot_connection.js') }}"></script>
     </head>
     <body>
-        <nav class="navbar navbar-expand-md navbar-dark bg-primary">
+        <nav class="navbar navbar-expand-md navbar-dark danger-color">
             <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
@@ -33,20 +33,28 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('config') }}">Configuration</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownTrading" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Trading
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="{{ url_for('portfolio') }}">Portfolio</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{{ url_for('orders') }}">Orders</a>
+                            <a class="dropdown-item" href="{{ url_for('trades') }}">Trades</a>
+                        </div>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('tentacles') }}">Tentacles</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('orders') }}">Orders</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('trades') }}">Trades</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('tentacle_manager') }}">Tentacle Manager</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownTentacles" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Tentacles
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="{{ url_for('tentacles') }}">Tentacles</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{{ url_for('tentacle_manager') }}">Tentacle Manager</a>
+                        </div>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('backtesting') }}">Backtesting</a>
@@ -54,7 +62,7 @@
                 </ul>
             </div>
             <div class="mx-auto order-0">
-                <a class="navbar-brand mx-auto" href="#">OctoBot <i id="navbar-bot-status" class="fas fa-spinner fa-spin"></i></a>
+                <a class="navbar-brand mx-auto" href="{{ url_for('commands') }}">OctoBot <i id="navbar-bot-status" class="fas fa-spinner fa-spin"></i></a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".dual-collapse2">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -80,7 +88,7 @@
             <div class=flash>{{ message }}</div>
         {% endfor %}
 
-        <div class="container">
+        <div class="container-fluid">
             {% block body %}{% endblock %}
         </div>
 

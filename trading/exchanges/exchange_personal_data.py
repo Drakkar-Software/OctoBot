@@ -3,6 +3,8 @@ from config.cst import *
 
 class ExchangePersonalData:
 
+    _MAX_ORDERS_COUNT = 20000
+
     # note: symbol keys are without /
     def __init__(self):
         self.portfolio = {}
@@ -39,16 +41,23 @@ class ExchangePersonalData:
     def has_order(self, order_id):
         return order_id in self.orders
 
-    def set_order(self, order_id, order_data):
-        self.orders[order_id] = order_data
-
-    def set_orders(self, orders):
+    def upsert_orders(self, orders):
         for order in orders:
-            self.set_order(order["id"], order)
+            self.upsert_order(order["id"], order)
 
-    # maybe later add an order remover to free up memory ?
     def upsert_order(self, order_id, ccxt_order):
         self.orders[order_id] = ccxt_order
+        if len(self.orders) > self._MAX_ORDERS_COUNT:
+            self.remove_oldest_orders(int(self._MAX_ORDERS_COUNT / 2))
+
+    def remove_oldest_orders(self, nb_to_remove):
+        time_sorted_orders = sorted(self.orders.values(), key=lambda x: x["timestamp"])
+        shrinked_list = [time_sorted_orders[i] 
+                         for i in range(0, nb_to_remove) 
+                         if( time_sorted_orders[i]["status"] == OrderStatus.OPEN.value
+                            or time_sorted_orders[i]["status"] == OrderStatus.PARTIALLY_FILLED.value)]
+        shrinked_list += [time_sorted_orders[i] for i in range(nb_to_remove, len(time_sorted_orders))]
+        self.orders = {order["id"]: order for order in shrinked_list}
 
     def get_all_orders(self, symbol, since, limit):
         return self._select_orders(None, symbol, since, limit)
