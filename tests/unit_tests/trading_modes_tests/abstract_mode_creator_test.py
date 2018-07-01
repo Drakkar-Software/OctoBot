@@ -369,6 +369,6 @@ class TestAbstractTradingModeCreator:
 
     def test_get_value_or_default(self):
         test_dict = {"a": 1, "b": 2, "c": 3}
-        assert AbstractTradingModeCreator._get_value_or_default(test_dict, "b", default="") == 2
-        assert AbstractTradingModeCreator._get_value_or_default(test_dict, "d") is math.nan
-        assert AbstractTradingModeCreator._get_value_or_default(test_dict, "d", default="") == ""
+        assert AbstractTradingModeCreator.get_value_or_default(test_dict, "b", default="") == 2
+        assert AbstractTradingModeCreator.get_value_or_default(test_dict, "d") is math.nan
+        assert AbstractTradingModeCreator.get_value_or_default(test_dict, "d", default="") == ""
