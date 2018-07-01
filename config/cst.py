@@ -382,6 +382,8 @@ class ExchangeConstantsTickersInfoColumns(Enum):
 
 
 class ExchangeConstantsMarketStatusColumns(Enum):
+    TAKER = "taker"
+    MAKER = "maker"
     SYMBOL = "symbol"
     ID = "id"
     CURRENCY = "base"
