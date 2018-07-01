@@ -2,7 +2,7 @@
 
 Changelog for 0.1.4-beta
 ====================
-*Released date : June 30 2018*
+*Released date : July 1 2018*
 
 **Info** :
 - New pip package to install "gitpython"
@@ -10,6 +10,7 @@ Changelog for 0.1.4-beta
 # Concerned issues :
     #263 [TentacleCreator] review tentacle creation
     #273 [Web interface] Implement commands
+    #274 installation issue
     #276 [Bug] Web interface exception when no exchange specified
 
 # New features :
