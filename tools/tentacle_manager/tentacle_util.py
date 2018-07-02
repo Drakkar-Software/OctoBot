@@ -10,7 +10,8 @@ from config.cst import EVALUATOR_DEFAULT_FOLDER, TENTACLE_TYPES, EVALUATOR_CONFI
     TENTACLES_INSTALL_FOLDERS, TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, TENTACLES_TRADING_PATH, \
     TENTACLES_EVALUATOR_REALTIME_PATH, TENTACLES_EVALUATOR_TA_PATH, TENTACLES_EVALUATOR_SOCIAL_PATH, \
     TENTACLES_EVALUATOR_STRATEGIES_PATH, TENTACLES_EVALUATOR_UTIL_PATH, TENTACLES_TRADING_MODE_PATH, \
-    TENTACLES_PYTHON_INIT_CONTENT, PYTHON_INIT_FILE, TENTACLE_MODULE_TESTS, TENTACLES_TEST_PATH
+    TENTACLES_PYTHON_INIT_CONTENT, PYTHON_INIT_FILE, TENTACLE_MODULE_TESTS, TENTACLES_TEST_PATH, TENTACLE_MODULE_DEV
+from tools.config_manager import ConfigManager
 
 
 def delete_tentacles_arch():
@@ -82,17 +83,17 @@ def _create_arch_module_extremity(architecture, types_subdir, type_path, with_in
 
 def get_tentacles_arch():
     tentacles_content_folder = {
-                TENTACLES_EVALUATOR_PATH: [
-                    TENTACLES_EVALUATOR_REALTIME_PATH,
-                    TENTACLES_EVALUATOR_SOCIAL_PATH,
-                    TENTACLES_EVALUATOR_TA_PATH,
-                    TENTACLES_EVALUATOR_STRATEGIES_PATH,
-                    TENTACLES_EVALUATOR_UTIL_PATH
-                ],
-                TENTACLES_TRADING_PATH: [
-                    TENTACLES_TRADING_MODE_PATH
-                ]
-            }
+        TENTACLES_EVALUATOR_PATH: [
+            TENTACLES_EVALUATOR_REALTIME_PATH,
+            TENTACLES_EVALUATOR_SOCIAL_PATH,
+            TENTACLES_EVALUATOR_TA_PATH,
+            TENTACLES_EVALUATOR_STRATEGIES_PATH,
+            TENTACLES_EVALUATOR_UTIL_PATH
+        ],
+        TENTACLES_TRADING_PATH: [
+            TENTACLES_TRADING_MODE_PATH
+        ]
+    }
     tentacle_architecture = {
         TENTACLES_PATH: [tentacles_content_folder, {TENTACLES_TEST_PATH: tentacles_content_folder}]
     }
@@ -124,7 +125,9 @@ def parse_module_header(module_header_content):
         TENTACLE_MODULE_REQUIREMENTS: extract_tentacle_requirements(module_header_content),
         TENTACLE_MODULE_TESTS: extract_tentacle_tests(module_header_content),
         TENTACLE_MODULE_CONFIG_FILES: module_header_content[TENTACLE_MODULE_CONFIG_FILES]
-        if TENTACLE_MODULE_CONFIG_FILES in module_header_content else None
+        if TENTACLE_MODULE_CONFIG_FILES in module_header_content else None,
+        TENTACLE_MODULE_DEV: module_header_content[TENTACLE_MODULE_DEV]
+        if TENTACLE_MODULE_DEV in module_header_content else None
     }
 
 
@@ -232,3 +235,15 @@ def is_module_in_list(module_name, module_version, module_list):
     else:
         return get_full_module_identifier(module_name, module_version) \
                in module_list
+
+
+def install_on_development(config, module_dev):
+    # is not on development
+    if module_dev is None or not module_dev:
+        return True
+
+    # is on development
+    if module_dev and ConfigManager.is_in_dev_mode(config):
+        return True
+
+    return False

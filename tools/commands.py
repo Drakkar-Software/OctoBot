@@ -3,7 +3,7 @@ import subprocess
 import sys
 import threading
 
-from git import Repo
+from git import Repo, InvalidGitRepositoryError
 
 from backtesting.collector.data_collector import DataCollector
 from config.cst import ORIGIN_URL, GIT_ORIGIN
@@ -17,7 +17,12 @@ class Commands:
     def update(logger, catch=False):
         logger.info("Updating...")
         try:
-            repo = Repo(os.getcwd())
+            try:
+                repo = Repo(os.getcwd())
+            except InvalidGitRepositoryError:
+                logger.error("Impossible to update if OctoBot. "
+                             "This error can appear when OctoBot's folder is not a git repository.")
+                return
             # git = repo.git
 
             # check origin
@@ -47,7 +52,12 @@ class Commands:
 
     @staticmethod
     def check_bot_update(logger, log=True):
-        repo = Repo(os.getcwd())
+        try:
+            repo = Repo(os.getcwd())
+        except InvalidGitRepositoryError:
+            logger.warning("Impossible to check if OctoBot is up to date. "
+                           "This error can appear when OctoBot's folder is not a git repository.")
+            return True
 
         try:
             diff = list(repo.iter_commits('{0}..{1}/{0}'.format(repo.active_branch.name, GIT_ORIGIN)))

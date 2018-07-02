@@ -1,8 +1,11 @@
-import time
 import copy
+import time
+
+from config.config import load_config
 
 from config.cst import *
 from evaluator.Dispatchers.abstract_dispatcher import *
+from tools.config_manager import ConfigManager
 
 
 class AbstractEvaluator:
@@ -36,6 +39,18 @@ class AbstractEvaluator:
             for subclass in copy.deepcopy(subclasses_list):
                 subclasses_list += subclass.get_all_subclasses()
         return subclasses_list
+
+    @classmethod
+    def get_config_file_name(cls, config_evaluator_type=None):
+        return "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, config_evaluator_type
+                                            , EVALUATOR_CONFIG_FOLDER, cls.get_name() + CONFIG_FILE_EXT)
+
+    @classmethod
+    def get_evaluator_config(cls):
+        try:
+            return load_config(cls.get_config_file_name())
+        except Exception as e:
+            raise e
 
     # Used to provide a new logger for this particular indicator
     def set_logger(self, logger):
@@ -86,14 +101,14 @@ class AbstractEvaluator:
             self.ensure_eval_note_is_not_expired()
             self.eval_impl()
         except Exception as e:
-            if CONFIG_DEBUG_OPTION in self.config and self.config[CONFIG_DEBUG_OPTION]:
+            if ConfigManager.is_in_dev_mode(self.config):
                 raise e
             else:
                 self.logger.error("Exception in eval_impl(): " + str(e))
         finally:
             if self.eval_note == "nan":
                 self.eval_note = START_PENDING_EVAL_NOTE
-                self.logger.warning(str(self.symbol)+" evaluator returned 'nan' as eval_note, ignoring this value.")
+                self.logger.warning(str(self.symbol) + " evaluator returned 'nan' as eval_note, ignoring this value.")
             self.is_updating = False
 
     # eval new data

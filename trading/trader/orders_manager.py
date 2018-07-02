@@ -130,6 +130,7 @@ class OrdersManager(threading.Thread):
             except Exception as e:
                 self.logger.error("Error when updating orders")
                 self.logger.exception(e)
+                sleep(self.order_refresh_time)
 
             if not Backtesting.enabled(self.config):
                 sleep(self.order_refresh_time)
