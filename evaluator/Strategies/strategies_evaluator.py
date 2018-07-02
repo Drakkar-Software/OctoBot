@@ -1,7 +1,7 @@
 from abc import *
 
-from config.config import load_config
-from config.cst import CONFIG_EVALUATOR_STRATEGIES, STRATEGIES_REQUIRED_TIME_FRAME, CONFIG_FILE_EXT
+from config.cst import CONFIG_EVALUATOR_STRATEGIES, STRATEGIES_REQUIRED_TIME_FRAME, CONFIG_FILE_EXT, \
+    STRATEGIES_REQUIRED_EVALUATORS
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.evaluator_divergence_analyser import EvaluatorDivergenceAnalyser
 from tools.time_frame_manager import TimeFrameManager
@@ -41,11 +41,17 @@ class StrategiesEvaluator(AbstractEvaluator):
         if STRATEGIES_REQUIRED_TIME_FRAME in config:
             return TimeFrameManager.parse_time_frames(config[STRATEGIES_REQUIRED_TIME_FRAME])
         else:
-            raise Exception("'required_time_frames' is missing in {0}{1}".format(cls.get_name(), CONFIG_FILE_EXT))
+            raise Exception("'{0}' is missing in {1}".format(STRATEGIES_REQUIRED_TIME_FRAME,
+                                                             cls.get_config_file_name()))
 
     @classmethod
     def get_required_evaluators(cls):
-        raise NotImplementedError("Get_required_evaluators not implemented")
+        config = cls.get_evaluator_config()
+        if STRATEGIES_REQUIRED_EVALUATORS in config:
+            return config[STRATEGIES_REQUIRED_EVALUATORS]
+        else:
+            raise Exception("'{0}' is missing in {1}".format(STRATEGIES_REQUIRED_EVALUATORS,
+                                                             cls.get_config_file_name()))
 
 
 class MixedStrategiesEvaluator(StrategiesEvaluator):
