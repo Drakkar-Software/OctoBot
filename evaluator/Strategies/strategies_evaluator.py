@@ -1,7 +1,10 @@
 from abc import *
 
+from config.config import load_config
+from config.cst import CONFIG_EVALUATOR_STRATEGIES, STRATEGIES_REQUIRED_TIME_FRAME, CONFIG_FILE_EXT
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.evaluator_divergence_analyser import EvaluatorDivergenceAnalyser
+from tools.time_frame_manager import TimeFrameManager
 
 
 class StrategiesEvaluator(AbstractEvaluator):
@@ -29,12 +32,18 @@ class StrategiesEvaluator(AbstractEvaluator):
         raise NotImplementedError("Eval_impl not implemented")
 
     @classmethod
-    @abstractmethod
-    def get_required_time_frames(cls):
-        raise NotImplementedError("Get_required_time_frames not implemented")
+    def get_config_file_name(cls, config_evaluator_type=CONFIG_EVALUATOR_STRATEGIES):
+        return super().get_config_file_name(config_evaluator_type)
 
     @classmethod
-    @abstractmethod
+    def get_required_time_frames(cls):
+        config = cls.get_evaluator_config()
+        if STRATEGIES_REQUIRED_TIME_FRAME in config:
+            return TimeFrameManager.parse_time_frames(config[STRATEGIES_REQUIRED_TIME_FRAME])
+        else:
+            raise Exception("'required_time_frames' is missing in {0}{1}".format(cls.get_name(), CONFIG_FILE_EXT))
+
+    @classmethod
     def get_required_evaluators(cls):
         raise NotImplementedError("Get_required_evaluators not implemented")
 

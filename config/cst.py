@@ -209,6 +209,12 @@ CONFIG_EVALUATOR_FILE_PATH = "{}/{}/{}".format(TENTACLES_PATH, TENTACLES_EVALUAT
 CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
 
 
+# Tentacle Config
+STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"
+STRATEGIES_REQUIRED_EVALUATORS = "required_evaluators"
+TRADING_MODE_REQUIRED_STRATEGIES = "required_strategies"
+
+
 class TentacleManagerActions(Enum):
     INSTALL = 1
     UNINSTALL = 2
