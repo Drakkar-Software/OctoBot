@@ -6,7 +6,7 @@ $tentacle_description: {
     "subtype": "{{ subtype }}",
     "version": "{{ version }}",
     "requirements": {{ requirements }},
-    "config_files": [],
+    "config_files": {{ config }},
     "tests": [],
     "developing": true
 }
