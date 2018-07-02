@@ -4,6 +4,7 @@ import os
 import shutil
 
 from config.config import load_config
+from config.cst import CONFIG_DEBUG_OPTION
 
 
 class ConfigManager:
@@ -42,3 +43,9 @@ class ConfigManager:
             load_config(config_file=config_file, error=True)
         except Exception as e:
             raise e
+
+    @staticmethod
+    def is_in_dev_mode(config):
+        if CONFIG_DEBUG_OPTION in config and config[CONFIG_DEBUG_OPTION]:
+            return True
+        return False
