@@ -3,6 +3,7 @@ import copy
 
 from config.cst import *
 from evaluator.Dispatchers.abstract_dispatcher import *
+from tools.config_manager import ConfigManager
 
 
 class AbstractEvaluator:
@@ -86,7 +87,7 @@ class AbstractEvaluator:
             self.ensure_eval_note_is_not_expired()
             self.eval_impl()
         except Exception as e:
-            if CONFIG_DEBUG_OPTION in self.config and self.config[CONFIG_DEBUG_OPTION]:
+            if ConfigManager.is_in_dev_mode(self.config):
                 raise e
             else:
                 self.logger.error("Exception in eval_impl(): " + str(e))
