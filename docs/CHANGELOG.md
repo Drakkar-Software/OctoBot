@@ -6,6 +6,7 @@ Changelog for 0.1.4_2-beta
 
 # Concerned issues :
     #281 [Tentacles] handle in development tentacles
+    #283 [Tentacle Strategies & Trading Mode] add constants to config files
 
 # New features :
     - In development tentacles

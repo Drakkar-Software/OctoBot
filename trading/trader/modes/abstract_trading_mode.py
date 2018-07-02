@@ -1,10 +1,13 @@
-import os
 import logging
+import os
 from abc import *
 
 from config.config import load_config
-from config.cst import CONFIG_FILE_EXT, CONFIG_TRADING, CONFIG_TRADER, CONFIG_TRADER_MODES, EVALUATOR_CONFIG_FOLDER
+from config.cst import CONFIG_FILE_EXT, EVALUATOR_CONFIG_FOLDER, \
+    TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH
+from evaluator import Strategies
 from evaluator.Util.advanced_manager import AdvancedManager
+from tools.class_inspector import get_deep_class_from_string
 
 
 class AbstractTradingMode:
@@ -21,10 +24,26 @@ class AbstractTradingMode:
         self.symbol = symbol_evaluator.get_symbol()
         self._init_strategies_instances(symbol_evaluator.get_strategies_eval_list(exchange))
 
-    @staticmethod
-    @abstractmethod
-    def get_required_strategies():
-        raise NotImplementedError("get_required_strategies not implemented")
+    @classmethod
+    def get_required_strategies(cls):
+        config = cls.get_trading_mode_config()
+        if TRADING_MODE_REQUIRED_STRATEGIES in config:
+            strategies_classes = []
+            for class_string in config[TRADING_MODE_REQUIRED_STRATEGIES]:
+                r = get_deep_class_from_string(class_string, Strategies)
+                if r is not None:
+                    if r not in strategies_classes:
+                        strategies_classes.append(r)
+                else:
+                    raise Exception("{0} is not found, Octobot can't use {1}, please check {1}{2}".format(
+                        class_string,
+                        cls.get_name(),
+                        cls.get_config_file_name()))
+
+            return strategies_classes
+        else:
+            raise Exception("'{0}' is missing in {1}".format(TRADING_MODE_REQUIRED_STRATEGIES,
+                                                             cls.get_config_file_name()))
 
     @classmethod
     def get_name(cls):
@@ -32,8 +51,15 @@ class AbstractTradingMode:
 
     @classmethod
     def get_config_file_name(cls):
-        return "{0}/{1}/{2}/{3}/{4}".format(CONFIG_TRADING, CONFIG_TRADER, CONFIG_TRADER_MODES, EVALUATOR_CONFIG_FOLDER,
-                                            cls.get_name() + CONFIG_FILE_EXT)
+        return "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH
+                                            , EVALUATOR_CONFIG_FOLDER, cls.get_name() + CONFIG_FILE_EXT)
+
+    @classmethod
+    def get_trading_mode_config(cls):
+        try:
+            return load_config(cls.get_config_file_name())
+        except Exception as e:
+            raise e
 
     def get_strategy_instances_by_classes(self):
         return self.strategy_instances_by_classes
