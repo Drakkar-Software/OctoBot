@@ -103,7 +103,7 @@ class TentaclePackageManager:
         module_dev = parsed_module[TENTACLE_MODULE_DEV]
         module_test_files = {test: "" for test in module_tests} if module_tests else {}
 
-        if module_dev is None or not module_dev:
+        if TentacleUtil.install_on_development(self.config, module_dev):
             if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
                 module_loc = "{0}.py".format(TentacleUtil.create_localization_from_type(package_localisation,
                                                                                         module_type,
@@ -130,7 +130,8 @@ class TentaclePackageManager:
                             with open(test_loc, "r") as module_file:
                                 module_test_files[test] = module_file.read()
 
-            if self._process_action_on_module(action, module_type, module_subtype, parsed_module[TENTACLE_MODULE_VERSION],
+            if self._process_action_on_module(action, module_type, module_subtype,
+                                              parsed_module[TENTACLE_MODULE_VERSION],
                                               module_file_content, module_test_files, target_folder, module_name):
                 # manage module config
                 self._try_action_on_config(action, package, module_name, is_url, package_localisation)
@@ -138,8 +139,8 @@ class TentaclePackageManager:
             if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
                 self._try_action_on_requirements(action, package, module_name)
         else:
-            self.logger.error("{0} is currently on development, "
-                              "it will not be installed (or activated DEV_MODE)".format(module_name))
+            self.logger.warning("{0} is currently on development, "
+                                "it will not be installed (or activated DEV_MODE)".format(module_name))
 
     def _should_do_something(self, action, module_name, module_version, need_this_exact_version=False, requiring=None):
         if action == TentacleManagerActions.UPDATE:
@@ -212,7 +213,7 @@ class TentaclePackageManager:
                             self._should_do_something(action, requirement_module_name,
                                                       requirement_module_version, True, module_name):
                         try:
-                            req_package, _, localisation, is_url, destination = self.tentacle_manager.\
+                            req_package, _, localisation, is_url, destination = self.tentacle_manager. \
                                 get_package_in_lists(requirement_module_name, requirement_module_version)
 
                             if req_package:
@@ -224,7 +225,7 @@ class TentaclePackageManager:
                                                 .format(requirement_data[TENTACLE_MODULE_REQUIREMENT_WITH_VERSION]))
 
                         except Exception as e:
-                            error = "failed for tentacle module requirement '{0}' of module {1} ({2})"\
+                            error = "failed for tentacle module requirement '{0}' of module {1} ({2})" \
                                 .format(requirement_module_name, module_name, e)
                             if action == TentacleManagerActions.INSTALL:
                                 self.logger.error("installation {0}".format(error))
@@ -238,7 +239,7 @@ class TentaclePackageManager:
             if not success:
                 if action == TentacleManagerActions.UPDATE:
                     # uninstall module
-                    req_package, _, localisation, is_url, destination = self.tentacle_manager.\
+                    req_package, _, localisation, is_url, destination = self.tentacle_manager. \
                         get_package_in_lists(module_name)
                     if req_package:
                         self.process_module(TentacleManagerActions.UNINSTALL, req_package, module_name,
@@ -247,7 +248,7 @@ class TentaclePackageManager:
                 elif action == TentacleManagerActions.INSTALL:
                     # uninstall module and requirements
                     for module_to_remove in applied_modules:
-                        req_package, _, localisation, is_url, destination = self.tentacle_manager.\
+                        req_package, _, localisation, is_url, destination = self.tentacle_manager. \
                             get_package_in_lists(module_to_remove)
                         if req_package:
                             self.process_module(TentacleManagerActions.UNINSTALL, req_package, module_to_remove,
