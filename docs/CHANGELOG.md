@@ -1,5 +1,18 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.4_2-beta
+====================
+*Released date : July 3 2018*
+
+# Concerned issues :
+    #281 [Tentacles] handle in development tentacles
+
+# New features :
+    - In development tentacles
+
+# Bug fix :
+    -
+
 Changelog for 0.1.4_1-beta
 ====================
 *Released date : July 1 2018*

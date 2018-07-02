@@ -1,7 +1,7 @@
 import time
 from abc import *
 
-from config.cst import MAX_TA_EVAL_TIME_SECONDS
+from config.cst import MAX_TA_EVAL_TIME_SECONDS, CONFIG_EVALUATOR_TA
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
@@ -23,6 +23,10 @@ class TAEvaluator(AbstractEvaluator):
     @abstractmethod
     def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
+
+    @classmethod
+    def get_config_file_name(cls, config_evaluator_type=CONFIG_EVALUATOR_TA):
+        return super().get_config_file_name(config_evaluator_type)
 
     def eval(self) -> None:
         self.is_updating = True
