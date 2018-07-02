@@ -10,6 +10,7 @@ Changelog for 0.1.4_2-beta
 
 # New features :
     - In development tentacles
+    - Strategies and Trading Mode config creation with tentacle creator
 
 # Bug fix :
     -
