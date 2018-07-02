@@ -1,5 +1,20 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.4_2-beta
+====================
+*Released date : July 3 2018*
+
+# Concerned issues :
+    #281 [Tentacles] handle in development tentacles
+    #283 [Tentacle Strategies & Trading Mode] add constants to config files
+
+# New features :
+    - In development tentacles
+    - Strategies and Trading Mode config creation with tentacle creator
+
+# Bug fix :
+    -
+
 Changelog for 0.1.4_1-beta
 ====================
 *Released date : July 1 2018*

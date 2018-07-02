@@ -5,7 +5,8 @@ from jinja2.nativetypes import NativeEnvironment
 
 from config.cst import TENTACLE_CREATOR_PATH, TENTACLE_TEMPLATE_PATH, TOOLS_PATH, \
     TENTACLE_TEMPLATE_DESCRIPTION, TENTACLE_TEMPLATE_EXT, TENTACLE_TEMPLATE_PRE_EXT, TENTACLE_PARENTS, TENTACLE_SONS, \
-    EVALUATOR_ADVANCED_FOLDER, TENTACLES_PATH
+    EVALUATOR_ADVANCED_FOLDER, TENTACLES_PATH, TENTACLE_CONFIG_TEMPLATE_PRE_EXT, CONFIG_FILE_EXT, \
+    EVALUATOR_CONFIG_FOLDER
 from tools.tentacle_manager.tentacle_util import get_tentacles_arch
 
 
@@ -14,6 +15,7 @@ class TentacleCreator:
         self.tentacles_arch, _ = get_tentacles_arch()
         self.config = config
         self.templates = {}
+        self.config_templates = {}
         self.logger = logging.getLogger(self.__class__.__name__)
 
     @staticmethod
@@ -25,14 +27,31 @@ class TentacleCreator:
                                               TENTACLE_TEMPLATE_PRE_EXT,
                                               TENTACLE_TEMPLATE_EXT)
 
+    @staticmethod
+    def get_config_template_path(name):
+        return "{0}/{1}/{2}/{3}{4}{5}".format(TOOLS_PATH,
+                                              TENTACLE_CREATOR_PATH,
+                                              TENTACLE_TEMPLATE_PATH,
+                                              name,
+                                              TENTACLE_CONFIG_TEMPLATE_PRE_EXT,
+                                              TENTACLE_TEMPLATE_EXT)
+
     def get_templates(self):
         return self.templates
+
+    def get_config_templates(self):
+        return self.config_templates
 
     def load_templates(self):
         self.templates["Description"] = open(self.get_template_path(TENTACLE_TEMPLATE_DESCRIPTION), "r").read()
         for tentacle_type in TENTACLE_SONS:
             try:
                 self.templates[tentacle_type] = open(self.get_template_path(tentacle_type), "r").read()
+            except FileNotFoundError:
+                pass
+
+            try:
+                self.config_templates[tentacle_type] = open(self.get_config_template_path(tentacle_type), "r").read()
             except FileNotFoundError:
                 pass
 
@@ -59,6 +78,7 @@ class TentacleCreator:
                 new_tentacle = CreatedTentacle(self.config, tentacle_type, self)
                 new_tentacle.ask_description(tentacle_type)
                 new_tentacle.create_file()
+                new_tentacle.create_config_file()
                 self.logger.info("{0} tentacle successfully created in {1}".format(new_tentacle.get_name(),
                                                                                    new_tentacle.get_path()))
             except Exception as e:
@@ -84,11 +104,16 @@ class CreatedTentacle:
         self.requirements = []
         self.tests = []
 
+        self.config_file = self.get_config_path() if self.subtype in self.tentacle_creator.get_config_templates() else[]
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def get_path(self):
         return "{0}/{1}/{2}/{3}/{4}.py".format(TENTACLES_PATH, self.t_type, self.subtype,
                                                EVALUATOR_ADVANCED_FOLDER, self.name)
+
+    def get_config_path(self):
+        return "{0}/{1}/{2}/{3}/{4}{5}".format(TENTACLES_PATH, self.t_type, self.subtype,
+                                               EVALUATOR_CONFIG_FOLDER, self.name, CONFIG_FILE_EXT)
 
     def get_name(self):
         return self.name
@@ -119,7 +144,8 @@ class CreatedTentacle:
                                                              subtype=self.subtype,
                                                              version=self.version,
                                                              requirements=self.requirements,
-                                                             tests=self.tests))
+                                                             tests=self.tests,
+                                                             config=self.config_file))
                     tentacle_file.write("\n"+self.header_separator)
                     tentacle_file.write(impl_template.render(name=self.name,
                                                              big_name=self.name.title(),
@@ -127,10 +153,22 @@ class CreatedTentacle:
                                                              subtype=self.subtype,
                                                              version=self.version,
                                                              requirements=self.requirements,
-                                                             tests=self.tests))
+                                                             tests=self.tests,
+                                                             config=self.config_file))
 
                 # TODO add __init__.py management
             else:
                 raise Exception("A tentacle with this name already exists")
         except Exception as e:
             raise e
+
+    def create_config_file(self):
+        try:
+            cfg_template = NativeEnvironment().from_string(self.tentacle_creator.get_config_templates()[self.subtype])
+            if not os.path.isfile(self.get_config_path()):
+                with open(self.get_config_path(), "w") as config_file:
+                    config_file.write(cfg_template.render()[1:])
+            else:
+                raise Exception("A config with this name already exists")
+        except Exception:
+            pass

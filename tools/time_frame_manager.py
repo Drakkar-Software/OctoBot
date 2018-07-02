@@ -50,3 +50,13 @@ class TimeFrameManager:
                 except ValueError:
                     pass
         return min_time_frame
+
+    @staticmethod
+    def parse_time_frames(time_frames_string_list):
+        result_list = []
+        for time_frame_string in time_frames_string_list:
+            try:
+                result_list.append(TimeFrames(time_frame_string))
+            except ValueError:
+                pass
+        return result_list
