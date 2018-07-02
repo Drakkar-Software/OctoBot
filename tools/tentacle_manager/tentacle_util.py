@@ -83,17 +83,17 @@ def _create_arch_module_extremity(architecture, types_subdir, type_path, with_in
 
 def get_tentacles_arch():
     tentacles_content_folder = {
-                TENTACLES_EVALUATOR_PATH: [
-                    TENTACLES_EVALUATOR_REALTIME_PATH,
-                    TENTACLES_EVALUATOR_SOCIAL_PATH,
-                    TENTACLES_EVALUATOR_TA_PATH,
-                    TENTACLES_EVALUATOR_STRATEGIES_PATH,
-                    TENTACLES_EVALUATOR_UTIL_PATH
-                ],
-                TENTACLES_TRADING_PATH: [
-                    TENTACLES_TRADING_MODE_PATH
-                ]
-            }
+        TENTACLES_EVALUATOR_PATH: [
+            TENTACLES_EVALUATOR_REALTIME_PATH,
+            TENTACLES_EVALUATOR_SOCIAL_PATH,
+            TENTACLES_EVALUATOR_TA_PATH,
+            TENTACLES_EVALUATOR_STRATEGIES_PATH,
+            TENTACLES_EVALUATOR_UTIL_PATH
+        ],
+        TENTACLES_TRADING_PATH: [
+            TENTACLES_TRADING_MODE_PATH
+        ]
+    }
     tentacle_architecture = {
         TENTACLES_PATH: [tentacles_content_folder, {TENTACLES_TEST_PATH: tentacles_content_folder}]
     }
@@ -238,6 +238,12 @@ def is_module_in_list(module_name, module_version, module_list):
 
 
 def install_on_development(config, module_dev):
+    # is not on development
+    if module_dev is None or not module_dev:
+        return True
+
+    # is on development
     if module_dev and ConfigManager.is_in_dev_mode(config):
         return True
+
     return False
