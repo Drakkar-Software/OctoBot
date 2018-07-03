@@ -70,7 +70,7 @@ class OctoBot:
         self.symbol_threads_manager = {}
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
-        self.exchange_trading_mode = {}
+        self.exchange_trading_modes = {}
         self.exchanges_list = {}
         self.symbol_evaluator_list = {}
         self.crypto_currency_evaluator_list = {}
@@ -105,7 +105,7 @@ class OctoBot:
 
                 # create trading mode
                 trading_mode_inst = self.get_trading_mode_class(self.config)(self.config, exchange_inst)
-                self.exchange_trading_mode[exchange_inst.get_name()] = trading_mode_inst
+                self.exchange_trading_modes[exchange_inst.get_name()] = trading_mode_inst
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
 
@@ -161,7 +161,7 @@ class OctoBot:
                                                                                   symbol_time_frame_updater_thread,
                                                                                   symbol_evaluator,
                                                                                   exchange,
-                                                                                  self.exchange_trading_mode
+                                                                                  self.exchange_trading_modes
                                                                                   [exchange.get_name()],
                                                                                   real_time_ta_eval_list,
                                                                                   self.relevant_evaluators)
@@ -268,6 +268,9 @@ class OctoBot:
 
     def get_exchange_trader_simulators(self):
         return self.exchange_trader_simulators
+
+    def get_exchange_trading_modes(self):
+        return self.exchange_trading_modes
 
     def get_exchanges_list(self):
         return self.exchanges_list
