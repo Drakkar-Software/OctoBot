@@ -122,6 +122,8 @@ class Trader:
         linked_to = None
 
         new_order = order
+        is_to_keep = True
+        is_already_in_history = False
 
         # if this order is linked to another (ex : a sell limit order with a stop loss order)
         if new_order.linked_to is not None:
@@ -151,15 +153,26 @@ class Trader:
         else:
             new_order.set_is_from_this_octobot(False)
             title = "Order loaded"
+            is_already_in_history = self.trades_manager.is_in_history(new_order)
+            if is_already_in_history or \
+                    (new_order.get_status() != OrderStatus.OPEN and
+                     new_order.get_status() != OrderStatus.PARTIALLY_FILLED):
+                is_to_keep = False
 
-        self.logger.info("{0} : {1} | {2} | Price : {3} | Quantity : {4}".format(title,
-                                                                                 new_order.get_order_symbol(),
-                                                                                 new_order.get_order_type(),
-                                                                                 new_order.get_origin_price(),
-                                                                                 new_order.get_origin_quantity()))
+        self.logger.info("{0} : {1} | {2} | Price : {3} | Quantity : {4} | Status : {5} {6}".format(
+            title,
+            new_order.get_order_symbol(),
+            new_order.get_order_type(),
+            new_order.get_origin_price(),
+            new_order.get_origin_quantity(),
+            new_order.get_status(),
+            "" if is_to_keep else ": will be archived in trades history if not already"))
 
-        # notify order manager of a new open order
-        self.order_manager.add_order_to_list(new_order)
+        if is_to_keep:
+            # notify order manager of a new open order
+            self.order_manager.add_order_to_list(new_order)
+        elif not is_already_in_history:
+            self.trades_manager.add_new_trade_in_history(Trade(self.exchange, new_order))
 
         # if this order is linked to another
         if linked_to is not None:

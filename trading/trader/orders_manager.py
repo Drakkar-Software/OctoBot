@@ -109,15 +109,16 @@ class OrdersManager(threading.Thread):
 
             # ask orders to update their status
             with order as odr:
-                odr.update_order_status()
+                if odr in self.order_list:
+                    odr.update_order_status()
 
-                if odr.get_status() == OrderStatus.FILLED:
-                    self.logger.info("{0} {1} (ID : {2}) filled on {3} at {4}".format(odr.get_order_symbol(),
-                                                                                      odr.get_name(),
-                                                                                      odr.get_id(),
-                                                                                      self.trader.get_exchange().get_name(),
-                                                                                      odr.get_filled_price()))
-                    odr.close_order()
+                    if odr.get_status() == OrderStatus.FILLED:
+                        self.logger.info("{0} {1} (ID : {2}) filled on {3} at {4}".format(odr.get_order_symbol(),
+                                                                                          odr.get_name(),
+                                                                                          odr.get_id(),
+                                                                                          self.trader.get_exchange().get_name(),
+                                                                                          odr.get_filled_price()))
+                        odr.close_order()
 
     # Threading method that will periodically update orders status with update_orders_status
     def run(self):

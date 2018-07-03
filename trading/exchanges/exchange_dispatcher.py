@@ -117,7 +117,9 @@ class ExchangeDispatcher(AbstractExchange):
         return self.exchange_personal_data.get_all_orders(symbol, since, limit)
 
     def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
-        if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
+        if not self._web_socket_available() \
+                or not self.exchange_personal_data.get_orders_are_initialized() \
+                or force_rest:
             self.exchange.get_open_orders(symbol=symbol,
                                           since=since,
                                           limit=limit)
