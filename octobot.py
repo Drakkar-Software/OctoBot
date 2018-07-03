@@ -16,7 +16,8 @@ from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
 from trading.exchanges.exchange_manager import ExchangeManager
-from trading.trader.modes import AbstractTradingMode, get_deep_class_from_string
+from trading.trader import modes
+from trading.trader.modes import get_deep_class_from_string
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 
@@ -251,7 +252,7 @@ class OctoBot:
     def get_trading_mode_class(self):
         if CONFIG_TRADER in self.config and CONFIG_TRADER_MODE in self.config[CONFIG_TRADER]:
             trading_mode_class = get_deep_class_from_string(self.config[CONFIG_TRADER][CONFIG_TRADER_MODE],
-                                                            AbstractTradingMode)
+                                                            modes)
 
             if trading_mode_class is not None:
                 return trading_mode_class
