@@ -51,9 +51,9 @@ class AbstractTradingModeDecider(AsynchronousServer):
 
     def activate_deactivate_strategies(self, strategy_list, activate):
         for strategy in strategy_list:
-            if strategy not in self.trading_mode.get_strategy_instances_by_classes():
+            if strategy not in self.trading_mode.get_strategy_instances_by_classes(self.symbol):
                 raise KeyError("{} not in trading mode's strategy instances.".format(strategy))
-        strategy_instances_list = [self.trading_mode.get_strategy_instances_by_classes()[strategy_class]
+        strategy_instances_list = [self.trading_mode.get_strategy_instances_by_classes(self.symbol)[strategy_class]
                                    for strategy_class in strategy_list]
         self.symbol_evaluator.activate_deactivate_strategies(strategy_instances_list, self.exchange, activate)
 
@@ -98,7 +98,7 @@ class AbstractTradingModeDecider(AsynchronousServer):
     def create_order_if_possible(self, evaluator_notification, trader, creator_key):
         if trader.is_enabled():
             with trader.get_portfolio() as pf:
-                order_creator = self.trading_mode.get_creator(creator_key)
+                order_creator = self.trading_mode.get_creator(self.symbol, creator_key)
                 if order_creator.can_create_order(self.symbol, self.exchange, self.state, pf):
                     new_orders = order_creator.create_new_order(
                         self.final_eval,
