@@ -104,7 +104,7 @@ class OctoBot:
                 self.exchange_trader_simulators[exchange_inst.get_name()] = exchange_trader_simulator
 
                 # create trading mode
-                trading_mode_inst = self.get_trading_mode_class()(self.config, exchange_inst)
+                trading_mode_inst = self.get_trading_mode_class(self.config)(self.config, exchange_inst)
                 self.exchange_trading_mode[exchange_inst.get_name()] = trading_mode_inst
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
@@ -249,9 +249,10 @@ class OctoBot:
 
         self.logger.info("Threads stopped.")
 
-    def get_trading_mode_class(self):
-        if CONFIG_TRADER in self.config and CONFIG_TRADER_MODE in self.config[CONFIG_TRADER]:
-            trading_mode_class = get_deep_class_from_string(self.config[CONFIG_TRADER][CONFIG_TRADER_MODE],
+    @staticmethod
+    def get_trading_mode_class(config):
+        if CONFIG_TRADER in config and CONFIG_TRADER_MODE in config[CONFIG_TRADER]:
+            trading_mode_class = get_deep_class_from_string(config[CONFIG_TRADER][CONFIG_TRADER_MODE],
                                                             modes)
 
             if trading_mode_class is not None:

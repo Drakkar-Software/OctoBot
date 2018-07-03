@@ -11,6 +11,7 @@ from trading.trader.portfolio import Portfolio
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from config.cst import TimeFrames
+from octobot import OctoBot
 
 
 def _get_tools():
@@ -35,17 +36,18 @@ def _get_tools():
     symbol_evaluator.set_traders(exchange_traders2)
     symbol_evaluator.strategies_eval_lists[exchange_inst.get_name()] = EvaluatorCreator.create_strategies_eval_list(
         config)
+    trading_mode_inst = OctoBot.get_trading_mode_class(config)(config, exchange_inst)
     evaluator_thread_manager = EvaluatorThreadsManager(config, time_frame, symbol_time_frame_updater_thread,
-                                                       symbol_evaluator, exchange_inst, [])
+                                                       symbol_evaluator, exchange_inst, trading_mode_inst, [])
     trader_inst.portfolio.portfolio["USDT"] = {
         Portfolio.TOTAL: 2000,
         Portfolio.AVAILABLE: 2000
     }
-    symbol_evaluator.add_evaluator_thread_manager(exchange_inst, time_frame, evaluator_thread_manager)
+    symbol_evaluator.add_evaluator_thread_manager(exchange_inst, time_frame, trading_mode_inst, evaluator_thread_manager)
     return symbol_evaluator, exchange_inst, time_frame, evaluator_thread_manager
 
 
 def test_init():
     symbol_evaluator, exchange_inst, time_frame, evaluator_thread_manager = _get_tools()
-    assert symbol_evaluator.trading_mode_class
+    assert symbol_evaluator.trading_mode_instances[exchange_inst.get_name()]
     assert symbol_evaluator.evaluator_thread_managers[exchange_inst.get_name()][time_frame] == evaluator_thread_manager
