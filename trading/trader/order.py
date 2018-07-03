@@ -154,6 +154,9 @@ class Order:
     def get_currency_total_fees(self):
         return self.currency_total_fees
 
+    def get_order_id(self):
+        return self.order_id
+
     def get_filled_quantity(self):
         return self.filled_quantity
 
