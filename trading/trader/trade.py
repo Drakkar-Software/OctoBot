@@ -7,6 +7,7 @@ class Trade:
         self.final_status = order.get_status()
         self.market_fees = order.get_market_total_fees()
         self.currency_fees = order.get_currency_total_fees()
+        self.order_id = order.get_order_id()
 
         self.creation_time = order.get_creation_time()
         self.canceled_time = order.get_canceled_time()
@@ -18,6 +19,9 @@ class Trade:
 
     def get_price(self):
         return self.price
+
+    def get_order_id(self):
+        return self.order_id
 
     def get_exchange_name(self):
         return self.exchange.get_name()
