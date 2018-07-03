@@ -42,6 +42,12 @@ class TradesManager:
         else:
             return DEFAULT_REFERENCE_MARKET
 
+    def is_in_history(self, order):
+        for trade in self.trade_history:
+            if order.get_id() == trade.get_id():
+                return True
+        return False
+
     def get_origin_portfolio(self):
         return self.origin_portfolio
 
