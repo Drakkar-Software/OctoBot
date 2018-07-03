@@ -120,8 +120,8 @@ class TelegramApp:
     @staticmethod
     def command_profitability(_, update):
         has_real_trader, has_simulated_trader, \
-            real_global_profitability, simulated_global_profitability, \
-            real_percent_profitability, simulated_percent_profitability = get_global_profitability()
+        real_global_profitability, simulated_global_profitability, \
+        real_percent_profitability, simulated_percent_profitability = get_global_profitability()
         profitability_string = ""
         if has_real_trader:
             profitability_string = "{0}Global profitability : {1} ({2}%){3}".format(
@@ -145,7 +145,7 @@ class TelegramApp:
     @staticmethod
     def command_portfolio(_, update):
         has_real_trader, has_simulated_trader, \
-            portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
+        portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
         reference_market = get_reference_market()
         real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amounts()
 
@@ -224,7 +224,7 @@ class TelegramApp:
 
         update.message.reply_text(trades_history_string)
 
-    #Displays my trades, exchanges, evaluators, strategies and trading
+    # Displays my trades, exchanges, evaluators, strategies and trading
     @staticmethod
     def command_configuration(_, update):
         try:
@@ -256,12 +256,12 @@ class TelegramApp:
                 message += "- {0}{1}".format(strategy.get_name(), TelegramApp.EOL)
 
             message += "{0}Trading mode:{0}".format(TelegramApp.EOL)
-            message += "- {0}{1}".format(first_symbol_evaluator.trading_mode_class.get_name(), TelegramApp.EOL)
+            message += "- {0}{1}".format(next(iter(get_bot().get_exchange_trading_modes().values())).get_name(),
+                                         TelegramApp.EOL)
             update.message.reply_text(message)
-        except Exception:
+        except Exception as e:
             update.message.reply_text("I'm unfortunately currently unable to show you my configuration. "
                                       "Please wait for my initialization to complete.")
-
 
     @staticmethod
     def command_market_status(_, update):
