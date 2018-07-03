@@ -1,5 +1,19 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.4_3-beta
+====================
+*Released date : July 3 2018*
+
+**Warning** :
+- Update your trading mode tentacles
+
+# Concerned issues :
+    #286 [Trading Mode] Refactoring
+
+# New features :
+    - Refactoring in trading mode that makes it multi symbol
+
+
 Changelog for 0.1.4_2-beta
 ====================
 *Released date : July 3 2018*
@@ -11,9 +25,6 @@ Changelog for 0.1.4_2-beta
 # New features :
     - In development tentacles
     - Strategies and Trading Mode config creation with tentacle creator
-
-# Bug fix :
-    -
 
 Changelog for 0.1.4_1-beta
 ====================

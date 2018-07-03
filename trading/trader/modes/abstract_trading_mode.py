@@ -4,8 +4,7 @@ from abc import *
 
 from config.config import load_config
 from config.cst import CONFIG_FILE_EXT, EVALUATOR_CONFIG_FOLDER, \
-    TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH, \
-    TRADING_MODE_SPECIFIC_SYMBOLS
+    TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH
 from evaluator import Strategies
 from evaluator.Util.advanced_manager import AdvancedManager
 from tools.class_inspector import get_deep_class_from_string
@@ -14,16 +13,16 @@ from tools.class_inspector import get_deep_class_from_string
 class AbstractTradingMode:
     __metaclass__ = ABCMeta
 
-    def __init__(self, config, symbol_evaluator, exchange):
+    def __init__(self, config, exchange):
         self.config = config
 
         self.trading_config = None
         self.creators = {}
         self.deciders = {}
-        self.deciders_without_keys = []
+        self.deciders_without_keys = {}
         self.strategy_instances_by_classes = {}
-        self.symbol = symbol_evaluator.get_symbol()
-        self._init_strategies_instances(symbol_evaluator.get_strategies_eval_list(exchange))
+        self.symbol_evaluators = {}
+        self.exchange = exchange
 
     @classmethod
     def get_name(cls):
@@ -62,27 +61,46 @@ class AbstractTradingMode:
             raise Exception("'{0}' is missing in {1}".format(TRADING_MODE_REQUIRED_STRATEGIES,
                                                              cls.get_config_file_name()))
 
-    @classmethod
-    def get_specific_symbols(cls):
-        config = cls.get_trading_mode_config()
-        if TRADING_MODE_SPECIFIC_SYMBOLS in config:
-            return config[TRADING_MODE_SPECIFIC_SYMBOLS]
+    @abstractmethod
+    def create_deciders(self, symbol, symbol_evaluator) -> None:
+        raise NotImplementedError("create_deciders not implemented")
 
-    def get_strategy_instances_by_classes(self):
-        return self.strategy_instances_by_classes
+    @abstractmethod
+    def create_creators(self, symbol, symbol_evaluator) -> None:
+        raise NotImplementedError("create_creators not implemented")
 
-    def _init_strategies_instances(self, all_strategy_instances):
+    def add_symbol_evaluator(self, symbol_evaluator):
+        new_symbol = symbol_evaluator.get_symbol()
+        self.symbol_evaluators[new_symbol] = symbol_evaluator
+
+        # init maps
+        self.creators[new_symbol] = {}
+        self.deciders[new_symbol] = {}
+        self.deciders_without_keys[new_symbol] = []
+
+        # init strategies
+        self.strategy_instances_by_classes[new_symbol] = {}
+        self._init_strategies_instances(new_symbol, symbol_evaluator.get_strategies_eval_list(self.exchange))
+
+        # create decider and creators
+        self.create_creators(new_symbol, symbol_evaluator)
+        self.create_deciders(new_symbol, symbol_evaluator)
+
+    def get_strategy_instances_by_classes(self, symbol):
+        return self.strategy_instances_by_classes[symbol]
+
+    def _init_strategies_instances(self, symbol, all_strategy_instances):
         all_strategy_classes = [s.__class__ for s in all_strategy_instances]
         for required_class in self.get_required_strategies():
             if required_class in all_strategy_classes:
-                self.strategy_instances_by_classes[required_class] = \
+                self.strategy_instances_by_classes[symbol][required_class] = \
                     all_strategy_instances[all_strategy_classes.index(required_class)]
             else:
                 subclass = AdvancedManager.get_class(self.config, required_class)
                 if subclass in all_strategy_classes:
-                    self.strategy_instances_by_classes[required_class] = \
+                    self.strategy_instances_by_classes[symbol][required_class] = \
                         all_strategy_instances[all_strategy_classes.index(subclass)]
-            if required_class not in self.strategy_instances_by_classes:
+            if required_class not in self.strategy_instances_by_classes[symbol]:
                 logging.getLogger(self.get_name()).error("No instance of {} or advanced equivalent found, {} trading "
                                                          "mode can't work properly ! Maybe this strategy is disabled in"
                                                          " tentacles/Evaluator/evaluator_config.json."
@@ -102,53 +120,53 @@ class AbstractTradingMode:
     def set_default_config(self):
         pass
 
-    def add_decider(self, decider, decider_key=None):
+    def add_decider(self, symbol, decider, decider_key=None):
         if not decider_key:
             decider_key = decider.__class__.__name__
-            if decider_key in self.creators:
+            if decider_key in self.creators[symbol]:
                 to_add_id = 2
                 proposed_decider_key = decider_key + str(to_add_id)
-                while proposed_decider_key in self.deciders:
+                while proposed_decider_key in self.deciders[symbol]:
                     to_add_id += 1
                     proposed_decider_key = decider_key + str(to_add_id)
                 decider_key = proposed_decider_key
-        self.deciders[decider_key] = decider
-        self.deciders_without_keys.append(decider)
+        self.deciders[symbol][decider_key] = decider
+        self.deciders_without_keys[symbol].append(decider)
         return decider_key
 
-    def add_creator(self, creator, creator_key=None):
+    def add_creator(self, symbol, creator, creator_key=None):
         if not creator_key:
             creator_key = creator.__class__.__name__
-            if creator_key in self.creators:
+            if creator_key in self.creators[symbol]:
                 to_add_id = 2
                 proposed_creator_key = creator_key + str(to_add_id)
-                while proposed_creator_key in self.creators:
+                while proposed_creator_key in self.creators[symbol]:
                     to_add_id += 1
                     proposed_creator_key = creator_key + str(to_add_id)
                 creator_key = proposed_creator_key
-        self.creators[creator_key] = creator
+        self.creators[symbol][creator_key] = creator
         return creator_key
 
-    def get_creator(self, creator_key):
-        return self.creators[creator_key]
+    def get_creator(self, symbol, creator_key):
+        return self.creators[symbol][creator_key]
 
-    def get_creators(self):
-        return self.creators
+    def get_creators(self, symbol):
+        return self.creators[symbol]
 
-    def get_only_creator_key(self):
-        return next(iter(self.creators.keys()))
+    def get_only_creator_key(self, symbol):
+        return next(iter(self.creators[symbol].keys()))
 
-    def get_only_decider_key(self, with_keys=False):
+    def get_only_decider_key(self, symbol, with_keys=False):
         if with_keys:
-            return next(iter(self.deciders.keys()))
+            return next(iter(self.deciders[symbol].keys()))
         else:
-            return self.deciders_without_keys[0]
+            return self.deciders_without_keys[symbol][0]
 
-    def get_decider(self, decider_key):
-        return self.deciders[decider_key]
+    def get_decider(self, symbol, decider_key):
+        return self.deciders[symbol][decider_key]
 
-    def get_deciders(self, with_keys=False):
+    def get_deciders(self, symbol, with_keys=False):
         if with_keys:
-            return self.deciders
+            return self.deciders[symbol]
         else:
-            return self.deciders_without_keys
+            return self.deciders_without_keys[symbol]
