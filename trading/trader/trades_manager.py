@@ -44,7 +44,7 @@ class TradesManager:
 
     def is_in_history(self, order):
         for trade in self.trade_history:
-            if order.get_order_id() == trade.get_order_id():
+            if order.get_id() == trade.get_id():
                 return True
         return False
 
