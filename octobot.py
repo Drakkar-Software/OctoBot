@@ -1,5 +1,6 @@
 import logging
 import time
+
 import ccxt
 
 from backtesting.backtesting import Backtesting
@@ -15,6 +16,8 @@ from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
 from trading.exchanges.exchange_manager import ExchangeManager
+from trading.trader import modes
+from trading.trader.modes import get_deep_class_from_string
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 
@@ -67,6 +70,7 @@ class OctoBot:
         self.symbol_threads_manager = {}
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
+        self.exchange_trading_mode = {}
         self.exchanges_list = {}
         self.symbol_evaluator_list = {}
         self.crypto_currency_evaluator_list = {}
@@ -98,6 +102,10 @@ class OctoBot:
                 # create trader simulator instance for this exchange
                 exchange_trader_simulator = TraderSimulator(self.config, exchange_inst)
                 self.exchange_trader_simulators[exchange_inst.get_name()] = exchange_trader_simulator
+
+                # create trading mode
+                trading_mode_inst = self.get_trading_mode_class(self.config)(self.config, exchange_inst)
+                self.exchange_trading_mode[exchange_inst.get_name()] = trading_mode_inst
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
 
@@ -153,6 +161,8 @@ class OctoBot:
                                                                                   symbol_time_frame_updater_thread,
                                                                                   symbol_evaluator,
                                                                                   exchange,
+                                                                                  self.exchange_trading_mode
+                                                                                  [exchange.get_name()],
                                                                                   real_time_ta_eval_list,
                                                                                   self.relevant_evaluators)
         self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
@@ -238,6 +248,17 @@ class OctoBot:
             exchange.stop()
 
         self.logger.info("Threads stopped.")
+
+    @staticmethod
+    def get_trading_mode_class(config):
+        if CONFIG_TRADER in config and CONFIG_TRADER_MODE in config[CONFIG_TRADER]:
+            trading_mode_class = get_deep_class_from_string(config[CONFIG_TRADER][CONFIG_TRADER_MODE],
+                                                            modes)
+
+            if trading_mode_class is not None:
+                return trading_mode_class
+
+        raise Exception("Please specify a valid trading mode in your config file (trader -> mode)")
 
     def get_symbols_threads_manager(self):
         return self.symbol_threads_manager

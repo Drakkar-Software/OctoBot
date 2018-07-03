@@ -10,17 +10,19 @@ class EvaluatorThreadsManager:
                  symbol_time_frame_updater_thread,
                  symbol_evaluator,
                  exchange,
+                 trading_mode,
                  real_time_ta_eval_list,
                  relevant_evaluators=CONFIG_EVALUATORS_WILDCARD):
         self.config = config
         self.exchange = exchange
+        self.trading_mode = trading_mode
         self.symbol = symbol_evaluator.get_symbol()
         self.time_frame = time_frame
         self.symbol_time_frame_updater_thread = symbol_time_frame_updater_thread
         self.symbol_evaluator = symbol_evaluator
 
         # notify symbol evaluator
-        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.time_frame, self)
+        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.time_frame, self.trading_mode, self)
 
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 

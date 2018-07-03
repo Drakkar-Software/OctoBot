@@ -1,7 +1,7 @@
 from enum import Enum
 
 SHORT_VERSION = "0.1.4"
-MINOR_VERSION = "2"
+MINOR_VERSION = "3"
 VERSION_DEV_PHASE = "beta"
 VERSION = "{0}-{1}".format(SHORT_VERSION, VERSION_DEV_PHASE)
 LONG_VERSION = "{0}_{1}-{2}".format(SHORT_VERSION, MINOR_VERSION, VERSION_DEV_PHASE)
@@ -214,7 +214,6 @@ CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
 STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"
 STRATEGIES_REQUIRED_EVALUATORS = "required_evaluators"
 TRADING_MODE_REQUIRED_STRATEGIES = "required_strategies"
-TRADING_MODE_SPECIFIC_SYMBOLS = "specific_symbols"
 
 
 class TentacleManagerActions(Enum):
