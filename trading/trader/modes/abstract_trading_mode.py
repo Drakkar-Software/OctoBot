@@ -19,7 +19,7 @@ class AbstractTradingMode:
         self.trading_config = None
         self.creators = {}
         self.deciders = {}
-        self.deciders_without_keys = []
+        self.deciders_without_keys = {}
         self.strategy_instances_by_classes = {}
         self.symbol_evaluators = {}
         self.exchange = exchange
@@ -76,7 +76,7 @@ class AbstractTradingMode:
         # init maps
         self.creators[new_symbol] = {}
         self.deciders[new_symbol] = {}
-        self.deciders_without_keys[new_symbol] = {}
+        self.deciders_without_keys[new_symbol] = []
 
         # init strategies
         self.strategy_instances_by_classes[new_symbol] = {}
