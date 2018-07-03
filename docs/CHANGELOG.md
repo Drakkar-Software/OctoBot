@@ -12,9 +12,6 @@ Changelog for 0.1.4_2-beta
     - In development tentacles
     - Strategies and Trading Mode config creation with tentacle creator
 
-# Bug fix :
-    -
-
 Changelog for 0.1.4_1-beta
 ====================
 *Released date : July 1 2018*
