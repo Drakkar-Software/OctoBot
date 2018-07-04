@@ -2,6 +2,7 @@ import time
 import math
 from abc import *
 from threading import Lock
+import logging
 
 from tools.symbol_util import split_symbol
 from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK
@@ -108,9 +109,21 @@ class Order:
                       if not math.isnan(p["price"])]
 
             if inferior:
-                return float(min(prices)) < price
+                if float(min(prices)) < price:
+                    logging.getLogger(self.get_name()).info("{0} last prices: {1}, ask for {2} to {3}"
+                                                            .format(self.symbol,
+                                                                    prices,
+                                                                    "inferior" if inferior else "superior",
+                                                                    price))
+                    return True
             else:
-                return float(max(prices)) > price
+                if float(max(prices)) > price:
+                    logging.getLogger(self.get_name()).info("{0} last prices: {1}, ask for {2} to {3}"
+                                                            .format(self.symbol,
+                                                                    prices,
+                                                                    "inferior" if inferior else "superior",
+                                                                    price))
+                    return True
         return False
 
     def cancel_order(self):

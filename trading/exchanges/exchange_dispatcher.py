@@ -79,7 +79,7 @@ class ExchangeDispatcher(AbstractExchange):
             if not self._web_socket_available() or \
                     (self._web_socket_available() and self.exchange_web_socket.handles_recent_trades()):
                 symbol_data.init_recent_trades()
-            self.exchange.get_recent_trades(symbol=symbol)
+            self.exchange.get_recent_trades(symbol=symbol, limit=limit)
 
         return symbol_data.get_symbol_recent_trades(limit)
 
