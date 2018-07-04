@@ -185,7 +185,7 @@ class ExchangeSimulator(AbstractExchange):
             self.time_frame_get_times[time_frame.value] += 1
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, result, replace_all=True)
 
-    def get_recent_trades(self, symbol):
+    def get_recent_trades(self, symbol, limit=50):
         trades = self._create_recent_trades(
             symbol, self.time_frame_get_times[self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value])
         self.get_symbol_data(symbol).update_recent_trades(trades)
