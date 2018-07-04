@@ -166,7 +166,7 @@ class OctoBot:
                                                                                   real_time_ta_eval_list,
                                                                                   self.relevant_evaluators)
             else:
-                self.logger.error("{0} exchange is not supporting the required time frame: {1} for {2}.".
+                self.logger.error("{0} exchange is not supporting the required time frame: '{1}' for {2}.".
                                   format(exchange.get_name(), time_frame.value, symbol_evaluator.get_symbol()))
         self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
 

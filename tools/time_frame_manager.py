@@ -60,8 +60,9 @@ class TimeFrameManager:
             try:
                 result_list.append(TimeFrames(time_frame_string))
             except ValueError:
-                logging.getLogger(TimeFrameManager.__name__).error("No time frame available for: {0} available "
-                                                                   "time frames are: {1}. {0} requirement ignored.".
+                logging.getLogger(TimeFrameManager.__name__).error("No time frame available for: '{0}'. Available time "
+                                                                   "frames are: {1}. '{0}' time frame requirement "
+                                                                   "ignored.".
                                                                    format(time_frame_string,
                                                                           [t.value for t in TimeFrames]))
         return result_list
