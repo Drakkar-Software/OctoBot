@@ -52,7 +52,7 @@ class RESTExchange(AbstractExchange):
             return self.fix_market_status(self.client.markets[symbol])
         else:
             self.logger.error("Fail to get market status of {0}".format(symbol))
-            return []
+            return {}
 
     @staticmethod
     def fix_market_status(market_status):
