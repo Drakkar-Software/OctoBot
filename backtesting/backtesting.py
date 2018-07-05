@@ -36,7 +36,7 @@ class Backtesting:
         # profitability
         total_profitability = 0
         for trader in get_bot().get_exchange_trader_simulators().values():
-            _, profitability, _ = trader.get_trades_manager().get_profitability()
+            _, profitability, _, _ = trader.get_trades_manager().get_profitability()
             total_profitability += profitability
 
         # vs market
