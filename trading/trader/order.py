@@ -5,7 +5,8 @@ from threading import Lock
 import logging
 
 from tools.symbol_util import split_symbol
-from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK
+from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK, \
+    ExchangeConstantsTickersColumns as eC
 
 """ Order class will represent an open order in the specified exchange
 In simulation it will also define rules to be filled / canceled
@@ -106,24 +107,25 @@ class Order:
         if self.last_prices is not None:
             prices = [p["price"]
                       for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]
-                      if not math.isnan(p["price"])]
+                      if not math.isnan(p["price"]) and p[eC.TIMESTAMP.value] >= self.creation_time]
+            if prices:
 
-            if inferior:
-                if float(min(prices)) < price:
-                    logging.getLogger(self.get_name()).info("{0} last prices: {1}, ask for {2} to {3}"
-                                                            .format(self.symbol,
-                                                                    prices,
-                                                                    "inferior" if inferior else "superior",
-                                                                    price))
-                    return True
-            else:
-                if float(max(prices)) > price:
-                    logging.getLogger(self.get_name()).info("{0} last prices: {1}, ask for {2} to {3}"
-                                                            .format(self.symbol,
-                                                                    prices,
-                                                                    "inferior" if inferior else "superior",
-                                                                    price))
-                    return True
+                if inferior:
+                    if float(min(prices)) < price:
+                        logging.getLogger(self.get_name()).info("{0} last prices: {1}, ask for {2} to {3}"
+                                                                .format(self.symbol,
+                                                                        prices,
+                                                                        "inferior" if inferior else "superior",
+                                                                        price))
+                        return True
+                else:
+                    if float(max(prices)) > price:
+                        logging.getLogger(self.get_name()).info("{0} last prices: {1}, ask for {2} to {3}"
+                                                                .format(self.symbol,
+                                                                        prices,
+                                                                        "inferior" if inferior else "superior",
+                                                                        price))
+                        return True
         return False
 
     def cancel_order(self):
