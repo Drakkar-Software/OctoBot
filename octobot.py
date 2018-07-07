@@ -295,3 +295,6 @@ class OctoBot:
 
     def is_ready(self):
         return self.ready
+
+    def get_config(self):
+        return self.config
