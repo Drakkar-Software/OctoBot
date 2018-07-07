@@ -81,6 +81,90 @@ function handle_route_button(){
     });
 }
 
+function change_boolean(to_update_element, new_value){
+    var badge = to_update_element.find(".badge")
+    if(new_value){
+        to_update_element.removeClass("list-group-item-light")
+        to_update_element.addClass("list-group-item-success")
+        badge.removeClass("badge-secondary")
+        badge.addClass("badge-success")
+        badge.html("Activated")
+    }else{
+        to_update_element.removeClass("list-group-item-success")
+        to_update_element.addClass("list-group-item-light")
+        badge.removeClass("badge-success")
+        badge.addClass("badge-secondary")
+        badge.html("Deactivated")
+    }
+}
+
+function update_dom(root_element, message){
+    var config_value_attr = "config-value"
+    for (var conf_key in message) {
+        var new_value = message[conf_key]
+        new_value_type = typeof(new_value)
+        new_value_string = new_value.toString()
+        var to_update_element = root_element.find("#"+conf_key)
+        if (to_update_element.attr(config_value_attr).toLowerCase() != new_value_string){
+            to_update_element.attr(config_value_attr, new_value_string)
+            if(new_value_type == "boolean"){
+                change_boolean(to_update_element, new_value)
+            }
+
+        }
+    }
+}
+
+function handle_configuration_editor(){
+    $(".config-element").click(function(){
+        var element = $(this);
+        var config_key_attr = "config-key";
+        var config_value_attr = "config-value";
+        var update_url_attr = "update-url";
+        var config_element_class = "config-element";
+        if (element.hasClass(config_element_class)){
+            var full_config_root = element.parents(".config-root");
+            if (full_config_root[0].hasAttribute(update_url_attr)){
+
+                // build data update
+                var config_elements = full_config_root.find("."+config_element_class);
+                var updated_config = {};
+                new_value = element.attr(config_value_attr)
+                var current_value = element.attr(config_value_attr).toLowerCase()
+                if (current_value == "true" || current_value == "false"){
+                    // boolean
+                    if (new_value.toLowerCase() == "true"){
+                        new_value = "false"
+                    }else{
+                        new_value = "true"
+                    }
+                }
+
+                updated_config[element.attr(config_key_attr)]=new_value;
+
+                // send update
+                var update_url = full_config_root.attr(update_url_attr)
+                $.ajax({
+                    url: update_url,
+                    type: "POST",
+                    dataType: "json",
+                    contentType: 'application/json',
+                    data: JSON.stringify(updated_config),
+                    success: function(msg, status){
+                        update_dom(full_config_root, msg);
+                    },
+                    error: function(result, status, error){
+                        window.console&&console.error(result);
+                        window.console&&console.error(status);
+                        window.console&&console.error(error);
+                        create_alert("danger", "Error when updating value.", error);
+                    },
+                })
+            }
+        }
+    });
+}
+
 function create_alert(a_level, a_title, a_msg, url="_blank"){
     $.notify({
         title: a_title,
@@ -111,6 +195,7 @@ function create_alert(a_level, a_title, a_msg, url="_blank"){
 
 
 $(document).ready(function () {
+    handle_configuration_editor();
     handle_route_button();
     setInterval(function(){ get_update(); }, 500);
 });

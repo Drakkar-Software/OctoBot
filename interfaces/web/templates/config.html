@@ -5,8 +5,8 @@
 <div class="accordion" id="accordionConfiguration">
     <div class="card">
         <div class="card-header" id="headingExchanges">
-          <h5 class="mb-0">
-            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseExchanges" aria-expanded="true" aria-controls="collapseExchanges">
+          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseExchanges" aria-expanded="true" aria-controls="collapseExchanges">
+            <button class="btn btn-link" type="button" >
               Exchanges
             </button>
           </h5>
@@ -19,9 +19,32 @@
         </div>
     </div>
     <div class="card">
+        <div class="card-header" id="headingEvaluators">
+          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseEvaluators" aria-expanded="true" aria-controls="collapseEvaluators">
+            <button class="btn btn-link" type="button">
+              Evaluators
+            </button>
+          </h5>
+        </div>
+
+        <div id="collapseEvaluators" class="collapse show" aria-labelledby="headingEvaluators" data-parent="#accordionConfiguration">
+          <div class="card-body">
+            <div class="row config-root" update-url="{{ url_for('config', update_type='evaluator_config') }}">
+              {% for evaluator_name, activated in get_evaluator_config().items() %}
+                <a href="#" onclick="return false;" class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element" id={{evaluator_name}} config-key={{evaluator_name}} config-value={{activated}}>{{ evaluator_name }}
+                    <span class="float-right">
+                        <span class="badge {{'badge-success' if activated else 'badge-secondary'}}">{{'Activated' if activated else 'Deactivated'}}</span>
+                    </span>
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+    </div>
+    <div class="card">
         <div class="card-header" id="headingTrading">
-          <h5 class="mb-0">
-            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTrading" aria-expanded="false" aria-controls="collapseTrading">
+          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseTrading" aria-expanded="false" aria-controls="collapseTrading">
+            <button class="btn btn-link collapsed" type="button">
               Trading
             </button>
           </h5>
@@ -34,8 +57,8 @@
     </div>
     <div class="card">
         <div class="card-header" id="headingNotifications">
-          <h5 class="mb-0">
-            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseNotifications" aria-expanded="false" aria-controls="collapseNotifications">
+          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseNotifications" aria-expanded="false" aria-controls="collapseNotifications">
+            <button class="btn btn-link collapsed" type="button">
               Notifications
             </button>
           </h5>

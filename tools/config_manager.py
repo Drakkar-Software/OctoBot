@@ -4,13 +4,12 @@ import os
 import shutil
 
 from config.config import load_config
-from config.cst import CONFIG_DEBUG_OPTION
+from config.cst import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH
 
 
 class ConfigManager:
     @staticmethod
     def save_config(config_file, config, temp_config_file):
-        logger = logging.getLogger("ConfigManager")
         try:
             # prepare a restoration config file
             ConfigManager.restore_config(temp_config_file, config_file, remove_old_file=False)
@@ -24,7 +23,7 @@ class ConfigManager:
 
         # when fail restore the old config
         except Exception as e:
-            logger.error("Save config failed : {}".format(e))
+            logging.getLogger("ConfigManager").error("Save config failed : {}".format(e))
             ConfigManager.restore_config(config_file, temp_config_file)
             raise e
 
@@ -49,3 +48,20 @@ class ConfigManager:
         if CONFIG_DEBUG_OPTION in config and config[CONFIG_DEBUG_OPTION]:
             return True
         return False
+
+    @staticmethod
+    def update_evaluator_config(to_update_data, current_config):
+        something_changed = False
+        for evaluator_name, activated in to_update_data.items():
+            if evaluator_name in current_config:
+                active = activated.lower() == "true"
+                current_activation = current_config[evaluator_name]
+                if current_activation != active:
+                    logging.getLogger("ConfigManager").info("evaluator_config.json updated: {0} {1}".
+                                                            format(evaluator_name,
+                                                                   "activated" if active else "deactivated"))
+                    current_config[evaluator_name] = active
+                    something_changed = True
+        if something_changed:
+            with open(CONFIG_EVALUATOR_FILE_PATH, "w+") as evaluator_config_file_w:
+                evaluator_config_file_w.write(json.dumps(current_config, indent=4, sort_keys=True))

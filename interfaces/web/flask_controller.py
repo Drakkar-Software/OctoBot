@@ -1,12 +1,14 @@
 import json
 import logging
 
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request
 
 from interfaces import get_bot
 from tools.commands import Commands
 
 from interfaces.web import server_instance, get_notifications, flush_notifications
+from interfaces.web.bot_data_model import get_evaluator_config, update_evaluator_config
+from interfaces.web.flask_util import get_rest_reply
 
 logger = logging.getLogger("ServerInstance Controller")
 
@@ -23,8 +25,20 @@ def dash():
 
 
 @server_instance.route("/config")
+@server_instance.route('/config', methods=['GET', 'POST'])
 def config():
-    return render_template('config.html')
+    if request.method == 'POST':
+        update_type = request.args["update_type"]
+        if update_type == "evaluator_config":
+            updated_data = request.get_json()
+
+            if updated_data:
+                if update_evaluator_config(updated_data):
+                    return get_rest_reply(jsonify(get_evaluator_config()))
+                else:
+                    return get_rest_reply('{"update": "ko"}', 500)
+    else:
+        return render_template('config.html', get_evaluator_config=get_evaluator_config)
 
 
 @server_instance.route("/portfolio")

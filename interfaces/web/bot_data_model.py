@@ -3,7 +3,7 @@ import time
 import plotly
 import plotly.graph_objs as go
 
-from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes
+from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes, CONFIG_EVALUATOR
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
@@ -11,6 +11,7 @@ from interfaces.web import add_to_matrix_history, get_matrix_history, add_to_sym
     add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE, get_symbol_data_history
 from tools.symbol_util import split_symbol
 from trading.trader.portfolio import Portfolio
+from tools.config_manager import ConfigManager
 
 
 def get_value_from_dict_or_string(data, is_time_frame=False):
@@ -214,3 +215,18 @@ def get_evaluator_graph_in_matrix_history(symbol,
                                title="Buy or sell")
                 )}
     return None
+
+
+def get_evaluator_config():
+    bot = get_bot()
+    return bot.get_config()[CONFIG_EVALUATOR]
+
+
+def update_evaluator_config(new_config):
+    bot = get_bot()
+    current_config = bot.get_config()[CONFIG_EVALUATOR]
+    try:
+        ConfigManager.update_evaluator_config(new_config, current_config)
+        return True
+    except:
+        return False
