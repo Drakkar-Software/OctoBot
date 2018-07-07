@@ -7,7 +7,8 @@ from interfaces import get_bot
 from tools.commands import Commands
 
 from interfaces.web import server_instance, get_notifications, flush_notifications
-from interfaces.web.bot_data_model import get_evaluator_config, update_evaluator_config
+from interfaces.web.bot_data_model import get_evaluator_config, update_evaluator_config, get_tentacles_packages, \
+    get_tentacles
 from interfaces.web.flask_util import get_rest_reply
 
 logger = logging.getLogger("ServerInstance Controller")
@@ -68,7 +69,9 @@ def backtesting():
 
 @server_instance.route("/tentacle_manager")
 def tentacle_manager():
-    return render_template('tentacle_manager.html')
+    return render_template('tentacle_manager.html',
+                           get_tentacles_packages=get_tentacles_packages,
+                           get_tentacles=get_tentacles)
 
 
 @server_instance.route("/commands")
