@@ -5,11 +5,12 @@ import json
 import tools.tentacle_manager.tentacle_package_util as TentaclePackageUtil
 import tools.tentacle_manager.tentacle_util as TentacleUtil
 
-from config.cst import TENTACLE_DESCRIPTION, EVALUATOR_DEFAULT_FOLDER, TENTACLE_DESCRIPTION_LOCALISATION, \
+from config.cst import TENTACLE_PACKAGE_DESCRIPTION, EVALUATOR_DEFAULT_FOLDER, TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION, \
     TENTACLE_DESCRIPTION_IS_URL, TENTACLE_TYPES, EVALUATOR_CONFIG_FOLDER, TENTACLE_MODULE_NAME, TENTACLE_MODULE_TYPE, \
     TENTACLE_MODULE_SUBTYPE, TENTACLE_MODULE_VERSION, TENTACLE_MODULE_CONFIG_FILES, TENTACLE_MODULE_REQUIREMENTS, \
     TENTACLE_MODULE_REQUIREMENT_WITH_VERSION, TENTACLES_PATH, PYTHON_INIT_FILE, TENTACLE_MODULE_TESTS, \
-    TentacleManagerActions, CONFIG_DEFAULT_EVALUATOR_FILE, CONFIG_EVALUATOR_FILE_PATH, TENTACLE_MODULE_DEV
+    TentacleManagerActions, CONFIG_DEFAULT_EVALUATOR_FILE, CONFIG_EVALUATOR_FILE_PATH, TENTACLE_MODULE_DEV, \
+    TENTACLE_PACKAGE_NAME
 
 
 class TentaclePackageManager:
@@ -94,7 +95,7 @@ class TentaclePackageManager:
         else:
             raise Exception("Tentacle type not found")
 
-    def process_module(self, action, package, module_name, package_localisation, is_url, target_folder):
+    def process_module(self, action, package, module_name, package_localisation, is_url, target_folder, package_name):
         parsed_module = TentacleUtil.parse_module_header(package[module_name])
         module_type = parsed_module[TENTACLE_MODULE_TYPE]
         module_subtype = parsed_module[TENTACLE_MODULE_SUBTYPE]
@@ -115,6 +116,8 @@ class TentaclePackageManager:
                 else:
                     with open(module_loc, "r") as module_file:
                         module_file_content = module_file.read()
+
+                module_file_content = TentaclePackageUtil.add_package_name(module_file_content, package_name)
 
                 if module_test_files:
                     for test in module_tests:
@@ -137,7 +140,7 @@ class TentaclePackageManager:
                 self._try_action_on_config(action, package, module_name, is_url, package_localisation)
 
             if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
-                self._try_action_on_requirements(action, package, module_name)
+                self._try_action_on_requirements(action, package, module_name, package_name)
         else:
             self.logger.warning("{0} is currently on development, "
                                 "it will not be installed (to install it anyway, "
@@ -179,17 +182,19 @@ class TentaclePackageManager:
             return True
 
     def try_action_on_tentacles_package(self, action, package, target_folder):
-        package_description = package[TENTACLE_DESCRIPTION]
-        package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
+        package_description = package[TENTACLE_PACKAGE_DESCRIPTION]
+        package_localisation = package_description[TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION]
         is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
+        package_name = package_description[TENTACLE_PACKAGE_NAME]
         for tentacle_module in package:
             try:
-                if tentacle_module != TENTACLE_DESCRIPTION and \
+                if tentacle_module != TENTACLE_PACKAGE_DESCRIPTION and \
                         not self._has_just_processed_module(tentacle_module,
                                                             package[tentacle_module][TENTACLE_MODULE_VERSION]) and \
                         self._should_do_something(action, tentacle_module,
                                                   package[tentacle_module][TENTACLE_MODULE_VERSION]):
-                    self.process_module(action, package, tentacle_module, package_localisation, is_url, target_folder)
+                    self.process_module(action, package, tentacle_module, package_localisation, is_url, target_folder,
+                                        package_name)
             except Exception as e:
                 error = "failed for tentacle module '{0}' ({1})".format(tentacle_module, e)
                 if action == TentacleManagerActions.INSTALL:
@@ -200,7 +205,7 @@ class TentaclePackageManager:
                     self.logger.error("Updating {0}".format(error))
             self.inc_current_step()
 
-    def _try_action_on_requirements(self, action, package, module_name):
+    def _try_action_on_requirements(self, action, package, module_name, package_name):
         parsed_module = TentacleUtil.parse_module_header(package[module_name])
         success = True
         module_name = parsed_module[TENTACLE_MODULE_NAME]
@@ -214,12 +219,12 @@ class TentaclePackageManager:
                             self._should_do_something(action, requirement_module_name,
                                                       requirement_module_version, True, module_name):
                         try:
-                            req_package, _, localisation, is_url, destination = self.tentacle_manager. \
+                            req_package, _, localisation, is_url, destination, _ = self.tentacle_manager. \
                                 get_package_in_lists(requirement_module_name, requirement_module_version)
 
                             if req_package:
                                 self.process_module(action, req_package, requirement_module_name,
-                                                    localisation, is_url, destination)
+                                                    localisation, is_url, destination, package_name)
                                 applied_modules.append(requirement_module_name)
                             else:
                                 raise Exception("module requirement '{0}' not found in package lists"
@@ -240,20 +245,20 @@ class TentaclePackageManager:
             if not success:
                 if action == TentacleManagerActions.UPDATE:
                     # uninstall module
-                    req_package, _, localisation, is_url, destination = self.tentacle_manager. \
+                    req_package, _, localisation, is_url, destination, _ = self.tentacle_manager. \
                         get_package_in_lists(module_name)
                     if req_package:
                         self.process_module(TentacleManagerActions.UNINSTALL, req_package, module_name,
-                                            localisation, is_url, destination)
+                                            localisation, is_url, destination, package_name)
 
                 elif action == TentacleManagerActions.INSTALL:
                     # uninstall module and requirements
                     for module_to_remove in applied_modules:
-                        req_package, _, localisation, is_url, destination = self.tentacle_manager. \
+                        req_package, _, localisation, is_url, destination, _ = self.tentacle_manager. \
                             get_package_in_lists(module_to_remove)
                         if req_package:
                             self.process_module(TentacleManagerActions.UNINSTALL, req_package, module_to_remove,
-                                                localisation, is_url, destination)
+                                                localisation, is_url, destination, package_name)
 
     def _try_action_on_config(self, action, package, module_name, is_url, package_localisation):
         parsed_module = TentacleUtil.parse_module_header(package[module_name])
@@ -307,23 +312,23 @@ class TentaclePackageManager:
     def _has_just_processed_module(self, module_name, module_version):
         return TentacleUtil.is_module_in_list(module_name, module_version, self.just_processed_modules)
 
-    def _init_installed_modules(self):
+    @staticmethod
+    def get_installed_modules():
+        modules = {}
         # Foreach folder (not hidden)
         for root_dir in os.listdir(os.getcwd()):
             if os.path.isdir(root_dir) and not root_dir.startswith('.'):
-                TentaclePackageUtil.read_tentacles(root_dir, self.installed_modules)
-
-    def init_installed_modules(self):
-        # Foreach folder (not hidden)
-        for root_dir in os.listdir(os.getcwd()):
-            if os.path.isdir(root_dir) and not root_dir.startswith('.'):
-                TentaclePackageUtil.read_tentacles(root_dir, self.installed_modules)
+                TentaclePackageUtil.read_tentacles(root_dir, modules)
+        return modules
 
     def _format_current_step(self):
         return "{0}/{1}: ".format(self.current_step, self.max_steps) if self.max_steps is not None else ""
 
     def set_max_steps(self, max_steps):
         self.max_steps = max_steps
+
+    def set_installed_modules(self, installed_modules):
+        self.installed_modules = installed_modules
 
     def inc_current_step(self):
         self.current_step += 1

@@ -3,17 +3,15 @@ import requests
 import os
 
 from tools.tentacle_manager import tentacle_util as TentacleUtil
-from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLE_DESCRIPTION, GITHUB_RAW_CONTENT_URL, \
-    GITHUB_BASE_URL, GITHUB, TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, \
-    TENTACLES_INSTALL_FOLDERS, PYTHON_INIT_FILE
+from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLE_PACKAGE_DESCRIPTION, GITHUB_RAW_CONTENT_URL, \
+    GITHUB_BASE_URL, GITHUB, TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, \
+    TENTACLES_INSTALL_FOLDERS, PYTHON_INIT_FILE, TENTACLE_PACKAGE_NAME, TENTACLES_PUBLIC_REPOSITORY
 
 
 def get_package_description(url_or_path, try_to_adapt=False):
     package_url_or_path = str(url_or_path)
     # if its an url: download with requests.get and return text
-    if package_url_or_path.startswith("https://") \
-            or package_url_or_path.startswith("http://") \
-            or package_url_or_path.startswith("ftp://"):
+    if get_is_url(package_url_or_path):
         if try_to_adapt:
             if not package_url_or_path.endswith("/"):
                 package_url_or_path += "/"
@@ -44,16 +42,51 @@ def get_package_description(url_or_path, try_to_adapt=False):
             return read_result
 
 
+def get_is_url(string):
+    return string.startswith("https://") \
+        or string.startswith("http://") \
+        or string.startswith("ftp://")
+
+
 def add_package_description_metadata(package_description, localisation, is_url):
     to_save_loc = str(localisation)
     if localisation.endswith(TENTACLES_PUBLIC_LIST):
         to_save_loc = localisation[0:-len(TENTACLES_PUBLIC_LIST)]
         while to_save_loc.endswith("/") or to_save_loc.endswith("\\"):
             to_save_loc = to_save_loc[0:-1]
-    package_description[TENTACLE_DESCRIPTION] = {
-        TENTACLE_DESCRIPTION_LOCALISATION: to_save_loc,
+    package_description[TENTACLE_PACKAGE_DESCRIPTION] = {
+        TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION: to_save_loc,
+        TENTACLE_PACKAGE_NAME: get_package_name(localisation, is_url),
         TENTACLE_DESCRIPTION_IS_URL: is_url
     }
+
+
+def get_octobot_tentacle_public_repo(to_description_file=True):
+    if to_description_file:
+        return "{0}/{1}/{2}/{3}".format(GITHUB_BASE_URL,
+                                        TENTACLES_PUBLIC_REPOSITORY,
+                                        TENTACLES_DEFAULT_BRANCH,
+                                        TENTACLES_PUBLIC_LIST)
+    else:
+        return "{0}/{1}".format(GITHUB_BASE_URL,
+                                TENTACLES_PUBLIC_REPOSITORY)
+
+
+def add_package_name(module_file_content, package_name):
+    return module_file_content.replace('$tentacle_description: {\n', '$tentacle_description: {\n    ' +
+                                       '"package_name": "{0}",\n'.format(package_name))
+
+
+def get_package_name(localisation, is_url):
+    if is_url:
+        github_package_name_reverse_index = -3
+        return localisation.split("/")[github_package_name_reverse_index]
+    else:
+        local_package_name_reverse_index = -2 if localisation.endswith(".json") else -1
+        separator = "/"
+        if "\\" in localisation:
+            separator = "\\"
+        return localisation.split(separator)[local_package_name_reverse_index]
 
 
 def get_package_file_content_from_url(url):
