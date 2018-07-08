@@ -32,7 +32,6 @@ class TradesManager:
         self.portfolio_current_value = 0
         self.trades_value = 0
 
-
         self.reference_market = TradesManager.get_reference_market(self.config)
 
         self._init_origin_portfolio_and_currencies_value()
@@ -107,6 +106,7 @@ class TradesManager:
 
     """ Returns the % move average of all the watched cryptocurrencies between bot's start time and now
     """
+
     def get_average_market_profitability(self, current_crypto_currencies_values=None):
         if current_crypto_currencies_values is None:
             current_crypto_currencies_values = self._update_portfolio_and_currencies_current_value()
@@ -155,11 +155,11 @@ class TradesManager:
         self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio,
                                                                       self.origin_crypto_currencies_values)
 
-
     """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reference currency
     It will try to create the symbol that fit with the exchange logic
     Returns the value found of this currency quantity, if not found returns 0     
     """
+
     def _try_get_value_of_currency(self, currency, quantity):
         symbol = merge_currencies(currency, self.reference_market)
         symbol_inverted = merge_currencies(self.reference_market, currency)
@@ -181,7 +181,6 @@ class TradesManager:
                 currency, _ = split_symbol(pairs[0])
                 values_dict[currency] = self._evaluate_value(currency, 1)
         return values_dict
-
 
     """ evaluate_portfolio_value performs evaluate_value with a portfolio configuration
     Returns the calculated quantity value in reference (attribute) currency
