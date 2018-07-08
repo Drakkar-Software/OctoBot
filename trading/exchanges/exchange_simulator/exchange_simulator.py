@@ -1,3 +1,5 @@
+import time
+
 from backtesting import get_bot
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_parser import DataCollectorParser
@@ -154,7 +156,8 @@ class ExchangeSimulator(AbstractExchange):
         for trade in trades:
             created_trades.append(
                 {
-                    "price": trade*self.recent_trades_multiplier_factor
+                    "price": trade*self.recent_trades_multiplier_factor,
+                    "timestamp": time.time()
                 }
             )
 

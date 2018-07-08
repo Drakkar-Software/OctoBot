@@ -77,15 +77,12 @@ class OrdersManager(threading.Thread):
         # Exchange call when not backtesting
         else:
             last_symbol_price = exchange.get_recent_trades(symbol)
-
-        # Check if exchange request failed
-        if last_symbol_price is not None:
-
-            # if we need to uniformize timestamps
-            if uniformize_timestamps:
+            if uniformize_timestamps and last_symbol_price:
                 for order in last_symbol_price:
                     order[eC.TIMESTAMP.value] = exchange.get_uniform_timestamp(order[eC.TIMESTAMP.value])
 
+        # Check if exchange request failed
+        if last_symbol_price is not None:
             self.last_symbol_prices[symbol] = last_symbol_price
 
     def get_open_orders(self):
