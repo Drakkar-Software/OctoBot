@@ -164,6 +164,6 @@ class ExchangeDispatcher(AbstractExchange):
 
     # returns (taker, maker) tuple
     def get_fees(self, symbol):
-        #TODO temporary implementation waiting for more accurate fee management
+        # TODO temporary implementation waiting for more accurate fee management
         market_status = self.exchange.get_market_status(symbol)
         return market_status[ecmsc.TAKER.value], market_status[ecmsc.MAKER.value]

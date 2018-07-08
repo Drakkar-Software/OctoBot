@@ -272,7 +272,6 @@ class OctoBot:
 
         raise RuntimeError("Please specify a valid trading mode in your {0} file (trader -> mode)".format(CONFIG_FILE))
 
-
     def get_symbols_threads_manager(self):
         return self.symbol_threads_manager
 

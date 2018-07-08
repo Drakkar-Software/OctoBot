@@ -108,8 +108,8 @@ class Order:
             prices = [p["price"]
                       for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]
                       if not math.isnan(p["price"]) and p[eC.TIMESTAMP.value] >= self.creation_time]
-            if prices:
 
+            if prices:
                 if inferior:
                     if float(min(prices)) < price:
                         logging.getLogger(self.get_name()).info("{0} last prices: {1}, ask for {2} to {3}"
