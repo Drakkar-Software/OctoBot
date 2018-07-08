@@ -86,15 +86,19 @@ function change_boolean(to_update_element, new_value){
     if(new_value){
         to_update_element.removeClass("list-group-item-light")
         to_update_element.addClass("list-group-item-success")
-        badge.removeClass("badge-secondary")
-        badge.addClass("badge-success")
-        badge.html("Activated")
+        if (badge.hasClass("badge-secondary")){
+            badge.removeClass("badge-secondary")
+            badge.addClass("badge-warning")
+        }
+        badge.html("Activation pending restart")
     }else{
         to_update_element.removeClass("list-group-item-success")
         to_update_element.addClass("list-group-item-light")
-        badge.removeClass("badge-success")
-        badge.addClass("badge-secondary")
-        badge.html("Deactivated")
+        if (badge.hasClass("badge-success")){
+            badge.removeClass("badge-success")
+            badge.addClass("badge-warning")
+        }
+        badge.html("Deactivation pending restart")
     }
 }
 
