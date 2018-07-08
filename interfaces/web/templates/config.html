@@ -1,7 +1,10 @@
 {% extends "layout.html" %}
 {% block body %}
 <h1>Configuration</h1>
-<br>
+<div class="alert alert-primary" role="alert">
+    Any configuration change will be take into account after OctBot restarts.
+    <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="btn btn-warning btn-sm float-right">Restart Octobot</button>
+</div>
 <div class="accordion" id="accordionConfiguration">
     <div class="card">
         <div class="card-header" id="headingExchanges">
