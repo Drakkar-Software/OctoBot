@@ -44,22 +44,24 @@ class AbstractTradingMode:
     def get_required_strategies(cls):
         config = cls.get_trading_mode_config()
         if TRADING_MODE_REQUIRED_STRATEGIES in config:
-            strategies_classes = []
-            for class_string in config[TRADING_MODE_REQUIRED_STRATEGIES]:
-                r = get_deep_class_from_string(class_string, Strategies)
-                if r is not None:
-                    if r not in strategies_classes:
-                        strategies_classes.append(r)
-                else:
-                    raise Exception("{0} is not found, Octobot can't use {1}, please check {1}{2}".format(
-                        class_string,
-                        cls.get_name(),
-                        cls.get_config_file_name()))
+            strategies_classes = [
+                AbstractTradingMode._is_valid_strategy(class_string)
+                for class_string in config[TRADING_MODE_REQUIRED_STRATEGIES]
+            ]
 
             return strategies_classes
         else:
             raise Exception("'{0}' is missing in {1}".format(TRADING_MODE_REQUIRED_STRATEGIES,
                                                              cls.get_config_file_name()))
+
+    @classmethod
+    def _is_valid_strategy(cls, class_string):
+        r = get_deep_class_from_string(class_string, Strategies)
+        if r is not None:
+            return r
+        else:
+            raise Exception(f"{class_string} is not found, Octobot can't use {cls.get_name()},"
+                            f" please check {cls.get_name()}{cls.get_config_file_name()}")
 
     @abstractmethod
     def create_deciders(self, symbol, symbol_evaluator) -> None:
@@ -91,20 +93,24 @@ class AbstractTradingMode:
 
     def _init_strategies_instances(self, symbol, all_strategy_instances):
         all_strategy_classes = [s.__class__ for s in all_strategy_instances]
-        for required_class in self.get_required_strategies():
-            if required_class in all_strategy_classes:
-                self.strategy_instances_by_classes[symbol][required_class] = \
-                    all_strategy_instances[all_strategy_classes.index(required_class)]
-            else:
-                subclass = AdvancedManager.get_class(self.config, required_class)
-                if subclass in all_strategy_classes:
-                    self.strategy_instances_by_classes[symbol][required_class] = \
-                        all_strategy_instances[all_strategy_classes.index(subclass)]
-            if required_class not in self.strategy_instances_by_classes[symbol]:
-                logging.getLogger(self.get_name()).error("No instance of {} or advanced equivalent found, {} trading "
-                                                         "mode can't work properly ! Maybe this strategy is disabled in"
-                                                         " tentacles/Evaluator/evaluator_config.json."
-                                                         .format(required_class.__name__, self.get_name()))
+
+        self.strategy_instances_by_classes[symbol] = \
+            {required_class: self._is_valid_required_class(required_class, all_strategy_classes, all_strategy_instances)
+             for required_class in self.get_required_strategies()}
+
+    def _is_valid_required_class(self, required_class, all_strategy_classes, all_strategy_instances):
+        if required_class in all_strategy_classes:
+            return all_strategy_instances[all_strategy_classes.index(required_class)]
+        else:
+            subclass = AdvancedManager.get_class(self.config, required_class)
+            if subclass in all_strategy_classes:
+                return all_strategy_instances[all_strategy_classes.index(subclass)]
+
+        logging.getLogger(self.get_name()).error("No instance of {} or advanced equivalent found, {} trading "
+                                                 "mode can't work properly ! Maybe this strategy is disabled in"
+                                                 " tentacles/Evaluator/evaluator_config.json."
+                                                 .format(required_class.__name__, self.get_name()))
+        return None
 
     def load_config(self):
         config_file = self.get_config_file_name()
@@ -126,10 +132,13 @@ class AbstractTradingMode:
             if decider_key in self.creators[symbol]:
                 to_add_id = 2
                 proposed_decider_key = decider_key + str(to_add_id)
+
                 while proposed_decider_key in self.deciders[symbol]:
                     to_add_id += 1
                     proposed_decider_key = decider_key + str(to_add_id)
+
                 decider_key = proposed_decider_key
+
         self.deciders[symbol][decider_key] = decider
         self.deciders_without_keys[symbol].append(decider)
         return decider_key
@@ -140,10 +149,13 @@ class AbstractTradingMode:
             if creator_key in self.creators[symbol]:
                 to_add_id = 2
                 proposed_creator_key = creator_key + str(to_add_id)
+
                 while proposed_creator_key in self.creators[symbol]:
                     to_add_id += 1
                     proposed_creator_key = creator_key + str(to_add_id)
+
                 creator_key = proposed_creator_key
+
         self.creators[symbol][creator_key] = creator
         return creator_key
 

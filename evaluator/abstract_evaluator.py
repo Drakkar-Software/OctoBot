@@ -141,12 +141,13 @@ class AbstractEvaluator:
 
     @classmethod
     def get_parent_evaluator_classes(cls, higher_parent_class_limit=None):
-        classes = []
         limit_class = higher_parent_class_limit if higher_parent_class_limit else AbstractEvaluator
-        for class_type in cls.mro():
-            if limit_class in class_type.mro():
-                classes.append(class_type)
-        return classes
+
+        return [
+            class_type
+            for class_type in cls.mro()
+            if limit_class in class_type.mro()
+        ]
 
     def set_eval_note(self, new_eval_note):
         self.eval_note_changed()
