@@ -9,17 +9,23 @@ from config.cst import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH
 
 class ConfigManager:
     @staticmethod
-    def save_config(config_file, config, temp_config_file):
+    def save_config(config_file, config, temp_config_file, json_data=None):
         try:
             # prepare a restoration config file
             ConfigManager.restore_config(temp_config_file, config_file, remove_old_file=False)
 
             # edit the config file
             with open(config_file, "w") as cg_file:
-                cg_file.write(json.dumps(config))
+                if json_data is not None:
+                    cg_file.write(json_data)
+                else:
+                    cg_file.write(json.dumps(config))
 
             # check if the new config file is correct
             ConfigManager.check_config(config_file)
+
+            # remove temp file
+            ConfigManager.restore_config(temp_config_file, config_file, remove_old_file=True, restore=False)
 
         # when fail restore the old config
         except Exception as e:
@@ -28,9 +34,11 @@ class ConfigManager:
             raise e
 
     @staticmethod
-    def restore_config(new_config_file, old_config_file, remove_old_file=True):
+    def restore_config(new_config_file, old_config_file, remove_old_file=True, restore=True):
         try:
-            shutil.copy(old_config_file, new_config_file)
+            if restore:
+                shutil.copy(old_config_file, new_config_file)
+
             if remove_old_file:
                 os.remove(old_config_file)
         except OSError:
@@ -54,7 +62,7 @@ class ConfigManager:
         something_changed = False
         for evaluator_name, activated in to_update_data.items():
             if evaluator_name in current_config:
-                active = activated if type(activated) is bool else activated.lower() == "true"
+                active = activated if isinstance(activated, bool) else activated.lower() == "true"
                 current_activation = current_config[evaluator_name]
                 if current_activation != active:
                     logging.getLogger("ConfigManager").info("evaluator_config.json updated: {0} {1}".

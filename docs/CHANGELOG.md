@@ -1,5 +1,30 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.4_4-beta
+====================
+*Released date : July 9 2018*
+
+**Warning** :
+- Re-install your tentacles
+
+# Concerned issues :
+    #265 [Web Interface] Create web evaluator_config.json edition interface
+    #266 [Web Interface] Create web tentacles manager interface
+    #288 [Binance Websocket] Handle exchange maintenance
+    #289 [Profitability] Add market average change when displaying profitability
+    #290 [TimeFrames] Ensure unsupported time frames by exchanges handling
+    #294 [Trader simulator] StopLoss orders triggered when they shouldn't
+    #299 [OrderCreator] change min digits handling
+
+# New features :
+    - New features in web interface : evaluator config, tentacles display
+    - Market profitability calculation
+
+# Bug fix :
+    - Fix Binance websocket maintenance handling
+    - Fix stop loss in simulator mode
+    - Fix digits bugs
+
 Changelog for 0.1.4_3-beta
 ====================
 *Released date : July 3 2018*
@@ -12,7 +37,6 @@ Changelog for 0.1.4_3-beta
 
 # New features :
     - Refactoring in trading mode that makes it multi symbol
-
 
 Changelog for 0.1.4_2-beta
 ====================
