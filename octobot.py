@@ -113,10 +113,9 @@ class OctoBot:
                     self.exchange_trading_modes[exchange_inst.get_name()] = trading_mode_inst
                 except RuntimeError as e:
                     self.logger.error(e.args[0])
-                    return -1
+                    raise e
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
-        return 0
 
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
@@ -155,7 +154,6 @@ class OctoBot:
                         else:
                             if not self.backtesting_enabled:
                                 self.logger.warning("{0} doesn't support {1}".format(exchange.get_name(), symbol))
-        return 0
 
     def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
         # Create real time TA evaluators
