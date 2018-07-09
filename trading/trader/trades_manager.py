@@ -1,8 +1,9 @@
 import logging
 
-from config.cst import CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET
+from config.cst import CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
+    CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
-from tools.symbol_util import merge_currencies
+from tools.symbol_util import merge_currencies, split_symbol
 
 """ TradesManager will store all trades performed by the exchange trader
 Another feature of TradesManager is the profitability calculation
@@ -23,6 +24,7 @@ class TradesManager:
         self.profitability_diff = 0
 
         self.currencies_last_prices = {}
+        self.origin_crypto_currencies_values = {}
         self.origin_portfolio = None
         self.last_portfolio = None
 
@@ -32,7 +34,7 @@ class TradesManager:
 
         self.reference_market = TradesManager.get_reference_market(self.config)
 
-        self._get_portfolio_origin_value()
+        self._init_origin_portfolio_and_currencies_value()
 
     @staticmethod
     def get_reference_market(config):
@@ -74,13 +76,15 @@ class TradesManager:
     Returns the profitability, the profitability percentage and the difference with the last portfolio profitability
     """
 
-    def get_profitability(self):
+    def get_profitability(self, with_market=False):
         self.profitability_diff = self.profitability_percent
         self.profitability = 0
         self.profitability_percent = 0
+        market_profitability_percent = None
 
         try:
-            self._update_portfolio_current_value()
+            current_crypto_currencies_values = self._update_portfolio_and_currencies_current_value()
+
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
 
             if self.portfolio_origin_value > 0:
@@ -90,10 +94,33 @@ class TradesManager:
 
             # calculate difference with the last current portfolio
             self.profitability_diff = self.profitability_percent - self.profitability_diff
+
+            if with_market:
+                market_profitability_percent = self.get_average_market_profitability(current_crypto_currencies_values)
+
         except Exception as e:
             self.logger.error(str(e))
 
-        return self.get_profitability_without_update()
+        profitability = self.get_profitability_without_update()
+        return profitability + (market_profitability_percent,)
+
+    """ Returns the % move average of all the watched cryptocurrencies between bot's start time and now
+    """
+
+    def get_average_market_profitability(self, current_crypto_currencies_values=None):
+        if current_crypto_currencies_values is None:
+            current_crypto_currencies_values = self._update_portfolio_and_currencies_current_value()
+
+        ratio_sum = 0
+        skipped_currencies = 0
+        for currency, value in current_crypto_currencies_values.items():
+            origin_value = self.origin_crypto_currencies_values[currency]
+            if origin_value > 0:
+                ratio_sum += value / self.origin_crypto_currencies_values[currency]
+            else:
+                skipped_currencies += 1
+
+        return ratio_sum / (len(current_crypto_currencies_values) - skipped_currencies) * 100 - 100
 
     def get_profitability_without_update(self):
         return self.profitability, self.profitability_percent, self.profitability_diff
@@ -111,20 +138,28 @@ class TradesManager:
             self.trades_value += self._evaluate_value(trade.get_currency(), trade.get_quantity())
         return self.trades_value
 
-    def _update_portfolio_current_value(self):
+    def _update_portfolio_and_currencies_current_value(self):
+        current_crypto_currencies_values = self._evaluate_config_crypto_currencies_values()
+
         with self.portfolio as pf:
             self.last_portfolio = pf.get_portfolio()
-        self.portfolio_current_value = self._evaluate_portfolio_value(self.last_portfolio)
+        self.portfolio_current_value = self._evaluate_portfolio_value(self.last_portfolio,
+                                                                      current_crypto_currencies_values)
+        return current_crypto_currencies_values
 
-    def _get_portfolio_origin_value(self):
+    def _init_origin_portfolio_and_currencies_value(self):
+        self.origin_crypto_currencies_values = self._evaluate_config_crypto_currencies_values()
+
         with self.portfolio as pf:
             self.origin_portfolio = pf.get_portfolio()
-        self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio)
+        self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio,
+                                                                      self.origin_crypto_currencies_values)
 
     """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reference currency
     It will try to create the symbol that fit with the exchange logic
     Returns the value found of this currency quantity, if not found returns 0     
     """
+
     def _try_get_value_of_currency(self, currency, quantity):
         symbol = merge_currencies(currency, self.reference_market)
         symbol_inverted = merge_currencies(self.reference_market, currency)
@@ -138,15 +173,27 @@ class TradesManager:
             # TODO : manage if currency/market doesn't exist
             return 0
 
+    def _evaluate_config_crypto_currencies_values(self):
+        values_dict = {}
+        for crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].values():
+            pairs = crypto_currency_data[CONFIG_CRYPTO_PAIRS]
+            if pairs:
+                currency, _ = split_symbol(pairs[0])
+                values_dict[currency] = self._evaluate_value(currency, 1)
+        return values_dict
+
     """ evaluate_portfolio_value performs evaluate_value with a portfolio configuration
     Returns the calculated quantity value in reference (attribute) currency
     """
 
-    def _evaluate_portfolio_value(self, portfolio):
+    def _evaluate_portfolio_value(self, portfolio, currencies_values=None):
         value = 0
         for currency in portfolio:
             if portfolio[currency][Portfolio.TOTAL] != 0:
-                value += self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
+                if currencies_values and currency in currencies_values:
+                    value += currencies_values[currency] * portfolio[currency][Portfolio.TOTAL]
+                else:
+                    value += self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
         return value
 
     # Evaluate value returns the currency quantity value in the reference (attribute) currency

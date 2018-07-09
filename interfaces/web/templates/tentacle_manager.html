@@ -1,38 +1,50 @@
 {% extends "layout.html" %}
 {% block body %}
 <h1>Tentacle Manager</h1>
-<br>
-<h2>Registered packages</h2>
-<br>
+<div class="card">
+    <h5 class="card-title">Registered tentacles packages</h5>
+
+    <table class="table table-striped table-sm">
+      <thead>
+        <tr>
+            <th scope="col">Package Name</th>
+            <th scope="col">Package address</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for package_path, package_name in get_tentacles_packages().items() %}
+        <tr>
+            <td>{{package_name}}</td>
+            <td>{{package_path}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
 <h2>Tentacles installation</h2>
 <button type="button" class="btn btn-primary">Install tentacle</button>
 <button type="button" class="btn btn-primary">Add new package repository</button>
-<br>
 <h2>Installed tentacles</h2>
-<table class="table">
-    <caption>List of installed tentacles</caption>
+<table class="table table-striped table-sm">
   <thead>
     <tr>
-        <th scope="col">#</th>
         <th scope="col">Package</th>
         <th scope="col">Tentacle Name</th>
+        <th scope="col">Tentacle Type</th>
+        <th scope="col">Tentacle Sub-Type</th>
         <th scope="col">Version</th>
     </tr>
   </thead>
   <tbody>
-    <tr>
-        <th scope="row">1</th>
-        <td>OctoBot-Tentacles</td>
-        <td>DailyTradingMode</td>
-        <td>1.0.0</td>
-    </tr>
-    <tr>
-        <th scope="row">2</th>
-        <td>OctoBot-Tentacles</td>
-        <td>RSIMomentumEvaluator</td>
-        <td>1.0.0</td>
-    </tr>
+    {% for tentacle in get_tentacles().values() %}
+        <tr>
+            <td>{{tentacle.package_name}}</td>
+            <td>{{tentacle.name}}</td>
+            <td>{{tentacle.type}}</td>
+            <td>{{tentacle.subtype}}</td>
+            <td>{{tentacle.version}}</td>
+        </tr>
+    {% endfor %}
   </tbody>
-  </table>
-<br>
+</table>
 {% endblock %}

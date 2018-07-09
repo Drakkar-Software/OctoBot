@@ -238,7 +238,7 @@ class Trader:
                 pf.update_portfolio(order)
 
             # debug purpose
-            profitability, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability()
+            profitability, profitability_percent, profitability_diff, _ = self.get_trades_manager().get_profitability()
 
             self.logger.info("Current portfolio profitability : {0}".format(
                 PrettyPrinter.portfolio_profitability_pretty_print(profitability,

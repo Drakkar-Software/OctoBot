@@ -1,4 +1,5 @@
 import random
+import time
 
 import ccxt
 
@@ -80,22 +81,24 @@ class TestOrder:
         # test inferior TRUE
         max_price = 10
         min_price = 4
-        recent_trades = [{"price": random.uniform(min_price, max_price)}
+        order_inst.creation_time = time.time()
+        recent_trades = [{"price": random.uniform(min_price, max_price), "timestamp": time.time()}
                          for _ in range(0, SIMULATOR_LAST_PRICES_TO_CHECK)]
 
         # append validating trade
-        recent_trades.append({"price": min_price})
+        recent_trades.append({"price": min_price, "timestamp": time.time()})
         order_inst.last_prices = recent_trades
         assert order_inst.check_last_prices(max_price, inferior=True)
 
         # test inferior FALSE
         max_price = 10.454677
         min_price = 2.4273
-        recent_trades = [{"price": random.uniform(min_price, max_price)}
+        order_inst.creation_time = time.time()
+        recent_trades = [{"price": random.uniform(min_price, max_price), "timestamp": time.time()}
                          for _ in range(0, SIMULATOR_LAST_PRICES_TO_CHECK)]
 
         # append validating trade
-        recent_trades.append({"price": max_price})
+        recent_trades.append({"price": max_price, "timestamp": time.time()})
         order_inst.last_prices = recent_trades
         assert order_inst.check_last_prices(random.uniform(min_price, max_price - 1), inferior=False)
 
@@ -103,7 +106,8 @@ class TestOrder:
         # test inferior TRUE
         max_price = 7456.15555632315
         min_price = 1421.1488845
-        recent_trades = [{"price": random.uniform(min_price, max_price)}
+        order_inst.creation_time = time.time()
+        recent_trades = [{"price": random.uniform(min_price, max_price), "timestamp": time.time()}
                          for _ in range(0, SIMULATOR_LAST_PRICES_TO_CHECK)]
 
         order_inst.last_prices = recent_trades
@@ -112,7 +116,8 @@ class TestOrder:
         # test inferior FALSE
         max_price = 0.0001243753
         min_price = 0.000012557753
-        recent_trades = [{"price": random.uniform(min_price, max_price)}
+        order_inst.creation_time = time.time()
+        recent_trades = [{"price": random.uniform(min_price, max_price), "timestamp": time.time()}
                          for _ in range(0, SIMULATOR_LAST_PRICES_TO_CHECK)]
 
         order_inst.last_prices = recent_trades

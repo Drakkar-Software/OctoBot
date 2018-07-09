@@ -52,7 +52,7 @@ class RESTExchange(AbstractExchange):
             return self.fix_market_status(self.client.markets[symbol])
         else:
             self.logger.error("Fail to get market status of {0}".format(symbol))
-            return []
+            return {}
 
     @staticmethod
     def fix_market_status(market_status):
@@ -107,7 +107,7 @@ class RESTExchange(AbstractExchange):
 
     def get_recent_trades(self, symbol, limit=50):
         try:
-            self.get_symbol_data(symbol).update_recent_trades(self.client.fetch_trades(symbol))
+            self.get_symbol_data(symbol).update_recent_trades(self.client.fetch_trades(symbol, limit=limit))
         except BaseError as e:
             self.logger.error("Failed to get recent trade {0}".format(e))
 

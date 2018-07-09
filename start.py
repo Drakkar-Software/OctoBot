@@ -6,7 +6,8 @@ from logging.config import fileConfig
 from time import sleep
 
 from config.config import load_config
-from config.cst import *
+from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
+    CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
 from tools.commands import Commands
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
@@ -40,7 +41,10 @@ def start_octobot(starting_args):
         Commands.check_bot_update(logger)
 
         logger.info("Loading config files...")
-        config = load_config()
+        config = load_config(error=False)
+        if config is None:
+            logger.error("OctoBot can't start without {0} configuration file.".format(CONFIG_FILE))
+            sys.exit(-1)
 
         # Handle utility methods before bot initializing if possible
         if starting_args.packager:
@@ -51,9 +55,20 @@ def start_octobot(starting_args):
 
         else:
             # In those cases load OctoBot
-            from octobot import OctoBot
+            try:
+                from octobot import OctoBot
+            except ModuleNotFoundError as e:
+                if 'tentacles' in e.msg:
+                    logger.error("Impossible to start OctoBot, tentacles are missing.\nTo install tentacles, "
+                                 "please use the following command:\nstart.py -p install all")
+                sys.exit(-1)
 
             config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
+            if config[CONFIG_EVALUATOR] is None:
+                logger.error("OctoBot can't start without {0} configuration file.\nThis file is generated on tentacle "
+                             "installation using the following command:\nstart.py -p install all"
+                             .format(CONFIG_EVALUATOR_FILE_PATH))
+                sys.exit(-1)
 
             TelegramApp.enable(config, starting_args.telegram)
 

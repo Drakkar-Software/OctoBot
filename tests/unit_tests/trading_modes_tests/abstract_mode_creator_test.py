@@ -134,28 +134,27 @@ class TestAbstractTradingModeCreator:
         except NotImplementedError:
             assert True
 
-    # Commented line are related to #261
     def test_adapt_price(self):
         # will use symbol market
         symbol_market = {Ecmsc.PRECISION.value: {Ecmsc.PRECISION_PRICE.value: 4}}
         assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.0001) == 0.0001
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.00015) == 0.00015
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.00015) == 0.0001
         assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.005) == 0.005
-        assert AbstractTradingModeCreator.adapt_price(symbol_market, 1) == 1.0000000000000000000000001
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 1) == 1
 
-        # TODO : digit number is not only after comma ?
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 56.5128597145) == 56.5128
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 1251.0000014576121234854513) == 1251.0000
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 56.5128597145) == 56.5128
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 1251.0000014576121234854513) == 1251.0000
 
         # will use default (CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
+        symbol_market = {Ecmsc.PRECISION.value: {}}
         assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.0001) == 0.0001
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.00015) == 0.00015
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.00015) == 0.00014999
         assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.005) == 0.005
         assert AbstractTradingModeCreator.adapt_price(symbol_market, 1) == 1.0000000000000000000000001
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 1) == 1
 
-        # TODO : digit number is not only after comma ?
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 56.5128597145) == 56.51285971
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 1251.0000014576121234854513) == 1251.00000145
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 56.5128597145) == 56.51285971
+        assert AbstractTradingModeCreator.adapt_price(symbol_market, 1251.0000014576121234854513) == 1251.00000145
 
     def test_get_additional_dusts_to_quantity_if_necessary(self):
         symbol_market = {Ecmsc.LIMITS.value: {
@@ -208,15 +207,14 @@ class TestAbstractTradingModeCreator:
                                                                                         symbol_market,
                                                                                         current_symbol_holding) == 0
 
-        # ROUNDING BUG SEE  #261
-        # current_symbol_holding = 0.99999999
-        # quantity = 0.99999
-        # price = 0.5
-        # exp = 0.00000999
-        # assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
-        #                                                                                 price,
-        #                                                                                 symbol_market,
-        #                                                                                 current_symbol_holding) == exp
+        current_symbol_holding = 0.99999999
+        quantity = 0.99999
+        price = 0.5
+        exp = 0.00000999
+        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
+                                                                                        price,
+                                                                                        symbol_market,
+                                                                                        current_symbol_holding) == exp
 
     def test_check_and_adapt_order_details_if_necessary(self):
         atmc = AbstractTradingModeCreator
@@ -337,24 +335,25 @@ class TestAbstractTradingModeCreator:
     def test_adapt_quantity(self):
         # will use symbol market
         symbol_market = {Ecmsc.PRECISION.value: {Ecmsc.PRECISION_AMOUNT.value: 4}}
-        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.0001) == 0.0001
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.00015) == 0.00015
-        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.005) == 0.005
-        assert AbstractTradingModeCreator.adapt_price(symbol_market, 1) == 1.0000000000000000000000001
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 0.0001) == 0.0001
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 0.00015) == 0.0001
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 0.005) == 0.005
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 1) == 1.0000000000000000000000001
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 1) == 1
 
-        # TODO : digit number is not only after comma ?
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 56.5128597145) == 56.5128
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 1251.0000014576121234854513) == 1251.0000
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 56.5128597145) == 56.5128
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 1251.0000014576121234854513) == 1251.0000
 
-        # will use default (CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
-        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.0001) == 0.0001
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.00015) == 0.00015
-        assert AbstractTradingModeCreator.adapt_price(symbol_market, 0.005) == 0.005
-        assert AbstractTradingModeCreator.adapt_price(symbol_market, 1) == 1.0000000000000000000000001
+        # will use default (0)
+        symbol_market = {Ecmsc.PRECISION.value: {}}
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 0.0001) == 0
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 0.00015) == 0
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 0.005) == 0
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 1) == 1.0000000000000000000000001
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 1) == 1
 
-        # TODO : digit number is not only after comma ?
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 56.5128597145) == 56.51285971
-        # assert AbstractTradingModeCreator.adapt_price(symbol_market, 1251.0000014576121234854513) == 1251.00000145
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 56.5128597145) == 56
+        assert AbstractTradingModeCreator._adapt_quantity(symbol_market, 1251.0000014576121234854513) == 1251
 
     @staticmethod
     def test_trunc_with_n_decimal_digits():

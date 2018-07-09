@@ -1,10 +1,13 @@
 import logging
 import time
+import copy
 
 import ccxt
 
 from backtesting.backtesting import Backtesting
-from config.cst import *
+from config.cst import CONFIG_FILE, CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
+    CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
+    NOTIFICATION_STOPPING_MESSAGE, CONFIG_TRADER, CONFIG_TRADER_MODE
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
@@ -34,6 +37,7 @@ class OctoBot:
     def __init__(self, config):
         self.start_time = time.time()
         self.config = config
+        self.startup_config = copy.deepcopy(config)
         self.ready = False
 
         # Logger
@@ -104,10 +108,15 @@ class OctoBot:
                 self.exchange_trader_simulators[exchange_inst.get_name()] = exchange_trader_simulator
 
                 # create trading mode
-                trading_mode_inst = self.get_trading_mode_class(self.config)(self.config, exchange_inst)
-                self.exchange_trading_modes[exchange_inst.get_name()] = trading_mode_inst
+                try:
+                    trading_mode_inst = self.get_trading_mode_class(self.config)(self.config, exchange_inst)
+                    self.exchange_trading_modes[exchange_inst.get_name()] = trading_mode_inst
+                except RuntimeError as e:
+                    self.logger.error(e.args[0])
+                    return -1
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
+        return 0
 
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
@@ -146,6 +155,7 @@ class OctoBot:
                         else:
                             if not self.backtesting_enabled:
                                 self.logger.warning("{0} doesn't support {1}".format(exchange.get_name(), symbol))
+        return 0
 
     def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
         # Create real time TA evaluators
@@ -165,6 +175,9 @@ class OctoBot:
                                                                                   [exchange.get_name()],
                                                                                   real_time_ta_eval_list,
                                                                                   self.relevant_evaluators)
+            else:
+                self.logger.error("{0} exchange is not supporting the required time frame: '{1}' for {2}.".
+                                  format(exchange.get_name(), time_frame.value, symbol_evaluator.get_symbol()))
         self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
 
     def start_threads(self):
@@ -258,7 +271,7 @@ class OctoBot:
             if trading_mode_class is not None:
                 return trading_mode_class
 
-        raise Exception("Please specify a valid trading mode in your config file (trader -> mode)")
+        raise RuntimeError("Please specify a valid trading mode in your {0} file (trader -> mode)".format(CONFIG_FILE))
 
     def get_symbols_threads_manager(self):
         return self.symbol_threads_manager
@@ -292,3 +305,9 @@ class OctoBot:
 
     def is_ready(self):
         return self.ready
+
+    def get_config(self):
+        return self.config
+
+    def get_startup_config(self):
+        return self.startup_config

@@ -1,5 +1,6 @@
 from binance.client import Client, BinanceAPIException
 from binance.websockets import BinanceSocketManager
+import logging
 
 from config.cst import *
 from tools.symbol_util import merge_symbol
@@ -158,6 +159,8 @@ class BinanceWebSocketClient(AbstractWebSocket):
         if msg['data']['e'] == 'error':
             # close and restart the socket
             # self.close_sockets()
+            logging.getLogger(self.get_name()).error("error in websocket all_currencies_prices_callback, "
+                                                     "call start_sockets()")
             self.start_sockets()
         else:
             msg_stream_type = msg["stream"]
@@ -181,6 +184,10 @@ class BinanceWebSocketClient(AbstractWebSocket):
             self._update_portfolio(msg)
         elif msg["e"] == "executionReport":
             self._update_order(msg)
+        elif msg['e'] == 'error':
+            logging.getLogger(self.get_name()).error("error in websocket user_callback, call start_sockets()")
+            self.start_sockets()
+
 
     def _init_price_sockets(self, time_frames, trader_pairs):
         # add klines

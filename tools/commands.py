@@ -105,8 +105,12 @@ class Commands:
 
     @staticmethod
     def start_bot(bot, logger, catch=False):
-        bot.create_exchange_traders()
-        bot.create_evaluation_threads()
+        return_code = bot.create_exchange_traders()
+        if return_code < 0:
+            Commands.stop_bot(bot)
+        return_code = bot.create_evaluation_threads()
+        if return_code < 0:
+            Commands.stop_bot(bot)
         try:
             bot.start_threads()
             bot.join_threads()

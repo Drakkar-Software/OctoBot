@@ -4,9 +4,9 @@ import tools.tentacle_manager.tentacle_package_util as TentaclePackageUtil
 import tools.tentacle_manager.tentacle_util as TentacleUtil
 from tools.tentacle_manager.tentacle_package_manager import TentaclePackageManager
 
-from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLES_PUBLIC_REPOSITORY, \
-    TENTACLE_DESCRIPTION, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, GITHUB_BASE_URL, \
-    TENTACLE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, TentacleManagerActions
+from config.cst import TENTACLE_PACKAGE_DESCRIPTION, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, \
+    TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, \
+    TentacleManagerActions,TENTACLE_PACKAGE_NAME
 
 
 class TentacleManager:
@@ -67,7 +67,7 @@ class TentacleManager:
                 self.logger.info("Welcome in Tentacle Manager, commands are:\n{0}".format(help))
 
             else:
-                self.logger.error("Command not found, commands are:\n{0}".format(help))
+                self.logger.error("Command not found: {0}, commands are:\n{1}".format(commands[0], help))
         else:
             arguments_help = "-p: activates the package manager."
             self.logger.error("Invalid arguments, arguments are: {0}".format(arguments_help))
@@ -95,12 +95,13 @@ class TentacleManager:
                 for component in commands:
 
                     component = TentacleUtil.check_format(component)
-                    package, _, localisation, is_url, destination = self.get_package_in_lists(component)
+                    package, _, localisation, is_url, destination, package_name = self.get_package_in_lists(component)
 
                     if package:
                         try:
                             self.tentacle_package_manager.process_module(TentacleManagerActions.INSTALL, package,
-                                                                         component, localisation, is_url, destination)
+                                                                         component, localisation, is_url, destination,
+                                                                         package_name)
 
                         except Exception as e:
                             self.logger.error("Installation failed for tentacle module '{0}'".format(component))
@@ -112,7 +113,7 @@ class TentacleManager:
             TentaclePackageManager.update_evaluator_config_file()
 
     def update_parser(self, commands, command_all=False):
-        self.tentacle_package_manager.init_installed_modules()
+        self.tentacle_package_manager.set_installed_modules(self.tentacle_package_manager.get_installed_modules())
         if command_all:
             self.tentacle_package_manager.set_max_steps(self._get_package_count())
             self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UPDATE,
@@ -127,12 +128,12 @@ class TentacleManager:
             for component in commands:
 
                 component = TentacleUtil.check_format(component)
-                package, _, localisation, is_url, destination = self.get_package_in_lists(component)
+                package, _, localisation, is_url, destination, package_name = self.get_package_in_lists(component)
 
                 if package:
                     try:
                         self.tentacle_package_manager.process_module(TentacleManagerActions.UPDATE, package, component,
-                                                                     localisation, is_url, destination)
+                                                                     localisation, is_url, destination, package_name)
 
                     except Exception as e:
                         self.logger.error("Update failed for tentacle module '{0}'".format(component))
@@ -155,12 +156,12 @@ class TentacleManager:
             for component in commands:
 
                 component = TentacleUtil.check_format(component)
-                package, _, _, _, destination = self.get_package_in_lists(component)
+                package, _, _, _, destination, _ = self.get_package_in_lists(component)
 
                 if package:
                     try:
                         self.tentacle_package_manager.process_module(TentacleManagerActions.UNINSTALL, package,
-                                                                     component, "", "", destination)
+                                                                     component, "", "", destination, "")
                     except Exception:
                         self.logger.error("Uninstalling failed for module '{0}'".format(component))
                 else:
@@ -174,10 +175,7 @@ class TentacleManager:
         self.logger.info("Tentacles reset.")
 
     def update_list(self):
-        default_package_list_url = "{0}/{1}/{2}/{3}".format(GITHUB_BASE_URL,
-                                                            TENTACLES_PUBLIC_REPOSITORY,
-                                                            TENTACLES_DEFAULT_BRANCH,
-                                                            TENTACLES_PUBLIC_LIST)
+        default_package_list_url = TentaclePackageUtil.get_octobot_tentacle_public_repo()
 
         self.default_package = TentaclePackageUtil.get_package_description(default_package_list_url)
 
@@ -194,18 +192,22 @@ class TentacleManager:
 
     def get_package_in_lists(self, component_name, component_version=None):
         if TentacleUtil.has_required_package(self.default_package, component_name, component_version):
-            package_description = self.default_package[TENTACLE_DESCRIPTION]
-            package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
+            package_description = self.default_package[TENTACLE_PACKAGE_DESCRIPTION]
+            package_localisation = package_description[TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION]
             is_url = package_description[TENTACLE_DESCRIPTION_IS_URL]
-            return self.default_package, package_description, package_localisation, is_url, EVALUATOR_DEFAULT_FOLDER
+            package_name = package_description[TENTACLE_PACKAGE_NAME]
+            return self.default_package, package_description, package_localisation, is_url, EVALUATOR_DEFAULT_FOLDER, \
+                package_name
         else:
             for advanced_package in self.advanced_package_list:
                 if TentacleUtil.has_required_package(advanced_package, component_name, component_version):
-                    package_description = advanced_package[TENTACLE_DESCRIPTION]
-                    package_localisation = package_description[TENTACLE_DESCRIPTION_LOCALISATION]
+                    package_description = advanced_package[TENTACLE_PACKAGE_DESCRIPTION]
+                    package_localisation = package_description[TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION]
                     url = package_description[TENTACLE_DESCRIPTION_IS_URL]
-                    return advanced_package, package_description, package_localisation, url, EVALUATOR_ADVANCED_FOLDER
-        return None, None, None, None, None
+                    package_name = package_description[TENTACLE_PACKAGE_NAME]
+                    return advanced_package, package_description, package_localisation, url, \
+                        EVALUATOR_ADVANCED_FOLDER, package_name
+        return None, None, None, None, None, None
 
     def _confirm_action(self, action):
         if self.force_actions:
