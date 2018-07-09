@@ -24,7 +24,8 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     def get_additional_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
-        remaining_portfolio_amount = current_symbol_holding - quantity
+        remaining_portfolio_amount = float("{1:.{0}f}".format(CURRENCY_DEFAULT_MAX_PRICE_DIGITS,
+                                                             current_symbol_holding - quantity))
         remaining_max_total_order_price = remaining_portfolio_amount * price
 
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
