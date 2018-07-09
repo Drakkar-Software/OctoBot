@@ -26,9 +26,7 @@ class EvaluatorThreadsManager:
 
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 
-        self.thread_name = "TA THREAD MANAGER - {0} - {1} - {2}".format(self.symbol,
-                                                                        self.exchange.get_name(),
-                                                                        self.time_frame)
+        self.thread_name = f"TA THREAD MANAGER - {self.symbol} - {self.exchange.get_name()} - {self.time_frame}"
         self.logger = logging.getLogger(self.thread_name)
 
         # Create Evaluator
@@ -59,10 +57,10 @@ class EvaluatorThreadsManager:
 
     def notify(self, notifier_name):
         if self.get_refreshed_times() > 0:
-            self.logger.debug("** Notified by {0} **".format(notifier_name))
+            self.logger.debug(f"** Notified by {notifier_name} **")
             self._refresh_eval(notifier_name)
         else:
-            self.logger.debug("Notification by {0} ignored".format(notifier_name))
+            self.logger.debug(f"Notification by {notifier_name} ignored")
 
     def _refresh_eval(self, ignored_evaluator=None):
         # update eval
@@ -76,7 +74,7 @@ class EvaluatorThreadsManager:
 
         # calculate the final result
         self.symbol_evaluator.finalize(self.exchange)
-        self.logger.debug("MATRIX : {0}".format(self.matrix.get_matrix()))
+        self.logger.debug(f"MATRIX : {self.matrix.get_matrix()}")
 
     def refresh_matrix(self):
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
