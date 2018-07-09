@@ -54,7 +54,7 @@ class ConfigManager:
         something_changed = False
         for evaluator_name, activated in to_update_data.items():
             if evaluator_name in current_config:
-                active = activated.lower() == "true"
+                active = activated if type(activated) is bool else activated.lower() == "true"
                 current_activation = current_config[evaluator_name]
                 if current_activation != active:
                     logging.getLogger("ConfigManager").info("evaluator_config.json updated: {0} {1}".

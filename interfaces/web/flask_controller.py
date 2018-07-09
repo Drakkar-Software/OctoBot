@@ -8,7 +8,7 @@ from tools.commands import Commands
 
 from interfaces.web import server_instance, get_notifications, flush_notifications
 from interfaces.web.bot_data_model import get_evaluator_config, update_evaluator_config, get_tentacles_packages, \
-    get_tentacles, get_evaluator_startup_config
+    get_tentacles, get_evaluator_startup_config, reset_evaluator_config
 from interfaces.web.flask_util import get_rest_reply
 
 logger = logging.getLogger("ServerInstance Controller")
@@ -31,13 +31,18 @@ def config():
     if request.method == 'POST':
         update_type = request.args["update_type"]
         if update_type == "evaluator_config":
-            updated_data = request.get_json()
+            request_data = request.get_json()
+            success = False
 
-            if updated_data:
-                if update_evaluator_config(updated_data):
-                    return get_rest_reply(jsonify(get_evaluator_config()))
-                else:
-                    return get_rest_reply('{"update": "ko"}', 500)
+            if request_data == "reset":
+                success = reset_evaluator_config()
+            elif request_data:
+                success = update_evaluator_config(request_data)
+
+            if success:
+                return get_rest_reply(jsonify(get_evaluator_config()))
+            else:
+                return get_rest_reply('{"update": "ko"}', 500)
     else:
         return render_template('config.html',
                                get_evaluator_config=get_evaluator_config,

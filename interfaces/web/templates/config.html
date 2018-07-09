@@ -31,15 +31,18 @@
         </div>
 
         <div id="collapseEvaluators" class="collapse show" aria-labelledby="headingEvaluators" data-parent="#accordionConfiguration">
-          <div class="card-body">
-            <div class="row config-root" update-url="{{ url_for('config', update_type='evaluator_config') }}">
+          <div class="card-body config-root" update-url="{{ url_for('config', update_type='evaluator_config') }}">
+            <div class="card-text row">
               {% for evaluator_name, activated in get_evaluator_config().items() %}
                 <a href="#" onclick="return false;" class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element" id={{evaluator_name}} config-key={{evaluator_name}} config-value={{activated}} startup-config-value={{get_evaluator_startup_config()[evaluator_name]}}>{{ evaluator_name }}
-                    <span class="float-right">
-                        <span class="badge {{'badge-warning' if get_evaluator_startup_config()[evaluator_name] != activated else ('badge-success' if activated else 'badge-secondary')}}">{{('Activation pending restart' if activated else 'Deactivation pending restart') if get_evaluator_startup_config()[evaluator_name] != activated else ('Activated' if activated else 'Deactivated')}}</span>
-                    </span>
+                  <span class="float-right">
+                    <span class="badge {{'badge-warning' if get_evaluator_startup_config()[evaluator_name] != activated else ('badge-success' if activated else 'badge-secondary')}}">{{('Activation pending restart' if activated else 'Deactivation pending restart') if get_evaluator_startup_config()[evaluator_name] != activated else ('Activated' if activated else 'Deactivated')}}</span>
+                  </span>
                 </a>
               {% endfor %}
+            </div>
+            <div class="card-body text-center">
+              <button class="btn btn-outline-warning btn-lg" id='reset-evaluator-config'>Reset</button>
             </div>
           </div>
         </div>

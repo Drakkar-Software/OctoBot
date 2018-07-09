@@ -1,3 +1,4 @@
+// utility variables
 var success_badge = "badge-success"
 var warning_badge = "badge-warning"
 var secondary_badge = "badge-secondary"
