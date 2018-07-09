@@ -3,7 +3,8 @@ import time
 import plotly
 import plotly.graph_objs as go
 
-from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes, CONFIG_EVALUATOR, CONFIG_TENTACLES_KEY
+from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes, CONFIG_EVALUATOR, CONFIG_TENTACLES_KEY, \
+    TENTACLE_PACKAGE_DESCRIPTION
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
@@ -12,7 +13,9 @@ from interfaces.web import add_to_matrix_history, get_matrix_history, add_to_sym
 from tools.symbol_util import split_symbol
 from tools.config_manager import ConfigManager
 from tools.tentacle_manager.tentacle_package_manager import TentaclePackageManager
-from tools.tentacle_manager.tentacle_package_util import get_is_url, get_package_name, get_octobot_tentacle_public_repo
+from tools.tentacle_manager.tentacle_package_util import get_is_url, get_package_name, \
+    get_octobot_tentacle_public_repo, get_package_description_with_adaptation
+from tools.tentacle_manager.tentacle_manager import TentacleManager
 from trading.trader.portfolio import Portfolio
 
 
@@ -250,6 +253,23 @@ def get_tentacles_packages():
     for tentacle_package in get_bot().get_config()[CONFIG_TENTACLES_KEY]:
         packages[tentacle_package] = get_package_name(tentacle_package, get_is_url(tentacle_package))
     return packages
+
+
+def get_tentacles_package_description(path_or_url):
+    try:
+        return get_package_description_with_adaptation(path_or_url)[TENTACLE_PACKAGE_DESCRIPTION]
+    except Exception:
+        return None
+
+
+def register_and_install(path_or_url):
+    config = get_bot().get_config()
+    config[CONFIG_TENTACLES_KEY].append(path_or_url)
+    #TODO update config.json
+    
+    tentacles_manager = TentacleManager(config)
+    tentacles_manager.install_tentacle_package(path_or_url, True)
+    return True
 
 
 def get_tentacles():

@@ -18,6 +18,19 @@ class TentacleManager:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.force_actions = False
 
+    def install_tentacle_package(self, package_path_or_url, force=False):
+        self.update_list()
+        package = TentaclePackageUtil.get_package_description_with_adaptation(package_path_or_url)
+        should_install = force
+        if TentacleUtil.create_missing_tentacles_arch() and not force:
+            should_install = self._confirm_action("Tentacles installation found on this OctoBot, this action will "
+                                                  "replace every local tentacle file and their configuration by their "
+                                                  "remote equivalent for the command's tentacles, continue ?")
+        if should_install:
+            self.tentacle_package_manager.set_max_steps(len(package) - 1)
+            self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL,
+                                                                          package, EVALUATOR_ADVANCED_FOLDER)
+
     def parse_commands(self, commands):
         help = "- install: Install or re-install the given tentacles modules with their requirements if any. " \
                                 "Also reset tentacles configuration files if any.\n" \
@@ -183,12 +196,10 @@ class TentacleManager:
             for package in self.config[CONFIG_TENTACLES_KEY]:
                 # try with package as in configuration
                 try:
-                    self.advanced_package_list.append(TentaclePackageUtil.get_package_description(package))
+                    self.advanced_package_list.append(
+                        TentaclePackageUtil.get_package_description_with_adaptation(package))
                 except Exception:
-                    try:
-                        self.advanced_package_list.append(TentaclePackageUtil.get_package_description(package, True))
-                    except Exception:
-                        self.logger.error("Impossible to get an OctoBot Tentacles Package at : {0}".format(package))
+                    self.logger.error("Impossible to get an OctoBot Tentacles Package at : {0}".format(package))
 
     def get_package_in_lists(self, component_name, component_version=None):
         if TentacleUtil.has_required_package(self.default_package, component_name, component_version):
