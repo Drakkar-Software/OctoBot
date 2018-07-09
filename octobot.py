@@ -1,6 +1,6 @@
 import logging
 import time
-import sys
+import copy
 
 import ccxt
 
@@ -37,6 +37,7 @@ class OctoBot:
     def __init__(self, config):
         self.start_time = time.time()
         self.config = config
+        self.startup_config = copy.deepcopy(config)
         self.ready = False
 
         # Logger
@@ -307,3 +308,6 @@ class OctoBot:
 
     def get_config(self):
         return self.config
+
+    def get_startup_config(self):
+        return self.startup_config

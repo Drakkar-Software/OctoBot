@@ -8,7 +8,7 @@ from tools.commands import Commands
 
 from interfaces.web import server_instance, get_notifications, flush_notifications
 from interfaces.web.bot_data_model import get_evaluator_config, update_evaluator_config, get_tentacles_packages, \
-    get_tentacles
+    get_tentacles, get_evaluator_startup_config
 from interfaces.web.flask_util import get_rest_reply
 
 logger = logging.getLogger("ServerInstance Controller")
@@ -39,7 +39,9 @@ def config():
                 else:
                     return get_rest_reply('{"update": "ko"}', 500)
     else:
-        return render_template('config.html', get_evaluator_config=get_evaluator_config)
+        return render_template('config.html',
+                               get_evaluator_config=get_evaluator_config,
+                               get_evaluator_startup_config=get_evaluator_startup_config)
 
 
 @server_instance.route("/portfolio")
