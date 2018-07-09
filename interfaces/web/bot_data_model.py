@@ -236,7 +236,7 @@ def update_evaluator_config(new_config):
     try:
         ConfigManager.update_evaluator_config(new_config, current_config)
         return True
-    except:
+    except Exception:
         return False
 
 
