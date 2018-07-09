@@ -81,44 +81,6 @@ function handle_route_button(){
     });
 }
 
-function change_boolean(to_update_element, new_value){
-    var badge = to_update_element.find(".badge")
-    if(new_value){
-        to_update_element.removeClass("list-group-item-light")
-        to_update_element.addClass("list-group-item-success")
-        if (badge.hasClass("badge-secondary")){
-            badge.removeClass("badge-secondary")
-            badge.addClass("badge-warning")
-        }
-        badge.html("Activation pending restart")
-    }else{
-        to_update_element.removeClass("list-group-item-success")
-        to_update_element.addClass("list-group-item-light")
-        if (badge.hasClass("badge-success")){
-            badge.removeClass("badge-success")
-            badge.addClass("badge-warning")
-        }
-        badge.html("Deactivation pending restart")
-    }
-}
-
-function update_dom(root_element, message){
-    var config_value_attr = "config-value"
-    for (var conf_key in message) {
-        var new_value = message[conf_key]
-        new_value_type = typeof(new_value)
-        new_value_string = new_value.toString()
-        var to_update_element = root_element.find("#"+conf_key)
-        if (to_update_element.attr(config_value_attr).toLowerCase() != new_value_string){
-            to_update_element.attr(config_value_attr, new_value_string)
-            if(new_value_type == "boolean"){
-                change_boolean(to_update_element, new_value)
-            }
-
-        }
-    }
-}
-
 function handle_configuration_editor(){
     $(".config-element").click(function(){
         var element = $(this);
