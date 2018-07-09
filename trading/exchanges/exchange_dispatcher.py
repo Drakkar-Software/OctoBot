@@ -79,7 +79,7 @@ class ExchangeDispatcher(AbstractExchange):
             if not self._web_socket_available() or \
                     (self._web_socket_available() and self.exchange_web_socket.handles_recent_trades()):
                 symbol_data.init_recent_trades()
-            self.exchange.get_recent_trades(symbol=symbol)
+            self.exchange.get_recent_trades(symbol=symbol, limit=limit)
 
         return symbol_data.get_symbol_recent_trades(limit)
 
@@ -164,6 +164,6 @@ class ExchangeDispatcher(AbstractExchange):
 
     # returns (taker, maker) tuple
     def get_fees(self, symbol):
-        #TODO temporary implementation waiting for more accurate fee management
+        # TODO temporary implementation waiting for more accurate fee management
         market_status = self.exchange.get_market_status(symbol)
         return market_status[ecmsc.TAKER.value], market_status[ecmsc.MAKER.value]

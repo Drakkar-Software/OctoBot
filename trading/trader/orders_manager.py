@@ -4,7 +4,7 @@ from time import sleep
 import copy
 
 from backtesting.backtesting import Backtesting
-from config.cst import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS
+from config.cst import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
 from trading.trader.order import Order
 
 """ OrdersManager class will perform the supervision of each open order of the exchange trader
@@ -56,26 +56,30 @@ class OrdersManager(threading.Thread):
         self.keep_running = False
 
     # Update each open order symbol with exchange data
-    def _update_last_symbol_list(self):
+    def _update_last_symbol_list(self, uniformize_timestamps=False):
         updated = []
         for order in self.order_list:
             if isinstance(order, Order) and order.get_order_symbol() not in updated:
-                self._update_last_symbol_prices(order.get_order_symbol())
+                self._update_last_symbol_prices(order.get_order_symbol(), uniformize_timestamps)
 
                 updated.append(order.get_order_symbol())
 
     # Ask to update a specific symbol with exchange data
-    def _update_last_symbol_prices(self, symbol):
+    def _update_last_symbol_prices(self, symbol, uniformize_timestamps=False):
         last_symbol_price = None
+        exchange = self.trader.get_exchange()
 
         # optimize exchange simulator calls when backtesting
         if Backtesting.enabled(self.config):
-            if self.trader.get_exchange().get_exchange().should_update_recent_trades(symbol):
+            if exchange.get_exchange().should_update_recent_trades(symbol):
                 last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
 
         # Exchange call when not backtesting
         else:
-            last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+            last_symbol_price = exchange.get_recent_trades(symbol)
+            if uniformize_timestamps and last_symbol_price:
+                for order in last_symbol_price:
+                    order[eC.TIMESTAMP.value] = exchange.get_uniform_timestamp(order[eC.TIMESTAMP.value])
 
         # Check if exchange request failed
         if last_symbol_price is not None:
@@ -99,7 +103,7 @@ class OrdersManager(threading.Thread):
 
     def _update_orders_status(self):
         # update all prices
-        self._update_last_symbol_list()
+        self._update_last_symbol_list(True)
 
         for order in copy.copy(self.order_list):
             # symbol prices from exchange

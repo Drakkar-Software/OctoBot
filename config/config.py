@@ -6,7 +6,7 @@ from config.cst import CONFIG_FILE
 
 def load_config(config_file=CONFIG_FILE, error=True):
     logger = logging.getLogger("CONFIG LOADER")
-    basic_error = "Error when load config"
+    basic_error = "Error when load config file {0}".format(config_file)
     try:
         with open(config_file) as json_data_file:
             config = json.load(json_data_file)

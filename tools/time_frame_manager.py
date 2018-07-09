@@ -1,3 +1,5 @@
+import logging
+
 from config.cst import TimeFramesMinutes, TimeFrames, CONFIG_TIME_FRAME
 
 
@@ -58,5 +60,9 @@ class TimeFrameManager:
             try:
                 result_list.append(TimeFrames(time_frame_string))
             except ValueError:
-                pass
+                logging.getLogger(TimeFrameManager.__name__).error("No time frame available for: '{0}'. Available time "
+                                                                   "frames are: {1}. '{0}' time frame requirement "
+                                                                   "ignored.".
+                                                                   format(time_frame_string,
+                                                                          [t.value for t in TimeFrames]))
         return result_list

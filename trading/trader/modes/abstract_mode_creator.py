@@ -23,15 +23,9 @@ class AbstractTradingModeCreator:
             return factor
 
     @staticmethod
-    def adapt_price(symbol_market, price):
-        maximal_price_digits = AbstractTradingModeCreator.get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
-                                                                               Ecmsc.PRECISION_PRICE.value,
-                                                                               CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
-        return AbstractTradingModeCreator._trunc_with_n_decimal_digits(price, maximal_price_digits)
-
-    @staticmethod
     def get_additional_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
-        remaining_portfolio_amount = current_symbol_holding - quantity
+        remaining_portfolio_amount = float("{1:.{0}f}".format(CURRENCY_DEFAULT_MAX_PRICE_DIGITS,
+                                                             current_symbol_holding - quantity))
         remaining_max_total_order_price = remaining_portfolio_amount * price
 
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
@@ -149,6 +143,13 @@ class AbstractTradingModeCreator:
     @abstractmethod
     def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
         raise NotImplementedError("create_new_order not implemented")
+
+    @staticmethod
+    def adapt_price(symbol_market, price):
+        maximal_price_digits = AbstractTradingModeCreator.get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
+                                                                               Ecmsc.PRECISION_PRICE.value,
+                                                                               CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
+        return AbstractTradingModeCreator._trunc_with_n_decimal_digits(price, maximal_price_digits)
 
     @staticmethod
     def _adapt_quantity(symbol_market, quantity):
