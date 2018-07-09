@@ -11,7 +11,7 @@
 
   "TwitterNewsEvaluator": true,
   "RedditForumEvaluator": true,
-  "GoogleTrendStatsEvaluator": true,
+  "GoogleTrendStatsEvaluator": false,
 
 
   "FullMixedStrategiesEvaluator": true,
