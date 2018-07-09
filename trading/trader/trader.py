@@ -159,7 +159,7 @@ class Trader:
                      new_order.get_status() != OrderStatus.PARTIALLY_FILLED):
                 is_to_keep = False
 
-        self.logger.info(f"{title} : {ew_order.get_order_symbol()} | "
+        self.logger.info(f"{title} : {new_order.get_order_symbol()} | "
                          f"{new_order.get_order_type()} | "
                          f"Price : {new_order.get_origin_price()} | "
                          f"Quantity : {new_order.get_origin_quantity()} | "
