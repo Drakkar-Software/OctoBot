@@ -159,14 +159,12 @@ class Trader:
                      new_order.get_status() != OrderStatus.PARTIALLY_FILLED):
                 is_to_keep = False
 
-        self.logger.info("{0} : {1} | {2} | Price : {3} | Quantity : {4} | Status : {5} {6}".format(
-            title,
-            new_order.get_order_symbol(),
-            new_order.get_order_type(),
-            new_order.get_origin_price(),
-            new_order.get_origin_quantity(),
-            new_order.get_status(),
-            "" if is_to_keep else ": will be archived in trades history if not already"))
+        self.logger.info(f"{title} : {ew_order.get_order_symbol()} | "
+                         f"{new_order.get_order_type()} | "
+                         f"Price : {new_order.get_origin_price()} | "
+                         f"Quantity : {new_order.get_origin_quantity()} | "
+                         f"Status : {new_order.get_status()} "
+                         f"{'' if is_to_keep else ': will be archived in trades history if not already'}")
 
         if is_to_keep:
             # notify order manager of a new open order

@@ -112,19 +112,15 @@ class Order:
             if prices:
                 if inferior:
                     if float(min(prices)) < price:
-                        logging.getLogger(self.get_name()).info("{0} last prices: {1}, ask for {2} to {3}"
-                                                                .format(self.symbol,
-                                                                        prices,
-                                                                        "inferior" if inferior else "superior",
-                                                                        price))
+                        logging.getLogger(self.get_name()).info(f"{self.symbol} last prices: {prices}, "
+                                                                f"ask for {'inferior' if inferior else 'superior'} "
+                                                                f"to {price}")
                         return True
                 else:
                     if float(max(prices)) > price:
-                        logging.getLogger(self.get_name()).info("{0} last prices: {1}, ask for {2} to {3}"
-                                                                .format(self.symbol,
-                                                                        prices,
-                                                                        "inferior" if inferior else "superior",
-                                                                        price))
+                        logging.getLogger(self.get_name()).info(f"{self.symbol} last prices: {prices}, "
+                                                                f"ask for {'inferior' if inferior else 'superior'} "
+                                                                f"to {price}")
                         return True
         return False
 

@@ -1,5 +1,9 @@
 from tools.notifications import OrdersNotification
 
+"""
+This class is used to perform order linked notification
+"""
+
 
 class OrderNotifier:
     def __init__(self, config, order):

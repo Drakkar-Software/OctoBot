@@ -3,6 +3,10 @@ import logging
 from config.cst import START_PENDING_EVAL_NOTE
 from tools.evaluators_util import check_valid_eval_note
 
+"""
+This class can be used into a Strategy to analyse divergence between its evaluator notes
+"""
+
 
 class EvaluatorDivergenceAnalyser:
     def __init__(self):
