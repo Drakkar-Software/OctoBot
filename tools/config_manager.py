@@ -65,9 +65,8 @@ class ConfigManager:
                 active = activated if isinstance(activated, bool) else activated.lower() == "true"
                 current_activation = current_config[evaluator_name]
                 if current_activation != active:
-                    logging.getLogger("ConfigManager").info("evaluator_config.json updated: {0} {1}".
-                                                            format(evaluator_name,
-                                                                   "activated" if active else "deactivated"))
+                    logging.getLogger("ConfigManager").info(f"evaluator_config.json updated: {evaluator_name} "
+                                                            f"{'activated' if active else 'deactivated'}")
                     current_config[evaluator_name] = active
                     something_changed = True
         if something_changed:
