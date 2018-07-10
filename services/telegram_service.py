@@ -67,8 +67,12 @@ class TelegramService(AbstractService):
         try:
             if content:
                 self.telegram_api.send_message(chat_id=self.chat_id, text=content)
-        except telegram.error.TimedOut as e:
-            self.logger.error(f"failed to send message : {e}")
+        except telegram.error.TimedOut:
+            # retry on failing
+            try:
+                self.telegram_api.send_message(chat_id=self.chat_id, text=content)
+            except telegram.error.TimedOut as e:
+                self.logger.error(f"failed to send message : {e}")
 
     def _get_bot_url(self):
         return "https://web.telegram.org/#/im?p={0}".format(self.telegram_api.get_me().name)
