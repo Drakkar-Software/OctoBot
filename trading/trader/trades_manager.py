@@ -115,7 +115,7 @@ class TradesManager:
                          for currency, value in current_crypto_currencies_values.items()
                          if self.origin_crypto_currencies_values[currency] > 0]
 
-        return sum(origin_values) / float(len(origin_values)) * 100 - 100
+        return sum(origin_values) / len(origin_values) * 100 - 100 if len(origin_values) != 0 else 0
 
     def get_profitability_without_update(self):
         return self.profitability, self.profitability_percent, self.profitability_diff
