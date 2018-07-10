@@ -16,7 +16,7 @@ class SymbolEvaluator:
         self.config = config
         self.traders = None
         self.trader_simulators = None
-        self.logger = logging.getLogger("{0} {1}".format(self.symbol, self.__class__.__name__))
+        self.logger = logging.getLogger(f"{self.symbol} {self.__class__.__name__}")
 
         self.evaluator_thread_managers = {}
         self.trading_mode_instances = {}

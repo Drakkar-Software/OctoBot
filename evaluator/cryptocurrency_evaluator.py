@@ -35,8 +35,7 @@ class CryptocurrencyEvaluator:
             for symbol_evaluator in self.symbol_evaluator_list.values():
                 symbol_evaluator.activate_deactivate_strategies(strategies, exchange, activate)
         except Exception as e:
-            logging.getLogger(self.__class__.__name__).error("{0} error in _activate_deactivate_strategies(): {1}"
-                                                             .format(self.crypto_currency, e))
+            logging.getLogger(self.__class__.__name__).error(f"{self.crypto_currency} error in activate_deactivate_strategies(): {e}")
 
     def deactivate_strategies(self, strategies, exchange):
         self._activate_deactivate_strategies(strategies, exchange, False)
