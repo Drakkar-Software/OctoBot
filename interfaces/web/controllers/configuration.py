@@ -1,8 +1,8 @@
 from flask import render_template, request, jsonify
 
 from interfaces.web import server_instance
-from interfaces.web.bot_data_model import get_evaluator_config, update_evaluator_config, get_evaluator_startup_config, \
-    reset_evaluator_config
+from interfaces.web.models.configuration import get_evaluator_config, update_evaluator_config, \
+    get_evaluator_startup_config, reset_evaluator_config
 from interfaces.web.util.flask_util import get_rest_reply
 
 

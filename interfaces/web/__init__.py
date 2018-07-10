@@ -7,7 +7,7 @@ import flask
 import pandas
 
 from config.cst import PriceIndexes
-from interfaces.web.controllers.advanced_controller import get_advanced_blueprint
+from interfaces.web.advanced_controllers.home import get_advanced_blueprint
 
 server_instance = flask.Flask(__name__)
 
@@ -97,7 +97,7 @@ def get_notifications():
 
 
 def load_callbacks():
-    from interfaces.web.controllers.dash_controller import update_values, \
+    from interfaces.web.controllers.dash import update_values, \
         update_strategy_values, \
         update_time_frame_dropdown_options, \
         update_symbol_dropdown_options, \
@@ -122,4 +122,4 @@ def load_routes():
 
 
 def load_advanced_routes():
-    from .controllers.advanced_controller import home
+    from interfaces.web.advanced_controllers.home import home

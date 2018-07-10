@@ -2,7 +2,7 @@ from flask import render_template, request, jsonify
 
 from interfaces.web import server_instance
 from interfaces.web.util.flask_util import get_rest_reply
-from interfaces.web.bot_data_model import get_tentacles_packages, \
+from interfaces.web.models.tentacles import get_tentacles_packages, \
     get_tentacles, get_tentacles_package_description, \
     register_and_install
 
