@@ -125,7 +125,7 @@ class TelegramApp:
         market_average_profitability = get_global_profitability()
         profitability_string = ""
         if has_real_trader:
-            profitability_string = "{0}Global profitability : {1} ({2}%), crypto-market: {3}%{4}".format(
+            profitability_string = "{0}Global profitability : {1} ({2}%), market: {3}%{4}".format(
                 REAL_TRADER_STR,
                 PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
                                                                    None,
@@ -134,7 +134,7 @@ class TelegramApp:
                 PrettyPrinter.get_min_string_from_number(market_average_profitability, 2),
                 TelegramApp.EOL)
         if has_simulated_trader:
-            profitability_string += "{0}Global profitability : {1} ({2}%), crypto-market: {3}%".format(
+            profitability_string += "{0}Global profitability : {1} ({2}%), market: {3}%".format(
                 SIMULATOR_TRADER_STR,
                 PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
                                                                    None,
