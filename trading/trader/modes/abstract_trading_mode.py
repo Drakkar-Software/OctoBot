@@ -30,8 +30,8 @@ class AbstractTradingMode:
 
     @classmethod
     def get_config_file_name(cls):
-        return "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH
-                                            , EVALUATOR_CONFIG_FOLDER, cls.get_name() + CONFIG_FILE_EXT)
+        return f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{TENTACLES_TRADING_MODE_PATH}/{EVALUATOR_CONFIG_FOLDER}/" \
+               f"{cls.get_name() + CONFIG_FILE_EXT}"
 
     @classmethod
     def get_trading_mode_config(cls):
