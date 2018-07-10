@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+<script src="{{ url_for('static', filename='js/components/tentacles.js') }}"></script>
 {% block body %}
 <h1>Tentacle Manager</h1>
 <h2 class="card-title">Registered tentacles packages</h2>
@@ -67,12 +68,5 @@
     {% endfor %}
   </tbody>
 </table>
-<script>
-$(document).ready(function() {
- $('#register_and_install_package_button').prop('disabled', true);
- $('#register_and_install_package_input').keyup(function() {
-   $('#register_and_install_package_button').prop('disabled', $(this).val() == '');
- });
-});
-</script>
+<script src="{{ url_for('static', filename='js/components/tentacles_configuration.js') }}"></script>
 {% endblock %}
