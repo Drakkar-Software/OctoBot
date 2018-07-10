@@ -3,7 +3,7 @@ import json
 from flask import render_template, jsonify
 
 from interfaces.web import server_instance, get_notifications, flush_notifications
-from interfaces.web.bot_data_model import get_bot
+from interfaces import get_bot
 from tools.commands import Commands
 
 

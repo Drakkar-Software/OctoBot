@@ -3,7 +3,7 @@ from dash.dependencies import Output, Event, Input
 from config.cst import CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_TIME_FRAME
 from interfaces import global_config
 from interfaces.web import app_instance
-from interfaces.web.bot_data_model import *
+from interfaces.web.models.dash import *
 
 
 @app_instance.callback(Output('live-graph', 'figure'),
