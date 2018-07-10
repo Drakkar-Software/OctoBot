@@ -164,7 +164,8 @@ class Portfolio:
     # Resets available amount with total amount CAREFUL: if no currency is give, resets all the portfolio !
     def reset_portfolio_available(self, reset_currency=None, reset_quantity=None):
         if not reset_currency:
-            self.portfolio.update({currency: {Portfolio.AVAILABLE: self.portfolio[currency][Portfolio.TOTAL]}
+            self.portfolio.update({currency: {Portfolio.AVAILABLE: self.portfolio[currency][Portfolio.TOTAL],
+                                              Portfolio.TOTAL: self.portfolio[currency][Portfolio.TOTAL]}
                                    for currency in self.portfolio})
         else:
             if reset_currency in self.portfolio:
