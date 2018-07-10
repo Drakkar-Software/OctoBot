@@ -51,7 +51,7 @@ class RESTExchange(AbstractExchange):
         if symbol in self.client.markets:
             return self.fix_market_status(self.client.markets[symbol])
         else:
-            self.logger.error("Fail to get market status of {0}".format(symbol))
+            self.logger.error(f"Fail to get market status of {symbol}")
             return {}
 
     @staticmethod
@@ -109,21 +109,21 @@ class RESTExchange(AbstractExchange):
         try:
             self.get_symbol_data(symbol).update_recent_trades(self.client.fetch_trades(symbol, limit=limit))
         except BaseError as e:
-            self.logger.error("Failed to get recent trade {0}".format(e))
+            self.logger.error(f"Failed to get recent trade {e}")
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     def get_price_ticker(self, symbol):
         try:
             self.get_symbol_data(symbol).update_symbol_ticker(self.client.fetch_ticker(symbol))
         except BaseError as e:
-            self.logger.error("Failed to get_price_ticker {0}".format(e))
+            self.logger.error(f"Failed to get_price_ticker {e}")
 
     def get_all_currencies_price_ticker(self):
         try:
             self.all_currencies_price_ticker = self.client.fetch_tickers()
             return self.all_currencies_price_ticker
         except BaseError as e:
-            self.logger.error("Failed to get_all_currencies_price_ticker {0}".format(e))
+            self.logger.error(f"Failed to get_all_currencies_price_ticker {e}")
             return None
 
     # ORDERS
@@ -159,9 +159,9 @@ class RESTExchange(AbstractExchange):
             self.client.cancel_order(order_id, symbol=symbol)
             return True
         except OrderNotFound:
-            self.logger.error("Order {0} was not found".format(order_id))
+            self.logger.error(f"Order {order_id} was not found")
         except Exception as e:
-            self.logger.error("Order {0} failed to cancel | {1}".format(order_id, e))
+            self.logger.error(f"Order {order_id} failed to cancel | {e}")
         return False
 
     # todo { 'type': 'trailing-stop' }
@@ -184,9 +184,9 @@ class RESTExchange(AbstractExchange):
             elif order_type == TraderOrderType.TAKE_PROFIT_LIMIT:
                 return None
         except Exception as e:
-            order_desc = "order_type: {0}, symbol: {1}, quantity: {2}, price: {3}, stop_price: {4}".format(
-                str(order_type), str(symbol), str(quantity), str(price), str(stop_price))
-            self.logger.error("Failed to create order : {0} ({1})".format(e, order_desc))
+            order_desc = f"order_type: {order_type}, symbol: {symbol}, quantity: {quantity}, price: {price}," \
+                         f" stop_price: {stop_price}"
+            self.logger.error(f"Failed to create order : {e} ({order_desc})")
         return None
 
     def get_uniform_timestamp(self, timestamp):

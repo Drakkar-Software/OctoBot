@@ -30,8 +30,8 @@ class AbstractTradingMode:
 
     @classmethod
     def get_config_file_name(cls):
-        return "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH
-                                            , EVALUATOR_CONFIG_FOLDER, cls.get_name() + CONFIG_FILE_EXT)
+        return f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{TENTACLES_TRADING_MODE_PATH}/{EVALUATOR_CONFIG_FOLDER}/" \
+               f"{cls.get_name() + CONFIG_FILE_EXT}"
 
     @classmethod
     def get_trading_mode_config(cls):
@@ -44,24 +44,19 @@ class AbstractTradingMode:
     def get_required_strategies(cls):
         config = cls.get_trading_mode_config()
         if TRADING_MODE_REQUIRED_STRATEGIES in config:
-            strategies_classes = [
-                AbstractTradingMode._is_valid_strategy(class_string)
-                for class_string in config[TRADING_MODE_REQUIRED_STRATEGIES]
-            ]
+            strategies_classes = []
+            for class_string in config[TRADING_MODE_REQUIRED_STRATEGIES]:
+                s_class = get_deep_class_from_string(class_string, Strategies)
+                if s_class is not None:
+                    if s_class not in strategies_classes:
+                        strategies_classes.append(s_class)
+                else:
+                    raise Exception(f"{class_string} is not found, Octobot can't use {cls.get_name()},"
+                                    f" please check {cls.get_name()}{cls.get_config_file_name()}")
 
             return strategies_classes
         else:
-            raise Exception("'{0}' is missing in {1}".format(TRADING_MODE_REQUIRED_STRATEGIES,
-                                                             cls.get_config_file_name()))
-
-    @classmethod
-    def _is_valid_strategy(cls, class_string):
-        r = get_deep_class_from_string(class_string, Strategies)
-        if r is not None:
-            return r
-        else:
-            raise Exception(f"{class_string} is not found, Octobot can't use {cls.get_name()},"
-                            f" please check {cls.get_name()}{cls.get_config_file_name()}")
+            raise Exception(f"'{TRADING_MODE_REQUIRED_STRATEGIES}' is missing in {cls.get_config_file_name()}")
 
     @abstractmethod
     def create_deciders(self, symbol, symbol_evaluator) -> None:
@@ -93,24 +88,20 @@ class AbstractTradingMode:
 
     def _init_strategies_instances(self, symbol, all_strategy_instances):
         all_strategy_classes = [s.__class__ for s in all_strategy_instances]
-
-        self.strategy_instances_by_classes[symbol] = \
-            {required_class: self._is_valid_required_class(required_class, all_strategy_classes, all_strategy_instances)
-             for required_class in self.get_required_strategies()}
-
-    def _is_valid_required_class(self, required_class, all_strategy_classes, all_strategy_instances):
-        if required_class in all_strategy_classes:
-            return all_strategy_instances[all_strategy_classes.index(required_class)]
-        else:
-            subclass = AdvancedManager.get_class(self.config, required_class)
-            if subclass in all_strategy_classes:
-                return all_strategy_instances[all_strategy_classes.index(subclass)]
-
-        logging.getLogger(self.get_name()).error("No instance of {} or advanced equivalent found, {} trading "
-                                                 "mode can't work properly ! Maybe this strategy is disabled in"
-                                                 " tentacles/Evaluator/evaluator_config.json."
-                                                 .format(required_class.__name__, self.get_name()))
-        return None
+        for required_class in self.get_required_strategies():
+            if required_class in all_strategy_classes:
+                self.strategy_instances_by_classes[symbol][required_class] = \
+                    all_strategy_instances[all_strategy_classes.index(required_class)]
+            else:
+                subclass = AdvancedManager.get_class(self.config, required_class)
+                if subclass in all_strategy_classes:
+                    self.strategy_instances_by_classes[symbol][required_class] = \
+                        all_strategy_instances[all_strategy_classes.index(subclass)]
+            if required_class not in self.strategy_instances_by_classes[symbol]:
+                logging.getLogger(self.get_name()).error(f"No instance of {required_class.__name__} "
+                                                         f"or advanced equivalent found, {self.get_name()} trading "
+                                                         "mode can't work properly ! Maybe this strategy is disabled in"
+                                                         " tentacles/Evaluator/evaluator_config.json.")
 
     def load_config(self):
         config_file = self.get_config_file_name()
