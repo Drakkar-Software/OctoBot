@@ -2,7 +2,7 @@ from flask import render_template, request, jsonify
 
 from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_evaluator_config, update_evaluator_config, \
-    get_evaluator_startup_config, reset_evaluator_config
+    get_evaluator_startup_config
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -15,9 +15,7 @@ def config():
             request_data = request.get_json()
             success = False
 
-            if request_data == "reset":
-                success = reset_evaluator_config()
-            elif request_data:
+            if request_data:
                 success = update_evaluator_config(request_data)
 
             if success:

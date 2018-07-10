@@ -4,7 +4,7 @@ function register_and_install_package(){
     var input_text = element.val()
     var request = {}
     request[$.trim(input_text)] = "description"
-    var full_config_root = element.parents(".config-root");
+    var full_config_root = element.parents("."+config_root_class);
     var update_url = full_config_root.attr(update_url_attr);
     send_and_interpret_bot_update(request, update_url, full_config_root, register_and_install_package_success_callback, register_and_install_package_error_callback)
 }

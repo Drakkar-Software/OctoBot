@@ -11,10 +11,6 @@ def get_evaluator_startup_config():
     return get_bot().get_startup_config()[CONFIG_EVALUATOR]
 
 
-def reset_evaluator_config():
-    return update_evaluator_config(get_evaluator_startup_config())
-
-
 def update_evaluator_config(new_config):
     current_config = get_bot().get_config()[CONFIG_EVALUATOR]
     try:
