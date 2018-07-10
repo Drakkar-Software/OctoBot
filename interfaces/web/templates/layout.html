@@ -18,8 +18,8 @@
 
         <!-- Own static -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
-        <script src="{{ url_for('static', filename='js/bot_connection.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/dom_updater.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/common/bot_connection.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/common/dom_updater.js') }}"></script>
     </head>
     <body>
         <nav class="navbar navbar-expand-md navbar-dark danger-color">
@@ -98,6 +98,6 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
 
-        <script src="{{ url_for('static', filename='js/bootstrap-notify.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/bootstrap-notify.min.js') }}"></script>
     </body>
 </html>

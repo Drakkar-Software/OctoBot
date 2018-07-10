@@ -7,7 +7,7 @@ import flask
 import pandas
 
 from config.cst import PriceIndexes
-from interfaces.web.advanced_flask_controller import get_advanced_blueprint
+from interfaces.web.controllers.advanced_controller import get_advanced_blueprint
 
 server_instance = flask.Flask(__name__)
 
@@ -97,7 +97,7 @@ def get_notifications():
 
 
 def load_callbacks():
-    from .dash_controller import update_values, \
+    from interfaces.web.controllers.dash_controller import update_values, \
         update_strategy_values, \
         update_time_frame_dropdown_options, \
         update_symbol_dropdown_options, \
@@ -109,17 +109,17 @@ def load_callbacks():
 
 
 def load_routes():
-    from .flask_controller import home
-    from .flask_controller import dash
-    from .flask_controller import config
-    from .flask_controller import portfolio
-    from .flask_controller import tentacles
-    from .flask_controller import orders
-    from .flask_controller import backtesting
-    from .flask_controller import tentacle_manager
-    from .flask_controller import update
-    from .flask_controller import commands
+    from .controllers.trading import portfolio
+    from .controllers.trading import orders
+    from .controllers.tentacles import tentacles
+    from .controllers.tentacles import tentacle_manager
+    from .controllers.backtesting import backtesting
+    from .controllers.commands import commands
+    from .controllers.commands import update
+    from .controllers.configuration import config
+    from .controllers.dashboard import dash
+    from .controllers.home import home
 
 
 def load_advanced_routes():
-    from .advanced_flask_controller import home
+    from .controllers.advanced_controller import home
