@@ -1,14 +1,3 @@
-// utility variables
-var config_key_attr = "config-key";
-var config_value_attr = "config-value";
-var update_url_attr = "update-url";
-var config_element_class = "config-element";
-
-// utility functions
-function log(text){
-    window.console&&console.log(text);
-}
-
 function get_update(){
     $.ajax({
       url: "/update",
