@@ -17,11 +17,6 @@ function update_element_temporary_look(element){
     var set_to_activated = element.attr(current_value_attr).toLowerCase() == "true";
     var set_to_temporary = element.attr(current_value_attr).toLowerCase() != element.attr(config_value_attr).toLowerCase();
     var is_back_to_startup_value = element.attr(startup_value_attr).toLowerCase() == element.attr(config_value_attr).toLowerCase();
-    log("set_to_activated: "+set_to_activated)
-    log("set_to_temporary: "+set_to_temporary)
-    log("startup_value_attr: "+element.attr(startup_value_attr).toLowerCase())
-    log("config_value_attr: "+element.attr(config_value_attr.toLowerCase()))
-    log("current_value_attr: "+element.attr(current_value_attr.toLowerCase()))
     if(element.hasClass("list-group-item")){
         // list item
         list_class = (set_to_activated ? success_list_item : light_list_item);
