@@ -8,16 +8,20 @@
 <div class="accordion" id="accordionConfiguration">
     <div class="card">
         <div class="card-header" id="headingExchanges">
-          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseExchanges" aria-expanded="true" aria-controls="collapseExchanges">
+          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseExchanges" aria-expanded="false" aria-controls="collapseExchanges">
             <button class="btn btn-link" type="button" >
               Exchanges
             </button>
           </h5>
         </div>
 
-        <div id="collapseExchanges" class="collapse show" aria-labelledby="headingExchanges" data-parent="#accordionConfiguration">
+        <div id="collapseExchanges" class="collapse" aria-labelledby="headingExchanges" data-parent="#accordionConfiguration">
           <div class="card-body">
             EXCHANGE CONFIG
+          </div>
+          <div class="card-body text-center">
+            <button class="btn btn-primary btn-lg " id='save-exchange-config'>Save</button>
+            <button class="btn btn-outline-warning btn-lg" id='reset-exchange-config'>Reset</button>
           </div>
         </div>
     </div>
@@ -42,6 +46,7 @@
               {% endfor %}
             </div>
             <div class="card-body text-center">
+              <button class="btn btn-primary btn-lg " id='save-evaluator-config'>Save</button>
               <button class="btn btn-outline-warning btn-lg" id='reset-evaluator-config'>Reset</button>
             </div>
           </div>
@@ -59,6 +64,10 @@
           <div class="card-body">
             TRADING CONFIG
           </div>
+          <div class="card-body text-center">
+            <button class="btn btn-primary btn-lg " id='save-trading-config'>Save</button>
+            <button class="btn btn-outline-warning btn-lg" id='reset-trading-config'>Reset</button>
+          </div>
         </div>
     </div>
     <div class="card">
@@ -73,10 +82,13 @@
           <div class="card-body">
             NOTIFICATIONS CONFIG
           </div>
+          <div class="card-body text-center">
+            <button class="btn btn-primary btn-lg " id='save-notification-config'>Save</button>
+            <button class="btn btn-outline-warning btn-lg" id='reset-notification-config'>Reset</button>
+          </div>
         </div>
     </div>
     <br>
-    <button type="button" class="btn btn-primary">Save config</button>
 </div>
 <script src="{{ url_for('static', filename='js/components/configuration.js') }}"></script>
 {% endblock %}
