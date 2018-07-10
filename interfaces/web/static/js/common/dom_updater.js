@@ -175,12 +175,12 @@ function update_status(status){
 }
 
 function add_or_remove_confirm_before_exit_page(add, message){
-    event = 'beforeunload'
+    exit_event = 'beforeunload'
     if(add){
-        $(window).bind(event, function(){
+        $(window).bind(exit_event, function(){
           return message;
         });
     }else{
-        $(window).off(event);
+        $(window).off(exit_event);
     }
 }
