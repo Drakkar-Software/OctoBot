@@ -1,9 +1,15 @@
+import logging
+
+
 from config.cst import CONFIG_TENTACLES_KEY, TENTACLE_PACKAGE_DESCRIPTION
 from interfaces import get_bot
 from tools.tentacle_manager.tentacle_package_manager import TentaclePackageManager
 from tools.tentacle_manager.tentacle_package_util import get_is_url, get_package_name, \
     get_octobot_tentacle_public_repo, get_package_description_with_adaptation
 from tools.tentacle_manager.tentacle_manager import TentacleManager
+
+
+logger = logging.getLogger("TentaclesModel")
 
 
 def get_tentacles_packages():
@@ -33,6 +39,42 @@ def register_and_install(path_or_url):
     tentacles_manager = TentacleManager(config)
     tentacles_manager.install_tentacle_package(path_or_url, True)
     return True
+
+
+def install_packages():
+    try:
+        tentacles_manager = TentacleManager(get_bot().get_config())
+        tentacles_manager.update_list()
+        tentacles_manager.set_force_actions(True)
+        return f"{tentacles_manager.install_parser(None, True)} installed tentacles"
+    except Exception as e:
+        logger.error(f"Error when installing packages: {e}")
+        logger.exception(e)
+        return False
+
+
+def update_packages():
+    try:
+        tentacles_manager = TentacleManager(get_bot().get_config())
+        tentacles_manager.update_list()
+        tentacles_manager.set_force_actions(True)
+        return f"{tentacles_manager.update_parser(None, True)} tentacles up to date"
+    except Exception as e:
+        logger.error(f"Error when updating packages: {e}")
+        logger.exception(e)
+        return None
+
+
+def reset_packages():
+    try:
+        tentacles_manager = TentacleManager(get_bot().get_config())
+        tentacles_manager.update_list()
+        tentacles_manager.reset_tentacles()
+        return "reset successful"
+    except Exception as e:
+        logger.error(f"Error when resetting packages: {e}")
+        logger.exception(e)
+        return None
 
 
 def get_tentacles():
