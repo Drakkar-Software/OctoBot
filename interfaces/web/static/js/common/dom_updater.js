@@ -46,7 +46,6 @@ function update_element_temporary_look(element){
 
 function at_least_one_temporary_element(root_element){
     at_least_one_element = false;
-    log(root_element);
     root_element.find("."+config_element_class).each(function(){
         if($(this).attr(current_value_attr).toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
             at_least_one_element = true;

@@ -4,7 +4,7 @@ from interfaces.web import server_instance
 from interfaces.web.util.flask_util import get_rest_reply
 from interfaces.web.models.tentacles import get_tentacles_packages, \
     get_tentacles, get_tentacles_package_description, \
-    register_and_install
+    register_and_install, install_packages, update_packages, reset_packages
 
 
 @server_instance.route("/tentacles")
@@ -20,7 +20,6 @@ def tentacle_manager():
         if update_type == "add_package":
             request_data = request.get_json()
             success = False
-
             if len(request_data) > 0:
                 path_or_url, action = next(iter(request_data.items()))
                 path_or_url = path_or_url.strip()
@@ -40,6 +39,22 @@ def tentacle_manager():
 
             if not success:
                 return get_rest_reply('{"operation": "ko"}', 500)
+        elif update_type in ["install_packages", "update_packages", "reset_packages"]:
+
+            packages_operation_result = {}
+            if update_type == "install_packages":
+                packages_operation_result = install_packages()
+            elif update_type == "update_packages":
+                packages_operation_result = update_packages()
+            elif update_type == "reset_packages":
+                packages_operation_result = reset_packages()
+
+            if packages_operation_result is not None:
+                return get_rest_reply(jsonify(packages_operation_result))
+            else:
+                action = update_type.split("_")[0]
+                return get_rest_reply('{"Impossible to '+action+' packages, check the logs '
+                                      'for more information.": "ko"}', 500)
 
     else:
         return render_template('tentacle_manager.html',
