@@ -7,11 +7,12 @@ function handle_reset_buttons(){
 function handle_save_buttons(){
     $("#save-evaluator-config").click(function() {
 
-        var full_config_root = $(this).parents("."+config_root_class);
+        var config_root = $(this).parents("." + config_root_class);
+        var full_config = config_root.find("." + config_container_class);
         var updated_config = {};
-        var update_url = full_config_root.attr(update_url_attr);
+        var update_url = full_config.attr(update_url_attr);
 
-        full_config_root.find("."+config_element_class).each(function(){
+        full_config.find("."+config_element_class).each(function(){
             var new_value = $(this).attr(current_value_attr)
             if(new_value.toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
                 updated_config[$(this).attr(config_key_attr)]=new_value;
@@ -19,7 +20,7 @@ function handle_save_buttons(){
         })
 
         // send update
-        send_and_interpret_bot_update(updated_config, update_url, full_config_root, handle_save_buttons_success_callback);
+        send_and_interpret_bot_update(updated_config, update_url, full_config, handle_save_buttons_success_callback);
 
         add_or_remove_confirm_before_exit_page(false);
     })
@@ -35,8 +36,8 @@ function handle_evaluator_configuration_editor(){
     $(".config-element").click(function(){
         var element = $(this);
         if (element.hasClass(config_element_class)){
-            var full_config_root = element.parents("."+config_root_class);
-            if (full_config_root[0].hasAttribute(update_url_attr)){
+            var full_config = element.parents("." + config_container_class);
+            if (full_config[0].hasAttribute(update_url_attr)){
 
                 // build data update
                 var updated_config = {};
@@ -53,15 +54,16 @@ function handle_evaluator_configuration_editor(){
                 update_element_temporary_look(element);
 
                 //add or remove exit confirm if necessary
-                add_or_remove_exit_confirm_if_necessary(full_config_root, 'Are you sure you want to exit configuration without saving ?');
+                add_or_remove_exit_confirm_if_necessary(full_config, 'Are you sure you want to exit configuration without saving ?');
             }
         }
     });
 }
 
 function reset_configuration_element(element){
-    var full_config_root = element.parents("."+config_root_class);
-    full_config_root.find("."+config_element_class).each(function(){
+    var config_root = element.parents("." + config_root_class);
+    var full_config = config_root.find("." + config_container_class);
+    full_config.find("."+ config_element_class).each(function(){
         if($(this).attr(current_value_attr).toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
             // update current value
             $(this).attr(current_value_attr, $(this).attr(config_value_attr));
@@ -72,7 +74,7 @@ function reset_configuration_element(element){
     refresh_buttons_lock($('#evaluator-config-root'), $('#save-evaluator-config'), $('#reset-evaluator-config'))
 
     //add or remove exit confirm if necessary
-    add_or_remove_exit_confirm_if_necessary(full_config_root, 'Are you sure you want to exit configuration without saving ?');
+    add_or_remove_exit_confirm_if_necessary(full_config, 'Are you sure you want to exit configuration without saving ?');
 }
 
 function refresh_buttons_lock(root_element, button1, button2){
