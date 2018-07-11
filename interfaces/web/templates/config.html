@@ -25,17 +25,17 @@
           </div>
         </div>
     </div>
-    <div class="card">
+    <div class="card config-root">
         <div class="card-header" id="headingEvaluators">
-          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseEvaluators" aria-expanded="true" aria-controls="collapseEvaluators">
-            <button class="btn btn-link" type="button">
-              Evaluators
-            </button>
-          </h5>
+            <h3 class="mb-0">
+                <span data-toggle="collapse" data-target="#collapseEvaluators" aria-expanded="true" aria-controls="collapseEvaluators">Evaluators</span>
+                <button class="btn btn-outline-warning btn-lg float-right" id='reset-evaluator-config'>Reset</button>
+                <button class="btn btn-primary btn-lg float-right" id='save-evaluator-config'>Save</button>
+            </h3>
         </div>
 
         <div id="collapseEvaluators" class="collapse show" aria-labelledby="headingEvaluators" data-parent="#accordionConfiguration">
-          <div class="card-body config-root" update-url="{{ url_for('config', update_type='evaluator_config') }}" id="evaluator-config-root">
+          <div class="card-body config-container" update-url="{{ url_for('config', update_type='evaluator_config') }}" id="evaluator-config-root">
             <div class="card-text row">
               {% for evaluator_name, activated in get_evaluator_config().items() %}
                 <a href="#" onclick="return false;" class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element evaluator-config-element" id={{evaluator_name}} config-key={{evaluator_name}} current-value={{activated}} config-value={{activated}} startup-config-value={{get_evaluator_startup_config()[evaluator_name]}}>{{ evaluator_name }}
@@ -44,10 +44,6 @@
                   </span>
                 </a>
               {% endfor %}
-            </div>
-            <div class="card-body text-center">
-              <button class="btn btn-primary btn-lg " id='save-evaluator-config'>Save</button>
-              <button class="btn btn-outline-warning btn-lg" id='reset-evaluator-config'>Reset</button>
             </div>
           </div>
         </div>

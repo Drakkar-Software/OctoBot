@@ -5,6 +5,7 @@ var current_value_attr = "current-value";
 var startup_value_attr = "startup-config-value";
 var update_url_attr = "update-url";
 var config_root_class = "config-root";
+var config_container_class = "config-container";
 var config_element_class = "config-element";
 
 // dom display classes
