@@ -4,7 +4,7 @@ import time
 
 import dash
 import flask
-import pandas
+import numpy
 
 from config.cst import PriceIndexes
 from interfaces.web.advanced_controllers.home import get_advanced_blueprint
@@ -64,8 +64,11 @@ def add_to_symbol_data_history(symbol, data, time_frame):
             else:
                 break
         if new_data_index > 0:
-            symbol_data_history[symbol][time_frame] = pandas.concat(
-                [symbol_data_history[symbol][time_frame], data[-new_data_index:]], ignore_index=True)
+            data_list = [None]*len(PriceIndexes)
+            for i in range(len(data)):
+                data_list[i] = data[i][-new_data_index:]
+            new_data = numpy.array(data_list)
+            symbol_data_history[symbol][time_frame] = numpy.concatenate((data, new_data), axis=1)
 
 
 def add_notification(level, title, message):
