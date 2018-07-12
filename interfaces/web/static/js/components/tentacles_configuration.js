@@ -18,6 +18,26 @@ function disable_packages_operations(should_lock=true){
     if($("#register_and_install_package_input").val() != ""){
         $("#register_and_install_package_button").prop('disabled', should_lock);
     }
+    $("#update_selected_tentacles").prop('disabled', should_lock);
+    $("#uninstall_selected_tentacles").prop('disabled', should_lock);
+
+}
+
+function update(module){
+    perform_modules_operation([module], "update");
+}
+
+function uninstall(module){
+    if(confirm("Uninstall this tentacle ? This will delete the associated tentacle file if any.")) {
+        perform_modules_operation([module], "uninstall");
+    }
+}
+
+function perform_modules_operation(modules, operation){
+    var dom_root_element = $("#module-table")
+    var update_url = dom_root_element.attr(operation+"-"+update_url_attr)
+    disable_packages_operations();
+    send_and_interpret_bot_update(modules, update_url, dom_root_element, modules_operation_success_callback, modules_operation_error_callback)
 }
 
 function perform_packages_operation(source){
@@ -27,16 +47,38 @@ function perform_packages_operation(source){
     send_and_interpret_bot_update({}, update_url, source, packages_operation_success_callback, packages_operation_error_callback)
 }
 
+function modules_operation_success_callback(updated_data, update_url, dom_root_element, msg, status){
+    disable_packages_operations(false);
+    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
+        disable_select_action_buttons();
+    });
+    $("#selected_tentacles_operation").hide();
+    create_alert("success", "Module operation success: "+msg, "");
+}
+
+function modules_operation_error_callback(updated_data, update_url, dom_root_element, result, status, error){
+    disable_packages_operations(false);
+    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
+        disable_select_action_buttons();
+    });
+    $("#selected_tentacles_operation").hide();
+    create_alert("danger", "Error when managing modules: "+result.responseText, "");
+}
+
 function packages_operation_success_callback(updated_data, update_url, dom_root_element, msg, status){
     disable_packages_operations(false);
-    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table");
+    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
+        disable_select_action_buttons();
+    });
     $("#packages_action_progess_bar").hide();
     create_alert("success", "Packages operation success: "+msg, "");
 }
 
 function packages_operation_error_callback(updated_data, update_url, dom_root_element, result, status, error){
     disable_packages_operations(false);
-    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table");
+    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
+        disable_select_action_buttons();
+    });
     $("#packages_action_progess_bar").hide();
     create_alert("danger", "Error when managing packages: "+result.responseText, "");
 }
@@ -68,7 +110,9 @@ function post_package_action_success_callback(updated_data, update_url, dom_root
     }
     create_alert("success", "Tentacles packages successfully installed from: "+package_path, "");
     $("#tentacles_packages_table").load(location.href + " #tentacles_packages_table");
-    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table");
+    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
+        disable_select_action_buttons();
+    });
     $("#register_and_install_package_progess_bar").hide();
     disable_packages_operations(false);
 }
@@ -76,9 +120,20 @@ function post_package_action_success_callback(updated_data, update_url, dom_root
 function post_package_action_error_callback(updated_data, update_url, dom_root_element, result, status, error){
     create_alert("danger", "Error during package handling: "+result.responseText, "");
     $("#tentacles_packages_table").load(location.href + " #tentacles_packages_table");
-    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table");
+    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
+        disable_select_action_buttons();
+    });
     $("#register_and_install_package_progess_bar").hide();
     disable_packages_operations(false);
+}
+
+function get_selected_modules(){
+    log("get_selected_modules");
+    var selected_modules = []
+    $("#module-table").find("input[type='checkbox']:checked").each(function(){
+        selected_modules.push($(this).attr("module"))
+    });
+    return selected_modules
 }
 
 function handle_tentacles_buttons(){
@@ -89,14 +144,45 @@ function handle_tentacles_buttons(){
         perform_packages_operation($(this));
     });
     $("#reset_tentacles_packages").click(function(){
-        perform_packages_operation($(this));
+        if(confirm("Reset all installed tentacles ? This will delete all tentacle files and configuration in tentacles folder.")) {
+            perform_packages_operation($(this));
+        }
     });
+    $("#uninstall_selected_tentacles").click(function(){
+        selected_modules = get_selected_modules();
+        if(selected_modules.length > 0){
+            if(confirm("Uninstall these tentacles ? This will delete all the associated tentacle files if any.")) {
+                $("#selected_tentacles_operation").show();
+                disable_packages_operations();
+                perform_modules_operation(selected_modules,"uninstall");
+            }
+        }
+    });
+    $("#update_selected_tentacles").click(function(){
+        selected_modules = get_selected_modules();
+        if(selected_modules.length > 0){
+            $("#selected_tentacles_operation").show();
+            disable_packages_operations();
+            perform_modules_operation(selected_modules,"update");
+        }
+    });
+}
+
+function disable_select_action_buttons(){
+    $('#update_selected_tentacles').prop('disabled', true);
+    $('#uninstall_selected_tentacles').prop('disabled', true);
+ $('.tentacle-module-checkbox').click(function() {
+     var should_disable_buttons = get_selected_modules() <= 0;
+     $('#uninstall_selected_tentacles').prop('disabled', should_disable_buttons);
+     $('#update_selected_tentacles').prop('disabled', should_disable_buttons);
+ });
 }
 
 $(document).ready(function() {
  handle_tentacles_buttons();
  $('#register_and_install_package_button').prop('disabled', true);
  $('#register_and_install_package_input').keyup(function() {
-   $('#register_and_install_package_button').prop('disabled', $(this).val() == '');
+    $('#register_and_install_package_button').prop('disabled', $(this).val() == '');
  });
+ disable_select_action_buttons();
 });

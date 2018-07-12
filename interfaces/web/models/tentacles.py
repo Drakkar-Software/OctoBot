@@ -77,5 +77,30 @@ def reset_packages():
         return None
 
 
+def update_modules(modules):
+    try:
+        tentacles_manager = TentacleManager(get_bot().get_config())
+        tentacles_manager.update_list()
+        tentacles_manager.set_force_actions(True)
+        nb_updated = tentacles_manager.update_parser(modules, False)
+        return f"{nb_updated} up to date module(s)" if nb_updated > 1 else f"{modules[0]} up to date"
+    except Exception as e:
+        logger.error(f"Error when updating modules: {e}")
+        logger.exception(e)
+        return None
+
+
+def uninstall_modules(modules):
+    try:
+        tentacles_manager = TentacleManager(get_bot().get_config())
+        tentacles_manager.update_list()
+        nb_uninstalled = tentacles_manager.uninstall_parser(modules, False)
+        return f"{nb_uninstalled} uninstalled module(s)" if nb_uninstalled > 1 else f"{modules[0]} uninstalled"
+    except Exception as e:
+        logger.error(f"Error when uninstalling modules: {e}")
+        logger.exception(e)
+        return None
+
+
 def get_tentacles():
     return TentaclePackageManager.get_installed_modules()
