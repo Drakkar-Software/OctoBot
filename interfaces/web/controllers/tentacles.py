@@ -4,7 +4,7 @@ from interfaces.web import server_instance
 from interfaces.web.util.flask_util import get_rest_reply
 from interfaces.web.models.tentacles import get_tentacles_packages, \
     get_tentacles, get_tentacles_package_description, \
-    register_and_install, install_packages, update_packages, reset_packages
+    register_and_install, install_packages, update_packages, reset_packages, update_modules, uninstall_modules
 
 
 @server_instance.route("/tentacles")
@@ -55,6 +55,25 @@ def tentacle_manager():
                 action = update_type.split("_")[0]
                 return get_rest_reply('{"Impossible to '+action+' packages, check the logs '
                                       'for more information.": "ko"}', 500)
+
+        elif update_type in ["update_modules", "uninstall_modules"]:
+
+            request_data = request.get_json()
+            if request_data:
+                packages_operation_result = {}
+                if update_type == "update_modules":
+                    packages_operation_result = update_modules(request_data)
+                elif update_type == "uninstall_modules":
+                    packages_operation_result = uninstall_modules(request_data)
+
+                if packages_operation_result is not None:
+                    return get_rest_reply(jsonify(packages_operation_result))
+                else:
+                    action = update_type.split("_")[0]
+                    return get_rest_reply('{"Impossible to '+action+' module(s), check the logs '
+                                          'for more information.": "ko"}', 500)
+            else:
+                return get_rest_reply('{"Need at least one element be selected": "ko"}', 500)
 
     else:
         return render_template('tentacle_manager.html',
