@@ -69,10 +69,8 @@ class OrdersManager(threading.Thread):
         last_symbol_price = None
         exchange = self.trader.get_exchange()
 
-        # optimize exchange simulator calls when backtesting
         if Backtesting.enabled(self.config):
-            if exchange.get_exchange().should_update_recent_trades(symbol):
-                last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+            last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
 
         # Exchange call when not backtesting
         else:
@@ -91,10 +89,14 @@ class OrdersManager(threading.Thread):
     def set_order_refresh_time(self, seconds):
         self.order_refresh_time = seconds
 
+    # Currently called by backtesting
     # Will be called by Websocket to perform order status update if new data available
     # TODO : currently blocking, may implement queue if needed
-    def force_update_order_status(self):
-        self._update_orders_status()
+    def force_update_order_status(self, blocking=True):
+        if blocking:
+            self._update_orders_status()
+        else:
+            raise NotImplementedError("force_update_order_status(blocking=False) not implemented")
 
     """ prepare order status updating by getting price data
     then ask orders to check their status
@@ -124,6 +126,8 @@ class OrdersManager(threading.Thread):
 
     # Threading method that will periodically update orders status with update_orders_status
     def run(self):
+        if Backtesting.enabled(self.config):
+            self.keep_running = False
         while self.keep_running:
 
             try:
@@ -135,7 +139,4 @@ class OrdersManager(threading.Thread):
                 self.logger.exception(e)
                 sleep(self.order_refresh_time)
 
-            if not Backtesting.enabled(self.config):
-                sleep(self.order_refresh_time)
-            else:
-                sleep(0)
+            sleep(self.order_refresh_time)

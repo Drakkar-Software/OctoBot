@@ -68,9 +68,9 @@ class TestExchangeSimulator:
         _, exchange_inst, exchange_simulator, trader_inst = self.init_default()
 
         # first call
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
+        assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR)
+        assert exchange_simulator.should_update_data(TimeFrames.FOUR_HOURS)
+        assert exchange_simulator.should_update_data(TimeFrames.ONE_DAY)
 
         # call get prices
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
@@ -78,72 +78,9 @@ class TestExchangeSimulator:
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
         # call with trader without order
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
+        assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR)
+        assert not exchange_simulator.should_update_data(TimeFrames.FOUR_HOURS)
+        assert not exchange_simulator.should_update_data(TimeFrames.ONE_DAY)
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-
-        trader_inst.get_order_manager().order_list = [1]
-        # call with trader with order and not recent trade
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and not enough recent trade
-        exchange_simulator.fetched_trades_counter[self.DEFAULT_SYMBOL] += 1
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and enough recent trade
-        exchange_simulator.fetched_trades_counter[self.DEFAULT_SYMBOL] += 2
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-
-        # call with trader with order and not enough recent trade
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and enough recent trade
-        exchange_simulator.fetched_trades_counter[self.DEFAULT_SYMBOL] += 1
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and not enough recent trade
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and enough recent trade
-        exchange_simulator.fetched_trades_counter[self.DEFAULT_SYMBOL] += 1
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        self.stop(trader_inst)
-
-    def test_should_update_recent_trades(self):
-        _, exchange_inst, exchange_simulator, trader_inst = self.init_default()
-
-        assert exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-        exchange_simulator.time_frame_get_times[self.DEFAULT_TF.value] += 1
-
-        assert exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-
-        # call with not enough time frame refresh
-        assert not exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-
-        exchange_simulator.time_frame_get_times[self.DEFAULT_TF.value] += 1
-        assert exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-
-        # call with not enough time frame refresh
-        assert not exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-        assert not exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
 
         self.stop(trader_inst)

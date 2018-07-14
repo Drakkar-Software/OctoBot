@@ -62,10 +62,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                 for time_frame in time_frames:
                     if back_testing_enabled:
                         exchange = evaluator_thread_manager.exchange.get_exchange()
-                        if exchange.should_update_data(
-                                evaluator_thread_manager.symbol,
-                                time_frame,
-                                evaluator_thread_manager.symbol_evaluator.get_trader_simulator(exchange)):
+                        if exchange.should_update_data(time_frame):
                             self._refresh_data(time_frame)
 
                     # if data from this time frame needs an update
@@ -84,6 +81,18 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                     if sleeping_time > 0:
                         time.sleep(sleeping_time)
                 else:
-                    time.sleep(0)
+                    while not self.ensure_finished_other_threads_tasks():
+                        time.sleep(0.01)
         else:
             self.logger.warning("no time frames to monitor, going to sleep.")
+
+    def ensure_finished_other_threads_tasks(self):
+        for evaluator_thread_manager in self.evaluator_threads_manager_by_time_frame.values():
+            symbol_evaluator = evaluator_thread_manager.symbol_evaluator
+            if symbol_evaluator.get_deciders_are_busy():
+                return False
+            else:
+                for trader_simulators in symbol_evaluator.trader_simulators.values():
+                    trader_simulators.order_manager.force_update_order_status()
+        return True
+

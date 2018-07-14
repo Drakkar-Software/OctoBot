@@ -16,8 +16,6 @@ class Backtesting:
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def end(self):
-        self.logger.warning("Current backtesting version has a 2% precision error rate.")
-
         for symbol in self.exchange_simulator.get_symbols():
             self.report(symbol)
 
