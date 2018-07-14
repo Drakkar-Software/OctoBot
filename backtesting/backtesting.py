@@ -19,9 +19,7 @@ class Backtesting:
         for symbol in self.exchange_simulator.get_symbols():
             self.report(symbol)
 
-        # make sure to wait the end of threads process
         backtesting_time = time.time() - self.begin_time
-        time.sleep(5)
         self.logger.info("Simulation lasted {0} sec".format(backtesting_time))
         if self.force_exit_at_end:
             os._exit(0)

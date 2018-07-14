@@ -82,7 +82,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                         time.sleep(sleeping_time)
                 else:
                     while not self.ensure_finished_other_threads_tasks():
-                        time.sleep(0.01)
+                        time.sleep(0.001)
         else:
             self.logger.warning("no time frames to monitor, going to sleep.")
 
