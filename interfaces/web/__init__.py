@@ -47,11 +47,11 @@ def add_to_portfolio_value_history(real_value, simulated_value):
     portfolio_value_history["timestamp"].append(time.time())
 
 
-def add_to_symbol_data_history(symbol, data, time_frame):
+def add_to_symbol_data_history(symbol, data, time_frame, force_data_reset=False):
     if symbol not in symbol_data_history:
         symbol_data_history[symbol] = {}
 
-    if time_frame not in symbol_data_history[symbol]:
+    if force_data_reset or time_frame not in symbol_data_history[symbol]:
         symbol_data_history[symbol][time_frame] = data
     else:
         # merge new data into current data
@@ -68,7 +68,8 @@ def add_to_symbol_data_history(symbol, data, time_frame):
             for i in range(len(data)):
                 data_list[i] = data[i][-new_data_index:]
             new_data = numpy.array(data_list)
-            symbol_data_history[symbol][time_frame] = numpy.concatenate((data, new_data), axis=1)
+            symbol_data_history[symbol][time_frame] = numpy.concatenate((symbol_data_history[symbol][time_frame],
+                                                                         new_data), axis=1)
 
 
 def add_notification(level, title, message):

@@ -5,12 +5,13 @@ import plotly.graph_objs as go
 
 from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame
+from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame, get_global_config
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
 from interfaces.web import add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
     add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE, get_symbol_data_history
 from tools.symbol_util import split_symbol
 from trading.trader.portfolio import Portfolio
+from backtesting.backtesting import Backtesting
 
 
 def get_value_from_dict_or_string(data, is_time_frame=False):
@@ -114,6 +115,7 @@ def get_portfolio_value_in_history():
 
 def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_name):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
+    in_backtesting = Backtesting.enabled(get_global_config())
     exchange_list = get_bot().get_exchanges_list()
 
     if time_frame is not None:
@@ -127,7 +129,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
 
                 if data is not None:
                     _, pair_tag = split_symbol(symbol)
-                    add_to_symbol_data_history(symbol, data, time_frame)
+                    add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
                     data = get_symbol_data_history(symbol, time_frame)
 
                     # data.loc[:, PriceStrings.STR_PRICE_TIME.value] /= 1000
