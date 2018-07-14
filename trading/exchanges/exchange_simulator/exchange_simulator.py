@@ -143,6 +143,7 @@ class ExchangeSimulator(AbstractExchange):
         max_price = tf[PriceIndexes.IND_PRICE_HIGH.value]
         min_price = tf[PriceIndexes.IND_PRICE_LOW.value]
 
+        # TODO generate trades with different patterns (linear, waves, random, etc)
         for _ in range(0, self.RECENT_TRADES_TO_CREATE - 2):
             trades.append((max_price + min_price) / 2)
 
