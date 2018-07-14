@@ -15,6 +15,9 @@ class AsynchronousServer:
         self.callback_method = callback_method
         self.logger = logging.getLogger(self.__class__.__name__)
 
+    def has_something_to_do(self):
+        return not self.queue.empty() or self.is_computing
+
     def add_to_queue(self, *data):
         self.queue.put(data)
         self.notify_received_data()

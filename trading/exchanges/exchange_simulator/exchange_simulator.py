@@ -111,7 +111,7 @@ class ExchangeSimulator(AbstractExchange):
             # create symbol last trades counter
             self.fetched_trades_counter[symbol] = 0
 
-    def should_update_data(self, symbol, time_frame, trader):
+    def should_update_data(self, time_frame):
         previous_time_frame = TimeFrameManager.get_previous_time_frame(self.config_time_frames, time_frame, time_frame)
         previous_time_frame_sec = TimeFramesMinutes[previous_time_frame]
         previous_time_frame_updated_times = self.time_frame_get_times[previous_time_frame.value]
@@ -121,10 +121,7 @@ class ExchangeSimulator(AbstractExchange):
         time_refresh_condition = (previous_time_frame_updated_times - (
                 current_time_frame_updated_times * (current_time_frame_sec / previous_time_frame_sec)) >= 0)
 
-        recent_trades_condition = trader.get_open_orders() and (
-                                  self.fetched_trades_counter[symbol] > current_time_frame_updated_times)
-
-        return time_refresh_condition and (not trader.get_open_orders() or recent_trades_condition)
+        return time_refresh_condition
 
     def should_update_recent_trades(self, symbol):
         if symbol in self.fetched_trades_counter:

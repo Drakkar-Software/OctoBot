@@ -143,6 +143,13 @@ class SymbolEvaluator:
             for decider in self.trading_mode_instances[exchange.get_name()].get_deciders(self.symbol):
                 decider.add_to_queue()
 
+    def get_deciders_are_busy(self):
+        for trading_mode in self.trading_mode_instances.values():
+            for decider in trading_mode.get_deciders(self.symbol):
+                if decider.has_something_to_do():
+                    return True
+        return False
+
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
         for evaluator_thread in self.evaluator_thread_managers[exchange.get_name()].values():
