@@ -1,4 +1,6 @@
 import time
+import datetime
+import copy
 
 from backtesting import get_bot
 from backtesting.backtesting import Backtesting
@@ -30,10 +32,10 @@ class ExchangeSimulator(AbstractExchange):
         self.exchange_manager.time_frames = self.config_time_frames
 
         self.time_frame_get_times = {}
-        self.fetched_trades_counter = {}
+        self.time_frames_offset = {}
 
         self.DEFAULT_LIMIT = 100
-        self.MIN_LIMIT = 20
+        self.MIN_LIMIT = 30
 
         # used to force price movement
         self.recent_trades_multiplier_factor = 1
@@ -74,12 +76,23 @@ class ExchangeSimulator(AbstractExchange):
                         self.data[symbol] = self.fix_timestamps(data)
 
     @staticmethod
-    def fix_timestamps(data):
+    def need_transform_timeframes(timeframes):
+        if timeframes:
+            try:
+                datetime.datetime.fromtimestamp(timeframes)
+            except OSError:
+                return True
+        return False
+
+    def fix_timestamps(self, data):
         if get_bot() is not None:
             for time_frame in data:
-                time_delta = get_bot().get_start_time() * 1000 - data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value]
+                need_to_uniform_timestamps = ExchangeSimulator.need_transform_timeframes(
+                    data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value])
                 for data_list in data[time_frame]:
-                    data_list[PriceIndexes.IND_PRICE_TIME.value] += time_delta
+                    if need_to_uniform_timestamps:
+                        data_list[PriceIndexes.IND_PRICE_TIME.value] = \
+                            self.get_uniform_timestamp(data_list[PriceIndexes.IND_PRICE_TIME.value])
         return data
 
     # returns price data for a given symbol
@@ -103,32 +116,30 @@ class ExchangeSimulator(AbstractExchange):
         return self.__class__.__name__ + str(self.symbols)
 
     def _prepare(self):
-        # create get times
+        # create get times and init offsets
         for time_frame in TimeFrames:
             self.time_frame_get_times[time_frame.value] = 0
-
-        for symbol in self.symbols:
-            # create symbol last trades counter
-            self.fetched_trades_counter[symbol] = 0
+            self.time_frames_offset[time_frame.value] = 0
 
     def should_update_data(self, time_frame):
-        previous_time_frame = TimeFrameManager.get_previous_time_frame(self.config_time_frames, time_frame, time_frame)
-        previous_time_frame_sec = TimeFramesMinutes[previous_time_frame]
-        previous_time_frame_updated_times = self.time_frame_get_times[previous_time_frame.value]
-        current_time_frame_sec = TimeFramesMinutes[time_frame]
-        current_time_frame_updated_times = self.time_frame_get_times[time_frame.value]
+        smallest_time_frame = TimeFrameManager.find_min_time_frame(self.config_time_frames)
+        if smallest_time_frame == time_frame:
+            # always True: refresh smallest timeframe systematically when possible
+            return True
+        else:
+            smallest_time_frame_sec = TimeFramesMinutes[smallest_time_frame]
+            smallest_time_frame_updated_times = self.time_frame_get_times[smallest_time_frame.value]
+            # - 1 because smallest timeframe is the 1st to be updated: always return true for it but others need not to
+            # be biased by the previous + 1 from current timeframe update wave
+            smallest_time_frame_updated_times_to_compare = smallest_time_frame_updated_times - 1 \
+                if smallest_time_frame_updated_times > 0 else 0
+            current_time_frame_sec = TimeFramesMinutes[time_frame]
+            current_time_frame_updated_times = self.time_frame_get_times[time_frame.value]
 
-        time_refresh_condition = (previous_time_frame_updated_times - (
-                current_time_frame_updated_times * (current_time_frame_sec / previous_time_frame_sec)) >= 0)
+            time_refresh_condition = (smallest_time_frame_updated_times_to_compare - (
+                    current_time_frame_updated_times * (current_time_frame_sec / smallest_time_frame_sec)) >= 0)
 
-        return time_refresh_condition
-
-    def should_update_recent_trades(self, symbol):
-        if symbol in self.fetched_trades_counter:
-            if self.time_frame_get_times[self.MIN_ENABLED_TIME_FRAME.value] >= self.fetched_trades_counter[symbol]:
-                self.fetched_trades_counter[symbol] += 1
-                return True
-        return False
+            return time_refresh_condition
 
     # Will use the One Minute time frame
     def _create_ticker(self, symbol, index):
@@ -161,35 +172,69 @@ class ExchangeSimulator(AbstractExchange):
 
         return created_trades
 
-    def _extract_indexes(self, array, index, factor=1, max_value=None):
+    def _extract_from_indexes(self, array, max_index, factor=1):
         max_limit = len(array)
-        index *= factor
-        max_count = max_value if max_value is not None else self.DEFAULT_LIMIT
-        min_count = max_value if max_value is not None else self.MIN_LIMIT
+        max_index *= factor
 
-        if max_limit - (index + max_count) <= min_count:
+        if max_index > max_limit:
             self.backtesting.end()
 
-        elif index + max_count >= max_limit:
-            return array[index::]
         else:
-            return array[index:index + max_count]
+            return array[:max_index]
+
+    def _get_candle_index(self, timeframe):
+        return self.time_frames_offset[timeframe] + self.time_frame_get_times[timeframe]
 
     def _extract_data_with_limit(self, symbol, time_frame):
-        to_use_timeframe = time_frame.value if time_frame is not None else next(iter(self.data[symbol]))
-        return self._extract_indexes(self.data[symbol][to_use_timeframe],
-                                     self.time_frame_get_times[to_use_timeframe])
+        to_use_timeframe = time_frame.value if time_frame is not None \
+            else TimeFrameManager.find_min_time_frame(self.data[symbol].keys())
+        return self._extract_from_indexes(self.data[symbol][to_use_timeframe],
+                                          self._get_candle_index(to_use_timeframe))
+
+    def get_candles_exact(self, symbol, time_frame, min_index, max_index, return_list=True):
+        candles = self.data[symbol][time_frame.value][min_index:max_index]
+        self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
+        return self.get_symbol_data(symbol).get_symbol_prices(time_frame, None, return_list)
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
-        result = self._extract_data_with_limit(symbol, time_frame)
+        candles = self._extract_data_with_limit(symbol, time_frame)
         if time_frame is not None:
             self.time_frame_get_times[time_frame.value] += 1
-        self.get_symbol_data(symbol).update_symbol_candles(time_frame, result, replace_all=True)
+        self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
 
     def get_recent_trades(self, symbol, limit=50):
         trades = self._create_recent_trades(
             symbol, self.time_frame_get_times[self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value])
         self.get_symbol_data(symbol).update_recent_trades(trades)
+
+    def _find_min_timeframe_to_consider(self, timeframes, symbol):
+        timeframes_to_consider = copy.copy(timeframes)
+        min_timeframe_to_consider = None
+        while not min_timeframe_to_consider and timeframes_to_consider:
+            potential_min_timeframe_to_consider = TimeFrameManager.find_min_time_frame(timeframes_to_consider).value
+            if potential_min_timeframe_to_consider in self.data[symbol]:
+                min_timeframe_to_consider = potential_min_timeframe_to_consider
+            else:
+                timeframes_to_consider.remove(potential_min_timeframe_to_consider)
+        if min_timeframe_to_consider:
+            return self.data[symbol][min_timeframe_to_consider][self.MIN_LIMIT][PriceIndexes.IND_PRICE_TIME.value]
+        else:
+            self.logger.error(f"No data for the timeframes: {timeframes} in loaded backtesting file.")
+            if Backtesting.enabled(self.config):
+                self.backtesting.end()
+
+    def init_candles_offset(self, timeframes, symbol):
+        min_timeframe_to_consider = self._find_min_timeframe_to_consider(timeframes, symbol)
+        for timeframe in timeframes:
+            if timeframe.value in self.data[symbol]:
+                found_index = False
+                for index, candle in enumerate(self.data[symbol][timeframe.value]):
+                    if candle[PriceIndexes.IND_PRICE_TIME.value] >= min_timeframe_to_consider:
+                        found_index = True
+                        self.time_frames_offset[timeframe.value] = index
+                        break
+                if not found_index:
+                    self.time_frames_offset[timeframe.value] = len(self.data[symbol][timeframe.value]) - 1
 
     def get_data(self):
         return self.data
@@ -277,4 +322,4 @@ class ExchangeSimulator(AbstractExchange):
         raise NotImplementedError("get_order_book not implemented")
 
     def get_uniform_timestamp(self, timestamp):
-        return timestamp
+        return timestamp / 1000

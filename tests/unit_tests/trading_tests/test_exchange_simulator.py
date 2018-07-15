@@ -17,6 +17,8 @@ class TestExchangeSimulator:
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
         exchange_inst = exchange_manager.get_exchange()
         exchange_simulator = exchange_inst.get_exchange()
+        exchange_simulator.init_candles_offset([TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY],
+                                               TestExchangeSimulator.DEFAULT_SYMBOL)
 
         trader_inst = TraderSimulator(config, exchange_inst, 1)
         return config, exchange_inst, exchange_simulator, trader_inst
@@ -43,8 +45,8 @@ class TestExchangeSimulator:
         assert first_data is not second_data
 
         # second is first with DEFAULT_TF difference
-        assert first_data[PriceIndexes.IND_PRICE_CLOSE.value][1] == second_data[PriceIndexes.IND_PRICE_CLOSE.value][0]
-        assert first_data[PriceIndexes.IND_PRICE_TIME.value][0] + HOURS_TO_MSECONDS == second_data[
+        assert first_data[PriceIndexes.IND_PRICE_CLOSE.value][0] == second_data[PriceIndexes.IND_PRICE_CLOSE.value][0]
+        assert first_data[PriceIndexes.IND_PRICE_TIME.value][0] == second_data[
             PriceIndexes.IND_PRICE_TIME.value][0]
 
         # end is end -1 with DEFAULT_TF difference
