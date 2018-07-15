@@ -132,13 +132,11 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                     add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
                     data = get_symbol_data_history(symbol, time_frame)
 
-                    # data.loc[:, PriceStrings.STR_PRICE_TIME.value] /= 1000
-
                     data_x = data[PriceIndexes.IND_PRICE_TIME.value]
                     data_y = data[PriceIndexes.IND_PRICE_CLOSE.value]
 
                     # Candlestick
-                    ohlc_graph = go.Ohlc(x=data[PriceIndexes.IND_PRICE_TIME.value],
+                    ohlc_graph = go.Ohlc(x=data_x,
                                          open=data[PriceIndexes.IND_PRICE_OPEN.value],
                                          high=data[PriceIndexes.IND_PRICE_HIGH.value],
                                          low=data[PriceIndexes.IND_PRICE_LOW.value],
@@ -151,14 +149,14 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         x=real_trades_prices,
                         y=real_trades_times,
                         mode='markers',
-                        name='markers'
+                        name='trade'
                     )
 
                     simulated_trades_points = go.Scatter(
                         x=simulated_trades_times,
                         y=simulated_trades_prices,
                         mode='markers',
-                        name='markers'
+                        name='trade'
                     )
 
                     return {'data': [ohlc_graph, real_trades_points, simulated_trades_points],

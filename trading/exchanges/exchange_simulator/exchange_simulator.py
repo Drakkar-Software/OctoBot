@@ -6,7 +6,9 @@ from backtesting import get_bot
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_parser import DataCollectorParser
 from backtesting.collector.exchange_collector import ExchangeDataCollector
-from config.cst import *
+from config.cst import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACKTESTING, \
+    SIMULATOR_LAST_PRICES_TO_CHECK, ORDER_CREATION_LAST_TRADES_TO_USE,CONFIG_BACKTESTING_DATA_FILES, PriceIndexes, \
+    TimeFramesMinutes, ExchangeConstantsTickersColumns
 from tools.time_frame_manager import TimeFrameManager
 from trading import AbstractExchange
 
@@ -146,8 +148,8 @@ class ExchangeSimulator(AbstractExchange):
         tf = self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value][index]
         return tf[PriceIndexes.IND_PRICE_CLOSE.value]
 
-    def _create_recent_trades(self, symbol, index):
-        tf = self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value][index]
+    def _create_recent_trades(self, symbol, timeframe, index):
+        tf = self._get_symbol_data(symbol)[timeframe.value][index]
         trades = []
         created_trades = []
 
@@ -208,9 +210,25 @@ class ExchangeSimulator(AbstractExchange):
             self.time_frame_get_times[time_frame.value] += 1
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
 
+    def _get_used_timeframes(self, symbol):
+        if symbol in self.time_frames_offset:
+            return self.time_frames_offset[symbol].keys()
+        else:
+            return [self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR]
+
     def get_recent_trades(self, symbol, limit=50):
+        timeframe_to_use = TimeFrameManager.find_min_time_frame(self._get_used_timeframes(symbol))
+        index = 0
+        if symbol in self.time_frames_offset and timeframe_to_use.value in self.time_frames_offset[symbol] \
+           and timeframe_to_use.value in self.time_frame_get_times:
+            # -2 because take into account the +1 in self.time_frame_get_times and the fact that it's an index
+            index = self.time_frames_offset[symbol][timeframe_to_use.value] \
+                    + self.time_frame_get_times[timeframe_to_use.value] \
+                    - 2
         trades = self._create_recent_trades(
-            symbol, self.time_frame_get_times[self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR.value])
+            symbol, timeframe_to_use,
+            index
+        )
         self.get_symbol_data(symbol).update_recent_trades(trades)
 
     def _find_min_timeframe_to_consider(self, timeframes, symbol):
