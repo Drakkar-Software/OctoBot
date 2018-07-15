@@ -92,9 +92,9 @@ class OrdersManager(threading.Thread):
     # Currently called by backtesting
     # Will be called by Websocket to perform order status update if new data available
     # TODO : currently blocking, may implement queue if needed
-    def force_update_order_status(self, blocking=True):
+    def force_update_order_status(self, blocking=True, simulated_time=None):
         if blocking:
-            self._update_orders_status()
+            self._update_orders_status(simulated_time=simulated_time)
         else:
             raise NotImplementedError("force_update_order_status(blocking=False) not implemented")
 
@@ -103,7 +103,7 @@ class OrdersManager(threading.Thread):
     Finally ask cancellation and filling process if it is required
     """
 
-    def _update_orders_status(self):
+    def _update_orders_status(self, simulated_time=None):
         # update all prices
         self._update_last_symbol_list(True)
 
@@ -116,7 +116,7 @@ class OrdersManager(threading.Thread):
             # ask orders to update their status
             with order as odr:
                 if odr in self.order_list:
-                    odr.update_order_status()
+                    odr.update_order_status(simulated_time=simulated_time)
 
                     if odr.get_status() == OrderStatus.FILLED:
                         self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} (ID : {odr.get_id()})"
