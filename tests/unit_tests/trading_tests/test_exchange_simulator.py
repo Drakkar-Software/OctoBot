@@ -86,3 +86,26 @@ class TestExchangeSimulator:
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
 
         self.stop(trader_inst)
+
+    @staticmethod
+    def _get_start_index_for_timeframe(nb_candles, min_limit, timeframe_multiplier):
+        return int(nb_candles - (nb_candles-min_limit) / timeframe_multiplier)
+
+    def test_init_candles_offset(self):
+        _, exchange_inst, exchange_simulator, trader_inst = self.init_default()
+
+        timeframes = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.TWO_HOURS,
+                      TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
+        exchange_simulator.init_candles_offset(timeframes, self.DEFAULT_SYMBOL)
+
+        offsets = exchange_simulator.time_frames_offset[self.DEFAULT_SYMBOL]
+        nb_candles = len(exchange_simulator.data[self.DEFAULT_SYMBOL][TimeFrames.THIRTY_MINUTES.value])
+        assert offsets[TimeFrames.THIRTY_MINUTES.value] == \
+            self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 1)
+        assert offsets[TimeFrames.ONE_HOUR.value] ==  \
+            self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 2)
+        assert offsets[TimeFrames.TWO_HOURS.value] ==  \
+            self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 4)
+        assert offsets[TimeFrames.FOUR_HOURS.value] ==  \
+            self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 8)
+        assert offsets[TimeFrames.ONE_DAY.value] == 245
