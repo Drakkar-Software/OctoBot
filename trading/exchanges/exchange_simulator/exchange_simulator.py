@@ -84,6 +84,8 @@ class ExchangeSimulator(AbstractExchange):
                 datetime.datetime.fromtimestamp(timeframes)
             except OSError:
                 return True
+            except ValueError:
+                return True
         return False
 
     def fix_timestamps(self, data):
