@@ -4,7 +4,8 @@ import logging
 import copy
 
 from backtesting.backtesting import Backtesting
-from config.cst import *
+from config.cst import TimeFramesMinutes, MINUTE_TO_SECONDS
+from tools.time_frame_manager import TimeFrameManager
 
 
 class SymbolTimeFramesDataUpdaterThread(threading.Thread):
@@ -43,6 +44,8 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
     # start background refresher
     def run(self):
         time_frames = self.evaluator_threads_manager_by_time_frame.keys()
+        # sort time frames to update them in order of accuracy
+        time_frames = TimeFrameManager.sort_time_frames(time_frames)
 
         if time_frames:
             max_sleeping_time = 2
@@ -50,6 +53,9 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
             # figure out from an evaluator if back testing is running for this symbol
             evaluator_thread_manager = next(iter(self.evaluator_threads_manager_by_time_frame.values()))
             back_testing_enabled = Backtesting.enabled(evaluator_thread_manager.get_evaluator().get_config())
+            if back_testing_enabled:
+                exchange = evaluator_thread_manager.exchange.get_exchange()
+                exchange.init_candles_offset(time_frames, evaluator_thread_manager.symbol)
 
             # init refreshed_times at 0 for each time frame
             self.refreshed_times = {key: 0 for key in time_frames}
@@ -61,7 +67,6 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
                 for time_frame in time_frames:
                     if back_testing_enabled:
-                        exchange = evaluator_thread_manager.exchange.get_exchange()
                         if exchange.should_update_data(time_frame):
                             self._refresh_data(time_frame)
 
