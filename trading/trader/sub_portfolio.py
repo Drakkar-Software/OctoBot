@@ -31,10 +31,9 @@ class SubPortfolio(Portfolio):
             balance = self.trader.get_trades_manager().get_origin_portfolio()
 
         # calculate for each currency the new quantity
-        for currency in balance:
-            self.portfolio[currency] = {
-                Portfolio.AVAILABLE: balance[currency][Portfolio.AVAILABLE] * self.percent,
-                Portfolio.TOTAL: balance[currency][Portfolio.TOTAL] * self.percent}
+        self.portfolio = {currency: {Portfolio.AVAILABLE: balance[currency][Portfolio.AVAILABLE] * self.percent,
+                                     Portfolio.TOTAL: balance[currency][Portfolio.TOTAL] * self.percent}
+                          for currency in balance}
 
     def get_parent_portfolio(self):
         return self.parent_portfolio

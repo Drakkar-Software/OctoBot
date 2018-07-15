@@ -4,10 +4,10 @@ import time
 
 import dash
 import flask
-import pandas
+import numpy
 
 from config.cst import PriceIndexes
-from interfaces.web.advanced_flask_controller import get_advanced_blueprint
+from interfaces.web.advanced_controllers.home import get_advanced_blueprint
 
 server_instance = flask.Flask(__name__)
 
@@ -47,11 +47,11 @@ def add_to_portfolio_value_history(real_value, simulated_value):
     portfolio_value_history["timestamp"].append(time.time())
 
 
-def add_to_symbol_data_history(symbol, data, time_frame):
+def add_to_symbol_data_history(symbol, data, time_frame, force_data_reset=False):
     if symbol not in symbol_data_history:
         symbol_data_history[symbol] = {}
 
-    if time_frame not in symbol_data_history[symbol]:
+    if force_data_reset or time_frame not in symbol_data_history[symbol]:
         symbol_data_history[symbol][time_frame] = data
     else:
         # merge new data into current data
@@ -64,8 +64,12 @@ def add_to_symbol_data_history(symbol, data, time_frame):
             else:
                 break
         if new_data_index > 0:
-            symbol_data_history[symbol][time_frame] = pandas.concat(
-                [symbol_data_history[symbol][time_frame], data[-new_data_index:]], ignore_index=True)
+            data_list = [None]*len(PriceIndexes)
+            for i in range(len(data)):
+                data_list[i] = data[i][-new_data_index:]
+            new_data = numpy.array(data_list)
+            symbol_data_history[symbol][time_frame] = numpy.concatenate((symbol_data_history[symbol][time_frame],
+                                                                         new_data), axis=1)
 
 
 def add_notification(level, title, message):
@@ -97,7 +101,7 @@ def get_notifications():
 
 
 def load_callbacks():
-    from .dash_controller import update_values, \
+    from interfaces.web.controllers.dash import update_values, \
         update_strategy_values, \
         update_time_frame_dropdown_options, \
         update_symbol_dropdown_options, \
@@ -109,17 +113,17 @@ def load_callbacks():
 
 
 def load_routes():
-    from .flask_controller import home
-    from .flask_controller import dash
-    from .flask_controller import config
-    from .flask_controller import portfolio
-    from .flask_controller import tentacles
-    from .flask_controller import orders
-    from .flask_controller import backtesting
-    from .flask_controller import tentacle_manager
-    from .flask_controller import update
-    from .flask_controller import commands
+    from .controllers.trading import portfolio
+    from .controllers.trading import orders
+    from .controllers.tentacles import tentacles
+    from .controllers.tentacles import tentacle_manager
+    from .controllers.backtesting import backtesting
+    from .controllers.commands import commands
+    from .controllers.commands import update
+    from .controllers.configuration import config
+    from .controllers.dashboard import dash
+    from .controllers.home import home
 
 
 def load_advanced_routes():
-    from .advanced_flask_controller import home
+    from interfaces.web.advanced_controllers.home import home

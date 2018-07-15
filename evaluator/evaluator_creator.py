@@ -98,14 +98,12 @@ class EvaluatorCreator:
 
     @staticmethod
     def create_social_not_threaded_list(social_eval_list):
-        social_eval_not_threaded_list = []
-        for social_eval in social_eval_list:
-
-            # if not threaded --> ask him to refresh with generic thread
-            if not social_eval.get_is_threaded():
-                social_eval_not_threaded_list.append(social_eval)
-
-        return social_eval_not_threaded_list
+        # if not threaded --> ask him to refresh with generic thread
+        return [
+            social_eval
+            for social_eval in social_eval_list
+            if not social_eval.get_is_threaded()
+        ]
 
     @staticmethod
     def create_strategies_eval_list(config):

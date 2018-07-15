@@ -2,6 +2,10 @@ import logging
 import threading
 from queue import Queue
 
+"""
+The asynchronous server tool class is used as a inherited class to use a FIFO implementation in an Octobot class
+"""
+
 
 class AsynchronousServer:
 
@@ -10,6 +14,9 @@ class AsynchronousServer:
         self.queue = Queue()
         self.callback_method = callback_method
         self.logger = logging.getLogger(self.__class__.__name__)
+
+    def has_something_to_do(self):
+        return not self.queue.empty() or self.is_computing
 
     def add_to_queue(self, *data):
         self.queue.put(data)

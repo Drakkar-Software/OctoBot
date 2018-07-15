@@ -2,7 +2,7 @@ import socket
 
 from config.cst import CONFIG_WEB, CONFIG_CATEGORY_SERVICES, CONFIG_ENABLED_OPTION, CONFIG_SERVICE_INSTANCE, \
     CONFIG_WEB_IP, CONFIG_WEB_PORT, DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT
-from interfaces.web.app import WebApp
+from interfaces.web.web_app import WebApp
 from services import AbstractService
 
 

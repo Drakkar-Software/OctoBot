@@ -3,17 +3,15 @@ import time
 import plotly
 import plotly.graph_objs as go
 
-from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes, CONFIG_EVALUATOR, CONFIG_TENTACLES_KEY
+from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes, TradeOrderSide
 from evaluator.evaluator_matrix import EvaluatorMatrix
-from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame
+from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame, get_global_config
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
 from interfaces.web import add_to_matrix_history, get_matrix_history, add_to_symbol_data_history, \
     add_to_portfolio_value_history, get_portfolio_value_history, TIME_AXIS_TITLE, get_symbol_data_history
 from tools.symbol_util import split_symbol
-from tools.config_manager import ConfigManager
-from tools.tentacle_manager.tentacle_package_manager import TentaclePackageManager
-from tools.tentacle_manager.tentacle_package_util import get_is_url, get_package_name, get_octobot_tentacle_public_repo
 from trading.trader.portfolio import Portfolio
+from backtesting.backtesting import Backtesting
 
 
 def get_value_from_dict_or_string(data, is_time_frame=False):
@@ -117,6 +115,7 @@ def get_portfolio_value_in_history():
 
 def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_name):
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
+    in_backtesting = Backtesting.enabled(get_global_config())
     exchange_list = get_bot().get_exchanges_list()
 
     if time_frame is not None:
@@ -130,39 +129,81 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
 
                 if data is not None:
                     _, pair_tag = split_symbol(symbol)
-                    add_to_symbol_data_history(symbol, data, time_frame)
+                    add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
                     data = get_symbol_data_history(symbol, time_frame)
-
-                    # data.loc[:, PriceStrings.STR_PRICE_TIME.value] /= 1000
 
                     data_x = data[PriceIndexes.IND_PRICE_TIME.value]
                     data_y = data[PriceIndexes.IND_PRICE_CLOSE.value]
 
                     # Candlestick
-                    ohlc_graph = go.Ohlc(x=data[PriceIndexes.IND_PRICE_TIME.value],
+                    ohlc_graph = go.Ohlc(x=data_x,
                                          open=data[PriceIndexes.IND_PRICE_OPEN.value],
                                          high=data[PriceIndexes.IND_PRICE_HIGH.value],
                                          low=data[PriceIndexes.IND_PRICE_LOW.value],
                                          close=data[PriceIndexes.IND_PRICE_CLOSE.value])
 
-                    real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times = \
-                        get_trades_by_times_and_prices()
+                    b_real_trades_prices, b_real_trades_times, b_simulated_trades_prices, b_simulated_trades_times = \
+                        get_trades_by_times_and_prices(TradeOrderSide.BUY)
 
-                    real_trades_points = go.Scatter(
-                        x=real_trades_prices,
-                        y=real_trades_times,
-                        mode='markers',
-                        name='markers'
+                    s_real_trades_prices, s_real_trades_times, s_simulated_trades_prices, s_simulated_trades_times = \
+                        get_trades_by_times_and_prices(TradeOrderSide.SELL)
+
+                    sell_color = "#ff0000"
+                    buy_color = "#009900"
+                    buy_text = "bought"
+                    sell_text = "sold"
+                    market_type = "markers"
+                    simulator = "simulator "
+                    real_trader = "real trader "
+
+                    b_real_trades_points = go.Scatter(
+                        x=b_real_trades_times,
+                        y=b_real_trades_prices,
+                        mode=market_type,
+                        name=real_trader+buy_text,
+                        marker=dict(
+                            color=buy_color,
+                            line=dict(
+                                width=2
+                            )
+                        )
                     )
 
-                    simulated_trades_points = go.Scatter(
-                        x=simulated_trades_times,
-                        y=simulated_trades_prices,
-                        mode='markers',
-                        name='markers'
+                    s_real_trades_points = go.Scatter(
+                        x=s_real_trades_times,
+                        y=s_real_trades_prices,
+                        mode=market_type,
+                        name=real_trader+sell_text,
+                        marker=dict(
+                            color=sell_color,
+                            line=dict(
+                                width=2
+                            )
+                        )
                     )
 
-                    return {'data': [ohlc_graph, real_trades_points, simulated_trades_points],
+                    b_simulated_trades_points = go.Scatter(
+                        x=b_simulated_trades_times,
+                        y=b_simulated_trades_prices,
+                        mode=market_type,
+                        name=simulator+buy_text,
+                        marker=dict(
+                            color=buy_color
+                        )
+                    )
+
+                    s_simulated_trades_points = go.Scatter(
+                        x=s_simulated_trades_times,
+                        y=s_simulated_trades_prices,
+                        mode=market_type,
+                        name=simulator+sell_text,
+                        marker=dict(
+                            color=sell_color
+                        )
+                    )
+
+                    return {'data': [ohlc_graph, b_real_trades_points, s_real_trades_points,
+                                     b_simulated_trades_points, s_simulated_trades_points],
                             'layout': go.Layout(
                                 title="{} real time data (per time frame)".format(cryptocurrency_name),
                                 xaxis=dict(range=[min(data_x), max(data_x)],
@@ -217,40 +258,3 @@ def get_evaluator_graph_in_matrix_history(symbol,
                                title="Buy or sell")
                 )}
     return None
-
-
-def get_evaluator_config():
-    return get_bot().get_config()[CONFIG_EVALUATOR]
-
-
-def get_evaluator_startup_config():
-    return get_bot().get_startup_config()[CONFIG_EVALUATOR]
-
-
-def reset_evaluator_config():
-    return update_evaluator_config(get_evaluator_startup_config())
-
-
-def update_evaluator_config(new_config):
-    current_config = get_bot().get_config()[CONFIG_EVALUATOR]
-    try:
-        ConfigManager.update_evaluator_config(new_config, current_config)
-        return True
-    except Exception:
-        return False
-
-
-def get_tentacles_packages():
-    default_tentacles_repo_desc_file = get_octobot_tentacle_public_repo()
-    default_tentacles_repo = get_octobot_tentacle_public_repo(False)
-    packages = {
-        default_tentacles_repo: get_package_name(default_tentacles_repo_desc_file,
-                                                 get_is_url(default_tentacles_repo_desc_file))
-    }
-    for tentacle_package in get_bot().get_config()[CONFIG_TENTACLES_KEY]:
-        packages[tentacle_package] = get_package_name(tentacle_package, get_is_url(tentacle_package))
-    return packages
-
-
-def get_tentacles():
-    return TentaclePackageManager.get_installed_modules()

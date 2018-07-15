@@ -69,10 +69,8 @@ class OrdersManager(threading.Thread):
         last_symbol_price = None
         exchange = self.trader.get_exchange()
 
-        # optimize exchange simulator calls when backtesting
         if Backtesting.enabled(self.config):
-            if exchange.get_exchange().should_update_recent_trades(symbol):
-                last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+            last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
 
         # Exchange call when not backtesting
         else:
@@ -91,17 +89,21 @@ class OrdersManager(threading.Thread):
     def set_order_refresh_time(self, seconds):
         self.order_refresh_time = seconds
 
+    # Currently called by backtesting
     # Will be called by Websocket to perform order status update if new data available
     # TODO : currently blocking, may implement queue if needed
-    def force_update_order_status(self):
-        self._update_orders_status()
+    def force_update_order_status(self, blocking=True, simulated_time=None):
+        if blocking:
+            self._update_orders_status(simulated_time=simulated_time)
+        else:
+            raise NotImplementedError("force_update_order_status(blocking=False) not implemented")
 
     """ prepare order status updating by getting price data
     then ask orders to check their status
     Finally ask cancellation and filling process if it is required
     """
 
-    def _update_orders_status(self):
+    def _update_orders_status(self, simulated_time=None):
         # update all prices
         self._update_last_symbol_list(True)
 
@@ -114,18 +116,18 @@ class OrdersManager(threading.Thread):
             # ask orders to update their status
             with order as odr:
                 if odr in self.order_list:
-                    odr.update_order_status()
+                    odr.update_order_status(simulated_time=simulated_time)
 
                     if odr.get_status() == OrderStatus.FILLED:
-                        self.logger.info("{0} {1} (ID : {2}) filled on {3} at {4}".format(odr.get_order_symbol(),
-                                                                                          odr.get_name(),
-                                                                                          odr.get_id(),
-                                                                                          self.trader.get_exchange().get_name(),
-                                                                                          odr.get_filled_price()))
+                        self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} (ID : {odr.get_id()})"
+                                         f" filled on {self.trader.get_exchange().get_name()} "
+                                         f"at {odr.get_filled_price()}")
                         odr.close_order()
 
     # Threading method that will periodically update orders status with update_orders_status
     def run(self):
+        if Backtesting.enabled(self.config):
+            self.keep_running = False
         while self.keep_running:
 
             try:
@@ -137,7 +139,4 @@ class OrdersManager(threading.Thread):
                 self.logger.exception(e)
                 sleep(self.order_refresh_time)
 
-            if not Backtesting.enabled(self.config):
-                sleep(self.order_refresh_time)
-            else:
-                sleep(0)
+            sleep(self.order_refresh_time)

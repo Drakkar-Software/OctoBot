@@ -16,14 +16,10 @@ class Backtesting:
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def end(self):
-        self.logger.warning("Current backtesting version has a 2% precision error rate.")
-
         for symbol in self.exchange_simulator.get_symbols():
             self.report(symbol)
 
-        # make sure to wait the end of threads process
         backtesting_time = time.time() - self.begin_time
-        time.sleep(5)
         self.logger.info("Simulation lasted {0} sec".format(backtesting_time))
         if self.force_exit_at_end:
             os._exit(0)

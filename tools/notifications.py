@@ -46,7 +46,7 @@ class Notification:
             # telegram
             self.telegram_notification_factory(message)
         except Exception as e:
-            self.logger.error("Failed to notify all : {0}".format(e))
+            self.logger.error(f"Failed to notify all : {e}")
 
     def gmail_notification_available(self, key=None):
         if self.enabled(key) and NotificationTypes.MAIL.value in self.notification_type:
@@ -138,7 +138,7 @@ class EvaluatorNotification(Notification):
         return self
 
     def notify_alert(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
-        title = "OCTOBOT ALERT : {0} / {1}".format(crypto_currency_evaluator.crypto_currency, result)
+        title = f"OCTOBOT ALERT : {crypto_currency_evaluator.crypto_currency} / {result}"
 
         if self.gmail_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
             profitability, profitability_percent, _, _ = trader.get_trades_manager().get_profitability()
@@ -190,7 +190,7 @@ class OrdersNotification(Notification):
             title = "Order(s) creation "
             content += title
             for order in orders:
-                content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
+                content += f"\n- {PrettyPrinter.open_order_pretty_printer(order)}"
 
             if self.twitter_notification_available(CONFIG_NOTIFICATION_TRADES) \
                     and self.evaluator_notification is not None \
@@ -216,25 +216,21 @@ class OrdersNotification(Notification):
         content = ""
 
         if order_filled is not None:
-            content += "\n{0}Order(s) filled : \n- {1}".format(
-                order_filled.trader.trader_type_str,
-                PrettyPrinter.open_order_pretty_printer(order_filled))
+            content += f"\n{order_filled.trader.trader_type_str}Order(s) filled : " \
+                       f"\n- {PrettyPrinter.open_order_pretty_printer(order_filled)}"
 
         if orders_canceled is not None and len(orders_canceled) > 0:
-            content += "\n{0}Order(s) canceled :".format(orders_canceled[0].trader.trader_type_str)
+            content += f"\n{orders_canceled[0].trader.trader_type_str}Order(s) canceled :"
             for order in orders_canceled:
-                content += "\n- {0}".format(PrettyPrinter.open_order_pretty_printer(order))
+                content += f"\n- {PrettyPrinter.open_order_pretty_printer(order)}"
 
         if trade_profitability is not None and profitability:
-            content += "\n\nTrade profitability : {0}{1}%".format(
-                "+" if trade_profitability >= 0 else "",
-                round(trade_profitability * 100, 7))
+            content += f"\n\nTrade profitability : {'+' if trade_profitability >= 0 else ''}" \
+                       f"{round(trade_profitability * 100, 7)}%"
 
         if portfolio_profitability is not None and profitability:
-            content += "\nGlobal Portfolio profitability : {0}% {1}{2}%".format(
-                round(portfolio_profitability, 5),
-                "+" if portfolio_diff >= 0 else "",
-                round(portfolio_diff, 7))
+            content += f"\nGlobal Portfolio profitability : {round(portfolio_profitability, 5)}% " \
+                       f"{'+' if portfolio_diff >= 0 else ''}{round(portfolio_diff, 7)}%"
 
         if self.twitter_notification_available(CONFIG_NOTIFICATION_TRADES) \
                 and self.evaluator_notification is not None \

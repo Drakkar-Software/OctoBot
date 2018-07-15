@@ -25,7 +25,7 @@ class AbstractTradingModeCreator:
     @staticmethod
     def get_additional_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
         remaining_portfolio_amount = float("{1:.{0}f}".format(CURRENCY_DEFAULT_MAX_PRICE_DIGITS,
-                                                             current_symbol_holding - quantity))
+                                                              current_symbol_holding - quantity))
         remaining_max_total_order_price = remaining_portfolio_amount * price
 
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
@@ -121,10 +121,9 @@ class AbstractTradingModeCreator:
     @staticmethod
     def get_pre_order_data(exchange, symbol, portfolio):
         last_prices = exchange.get_recent_trades(symbol)
-        reference_sum = 0
 
-        for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]:
-            reference_sum += float(last_price["price"])
+        reference_sum = sum([float(last_price["price"])
+                             for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]])
 
         reference = reference_sum / ORDER_CREATION_LAST_TRADES_TO_USE
 
@@ -175,6 +174,7 @@ class AbstractTradingModeCreator:
         nb_full_orders = limiting_value // max_value
         rest_order_quantity = limiting_value % max_value
         after_rest_quantity_to_adapt = quantity_to_adapt
+
         if rest_order_quantity > 0:
             after_rest_quantity_to_adapt -= rest_order_quantity
             valid_last_order_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, rest_order_quantity)

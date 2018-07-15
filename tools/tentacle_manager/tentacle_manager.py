@@ -18,6 +18,19 @@ class TentacleManager:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.force_actions = False
 
+    def install_tentacle_package(self, package_path_or_url, force=False):
+        self.update_list()
+        package = TentaclePackageUtil.get_package_description_with_adaptation(package_path_or_url)
+        should_install = force
+        if TentacleUtil.create_missing_tentacles_arch() and not force:
+            should_install = self._confirm_action("Tentacles installation found on this OctoBot, this action will "
+                                                  "replace every local tentacle file and their configuration by their "
+                                                  "remote equivalent for the command's tentacles, continue ?")
+        if should_install:
+            self.tentacle_package_manager.set_max_steps(len(package) - 1)
+            self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL,
+                                                                          package, EVALUATOR_ADVANCED_FOLDER)
+
     def parse_commands(self, commands):
         help = "- install: Install or re-install the given tentacles modules with their requirements if any. " \
                                 "Also reset tentacles configuration files if any.\n" \
@@ -74,6 +87,7 @@ class TentacleManager:
 
     def install_parser(self, commands, command_all=False):
         should_install = True
+        nb_actions = 0
         # first ensure the current tentacles architecture is setup correctly
         if TentacleUtil.create_missing_tentacles_arch():
             should_install = self._confirm_action("Tentacles installation found on this OctoBot, this action will "
@@ -90,8 +104,11 @@ class TentacleManager:
                 for package in self.advanced_package_list:
                     self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL,
                                                                                   package, EVALUATOR_ADVANCED_FOLDER)
+
+                nb_actions = self._get_package_count()
             else:
-                self.tentacle_package_manager.set_max_steps(len(commands))
+                nb_actions = len(commands)
+                self.tentacle_package_manager.set_max_steps(nb_actions)
                 for component in commands:
 
                     component = TentacleUtil.check_format(component)
@@ -112,6 +129,8 @@ class TentacleManager:
 
             TentaclePackageManager.update_evaluator_config_file()
 
+            return nb_actions
+
     def update_parser(self, commands, command_all=False):
         self.tentacle_package_manager.set_installed_modules(self.tentacle_package_manager.get_installed_modules())
         if command_all:
@@ -123,8 +142,11 @@ class TentacleManager:
                 self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UPDATE, package,
                                                                               EVALUATOR_ADVANCED_FOLDER)
 
+            return self._get_package_count()
+
         else:
-            self.tentacle_package_manager.set_max_steps(len(commands))
+            nb_actions = len(commands)
+            self.tentacle_package_manager.set_max_steps(nb_actions)
             for component in commands:
 
                 component = TentacleUtil.check_format(component)
@@ -142,6 +164,8 @@ class TentacleManager:
                     self.logger.error("No tentacle found for '{0}'".format(component))
                 self.tentacle_package_manager.inc_current_step()
 
+            return nb_actions
+
     def uninstall_parser(self, commands, command_all=False):
         if command_all:
             self.tentacle_package_manager.set_max_steps(self._get_package_count())
@@ -151,8 +175,10 @@ class TentacleManager:
             for package in self.advanced_package_list:
                 self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.UNINSTALL,
                                                                               package, EVALUATOR_ADVANCED_FOLDER)
+            return self._get_package_count()
         else:
-            self.tentacle_package_manager.set_max_steps(len(commands))
+            nb_actions = len(commands)
+            self.tentacle_package_manager.set_max_steps(nb_actions)
             for component in commands:
 
                 component = TentacleUtil.check_format(component)
@@ -167,6 +193,7 @@ class TentacleManager:
                 else:
                     self.logger.error("No module found for '{0}'".format(component))
                 self.tentacle_package_manager.inc_current_step()
+            return nb_actions
 
     def reset_tentacles(self):
         self.logger.info("Removing tentacles.")
@@ -183,12 +210,10 @@ class TentacleManager:
             for package in self.config[CONFIG_TENTACLES_KEY]:
                 # try with package as in configuration
                 try:
-                    self.advanced_package_list.append(TentaclePackageUtil.get_package_description(package))
+                    self.advanced_package_list.append(
+                        TentaclePackageUtil.get_package_description_with_adaptation(package))
                 except Exception:
-                    try:
-                        self.advanced_package_list.append(TentaclePackageUtil.get_package_description(package, True))
-                    except Exception:
-                        self.logger.error("Impossible to get an OctoBot Tentacles Package at : {0}".format(package))
+                    self.logger.error("Impossible to get an OctoBot Tentacles Package at : {0}".format(package))
 
     def get_package_in_lists(self, component_name, component_version=None):
         if TentacleUtil.has_required_package(self.default_package, component_name, component_version):
