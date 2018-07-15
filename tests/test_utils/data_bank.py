@@ -84,7 +84,7 @@ class DataBank:
         self.data_by_symbol_by_data_frame = {symbol: self._get_symbol_data(symbol) for symbol in self.symbols}
 
     def _get_symbol_data(self, symbol):
-        min_index = 20
+        min_index = 0
         max_index = min_index + 100
         return {time_frame: self.exchange_simulator_inst.get_candles_exact(
             symbol,
