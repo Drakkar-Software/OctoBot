@@ -53,8 +53,10 @@ class AbstractTradingModeDecider(AsynchronousServer):
         for strategy in strategy_list:
             if strategy not in self.trading_mode.get_strategy_instances_by_classes(self.symbol):
                 raise KeyError("{} not in trading mode's strategy instances.".format(strategy))
+
         strategy_instances_list = [self.trading_mode.get_strategy_instances_by_classes(self.symbol)[strategy_class]
                                    for strategy_class in strategy_list]
+
         self.symbol_evaluator.activate_deactivate_strategies(strategy_instances_list, self.exchange, activate)
 
     def get_state(self):

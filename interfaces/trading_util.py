@@ -190,7 +190,7 @@ def get_global_portfolio_currencies_amounts():
     return real_global_portfolio, simulated_global_portfolio
 
 
-def get_trades_by_times_and_prices():
+def get_trades_by_times_and_prices(side):
     simulated_trades_times = []
     simulated_trades_prices = []
 
@@ -201,11 +201,12 @@ def get_trades_by_times_and_prices():
 
     for trader in traders:
         for trade in trader.get_trades_manager().get_trade_history():
-            if trader.get_simulate():
-                simulated_trades_times.append(trade.get_filled_time())
-                simulated_trades_prices.append(trade.get_price())
-            else:
-                real_trades_times.append(trade.get_filled_time())
-                real_trades_prices.append(trade.get_price())
+            if trade.get_side() == side:
+                if trader.get_simulate():
+                    simulated_trades_times.append(trade.get_filled_time())
+                    simulated_trades_prices.append(trade.get_price())
+                else:
+                    real_trades_times.append(trade.get_filled_time())
+                    real_trades_prices.append(trade.get_price())
 
     return real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times

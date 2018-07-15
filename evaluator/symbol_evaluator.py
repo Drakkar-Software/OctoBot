@@ -16,7 +16,7 @@ class SymbolEvaluator:
         self.config = config
         self.traders = None
         self.trader_simulators = None
-        self.logger = logging.getLogger("{0} {1}".format(self.symbol, self.__class__.__name__))
+        self.logger = logging.getLogger(f"{self.symbol} {self.__class__.__name__}")
 
         self.evaluator_thread_managers = {}
         self.trading_mode_instances = {}
@@ -142,6 +142,13 @@ class SymbolEvaluator:
         if self.finalize_enabled_list[exchange.get_name()]:
             for decider in self.trading_mode_instances[exchange.get_name()].get_deciders(self.symbol):
                 decider.add_to_queue()
+
+    def get_deciders_are_busy(self):
+        for trading_mode in self.trading_mode_instances.values():
+            for decider in trading_mode.get_deciders(self.symbol):
+                if decider.has_something_to_do():
+                    return True
+        return False
 
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True

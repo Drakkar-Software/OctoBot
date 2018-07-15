@@ -30,8 +30,8 @@ class AbstractTradingMode:
 
     @classmethod
     def get_config_file_name(cls):
-        return "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH
-                                            , EVALUATOR_CONFIG_FOLDER, cls.get_name() + CONFIG_FILE_EXT)
+        return f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{TENTACLES_TRADING_MODE_PATH}/{EVALUATOR_CONFIG_FOLDER}/" \
+               f"{cls.get_name() + CONFIG_FILE_EXT}"
 
     @classmethod
     def get_trading_mode_config(cls):
@@ -46,20 +46,17 @@ class AbstractTradingMode:
         if TRADING_MODE_REQUIRED_STRATEGIES in config:
             strategies_classes = []
             for class_string in config[TRADING_MODE_REQUIRED_STRATEGIES]:
-                r = get_deep_class_from_string(class_string, Strategies)
-                if r is not None:
-                    if r not in strategies_classes:
-                        strategies_classes.append(r)
+                s_class = get_deep_class_from_string(class_string, Strategies)
+                if s_class is not None:
+                    if s_class not in strategies_classes:
+                        strategies_classes.append(s_class)
                 else:
-                    raise Exception("{0} is not found, Octobot can't use {1}, please check {1}{2}".format(
-                        class_string,
-                        cls.get_name(),
-                        cls.get_config_file_name()))
+                    raise Exception(f"{class_string} is not found, Octobot can't use {cls.get_name()},"
+                                    f" please check {cls.get_name()}{cls.get_config_file_name()}")
 
             return strategies_classes
         else:
-            raise Exception("'{0}' is missing in {1}".format(TRADING_MODE_REQUIRED_STRATEGIES,
-                                                             cls.get_config_file_name()))
+            raise Exception(f"'{TRADING_MODE_REQUIRED_STRATEGIES}' is missing in {cls.get_config_file_name()}")
 
     @abstractmethod
     def create_deciders(self, symbol, symbol_evaluator) -> None:
@@ -101,10 +98,10 @@ class AbstractTradingMode:
                     self.strategy_instances_by_classes[symbol][required_class] = \
                         all_strategy_instances[all_strategy_classes.index(subclass)]
             if required_class not in self.strategy_instances_by_classes[symbol]:
-                logging.getLogger(self.get_name()).error("No instance of {} or advanced equivalent found, {} trading "
+                logging.getLogger(self.get_name()).error(f"No instance of {required_class.__name__} "
+                                                         f"or advanced equivalent found, {self.get_name()} trading "
                                                          "mode can't work properly ! Maybe this strategy is disabled in"
-                                                         " tentacles/Evaluator/evaluator_config.json."
-                                                         .format(required_class.__name__, self.get_name()))
+                                                         " tentacles/Evaluator/evaluator_config.json.")
 
     def load_config(self):
         config_file = self.get_config_file_name()
@@ -126,10 +123,13 @@ class AbstractTradingMode:
             if decider_key in self.creators[symbol]:
                 to_add_id = 2
                 proposed_decider_key = decider_key + str(to_add_id)
+
                 while proposed_decider_key in self.deciders[symbol]:
                     to_add_id += 1
                     proposed_decider_key = decider_key + str(to_add_id)
+
                 decider_key = proposed_decider_key
+
         self.deciders[symbol][decider_key] = decider
         self.deciders_without_keys[symbol].append(decider)
         return decider_key
@@ -140,10 +140,13 @@ class AbstractTradingMode:
             if creator_key in self.creators[symbol]:
                 to_add_id = 2
                 proposed_creator_key = creator_key + str(to_add_id)
+
                 while proposed_creator_key in self.creators[symbol]:
                     to_add_id += 1
                     proposed_creator_key = creator_key + str(to_add_id)
+
                 creator_key = proposed_creator_key
+
         self.creators[symbol][creator_key] = creator
         return creator_key
 

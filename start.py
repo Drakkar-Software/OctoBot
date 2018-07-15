@@ -11,6 +11,7 @@ from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR
 from tools.commands import Commands
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
+from tools.errors import ConfigError, ConfigEvaluatorError
 
 
 def _log_uncaught_exceptions(ex_cls, ex, tb):
@@ -34,77 +35,84 @@ def start_octobot(starting_args):
     # Version
     logger.info("Version : {0}".format(LONG_VERSION))
 
-    # Test update
-    if starting_args.update:
-        Commands.update(logger)
-    else:
-        Commands.check_bot_update(logger)
-
-        logger.info("Loading config files...")
-        config = load_config(error=False)
-        if config is None:
-            logger.error("OctoBot can't start without {0} configuration file.".format(CONFIG_FILE))
-            sys.exit(-1)
-
-        # Handle utility methods before bot initializing if possible
-        if starting_args.packager:
-            Commands.package_manager(config, starting_args.packager)
-
-        elif starting_args.creator:
-            Commands.tentacle_creator(config, starting_args.creator)
-
+    try:
+        # Test update
+        if starting_args.update:
+            Commands.update(logger)
         else:
-            # In those cases load OctoBot
-            try:
-                from octobot import OctoBot
-            except ModuleNotFoundError as e:
-                if 'tentacles' in e.msg:
-                    logger.error("Impossible to start OctoBot, tentacles are missing.\nTo install tentacles, "
-                                 "please use the following command:\nstart.py -p install all")
-                sys.exit(-1)
+            Commands.check_bot_update(logger)
 
-            config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
-            if config[CONFIG_EVALUATOR] is None:
-                logger.error("OctoBot can't start without {0} configuration file.\nThis file is generated on tentacle "
-                             "installation using the following command:\nstart.py -p install all"
-                             .format(CONFIG_EVALUATOR_FILE_PATH))
-                sys.exit(-1)
+            logger.info("Loading config files...")
+            config = load_config(error=False)
+            if config is None:
+                raise ConfigError
 
-            TelegramApp.enable(config, starting_args.telegram)
+            # Handle utility methods before bot initializing if possible
+            if starting_args.packager:
+                Commands.package_manager(config, starting_args.packager)
 
-            WebService.enable(config, starting_args.web)
+            elif starting_args.creator:
+                Commands.tentacle_creator(config, starting_args.creator)
 
-            bot = OctoBot(config)
-
-            import interfaces
-
-            interfaces.__init__(bot, config)
-
-            if starting_args.data_collector:
-                Commands.data_collector(config)
-
-            # start crypto bot options
             else:
-                if starting_args.backtesting:
-                    import backtesting
+                # In those cases load OctoBot
+                from octobot import OctoBot
 
-                    backtesting.__init__(bot)
+                config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
+                if config[CONFIG_EVALUATOR] is None:
+                    raise ConfigEvaluatorError
 
-                    config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-                    config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
+                TelegramApp.enable(config, starting_args.telegram)
 
-                    config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-                    config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+                WebService.enable(config, starting_args.web)
 
-                if starting_args.simulate:
-                    config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-                    config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+                bot = OctoBot(config)
 
-                if starting_args.risk is not None and 0 < starting_args.risk <= 1:
-                    config[CONFIG_TRADER][CONFIG_TRADER_RISK] = starting_args.risk
+                import interfaces
 
-                if starting_args.start:
-                    Commands.start_bot(bot, logger)
+                interfaces.__init__(bot, config)
+
+                if starting_args.data_collector:
+                    Commands.data_collector(config)
+
+                # start crypto bot options
+                else:
+                    if starting_args.backtesting:
+                        import backtesting
+
+                        backtesting.__init__(bot)
+
+                        config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
+                        config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
+
+                        config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+                        config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+                    if starting_args.simulate:
+                        config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+                        config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+                    if starting_args.risk is not None and 0 < starting_args.risk <= 1:
+                        config[CONFIG_TRADER][CONFIG_TRADER_RISK] = starting_args.risk
+
+                    if starting_args.start:
+                        Commands.start_bot(bot, logger)
+
+    except ConfigError:
+        logger.error(f"OctoBot can't start without {CONFIG_FILE} configuration file.")
+        sys.exit(-1)
+
+    except ModuleNotFoundError as e:
+        if 'tentacles' in str(e):
+            logger.error("Impossible to start OctoBot, tentacles are missing.\nTo install tentacles, "
+                         "please use the following command:\nstart.py -p install all")
+        sys.exit(-1)
+
+    except ConfigEvaluatorError:
+        logger.error(f"OctoBot can't start without {CONFIG_EVALUATOR_FILE_PATH} configuration file."
+                     "\nThis file is generated on tentacle "
+                     "installation using the following command:\nstart.py -p install all")
+        sys.exit(-1)
 
 
 if __name__ == '__main__':

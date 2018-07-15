@@ -17,6 +17,8 @@ class TestExchangeSimulator:
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
         exchange_inst = exchange_manager.get_exchange()
         exchange_simulator = exchange_inst.get_exchange()
+        exchange_simulator.init_candles_offset([TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY],
+                                               TestExchangeSimulator.DEFAULT_SYMBOL)
 
         trader_inst = TraderSimulator(config, exchange_inst, 1)
         return config, exchange_inst, exchange_simulator, trader_inst
@@ -43,8 +45,8 @@ class TestExchangeSimulator:
         assert first_data is not second_data
 
         # second is first with DEFAULT_TF difference
-        assert first_data[PriceIndexes.IND_PRICE_CLOSE.value][1] == second_data[PriceIndexes.IND_PRICE_CLOSE.value][0]
-        assert first_data[PriceIndexes.IND_PRICE_TIME.value][0] + HOURS_TO_MSECONDS == second_data[
+        assert first_data[PriceIndexes.IND_PRICE_CLOSE.value][0] == second_data[PriceIndexes.IND_PRICE_CLOSE.value][0]
+        assert first_data[PriceIndexes.IND_PRICE_TIME.value][0] == second_data[
             PriceIndexes.IND_PRICE_TIME.value][0]
 
         # end is end -1 with DEFAULT_TF difference
@@ -68,9 +70,9 @@ class TestExchangeSimulator:
         _, exchange_inst, exchange_simulator, trader_inst = self.init_default()
 
         # first call
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
+        assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR)
+        assert exchange_simulator.should_update_data(TimeFrames.FOUR_HOURS)
+        assert exchange_simulator.should_update_data(TimeFrames.ONE_DAY)
 
         # call get prices
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
@@ -78,72 +80,32 @@ class TestExchangeSimulator:
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
         # call with trader without order
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
+        assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR)
+        assert not exchange_simulator.should_update_data(TimeFrames.FOUR_HOURS)
+        assert not exchange_simulator.should_update_data(TimeFrames.ONE_DAY)
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-
-        trader_inst.get_order_manager().order_list = [1]
-        # call with trader with order and not recent trade
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and not enough recent trade
-        exchange_simulator.fetched_trades_counter[self.DEFAULT_SYMBOL] += 1
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and enough recent trade
-        exchange_simulator.fetched_trades_counter[self.DEFAULT_SYMBOL] += 2
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-
-        # call with trader with order and not enough recent trade
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and enough recent trade
-        exchange_simulator.fetched_trades_counter[self.DEFAULT_SYMBOL] += 1
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and not enough recent trade
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
-
-        # call with trader with order and enough recent trade
-        exchange_simulator.fetched_trades_counter[self.DEFAULT_SYMBOL] += 1
-        assert exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS, trader_inst)
-        assert not exchange_simulator.should_update_data(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY, trader_inst)
 
         self.stop(trader_inst)
 
-    def test_should_update_recent_trades(self):
+    @staticmethod
+    def _get_start_index_for_timeframe(nb_candles, min_limit, timeframe_multiplier):
+        return int(nb_candles - (nb_candles-min_limit) / timeframe_multiplier)
+
+    def test_init_candles_offset(self):
         _, exchange_inst, exchange_simulator, trader_inst = self.init_default()
 
-        assert exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-        exchange_simulator.time_frame_get_times[self.DEFAULT_TF.value] += 1
+        timeframes = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.TWO_HOURS,
+                      TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]
+        exchange_simulator.init_candles_offset(timeframes, self.DEFAULT_SYMBOL)
 
-        assert exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-
-        # call with not enough time frame refresh
-        assert not exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-
-        exchange_simulator.time_frame_get_times[self.DEFAULT_TF.value] += 1
-        assert exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-
-        # call with not enough time frame refresh
-        assert not exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-        assert not exchange_simulator.should_update_recent_trades(self.DEFAULT_SYMBOL)
-
-        self.stop(trader_inst)
+        offsets = exchange_simulator.time_frames_offset[self.DEFAULT_SYMBOL]
+        nb_candles = len(exchange_simulator.data[self.DEFAULT_SYMBOL][TimeFrames.THIRTY_MINUTES.value])
+        assert offsets[TimeFrames.THIRTY_MINUTES.value] == \
+            self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 1)
+        assert offsets[TimeFrames.ONE_HOUR.value] ==  \
+            self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 2)
+        assert offsets[TimeFrames.TWO_HOURS.value] ==  \
+            self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 4)
+        assert offsets[TimeFrames.FOUR_HOURS.value] ==  \
+            self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 8)
+        assert offsets[TimeFrames.ONE_DAY.value] == 245

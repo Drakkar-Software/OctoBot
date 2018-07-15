@@ -43,15 +43,16 @@ class Portfolio:
                 self.update_portfolio_balance()
 
     def set_starting_simulated_portfolio(self):
-        for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items():
-            self.portfolio[currency] = {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
+        self.portfolio = {currency: {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
+                          for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items()}
 
     def update_portfolio_balance(self):
         if not self.is_simulated and self.is_enabled:
             balance = self.trader.get_exchange().get_balance()
-            for currency in balance:
-                self.portfolio[currency] = {Portfolio.AVAILABLE: balance[currency][CONFIG_PORTFOLIO_FREE],
-                                            Portfolio.TOTAL: balance[currency][CONFIG_PORTFOLIO_TOTAL]}
+
+            self.portfolio = {currency: {Portfolio.AVAILABLE: balance[currency][CONFIG_PORTFOLIO_FREE],
+                                         Portfolio.TOTAL: balance[currency][CONFIG_PORTFOLIO_TOTAL]}
+                              for currency in balance}
 
     def get_portfolio(self):
         return self.portfolio
@@ -111,11 +112,11 @@ class Portfolio:
             if order.get_side() == TradeOrderSide.BUY:
                 currency_portfolio_num = order.get_filled_quantity()
                 market_portfolio_num = -order.get_filled_quantity() * \
-                    order.get_filled_price() - order.get_market_total_fees()
+                                        order.get_filled_price() - order.get_market_total_fees()
             else:
                 currency_portfolio_num = -order.get_filled_quantity()
                 market_portfolio_num = order.get_filled_quantity() * \
-                    order.get_filled_price() - order.get_market_total_fees()
+                                       order.get_filled_price() - order.get_market_total_fees()
 
             self.logger.info("Portfolio updated | {0} {1} | {2} {3} | Current Portfolio : {4}"
                              .format(currency,
@@ -136,11 +137,6 @@ class Portfolio:
     def update_portfolio_available(self, order, is_new_order=False):
         if self._check_available_should_update(order):
             self._update_portfolio_available(order, 1 if is_new_order else -1)
-
-            # debug purpose
-            # self.logger.debug("Portfolio available updated after order on {0} | Current Portfolio : {1}".format(
-            #     order.get_order_symbol(),
-            #     self.portfolio))
 
     # Check if the order has impact on availability
     @staticmethod
@@ -168,8 +164,9 @@ class Portfolio:
     # Resets available amount with total amount CAREFUL: if no currency is give, resets all the portfolio !
     def reset_portfolio_available(self, reset_currency=None, reset_quantity=None):
         if not reset_currency:
-            for currency in self.portfolio:
-                self.portfolio[currency][Portfolio.AVAILABLE] = self.portfolio[currency][Portfolio.TOTAL]
+            self.portfolio.update({currency: {Portfolio.AVAILABLE: self.portfolio[currency][Portfolio.TOTAL],
+                                              Portfolio.TOTAL: self.portfolio[currency][Portfolio.TOTAL]}
+                                   for currency in self.portfolio})
         else:
             if reset_currency in self.portfolio:
                 if reset_quantity is None:

@@ -26,7 +26,7 @@ class DataBank:
         self.symbols = symbols if symbols else ["BTC"]
 
         exchange_manager = ExchangeManager(self.config, ccxt.binance, is_simulated=True)
-        self.exchange_inst = exchange_manager.get_exchange()
+        self.exchange_simulator_inst = exchange_manager.get_exchange().get_exchange()
 
         self.data_by_symbol_by_data_frame = None
         self._init_data()
@@ -84,12 +84,16 @@ class DataBank:
         self.data_by_symbol_by_data_frame = {symbol: self._get_symbol_data(symbol) for symbol in self.symbols}
 
     def _get_symbol_data(self, symbol):
-        return {time_frame: self.exchange_inst.get_symbol_prices(
+        min_index = 0
+        max_index = min_index + 100
+        return {time_frame: self.exchange_simulator_inst.get_candles_exact(
             symbol,
             time_frame,
+            min_index,
+            max_index,
             return_list=False)
             for time_frame in TimeFrames
-            if self.exchange_inst.get_exchange().has_data_for_time_frame(symbol, time_frame.value)}
+            if self.exchange_simulator_inst.has_data_for_time_frame(symbol, time_frame.value)}
 
     @staticmethod
     def reduce_data(time_frame_data, min_index, max_index):

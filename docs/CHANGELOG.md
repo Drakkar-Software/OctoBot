@@ -1,5 +1,33 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.5-beta
+====================
+*Released date : July 15 2018*
+
+# Concerned issues :
+    #265 [Web Interface] Create web evaluator_config.json edition interface
+    #266 [Web Interface] Create web tentacles manager interface
+    #302 [Web Interface] setup architecture
+    #270 [Web interface] Create advanced web interface
+    #308 [Backtesting] Improve backtesting accuracy 
+    #304 [Trade Manager] Ensure get_average_market_profitability resilience
+    #294 [Trader simulator] StopLoss orders triggered when they shouldn't
+    #252 [OrderManager] "Timed Out" raised during _update_orders_status
+
+# New features :
+    - New features in web interface : tentacles configuration, trades displayed on Dashboard tob
+    - Backtesting now fully operational
+    - Optimized String operations
+
+# Bug fixes :
+    - Fixed rare exceptions on order notification through Telegram
+    - Fixed backtesting randomness
+    - Fixed wronly triggered orders in simulator mode
+    
+# Notes :
+    - Deactivated Google stats indicator by default while looking for a request limit solution
+
+
 Changelog for 0.1.4_4-beta
 ====================
 *Released date : July 9 2018*

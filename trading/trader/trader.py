@@ -45,9 +45,9 @@ class Trader:
                 self.exchange.get_exchange_personal_data().init_orders()
 
             self.order_manager.start()
-            self.logger.debug("Enabled on {0}".format(self.exchange.get_name()))
+            self.logger.debug(f"Enabled on {self.exchange.get_name()}")
         else:
-            self.logger.debug("Disabled on {0}".format(self.exchange.get_name()))
+            self.logger.debug(f"Disabled on {self.exchange.get_name()}")
 
     @staticmethod
     def enabled(config):
@@ -159,14 +159,12 @@ class Trader:
                      new_order.get_status() != OrderStatus.PARTIALLY_FILLED):
                 is_to_keep = False
 
-        self.logger.info("{0} : {1} | {2} | Price : {3} | Quantity : {4} | Status : {5} {6}".format(
-            title,
-            new_order.get_order_symbol(),
-            new_order.get_order_type(),
-            new_order.get_origin_price(),
-            new_order.get_origin_quantity(),
-            new_order.get_status(),
-            "" if is_to_keep else ": will be archived in trades history if not already"))
+        self.logger.info(f"{title} : {new_order.get_order_symbol()} | "
+                         f"{new_order.get_order_type()} | "
+                         f"Price : {new_order.get_origin_price()} | "
+                         f"Quantity : {new_order.get_origin_quantity()} | "
+                         f"Status : {new_order.get_status()} "
+                         f"{'' if is_to_keep else ': will be archived in trades history if not already'}")
 
         if is_to_keep:
             # notify order manager of a new open order
@@ -184,11 +182,9 @@ class Trader:
         if not order.is_cancelled():
             with order as odr:
                 odr.cancel_order()
-                self.logger.info("{0} {1} at {2} (ID : {3}) cancelled on {4}".format(odr.get_order_symbol(),
-                                                                                     odr.get_name(),
-                                                                                     odr.get_origin_price(),
-                                                                                     odr.get_id(),
-                                                                                     self.get_exchange().get_name()))
+                self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} at {odr.get_origin_price()}"
+                                 f" (ID : {odr.get_id()}) cancelled on {self.get_exchange().get_name()}")
+
                 self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
@@ -237,13 +233,15 @@ class Trader:
             with self.get_order_portfolio(order) as pf:
                 pf.update_portfolio(order)
 
-            # debug purpose
             profitability, profitability_percent, profitability_diff, _ = self.get_trades_manager().get_profitability()
 
-            self.logger.info("Current portfolio profitability : {0}".format(
-                PrettyPrinter.portfolio_profitability_pretty_print(profitability,
-                                                                   profitability_percent,
-                                                                   self.get_trades_manager().get_reference())))
+            # debug purpose
+            profitability_str = PrettyPrinter.portfolio_profitability_pretty_print(profitability,
+                                                                                   profitability_percent,
+                                                                                   self.get_trades_manager().
+                                                                                   get_reference())
+
+            self.logger.debug(f"Current portfolio profitability : {profitability_str}")
 
             # add to trade history
             self.trades_manager.add_new_trade_in_history(Trade(self.exchange, order))

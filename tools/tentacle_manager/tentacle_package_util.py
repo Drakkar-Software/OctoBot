@@ -8,6 +8,14 @@ from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLE
     TENTACLES_INSTALL_FOLDERS, PYTHON_INIT_FILE, TENTACLE_PACKAGE_NAME, TENTACLES_PUBLIC_REPOSITORY
 
 
+def get_package_description_with_adaptation(url_or_path):
+    # try with package as in configuration
+    try:
+        return get_package_description(url_or_path)
+    except Exception:
+        return get_package_description(url_or_path, True)
+
+
 def get_package_description(url_or_path, try_to_adapt=False):
     package_url_or_path = str(url_or_path)
     # if its an url: download with requests.get and return text
@@ -79,7 +87,7 @@ def add_package_name(module_file_content, package_name):
 
 def get_package_name(localisation, is_url):
     if is_url:
-        github_package_name_reverse_index = -3
+        github_package_name_reverse_index = -3 if localisation.endswith(".json") else -1
         return localisation.split("/")[github_package_name_reverse_index]
     else:
         local_package_name_reverse_index = -2 if localisation.endswith(".json") else -1
