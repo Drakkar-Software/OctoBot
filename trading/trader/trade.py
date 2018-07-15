@@ -8,6 +8,7 @@ class Trade:
         self.market_fees = order.get_market_total_fees()
         self.currency_fees = order.get_currency_total_fees()
         self.order_id = order.get_id()
+        self.side = order.get_side()
 
         self.creation_time = order.get_creation_time()
         self.canceled_time = order.get_canceled_time()
@@ -58,3 +59,6 @@ class Trade:
 
     def get_simulated(self):
         return self.simulated
+
+    def get_side(self):
+        return self.side
