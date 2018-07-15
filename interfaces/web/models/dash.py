@@ -3,7 +3,7 @@ import time
 import plotly
 import plotly.graph_objs as go
 
-from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes
+from config.cst import TimeFrames, EvaluatorMatrixTypes, PriceIndexes, TradeOrderSide
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from interfaces import get_reference_market, get_bot, set_default_time_frame, get_default_time_frame, get_global_config
 from interfaces.trading_util import get_portfolio_current_value, get_trades_by_times_and_prices
@@ -142,24 +142,68 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                                          low=data[PriceIndexes.IND_PRICE_LOW.value],
                                          close=data[PriceIndexes.IND_PRICE_CLOSE.value])
 
-                    real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times = \
-                        get_trades_by_times_and_prices()
+                    b_real_trades_prices, b_real_trades_times, b_simulated_trades_prices, b_simulated_trades_times = \
+                        get_trades_by_times_and_prices(TradeOrderSide.BUY)
 
-                    real_trades_points = go.Scatter(
-                        x=real_trades_prices,
-                        y=real_trades_times,
-                        mode='markers',
-                        name='trade'
+                    s_real_trades_prices, s_real_trades_times, s_simulated_trades_prices, s_simulated_trades_times = \
+                        get_trades_by_times_and_prices(TradeOrderSide.SELL)
+
+                    sell_color = "#ff0000"
+                    buy_color = "#009900"
+                    buy_text = "bought"
+                    sell_text = "sold"
+                    market_type = "markers"
+                    simulator = "simulator "
+                    real_trader = "real trader "
+
+                    b_real_trades_points = go.Scatter(
+                        x=b_real_trades_times,
+                        y=b_real_trades_prices,
+                        mode=market_type,
+                        name=real_trader+buy_text,
+                        marker=dict(
+                            color=buy_color,
+                            line=dict(
+                                width=2
+                            )
+                        )
                     )
 
-                    simulated_trades_points = go.Scatter(
-                        x=simulated_trades_times,
-                        y=simulated_trades_prices,
-                        mode='markers',
-                        name='trade'
+                    s_real_trades_points = go.Scatter(
+                        x=s_real_trades_times,
+                        y=s_real_trades_prices,
+                        mode=market_type,
+                        name=real_trader+sell_text,
+                        marker=dict(
+                            color=sell_color,
+                            line=dict(
+                                width=2
+                            )
+                        )
                     )
 
-                    return {'data': [ohlc_graph, real_trades_points, simulated_trades_points],
+                    b_simulated_trades_points = go.Scatter(
+                        x=b_simulated_trades_times,
+                        y=b_simulated_trades_prices,
+                        mode=market_type,
+                        name=simulator+buy_text,
+                        marker=dict(
+                            color=buy_color
+                        )
+                    )
+
+                    s_simulated_trades_points = go.Scatter(
+                        x=s_simulated_trades_times,
+                        y=s_simulated_trades_prices,
+                        mode=market_type,
+                        name=simulator+sell_text,
+                        marker=dict(
+                            color=sell_color
+                        )
+                    )
+
+                    return {'data': [ohlc_graph, b_real_trades_points, s_real_trades_points,
+                                     b_simulated_trades_points, s_simulated_trades_points],
                             'layout': go.Layout(
                                 title="{} real time data (per time frame)".format(cryptocurrency_name),
                                 xaxis=dict(range=[min(data_x), max(data_x)],
