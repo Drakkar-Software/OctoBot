@@ -4,6 +4,7 @@ import time
 
 from backtesting import get_bot
 from config.cst import *
+from tools.pretty_printer import PrettyPrinter
 
 
 class Backtesting:
@@ -22,11 +23,23 @@ class Backtesting:
         self.ended_symbols.add(symbol)
         if len(self.ended_symbols) == len(self.symbols_to_test):
 
-            for symbol in self.exchange_simulator.get_symbols():
+            for symbol in self.symbols_to_test:
                 self.report(symbol)
 
+            trader = next(iter(get_bot().get_exchange_trader_simulators().values()))
+            trade_manager = trader.get_trades_manager()
+            _, profitability, _, market_average_profitability = trade_manager.get_profitability(True)
+            reference_market = trade_manager.get_reference()
+            portfolio = trader.get_portfolio()
+
+            self.logger.info(f"End portfolio: "
+                             f"{PrettyPrinter.global_portfolio_pretty_print(portfolio.get_portfolio(),' | ')}")
+
+            self.logger.info(f"Global market profitability versus reference currency ({reference_market}) : "
+                             f"{market_average_profitability}% | Octobot : {profitability}%")
+
             backtesting_time = time.time() - self.begin_time
-            self.logger.info("Simulation lasted {0} sec".format(backtesting_time))
+            self.logger.info(f"Simulation lasted {backtesting_time} sec")
             if self.force_exit_at_end:
                 os._exit(0)
 
@@ -45,7 +58,7 @@ class Backtesting:
         market_delta = self.get_market_delta(market_data)
 
         # log
-        self.logger.info(f"{symbol} Profitability : Market {market_delta * 100}% | OctoBot : {total_profitability}%")
+        self.logger.info(f"{symbol} Profitability : Market {market_delta * 100}%")
 
     def init_symbols_to_test(self):
         for crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].values():
