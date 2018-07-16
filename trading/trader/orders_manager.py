@@ -105,7 +105,7 @@ class OrdersManager(threading.Thread):
     Finally ask cancellation and filling process if it is required
     """
 
-    def _update_orders_status(self, simulated_time=None):
+    def _update_orders_status(self, simulated_time=False):
         # update all prices
         self._update_last_symbol_list(True)
 

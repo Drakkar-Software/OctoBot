@@ -145,6 +145,7 @@ class ExchangeSimulator(AbstractExchange):
 
         max_price = tf[PriceIndexes.IND_PRICE_HIGH.value]
         min_price = tf[PriceIndexes.IND_PRICE_LOW.value]
+        timestamp = tf[PriceIndexes.IND_PRICE_TIME.value] if Backtesting.enabled(self.config) else time.time()
 
         # TODO generate trades with different patterns (linear, waves, random, etc)
         for _ in range(0, self.RECENT_TRADES_TO_CREATE - 2):
@@ -158,7 +159,7 @@ class ExchangeSimulator(AbstractExchange):
             created_trades.append(
                 {
                     "price": trade*self.recent_trades_multiplier_factor,
-                    "timestamp": time.time()
+                    "timestamp": timestamp
                 }
             )
 
