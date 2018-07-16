@@ -1,5 +1,6 @@
 from interfaces import get_bot
 from trading.trader.portfolio import Portfolio
+from tools.timestamp_util import convert_timestamps_to_datetime
 
 
 def get_traders():
@@ -210,4 +211,7 @@ def get_trades_by_times_and_prices(symbol, side):
                         real_trades_times.append(trade.get_filled_time())
                         real_trades_prices.append(trade.get_price())
 
-    return real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times
+        real_times = convert_timestamps_to_datetime(real_trades_times)
+        simulated_times = convert_timestamps_to_datetime(simulated_trades_times)
+
+    return real_trades_prices, real_times, simulated_trades_prices, simulated_times

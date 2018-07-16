@@ -1,7 +1,6 @@
-import datetime
-
 from trading.trader.order import OrderConstants
 from trading.trader.portfolio import Portfolio
+from tools.timestamp_util import convert_timestamp_to_datetime
 
 
 class PrettyPrinter:
@@ -24,7 +23,7 @@ class PrettyPrinter:
             PrettyPrinter.get_min_string_from_number(order.get_origin_price()),
             market,
             order.get_exchange().get_name(),
-            datetime.datetime.fromtimestamp(
+            convert_timestamp_to_datetime(
                 order.get_creation_time()
             ).strftime('%d/%m/%y %H:%M'))
 
@@ -48,7 +47,7 @@ class PrettyPrinter:
             PrettyPrinter.get_min_string_from_number(trade.get_price()),
             market,
             trade.get_exchange_name(),
-            datetime.datetime.fromtimestamp(
+            convert_timestamp_to_datetime(
                 trade.get_filled_time()
             ).strftime('%d/%m/%y %H:%M'))
 
