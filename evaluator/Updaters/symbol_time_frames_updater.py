@@ -4,7 +4,7 @@ import logging
 import copy
 
 from backtesting.backtesting import Backtesting, BacktestingEndedException
-from config.cst import TimeFramesMinutes, MINUTE_TO_SECONDS, PriceIndexes
+from config.cst import TimeFramesMinutes, MINUTE_TO_SECONDS
 from tools.time_frame_manager import TimeFrameManager
 
 
@@ -92,20 +92,18 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                     if sleeping_time > 0:
                         time.sleep(sleeping_time)
                 else:
-                    while not self.ensure_finished_other_threads_tasks(time_frames[0]):
+                    while not self.ensure_finished_other_threads_tasks():
                         time.sleep(0.001)
         else:
             self.logger.warning("no time frames to monitor, going to sleep.")
 
-    def ensure_finished_other_threads_tasks(self, smallest_timeframe):
-        data = self.evaluator_threads_manager_by_time_frame[smallest_timeframe].evaluator.get_data()
-        simulated_time = data[PriceIndexes.IND_PRICE_TIME.value][-1]
+    def ensure_finished_other_threads_tasks(self):
         for evaluator_thread_manager in self.evaluator_threads_manager_by_time_frame.values():
             symbol_evaluator = evaluator_thread_manager.symbol_evaluator
             if symbol_evaluator.get_deciders_are_busy():
                 return False
             else:
                 for trader_simulators in symbol_evaluator.trader_simulators.values():
-                    trader_simulators.order_manager.force_update_order_status(simulated_time=simulated_time)
+                    trader_simulators.order_manager.force_update_order_status(simulated_time=True)
         return True
 

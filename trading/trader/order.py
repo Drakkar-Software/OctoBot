@@ -99,15 +99,15 @@ class Order:
 
     # update_order_status will define the rules for a simulated order to be filled / canceled
     @abstractmethod
-    def update_order_status(self, simulated_time=None):
+    def update_order_status(self, simulated_time=False):
         raise NotImplementedError("Update_order_status not implemented")
 
     # check_last_prices is used to collect data to perform the order update_order_status process
-    def check_last_prices(self, price, inferior):
+    def check_last_prices(self, price, inferior, simulated_time=False):
         if self.last_prices is not None:
             prices = [p["price"]
                       for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]
-                      if not math.isnan(p["price"]) and p[eC.TIMESTAMP.value] >= self.creation_time]
+                      if not math.isnan(p["price"]) and (p[eC.TIMESTAMP.value] >= self.creation_time or simulated_time)]
             
             if prices:
                 if inferior:
@@ -243,12 +243,11 @@ class Order:
         elif new_status == OrderStatus.CANCELED:
             self.cancel_from_exchange()
 
-    @staticmethod
-    def generate_executed_time(simulated_time=None):
-        if simulated_time is None:
+    def generate_executed_time(self, simulated_time=False):
+        if not simulated_time or not self.last_prices:
             return time.time()
         else:
-            return simulated_time
+            return self.last_prices[-1][eC.TIMESTAMP.value]
 
 
 class BuyMarketOrder(Order):
@@ -256,7 +255,7 @@ class BuyMarketOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.BUY
 
-    def update_order_status(self, simulated_time=None):
+    def update_order_status(self, simulated_time=False):
         if not self.trader.simulate:
             self.default_exchange_update_order_status()
         else:
@@ -272,12 +271,12 @@ class BuyLimitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.BUY
 
-    def update_order_status(self, simulated_time=None):
+    def update_order_status(self, simulated_time=False):
         if not self.trader.simulate:
             self.default_exchange_update_order_status()
         else:
             # ONLY FOR SIMULATION
-            if self.check_last_prices(self.origin_price, True):
+            if self.check_last_prices(self.origin_price, True, simulated_time):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
@@ -289,7 +288,7 @@ class SellMarketOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=None):
+    def update_order_status(self, simulated_time=False):
         if not self.trader.simulate:
             self.default_exchange_update_order_status()
         else:
@@ -305,12 +304,12 @@ class SellLimitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=None):
+    def update_order_status(self, simulated_time=False):
         if not self.trader.simulate:
             self.default_exchange_update_order_status()
         else:
             # ONLY FOR SIMULATION
-            if self.check_last_prices(self.origin_price, False):
+            if self.check_last_prices(self.origin_price, False, simulated_time):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
@@ -322,8 +321,8 @@ class StopLossOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=None):
-        if self.check_last_prices(self.origin_price, True):
+    def update_order_status(self, simulated_time=False):
+        if self.check_last_prices(self.origin_price, True, simulated_time):
             self.status = OrderStatus.FILLED
             self.filled_price = self.origin_price
             self.filled_quantity = self.origin_quantity
@@ -345,7 +344,7 @@ class StopLossLimitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=None):
+    def update_order_status(self, simulated_time=False):
         pass
 
 
@@ -355,7 +354,7 @@ class TakeProfitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=None):
+    def update_order_status(self, simulated_time=False):
         pass
 
 
@@ -365,7 +364,7 @@ class TakeProfitLimitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=None):
+    def update_order_status(self, simulated_time=False):
         pass
 
 
