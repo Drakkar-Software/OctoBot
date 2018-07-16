@@ -158,6 +158,8 @@ class ExchangeManager:
                 return True
             except ValueError:
                 return True
+            except OverflowError:
+                return True
         return False
 
     def uniformize_candles_if_necessary(self, candle_or_candles):
