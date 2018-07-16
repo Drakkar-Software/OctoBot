@@ -2,7 +2,7 @@ import time
 import copy
 
 from backtesting import get_bot
-from backtesting.backtesting import Backtesting
+from backtesting.backtesting import Backtesting, BacktestingEndedException
 from backtesting.collector.data_parser import DataCollectorParser
 from backtesting.collector.exchange_collector import ExchangeDataCollector
 from config.cst import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACKTESTING, \
@@ -164,12 +164,12 @@ class ExchangeSimulator(AbstractExchange):
 
         return created_trades
 
-    def _extract_from_indexes(self, array, max_index, factor=1):
+    def _extract_from_indexes(self, array, max_index, symbol, factor=1):
         max_limit = len(array)
         max_index *= factor
 
         if max_index > max_limit:
-            self.backtesting.end()
+            raise BacktestingEndedException(symbol)
 
         else:
             return array[:max_index]
@@ -187,7 +187,8 @@ class ExchangeSimulator(AbstractExchange):
         to_use_timeframe = time_frame.value if time_frame is not None \
             else TimeFrameManager.find_min_time_frame(self.data[symbol].keys())
         return self._extract_from_indexes(self.data[symbol][to_use_timeframe],
-                                          self._get_candle_index(to_use_timeframe, symbol))
+                                          self._get_candle_index(to_use_timeframe, symbol),
+                                          symbol)
 
     def get_candles_exact(self, symbol, time_frame, min_index, max_index, return_list=True):
         candles = self.data[symbol][time_frame.value][min_index:max_index]
@@ -311,6 +312,9 @@ class ExchangeSimulator(AbstractExchange):
                 },
             },
         }
+
+    def end_backtesting(self, symbol):
+        self.backtesting.end(symbol)
 
     def set_recent_trades_multiplier_factor(self, factor):
         self.recent_trades_multiplier_factor = factor

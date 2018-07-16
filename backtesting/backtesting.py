@@ -14,15 +14,21 @@ class Backtesting:
         self.force_exit_at_end = exit_at_end
         self.exchange_simulator = exchange_simulator
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.ended_symbols = set()
+        self.symbols_to_test = set()
+        self.init_symbols_to_test()
 
-    def end(self):
-        for symbol in self.exchange_simulator.get_symbols():
-            self.report(symbol)
+    def end(self, symbol):
+        self.ended_symbols.add(symbol)
+        if len(self.ended_symbols) == len(self.symbols_to_test):
 
-        backtesting_time = time.time() - self.begin_time
-        self.logger.info("Simulation lasted {0} sec".format(backtesting_time))
-        if self.force_exit_at_end:
-            os._exit(0)
+            for symbol in self.exchange_simulator.get_symbols():
+                self.report(symbol)
+
+            backtesting_time = time.time() - self.begin_time
+            self.logger.info("Simulation lasted {0} sec".format(backtesting_time))
+            if self.force_exit_at_end:
+                os._exit(0)
 
     def report(self, symbol):
         market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
@@ -39,8 +45,13 @@ class Backtesting:
         market_delta = self.get_market_delta(market_data)
 
         # log
-        self.logger.info(
-            "Profitability : Market {0}% | OctoBot : {1}%".format(market_delta * 100, total_profitability))
+        self.logger.info(f"{symbol} Profitability : Market {market_delta * 100}% | OctoBot : {total_profitability}%")
+
+    def init_symbols_to_test(self):
+        for crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].values():
+            for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
+                if symbol in self.exchange_simulator.get_symbols():
+                    self.symbols_to_test.add(symbol)
 
     @staticmethod
     def get_market_delta(market_data):
@@ -57,3 +68,9 @@ class Backtesting:
     @staticmethod
     def enabled(config):
         return CONFIG_BACKTESTING in config and config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION]
+
+
+class BacktestingEndedException(Exception):
+    def __init__(self, symbol=""):
+        self.msg = f"Backtesting finished for {symbol}."
+        super().__init__(self.msg)
