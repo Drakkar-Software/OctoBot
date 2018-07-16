@@ -3,7 +3,7 @@ import time
 import logging
 import copy
 
-from backtesting.backtesting import Backtesting
+from backtesting.backtesting import Backtesting, BacktestingEndedException
 from config.cst import TimeFramesMinutes, MINUTE_TO_SECONDS, PriceIndexes
 from tools.time_frame_manager import TimeFrameManager
 
@@ -67,8 +67,14 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
                 for time_frame in time_frames:
                     if back_testing_enabled:
-                        if exchange.should_update_data(time_frame):
-                             self._refresh_data(time_frame)
+                        try:
+                            if exchange.should_update_data(time_frame):
+                                self._refresh_data(time_frame)
+                        except BacktestingEndedException as e:
+                            self.logger.info(e)
+                            self.keep_running = False
+                            exchange.end_backtesting(evaluator_thread_manager.symbol)
+                            break
 
                     # if data from this time frame needs an update
                     elif now - self.time_frame_last_update[time_frame] >= \
