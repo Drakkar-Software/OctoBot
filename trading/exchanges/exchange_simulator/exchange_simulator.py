@@ -1,5 +1,4 @@
 import time
-import datetime
 import copy
 
 from backtesting import get_bot
@@ -77,21 +76,10 @@ class ExchangeSimulator(AbstractExchange):
                         data = DataCollectorParser.parse(file)
                         self.data[symbol] = self.fix_timestamps(data)
 
-    @staticmethod
-    def need_transform_timeframes(timeframes):
-        if timeframes:
-            try:
-                datetime.datetime.fromtimestamp(timeframes)
-            except OSError:
-                return True
-            except ValueError:
-                return True
-        return False
-
     def fix_timestamps(self, data):
         if get_bot() is not None:
             for time_frame in data:
-                need_to_uniform_timestamps = ExchangeSimulator.need_transform_timeframes(
+                need_to_uniform_timestamps = self.exchange_manager.need_to_uniformize_timestamp(
                     data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value])
                 for data_list in data[time_frame]:
                     if need_to_uniform_timestamps:
