@@ -76,8 +76,10 @@ class OrdersManager(threading.Thread):
         else:
             last_symbol_price = exchange.get_recent_trades(symbol)
             if uniformize_timestamps and last_symbol_price:
-                for order in last_symbol_price:
-                    order[eC.TIMESTAMP.value] = exchange.get_uniform_timestamp(order[eC.TIMESTAMP.value])
+                timestamp_sample = last_symbol_price[0][eC.TIMESTAMP.value]
+                if exchange.get_exchange_manager().need_to_uniformize_timestamp(timestamp_sample):
+                    for order in last_symbol_price:
+                        order[eC.TIMESTAMP.value] = exchange.get_uniform_timestamp(order[eC.TIMESTAMP.value])
 
         # Check if exchange request failed
         if last_symbol_price is not None:
