@@ -23,27 +23,45 @@ class Backtesting:
         self.ended_symbols.add(symbol)
         if len(self.ended_symbols) == len(self.symbols_to_test):
 
+            self.logger.info(" **** Backtesting report ****")
+            self.logger.info(" ========= Trades =========")
+            self.print_trades_history()
+
+            self.logger.info(" ========= Symbols price evolution =========")
             for symbol in self.symbols_to_test:
-                self.report(symbol)
+                self.print_symbol_report(symbol)
 
-            trader = next(iter(get_bot().get_exchange_trader_simulators().values()))
-            trade_manager = trader.get_trades_manager()
-            _, profitability, _, market_average_profitability = trade_manager.get_profitability(True)
-            reference_market = trade_manager.get_reference()
-            portfolio = trader.get_portfolio()
+            self.logger.info(" ========= Octobot end state =========")
+            self.print_global_report()
 
-            self.logger.info(f"End portfolio: "
-                             f"{PrettyPrinter.global_portfolio_pretty_print(portfolio.get_portfolio(),' | ')}")
-
-            self.logger.info(f"Global market profitability versus reference currency ({reference_market}) : "
-                             f"{market_average_profitability}% | Octobot : {profitability}%")
-
-            backtesting_time = time.time() - self.begin_time
-            self.logger.info(f"Simulation lasted {backtesting_time} sec")
             if self.force_exit_at_end:
                 os._exit(0)
 
-    def report(self, symbol):
+    def print_trades_history(self):
+        trader = next(iter(get_bot().get_exchange_trader_simulators().values()))
+        trades_history = trader.get_trades_manager().get_trade_history()
+        trades_history_string = ""
+        for trade in trades_history:
+            trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + "\n"
+        self.logger.info(trades_history_string.strip())
+
+    def print_global_report(self):
+        trader = next(iter(get_bot().get_exchange_trader_simulators().values()))
+        trade_manager = trader.get_trades_manager()
+        _, profitability, _, market_average_profitability = trade_manager.get_profitability(True)
+        reference_market = trade_manager.get_reference()
+        portfolio = trader.get_portfolio()
+
+        self.logger.info(f"End portfolio: "
+                         f"{PrettyPrinter.global_portfolio_pretty_print(portfolio.get_portfolio(),' | ')}")
+
+        self.logger.info(f"Global market profitability (vs {reference_market}) : "
+                         f"{market_average_profitability}% | Octobot : {profitability}%")
+
+        backtesting_time = time.time() - self.begin_time
+        self.logger.info(f"Simulation lasted {backtesting_time} sec")
+
+    def print_symbol_report(self, symbol):
         market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
 
         self.time_delta = self.begin_time - market_data[0][PriceIndexes.IND_PRICE_TIME.value] / 1000
