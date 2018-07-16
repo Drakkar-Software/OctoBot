@@ -5,11 +5,19 @@ Changelog for 0.1.5_1-beta
 *Released date : July 17 2018*
 
 # Concerned issues :
+    #305 [Refactor] refactor overall code
     #318 [Candles management] adapt candles timestamp to have second timestamp everywhere
     #319 [Web interface] trades are displayed for all symbols, display only for the selected one
 
 # New features :
     - Backtesting multi symbol support improved
+    - Backtesting report at the end of a backtesting
+    
+# Improvements:
+    - Improved readability of web interface
+    
+# Bug fixes :
+    - Backtesting trades timestamps were wrong on multi symbol backtesting
 
 Changelog for 0.1.5-beta
 ====================
