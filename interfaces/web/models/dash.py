@@ -155,6 +155,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                     market_type = "markers"
                     simulator = "simulator "
                     real_trader = "real trader "
+                    marker_size = 10
+                    marker_opacity = 0.7
 
                     b_real_trades_points = go.Scatter(
                         x=b_real_trades_times,
@@ -163,6 +165,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         name=real_trader+buy_text,
                         marker=dict(
                             color=buy_color,
+                            size=marker_size,
+                            opacity=marker_opacity,
                             line=dict(
                                 width=2
                             )
@@ -176,6 +180,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         name=real_trader+sell_text,
                         marker=dict(
                             color=sell_color,
+                            size=marker_size,
+                            opacity=marker_opacity,
                             line=dict(
                                 width=2
                             )
@@ -188,7 +194,9 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         mode=market_type,
                         name=simulator+buy_text,
                         marker=dict(
-                            color=buy_color
+                            color=buy_color,
+                            size=marker_size,
+                            opacity=marker_opacity
                         )
                     )
 
@@ -198,7 +206,9 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         mode=market_type,
                         name=simulator+sell_text,
                         marker=dict(
-                            color=sell_color
+                            color=sell_color,
+                            size=marker_size,
+                            opacity=marker_opacity
                         )
                     )
 
