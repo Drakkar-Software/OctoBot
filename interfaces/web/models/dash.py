@@ -143,10 +143,10 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                                          close=data[PriceIndexes.IND_PRICE_CLOSE.value])
 
                     b_real_trades_prices, b_real_trades_times, b_simulated_trades_prices, b_simulated_trades_times = \
-                        get_trades_by_times_and_prices(TradeOrderSide.BUY)
+                        get_trades_by_times_and_prices(symbol, TradeOrderSide.BUY)
 
                     s_real_trades_prices, s_real_trades_times, s_simulated_trades_prices, s_simulated_trades_times = \
-                        get_trades_by_times_and_prices(TradeOrderSide.SELL)
+                        get_trades_by_times_and_prices(symbol, TradeOrderSide.SELL)
 
                     sell_color = "#ff0000"
                     buy_color = "#009900"
