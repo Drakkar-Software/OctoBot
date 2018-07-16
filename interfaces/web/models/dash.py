@@ -12,6 +12,7 @@ from interfaces.web import add_to_matrix_history, get_matrix_history, add_to_sym
 from tools.symbol_util import split_symbol
 from trading.trader.portfolio import Portfolio
 from backtesting.backtesting import Backtesting
+from tools.timestamp_util import convert_timestamps_to_datetime
 
 
 def get_value_from_dict_or_string(data, is_time_frame=False):
@@ -132,7 +133,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                     add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
                     data = get_symbol_data_history(symbol, time_frame)
 
-                    data_x = data[PriceIndexes.IND_PRICE_TIME.value]
+                    data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value])
                     data_y = data[PriceIndexes.IND_PRICE_CLOSE.value]
 
                     # Candlestick

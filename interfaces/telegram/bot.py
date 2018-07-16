@@ -1,4 +1,3 @@
-import datetime
 import logging
 import copy
 
@@ -11,6 +10,7 @@ from interfaces.trading_util import get_portfolio_current_value, get_open_orders
     cancel_all_open_orders, set_enable_trading, has_real_and_or_simulated_traders
 from tools.commands import Commands
 from tools.pretty_printer import PrettyPrinter
+from tools.timestamp_util import convert_timestamp_to_datetime
 
 
 class TelegramApp:
@@ -106,7 +106,7 @@ class TelegramApp:
     @staticmethod
     def command_ping(_, update):
         update.message.reply_text("I'm alive since {0}.".format(
-            datetime.datetime.fromtimestamp(get_bot().get_start_time()).strftime('%Y-%m-%d %H:%M:%S')))
+            convert_timestamp_to_datetime((get_bot().get_start_time())).strftime('%Y-%m-%d %H:%M:%S')))
 
     @staticmethod
     def command_risk(_, update):

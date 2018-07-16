@@ -1,8 +1,8 @@
 import logging
-import datetime
 
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
+from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
@@ -151,16 +151,7 @@ class ExchangeManager:
 
     @staticmethod
     def need_to_uniformize_timestamp(timestamp):
-        if timestamp:
-            try:
-                datetime.datetime.fromtimestamp(timestamp)
-            except OSError:
-                return True
-            except ValueError:
-                return True
-            except OverflowError:
-                return True
-        return False
+        return not is_valid_timestamp(timestamp)
 
     def uniformize_candles_if_necessary(self, candle_or_candles):
         if candle_or_candles:
