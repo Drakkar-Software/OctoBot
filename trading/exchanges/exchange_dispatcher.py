@@ -155,9 +155,6 @@ class ExchangeDispatcher(AbstractExchange):
                                           price=price,
                                           stop_price=stop_price)
 
-    def end_backtesting(self, symbol):
-        self.exchange.end_backtesting(symbol)
-
     def stop(self):
         if self._web_socket_available():
             self.exchange_web_socket.stop_sockets()
