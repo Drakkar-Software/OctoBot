@@ -118,6 +118,7 @@ def load_routes():
     from .controllers.tentacles import tentacles
     from .controllers.tentacles import tentacle_manager
     from .controllers.backtesting import backtesting
+    from .controllers.backtesting import data_collector
     from .controllers.commands import commands
     from .controllers.commands import update
     from .controllers.configuration import config
