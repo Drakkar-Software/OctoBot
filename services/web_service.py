@@ -10,6 +10,7 @@ class WebService(AbstractService):
 
     def __init__(self):
         super().__init__()
+        self.backtesting_enabled = True
         self.web_app = None
 
     @staticmethod
