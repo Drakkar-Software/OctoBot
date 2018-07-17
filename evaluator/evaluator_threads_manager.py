@@ -125,3 +125,6 @@ class EvaluatorThreadsManager:
 
     def get_symbol_evaluator(self):
         return self.symbol_evaluator
+
+    def get_symbol(self):
+        return self.symbol
