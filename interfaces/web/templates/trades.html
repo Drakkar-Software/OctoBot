@@ -24,11 +24,11 @@
             <th scope="row">{{ trade.get_order_id() }}</th>
             <td>{{ trade.get_exchange_name() }}</td>
             <td>{{ trade.get_symbol() }}</td>
-            <td>{{ trade.get_order_type() }}</td>
+            <td>{{ convert_type(trade.get_order_type()) }}</td>
             <td>{{ trade.get_price() }}</td>
             <td>{{ trade.get_quantity() }}</td>
             <td>Real</td>
-            <td>{{ trade.get_creation_time() }}</td>
+            <td>{{ convert_timestamp(trade.get_creation_time()) }}</td>
         </tr>
       {% endfor %}
   {% endfor %}
@@ -38,11 +38,11 @@
             <th scope="row">{{ trade.get_order_id() }}</th>
             <td>{{ trade.get_exchange_name() }}</td>
             <td>{{ trade.get_symbol() }}</td>
-            <td>{{ trade.get_order_type() }}</td>
+            <td>{{ convert_type(trade.get_order_type()) }}</td>
             <td>{{ trade.get_price() }}</td>
             <td>{{ trade.get_quantity() }}</td>
             <td>Simulated</td>
-            <td>{{ trade.get_creation_time() }}</td>
+            <td>{{ convert_timestamp(trade.get_creation_time()) }}</td>
         </tr>
       {% endfor %}
   {% endfor %}

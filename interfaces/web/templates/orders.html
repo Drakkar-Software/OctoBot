@@ -11,31 +11,42 @@
         <th scope="col">#</th>
         <th scope="col">Exchange</th>
         <th scope="col">Symbol</th>
+        <th scope="col">Type</th>
         <th scope="col">Price</th>
         <th scope="col">Quantity</th>
-        <th scope="col">Status</th>
+        <th scope="col">Real / Simulated</th>
         <th scope="col">Creation</th>
     </tr>
   </thead>
   <tbody>
-    <tr>
-        <th scope="row">1</th>
-        <td>Binance</td>
-        <td>BTC/USDT</td>
-        <td>5500</td>
-        <td>2.1</td>
-        <td>OPEN</td>
-        <td>124545484</td>
-    </tr>
-    <tr>
-        <th scope="row">2</th>
-        <td>Bitfinex</td>
-        <td>ETH/USDT</td>
-        <td>450</td>
-        <td>10.15</td>
-        <td>OPEN</td>
-        <td>124545484</td>
-    </tr>
+    {% for orders in real_trades_history %}
+        {% for order in orders %}
+            <tr>
+                <th scope="row">{{ order.get_id() }}</th>
+                <td>{{ order.get_exchange().get_name() }}</td>
+                <td>{{ order.get_order_symbol() }}</td>
+                <td>{{ convert_type(order.get_order_type()) }}</td>
+                <td>{{ order.get_origin_price() }}</td>
+                <td>{{ order.get_origin_quantity() }}</td>
+                <td>Real</td>
+                <td>{{ convert_timestamp(order.get_creation_time()) }}</td>
+            </tr>
+        {% endfor %}
+    {% endfor %}
+  {% for orders in simulated_open_orders %}
+        {% for order in orders %}
+            <tr>
+                <th scope="row">{{ order.get_id() }}</th>
+                <td>{{ order.get_exchange().get_name() }}</td>
+                <td>{{ order.get_order_symbol() }}</td>
+                <td>{{ convert_type(order.get_order_type()) }}</td>
+                <td>{{ order.get_origin_price() }}</td>
+                <td>{{ order.get_origin_quantity() }}</td>
+                <td>Simulated</td>
+                <td>{{ convert_timestamp(order.get_creation_time()) }}</td>
+            </tr>
+        {% endfor %}
+    {% endfor %}
   </tbody>
   </table>
 </div>
@@ -49,6 +60,7 @@
         <th scope="col">#</th>
         <th scope="col">Exchange</th>
         <th scope="col">Symbol</th>
+        <th scope="col">Type</th>
         <th scope="col">Price</th>
         <th scope="col">Quantity</th>
         <th scope="col">Status</th>
@@ -60,6 +72,7 @@
         <th scope="row">1</th>
         <td>Binance</td>
         <td>BTC/USDT</td>
+        <td>SELL_MARKET</td>
         <td>6000</td>
         <td>1</td>
         <td>FILLED</td>
@@ -69,6 +82,7 @@
         <th scope="row">2</th>
         <td>Bitfinex</td>
         <td>ETH/USDT</td>
+        <td>SELL_MARKET</td>
         <td>500</td>
         <td>5</td>
         <td>CANCELED</td>

@@ -130,8 +130,8 @@ def get_global_profitability():
         if real_full_origin_value > 0 else 0
 
     return has_real_trader, has_simulated_trader, \
-        real_global_profitability, simulated_global_profitability, \
-        real_percent_profitability, simulated_percent_profitability, market_average_profitability
+           real_global_profitability, simulated_global_profitability, \
+           real_percent_profitability, simulated_percent_profitability, market_average_profitability
 
 
 def get_portfolios():
@@ -156,8 +156,8 @@ def get_currencies_with_status():
                 ",".join([
                     dec.get_state().name if dec.get_state() is not None else "N/A"
                     for dec in symbol_evaluator.get_deciders(exchange)])
-             for exchange in get_bot().get_exchanges_list().values()
-             if symbol_evaluator.has_exchange(exchange)}
+                for exchange in get_bot().get_exchanges_list().values()
+                if symbol_evaluator.has_exchange(exchange)}
     return symbol_with_evaluation
 
 
