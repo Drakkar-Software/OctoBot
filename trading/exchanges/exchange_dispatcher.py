@@ -3,6 +3,12 @@ from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
 from config.cst import ExchangeConstantsMarketStatusColumns as ecmsc
 
+"""
+This class supervise exchange call by : 
+- Storing data through ExchangePersonalData and ExchangeSymbolData
+- Use web socket calls as much as possible (if available else use REST exchange with ccxt lib)
+"""
+
 
 class ExchangeDispatcher(AbstractExchange):
     def __init__(self, config, exchange_type, exchange, exchange_web_socket):
@@ -14,16 +20,12 @@ class ExchangeDispatcher(AbstractExchange):
         self.symbols_data = {}
         self.exchange_personal_data = ExchangePersonalData()
 
-        self.logger.info("online with {0}".format(
-            "REST api{0}".format(
-                " and websocket api" if self.exchange_web_socket else ""
-            )
-        ))
+        self.logger.info(f"online with REST api {' and web socket api' if self.exchange_web_socket else ''}")
 
     def _web_socket_available(self):
         return self.exchange_web_socket
 
-    def is_websocket_available(self):
+    def is_web_socket_available(self):
         if self._web_socket_available():
             return True
         else:

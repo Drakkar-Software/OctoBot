@@ -37,4 +37,3 @@ class DataCollectorParser:
                     data[PriceIndexes.IND_PRICE_VOL.value][i]
 
         return time_frames_data
-

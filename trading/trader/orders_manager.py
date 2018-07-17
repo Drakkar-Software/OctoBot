@@ -24,7 +24,7 @@ class OrdersManager(threading.Thread):
         self.last_symbol_prices = {}
         self.logger = logging.getLogger(self.__class__.__name__)
 
-        if self.trader.get_exchange().is_websocket_available():
+        if self.trader.get_exchange().is_web_socket_available():
             self.order_refresh_time = ORDER_REFRESHER_TIME_WS
         else:
             self.order_refresh_time = ORDER_REFRESHER_TIME

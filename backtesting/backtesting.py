@@ -28,8 +28,8 @@ class Backtesting:
             self.print_trades_history()
 
             self.logger.info(" ========= Symbols price evolution =========")
-            for symbol in self.symbols_to_test:
-                self.print_symbol_report(symbol)
+            for symbol_to_test in self.symbols_to_test:
+                self.print_symbol_report(symbol_to_test)
 
             self.logger.info(" ========= Octobot end state =========")
             self.print_global_report()
