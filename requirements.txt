@@ -2,7 +2,7 @@ matplotlib==2.2.2
 requests
 vaderSentiment
 pytrends
-twisted==18.4.0
+twisted==18.7.0
 cryptography >= 2.2.1
 python-binance
 tulipy
