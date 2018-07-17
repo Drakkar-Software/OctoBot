@@ -51,12 +51,18 @@ class Backtesting:
         _, profitability, _, market_average_profitability = trade_manager.get_profitability(True)
         reference_market = trade_manager.get_reference()
         portfolio = trader.get_portfolio()
+        accuracy_info = "" if len(self.symbols_to_test) < 2 else "\nPlease note that multi symbol backtesting is " \
+                                                                 "slightly random due to Octbot's multithreaded " \
+                                                                 "architecture used to process all symbols as fast as" \
+                                                                 " possible. This randomness is kept for backtesting " \
+                                                                 "in order to be as close as possible from reality. " \
+                                                                 "Single symbol backtesting is 100% determinist."
 
         self.logger.info(f"End portfolio: "
                          f"{PrettyPrinter.global_portfolio_pretty_print(portfolio.get_portfolio(),' | ')}")
 
         self.logger.info(f"Global market profitability (vs {reference_market}) : "
-                         f"{market_average_profitability}% | Octobot : {profitability}%")
+                         f"{market_average_profitability}% | Octobot : {profitability}%{accuracy_info}")
 
         backtesting_time = time.time() - self.begin_time
         self.logger.info(f"Simulation lasted {backtesting_time} sec")
