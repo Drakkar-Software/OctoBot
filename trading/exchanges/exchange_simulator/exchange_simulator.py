@@ -165,7 +165,8 @@ class ExchangeSimulator(AbstractExchange):
 
         return created_trades
 
-    def _extract_from_indexes(self, array, max_index, symbol, factor=1):
+    @staticmethod
+    def _extract_from_indexes(array, max_index, symbol, factor=1):
         max_limit = len(array)
         max_index *= factor
 
@@ -175,20 +176,20 @@ class ExchangeSimulator(AbstractExchange):
         else:
             return array[:max_index]
 
-    def _get_candle_index(self, timeframe, symbol):
-        if symbol not in self.data or timeframe not in self.data[symbol]:
+    def _get_candle_index(self, time_frame, symbol):
+        if symbol not in self.data or time_frame not in self.data[symbol]:
             self.logger.error("get_candle_index(self, timeframe, symbol) called with unset "
-                              f"time_frames_offset[symbol][timeframe] for symbol: {symbol} and  timeframe: {timeframe}."
+                              f"time_frames_offset[symbol][timeframe] for symbol: {symbol} and timeframe: {time_frame}."
                               " Call init_candles_offset(self, timeframes, symbol) to set candles indexes in order to "
                               "have consistent candles on different timeframes while using the timeframes you are "
                               "interested in")
-        return self.time_frames_offset[symbol][timeframe] + self.time_frame_get_times[timeframe]
+        return self.time_frames_offset[symbol][time_frame] + self.time_frame_get_times[time_frame]
 
     def _extract_data_with_limit(self, symbol, time_frame):
-        to_use_timeframe = time_frame.value if time_frame is not None \
+        to_use_time_frame = time_frame.value if time_frame is not None \
             else TimeFrameManager.find_min_time_frame(self.data[symbol].keys())
-        return self._extract_from_indexes(self.data[symbol][to_use_timeframe],
-                                          self._get_candle_index(to_use_timeframe, symbol),
+        return self._extract_from_indexes(self.data[symbol][to_use_time_frame],
+                                          self._get_candle_index(to_use_time_frame, symbol),
                                           symbol)
 
     def get_candles_exact(self, symbol, time_frame, min_index, max_index, return_list=True):
@@ -202,42 +203,42 @@ class ExchangeSimulator(AbstractExchange):
             self.time_frame_get_times[time_frame.value] += 1
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
 
-    def _get_used_timeframes(self, symbol):
+    def _get_used_time_frames(self, symbol):
         if symbol in self.time_frames_offset:
             return self.time_frames_offset[symbol].keys()
         else:
             return [self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR]
 
     def get_recent_trades(self, symbol, limit=50):
-        timeframe_to_use = TimeFrameManager.find_min_time_frame(self._get_used_timeframes(symbol))
+        time_frame_to_use = TimeFrameManager.find_min_time_frame(self._get_used_time_frames(symbol))
         index = 0
-        if symbol in self.time_frames_offset and timeframe_to_use.value in self.time_frames_offset[symbol] \
-           and timeframe_to_use.value in self.time_frame_get_times:
+        if symbol in self.time_frames_offset and time_frame_to_use.value in self.time_frames_offset[symbol] \
+           and time_frame_to_use.value in self.time_frame_get_times:
             # -2 because take into account the +1 in self.time_frame_get_times and the fact that it's an index
-            index = self.time_frames_offset[symbol][timeframe_to_use.value] \
-                    + self.time_frame_get_times[timeframe_to_use.value] \
+            index = self.time_frames_offset[symbol][time_frame_to_use.value] \
+                    + self.time_frame_get_times[time_frame_to_use.value] \
                     - 2
         trades = self._create_recent_trades(
-            symbol, timeframe_to_use,
+            symbol, time_frame_to_use,
             index
         )
         self.get_symbol_data(symbol).update_recent_trades(trades)
 
-    def _find_min_timeframe_to_consider(self, timeframes, symbol):
-        timeframes_to_consider = copy.copy(timeframes)
-        min_timeframe_to_consider = None
-        while not min_timeframe_to_consider and timeframes_to_consider:
-            potential_min_timeframe_to_consider = TimeFrameManager.find_min_time_frame(timeframes_to_consider).value
-            if potential_min_timeframe_to_consider in self.data[symbol]:
-                min_timeframe_to_consider = potential_min_timeframe_to_consider
+    def _find_min_time_frame_to_consider(self, time_frames, symbol):
+        time_frames_to_consider = copy.copy(time_frames)
+        min_time_frame_to_consider = None
+        while not min_time_frame_to_consider and time_frames_to_consider:
+            potential_min_time_frame_to_consider = TimeFrameManager.find_min_time_frame(time_frames_to_consider).value
+            if potential_min_time_frame_to_consider in self.data[symbol]:
+                min_time_frame_to_consider = potential_min_time_frame_to_consider
             else:
-                timeframes_to_consider.remove(potential_min_timeframe_to_consider)
-        if min_timeframe_to_consider:
-            return self.data[symbol][min_timeframe_to_consider][self.MIN_LIMIT][PriceIndexes.IND_PRICE_TIME.value]
+                time_frames_to_consider.remove(potential_min_time_frame_to_consider)
+        if min_time_frame_to_consider:
+            return self.data[symbol][min_time_frame_to_consider][self.MIN_LIMIT][PriceIndexes.IND_PRICE_TIME.value]
         else:
-            self.logger.error(f"No data for the timeframes: {timeframes} in loaded backtesting file.")
+            self.logger.error(f"No data for the timeframes: {time_frames} in loaded backtesting file.")
             if Backtesting.enabled(self.config):
-                self.backtesting.end()
+                self.backtesting.end(symbol)
 
     """
     Used to set self.time_frames_offset: will set offsets for all the given timeframes to keep data consistent 
@@ -248,20 +249,20 @@ class ExchangeSimulator(AbstractExchange):
     This is used to avoid data from 500 hours ago mixed with data from 500 min ago for example.
     """
 
-    def init_candles_offset(self, timeframes, symbol):
-        min_timeframe_to_consider = self._find_min_timeframe_to_consider(timeframes, symbol)
+    def init_candles_offset(self, time_frames, symbol):
+        min_time_frame_to_consider = self._find_min_time_frame_to_consider(time_frames, symbol)
         if symbol not in self.time_frames_offset:
             self.time_frames_offset[symbol] = {}
-        for timeframe in timeframes:
-            if timeframe.value in self.data[symbol]:
+        for time_frame in time_frames:
+            if time_frame.value in self.data[symbol]:
                 found_index = False
-                for index, candle in enumerate(self.data[symbol][timeframe.value]):
-                    if candle[PriceIndexes.IND_PRICE_TIME.value] >= min_timeframe_to_consider:
+                for index, candle in enumerate(self.data[symbol][time_frame.value]):
+                    if candle[PriceIndexes.IND_PRICE_TIME.value] >= min_time_frame_to_consider:
                         found_index = True
-                        self.time_frames_offset[symbol][timeframe.value] = index
+                        self.time_frames_offset[symbol][time_frame.value] = index
                         break
                 if not found_index:
-                    self.time_frames_offset[symbol][timeframe.value] = len(self.data[symbol][timeframe.value]) - 1
+                    self.time_frames_offset[symbol][time_frame.value] = len(self.data[symbol][time_frame.value]) - 1
 
     def get_data(self):
         return self.data
