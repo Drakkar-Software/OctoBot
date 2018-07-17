@@ -11,7 +11,7 @@ from config.cst import EVALUATOR_DEFAULT_FOLDER, TENTACLE_TYPES, EVALUATOR_CONFI
     TENTACLES_EVALUATOR_REALTIME_PATH, TENTACLES_EVALUATOR_TA_PATH, TENTACLES_EVALUATOR_SOCIAL_PATH, \
     TENTACLES_EVALUATOR_STRATEGIES_PATH, TENTACLES_EVALUATOR_UTIL_PATH, TENTACLES_TRADING_MODE_PATH, \
     TENTACLES_PYTHON_INIT_CONTENT, PYTHON_INIT_FILE, TENTACLE_MODULE_TESTS, TENTACLES_TEST_PATH, TENTACLE_MODULE_DEV, \
-    TENTACLE_PACKAGE
+    TENTACLE_PACKAGE, TENTACLE_MODULE_RESOURCE_FILES, EVALUATOR_RESOURCE_FOLDER
 from tools.config_manager import ConfigManager
 
 
@@ -56,13 +56,13 @@ def create_missing_tentacles_arch():
                         init_path = os.path.join(test_type_path, PYTHON_INIT_FILE)
                         _find_or_create(init_path, False, "")
                         _create_arch_module_extremity(tentacle_extremity_architecture,
-                                                      types_subsubdir, test_type_path, False)
+                                                      types_subsubdir, test_type_path, False, False)
                 else:
                     _create_arch_module_extremity(tentacle_extremity_architecture, types_subdir, type_path)
     return found_existing_installation
 
 
-def _create_arch_module_extremity(architecture, types_subdir, type_path, with_init_config=True):
+def _create_arch_module_extremity(architecture, types_subdir, type_path, with_init_config=True, with_init_res=True):
     for module_type in types_subdir:
         path = os.path.join(type_path, module_type)
         _find_or_create(path)
@@ -75,11 +75,16 @@ def _create_arch_module_extremity(architecture, types_subdir, type_path, with_in
         # add init.py file
         init_path = os.path.join(path, PYTHON_INIT_FILE)
         _find_or_create(init_path, False)
+
         if with_init_config:
             module_config_path = os.path.join(path, EVALUATOR_CONFIG_FOLDER)
             _find_or_create(module_config_path)
             module_default_config_path = os.path.join(module_config_path, EVALUATOR_DEFAULT_FOLDER)
             _find_or_create(module_default_config_path)
+
+        if with_init_res:
+            module_res_path = os.path.join(path, EVALUATOR_RESOURCE_FOLDER)
+            _find_or_create(module_res_path)
 
 
 def get_tentacles_arch():
@@ -127,6 +132,8 @@ def parse_module_header(module_header_content):
         TENTACLE_MODULE_TESTS: extract_tentacle_tests(module_header_content),
         TENTACLE_MODULE_CONFIG_FILES: module_header_content[TENTACLE_MODULE_CONFIG_FILES]
         if TENTACLE_MODULE_CONFIG_FILES in module_header_content else None,
+        TENTACLE_MODULE_RESOURCE_FILES: module_header_content[TENTACLE_MODULE_RESOURCE_FILES]
+        if TENTACLE_MODULE_RESOURCE_FILES in module_header_content else None,
         TENTACLE_MODULE_DEV: module_header_content[TENTACLE_MODULE_DEV]
         if TENTACLE_MODULE_DEV in module_header_content else None,
         TENTACLE_PACKAGE: module_header_content[TENTACLE_PACKAGE]
