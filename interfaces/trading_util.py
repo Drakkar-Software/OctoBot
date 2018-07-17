@@ -1,5 +1,6 @@
 from interfaces import get_bot
 from trading.trader.portfolio import Portfolio
+from tools.timestamp_util import convert_timestamps_to_datetime
 
 
 def get_traders():
@@ -129,8 +130,8 @@ def get_global_profitability():
         if real_full_origin_value > 0 else 0
 
     return has_real_trader, has_simulated_trader, \
-        real_global_profitability, simulated_global_profitability, \
-        real_percent_profitability, simulated_percent_profitability, market_average_profitability
+           real_global_profitability, simulated_global_profitability, \
+           real_percent_profitability, simulated_percent_profitability, market_average_profitability
 
 
 def get_portfolios():
@@ -155,8 +156,8 @@ def get_currencies_with_status():
                 ",".join([
                     dec.get_state().name if dec.get_state() is not None else "N/A"
                     for dec in symbol_evaluator.get_deciders(exchange)])
-             for exchange in get_bot().get_exchanges_list().values()
-             if symbol_evaluator.has_exchange(exchange)}
+                for exchange in get_bot().get_exchanges_list().values()
+                if symbol_evaluator.has_exchange(exchange)}
     return symbol_with_evaluation
 
 
@@ -190,23 +191,30 @@ def get_global_portfolio_currencies_amounts():
     return real_global_portfolio, simulated_global_portfolio
 
 
-def get_trades_by_times_and_prices(side):
+def get_trades_by_times_and_prices(symbol, side):
     simulated_trades_times = []
     simulated_trades_prices = []
 
     real_trades_times = []
     real_trades_prices = []
 
+    real_times = None
+    simulated_times = None
+
     traders = get_traders()
 
     for trader in traders:
         for trade in trader.get_trades_manager().get_trade_history():
-            if trade.get_side() == side:
-                if trader.get_simulate():
-                    simulated_trades_times.append(trade.get_filled_time())
-                    simulated_trades_prices.append(trade.get_price())
-                else:
-                    real_trades_times.append(trade.get_filled_time())
-                    real_trades_prices.append(trade.get_price())
+            if trade.get_symbol() == symbol:
+                if trade.get_side() == side:
+                    if trader.get_simulate():
+                        simulated_trades_times.append(trade.get_filled_time())
+                        simulated_trades_prices.append(trade.get_price())
+                    else:
+                        real_trades_times.append(trade.get_filled_time())
+                        real_trades_prices.append(trade.get_price())
 
-    return real_trades_prices, real_trades_times, simulated_trades_prices, simulated_trades_times
+        real_times = convert_timestamps_to_datetime(real_trades_times)
+        simulated_times = convert_timestamps_to_datetime(simulated_trades_times)
+
+    return real_trades_prices, real_times, simulated_trades_prices, simulated_times

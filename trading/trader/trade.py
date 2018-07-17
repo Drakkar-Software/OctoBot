@@ -13,6 +13,7 @@ class Trade:
         self.creation_time = order.get_creation_time()
         self.canceled_time = order.get_canceled_time()
         self.filled_time = order.get_executed_time()
+        self.symbol = order.get_order_symbol()
 
         self.simulated = order.trader.simulate
 
@@ -20,6 +21,9 @@ class Trade:
 
     def get_price(self):
         return self.price
+
+    def get_symbol(self):
+        return self.symbol
 
     def get_order_id(self):
         return self.order_id

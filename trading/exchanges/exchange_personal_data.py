@@ -2,7 +2,6 @@ from config.cst import *
 
 
 class ExchangePersonalData:
-
     _MAX_ORDERS_COUNT = 20000
 
     # note: symbol keys are without /
@@ -52,10 +51,11 @@ class ExchangePersonalData:
 
     def remove_oldest_orders(self, nb_to_remove):
         time_sorted_orders = sorted(self.orders.values(), key=lambda x: x["timestamp"])
-        shrinked_list = [time_sorted_orders[i] 
-                         for i in range(0, nb_to_remove) 
-                         if( time_sorted_orders[i]["status"] == OrderStatus.OPEN.value
-                            or time_sorted_orders[i]["status"] == OrderStatus.PARTIALLY_FILLED.value)]
+        shrinked_list = [time_sorted_orders[i]
+                         for i in range(0, nb_to_remove)
+                         if (time_sorted_orders[i]["status"] == OrderStatus.OPEN.value
+                             or time_sorted_orders[i]["status"] == OrderStatus.PARTIALLY_FILLED.value)]
+
         shrinked_list += [time_sorted_orders[i] for i in range(nb_to_remove, len(time_sorted_orders))]
         self.orders = {order["id"]: order for order in shrinked_list}
 

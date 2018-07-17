@@ -9,7 +9,7 @@ from services import RedditService
 
 class RedditDispatcher(AbstractDispatcher):
 
-    MAX_CONNECTION_ATTEMPTS = 3
+    MAX_CONNECTION_ATTEMPTS = 10
 
     def __init__(self, config):
         super().__init__(config)
@@ -18,6 +18,7 @@ class RedditDispatcher(AbstractDispatcher):
         self.counter = 0
         self.connect_attempts = 0
         self.social_config = {}
+        self.credentials_ok = False
 
         # check presence of twitter instance
         if RedditService.is_setup_correctly(self.config):
@@ -56,6 +57,7 @@ class RedditDispatcher(AbstractDispatcher):
         subreddit = self.reddit_service.get_endpoint().subreddit(self.subreddits)
         start_time = time.time()
         for entry in subreddit.stream.submissions():
+            self.credentials_ok = True
             self.connect_attempts = 0
             self.counter += 1
             # check if we are in the 100 history or if it's a new entry (new posts are more valuables)
@@ -93,27 +95,33 @@ class RedditDispatcher(AbstractDispatcher):
                 time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except InvalidToken:
                 # expired, try again
-                self.logger.error("Error when receiving Reddit feed: '{0}'".format(e))
+                self.logger.error(f"Error when receiving Reddit feed: '{e}'")
                 self.logger.exception(e)
-                self.logger.info("Try to continue after some time.")
+                self.logger.info(f"Try to continue after {self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC} seconds.")
                 time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except ServerError as e:
                 # server error, try again
-                self.logger.error("Error when receiving Reddit feed: '{0}'".format(e))
+                self.logger.error("Error when receiving Reddit feed: '{e}'")
                 self.logger.exception(e)
-                self.logger.info("Try to continue after some time.")
+                self.logger.info(f"Try to continue after {self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC} seconds.")
                 time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except OAuthException as e:
-                self.logger.error("Error when receiving Reddit feed: '{0}' this may mean {1}"
-                                  .format(e, "that reddit login info in config.json are wrong."))
+                self.logger.error(f"Error when receiving Reddit feed: '{e}' this may mean that reddit login info "
+                                  f"in config.json are wrong")
                 self.logger.exception(e)
                 self.keep_running = False
             except ResponseException as e:
-                self.logger.error("Error when receiving Reddit feed: '{0}' this may mean {1}"
-                                  .format(e, "that reddit configuration in config.json are wrong."))
+                message_complement = "this may mean that reddit login info in config.json are wrong." \
+                    if not self.credentials_ok else \
+                    f"Try to continue after {self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC} seconds."
+                self.logger.error(f"Error when receiving Reddit feed: '{e}' this may mean {message_complement}")
                 self.logger.exception(e)
-                self.connect_attempts += 1
+                if not self.credentials_ok:
+                    self.connect_attempts += 1
+                else:
+                    self.connect_attempts += 0.1
+                time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except Exception as e:
-                self.logger.error("Error when receiving Reddit feed: '{0}'".format(e))
+                self.logger.error(f"Error when receiving Reddit feed: '{e}'")
                 self.logger.exception(e)
                 self.keep_running = False

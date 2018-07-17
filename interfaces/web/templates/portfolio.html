@@ -10,48 +10,22 @@
 </style>
 
 <div class="card-deck">
-    <div class="card">
-        <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/btc.png" alt="Bitcoin">
-        <div class="card-body">
-          <h5 class="card-title">Bitcoin</h5>
-            <p class="card-text">
-                <h6>Quantity</h6>
-                Free : 0.2 BTC<br>
-                Total : 0.3 BTC
-            </p>
+    {% for currency in total_portfolio %}
+        <div class="card">
+            <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/{{ currency.lower() }}.png" alt="{{ currency }}">
+            <div class="card-body">
+              <h5 class="card-title">{{ currency }}</h5>
+                <p class="card-text">
+                    <h6>Quantity</h6>
+                    Free : {{ total_portfolio[currency]["available"] }} {{ currency }}<br>
+                    Total : {{ total_portfolio[currency]["total"] }} {{ currency }}
+                </p>
+            </div>
+            <div class="card-footer">
+              <small class="text-muted">Last updated 3 mins ago</small>
+            </div>
         </div>
-        <div class="card-footer">
-          <small class="text-muted">Last updated 3 mins ago</small>
-        </div>
-    </div>
-    <div class="card">
-        <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/eth.png" alt="Ethereum">
-        <div class="card-body">
-          <h5 class="card-title">Ethereum</h5>
-            <p class="card-text">
-                <h6>Quantity</h6>
-                Free : 0.2 ETH<br>
-                Total : 2 ETH
-            </p>
-        </div>
-        <div class="card-footer">
-          <small class="text-muted">Last updated 5 mins ago</small>
-        </div>
-    </div>
-    <div class="card">
-        <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/ltc.png" alt="Litecoin">
-        <div class="card-body">
-          <h5 class="card-title">Litecoin</h5>
-            <p class="card-text">
-                <h6>Quantity</h6>
-                Free : 20 LTC<br>
-                Total : 20 LTC
-            </p>
-        </div>
-        <div class="card-footer">
-          <small class="text-muted">Last updated 55 mins ago</small>
-        </div>
-    </div>
+    {% endfor %}
 </div>
 
 {% endblock %}

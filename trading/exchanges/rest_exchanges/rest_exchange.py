@@ -99,6 +99,8 @@ class RESTExchange(AbstractExchange):
         else:
             candles = self.client.fetch_ohlcv(symbol, time_frame.value)
 
+        self.exchange_manager.uniformize_candles_if_necessary(candles)
+
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
 
     # return up to ten bidasks on each side of the order book stack

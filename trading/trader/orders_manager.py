@@ -24,7 +24,7 @@ class OrdersManager(threading.Thread):
         self.last_symbol_prices = {}
         self.logger = logging.getLogger(self.__class__.__name__)
 
-        if self.trader.get_exchange().is_websocket_available():
+        if self.trader.get_exchange().is_web_socket_available():
             self.order_refresh_time = ORDER_REFRESHER_TIME_WS
         else:
             self.order_refresh_time = ORDER_REFRESHER_TIME
@@ -76,8 +76,10 @@ class OrdersManager(threading.Thread):
         else:
             last_symbol_price = exchange.get_recent_trades(symbol)
             if uniformize_timestamps and last_symbol_price:
-                for order in last_symbol_price:
-                    order[eC.TIMESTAMP.value] = exchange.get_uniform_timestamp(order[eC.TIMESTAMP.value])
+                timestamp_sample = last_symbol_price[0][eC.TIMESTAMP.value]
+                if exchange.get_exchange_manager().need_to_uniformize_timestamp(timestamp_sample):
+                    for order in last_symbol_price:
+                        order[eC.TIMESTAMP.value] = exchange.get_uniform_timestamp(order[eC.TIMESTAMP.value])
 
         # Check if exchange request failed
         if last_symbol_price is not None:
@@ -92,7 +94,7 @@ class OrdersManager(threading.Thread):
     # Currently called by backtesting
     # Will be called by Websocket to perform order status update if new data available
     # TODO : currently blocking, may implement queue if needed
-    def force_update_order_status(self, blocking=True, simulated_time=None):
+    def force_update_order_status(self, blocking=True, simulated_time=False):
         if blocking:
             self._update_orders_status(simulated_time=simulated_time)
         else:
@@ -103,7 +105,7 @@ class OrdersManager(threading.Thread):
     Finally ask cancellation and filling process if it is required
     """
 
-    def _update_orders_status(self, simulated_time=None):
+    def _update_orders_status(self, simulated_time=False):
         # update all prices
         self._update_last_symbol_list(True)
 

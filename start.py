@@ -19,6 +19,22 @@ def _log_uncaught_exceptions(ex_cls, ex, tb):
     logging.exception('{0}: {1}'.format(ex_cls, ex))
 
 
+def update_config_with_args(starting_args, config):
+    if starting_args.backtesting:
+        config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
+        config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
+
+        config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+        config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+    if starting_args.simulate:
+        config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+        config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+
+    if starting_args.risk is not None and 0 < starting_args.risk <= 1:
+        config[CONFIG_TRADER][CONFIG_TRADER_RISK] = starting_args.risk
+
+
 def start_octobot(starting_args):
     if starting_args.pause_time is not None:
         sleep(starting_args.pause_time)
@@ -66,6 +82,8 @@ def start_octobot(starting_args):
 
                 WebService.enable(config, starting_args.web)
 
+                update_config_with_args(starting_args, config)
+
                 bot = OctoBot(config)
 
                 import interfaces
@@ -81,19 +99,6 @@ def start_octobot(starting_args):
                         import backtesting
 
                         backtesting.__init__(bot)
-
-                        config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-                        config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
-
-                        config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-                        config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
-
-                    if starting_args.simulate:
-                        config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-                        config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
-
-                    if starting_args.risk is not None and 0 < starting_args.risk <= 1:
-                        config[CONFIG_TRADER][CONFIG_TRADER_RISK] = starting_args.risk
 
                     if starting_args.start:
                         Commands.start_bot(bot, logger)

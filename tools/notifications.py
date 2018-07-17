@@ -219,7 +219,7 @@ class OrdersNotification(Notification):
             content += f"\n{order_filled.trader.trader_type_str}Order(s) filled : " \
                        f"\n- {PrettyPrinter.open_order_pretty_printer(order_filled)}"
 
-        if orders_canceled is not None and len(orders_canceled) > 0:
+        if orders_canceled is not None and orders_canceled:
             content += f"\n{orders_canceled[0].trader.trader_type_str}Order(s) canceled :"
             for order in orders_canceled:
                 content += f"\n- {PrettyPrinter.open_order_pretty_printer(order)}"

@@ -14,11 +14,8 @@ class TwitterService(AbstractService):
 
     @staticmethod
     def is_setup_correctly(config):
-        if CONFIG_TWITTER in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]:
-            return True
-        else:
-            return False
+        return CONFIG_TWITTER in config[CONFIG_CATEGORY_SERVICES] \
+                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]
 
     def get_user_id(self, user_account):
         user = self.twitter_api.GetUser(screen_name=user_account)

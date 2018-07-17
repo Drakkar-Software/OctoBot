@@ -12,6 +12,7 @@ from interfaces.web import add_to_matrix_history, get_matrix_history, add_to_sym
 from tools.symbol_util import split_symbol
 from trading.trader.portfolio import Portfolio
 from backtesting.backtesting import Backtesting
+from tools.timestamp_util import convert_timestamps_to_datetime
 
 
 def get_value_from_dict_or_string(data, is_time_frame=False):
@@ -119,7 +120,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
     exchange_list = get_bot().get_exchanges_list()
 
     if time_frame is not None:
-        if len(symbol_evaluator_list) > 0:
+        if symbol_evaluator_list:
             evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_thread_managers(
                 exchange_list[exchange_name])
 
@@ -132,7 +133,7 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                     add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
                     data = get_symbol_data_history(symbol, time_frame)
 
-                    data_x = data[PriceIndexes.IND_PRICE_TIME.value]
+                    data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value])
                     data_y = data[PriceIndexes.IND_PRICE_CLOSE.value]
 
                     # Candlestick
@@ -143,10 +144,10 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                                          close=data[PriceIndexes.IND_PRICE_CLOSE.value])
 
                     b_real_trades_prices, b_real_trades_times, b_simulated_trades_prices, b_simulated_trades_times = \
-                        get_trades_by_times_and_prices(TradeOrderSide.BUY)
+                        get_trades_by_times_and_prices(symbol, TradeOrderSide.BUY)
 
                     s_real_trades_prices, s_real_trades_times, s_simulated_trades_prices, s_simulated_trades_times = \
-                        get_trades_by_times_and_prices(TradeOrderSide.SELL)
+                        get_trades_by_times_and_prices(symbol, TradeOrderSide.SELL)
 
                     sell_color = "#ff0000"
                     buy_color = "#009900"
@@ -155,6 +156,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                     market_type = "markers"
                     simulator = "simulator "
                     real_trader = "real trader "
+                    marker_size = 10
+                    marker_opacity = 0.7
 
                     b_real_trades_points = go.Scatter(
                         x=b_real_trades_times,
@@ -163,6 +166,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         name=real_trader+buy_text,
                         marker=dict(
                             color=buy_color,
+                            size=marker_size,
+                            opacity=marker_opacity,
                             line=dict(
                                 width=2
                             )
@@ -176,6 +181,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         name=real_trader+sell_text,
                         marker=dict(
                             color=sell_color,
+                            size=marker_size,
+                            opacity=marker_opacity,
                             line=dict(
                                 width=2
                             )
@@ -188,7 +195,9 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         mode=market_type,
                         name=simulator+buy_text,
                         marker=dict(
-                            color=buy_color
+                            color=buy_color,
+                            size=marker_size,
+                            opacity=marker_opacity
                         )
                     )
 
@@ -198,7 +207,9 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                         mode=market_type,
                         name=simulator+sell_text,
                         marker=dict(
-                            color=sell_color
+                            color=sell_color,
+                            size=marker_size,
+                            opacity=marker_opacity
                         )
                     )
 
@@ -223,7 +234,7 @@ def get_evaluator_graph_in_matrix_history(symbol,
     symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
     exchange_list = get_bot().get_exchanges_list()
 
-    if evaluator_name is not None and exchange_name and len(symbol_evaluator_list) > 0:
+    if evaluator_name is not None and exchange_name and symbol_evaluator_list:
         matrix = symbol_evaluator_list[symbol].get_matrix(exchange_list[exchange_name])
         add_to_matrix_history(matrix)
 

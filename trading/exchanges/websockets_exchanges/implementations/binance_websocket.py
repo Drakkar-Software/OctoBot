@@ -174,10 +174,9 @@ class BinanceWebSocketClient(AbstractWebSocket):
             elif self._KLINE_KEY in msg_stream_type:
                 time_frame = self._convert_time_frame(msg["data"]["k"]["i"])
                 if symbol_data.candles_are_initialized(time_frame):
-                    symbol_data.update_symbol_candles(
-                        time_frame,
-                        self._create_candle(msg["data"]["k"]),
-                        replace_all=False)
+                    candle = self._create_candle(msg["data"]["k"])
+                    self.exchange_manager.uniformize_candles_if_necessary(candle)
+                    symbol_data.update_symbol_candles(time_frame, candle, replace_all=False)
 
     def user_callback(self, msg):
         if msg["e"] == "outboundAccountInfo":

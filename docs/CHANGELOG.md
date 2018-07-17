@@ -1,18 +1,42 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.5_1-beta
+====================
+*Released date : July 17 2018*
+
+# Concerned issues :
+    #305 [Refactor] refactor overall code
+    #318 [Candles management] adapt candles timestamp to have second timestamp everywhere
+    #319 [Web interface] trades are displayed for all symbols, display only for the selected one
+    #320 [Backtesting] do not start unecessary services on backtesting mode
+    #322 [Web interface] Create portfolio page
+    #323 [Web interface] Create orders page
+    #324 [Web interface] Create trades page
+
+# New features :
+    - Backtesting multi symbol support improved
+    - Backtesting report at the end of a backtesting
+    - Web Interface : New pages (portfolio, orders, trades)
+    
+# Improvements:
+    - Improved readability of web interface
+    
+# Bug fixes :
+    - Backtesting trades timestamps were wrong on multi symbol backtesting
+
 Changelog for 0.1.5-beta
 ====================
 *Released date : July 15 2018*
 
 # Concerned issues :
+    #252 [OrderManager] "Timed Out" raised during _update_orders_status
     #265 [Web Interface] Create web evaluator_config.json edition interface
     #266 [Web Interface] Create web tentacles manager interface
-    #302 [Web Interface] setup architecture
     #270 [Web interface] Create advanced web interface
-    #308 [Backtesting] Improve backtesting accuracy 
-    #304 [Trade Manager] Ensure get_average_market_profitability resilience
     #294 [Trader simulator] StopLoss orders triggered when they shouldn't
-    #252 [OrderManager] "Timed Out" raised during _update_orders_status
+    #302 [Web Interface] setup architecture
+    #304 [Trade Manager] Ensure get_average_market_profitability resilience
+    #308 [Backtesting] Improve backtesting accuracy
 
 # New features :
     - New features in web interface : tentacles configuration, trades displayed on Dashboard tob
