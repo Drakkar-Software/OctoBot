@@ -97,13 +97,17 @@ def get_package_name(localisation, is_url):
         return localisation.split(separator)[local_package_name_reverse_index]
 
 
-def get_package_file_content_from_url(url):
-    package_file = requests.get(url).text
+def get_package_file_content_from_url(url, as_bytes=False):
+    result = requests.get(url)
+    package_file = result.text
 
     if package_file.find("404: Not Found") != -1:
         raise Exception(package_file)
 
-    return package_file
+    if as_bytes:
+        return result.content
+    else:
+        return package_file
 
 
 def read_tentacles(path, description_list):

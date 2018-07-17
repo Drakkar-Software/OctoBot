@@ -292,7 +292,8 @@ class TentaclePackageManager:
                                                             is_url,
                                                             parsed_module,
                                                             res_file,
-                                                            res_file_path)
+                                                            res_file_path,
+                                                            read_as_bytes=True)
 
     def _try_action_on_config_or_resource_file(self, action,
                                                module_name,
@@ -301,7 +302,8 @@ class TentaclePackageManager:
                                                parsed_module,
                                                file,
                                                file_path,
-                                               default_file_path=None):
+                                               default_file_path=None,
+                                               read_as_bytes=False):
 
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
 
@@ -313,19 +315,20 @@ class TentaclePackageManager:
                                                                         file)
 
                 if is_url:
-                    config_file_content = TentaclePackageUtil.get_package_file_content_from_url(module_loc)
+                    config_file_content = TentaclePackageUtil.get_package_file_content_from_url(module_loc,
+                                                                                                as_bytes=read_as_bytes)
                 else:
-                    with open(module_loc, "r") as module_file:
+                    with open(module_loc, "rb" if read_as_bytes else "r") as module_file:
                         config_file_content = module_file.read()
 
                 # install local file content
                 if action == TentacleManagerActions.INSTALL:
-                    with open(file_path, "w") as new_file:
+                    with open(file_path, "wb" if read_as_bytes else "w") as new_file:
                         new_file.write(config_file_content)
 
                 # copy into default
                 if default_file_path:
-                    with open(default_file_path, "w") as new_default_file:
+                    with open(default_file_path, "wb" if read_as_bytes else "w") as new_default_file:
                         new_default_file.write(config_file_content)
 
                     if action == TentacleManagerActions.UPDATE:
