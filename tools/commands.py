@@ -7,7 +7,6 @@ from git import Repo, InvalidGitRepositoryError
 
 from backtesting.collector.data_collector import DataCollector
 from config.cst import ORIGIN_URL, GIT_ORIGIN
-from tools.console_tools import FetchProgressBar
 from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
 
@@ -33,7 +32,7 @@ class Commands:
 
             if origin.exists():
                 # update
-                for fetch_info in origin.pull(progress=FetchProgressBar()):
+                for fetch_info in origin.pull():
                     print("Updated %s to %s" % (fetch_info.ref, fetch_info.commit))
 
                 # checkout
@@ -69,7 +68,7 @@ class Commands:
                 if log:
                     logger.info("Octobot is up to date :)")
                 return True
-        except Exception as e:
+        except Exception:
             if log:
                 logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
             return False

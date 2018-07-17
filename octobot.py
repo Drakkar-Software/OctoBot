@@ -58,8 +58,11 @@ class OctoBot:
         # Init relevant evaluator names list using enabled strategies
         self.relevant_evaluators = EvaluatorCreator.get_relevant_evaluators_from_strategies(self.config)
 
+        # Backtesting
+        self.backtesting_enabled = Backtesting.enabled(self.config)
+
         # Add services to self.config[CONFIG_CATEGORY_SERVICES]
-        ServiceCreator.create_services(self.config)
+        ServiceCreator.create_services(self.config, self.backtesting_enabled)
 
         # Notifier
         self.config[CONFIG_NOTIFICATION_INSTANCE] = Notification(self.config)
@@ -67,9 +70,6 @@ class OctoBot:
         # Notify starting
         if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
             self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE)
-
-        # Backtesting
-        self.backtesting_enabled = None
 
         self.symbol_threads_manager = {}
         self.exchange_traders = {}
@@ -82,8 +82,6 @@ class OctoBot:
         self.symbol_time_frame_updater_threads = []
 
     def create_exchange_traders(self):
-        self.backtesting_enabled = Backtesting.enabled(self.config)
-
         available_exchanges = ccxt.exchanges
         for exchange_class_string in self.config[CONFIG_EXCHANGES]:
             if exchange_class_string in available_exchanges:

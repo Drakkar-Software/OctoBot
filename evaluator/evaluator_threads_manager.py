@@ -3,6 +3,12 @@ import logging
 from config.cst import *
 from evaluator.evaluator import Evaluator
 
+"""
+This class represent the last level of evaluator management by :
+- Providing a link between evaluators and symbol evaluation matrix (through notifications)
+- Refreshing matrix with evaluators eval_note
+"""
+
 
 class EvaluatorThreadsManager:
     def __init__(self, config,
@@ -13,6 +19,7 @@ class EvaluatorThreadsManager:
                  trading_mode,
                  real_time_ta_eval_list,
                  relevant_evaluators=CONFIG_EVALUATORS_WILDCARD):
+
         self.config = config
         self.exchange = exchange
         self.trading_mode = trading_mode
@@ -49,12 +56,7 @@ class EvaluatorThreadsManager:
         # Register in refreshing threads
         self.symbol_time_frame_updater_thread.register_evaluator_thread_manager(self.time_frame, self)
 
-    def get_refreshed_times(self):
-        return self.symbol_time_frame_updater_thread.get_refreshed_times(self.time_frame)
-
-    def get_evaluator(self):
-        return self.evaluator
-
+    # handle notifications from evaluators, when notified refresh symbol evaluation matrix
     def notify(self, notifier_name):
         if self.get_refreshed_times() > 0:
             self.logger.debug(f"** Notified by {notifier_name} **")
@@ -117,6 +119,12 @@ class EvaluatorThreadsManager:
         for thread in self.evaluator.get_real_time_eval_list():
             thread.join()
 
+    def get_refreshed_times(self):
+        return self.symbol_time_frame_updater_thread.get_refreshed_times(self.time_frame)
+
+    def get_evaluator(self):
+        return self.evaluator
+
     def get_symbol_time_frame_updater_thread(self):
         return self.symbol_time_frame_updater_thread
 
@@ -125,3 +133,6 @@ class EvaluatorThreadsManager:
 
     def get_symbol_evaluator(self):
         return self.symbol_evaluator
+
+    def get_symbol(self):
+        return self.symbol

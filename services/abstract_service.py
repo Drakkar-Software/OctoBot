@@ -8,6 +8,7 @@ class AbstractService:
         super().__init__()
         self.logger = None
         self.config = None
+        self.backtesting_enabled = False
         self.enabled = True
 
     @classmethod

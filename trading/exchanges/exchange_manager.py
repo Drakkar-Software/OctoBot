@@ -2,6 +2,7 @@ import logging
 
 from config.cst import *
 from tools.time_frame_manager import TimeFrameManager
+from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
@@ -147,6 +148,27 @@ class ExchangeManager:
 
     def get_personal_data(self):
         return self.get_exchange().get_exchange_personal_data()
+
+    @staticmethod
+    def need_to_uniformize_timestamp(timestamp):
+        return not is_valid_timestamp(timestamp)
+
+    def uniformize_candles_if_necessary(self, candle_or_candles):
+        if candle_or_candles:
+            if isinstance(candle_or_candles[0], list):
+                if self.need_to_uniformize_timestamp(candle_or_candles[0][PriceIndexes.IND_PRICE_TIME.value]):
+                    self._uniformize_candles_timestamps(candle_or_candles)
+            else:
+                if self.need_to_uniformize_timestamp(candle_or_candles[PriceIndexes.IND_PRICE_TIME.value]):
+                    self._uniformize_candle_timestamps(candle_or_candles)
+
+    def _uniformize_candles_timestamps(self, candles):
+        for candle in candles:
+            self._uniformize_candle_timestamps(candle)
+
+    def _uniformize_candle_timestamps(self, candle):
+        candle[PriceIndexes.IND_PRICE_TIME.value] = \
+            self.exchange_dispatcher.get_uniform_timestamp(candle[PriceIndexes.IND_PRICE_TIME.value])
 
     # Exceptions
     def _raise_exchange_load_error(self):

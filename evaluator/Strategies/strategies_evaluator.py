@@ -1,7 +1,6 @@
 from abc import *
 
-from config.cst import CONFIG_EVALUATOR_STRATEGIES, STRATEGIES_REQUIRED_TIME_FRAME, CONFIG_FILE_EXT, \
-    STRATEGIES_REQUIRED_EVALUATORS
+from config.cst import CONFIG_EVALUATOR_STRATEGIES, STRATEGIES_REQUIRED_TIME_FRAME, STRATEGIES_REQUIRED_EVALUATORS
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.evaluator_divergence_analyser import EvaluatorDivergenceAnalyser
 from tools.time_frame_manager import TimeFrameManager
