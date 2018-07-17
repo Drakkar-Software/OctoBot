@@ -25,7 +25,8 @@ class RedditDispatcher(AbstractDispatcher):
             self.reddit_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT][CONFIG_SERVICE_INSTANCE]
             self.is_setup_correctly = True
         else:
-            self.logger.warning("Required services are not ready")
+            if RedditService.should_be_ready(config):
+                self.logger.warning("Required services are not ready, dispatcher can't start")
             self.is_setup_correctly = False
 
     # merge new config into existing config
