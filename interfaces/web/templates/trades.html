@@ -10,28 +10,42 @@
         <th scope="col">#</th>
         <th scope="col">Exchange</th>
         <th scope="col">Symbol</th>
+        <th scope="col">Type</th>
         <th scope="col">Price</th>
         <th scope="col">Quantity</th>
+        <th scope="col">Real / Simulated</th>
         <th scope="col">Creation</th>
     </tr>
   </thead>
   <tbody>
-    <tr>
-        <th scope="row">1</th>
-        <td>Binance</td>
-        <td>BTC/USDT</td>
-        <td>5500</td>
-        <td>2.1</td>
-        <td>124545484</td>
-    </tr>
-    <tr>
-        <th scope="row">2</th>
-        <td>Bitfinex</td>
-        <td>ETH/USDT</td>
-        <td>450</td>
-        <td>10.15</td>
-        <td>124545484</td>
-    </tr>
+  {% for trades in real_trades_history %}
+      {% for trade in trades %}
+        <tr>
+            <th scope="row">{{ trade.get_order_id() }}</th>
+            <td>{{ trade.get_exchange_name() }}</td>
+            <td>{{ trade.get_symbol() }}</td>
+            <td>{{ trade.get_order_type() }}</td>
+            <td>{{ trade.get_price() }}</td>
+            <td>{{ trade.get_quantity() }}</td>
+            <td>Real</td>
+            <td>{{ trade.get_creation_time() }}</td>
+        </tr>
+      {% endfor %}
+  {% endfor %}
+  {% for trades in simulated_trades_history %}
+    {% for trade in trades %}
+        <tr>
+            <th scope="row">{{ trade.get_order_id() }}</th>
+            <td>{{ trade.get_exchange_name() }}</td>
+            <td>{{ trade.get_symbol() }}</td>
+            <td>{{ trade.get_order_type() }}</td>
+            <td>{{ trade.get_price() }}</td>
+            <td>{{ trade.get_quantity() }}</td>
+            <td>Simulated</td>
+            <td>{{ trade.get_creation_time() }}</td>
+        </tr>
+      {% endfor %}
+  {% endfor %}
   </tbody>
   </table>
 </div>
