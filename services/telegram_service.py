@@ -17,11 +17,8 @@ class TelegramService(AbstractService):
 
     @staticmethod
     def is_setup_correctly(config):
-        if CONFIG_TELEGRAM in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]:
-            return True
-        else:
-            return False
+        return CONFIG_TELEGRAM in config[CONFIG_CATEGORY_SERVICES] \
+                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]
 
     def prepare(self):
         if not self.telegram_api:

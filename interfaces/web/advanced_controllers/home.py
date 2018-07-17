@@ -11,4 +11,3 @@ def get_advanced_blueprint():
 @advanced.route("/home")
 def home():
     return render_template('advanced_index.html')
-

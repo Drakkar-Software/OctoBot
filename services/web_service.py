@@ -14,11 +14,8 @@ class WebService(AbstractService):
 
     @staticmethod
     def is_setup_correctly(config):
-        if CONFIG_WEB in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB]:
-            return True
-        else:
-            return False
+        return CONFIG_WEB in config[CONFIG_CATEGORY_SERVICES] \
+                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB]
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \

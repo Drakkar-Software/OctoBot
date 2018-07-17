@@ -12,11 +12,8 @@ class RedditService(AbstractService):
 
     @staticmethod
     def is_setup_correctly(config):
-        if CONFIG_REDDIT in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]:
-            return True
-        else:
-            return False
+        return CONFIG_REDDIT in config[CONFIG_CATEGORY_SERVICES] \
+                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]
 
     def prepare(self):
         if not self.reddit_api:
