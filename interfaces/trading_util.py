@@ -198,6 +198,9 @@ def get_trades_by_times_and_prices(symbol, side):
     real_trades_times = []
     real_trades_prices = []
 
+    real_times = None
+    simulated_times = None
+
     traders = get_traders()
 
     for trader in traders:

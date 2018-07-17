@@ -10,11 +10,11 @@ class ServiceCreator:
         return cls.__name__
 
     @staticmethod
-    def create_services(config):
+    def create_services(config, backtesting_enabled):
         logger = logging.getLogger(ServiceCreator.get_name())
         for service_class in AbstractService.__subclasses__():
             service_instance = service_class()
-            if service_instance.get_is_enabled():
+            if service_instance.get_is_enabled() and (not backtesting_enabled or service_instance.backtesting_enabled):
                 service_instance.set_logger(logging.getLogger(service_class.get_name()))
                 service_instance.set_config(config)
                 if service_instance.has_required_configuration():
