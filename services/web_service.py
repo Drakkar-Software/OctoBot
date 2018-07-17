@@ -8,9 +8,10 @@ from services import AbstractService
 
 class WebService(AbstractService):
 
+    BACKTESTING_ENABLED = True
+
     def __init__(self):
         super().__init__()
-        self.backtesting_enabled = True
         self.web_app = None
 
     @staticmethod
