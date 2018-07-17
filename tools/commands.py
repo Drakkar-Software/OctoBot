@@ -68,7 +68,7 @@ class Commands:
                 if log:
                     logger.info("Octobot is up to date :)")
                 return True
-        except Exception as e:
+        except Exception:
             if log:
                 logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
             return False

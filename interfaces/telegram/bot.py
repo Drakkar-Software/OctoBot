@@ -262,7 +262,7 @@ class TelegramApp:
             message += "- {0}{1}".format(next(iter(get_bot().get_exchange_trading_modes().values())).get_name(),
                                          TelegramApp.EOL)
             update.message.reply_text(message)
-        except Exception as e:
+        except Exception:
             update.message.reply_text("I'm unfortunately currently unable to show you my configuration. "
                                       "Please wait for my initialization to complete.")
 

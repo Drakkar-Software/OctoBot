@@ -38,7 +38,7 @@ class AdvancedManager:
     """
     @staticmethod
     def _get_advanced(config, class_type, abstract_class=None):
-        if len(class_type.__subclasses__()) > 0:
+        if class_type.__subclasses__():
             for child in class_type.__subclasses__():
                 if AdvancedManager.is_abstract(child):
                     AdvancedManager._get_advanced(config, child)
