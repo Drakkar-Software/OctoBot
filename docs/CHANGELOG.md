@@ -8,10 +8,14 @@ Changelog for 0.1.5_1-beta
     #305 [Refactor] refactor overall code
     #318 [Candles management] adapt candles timestamp to have second timestamp everywhere
     #319 [Web interface] trades are displayed for all symbols, display only for the selected one
+    #322 [Web interface] Create portfolio page
+    #323 [Web interface] Create orders page
+    #324 [Web interface] Create trades page
 
 # New features :
     - Backtesting multi symbol support improved
     - Backtesting report at the end of a backtesting
+    - Web Interface : New pages (portfolio, orders, trades)
     
 # Improvements:
     - Improved readability of web interface
