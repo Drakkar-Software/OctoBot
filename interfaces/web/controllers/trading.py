@@ -1,6 +1,6 @@
 from flask import render_template
 
-from interfaces.trading_util import get_traders
+from interfaces.trading_util import get_traders, get_open_orders, get_trades_history
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
 
@@ -26,9 +26,13 @@ def portfolio():
 
 @server_instance.route("/orders")
 def orders():
+    real_open_orders, simulated_open_orders = get_open_orders()
     return render_template('orders.html')
 
 
 @server_instance.route("/trades")
 def trades():
-    return render_template('trades.html')
+    real_trades_history, simulated_trades_history = get_trades_history()
+    return render_template('trades.html',
+                           real_trades_history=real_trades_history,
+                           simulated_trades_history=simulated_trades_history)
