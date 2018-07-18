@@ -1,3 +1,5 @@
+import logging
+
 from config.cst import TimeFrames, CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, \
     CONFIG_ENABLED_OPTION
 from octobot import OctoBot
@@ -23,17 +25,18 @@ def create_backtesting_bot(config):
 
 
 def start_backtesting_bot(bot):
-    bot.time_frames = [TimeFrames.ONE_HOUR]
     bot.create_exchange_traders()
+
+    # fix backtesting exit
+    for exchange in bot.exchanges_list:
+        exchange_inst = bot.exchanges_list[exchange].get_exchange()
+        try:
+            exchange_inst.backtesting.force_exit_at_end = False
+        except Exception:
+            logging.getLogger(f"fail to stop forcing exit for exchange {exchange_inst.get_name()}")
+
     bot.create_evaluation_threads()
     bot.start_threads()
-
-
-def stop_backtesting_bot(bot):
-    bot.stop_threads()
-
-
-def join_backtesting_bot(bot):
     bot.join_threads()
 
 
@@ -41,7 +44,6 @@ def test_simple_backtesting():
     config = create_backtesting_config()
     bot = create_backtesting_bot(config)
     start_backtesting_bot(bot)
-    join_backtesting_bot(bot)
 
 
 def test_multiple_backtesting():
@@ -49,4 +51,3 @@ def test_multiple_backtesting():
         config = create_backtesting_config()
         bot = create_backtesting_bot(config)
         start_backtesting_bot(bot)
-        join_backtesting_bot(bot)
