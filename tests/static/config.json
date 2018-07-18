@@ -1,4 +1,5 @@
 {
+  "time_frame": ["1h", "4h", "1d"],
   "crypto_currencies":{
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
