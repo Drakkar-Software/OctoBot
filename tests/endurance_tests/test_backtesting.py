@@ -23,7 +23,7 @@ def create_backtesting_bot(config):
 
 
 def start_backtesting_bot(bot):
-    bot.time_frames = [TimeFrames.ONE_MINUTE]
+    bot.time_frames = [TimeFrames.ONE_HOUR]
     bot.create_exchange_traders()
     bot.create_evaluation_threads()
     bot.start_threads()
