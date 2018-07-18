@@ -22,17 +22,19 @@ class Backtesting:
     def end(self, symbol):
         self.ended_symbols.add(symbol)
         if len(self.ended_symbols) == len(self.symbols_to_test):
+            try:
+                self.logger.info(" **** Backtesting report ****")
+                self.logger.info(" ========= Trades =========")
+                self.print_trades_history()
 
-            self.logger.info(" **** Backtesting report ****")
-            self.logger.info(" ========= Trades =========")
-            self.print_trades_history()
+                self.logger.info(" ========= Symbols price evolution =========")
+                for symbol_to_test in self.symbols_to_test:
+                    self.print_symbol_report(symbol_to_test)
 
-            self.logger.info(" ========= Symbols price evolution =========")
-            for symbol_to_test in self.symbols_to_test:
-                self.print_symbol_report(symbol_to_test)
-
-            self.logger.info(" ========= Octobot end state =========")
-            self.print_global_report()
+                self.logger.info(" ========= Octobot end state =========")
+                self.print_global_report()
+            except AttributeError:
+                self.logger.info(" *** Backtesting ended ****")
 
             if self.force_exit_at_end:
                 os._exit(0)
