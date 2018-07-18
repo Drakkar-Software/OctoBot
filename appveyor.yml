@@ -19,4 +19,5 @@ build: off
 
 test_script:
   - "%PYTHON%\\python.exe -m pip install -r dev_requirements.txt"
-  - "%PYTHON%\\python.exe -m pytest tests"
+  - "%PYTHON%\\python.exe -m pytest tests/unit_tests"
+  - "%PYTHON%\\python.exe -m pytest tests/functional_tests"
