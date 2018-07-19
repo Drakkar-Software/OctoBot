@@ -4,7 +4,7 @@
 {% macro extract_trades(trades_list, sim_or_real) -%}
     {% for trades in trades_list %}
         {% for trade in trades %}
-            {{ m_tables.trades_tr(trade, convert_type(trade.get_order_type()),convert_timestamp(trade.get_creation_time(), sim_or_real)) }}
+            {{ m_tables.trades_tr(trade, convert_type(trade.get_order_type()),convert_timestamp(trade.get_creation_time()), sim_or_real) }}
         {% endfor %}
     {% endfor %}
 {%- endmacro %}

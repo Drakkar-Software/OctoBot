@@ -4,7 +4,7 @@
 {% macro extract_orders(order_list, sim_or_real) -%}
     {% for orders in order_list %}
         {% for order in orders %}
-            {{ m_tables.order_tr(order, convert_type(order.get_order_type()), convert_timestamp(order.get_creation_time(), sim_or_real)) }}
+            {{ m_tables.order_tr(order, convert_type(order.get_order_type()), convert_timestamp(order.get_creation_time()), sim_or_real) }}
         {% endfor %}
     {% endfor %}
 {%- endmacro %}

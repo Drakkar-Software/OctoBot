@@ -1,94 +1,83 @@
 {% extends "layout.html" %}
+
 {% block body %}
 <h1>Configuration</h1>
+<nav class="navbar fixed-top navbar-expand-lg info-color" style="top: 6%">
+    <!-- Nav tabs -->
+     <ul class="nav mr-auto md-pills nav-justified">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#panelExchanges" role="tab">Exchanges</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#panelEvaluators" role="tab">Evaluators</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#panelTrading" role="tab">Trading</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#panelNotification" role="tab">Notification</a>
+        </li>
+    </ul>
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('commands', cmd='restart') }}">Restart Octobot</a>
+        </li>
+    </ul>
+</nav>
+
+<br><br><br>
 <div class="alert alert-primary" role="alert">
     Any configuration change will be take into account after OctBot restarts.
-    <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="btn btn-warning btn-sm float-right">Restart Octobot</button>
 </div>
-<div class="accordion" id="accordionConfiguration">
-    <div class="card">
-        <div class="card-header" id="headingExchanges">
-          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseExchanges" aria-expanded="false" aria-controls="collapseExchanges">
-            <button class="btn btn-link" type="button" >
-              Exchanges
-            </button>
-          </h5>
-        </div>
 
-        <div id="collapseExchanges" class="collapse" aria-labelledby="headingExchanges" data-parent="#accordionConfiguration">
-          <div class="card-body">
-            EXCHANGE CONFIG
-          </div>
-          <div class="card-body text-center">
-            <button class="btn btn-primary btn-lg " id='save-exchange-config'>Save</button>
-            <button class="btn btn-outline-warning btn-lg" id='reset-exchange-config'>Reset</button>
-          </div>
-        </div>
+<!-- Tab panels -->
+<div class="tab-content">
+
+    <!--Panel Exchanges-->
+    <div class="tab-pane fade in show active" id="panelExchanges" role="tabpanel">
+
+        <h5>Panel Exchanges</h5>
+
     </div>
-    <div class="card config-root">
-        <div class="card-header" id="headingEvaluators">
-            <h3 class="mb-0" data-toggle="collapse" data-target="#collapseEvaluators" aria-expanded="true" aria-controls="collapseEvaluators">
-                <button class="btn btn-link" type="button" >
-                  Evaluators
-                </button>
-                <button class="btn btn-outline-warning btn-lg float-right" id='reset-evaluator-config'>Reset</button>
-                <button class="btn btn-primary btn-lg float-right" id='save-evaluator-config'>Save</button>
-            </h3>
-        </div>
 
-        <div id="collapseEvaluators" class="collapse show" aria-labelledby="headingEvaluators" data-parent="#accordionConfiguration">
-          <div class="card-body config-container" update-url="{{ url_for('config', update_type='evaluator_config') }}" id="evaluator-config-root">
-            <div class="card-text row">
-              {% for evaluator_name, activated in get_evaluator_config().items() %}
+    <!--Panel Evaluators-->
+    <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel">
+
+        <h5>Panel Evaluators</h5>
+
+        <button class="btn btn-outline-warning btn-lg float-right" id='reset-evaluator-config'>Reset</button>
+        <button class="btn btn-primary btn-lg float-right" id='save-evaluator-config'>Save</button>
+
+        <div class="row" update-url="{{ url_for('config', update_type='evaluator_config') }}" id="evaluator-config-root">
+            {% for i in range(10) %}
+            {% for evaluator_name, activated in get_evaluator_config().items() %}
                 <a href="#" onclick="return false;" class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element evaluator-config-element" id={{evaluator_name}} config-key={{evaluator_name}} current-value={{activated}} config-value={{activated}} startup-config-value={{get_evaluator_startup_config()[evaluator_name]}}>{{ evaluator_name }}
                   <span class="float-right">
                     <span class="badge {{'badge-warning' if get_evaluator_startup_config()[evaluator_name] != activated else ('badge-success' if activated else 'badge-secondary')}}">{{('Activation pending restart' if activated else 'Deactivation pending restart') if get_evaluator_startup_config()[evaluator_name] != activated else ('Activated' if activated else 'Deactivated')}}</span>
                   </span>
                 </a>
-              {% endfor %}
-            </div>
-          </div>
+            {% endfor %}
+            {% endfor %}
         </div>
+
     </div>
-    <div class="card">
-        <div class="card-header" id="headingTrading">
-          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseTrading" aria-expanded="false" aria-controls="collapseTrading">
-            <button class="btn btn-link collapsed" type="button">
-              Trading
-            </button>
-          </h5>
-        </div>
-        <div id="collapseTrading" class="collapse" aria-labelledby="headingTrading" data-parent="#accordionConfiguration">
-          <div class="card-body">
-            TRADING CONFIG
-          </div>
-          <div class="card-body text-center">
-            <button class="btn btn-primary btn-lg " id='save-trading-config'>Save</button>
-            <button class="btn btn-outline-warning btn-lg" id='reset-trading-config'>Reset</button>
-          </div>
-        </div>
+
+    <!--Panel Trading-->
+    <div class="tab-pane fade" id="panelTrading" role="tabpanel">
+
+        <h5>Panel Trading</h5>
+
     </div>
-    <div class="card">
-        <div class="card-header" id="headingNotifications">
-          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseNotifications" aria-expanded="false" aria-controls="collapseNotifications">
-            <button class="btn btn-link collapsed" type="button">
-              Notifications
-            </button>
-          </h5>
-        </div>
-        <div id="collapseNotifications" class="collapse" aria-labelledby="headingNotifications" data-parent="#accordionConfiguration">
-          <div class="card-body">
-            NOTIFICATIONS CONFIG
-          </div>
-          <div class="card-body text-center">
-            <button class="btn btn-primary btn-lg " id='save-notification-config'>Save</button>
-            <button class="btn btn-outline-warning btn-lg" id='reset-notification-config'>Reset</button>
-          </div>
-        </div>
+
+    <!--Panel Notification-->
+    <div class="tab-pane fade" id="panelNotification" role="tabpanel">
+
+        <h5>Panel Notification</h5>
+
     </div>
-    <br>
 </div>
 {% endblock %}
+
 {% block additional_scripts %}
 <script src="{{ url_for('static', filename='js/components/configuration.js') }}"></script>
 {% endblock additional_scripts %}
