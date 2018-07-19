@@ -1,0 +1,28 @@
+// List group
+.media  {
+  .media-left {
+    padding: $list-group-padding;
+    img {
+      box-shadow: $z-depth-1;
+    }
+  }
+}
+.list-group {
+  .list-group-item {
+    &:first-child {
+      border-top-left-radius: $border-radius-base;
+      border-top-right-radius: $border-radius-base;
+    }
+    &:last-child {
+      border-bottom-left-radius: $border-radius-base;
+      border-bottom-right-radius: $border-radius-base;
+    }
+  }
+  a,
+  button {
+    transition: $list-group-transition;
+    &:hover {
+      transition: $list-group-transition;
+    }
+  }
+}

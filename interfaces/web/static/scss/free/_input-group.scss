@@ -1,0 +1,21 @@
+// Input group
+.md-form {
+  &.input-group {
+    label {
+      top: 0;
+      margin-bottom: 0;
+    }
+    .input-group-text {
+      background-color: $input-group-text-bgc;
+      &.md-addon {
+        border: none;
+        background-color: transparent;
+        font-weight: 500;
+      }
+    }
+    .form-control {
+      margin: 0;
+      padding: $input-group-form-control-py $input-group-form-control-px;
+    }
+  }
+}
