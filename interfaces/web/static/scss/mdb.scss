@@ -1,0 +1,121 @@
+/*!
+ * Material Design for Bootstrap 4
+ * Version: MDB PRO 4.5.7
+ *
+ *
+ * Copyright: Material Design for Bootstrap
+ * https://mdbootstrap.com/
+ *
+ * Read the license: https://mdbootstrap.com/license/
+ *
+ *
+ * Documentation: https://mdbootstrap.com/
+ *
+ * Getting started: https://mdbootstrap.com/getting-started/
+ *
+ * Tutorials: https://mdbootstrap.com/bootstrap-tutorial/
+ *
+ * Templates: https://mdbootstrap.com/templates/
+ *
+ * Support: https://mdbootstrap.com/support/
+ *
+ * Contact: office@mdbootstrap.com
+ *
+ * Atribution: Animate CSS, Twitter Bootstrap, Materialize CSS, Normalize CSS, Waves JS, WOW JS, Toastr, Chart.js , Hammer.js
+ *
+ */
+
+@charset "UTF-8";
+
+// Bootstrap
+@import "core/bootstrap/functions";
+@import "core/bootstrap/variables";
+
+// CORE
+@import "core/mixins";
+// Your custom variables
+@import "custom-variables";
+@import "core/colors";
+@import "core/variables";
+@import "core/global";
+@import "core/helpers";
+@import "core/typography";
+@import "core/masks";
+@import "core/waves";
+
+// FREE
+@import "free/animations-basic";
+@import "free/animations-extended";
+@import "free/buttons";
+@import "free/cards";
+@import "free/dropdowns";
+@import "free/input-group";
+@import "free/navbars";
+@import "free/pagination";
+@import "free/badges";
+@import "free/modals";
+@import "free/carousels";
+@import "free/forms";
+@import "free/msc";
+@import "free/footers";
+@import "free/list-group";
+@import "free/tables";
+@import "free/depreciated";
+
+// Free addons
+// @import "addons/datatables";
+
+// PRO
+@import "pro/variables";
+@import "pro/buttons";
+@import "pro/social-buttons";
+@import "pro/tabs";
+@import "pro/cards";
+@import "pro/dropdowns";
+@import "pro/navbars";
+@import "pro/scrollspy";
+@import "pro/lightbox";
+@import "pro/chips";
+@import "pro/msc";
+@import "pro/forms";
+@import "pro/radio";
+@import "pro/checkbox";
+@import "pro/material-select";
+@import "pro/switch";
+@import "pro/file-input";
+@import "pro/range";
+@import "pro/input-group";
+@import "pro/autocomplete";
+@import "pro/accordion";
+@import "pro/parallax";
+@import "pro/sidenav";
+@import "pro/ecommerce";
+@import "pro/carousels";
+@import "pro/steppers";
+@import "pro/blog";
+@import "pro/toasts";
+@import "pro/animations";
+@import "pro/charts";
+@import "pro/progress";
+@import "pro/scrollbar";
+// Your custom skin
+@import "custom-skin";
+@import "pro/skins";
+@import "pro/depreciated";
+
+// Picker
+@import "pro/picker/default";
+@import "pro/picker/default-time";
+@import "pro/picker/default-date";
+
+// Sections
+@import "pro/sections/templates";
+@import "pro/sections/social";
+@import "pro/sections/team";
+@import "pro/sections/testimonials";
+@import "pro/sections/magazine";
+@import "pro/sections/pricing";
+@import "pro/sections/contacts";
+
+// Your custom styles
+@import "custom-styles";
