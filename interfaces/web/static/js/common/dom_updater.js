@@ -103,7 +103,7 @@ function update_dom(root_element, message){
 }
 
 function create_alert(a_level, a_title, a_msg, url="_blank"){
-    toastr[a_level](a_title, a_msg)
+    toastr[a_level](a_msg, a_title)
 
     toastr.options = {
       "closeButton": false,
