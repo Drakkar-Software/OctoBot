@@ -7,13 +7,13 @@ import flask
 import numpy
 
 from config.cst import PriceIndexes
-from interfaces.web.advanced_controllers import get_advanced_blueprint
-from interfaces.web.api import get_api_blueprint
+from interfaces.web.advanced_controllers import advanced
+from interfaces.web.api import api
 
 server_instance = flask.Flask(__name__)
 
-server_instance.register_blueprint(get_advanced_blueprint())
-server_instance.register_blueprint(get_api_blueprint())
+server_instance.register_blueprint(advanced)
+server_instance.register_blueprint(api)
 
 # dash
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
@@ -112,25 +112,3 @@ def load_callbacks():
         update_evaluator_dropdown_values, \
         update_currencies_amounts, \
         update_portfolio_value
-
-
-def load_routes():
-    from .controllers.trading import portfolio
-    from .controllers.trading import orders
-    from .controllers.tentacles import tentacles
-    from .controllers.tentacles import tentacle_manager
-    from .controllers.backtesting import backtesting
-    from .controllers.backtesting import data_collector
-    from .controllers.commands import commands
-    from .controllers.commands import update
-    from .controllers.configuration import config
-    from .controllers.dashboard import dash
-    from .controllers.home import home
-
-
-def load_advanced_routes():
-    from interfaces.web.advanced_controllers.home import home
-
-
-def load_api_routes():
-    from interfaces.web.api.trading import orders
