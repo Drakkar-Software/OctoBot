@@ -1,4 +1,4 @@
-{% macro order_tr(order, type='', timestamp='') -%}
+{% macro order_tr(order, type='', timestamp='', sim_or_real='Simulated') -%}
     <tr>
         <th scope="row">{{ order.get_id() }}</th>
         <td>{{ order.get_exchange().get_name() }}</td>
@@ -6,7 +6,20 @@
         <td>{{ type }}</td>
         <td>{{ order.get_origin_price() }}</td>
         <td>{{ order.get_origin_quantity() }}</td>
-        <td>Simulated</td>
+        <td>{{ sim_or_real }}</td>
+        <td>{{ timestamp }}</td>
+    </tr>
+{%- endmacro %}
+
+{% macro trades_tr(trade, type='', timestamp='', sim_or_real='Simulated') -%}
+    <tr>
+        <th scope="row">{{ trade.get_order_id() }}</th>
+        <td>{{ trade.get_exchange_name() }}</td>
+        <td>{{ trade.get_symbol() }}</td>
+        <td>{{ type }}</td>
+        <td>{{ trade.get_price() }}</td>
+        <td>{{ trade.get_quantity() }}</td>
+        <td>{{ sim_or_real }}</td>
         <td>{{ timestamp }}</td>
     </tr>
 {%- endmacro %}
