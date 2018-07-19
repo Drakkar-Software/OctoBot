@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% import 'macros/cards.html' as cards %}
+{% import 'macros/cards.html' as m_cards %}
 {% block body %}
 <h1>Portfolio</h1>
 <br>
@@ -12,7 +12,7 @@
 
 <div class="card-deck">
     {% for currency in total_portfolio %}
-        {{ cards.currency_card(currency, total_portfolio) }}
+        {{ m_cards.currency_card(currency, total_portfolio) }}
     {% endfor %}
 </div>
 

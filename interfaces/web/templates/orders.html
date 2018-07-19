@@ -1,10 +1,11 @@
 {% extends "layout.html" %}
+{% import 'macros/tables.html' as m_tables %}
 {% block body %}
 <h1>Orders</h1>
 <br>
 <h2>Open orders</h2>
-<div class="table-responsive">
-  <table class="table">
+<div>
+  <table id="open_order_datatable" class="table table-striped table-bordered">
     <caption>List of open orders</caption>
   <thead>
     <tr>
@@ -21,56 +22,46 @@
   <tbody>
     {% for orders in real_trades_history %}
         {% for order in orders %}
-            <tr>
-                <th scope="row">{{ order.get_id() }}</th>
-                <td>{{ order.get_exchange().get_name() }}</td>
-                <td>{{ order.get_order_symbol() }}</td>
-                <td>{{ convert_type(order.get_order_type()) }}</td>
-                <td>{{ order.get_origin_price() }}</td>
-                <td>{{ order.get_origin_quantity() }}</td>
-                <td>Real</td>
-                <td>{{ convert_timestamp(order.get_creation_time()) }}</td>
-            </tr>
+            {{ m_tables.order_tr(order, convert_type(order.get_order_type()), convert_timestamp(order.get_creation_time())) }}
         {% endfor %}
     {% endfor %}
   {% for orders in simulated_open_orders %}
         {% for order in orders %}
-            <tr>
-                <th scope="row">{{ order.get_id() }}</th>
-                <td>{{ order.get_exchange().get_name() }}</td>
-                <td>{{ order.get_order_symbol() }}</td>
-                <td>{{ convert_type(order.get_order_type()) }}</td>
-                <td>{{ order.get_origin_price() }}</td>
-                <td>{{ order.get_origin_quantity() }}</td>
-                <td>Simulated</td>
-                <td>{{ convert_timestamp(order.get_creation_time()) }}</td>
-            </tr>
+            {{ m_tables.order_tr(order, convert_type(order.get_order_type()), convert_timestamp(order.get_creation_time())) }}
         {% endfor %}
     {% endfor %}
   </tbody>
   </table>
 </div>
 <br>
-<h2>Order history</h2>
-<div class="table-responsive">
-  <table class="table">
-    <caption>List of order history</caption>
-  <thead>
-    <tr>
-        <th scope="col">#</th>
-        <th scope="col">Exchange</th>
-        <th scope="col">Symbol</th>
-        <th scope="col">Type</th>
-        <th scope="col">Price</th>
-        <th scope="col">Quantity</th>
-        <th scope="col">Status</th>
-        <th scope="col">Creation</th>
-    </tr>
-  </thead>
-  <tbody>
-  PENDING...
-  </tbody>
-  </table>
-</div>
+<!--<h2>Order history</h2>-->
+<!--<div class="table-responsive">-->
+  <!--<table class="table">-->
+    <!--<caption>List of order history</caption>-->
+  <!--<thead>-->
+    <!--<tr>-->
+        <!--<th scope="col">#</th>-->
+        <!--<th scope="col">Exchange</th>-->
+        <!--<th scope="col">Symbol</th>-->
+        <!--<th scope="col">Type</th>-->
+        <!--<th scope="col">Price</th>-->
+        <!--<th scope="col">Quantity</th>-->
+        <!--<th scope="col">Status</th>-->
+        <!--<th scope="col">Creation</th>-->
+    <!--</tr>-->
+  <!--</thead>-->
+  <!--<tbody>-->
+  <!--PENDING...-->
+  <!--</tbody>-->
+  <!--</table>-->
+<!--</div>-->
 
 {% endblock %}
+
+{% block additional_scripts %}
+<script>
+    $(document).ready(function () {
+      $('#open_order_datatable').DataTable();
+    });
+</script>
+{% endblock additional_scripts %}

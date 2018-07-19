@@ -7,11 +7,13 @@ import flask
 import numpy
 
 from config.cst import PriceIndexes
-from interfaces.web.advanced_controllers.home import get_advanced_blueprint
+from interfaces.web.advanced_controllers import get_advanced_blueprint
+from interfaces.web.api import get_api_blueprint
 
 server_instance = flask.Flask(__name__)
 
 server_instance.register_blueprint(get_advanced_blueprint())
+server_instance.register_blueprint(get_api_blueprint())
 
 # dash
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
@@ -64,7 +66,7 @@ def add_to_symbol_data_history(symbol, data, time_frame, force_data_reset=False)
             else:
                 break
         if new_data_index > 0:
-            data_list = [None]*len(PriceIndexes)
+            data_list = [None] * len(PriceIndexes)
             for i in range(len(data)):
                 data_list[i] = data[i][-new_data_index:]
             new_data = numpy.array(data_list)
@@ -128,3 +130,7 @@ def load_routes():
 
 def load_advanced_routes():
     from interfaces.web.advanced_controllers.home import home
+
+
+def load_api_routes():
+    from interfaces.web.api.trading import orders
