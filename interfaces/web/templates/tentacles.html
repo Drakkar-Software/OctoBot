@@ -16,7 +16,9 @@
 </div>
 <br>
 <button type="button" class="btn btn-primary">Apply</button>
+{% endblock %}
 
+{% block additional_scripts %}
 <script>
 $(document).ready(function () {
     $(".list-group-item").click(function(){
@@ -28,4 +30,4 @@ $(document).ready(function () {
     });
 });
 </script>
-{% endblock %}
+{% endblock additional_scripts %}

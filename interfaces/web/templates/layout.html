@@ -23,6 +23,8 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
 
+        {% block additional_style %}
+        {% endblock additional_style %}
     </head>
     <body>
         <nav class="navbar navbar-expand-md navbar-dark danger-color">
@@ -107,12 +109,15 @@
         <!-- Scripts -->
         <script src="{{ url_for('static', filename='js/lib/jquery-3.3.1.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/lib/popper.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/toastr.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/toastr.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/lib/mdb.min.js') }}"></script>
 
         <script src="{{ url_for('static', filename='js/common/cst.js') }}"></script>
         <script src="{{ url_for('static', filename='js/common/bot_connection.js') }}"></script>
         <script src="{{ url_for('static', filename='js/common/dom_updater.js') }}"></script>
+
+        {% block additional_scripts %}
+        {% endblock additional_scripts %}
     </body>
 </html>

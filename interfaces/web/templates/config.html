@@ -88,5 +88,7 @@
     </div>
     <br>
 </div>
-<script src="{{ url_for('static', filename='js/components/configuration.js') }}"></script>
 {% endblock %}
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/configuration.js') }}"></script>
+{% endblock additional_scripts %}

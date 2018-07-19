@@ -83,5 +83,8 @@
     <button type="button" class="btn btn-primary card-link" id="update_selected_tentacles" update-url="{{ url_for('tentacle_manager', update_type='update_modules') }}">Update selected tentacles</button>
     <button type="button" class="btn btn-danger card-link" id="uninstall_selected_tentacles" update-url="{{ url_for('tentacle_manager', update_type='uninstall_modules') }}">Uninstall selected tentacles</button>
 </div>
-<script src="{{ url_for('static', filename='js/components/tentacles_configuration.js') }}"></script>
 {% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/tentacles_configuration.js') }}"></script>
+{% endblock additional_scripts %}
