@@ -1,6 +1,6 @@
 from flask import render_template
 
-from interfaces.web.advanced_controllers import advanced
+from . import advanced
 
 
 @advanced.route("/")
