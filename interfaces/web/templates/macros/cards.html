@@ -1,0 +1,26 @@
+{% macro currency_card(currency, total_portfolio) -%}
+    <!-- Card -->
+    <div class="card mb-4">
+
+    <!--Card image-->
+    <div class="view overlay">
+      <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/{{ currency.lower() }}.png" alt="Can't find image for {{ currency }} :(">
+      <a href="#!">
+        <div class="mask rgba-white-slight"></div>
+      </a>
+    </div>
+
+    <!--Card content-->
+    <div class="card-body">
+        <!--Title-->
+        <h4 class="card-title">{{ currency }}</h4>
+        <p class="card-text">
+            <h6>Quantity</h6>
+            Free : {{ total_portfolio[currency]["available"] }} {{ currency }}<br>
+            Total : {{ total_portfolio[currency]["total"] }} {{ currency }}
+        </p>
+    </div>
+
+    </div>
+    <!-- Card -->
+{%- endmacro %}
