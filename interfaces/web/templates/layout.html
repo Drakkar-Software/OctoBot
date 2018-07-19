@@ -13,7 +13,11 @@
         <!-- Fontawesome CSS -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/fontawesome_all.css') }}">
 
+        <!-- mdb CSS -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/mdb.min.css') }}">
+
         <!-- Own -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
 
     </head>
@@ -67,7 +71,7 @@
                 </ul>
             </div>
             <div class="mx-auto order-0">
-                <a class="navbar-brand mx-auto" href="{{ url_for('commands') }}">OctoBot <i id="navbar-bot-status" class="fas fa-spinner fa-spin"></i></a>
+                <a class="navbar-brand mx-auto" href="{{ url_for('commands') }}">OctoBot <i id="navbar-bot-status" class="fa fa-spinner fa-spin"></i></a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".dual-collapse2">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -81,10 +85,10 @@
                         <a class="nav-link" href="#">About</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('advanced.home') }}"><i class="fas fa-bug"></i></a>
+                        <a class="nav-link" href="{{ url_for('advanced.home') }}"><i class="fa fa-bug"></i></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('commands') }}"><i id="navbar-bot-reboot" class="fas fa-sync"></i></a>
+                        <a class="nav-link" href="{{ url_for('commands') }}"><i id="navbar-bot-reboot" class="fa fa-sync"></i></a>
                     </li>
                 </ul>
             </div>
@@ -100,8 +104,9 @@
         <!-- Scripts -->
         <script src="{{ url_for('static', filename='js/lib/jquery-3.3.1.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/lib/popper.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/toastr.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/bootstrap-notify.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/mdb.min.js') }}"></script>
 
         <script src="{{ url_for('static', filename='js/common/cst.js') }}"></script>
         <script src="{{ url_for('static', filename='js/common/bot_connection.js') }}"></script>

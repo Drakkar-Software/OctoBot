@@ -28,7 +28,7 @@ function handle_route_button(){
             $.ajax({
                 url: command,
                 beforeSend: function() {
-                    button.html("<i class='fas fa-circle-notch fa-spin'></i>");
+                    button.html("<i class='fa fa-circle-notch fa-spin'></i>");
                 },
                 complete: function() {
                    button.html(origin_val);

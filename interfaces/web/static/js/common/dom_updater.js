@@ -103,31 +103,25 @@ function update_dom(root_element, message){
 }
 
 function create_alert(a_level, a_title, a_msg, url="_blank"){
-    $.notify({
-        title: a_title,
-        message: a_msg
-    },{
-        element: "body",
-	    position: null,
-        type: a_level,
-        allow_dismiss: true,
-	    newest_on_top: true,
-	    placement: {
-            from: "top",
-            align: "right"
-	    },
-	    showProgressbar: false,
-	    offset: 20,
-        spacing: 10,
-        z_index: 1031,
-        url_target: url,
-	    delay: 5000,
-	    timer: 1000,
-	    animate: {
-            enter: "animated fadeInDown",
-            exit: "animated fadeOutUp"
-	    }
-    });
+    toastr[a_level](a_title, a_msg)
+
+    toastr.options = {
+      "closeButton": false,
+      "debug": false,
+      "newestOnTop": false,
+      "progressBar": false,
+      "positionClass": "toast-top-right",
+      "preventDuplicates": false,
+      "onclick": null,
+      "showDuration": 300,
+      "hideDuration": 1000,
+      "timeOut": 5000,
+      "extendedTimeOut": 1000,
+      "showEasing": "swing",
+      "hideEasing": "linear",
+      "showMethod": "fadeIn",
+      "hideMethod": "fadeOut"
+    }
 }
 
 function lock_ui(){
