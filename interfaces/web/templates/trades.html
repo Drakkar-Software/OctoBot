@@ -1,9 +1,19 @@
 {% extends "layout.html" %}
+{% import 'macros/tables.html' as m_tables %}
+
+{% macro extract_trades(trades_list, sim_or_real) -%}
+    {% for trades in trades_list %}
+        {% for trade in trades %}
+            {{ m_tables.trades_tr(trade, convert_type(trade.get_order_type()),convert_timestamp(trade.get_creation_time(), sim_or_real)) }}
+        {% endfor %}
+    {% endfor %}
+{%- endmacro %}
+
 {% block body %}
 <h1>Trades</h1>
 <br>
 <div class="table-responsive">
-  <table class="table">
+  <table id="open_trades_datatable" class="table table-striped table-bordered">
     <caption>List of trades</caption>
   <thead>
     <tr>
@@ -18,36 +28,20 @@
     </tr>
   </thead>
   <tbody>
-  {% for trades in real_trades_history %}
-      {% for trade in trades %}
-        <tr>
-            <th scope="row">{{ trade.get_order_id() }}</th>
-            <td>{{ trade.get_exchange_name() }}</td>
-            <td>{{ trade.get_symbol() }}</td>
-            <td>{{ convert_type(trade.get_order_type()) }}</td>
-            <td>{{ trade.get_price() }}</td>
-            <td>{{ trade.get_quantity() }}</td>
-            <td>Real</td>
-            <td>{{ convert_timestamp(trade.get_creation_time()) }}</td>
-        </tr>
-      {% endfor %}
-  {% endfor %}
-  {% for trades in simulated_trades_history %}
-    {% for trade in trades %}
-        <tr>
-            <th scope="row">{{ trade.get_order_id() }}</th>
-            <td>{{ trade.get_exchange_name() }}</td>
-            <td>{{ trade.get_symbol() }}</td>
-            <td>{{ convert_type(trade.get_order_type()) }}</td>
-            <td>{{ trade.get_price() }}</td>
-            <td>{{ trade.get_quantity() }}</td>
-            <td>Simulated</td>
-            <td>{{ convert_timestamp(trade.get_creation_time()) }}</td>
-        </tr>
-      {% endfor %}
-  {% endfor %}
+  {{ extract_trades(real_trades_history, "Real") }}
+  {{ extract_trades(simulated_trades_history, "Simulated") }}
   </tbody>
   </table>
 </div>
 
 {% endblock %}
+
+{% block additional_scripts %}
+<script>
+    $(document).ready(function () {
+      $('#open_trades_datatable').DataTable({
+         // "ajax": "{{ url_for('api.orders') }}"
+      })
+    });
+</script>
+{% endblock additional_scripts %}

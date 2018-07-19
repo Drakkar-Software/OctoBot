@@ -1,10 +1,10 @@
 {% extends "layout.html" %}
 {% import 'macros/tables.html' as m_tables %}
 
-{% macro extract_orders(order_list) -%}
+{% macro extract_orders(order_list, sim_or_real) -%}
     {% for orders in order_list %}
         {% for order in orders %}
-            {{ m_tables.order_tr(order, convert_type(order.get_order_type()), convert_timestamp(order.get_creation_time())) }}
+            {{ m_tables.order_tr(order, convert_type(order.get_order_type()), convert_timestamp(order.get_creation_time(), sim_or_real)) }}
         {% endfor %}
     {% endfor %}
 {%- endmacro %}
@@ -29,8 +29,8 @@
     </tr>
   </thead>
   <tbody>
-    {{ extract_orders(real_trades_history) }}
-    {{ extract_orders(simulated_open_orders) }}
+    {{ extract_orders(real_trades_history, "Real") }}
+    {{ extract_orders(simulated_open_orders, "Simulated") }}
   </tbody>
   </table>
 </div>
@@ -63,7 +63,7 @@
 <script>
     $(document).ready(function () {
       $('#open_order_datatable').DataTable({
-         "ajax": "{{ url_for('api.orders') }}"
+         // "ajax": "{{ url_for('api.orders') }}"
       })
     });
 </script>
