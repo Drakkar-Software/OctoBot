@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% import 'macros/cards.html' as cards %}
 {% block body %}
 <h1>Portfolio</h1>
 <br>
@@ -11,20 +12,7 @@
 
 <div class="card-deck">
     {% for currency in total_portfolio %}
-        <div class="card">
-            <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/{{ currency.lower() }}.png" alt="Can't find image for {{ currency }} :(">
-            <div class="card-body">
-              <h5 class="card-title">{{ currency }}</h5>
-                <p class="card-text">
-                    <h6>Quantity</h6>
-                    Free : {{ total_portfolio[currency]["available"] }} {{ currency }}<br>
-                    Total : {{ total_portfolio[currency]["total"] }} {{ currency }}
-                </p>
-            </div>
-            <div class="card-footer">
-              <small class="text-muted">Last updated 3 mins ago</small>
-            </div>
-        </div>
+        {{ cards.currency_card(currency, total_portfolio) }}
     {% endfor %}
 </div>
 
