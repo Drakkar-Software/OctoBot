@@ -1,10 +1,6 @@
-from flask import render_template, Blueprint
+from flask import render_template
 
-advanced = Blueprint('advanced', __name__, url_prefix='/advanced', template_folder="../advanced_templates")
-
-
-def get_advanced_blueprint():
-    return advanced
+from interfaces.web.advanced_controllers import advanced
 
 
 @advanced.route("/")
