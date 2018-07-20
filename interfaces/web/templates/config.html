@@ -1,41 +1,42 @@
 {% extends "layout.html" %}
 
 {% block body %}
-<h1>Configuration</h1>
-<nav class="navbar nav-tabs info-color animated slideInDown" >
-    <!-- Nav tabs -->
-     <ul class="nav mr-auto md-pills nav-justified">
-        <li class="nav-item">
-            <a class="nav-link active" data-toggle="tab" href="#panelExchanges" role="tab">Exchanges</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#panelEvaluators" role="tab">Evaluators</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#panelTrading" role="tab">Trading</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#panelNotification" role="tab">Notification</a>
-        </li>
-    </ul>
-</nav>
+<div id="nav-config" class="animated slideInDown sticky-top">
+    <nav class="navbar nav-tabs info-color" data-toggle="affix">
+        <!-- Nav tabs -->
+         <ul class="nav mr-auto md-pills nav-justified">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#panelExchanges" role="tab">Exchanges</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelEvaluators" role="tab">Evaluators</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelTrading" role="tab">Trading</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelNotification" role="tab">Notification</a>
+            </li>
+        </ul>
+    </nav>
 
-<nav class="navbar nav-tabs alert-primary animated slideInDown">
-    Any configuration change will be take into account after OctBot restarts.
-    <ul class="nav mx-auto">
-        <li class="nav-item" style="padding-right: 5px;">
-            <a class="nav-link green" id='save-config' href="#" role="tab">Save</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link orange" id='reset-config' href="#" role="tab">Reset</a>
-        </li>
-    </ul>
-    <ul class="nav ml-auto">
-        <li class="nav-item">
-            <a class="nav-link red" href="{{ url_for('commands', cmd='restart') }}" role="tab">Restart Octobot</a>
-        </li>
-    </ul>
-</nav>
+    <nav class="navbar nav-tabs alert-primary">
+        Any configuration change will be take into account after OctBot restarts.
+        <ul class="nav mx-auto">
+            <li class="nav-item" style="padding-right: 5px;">
+                <a class="nav-link green" id='save-config' href="#" role="tab">Save</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link orange" id='reset-config' href="#" role="tab">Reset</a>
+            </li>
+        </ul>
+        <ul class="nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link red" href="{{ url_for('commands', cmd='restart') }}" role="tab">Restart Octobot</a>
+            </li>
+        </ul>
+    </nav>
+</div>
 
 <!-- Tab panels -->
 <div class="tab-content">
