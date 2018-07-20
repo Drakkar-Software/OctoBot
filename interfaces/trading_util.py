@@ -191,7 +191,7 @@ def get_global_portfolio_currencies_amounts():
     return real_global_portfolio, simulated_global_portfolio
 
 
-def get_trades_by_times_and_prices(symbol, side):
+def get_trades_by_times_and_prices(symbol, side, force_timezone=False):
     simulated_trades_times = []
     simulated_trades_prices = []
 
@@ -214,7 +214,7 @@ def get_trades_by_times_and_prices(symbol, side):
                         real_trades_times.append(trade.get_filled_time())
                         real_trades_prices.append(trade.get_price())
 
-        real_times = convert_timestamps_to_datetime(real_trades_times)
-        simulated_times = convert_timestamps_to_datetime(simulated_trades_times)
+        real_times = convert_timestamps_to_datetime(real_trades_times, force_timezone=force_timezone)
+        simulated_times = convert_timestamps_to_datetime(simulated_trades_times, force_timezone=force_timezone)
 
     return real_trades_prices, real_times, simulated_trades_prices, simulated_times
