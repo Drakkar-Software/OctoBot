@@ -2,7 +2,7 @@
 
 {% block body %}
 <h1>Configuration</h1>
-<nav class="navbar nav-tabs info-color" role="tablist">
+<nav class="navbar nav-tabs info-color">
     <!-- Nav tabs -->
      <ul class="nav mr-auto md-pills nav-justified">
         <li class="nav-item">
@@ -18,6 +18,10 @@
             <a class="nav-link" data-toggle="tab" href="#panelNotification" role="tab">Notification</a>
         </li>
     </ul>
+</nav>
+
+<nav class="navbar nav-tabs alert-primary">
+    Any configuration change will be take into account after OctBot restarts.
     <ul class="nav mx-auto">
         <li class="nav-item" style="padding-right: 5px;">
             <a class="nav-link green" id='save-config' href="#" role="tab">Save</a>
@@ -33,24 +37,16 @@
     </ul>
 </nav>
 
-<div class="alert alert-primary" role="alert">
-    Any configuration change will be take into account after OctBot restarts.
-</div>
-
 <!-- Tab panels -->
 <div class="tab-content">
 
     <!--Panel Exchanges-->
     <div class="tab-pane fade in show active" id="panelExchanges" role="tabpanel">
 
-        <h5>Panel Exchanges</h5>
-
     </div>
 
     <!--Panel Evaluators-->
     <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel">
-
-        <h5>Panel Evaluators</h5>
 
         <div class="row" update-url="{{ url_for('config', update_type='evaluator_config') }}" id="evaluator-config-root">
             {% for i in range(10) %}
@@ -69,14 +65,10 @@
     <!--Panel Trading-->
     <div class="tab-pane fade" id="panelTrading" role="tabpanel">
 
-        <h5>Panel Trading</h5>
-
     </div>
 
     <!--Panel Notification-->
     <div class="tab-pane fade" id="panelNotification" role="tabpanel">
-
-        <h5>Panel Notification</h5>
 
     </div>
 </div>
