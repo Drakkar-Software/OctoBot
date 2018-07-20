@@ -275,7 +275,6 @@ class TestAbstractTradingModeCreator:
         price = 1
         assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
 
-        # TODO not splitted ?
         # invalid cost >
         quantity = 10
         price = 49
