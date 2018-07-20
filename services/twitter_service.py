@@ -29,7 +29,8 @@ class TwitterService(AbstractService):
             self.twitter_api = twitter.Api(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-key"],
                                            self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-secret"],
                                            self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["access-token"],
-                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["access-token-secret"])
+                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["access-token-secret"],
+                                           sleep_on_rate_limit=True)
 
     def get_type(self):
         return CONFIG_TWITTER
