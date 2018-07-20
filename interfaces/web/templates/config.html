@@ -43,7 +43,50 @@
 
     <!--Panel Exchanges-->
     <div class="tab-pane fade in show active config-root" id="panelExchanges" role="tabpanel">
+        <br>
+        <div class="alert alert-success">Add a new exchange :
+            <select class="selectpicker" data-live-search="true">
+               {% for exchange in ccxt_exchanges %}
+                    <option data-tokens="{{ exchange }}">{{ exchange }}</option>
+               {% endfor %}
+            </select>
+            <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+        </div>
 
+        <!-- Card deck -->
+        <div class="card-deck">
+
+          {% for exchange in ["binance", "bitfinex", "kucoin", "bittrex", "gdax"] %}
+
+              <!-- Card -->
+              <div class="card mb-4">
+
+                <!--Card image-->
+                <div class="view overlay">
+                  <!--{{ exchange }}-->
+                </div>
+
+                <!--Card content-->
+                <div class="card-body">
+
+                    <!--Title-->
+                    <h4 class="card-title">{{ exchange }}</h4>
+
+                    <p class="card-text api">
+                      API Key : ********* <br>
+                      API Secret : *****************
+                    </p>
+
+                    <p class="card-text websocket">
+                      Websocket : disabled
+                    </p>
+
+                    <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
+                    <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+                </div>
+              </div>
+            {% endfor %}
+        </div>
     </div>
 
     <!--Panel Evaluators-->
