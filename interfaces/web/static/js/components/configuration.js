@@ -1,14 +1,12 @@
 function handle_reset_buttons(){
-    $("#reset-evaluator-config").click(function() {
+    $("#reset-config").click(function() {
         reset_configuration_element($(this));
     })
 }
 
 function handle_save_buttons(){
-    $("#save-evaluator-config").click(function() {
-
-        var config_root = $(this).parents("." + config_root_class);
-        var full_config = config_root.find("." + config_container_class);
+    $("#save-config").click(function() {
+        var full_config = $(document).find("." + config_root_class);
         var updated_config = {};
         var update_url = full_config.attr(update_url_attr);
 
@@ -28,7 +26,7 @@ function handle_save_buttons(){
 
 function handle_save_buttons_success_callback(updated_data, update_url, dom_root_element, msg, status){
     update_dom(dom_root_element, msg);
-    refresh_buttons_lock($('#evaluator-config-root'), $('#save-evaluator-config'), $('#reset-evaluator-config'))
+    refresh_buttons_lock($('#evaluator-config-root'), $('#save-config'), $('#reset-config'))
     create_alert("success", "Configuration successfully updated.", "");
 }
 
@@ -36,7 +34,7 @@ function handle_evaluator_configuration_editor(){
     $(".config-element").click(function(){
         var element = $(this);
         if (element.hasClass(config_element_class)){
-            var full_config = element.parents("." + config_container_class);
+            var full_config = $(document).find("." + config_root_class);
             if (full_config[0].hasAttribute(update_url_attr)){
 
                 // build data update
@@ -61,8 +59,7 @@ function handle_evaluator_configuration_editor(){
 }
 
 function reset_configuration_element(element){
-    var config_root = element.parents("." + config_root_class);
-    var full_config = config_root.find("." + config_container_class);
+    var full_config = $(document).find("." + config_root_class);
     full_config.find("."+ config_element_class).each(function(){
         if($(this).attr(current_value_attr).toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
             // update current value
@@ -71,7 +68,7 @@ function reset_configuration_element(element){
             update_element_temporary_look($(this));
         }
     });
-    refresh_buttons_lock($('#evaluator-config-root'), $('#save-evaluator-config'), $('#reset-evaluator-config'))
+    refresh_buttons_lock($('#evaluator-config-root'), $('#save-config'), $('#reset-config'))
 
     //add or remove exit confirm if necessary
     add_or_remove_exit_confirm_if_necessary(full_config, 'Are you sure you want to exit configuration without saving ?');
@@ -88,10 +85,10 @@ $(document).ready(function () {
     handle_save_buttons();
     handle_evaluator_configuration_editor();
 
-    $('#save-evaluator-config').prop('disabled', true);
-    $('#reset-evaluator-config').prop('disabled', true);
+    $('#save-config').prop('disabled', true);
+    $('#reset-config').prop('disabled', true);
     $('.evaluator-config-element').click(function() {
-        refresh_buttons_lock($('#evaluator-config-root'), $('#save-evaluator-config'), $('#reset-evaluator-config'));
+        refresh_buttons_lock($('#evaluator-config-root'), $('#save-config'), $('#reset-config'));
     });
     at_least_one_temporary_element
 });
