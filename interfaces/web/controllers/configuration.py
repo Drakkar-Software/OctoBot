@@ -3,7 +3,7 @@ from flask import render_template, request, jsonify
 
 from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_evaluator_config, update_evaluator_config, \
-    get_evaluator_startup_config
+    get_evaluator_startup_config, get_services_list
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -26,5 +26,6 @@ def config():
     else:
         return render_template('config.html',
                                ccxt_exchanges=ccxt.exchanges,
+                               services_list=get_services_list(),
                                get_evaluator_config=get_evaluator_config,
                                get_evaluator_startup_config=get_evaluator_startup_config)

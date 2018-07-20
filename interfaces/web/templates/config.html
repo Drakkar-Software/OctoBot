@@ -1,5 +1,13 @@
 {% extends "layout.html" %}
 
+{% block additional_style %}
+<style>
+    li.nav-item {
+        padding-right: 5px;
+    }
+</style>
+{% endblock additional_style %}
+
 {% block body %}
 <div id="nav-config" class="animated slideInDown sticky-top">
     <nav class="navbar nav-tabs info-color" data-toggle="affix">
@@ -15,7 +23,10 @@
                 <a class="nav-link" data-toggle="tab" href="#panelTrading" role="tab">Trading</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#panelNotification" role="tab">Notification</a>
+                <a class="nav-link" data-toggle="tab" href="#panelNotifications" role="tab">Notifications</a>
+            </li>
+             <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelServices" role="tab">Services</a>
             </li>
         </ul>
     </nav>
@@ -23,7 +34,7 @@
     <nav class="navbar nav-tabs alert-primary">
         Any configuration change will be take into account after OctBot restarts.
         <ul class="nav mx-auto">
-            <li class="nav-item" style="padding-right: 5px;">
+            <li class="nav-item">
                 <a class="nav-link green" id='save-config' href="#" role="tab">Save</a>
             </li>
             <li class="nav-item">
@@ -42,7 +53,7 @@
 <div class="tab-content">
 
     <!--Panel Exchanges-->
-    <div class="tab-pane fade in show active config-root" id="panelExchanges" role="tabpanel">
+    <div class="tab-pane fade in show active config-root" id="panelExchanges" role="tabpanel"><br>
         <br>
         <div class="alert alert-success">Add a new exchange :
             <select class="selectpicker" data-live-search="true">
@@ -78,7 +89,7 @@
                     </p>
 
                     <p class="card-text websocket">
-                      Websocket : disabled
+                      Websocket : <input type="checkbox">
                     </p>
 
                     <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
@@ -90,7 +101,7 @@
     </div>
 
     <!--Panel Evaluators-->
-    <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel">
+    <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel"><br>
 
         <div class="row config-container" update-url="{{ url_for('config', update_type='evaluator_config') }}" config_type="bool" id="evaluator-config-root">
             {% for i in range(10) %}
@@ -107,13 +118,139 @@
     </div>
 
     <!--Panel Trading-->
-    <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel">
+    <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel"><br>
+         <!-- Card deck -->
+        <div class="card-deck">
+            <!-- Card -->
+            <div class="card mb-4">
 
+                <!--Card content-->
+                <div class="card-body">
+
+                    <!--Title-->
+                    <h4 class="card-title">Trader</h4>
+
+                    <p class="card-text enable">
+                        Enabled : <input type="checkbox">
+                    </p>
+
+                    <p class="card-text config">
+                        Risk : 1 <br>
+                        Mode : DailyTradingMode <br>
+                        Reference Market : BTC
+                    </p>
+                </div>
+            </div>
+
+            <!-- Card -->
+            <div class="card mb-4">
+
+                <!--Card content-->
+                <div class="card-body">
+
+                    <!--Title-->
+                    <h4 class="card-title">Trader Simulator</h4>
+
+                    <p class="card-text enable">
+                        Enabled : <input type="checkbox" checked="checked">
+                    </p>
+
+                    <p class="card-text pf">
+                        Starting portfolio :
+                        - BTC : 10 <br>
+                        - ETH : 20 <br>
+                        - USDT : 10000
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!--Panel Notification-->
-    <div class="tab-pane fade config-root" id="panelNotification" role="tabpanel">
+    <!--Panel Notifications-->
+    <div class="tab-pane fade config-root" id="panelNotifications" role="tabpanel"><br>
+        <!-- Card deck -->
+        <div class="card-deck">
+            <!-- Card -->
+            <div class="card mb-4">
 
+                <!--Card content-->
+                <div class="card-body">
+
+                    <!--Title-->
+                    <h4 class="card-title">Notifications</h4>
+
+                    <p class="card-text enable">
+                        Global info : <input type="checkbox" checked="checked"><br>
+                        Price alerts : <input type="checkbox" checked="checked"><br>
+                        Trades : <input type="checkbox" checked="checked"><br>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Card -->
+            <div class="card mb-4">
+
+                <!--Card content-->
+                <div class="card-body">
+
+                    <!--Title-->
+                    <h4 class="card-title">Notification type</h4>
+
+                    <p class="card-text enable">
+                        {% for service in services_list %}
+                            {{ service }} : <input type="checkbox"><br>
+                        {% endfor %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--Panel Services-->
+    <div class="tab-pane fade config-root" id="panelServices" role="tabpanel"><br>
+        <div class="alert alert-success">Add a new service :
+            <select class="selectpicker" data-live-search="true">
+               {% for service in services_list %}
+                    <option data-tokens="{{ service }}">{{ service }}</option>
+               {% endfor %}
+            </select>
+            <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+        </div>
+
+        <!-- Card deck -->
+        <div class="card-deck">
+
+          {% for service in services_list %}
+
+              <!-- Card -->
+              <div class="card mb-4">
+
+                <!--Card image-->
+                <div class="view overlay">
+                  <!--{{ service }}-->
+                </div>
+
+                <!--Card content-->
+                <div class="card-body">
+
+                    <!--Title-->
+                    <h4 class="card-title">{{ service }}</h4>
+
+                    <p class="card-text api">
+                      UserName : ********* <br>
+                      Password : *****************
+                    </p>
+
+                    <p class="card-text websocket">
+                      Token : ************
+                    </p>
+
+                    <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
+                    <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+                </div>
+              </div>
+            {% endfor %}
+        </div>
     </div>
 </div>
 {% endblock %}
