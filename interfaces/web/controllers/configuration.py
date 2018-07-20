@@ -1,3 +1,4 @@
+import ccxt
 from flask import render_template, request, jsonify
 
 from interfaces.web import server_instance
@@ -24,5 +25,6 @@ def config():
                 return get_rest_reply('{"update": "ko"}', 500)
     else:
         return render_template('config.html',
+                               ccxt_exchanges=ccxt.exchanges,
                                get_evaluator_config=get_evaluator_config,
                                get_evaluator_startup_config=get_evaluator_startup_config)
