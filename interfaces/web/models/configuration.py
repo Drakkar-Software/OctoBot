@@ -1,3 +1,5 @@
+import ccxt
+
 from config.cst import CONFIG_EVALUATOR
 from interfaces import get_bot
 from services import AbstractService
@@ -26,3 +28,17 @@ def get_services_list():
         service().get_type()
         for service in AbstractService.__subclasses__()
     ]
+
+
+def get_symbol_list(exchanges):
+    result = []
+
+    for exchange in exchanges:
+        try:
+            inst = getattr(ccxt, exchange)({'verbose': False})
+            inst.load_markets()
+            result += inst.symbols
+        except Exception:
+            pass
+
+    return list(set(result))
