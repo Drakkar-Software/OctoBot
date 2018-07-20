@@ -1,5 +1,6 @@
 from config.cst import CONFIG_EVALUATOR
 from interfaces import get_bot
+from services import AbstractService
 from tools.config_manager import ConfigManager
 
 
@@ -18,3 +19,10 @@ def update_evaluator_config(new_config):
         return True
     except Exception:
         return False
+
+
+def get_services_list():
+    return [
+        service().get_type()
+        for service in AbstractService.__subclasses__()
+    ]
