@@ -33,7 +33,7 @@ def create_dashboard(web_app):
         ),
         dcc.Interval(
             id='portfolio-update',
-            interval=3 * 1000
+            interval=10 * 1000
         ),
 
         html.Div([
@@ -82,6 +82,6 @@ def create_dashboard(web_app):
         dcc.Graph(id='strategy-live-graph', animate=True),
         dcc.Interval(
             id='strategy-graph-update',
-            interval=3 * 1000
+            interval=10 * 1000
         ),
     ])

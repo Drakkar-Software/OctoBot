@@ -75,14 +75,16 @@ def get_portfolio_value_in_history():
         at_least_one_simulated = True
 
     real_data = plotly.graph_objs.Scatter(
-        x=portfolio_value_in_history["timestamp"],
+        x=convert_timestamps_to_datetime(portfolio_value_in_history["timestamp"],
+                                         force_timezone=True),
         y=portfolio_value_in_history["real_value"],
         name='Real Portfolio in {}'.format(reference_market),
         mode='lines'
     )
 
     simulated_data = plotly.graph_objs.Scatter(
-        x=portfolio_value_in_history["timestamp"],
+        x=convert_timestamps_to_datetime(portfolio_value_in_history["timestamp"],
+                                         force_timezone=True),
         y=portfolio_value_in_history["simulated_value"],
         name='Simulated Portfolio in {}'.format(reference_market),
         mode='lines'
@@ -107,7 +109,8 @@ def get_portfolio_value_in_history():
     return {'data': merged_data,
             'layout': go.Layout(
                 title='Portfolio value ({})'.format(real_simulated_string),
-                xaxis=dict(range=[get_bot().get_start_time(), time.time()],
+                xaxis=dict(range=convert_timestamps_to_datetime([get_bot().get_start_time(), time.time()],
+                                                                force_timezone=True),
                            title=TIME_AXIS_TITLE),
                 yaxis=dict(range=[max(0, min_value * 0.99), max(0.1, max_value * 1.01)],
                            title=reference_market)
@@ -133,7 +136,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                     add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
                     data = get_symbol_data_history(symbol, time_frame)
 
-                    data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value])
+                    data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value],
+                                                            force_timezone=True)
                     data_y = data[PriceIndexes.IND_PRICE_CLOSE.value]
 
                     # Candlestick
@@ -144,10 +148,10 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                                          close=data[PriceIndexes.IND_PRICE_CLOSE.value])
 
                     b_real_trades_prices, b_real_trades_times, b_simulated_trades_prices, b_simulated_trades_times = \
-                        get_trades_by_times_and_prices(symbol, TradeOrderSide.BUY)
+                        get_trades_by_times_and_prices(symbol, TradeOrderSide.BUY, force_timezone=True)
 
                     s_real_trades_prices, s_real_trades_times, s_simulated_trades_prices, s_simulated_trades_times = \
-                        get_trades_by_times_and_prices(symbol, TradeOrderSide.SELL)
+                        get_trades_by_times_and_prices(symbol, TradeOrderSide.SELL, force_timezone=True)
 
                     sell_color = "#ff0000"
                     buy_color = "#009900"
@@ -218,7 +222,8 @@ def get_currency_graph_update(exchange_name, symbol, time_frame, cryptocurrency_
                             'layout': go.Layout(
                                 title="{} real time data (per time frame)".format(cryptocurrency_name),
                                 xaxis=dict(range=[min(data_x), max(data_x)],
-                                           title=TIME_AXIS_TITLE),
+                                           title=TIME_AXIS_TITLE,
+                                           ),
                                 yaxis=dict(range=[min(data_y) * 0.98, max(data_y) * 1.02],
                                            title=pair_tag)
                             )}
@@ -254,16 +259,20 @@ def get_evaluator_graph_in_matrix_history(symbol,
                 formatted_matrix_history["timestamps"].append(matrix["timestamp"])
 
         data = plotly.graph_objs.Scatter(
-            x=formatted_matrix_history["timestamps"],
+            x=convert_timestamps_to_datetime(formatted_matrix_history["timestamps"],
+                                             force_timezone=True),
             y=formatted_matrix_history["evaluator_data"],
             name='Scatter',
             mode='lines+markers'
         )
 
+
+
         return {'data': [data],
                 'layout': go.Layout(
                     title="{} strategy".format(cryptocurrency_name),
-                    xaxis=dict(range=[get_bot().get_start_time(), time.time()],
+                    xaxis=dict(range=convert_timestamps_to_datetime([get_bot().get_start_time(), time.time()],
+                                                                    force_timezone=True),
                                title=TIME_AXIS_TITLE),
                     yaxis=dict(range=[-1.1, 1.1],
                                title="Buy or sell")
