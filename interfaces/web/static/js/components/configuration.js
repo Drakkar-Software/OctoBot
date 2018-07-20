@@ -6,7 +6,7 @@ function handle_reset_buttons(){
 
 function handle_save_buttons(){
     $("#save-config").click(function() {
-        var full_config = $(document).find("." + config_root_class);
+        var full_config = $("#evaluator-config-root");
         var updated_config = {};
         var update_url = full_config.attr(update_url_attr);
 
@@ -34,7 +34,7 @@ function handle_evaluator_configuration_editor(){
     $(".config-element").click(function(){
         var element = $(this);
         if (element.hasClass(config_element_class)){
-            var full_config = $(document).find("." + config_root_class);
+            var full_config = $("#evaluator-config-root");
             if (full_config[0].hasAttribute(update_url_attr)){
 
                 // build data update
@@ -59,7 +59,7 @@ function handle_evaluator_configuration_editor(){
 }
 
 function reset_configuration_element(element){
-    var full_config = $(document).find("." + config_root_class);
+    var full_config = $("#evaluator-config-root");
     full_config.find("."+ config_element_class).each(function(){
         if($(this).attr(current_value_attr).toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
             // update current value
