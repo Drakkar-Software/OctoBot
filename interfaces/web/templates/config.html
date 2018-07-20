@@ -42,14 +42,14 @@
 <div class="tab-content">
 
     <!--Panel Exchanges-->
-    <div class="tab-pane fade in show active" id="panelExchanges" role="tabpanel">
+    <div class="tab-pane fade in show active config-root" id="panelExchanges" role="tabpanel">
 
     </div>
 
     <!--Panel Evaluators-->
-    <div class="tab-pane fade" id="panelEvaluators" role="tabpanel">
+    <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel">
 
-        <div class="row" update-url="{{ url_for('config', update_type='evaluator_config') }}" id="evaluator-config-root">
+        <div class="row config-container" update-url="{{ url_for('config', update_type='evaluator_config') }}" config_type="bool" id="evaluator-config-root">
             {% for i in range(10) %}
             {% for evaluator_name, activated in get_evaluator_config().items() %}
                 <a href="#" onclick="return false;" class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element evaluator-config-element" id={{evaluator_name}} config-key={{evaluator_name}} current-value={{activated}} config-value={{activated}} startup-config-value={{get_evaluator_startup_config()[evaluator_name]}}>{{ evaluator_name }}
@@ -64,12 +64,12 @@
     </div>
 
     <!--Panel Trading-->
-    <div class="tab-pane fade" id="panelTrading" role="tabpanel">
+    <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel">
 
     </div>
 
     <!--Panel Notification-->
-    <div class="tab-pane fade" id="panelNotification" role="tabpanel">
+    <div class="tab-pane fade config-root" id="panelNotification" role="tabpanel">
 
     </div>
 </div>
@@ -77,4 +77,19 @@
 
 {% block additional_scripts %}
 <script src="{{ url_for('static', filename='js/components/configuration.js') }}"></script>
+
+<script>
+$(document).ready(function () {
+    handle_reset_buttons();
+    handle_save_buttons();
+    handle_evaluator_configuration_editor();
+
+    $('#save-config').prop('disabled', true);
+    $('#reset-config').prop('disabled', true);
+    $('.evaluator-config-element').click(function() {
+        refresh_buttons_lock($('#evaluator-config-root'), $('#save-config'), $('#reset-config'));
+    });
+    at_least_one_temporary_element
+});
+</script>
 {% endblock additional_scripts %}
