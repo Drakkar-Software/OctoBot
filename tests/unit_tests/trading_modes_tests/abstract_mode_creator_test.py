@@ -278,7 +278,20 @@ class TestAbstractTradingModeCreator:
         # TODO not splitted ?
         # invalid cost >
         quantity = 10
+        price = 49
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(1.83673469, 49),
+                                                                                                   (4.08163265, 49),
+                                                                                                   (4.08163265, 49)]
+
+        # invalid cost with invalid price >=
+        quantity = 10
         price = 50
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(2, 50), (4, 50),
+                                                                                                   (4, 50)]
+
+        # invalid cost with invalid price >
+        quantity = 10
+        price = 51
         assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
 
         # invalid amount >
