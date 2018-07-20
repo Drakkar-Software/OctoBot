@@ -2,7 +2,7 @@
 
 {% block body %}
 <h1>Configuration</h1>
-<nav class="navbar fixed-top navbar-expand-lg info-color" style="top: 6%">
+<nav class="navbar nav-tabs info-color" role="tablist">
     <!-- Nav tabs -->
      <ul class="nav mr-auto md-pills nav-justified">
         <li class="nav-item">
@@ -18,14 +18,21 @@
             <a class="nav-link" data-toggle="tab" href="#panelNotification" role="tab">Notification</a>
         </li>
     </ul>
-    <ul class="navbar-nav ml-auto">
+    <ul class="nav mx-auto">
+        <li class="nav-item" style="padding-right: 5px;">
+            <a class="nav-link green" id='save-config' href="#" role="tab">Save</a>
+        </li>
         <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('commands', cmd='restart') }}">Restart Octobot</a>
+            <a class="nav-link orange" id='reset-config' href="#" role="tab">Reset</a>
+        </li>
+    </ul>
+    <ul class="nav ml-auto">
+        <li class="nav-item">
+            <a class="nav-link red" href="{{ url_for('commands', cmd='restart') }}" role="tab">Restart Octobot</a>
         </li>
     </ul>
 </nav>
 
-<br><br><br>
 <div class="alert alert-primary" role="alert">
     Any configuration change will be take into account after OctBot restarts.
 </div>
@@ -44,9 +51,6 @@
     <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel">
 
         <h5>Panel Evaluators</h5>
-
-        <button class="btn btn-outline-warning btn-lg float-right" id='reset-evaluator-config'>Reset</button>
-        <button class="btn btn-primary btn-lg float-right" id='save-evaluator-config'>Save</button>
 
         <div class="row" update-url="{{ url_for('config', update_type='evaluator_config') }}" id="evaluator-config-root">
             {% for i in range(10) %}
