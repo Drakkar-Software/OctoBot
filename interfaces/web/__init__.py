@@ -59,9 +59,9 @@ def add_to_symbol_data_history(symbol, data, time_frame, force_data_reset=False)
         # merge new data into current data
         # find index from where data is new
         new_data_index = 0
-        for i in range(1, len(data)):
-            if data[-i][PriceIndexes.IND_PRICE_TIME.value] > \
-                    symbol_data_history[symbol][time_frame][-1][PriceIndexes.IND_PRICE_TIME.value]:
+        candle_times = data[PriceIndexes.IND_PRICE_TIME.value]
+        for i in range(1, len(candle_times)):
+            if candle_times[-i] > symbol_data_history[symbol][time_frame][PriceIndexes.IND_PRICE_TIME.value][-1]:
                 new_data_index = i
             else:
                 break
