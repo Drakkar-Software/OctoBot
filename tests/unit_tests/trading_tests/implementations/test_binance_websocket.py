@@ -217,16 +217,3 @@ class TestBinanceWebSocketClient:
 
         assert symbol == symbol_data.symbol_ticker["symbol"]
         assert symbol_data.symbol_ticker["info"] == msg["data"]
-
-    def test_close_and_restart_socket(self):
-        _, binance_web_socket = self.init_default()
-
-        # TODO
-        # old_socket_manager = deepcopy(binance_web_socket.get_socket_manager())
-
-        msg = {"data": {"e": "error"}}
-        binance_web_socket.all_currencies_prices_callback(msg)
-
-        # new_socket_manager = binance_web_socket.get_socket_manager()
-
-        # assert old_socket_manager != new_socket_manager

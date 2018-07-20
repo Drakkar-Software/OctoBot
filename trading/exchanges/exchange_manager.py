@@ -1,6 +1,8 @@
 import logging
 
-from config.cst import *
+from config.cst import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_WEB_SOCKET, \
+    CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
+    PriceIndexes
 from tools.time_frame_manager import TimeFrameManager
 from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
@@ -37,6 +39,9 @@ class ExchangeManager:
 
     def websocket_available(self):
         return self.exchange_web_socket
+
+    def need_user_stream(self):
+        return self.config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]
 
     def create_exchanges(self):
         if not self.is_simulated:
