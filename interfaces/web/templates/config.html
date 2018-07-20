@@ -28,6 +28,9 @@
              <li class="nav-item">
                 <a class="nav-link" data-toggle="tab" href="#panelServices" role="tab">Services</a>
             </li>
+             <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelSymbols" role="tab">Symbols</a>
+            </li>
         </ul>
     </nav>
 
@@ -250,6 +253,18 @@
                 </div>
               </div>
             {% endfor %}
+        </div>
+    </div>
+
+    <!--Panel Symbols-->
+    <div class="tab-pane fade config-root" id="panelSymbols" role="tabpanel"><br>
+        <div class="alert alert-success">Add a new symbol :
+            <select class="selectpicker" data-live-search="true">
+               {% for symbol in symbol_list %}
+                    <option data-tokens="{{ symbol }}">{{ symbol }}</option>
+               {% endfor %}
+            </select>
+            <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
     </div>
 </div>
