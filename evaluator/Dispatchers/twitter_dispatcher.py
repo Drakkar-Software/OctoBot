@@ -71,7 +71,8 @@ class TwitterDispatcher(AbstractDispatcher):
 
     def _start_listener(self):
         for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids,
-                                                                         track=self.hashtags):
+                                                                         track=self.hashtags,
+                                                                         stall_warnings=True):
             self.counter += 1
             string_tweet = self.twitter_service.get_tweet_text(tweet)
             if string_tweet:
