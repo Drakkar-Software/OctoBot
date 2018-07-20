@@ -76,7 +76,7 @@ class AbstractTradingModeCreator:
         total_order_price = valid_quantity * valid_price
 
         # check total_order_price not < min_cost and valid_quantity not < min_quantity and max_price > price > min_price
-        if total_order_price < min_cost or valid_quantity < min_quantity or not (max_price > valid_price > min_price):
+        if total_order_price < min_cost or valid_quantity < min_quantity or not (max_price >= valid_price >= min_price):
             # invalid order
             return []
 
