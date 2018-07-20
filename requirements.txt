@@ -1,4 +1,6 @@
 matplotlib==2.2.2
+pytz
+tzlocal
 requests
 vaderSentiment
 pytrends
