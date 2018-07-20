@@ -147,7 +147,7 @@ function update_status(status){
     if (status && icon_status.hasClass("icon-red")){
         create_alert("success", "Connected with Octobot", "");
     }else if(!status && icon_status.hasClass("icon-green")){
-        create_alert("danger", "Connection lost with Octobot", "<br>Reconnecting...");
+        create_alert("error", "Connection lost with Octobot", "<br>Reconnecting...");
     }
 
     // update central status

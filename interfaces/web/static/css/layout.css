@@ -38,3 +38,7 @@ a.disabled {
 .info-color-dark{
     background-color: #0099CC;
 }
+
+.navbar-default{
+    z-index: 2000;
+}
