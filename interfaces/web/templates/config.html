@@ -70,7 +70,7 @@
         <!-- Card deck -->
         <div class="card-deck">
 
-          {% for exchange in ["binance", "bitfinex", "kucoin", "bittrex", "gdax"] %}
+          {% for exchange in config_exchanges %}
 
               <!-- Card -->
               <div class="card mb-4">
@@ -92,7 +92,12 @@
                     </p>
 
                     <p class="card-text websocket">
-                      Websocket : <input type="checkbox">
+                      Websocket :
+                        {% if "web_socket" in exchange and exchange["web_socket"] == True %}
+                            <input checked type="checkbox">
+                        {% else %}
+                            <input type="checkbox">
+                        {% endif %}
                     </p>
 
                     <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
@@ -265,6 +270,37 @@
                {% endfor %}
             </select>
             <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+        </div>
+
+        <!-- Card deck -->
+        <div class="card-deck">
+            {% for crypto_currency in config_symbols %}
+
+              <!-- Card -->
+              <div class="card mb-4">
+
+                <!--Card image-->
+                <div class="view overlay">
+                  <!--{{ crypto_currency }}-->
+                </div>
+
+                <!--Card content-->
+                <div class="card-body">
+
+                    <!--Title-->
+                    <h4 class="card-title">{{ crypto_currency }}</h4>
+
+                    <p class="card-text symbols">
+                       {% for symbol in config_symbols[crypto_currency]["pairs"] %}
+                            {{ symbol }}<br>
+                        {% endfor %}
+                    </p>
+
+                    <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
+                    <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+                </div>
+              </div>
+            {% endfor %}
         </div>
     </div>
 </div>
