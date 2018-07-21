@@ -1,27 +1,42 @@
+# Cryptocurrency trading
+python-binance
+twisted==18.4.0
+ccxt
+tulipy
+
+## Services
+# Reddit
+praw
+
+# Telegram
+python-telegram-bot
+
+# Twitter
+Python-Twitter
+
+# Web
+jinja2
+flask
+dash
+dash-table-experiments
+dash-renderer
+dash-html-components
+dash-core-components
+
+## Tools
+# Analysis tools
+newspaper3k
+pytrends
+vaderSentiment
+
+## Others
+gitpython
+psutil
+plotly
+colorlog
+pandas
+cryptography >= 2.2.1
 matplotlib==2.2.2
 pytz
 tzlocal
 requests
-vaderSentiment
-pytrends
-twisted==18.4.0
-cryptography >= 2.2.1
-python-binance
-tulipy
-ccxt
-pandas
-jinja2
-colorlog
-Python-Twitter
-psutil
-plotly
-newspaper3k
-praw
-python-telegram-bot
-gitpython
-dash
-dash-table-experiments
-flask
-dash-renderer
-dash-html-components
-dash-core-components
