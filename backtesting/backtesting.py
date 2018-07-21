@@ -50,7 +50,8 @@ class Backtesting:
     def print_global_report(self):
         trader = next(iter(get_bot().get_exchange_trader_simulators().values()))
         trade_manager = trader.get_trades_manager()
-        _, profitability, _, market_average_profitability = trade_manager.get_profitability(True)
+        profitability, market_average_profitability = self.get_profitability(get_bot())
+
         reference_market = trade_manager.get_reference()
         portfolio = trader.get_portfolio()
         accuracy_info = "" if len(self.symbols_to_test) < 2 else "\nPlease note that multi symbol backtesting is " \
@@ -85,6 +86,13 @@ class Backtesting:
 
         # log
         self.logger.info(f"{symbol} Profitability : Market {market_delta * 100}%")
+
+    @staticmethod
+    def get_profitability(bot):
+        trader = next(iter(bot.get_exchange_trader_simulators().values()))
+        trade_manager = trader.get_trades_manager()
+        _, profitability, _, market_average_profitability = trade_manager.get_profitability(True)
+        return profitability, market_average_profitability
 
     def init_symbols_to_test(self):
         for crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].values():

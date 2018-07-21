@@ -1,14 +1,20 @@
 import logging
 
 from config.cst import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, \
-    CONFIG_ENABLED_OPTION
+    CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
 from octobot import OctoBot
 from tests.test_utils.config import load_test_config
+from backtesting.backtesting import Backtesting
 
 
-def create_backtesting_config():
+def create_backtesting_config(wanted_symbols=["BTC/USDT"]):
     # launch a bot
     config = load_test_config()
+
+    # filters to keep only relevant currencies
+    for cryptocurrency, symbols in config[CONFIG_CRYPTO_CURRENCIES].items():
+        if wanted_symbols not in symbols.values():
+            config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency] = {CONFIG_CRYPTO_PAIRS: []}
 
     # setup backtesting config
     config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
@@ -38,3 +44,4 @@ def start_backtesting_bot(bot):
     bot.create_evaluation_threads()
     bot.start_threads()
     bot.join_threads()
+    return Backtesting.get_profitability(bot)
