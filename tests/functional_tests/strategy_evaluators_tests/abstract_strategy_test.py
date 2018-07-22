@@ -47,42 +47,42 @@ class AbstractStrategyTest:
     def test_flat_markets(strategy_tester):
         raise NotImplementedError("test_flat_markets not implemented")
 
+    # plays a backtesting with this strategy on a slow uptrend market: BTC/USDT[30m]: 0 (vs btc) %
+    @staticmethod
+    @abstractmethod
+    def test_slow_uptrend(strategy_tester):
+        raise NotImplementedError("test_slow_uptrend not implemented")
+
     def run_test_default_run(self, profitability):
         run_results = self._run_backtesting_with_current_config(DEFAULT_SYMBOL)
         self._assert_results(run_results, profitability)
 
     def run_test_slow_downtrend(self, profitability):
-        run_results = self._run_backtesting_with_slow_downtrend()
+        run_results = self._run_backtesting_with_current_config("ICX/BTC")
         self._assert_results(run_results, profitability)
 
     def run_test_sharp_downtrend(self, profitability):
-        run_results = self._run_backtesting_with_sharp_downtrend()
+        run_results = self._run_backtesting_with_current_config("VEN/BTC")
         self._assert_results(run_results, profitability)
 
     def run_test_flat_markets(self, profitability_1, profitability_2):
-        run_results = self._run_backtesting_with_flat_market("NEO/BTC")
+        run_results = self._run_backtesting_with_current_config("NEO/BTC", True)
         self._assert_results(run_results, profitability_1)
-        # run_results = self._run_backtesting_with_flat_market("XRB/BTC")
-        # self._assert_results(run_results, profitability_2)
+        run_results = self._run_backtesting_with_current_config("XRB/BTC", True)
+        self._assert_results(run_results, profitability_2)
+
+    def run_test_slow_uptrend(self, profitability):
+        run_results = self._run_backtesting_with_current_config("BTC/USDT")
+        self._assert_results(run_results, profitability)
 
     @staticmethod
     def _assert_results(run_results, profitability):
         assert run_results[0] >= profitability
 
-    def _run_backtesting_with_slow_downtrend(self):
-        symbol = "ICX/BTC"
-        return self._run_backtesting_with_current_config(symbol)
-
-    def _run_backtesting_with_sharp_downtrend(self):
-        symbol = "VEN/BTC"
-        return self._run_backtesting_with_current_config(symbol)
-
-    def _run_backtesting_with_flat_market(self, symbol):
-        return self._run_backtesting_with_current_config(symbol)
-
-    def _run_backtesting_with_current_config(self, symbol):
-        filter_wanted_symbols(self.config, [symbol])
-        bot = create_backtesting_bot(copy.copy(self.config))
+    def _run_backtesting_with_current_config(self, symbol, copy_config_before_use=False):
+        config_to_use = copy.deepcopy(self.config) if copy_config_before_use else self.config
+        filter_wanted_symbols(config_to_use, [symbol])
+        bot = create_backtesting_bot(config_to_use)
         return start_backtesting_bot(bot)
 
     def _register_only_strategy(self, strategy_evaluator_class):
