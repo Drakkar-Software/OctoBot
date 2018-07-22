@@ -1,0 +1,32 @@
+<!-- Card -->
+<div class="card mb-4">
+
+    <!--Card image-->
+    <div class="view overlay">
+      <!--{{ exchange }}-->
+    </div>
+
+    <!--Card content-->
+    <div class="card-body">
+
+        <!--Title-->
+        <h4 class="card-title">{{ exchange }}</h4>
+
+        <p class="card-text api">
+          API Key : ********* <br>
+          API Secret : *****************
+        </p>
+
+        <p class="card-text websocket">
+          Websocket :
+            {% if "web_socket" in exchange and exchange["web_socket"] == True %}
+                <input checked type="checkbox">
+            {% else %}
+                <input type="checkbox">
+            {% endif %}
+        </p>
+
+        <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
+        <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+    </div>
+</div>
