@@ -12,8 +12,9 @@ def create_backtesting_config(wanted_symbols=["BTC/USDT"]):
     config = load_test_config()
 
     # filters to keep only relevant currencies
+    wanted_symbols_set = set(wanted_symbols)
     for cryptocurrency, symbols in config[CONFIG_CRYPTO_CURRENCIES].items():
-        if wanted_symbols not in symbols.values():
+        if not wanted_symbols_set.intersection(symbols[CONFIG_CRYPTO_PAIRS]):
             config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency] = {CONFIG_CRYPTO_PAIRS: []}
 
     # setup backtesting config
