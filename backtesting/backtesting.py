@@ -11,7 +11,6 @@ class Backtesting:
     def __init__(self, config, exchange_simulator, exit_at_end=True):
         self.config = config
         self.begin_time = time.time()
-        self.time_delta = 0
         self.force_exit_at_end = exit_at_end
         self.exchange_simulator = exchange_simulator
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -73,8 +72,6 @@ class Backtesting:
     def print_symbol_report(self, symbol):
         market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
 
-        self.time_delta = self.begin_time - market_data[0][PriceIndexes.IND_PRICE_TIME.value] / 1000
-
         # profitability
         total_profitability = 0
         for trader in get_bot().get_exchange_trader_simulators().values():
@@ -106,7 +103,8 @@ class Backtesting:
         market_end = market_data[-1][PriceIndexes.IND_PRICE_CLOSE.value]
 
         if market_begin and market_end and market_begin > 0:
-            market_delta = market_end / market_begin - 1 if market_end >= market_begin else market_end / market_begin - 1
+            market_delta = market_end / market_begin - 1 if market_end >= market_begin \
+                else 1 - market_begin / market_end
         else:
             market_delta = 0
 
