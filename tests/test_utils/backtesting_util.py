@@ -7,15 +7,12 @@ from tests.test_utils.config import load_test_config
 from backtesting.backtesting import Backtesting
 
 
-def create_backtesting_config(wanted_symbols=["BTC/USDT"]):
+def create_backtesting_config(wanted_symbols=["BTC/USDT"], filter_symbols=True):
     # launch a bot
     config = load_test_config()
 
-    # filters to keep only relevant currencies
-    wanted_symbols_set = set(wanted_symbols)
-    for cryptocurrency, symbols in config[CONFIG_CRYPTO_CURRENCIES].items():
-        if not wanted_symbols_set.intersection(symbols[CONFIG_CRYPTO_PAIRS]):
-            config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency] = {CONFIG_CRYPTO_PAIRS: []}
+    if filter_symbols:
+        filter_wanted_symbols(config, wanted_symbols)
 
     # setup backtesting config
     config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
@@ -24,6 +21,14 @@ def create_backtesting_config(wanted_symbols=["BTC/USDT"]):
     config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
 
     return config
+
+
+def filter_wanted_symbols(config, wanted_symbols):
+    # filters to keep only relevant currencies
+    wanted_symbols_set = set(wanted_symbols)
+    for cryptocurrency, symbols in config[CONFIG_CRYPTO_CURRENCIES].items():
+        if not wanted_symbols_set.intersection(symbols[CONFIG_CRYPTO_PAIRS]):
+            config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency] = {CONFIG_CRYPTO_PAIRS: []}
 
 
 def create_backtesting_bot(config):
