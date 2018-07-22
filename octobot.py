@@ -151,7 +151,7 @@ class OctoBot:
                         # notify that exchange doesn't support this symbol
                         else:
                             if not self.backtesting_enabled:
-                                self.logger.warning("{exchange.get_name()} doesn't support {symbol}")
+                                self.logger.warning(f"{exchange.get_name()} doesn't support {symbol}")
 
     def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
         # Create real time TA evaluators

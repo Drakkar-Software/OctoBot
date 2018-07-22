@@ -140,7 +140,6 @@ class ExchangeManager:
             # should only happen in backtesting (or with an exchange with different timeframes per symbol)
             return time_frame in self.client_time_frames[symbol]
 
-
     def get_client_symbols(self):
         return self.client_symbols
 
