@@ -1,0 +1,24 @@
+<!-- Card -->
+<div class="card mb-4">
+
+    <!--Card image-->
+    <div class="view overlay">
+      <!--{{ crypto_currency }}-->
+    </div>
+
+    <!--Card content-->
+    <div class="card-body">
+
+        <!--Title-->
+        <h4 class="card-title">{{ crypto_currency }}</h4>
+
+        <p class="card-text symbols">
+           {% for symbol in config_symbols[crypto_currency]["pairs"] %}
+                {{ symbol }}<br>
+            {% endfor %}
+        </p>
+
+        <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
+        <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+    </div>
+</div>
