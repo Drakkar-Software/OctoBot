@@ -64,7 +64,7 @@
                     <option data-tokens="{{ exchange }}">{{ exchange }}</option>
                {% endfor %}
             </select>
-            <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddExchange" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
@@ -150,7 +150,7 @@
                     <option data-tokens="{{ service }}">{{ service }}</option>
                {% endfor %}
             </select>
-            <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddService" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
@@ -171,7 +171,7 @@
                     <option data-tokens="{{ symbol }}">{{ symbol }}</option>
                {% endfor %}
             </select>
-            <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddSymbol" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
@@ -202,5 +202,18 @@ $(document).ready(function () {
     });
     at_least_one_temporary_element
 });
+
+// Card deck code
+// Specific
+$("#AddSymbol").click(function() {
+    var deck = $(this).parents(".card-deck");
+});
+$("#AddService").click(function() {
+  alert( "Handler for .click() called." );
+});
+$("#AddExchange").click(function() {
+  alert( "Handler for .click() called." );
+});
+
 </script>
 {% endblock additional_scripts %}
