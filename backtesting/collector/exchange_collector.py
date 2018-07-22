@@ -3,6 +3,7 @@ import logging
 import os
 import threading
 import time
+import gzip
 
 from config.cst import *
 from tools.symbol_util import merge_currencies
@@ -82,8 +83,10 @@ class ExchangeDataCollector(threading.Thread):
             self._update_file(symbol)
 
     def _update_file(self, symbol):
-        with open(CONFIG_DATA_COLLECTOR_PATH + self.file_names[symbol], 'w') as json_file:
+        file_name = CONFIG_DATA_COLLECTOR_PATH + self.file_names[symbol]
+        with gzip.open(file_name, 'wt') as json_file:
             json.dump(self.file_contents[symbol], json_file)
+            self.logger.info(f"{symbol} candles data saved in: {file_name}")
 
     def run(self):
         self._prepare()
