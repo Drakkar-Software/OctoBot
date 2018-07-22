@@ -28,3 +28,7 @@ var deactivated = "Deactivated"
 function log(text){
     window.console&&console.log(text);
 }
+
+function replace_eol_by_html(str){
+    return str.replace(/(?:\r\n|\r|\n)/g, '<br />');
+}
