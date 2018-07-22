@@ -1,5 +1,6 @@
 import json
 import os
+import gzip
 
 from config.cst import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes
 
@@ -8,10 +9,20 @@ class DataCollectorParser:
     @staticmethod
     def parse(file):
         if os.path.isfile(CONFIG_DATA_COLLECTOR_PATH + file):
-            with open(CONFIG_DATA_COLLECTOR_PATH + file) as file_to_parse:
-                file_content = DataCollectorParser.merge_arrays(json.loads(file_to_parse.read()))
+            file_content = DataCollectorParser.get_file_content(CONFIG_DATA_COLLECTOR_PATH + file)
         else:
-            with open(file) as file_to_parse:
+            file_content = DataCollectorParser.get_file_content(file)
+        return file_content
+
+    @staticmethod
+    def get_file_content(file_name):
+        try:
+            # try zipfile
+            with gzip.open(file_name, 'r') as file_to_parse:
+                file_content = DataCollectorParser.merge_arrays(json.loads(file_to_parse.read()))
+        except OSError as e:
+            # try without unzip
+            with open(file_name) as file_to_parse:
                 file_content = DataCollectorParser.merge_arrays(json.loads(file_to_parse.read()))
         return file_content
 

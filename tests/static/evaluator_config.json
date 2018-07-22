@@ -3,7 +3,7 @@
   "DoubleMovingAverageTrendEvaluator": true,
   "BBMomentumEvaluator": true,
   "MACDMomentumEvaluator": true,
-  "CandlePatternMomentumEvaluator": true,
+  "CandlePatternMomentumEvaluator": false,
   "ADXMomentumEvaluator": true,
 
 

@@ -18,6 +18,18 @@
     },
     "Nano": {
       "pairs" : ["XRB/BTC"]
+    },
+    "Cardano": {
+      "pairs" : ["ADA/BTC"]
+    },
+    "Ontology":{
+      "pairs" : ["ONT/BTC"]
+    },
+    "Stellar":{
+      "pairs" : ["XLM/BTC"]
+    },
+    "Power Ledger":{
+      "pairs" : ["POWR/BTC"]
     }
   },
   "exchanges": {
@@ -71,6 +83,11 @@
       "tests/static/binance_ICX_BTC_20180716_131148.data",
       "tests/static/binance_NEO_BTC_20180716_131148.data",
       "tests/static/binance_VEN_BTC_20180716_131148.data",
-      "tests/static/binance_XRB_BTC_20180716_131148.data"]
+      "tests/static/binance_XRB_BTC_20180716_131148.data",
+      "tests/static/binance_ONT_BTC_20180722_230900.data",
+      "tests/static/binance_XLM_BTC_20180722_234305.data",
+      "tests/static/binance_POWR_BTC_20180722_234855.data",
+      "tests/static/binance_ADA_BTC_20180722_223335.data"
+    ]
   }
 }
