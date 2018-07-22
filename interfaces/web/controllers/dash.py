@@ -87,7 +87,8 @@ def update_time_frame_dropdown_options(exchange_name, symbol):
 
     time_frame_list = []
     for time_frame in global_config[CONFIG_TIME_FRAME]:
-        if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value):
+        if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value,
+                                                             get_value_from_dict_or_string(symbol)):
             time_frame_list.append({
                 "label": time_frame.value,
                 "value": time_frame.value
@@ -104,7 +105,8 @@ def update_time_frame_dropdown_value(exchange_name, symbol):
     exchange = get_bot().get_exchanges_list()[exchange_name]
 
     for time_frame in global_config[CONFIG_TIME_FRAME]:
-        if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value):
+        if exchange.get_exchange_manager().time_frame_exists(TimeFrames(time_frame).value,
+                                                             get_value_from_dict_or_string(symbol)):
             return {
                 "label": time_frame.value,
                 "value": time_frame.value

@@ -29,7 +29,7 @@ class ExchangeSimulator(AbstractExchange):
         # set exchange manager attributes
         self.exchange_manager.client_symbols = self.symbols
         self.exchange_manager.traded_pairs = self.symbols
-        self.exchange_manager.client_time_frames = [tf.value for tf in self.config_time_frames]
+        self.exchange_manager.client_time_frames = self.get_available_timeframes()
         self.exchange_manager.time_frames = self.config_time_frames
 
         self.time_frame_get_times = {}
@@ -48,6 +48,14 @@ class ExchangeSimulator(AbstractExchange):
 
         self.backtesting = Backtesting(self.config, self)
         self._prepare()
+
+    def get_available_timeframes(self):
+        client_timeframes = {}
+        for symbol in self.symbols:
+            client_timeframes[symbol] = [tf.value
+                                         for tf in self.config_time_frames
+                                         if tf.value in self.data[symbol]]
+        return client_timeframes
 
     def get_symbol_data(self, symbol):
         return self.exchange_manager.get_symbol_data(symbol)
@@ -135,7 +143,14 @@ class ExchangeSimulator(AbstractExchange):
 
     # Will use the One Minute time frame
     def _create_ticker(self, symbol, index):
-        tf = self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value][index]
+        nb_candles = len(self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value])
+        if index >= nb_candles:
+            tf = self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value][-1]
+            self.logger.warning(f"Impossible to simulate price ticker for {symbol} at candle index {index} "
+                                f"(only {nb_candles} candles are available). "
+                                f"Creating ticker using the last available candle.")
+        else:
+            tf = self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value][index]
         return tf[PriceIndexes.IND_PRICE_CLOSE.value]
 
     def _create_recent_trades(self, symbol, timeframe, index):

@@ -2,7 +2,7 @@ import logging
 
 from config.cst import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_WEB_SOCKET, \
     CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
-    PriceIndexes
+    PriceIndexes, CONFIG_EVALUATORS_WILDCARD
 from tools.time_frame_manager import TimeFrameManager
 from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
@@ -25,7 +25,7 @@ class ExchangeManager:
         self.exchange_dispatcher = None
 
         self.client_symbols = []
-        self.client_time_frames = []
+        self.client_time_frames = {}
 
         self.traded_pairs = []
         self.time_frames = []
@@ -104,7 +104,8 @@ class ExchangeManager:
             if self.time_frame_exists(time_frame.value):
                 self.time_frames.append(time_frame)
         # add shortest timeframe for realtime evaluators
-        client_shortest_time_frame = TimeFrameManager.find_min_time_frame(self.client_time_frames, MIN_EVAL_TIME_FRAME)
+        client_shortest_time_frame = TimeFrameManager.find_min_time_frame(
+            self.client_time_frames[CONFIG_EVALUATORS_WILDCARD[0]], MIN_EVAL_TIME_FRAME)
         if client_shortest_time_frame not in self.time_frames:
             self.time_frames.append(client_shortest_time_frame)
 
@@ -124,7 +125,7 @@ class ExchangeManager:
         client = self.exchange.get_client()
         if client:
             self.client_symbols = client.symbols
-            self.client_time_frames = client.timeframes
+            self.client_time_frames[CONFIG_EVALUATORS_WILDCARD[0]] = client.timeframes
         else:
             self.logger.error("Failed to load client from REST exchange")
             self._raise_exchange_load_error()
@@ -132,8 +133,13 @@ class ExchangeManager:
     def symbol_exists(self, symbol):
         return symbol in self.client_symbols
 
-    def time_frame_exists(self, time_frame):
-        return time_frame in self.client_time_frames
+    def time_frame_exists(self, time_frame, symbol=None):
+        if CONFIG_EVALUATORS_WILDCARD[0] in self.client_time_frames or symbol is None:
+            return time_frame in self.client_time_frames[CONFIG_EVALUATORS_WILDCARD[0]]
+        else:
+            # should only happen in backtesting (or with an exchange with different timeframes per symbol)
+            return time_frame in self.client_time_frames[symbol]
+
 
     def get_client_symbols(self):
         return self.client_symbols
