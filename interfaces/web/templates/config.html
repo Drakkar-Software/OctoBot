@@ -64,46 +64,15 @@
                     <option data-tokens="{{ exchange }}">{{ exchange }}</option>
                {% endfor %}
             </select>
-            <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddExchange" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
         <div class="card-deck">
-
-          {% for exchange in config_exchanges %}
-
-              <!-- Card -->
-              <div class="card mb-4">
-
-                <!--Card image-->
-                <div class="view overlay">
-                  <!--{{ exchange }}-->
-                </div>
-
-                <!--Card content-->
-                <div class="card-body">
-
-                    <!--Title-->
-                    <h4 class="card-title">{{ exchange }}</h4>
-
-                    <p class="card-text api">
-                      API Key : ********* <br>
-                      API Secret : *****************
-                    </p>
-
-                    <p class="card-text websocket">
-                      Websocket :
-                        {% if "web_socket" in exchange and exchange["web_socket"] == True %}
-                            <input checked type="checkbox">
-                        {% else %}
-                            <input type="checkbox">
-                        {% endif %}
-                    </p>
-
-                    <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
-                    <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
-                </div>
-              </div>
+            {% for exchange in config_exchanges %}
+                {% with exchange=exchange %}
+                    {% include "components/config/exchange_card.html" %}
+                {% endwith %}
             {% endfor %}
         </div>
     </div>
@@ -112,14 +81,10 @@
     <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel"><br>
 
         <div class="row config-container" update-url="{{ url_for('config', update_type='evaluator_config') }}" config_type="bool" id="evaluator-config-root">
-            {% for i in range(10) %}
             {% for evaluator_name, activated in get_evaluator_config().items() %}
-                <a href="#" onclick="return false;" class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element evaluator-config-element" id={{evaluator_name}} config-key={{evaluator_name}} current-value={{activated}} config-value={{activated}} startup-config-value={{get_evaluator_startup_config()[evaluator_name]}}>{{ evaluator_name }}
-                  <span class="float-right">
-                    <span class="badge {{'badge-warning' if get_evaluator_startup_config()[evaluator_name] != activated else ('badge-success' if activated else 'badge-secondary')}}">{{('Activation pending restart' if activated else 'Deactivation pending restart') if get_evaluator_startup_config()[evaluator_name] != activated else ('Activated' if activated else 'Deactivated')}}</span>
-                  </span>
-                </a>
-            {% endfor %}
+                {% with evaluator_name=evaluator_name, activated=activated %}
+                    {% include "components/config/evaluator_card.html" %}
+                {% endwith %}
             {% endfor %}
         </div>
 
@@ -129,48 +94,11 @@
     <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel"><br>
          <!-- Card deck -->
         <div class="card-deck">
-            <!-- Card -->
-            <div class="card mb-4">
-
-                <!--Card content-->
-                <div class="card-body">
-
-                    <!--Title-->
-                    <h4 class="card-title">Trader</h4>
-
-                    <p class="card-text enable">
-                        Enabled : <input type="checkbox">
-                    </p>
-
-                    <p class="card-text config">
-                        Risk : 1 <br>
-                        Mode : DailyTradingMode <br>
-                        Reference Market : BTC
-                    </p>
-                </div>
-            </div>
-
-            <!-- Card -->
-            <div class="card mb-4">
-
-                <!--Card content-->
-                <div class="card-body">
-
-                    <!--Title-->
-                    <h4 class="card-title">Trader Simulator</h4>
-
-                    <p class="card-text enable">
-                        Enabled : <input type="checkbox" checked="checked">
-                    </p>
-
-                    <p class="card-text pf">
-                        Starting portfolio :
-                        - BTC : 10 <br>
-                        - ETH : 20 <br>
-                        - USDT : 10000
-                    </p>
-                </div>
-            </div>
+            {% for trader in ["Trader", "Trader Simulator"] %}
+                {% with name=trader %}
+                    {% include "components/config/trader_card.html" %}
+                {% endwith %}
+            {% endfor %}
         </div>
     </div>
 
@@ -222,41 +150,15 @@
                     <option data-tokens="{{ service }}">{{ service }}</option>
                {% endfor %}
             </select>
-            <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddService" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
         <div class="card-deck">
-
-          {% for service in services_list %}
-
-              <!-- Card -->
-              <div class="card mb-4">
-
-                <!--Card image-->
-                <div class="view overlay">
-                  <!--{{ service }}-->
-                </div>
-
-                <!--Card content-->
-                <div class="card-body">
-
-                    <!--Title-->
-                    <h4 class="card-title">{{ service }}</h4>
-
-                    <p class="card-text api">
-                      UserName : ********* <br>
-                      Password : *****************
-                    </p>
-
-                    <p class="card-text websocket">
-                      Token : ************
-                    </p>
-
-                    <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
-                    <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
-                </div>
-              </div>
+            {% for service in services_list %}
+                {% with service=service %}
+                    {% include "components/config/service_card.html" %}
+                {% endwith %}
             {% endfor %}
         </div>
     </div>
@@ -269,37 +171,15 @@
                     <option data-tokens="{{ symbol }}">{{ symbol }}</option>
                {% endfor %}
             </select>
-            <button type="button" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddSymbol" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
         <div class="card-deck">
             {% for crypto_currency in config_symbols %}
-
-              <!-- Card -->
-              <div class="card mb-4">
-
-                <!--Card image-->
-                <div class="view overlay">
-                  <!--{{ crypto_currency }}-->
-                </div>
-
-                <!--Card content-->
-                <div class="card-body">
-
-                    <!--Title-->
-                    <h4 class="card-title">{{ crypto_currency }}</h4>
-
-                    <p class="card-text symbols">
-                       {% for symbol in config_symbols[crypto_currency]["pairs"] %}
-                            {{ symbol }}<br>
-                        {% endfor %}
-                    </p>
-
-                    <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
-                    <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
-                </div>
-              </div>
+                {% with crypto_currency=crypto_currency %}
+                    {% include "components/config/currency_card.html" %}
+                {% endwith %}
             {% endfor %}
         </div>
     </div>
@@ -322,5 +202,18 @@ $(document).ready(function () {
     });
     at_least_one_temporary_element
 });
+
+// Card deck code
+// Specific
+$("#AddSymbol").click(function() {
+    var deck = $(this).parents(".card-deck");
+});
+$("#AddService").click(function() {
+  alert( "Handler for .click() called." );
+});
+$("#AddExchange").click(function() {
+  alert( "Handler for .click() called." );
+});
+
 </script>
 {% endblock additional_scripts %}
