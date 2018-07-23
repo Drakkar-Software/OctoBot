@@ -1,26 +1,28 @@
-<!-- Card -->
-<div class="card mb-4">
+{% macro config_currency_card(config_symbols, crypto_currency, color='') -%}
+    <!-- Card -->
+    <div class="card mb-4 {{color}}">
 
-    <!--Card image-->
-    <div class="view overlay">
-      <!--{{ crypto_currency }}-->
+        <!--Card image-->
+        <div class="view overlay">
+          <!--{{ crypto_currency }}-->
+        </div>
+
+        <!--Card content-->
+        <div class="card-body">
+
+            <!--Title-->
+            <h4 class="card-title">{{ crypto_currency }}</h4>
+
+            <p class="card-text symbols">
+                {% if crypto_currency in config_symbols %}
+                    {% for symbol in config_symbols[crypto_currency]["pairs"] %}
+                        {{ symbol }}<br>
+                    {% endfor %}
+                {% endif %}
+            </p>
+
+            <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
+            <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+        </div>
     </div>
-
-    <!--Card content-->
-    <div class="card-body">
-
-        <!--Title-->
-        <h4 class="card-title">{{ crypto_currency }}</h4>
-
-        <p class="card-text symbols">
-            {% if crypto_currency in config_symbols %}
-                {% for symbol in config_symbols[crypto_currency]["pairs"] %}
-                    {{ symbol }}<br>
-                {% endfor %}
-            {% endif %}
-        </p>
-
-        <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
-        <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
-    </div>
-</div>
+{%- endmacro %}

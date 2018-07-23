@@ -1,4 +1,9 @@
 {% extends "layout.html" %}
+{% import 'components/config/exchange_card.html' as m_config_exchange_card %}
+{% import 'components/config/service_card.html' as m_config_service_card %}
+{% import 'components/config/currency_card.html' as m_config_currency_card %}
+{% import 'components/config/trader_card.html' as m_config_trader_card %}
+{% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
 
 {% block additional_style %}
 <style>
@@ -64,15 +69,13 @@
                     <option data-tokens="{{ exchange }}">{{ exchange }}</option>
                {% endfor %}
             </select>
-            <button type="button" id="AddExchange" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddExchange" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
         <div class="card-deck">
             {% for exchange in config_exchanges %}
-                {% with exchange=exchange %}
-                    {% include "components/config/exchange_card.html" %}
-                {% endwith %}
+                {{ m_config_exchange_card.config_exchange_card(exchange) }}
             {% endfor %}
         </div>
     </div>
@@ -82,9 +85,7 @@
 
         <div class="row config-container" update-url="{{ url_for('config', update_type='evaluator_config') }}" config_type="bool" id="evaluator-config-root">
             {% for evaluator_name, activated in get_evaluator_config().items() %}
-                {% with evaluator_name=evaluator_name, activated=activated %}
-                    {% include "components/config/evaluator_card.html" %}
-                {% endwith %}
+                {{ m_config_evaluator_card.config_evaluator_card(get_evaluator_startup_config(), evaluator_name, activated) }}
             {% endfor %}
         </div>
 
@@ -95,9 +96,7 @@
          <!-- Card deck -->
         <div class="card-deck">
             {% for trader in ["Trader", "Trader Simulator"] %}
-                {% with name=trader %}
-                    {% include "components/config/trader_card.html" %}
-                {% endwith %}
+                {{ m_config_trader_card.config_trader_card(trader) }}
             {% endfor %}
         </div>
     </div>
@@ -150,15 +149,13 @@
                     <option data-tokens="{{ service }}">{{ service }}</option>
                {% endfor %}
             </select>
-            <button type="button" id="AddService" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddService" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
         <div class="card-deck">
             {% for service in services_list %}
-                {% with service=service %}
-                    {% include "components/config/service_card.html" %}
-                {% endwith %}
+                {{ m_config_service_card.config_service_card(service) }}
             {% endfor %}
         </div>
     </div>
@@ -171,17 +168,33 @@
                     <option data-tokens="{{ symbol }}">{{ symbol }}</option>
                {% endfor %}
             </select>
-            <button type="button" id="AddSymbol" class="btn btn-primary px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddSymbol" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
         <div class="card-deck">
             {% for crypto_currency in config_symbols %}
-                {% with crypto_currency=crypto_currency %}
-                    {% include "components/config/currency_card.html" %}
-                {% endwith %}
+               {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency) }}
             {% endfor %}
         </div>
+    </div>
+</div>
+
+<!-- Default cards -->
+<div id="div-template-default">
+    <!-- Exchange -->
+    <div id="AddExchange-template-default">
+        {{ m_config_exchange_card.config_exchange_card("$default_value$") }}
+    </div>
+
+    <!-- Services -->
+    <div id="AddService-template-default">
+         {{ m_config_service_card.config_service_card("$default_value$") }}
+    </div>
+
+    <!-- Symbols -->
+    <div id="AddSymbol-template-default">
+        {{ m_config_currency_card.config_currency_card([], "$default_value$") }}
     </div>
 </div>
 {% endblock %}
@@ -191,6 +204,8 @@
 
 <script>
 $(document).ready(function () {
+    $("#div-template-default").hide();
+
     handle_reset_buttons();
     handle_save_buttons();
     handle_evaluator_configuration_editor();
@@ -203,16 +218,11 @@ $(document).ready(function () {
     at_least_one_temporary_element
 });
 
-// Card deck code
-// Specific
-$("#AddSymbol").click(function() {
-    var deck = $(this).parents(".card-deck");
-});
-$("#AddService").click(function() {
-  alert( "Handler for .click() called." );
-});
-$("#AddExchange").click(function() {
-  alert( "Handler for .click() called." );
+// Card deck adding code
+$(".add-btn").click(function() {
+    var deck = $(this).parents("." + config_root_class).find(".card-deck");
+    var template_default = $("#" + $(this).attr("id") + "-template-default").html();
+    deck.append(template_default);
 });
 
 </script>
