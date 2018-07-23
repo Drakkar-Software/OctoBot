@@ -11,7 +11,8 @@
         <div class="card-body">
 
             <!--Title-->
-            <h4 class="card-title" editable="string">{{ crypto_currency }}</h4>
+            <h4 class="card-title"><a href="#" id="crypto_currencies" data-type="text" data-pk="1" data-title="Enter cryptocurrency name"
+                                      class="editable editable-click" data-original-title="{{crypto_currency}}" title="{{crypto_currency}}">{{crypto_currency}}</a></h4>
 
             <p class="card-text symbols">
                 {% if crypto_currency in config_symbols %}
