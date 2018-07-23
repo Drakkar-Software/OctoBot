@@ -110,8 +110,8 @@ class AbstractStrategyTest:
 
     @staticmethod
     def _assert_results(run_results, profitability):
-        print(f"results: {run_results} expected: {profitability}")  # convenient for building tests
-        # assert run_results[0] >= profitability
+        # print(f"results: {run_results} expected: {profitability}")  # convenient for building tests
+        assert run_results[0] >= profitability
 
     def _run_backtesting_with_current_config(self, symbol, copy_config_before_use=False, data_file_to_use=None):
         config_to_use = copy.deepcopy(self.config) if copy_config_before_use else self.config
