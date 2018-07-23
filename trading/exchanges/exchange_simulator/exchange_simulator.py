@@ -117,24 +117,26 @@ class ExchangeSimulator(AbstractExchange):
 
     def _prepare(self):
         # create get times and init offsets
-        for time_frame in TimeFrames:
-            self.time_frame_get_times[time_frame.value] = 0
-            self.time_frames_offset = {}
+        for symbol in self.symbols:
+            self.time_frame_get_times[symbol] = {}
+            for time_frame in TimeFrames:
+                self.time_frame_get_times[symbol][time_frame.value] = 0
+                self.time_frames_offset = {}
 
-    def should_update_data(self, time_frame):
+    def should_update_data(self, time_frame, symbol):
         smallest_time_frame = TimeFrameManager.find_min_time_frame(self.config_time_frames)
         if smallest_time_frame == time_frame:
             # always True: refresh smallest timeframe systematically when possible
             return True
         else:
             smallest_time_frame_sec = TimeFramesMinutes[smallest_time_frame]
-            smallest_time_frame_updated_times = self.time_frame_get_times[smallest_time_frame.value]
+            smallest_time_frame_updated_times = self.time_frame_get_times[symbol][smallest_time_frame.value]
             # - 1 because smallest timeframe is the 1st to be updated: always return true for it but others need not to
             # be biased by the previous + 1 from current timeframe update wave
             smallest_time_frame_updated_times_to_compare = smallest_time_frame_updated_times - 1 \
                 if smallest_time_frame_updated_times > 0 else 0
             current_time_frame_sec = TimeFramesMinutes[time_frame]
-            current_time_frame_updated_times = self.time_frame_get_times[time_frame.value]
+            current_time_frame_updated_times = self.time_frame_get_times[symbol][time_frame.value]
 
             time_refresh_condition = (smallest_time_frame_updated_times_to_compare - (
                     current_time_frame_updated_times * (current_time_frame_sec / smallest_time_frame_sec)) >= 0)
@@ -198,7 +200,7 @@ class ExchangeSimulator(AbstractExchange):
                               " Call init_candles_offset(self, timeframes, symbol) to set candles indexes in order to "
                               "have consistent candles on different timeframes while using the timeframes you are "
                               "interested in")
-        return self.time_frames_offset[symbol][time_frame] + self.time_frame_get_times[time_frame]
+        return self.time_frames_offset[symbol][time_frame] + self.time_frame_get_times[symbol][time_frame]
 
     def _extract_data_with_limit(self, symbol, time_frame):
         to_use_time_frame = time_frame.value if time_frame is not None \
@@ -215,7 +217,9 @@ class ExchangeSimulator(AbstractExchange):
     def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         candles = self._extract_data_with_limit(symbol, time_frame)
         if time_frame is not None:
-            self.time_frame_get_times[time_frame.value] += 1
+            self.time_frame_get_times[symbol][time_frame.value] += 1
+            self.logger.info(f"get_symbol_prices {symbol} {time_frame} "
+                             f"({self.time_frame_get_times[symbol][time_frame.value]})")
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
 
     def _get_used_time_frames(self, symbol):
@@ -228,10 +232,10 @@ class ExchangeSimulator(AbstractExchange):
         time_frame_to_use = TimeFrameManager.find_min_time_frame(self._get_used_time_frames(symbol))
         index = 0
         if symbol in self.time_frames_offset and time_frame_to_use.value in self.time_frames_offset[symbol] \
-           and time_frame_to_use.value in self.time_frame_get_times:
+           and time_frame_to_use.value in self.time_frame_get_times[symbol]:
             # -2 because take into account the +1 in self.time_frame_get_times and the fact that it's an index
             index = self.time_frames_offset[symbol][time_frame_to_use.value] \
-                    + self.time_frame_get_times[time_frame_to_use.value] \
+                    + self.time_frame_get_times[symbol][time_frame_to_use.value] \
                     - 2
         trades = self._create_recent_trades(
             symbol, time_frame_to_use,
@@ -287,7 +291,7 @@ class ExchangeSimulator(AbstractExchange):
             "symbol": symbol,
             ExchangeConstantsTickersColumns.LAST.value: self._create_ticker(
                 symbol,
-                self.time_frame_get_times[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value])
+                self.time_frame_get_times[symbol][self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value])
         }
         self.get_symbol_data(symbol).update_symbol_ticker(result)
 
