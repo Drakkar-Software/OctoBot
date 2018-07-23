@@ -34,9 +34,7 @@ gitpython
 psutil
 plotly
 colorlog
-pandas
 cryptography >= 2.2.1
-matplotlib==2.2.2
 pytz
 tzlocal
 requests
