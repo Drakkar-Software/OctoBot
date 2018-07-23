@@ -8,7 +8,6 @@ var config_type_attr = "config_type";
 var config_root_class = "config-root";
 var config_container_class = "config-container";
 var config_element_class = "config-element";
-var config_default_value = "@default_value";
 
 // dom display classes
 var success_badge = "badge-success";
