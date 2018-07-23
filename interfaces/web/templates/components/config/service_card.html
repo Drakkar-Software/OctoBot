@@ -1,6 +1,6 @@
-{% macro config_service_card(service, color='') -%}
+{% macro config_service_card(service, add_class='') -%}
     <!-- Card -->
-    <div class="card mb-4">
+    <div class="card mb-4 {{add_class}}">
 
         <!--Card image-->
         <div class="view overlay">
@@ -11,19 +11,23 @@
         <div class="card-body">
 
             <!--Title-->
-            <h4 class="card-title">{{ service }}</h4>
+            <h4 class="card-title"><a href="#" id="service" data-type="text" data-pk="1" data-title="Enter service name"
+                                      class="editable editable-click" data-original-title="{{service}}" title="{{service}}">{{service}}</a></h4>
 
             <p class="card-text api">
-              UserName : ********* <br>
-              Password : *****************
+                UserName : <a href="#" id="service_user-name" data-type="text" data-pk="1" data-title="Enter service username"
+                                      class="editable editable-click">*********</a><br>
+                Password : <a href="#" id="service_password" data-type="text" data-pk="1" data-title="Enter service password"
+                                      class="editable editable-click">*********</a></span>
             </p>
 
-            <p class="card-text websocket">
-              Token : ************
+            <p class="card-text token">
+                Token : <a href="#" id="service_token" data-type="text" data-pk="1" data-title="Enter service token"
+                                      class="editable editable-click">*********</a>
             </p>
 
-            <button type="button" class="btn btn-warning px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
-            <button type="button" class="btn btn-danger px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+            <button type="button" class="btn btn-warning edit-btn px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
+            <button type="button" class="btn btn-danger remove-btn px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
         </div>
     </div>
 {%- endmacro %}
