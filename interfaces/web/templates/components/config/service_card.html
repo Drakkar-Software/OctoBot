@@ -1,6 +1,6 @@
-{% macro config_service_card(service, color='') -%}
+{% macro config_service_card(service, add_class='') -%}
     <!-- Card -->
-    <div class="card mb-4">
+    <div class="card mb-4 {{add_class}}">
 
         <!--Card image-->
         <div class="view overlay">
@@ -14,12 +14,12 @@
             <h4 class="card-title">{{ service }}</h4>
 
             <p class="card-text api">
-              UserName : ********* <br>
-              Password : *****************
+                UserName : <span editable="string">********</span><br>
+                Password : <span editable="string">*****************</span>
             </p>
 
             <p class="card-text websocket">
-              Token : ************
+                Token : <span editable="string">************</span>
             </p>
 
             <button type="button" class="btn btn-warning edit-btn px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
