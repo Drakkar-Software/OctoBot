@@ -4,6 +4,7 @@ from config.cst import *
 from octobot import OctoBot
 from tests.test_utils.config import load_test_config
 
+
 def test_run_bot():
     # launch a bot
     config = load_test_config()
