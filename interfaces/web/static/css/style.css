@@ -8,3 +8,6 @@
   display: block;
   flex-basis: 33.3%;
 }
+
+// Remove color from editable link
+a:link { color: inherit; }

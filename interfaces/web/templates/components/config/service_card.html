@@ -11,15 +11,19 @@
         <div class="card-body">
 
             <!--Title-->
-            <h4 class="card-title">{{ service }}</h4>
+            <h4 class="card-title"><a href="#" id="service" data-type="text" data-pk="1" data-title="Enter service name"
+                                      class="editable editable-click" data-original-title="{{service}}" title="{{service}}">{{service}}</a></h4>
 
             <p class="card-text api">
-                UserName : <span editable="string">********</span><br>
-                Password : <span editable="string">*****************</span>
+                UserName : <a href="#" id="service_user-name" data-type="text" data-pk="1" data-title="Enter service username"
+                                      class="editable editable-click">*********</a><br>
+                Password : <a href="#" id="service_password" data-type="text" data-pk="1" data-title="Enter service password"
+                                      class="editable editable-click">*********</a></span>
             </p>
 
-            <p class="card-text websocket">
-                Token : <span editable="string">************</span>
+            <p class="card-text token">
+                Token : <a href="#" id="service_token" data-type="text" data-pk="1" data-title="Enter service token"
+                                      class="editable editable-click">*********</a>
             </p>
 
             <button type="button" class="btn btn-warning edit-btn px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
