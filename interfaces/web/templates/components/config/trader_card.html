@@ -1,29 +1,31 @@
-<!-- Card -->
-<div class="card mb-4">
+{% macro config_trader_card(exchange, color='') -%}
+    <!-- Card -->
+    <div class="card mb-4">
 
-    <!--Card content-->
-    <div class="card-body">
+        <!--Card content-->
+        <div class="card-body">
 
-        <!--Title-->
-        <h4 class="card-title">{{ name }}</h4>
+            <!--Title-->
+            <h4 class="card-title">{{ name }}</h4>
 
-        <p class="card-text enable">
-            Enabled : <input type="checkbox">
-        </p>
+            <p class="card-text enable">
+                Enabled : <input type="checkbox">
+            </p>
 
-        <!-- IF not simulated -->
-        <p class="card-text config">
-            Risk : 1 <br>
-            Mode : DailyTradingMode <br>
-            Reference Market : BTC
-        </p>
+            <!-- IF not simulated -->
+            <p class="card-text config">
+                Risk : 1 <br>
+                Mode : DailyTradingMode <br>
+                Reference Market : BTC
+            </p>
 
-        <!-- IF simulated -->
-        <p class="card-text pf">
-            Starting portfolio :
-            - BTC : 10 <br>
-            - ETH : 20 <br>
-            - USDT : 10000
-        </p>
+            <!-- IF simulated -->
+            <p class="card-text pf">
+                Starting portfolio :
+                - BTC : 10 <br>
+                - ETH : 20 <br>
+                - USDT : 10000
+            </p>
+        </div>
     </div>
-</div>
+{%- endmacro %}
