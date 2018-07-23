@@ -1,6 +1,6 @@
-{% macro config_exchange_card(exchange, color='') -%}
+{% macro config_exchange_card(exchange, add_class='') -%}
     <!-- Card -->
-    <div class="card mb-4 {{color}}">
+    <div class="card mb-4 {{add_class}}">
 
         <!--Card image-->
         <div class="view overlay">
@@ -11,11 +11,11 @@
         <div class="card-body">
 
             <!--Title-->
-            <h4 class="card-title">{{ exchange }}</h4>
+            <h4 class="card-title"><a href="#" id="exchange" data-type="text" data-pk="1" data-title="Enter exchange name" class="editable editable-click" data-original-title="" title="">{{exchange}}</a></h4>
 
             <p class="card-text api">
-              API Key : ********* <br>
-              API Secret : *****************
+                API Key : <span editable="string">*********</span><br>
+                API Secret : <span editable="string">*****************</span>
             </p>
 
             <p class="card-text websocket">
