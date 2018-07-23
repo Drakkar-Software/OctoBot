@@ -207,12 +207,8 @@
 
 <script>
 $(document).ready(function () {
-    $.fn.editable.defaults.mode = 'inline';
-
-    // handle editable
-    $(".editable").each(function(){
-        $(this).editable();
-    });
+    setup_editable();
+    handle_editable();
 
     handle_reset_buttons();
     handle_save_buttons();
@@ -232,6 +228,7 @@ $(".add-btn").click(function() {
     var select_value = $("#" + $(this).attr("id") + "Select").val();
     var template_default = $("#" + $(this).attr("id") + "-template-default").html().replace(/{{ config_default_value }}/g, select_value);
     deck.append(template_default).hide().fadeIn();
+    handle_editable();
 });
 
 // Card deck removing
