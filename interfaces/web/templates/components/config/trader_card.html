@@ -1,4 +1,4 @@
-{% macro config_trader_card(exchange, color='') -%}
+{% macro config_trader_card(trader, color='') -%}
     <!-- Card -->
     <div class="card mb-4">
 
@@ -6,7 +6,7 @@
         <div class="card-body">
 
             <!--Title-->
-            <h4 class="card-title">{{ name }}</h4>
+            <h4 class="card-title">{{ trader }}</h4>
 
             <p class="card-text enable">
                 Enabled : <input type="checkbox">
