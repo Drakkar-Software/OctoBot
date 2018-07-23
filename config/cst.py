@@ -219,7 +219,6 @@ CONFIG_EVALUATOR_FILE = "evaluator_config.json"
 CONFIG_EVALUATOR_FILE_PATH = f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{CONFIG_EVALUATOR_FILE}"
 CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
 
-
 # Tentacle Config
 STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"
 STRATEGIES_REQUIRED_EVALUATORS = "required_evaluators"
@@ -422,3 +421,6 @@ class ExchangeConstantsMarketStatusColumns(Enum):
     LIMITS_COST_MIN = "min"  # order cost should be > min
     LIMITS_COST_MAX = "max"  # order cost should be < max
     INFO = "info"
+
+
+OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='

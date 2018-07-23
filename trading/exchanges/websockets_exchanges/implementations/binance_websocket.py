@@ -1,6 +1,7 @@
 from binance.client import Client, BinanceAPIException
 from binance.websockets import BinanceSocketManager
 
+from config.config import decrypt
 from config.cst import *
 from tools.symbol_util import merge_symbol
 from trading.exchanges.websockets_exchanges.abstract_websocket import AbstractWebSocket
@@ -20,8 +21,8 @@ class BinanceWebSocketClient(AbstractWebSocket):
 
     def __init__(self, config, exchange_manager):
         super().__init__(config, exchange_manager)
-        self.client = Client(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY],
-                             self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET])
+        self.client = Client(decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
+                             decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]))
         self.socket_manager = None
         self.open_sockets_keys = {}
         self.ws_time_frames = None

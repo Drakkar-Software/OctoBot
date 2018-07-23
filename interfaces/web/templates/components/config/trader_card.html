@@ -1,6 +1,6 @@
-{% macro config_trader_card(trader, color='') -%}
+{% macro config_trader_card(trader, add_class='') -%}
     <!-- Card -->
-    <div class="card mb-4">
+    <div class="card mb-4 {{add_class}}">
 
         <!--Card content-->
         <div class="card-body">
@@ -14,9 +14,9 @@
 
             <!-- IF not simulated -->
             <p class="card-text config">
-                Risk : 1 <br>
-                Mode : DailyTradingMode <br>
-                Reference Market : BTC
+                Risk : <span editable="integer">1</span><br>
+                Mode : <span editable="string">DailyTradingMode</span> <br>
+                Reference Market : <span editable="string">BTC</span>
             </p>
 
             <!-- IF simulated -->
