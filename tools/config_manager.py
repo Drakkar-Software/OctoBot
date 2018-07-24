@@ -2,9 +2,12 @@ import json
 import logging
 import os
 import shutil
+from copy import copy
 
 from config.config import load_config
-from config.cst import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH
+from config.cst import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
+    TEMP_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_ADVANCED_CLASSES, \
+    CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES
 
 
 class ConfigManager:
@@ -19,7 +22,7 @@ class ConfigManager:
                 if json_data is not None:
                     cg_file.write(json_data)
                 else:
-                    cg_file.write(json.dumps(config))
+                    cg_file.write(ConfigManager.jsonify_config(config))
 
             # check if the new config file is correct
             ConfigManager.check_config(config_file)
@@ -43,6 +46,22 @@ class ConfigManager:
                 os.remove(old_config_file)
         except OSError:
             pass
+
+    @staticmethod
+    def jsonify_config(config):
+        # remove service instances
+        for service in config[CONFIG_CATEGORY_SERVICES][0]:
+            config[CONFIG_CATEGORY_SERVICES][0][service].pop(CONFIG_SERVICE_INSTANCE, None)
+
+        # remove non config keys
+        config.pop(CONFIG_EVALUATOR, None)
+        config.pop(CONFIG_INTERFACES, None)
+        config.pop(CONFIG_ADVANCED_CLASSES, None)
+        config.pop(CONFIG_TIME_FRAME, None)
+        config.pop(CONFIG_NOTIFICATION_INSTANCE, None)
+        config.pop(CONFIG_ADVANCED_INSTANCES, None)
+
+        return json.dumps(config)
 
     @staticmethod
     def check_config(config_file):
@@ -72,3 +91,41 @@ class ConfigManager:
         if something_changed:
             with open(CONFIG_EVALUATOR_FILE_PATH, "w+") as evaluator_config_file_w:
                 evaluator_config_file_w.write(json.dumps(current_config, indent=4, sort_keys=True))
+
+    @staticmethod
+    def update_global_config(to_update_data, current_config):
+        new_current_config = copy(current_config)
+        updated_configs = [
+            ConfigManager.parse_and_update(data_key, data_value)
+            for data_key, data_value in to_update_data.items()
+        ]
+
+        # merge configs
+        for new_config in updated_configs:
+            new_current_config = ConfigManager.merge_dictionaries_by_appending_keys(new_current_config, new_config)
+
+        # save config
+        ConfigManager.save_config(CONFIG_FILE, new_current_config, TEMP_CONFIG_FILE)
+
+    @staticmethod
+    def parse_and_update(key, new_data):
+        parsed_data_array = key.split(UPDATED_CONFIG_SEPARATOR)
+        new_config = {}
+        current_dict = new_config
+
+        for i in range(len(parsed_data_array)):
+            if i > 0:
+                if i == len(parsed_data_array) - 1:
+                    current_dict[parsed_data_array[i]] = new_data
+                else:
+                    current_dict[parsed_data_array[i]] = {}
+            else:
+                new_config[parsed_data_array[i]] = {}
+
+            current_dict = current_dict[parsed_data_array[i]]
+
+        return new_config
+
+    @staticmethod
+    def merge_dictionaries_by_appending_keys(dict_src, dict_dest):
+        return dict((k, [v] + ([dict_dest[k]] if k in dict_dest else [])) for (k, v) in dict_src.items())

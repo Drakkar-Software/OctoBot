@@ -68,6 +68,7 @@ CONFIG_PORTFOLIO_USED = "used"
 CONFIG_PORTFOLIO_TOTAL = "total"
 
 # Notification
+CONFIG_NOTIFICATION_TYPE = "notification_type"
 CONFIG_NOTIFICATION_INSTANCE = "notifier"
 CONFIG_CATEGORY_NOTIFICATION = "notification"
 CONFIG_NOTIFICATION_GLOBAL_INFO = "global_info"
@@ -223,6 +224,11 @@ CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
 STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"
 STRATEGIES_REQUIRED_EVALUATORS = "required_evaluators"
 TRADING_MODE_REQUIRED_STRATEGIES = "required_strategies"
+
+# Web interface
+UPDATED_CONFIG_SEPARATOR = "_"
+GLOBAL_CONFIG_KEY = "global_config"
+EVALUATOR_CONFIG_KEY = "evaluator_config"
 
 
 class TentacleManagerActions(Enum):

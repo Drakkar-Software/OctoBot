@@ -1,4 +1,4 @@
-{% macro config_exchange_card(exchange, add_class='') -%}
+{% macro config_exchange_card(config, exchange, add_class='') -%}
     <!-- Card -->
     <div class="card mb-4 {{add_class}}">
 
@@ -11,26 +11,42 @@
         <div class="card-body">
 
             <!--Title-->
-            <h4 class="card-title"><a href="#" id="exchange" data-type="text" data-pk="1" data-title="Enter exchange name"
-                                      class="editable editable-click" data-original-title="{{exchange}}" title="{{exchange}}">{{exchange}}</a></h4>
+            <h4 class="card-title">{{exchange}}</h4>
 
             <p class="card-text api">
-                API Key : <a href="#" id="exchange_api-key" data-type="text" data-pk="1" data-title="Enter api key"
-                                      class="editable editable-click">*********</a><br>
-                API Secret : <a href="#" id="exchange_api-secret" data-type="text" data-pk="1" data-title="Enter exchange api secret"
-                                      class="editable editable-click">************</a><br>
+                API Key : <a href="#"
+                            id="exchange_api-key"
+                            config-key="exchanges_{{exchange}}_api-key"
+                            config-type="global_config"
+                            config-value="*********"
+                            startup-config-value="*********"
+                            data-type="text"
+                            data-pk="1"
+                            data-title="Enter api key"
+                            class="editable editable-click config-element">
+                *********</a><br>
+
+                API Secret : <a href="#"
+                            id="exchange_api-secret"
+                            config-key="exchanges_{{exchange}}_api-secret"
+                            config-type="global_config"
+                            config-value="************"
+                            startup-config-value="************"
+                            data-type="text"
+                            data-pk="1"
+                            data-title="Enter exchange api secret"
+                            class="editable editable-click config-element">
+                ************</a><br>
             </p>
 
             <p class="card-text websocket">
               Websocket :
-                {% if "web_socket" in exchange and exchange["web_socket"] == True %}
-                    <input checked type="checkbox">
-                {% else %}
-                    <input type="checkbox">
-                {% endif %}
+                    {% if "web_socket" in exchange and exchange["web_socket"] == True %}
+                        <!--checked-->
+                    {% endif %}
+                    <input disabled type="checkbox">
             </p>
 
-            <button type="button" class="btn btn-warning edit-btn px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
             <button type="button" class="btn btn-danger remove-btn px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
         </div>
     </div>

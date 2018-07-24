@@ -7,3 +7,11 @@ function handle_editable(){
         $(this).editable();
     });
 }
+
+function replace_break_line(str, replacement=""){
+    return str.replace(/(?:\r\n|\r|\n)/g, replacement);
+}
+
+function replace_spaces(str, replacement=""){
+    return str.replace(/ /g, replacement);
+}
