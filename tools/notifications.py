@@ -5,7 +5,7 @@ from enum import Enum
 
 from config.cst import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
-    CONFIG_NOTIFICATION_TRADES, CONFIG_ENABLED_OPTION, CONFIG_WEB
+    CONFIG_NOTIFICATION_TRADES, CONFIG_ENABLED_OPTION, CONFIG_WEB, CONFIG_NOTIFICATION_TYPE
 from interfaces.web import add_notification
 from services import TwitterService, TelegramService, WebService
 from services.gmail_service import GmailService
@@ -19,7 +19,7 @@ class Notification:
     def __init__(self, config):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.notification_type = self.config[CONFIG_CATEGORY_NOTIFICATION]["type"]
+        self.notification_type = self.config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_NOTIFICATION_TYPE]
         self._enable = self.config[CONFIG_CATEGORY_NOTIFICATION]
 
     # return True if key is enabled

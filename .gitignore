@@ -123,3 +123,5 @@ config\.json
 *.csv
 
 *.ods
+
+temp_config\.json

@@ -1,5 +1,5 @@
 {% macro config_evaluator_card(evaluator_startup_config, evaluator_name, activated) -%}
-    <a href="#" onclick="return false;" class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element evaluator-config-element" id={{evaluator_name}} config-key={{evaluator_name}} current-value={{activated}} config-value={{activated}} startup-config-value={{evaluator_startup_config[evaluator_name]}}>{{ evaluator_name }}
+    <a href="#" onclick="return false;" class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element evaluator-config-element" id={{evaluator_name}} config-type="evaluator_config" config-key={{evaluator_name}} current-value={{activated}} config-value={{activated}} startup-config-value={{evaluator_startup_config[evaluator_name]}}>{{ evaluator_name }}
       <span class="float-right">
         <span class="badge {{'badge-warning' if evaluator_startup_config[evaluator_name] != activated else ('badge-success' if activated else 'badge-secondary')}}">{{('Activation pending restart' if activated else 'Deactivation pending restart') if evaluator_startup_config[evaluator_name] != activated else ('Activated' if activated else 'Deactivated')}}</span>
       </span>

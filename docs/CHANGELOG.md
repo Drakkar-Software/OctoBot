@@ -6,6 +6,7 @@ Changelog for 0.1.5_2-beta
 
 **Warning** :
 - You have to encrypt your exchange token : **please run python tools/temp_encrypt_tool.py**
+- Notification type key changed from "type" to "notification_type"
 
 # Concerned issues :
     #269 [Tool] Implement ConfigManager

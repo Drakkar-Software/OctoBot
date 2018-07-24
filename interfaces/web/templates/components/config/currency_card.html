@@ -11,8 +11,7 @@
         <div class="card-body">
 
             <!--Title-->
-            <h4 class="card-title"><a href="#" id="crypto_currencies" data-type="text" data-pk="1" data-title="Enter cryptocurrency name"
-                                      class="editable editable-click" data-original-title="{{crypto_currency}}" title="{{crypto_currency}}">{{crypto_currency}}</a></h4>
+            <h4 class="card-title">{{crypto_currency}}</h4>
 
             <p class="card-text symbols">
                 {% if crypto_currency in config_symbols %}
@@ -22,7 +21,6 @@
                 {% endif %}
             </p>
 
-            <button type="button" class="btn btn-warning edit-btn px-3"><i class="fa fa-edit" aria-hidden="true"></i> Edit</button>
             <button type="button" class="btn btn-danger remove-btn px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
         </div>
     </div>
