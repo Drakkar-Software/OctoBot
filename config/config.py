@@ -39,13 +39,13 @@ def encrypt(data):
     try:
         return Fernet(OCTOBOT_KEY).encrypt(data.encode())
     except Exception as e:
-        logging.getLogger().exception(f"Failed to encrypt : {data} => {e}")
+        logging.getLogger().error(f"Failed to encrypt : {data}")
+        raise e
 
 
 def decrypt(data):
     try:
         return Fernet(OCTOBOT_KEY).decrypt(data.encode()).decode()
-    except InvalidToken:
-        logging.getLogger().error("Failed to decrypt : Your token is invalid.")
     except Exception as e:
-        logging.getLogger().exception(f"Failed to decrypt : {data} => {e}")
+        logging.getLogger().error(f"Failed to decrypt : {data}")
+        raise e
