@@ -1,0 +1,17 @@
+function setup_editable(){
+    $.fn.editable.defaults.mode = 'inline';
+}
+
+function handle_editable(){
+    $(".editable").each(function(){
+        $(this).editable();
+    });
+}
+
+function replace_break_line(str, replacement=""){
+    return str.replace(/(?:\r\n|\r|\n)/g, replacement);
+}
+
+function replace_spaces(str, replacement=""){
+    return str.replace(/ /g, replacement);
+}

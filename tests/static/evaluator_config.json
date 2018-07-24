@@ -3,7 +3,7 @@
   "DoubleMovingAverageTrendEvaluator": true,
   "BBMomentumEvaluator": true,
   "MACDMomentumEvaluator": true,
-  "CandlePatternMomentumEvaluator": true,
+  "CandlePatternMomentumEvaluator": false,
   "ADXMomentumEvaluator": true,
 
 
@@ -12,9 +12,9 @@
 
   "TwitterNewsEvaluator": false,
   "RedditForumEvaluator": false,
-  "GoogleTrendStatsEvaluator": true,
+  "GoogleTrendStatsEvaluator": false,
 
   
   "FullMixedStrategiesEvaluator": true,
-  "InstantSocialReactionMixedStrategiesEvaluator": true
+  "InstantSocialReactionMixedStrategiesEvaluator": false
 }

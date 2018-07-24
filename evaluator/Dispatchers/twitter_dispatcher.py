@@ -8,6 +8,7 @@ from services import TwitterService
 
 
 class TwitterDispatcher(AbstractDispatcher):
+
     def __init__(self, config):
         super().__init__(config)
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -21,7 +22,8 @@ class TwitterDispatcher(AbstractDispatcher):
             self.twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
             self.is_setup_correctly = True
         else:
-            self.logger.warning("Required services are not ready")
+            if TwitterService.should_be_ready(config):
+                self.logger.warning("Required services are not ready, dispatcher can't start")
             self.is_setup_correctly = False
 
     # merge new config into existing config
@@ -69,7 +71,8 @@ class TwitterDispatcher(AbstractDispatcher):
 
     def _start_listener(self):
         for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids,
-                                                                         track=self.hashtags):
+                                                                         track=self.hashtags,
+                                                                         stall_warnings=True):
             self.counter += 1
             string_tweet = self.twitter_service.get_tweet_text(tweet)
             if string_tweet:

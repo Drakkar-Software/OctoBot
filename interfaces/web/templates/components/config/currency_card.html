@@ -1,0 +1,27 @@
+{% macro config_currency_card(config_symbols, crypto_currency, add_class='') -%}
+    <!-- Card -->
+    <div class="card mb-4 {{add_class}}">
+
+        <!--Card image-->
+        <div class="view overlay">
+          <!--{{ crypto_currency }}-->
+        </div>
+
+        <!--Card content-->
+        <div class="card-body">
+
+            <!--Title-->
+            <h4 class="card-title">{{crypto_currency}}</h4>
+
+            <p class="card-text symbols">
+                {% if crypto_currency in config_symbols %}
+                    {% for symbol in config_symbols[crypto_currency]["pairs"] %}
+                        <span editable="string">{{ symbol }}</span><br>
+                    {% endfor %}
+                {% endif %}
+            </p>
+
+            <button type="button" class="btn btn-danger remove-btn px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+        </div>
+    </div>
+{%- endmacro %}

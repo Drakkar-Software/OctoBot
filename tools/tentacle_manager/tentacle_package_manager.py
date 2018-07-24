@@ -5,12 +5,13 @@ import json
 import tools.tentacle_manager.tentacle_package_util as TentaclePackageUtil
 import tools.tentacle_manager.tentacle_util as TentacleUtil
 
-from config.cst import TENTACLE_PACKAGE_DESCRIPTION, EVALUATOR_DEFAULT_FOLDER, TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION, \
+from config.cst import TENTACLE_PACKAGE_DESCRIPTION, EVALUATOR_DEFAULT_FOLDER, \
+    TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION, \
     TENTACLE_DESCRIPTION_IS_URL, TENTACLE_TYPES, EVALUATOR_CONFIG_FOLDER, TENTACLE_MODULE_NAME, TENTACLE_MODULE_TYPE, \
     TENTACLE_MODULE_SUBTYPE, TENTACLE_MODULE_VERSION, TENTACLE_MODULE_CONFIG_FILES, TENTACLE_MODULE_REQUIREMENTS, \
     TENTACLE_MODULE_REQUIREMENT_WITH_VERSION, TENTACLES_PATH, PYTHON_INIT_FILE, TENTACLE_MODULE_TESTS, \
     TentacleManagerActions, CONFIG_DEFAULT_EVALUATOR_FILE, CONFIG_EVALUATOR_FILE_PATH, TENTACLE_MODULE_DEV, \
-    TENTACLE_PACKAGE_NAME
+    TENTACLE_PACKAGE_NAME, TENTACLE_MODULE_RESOURCE_FILES, EVALUATOR_RESOURCE_FOLDER
 
 
 class TentaclePackageManager:
@@ -137,7 +138,7 @@ class TentaclePackageManager:
                                               parsed_module[TENTACLE_MODULE_VERSION],
                                               module_file_content, module_test_files, target_folder, module_name):
                 # manage module config
-                self._try_action_on_config(action, package, module_name, is_url, package_localisation)
+                self._try_action_on_config_or_resources(action, package, module_name, is_url, package_localisation)
 
             if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
                 self._try_action_on_requirements(action, package, module_name, package_name)
@@ -260,54 +261,92 @@ class TentaclePackageManager:
                             self.process_module(TentacleManagerActions.UNINSTALL, req_package, module_to_remove,
                                                 localisation, is_url, destination, package_name)
 
-    def _try_action_on_config(self, action, package, module_name, is_url, package_localisation):
+    def _try_action_on_config_or_resources(self, action, package, module_name, is_url, package_localisation):
         parsed_module = TentacleUtil.parse_module_header(package[module_name])
+
+        file_dir = TentacleUtil.create_path_from_type(parsed_module[TENTACLE_MODULE_TYPE],
+                                                      parsed_module[TENTACLE_MODULE_SUBTYPE], "")
 
         if parsed_module[TENTACLE_MODULE_CONFIG_FILES]:
             for config_file in parsed_module[TENTACLE_MODULE_CONFIG_FILES]:
-
-                file_dir = TentacleUtil.create_path_from_type(parsed_module[TENTACLE_MODULE_TYPE],
-                                                              parsed_module[TENTACLE_MODULE_SUBTYPE], "")
-
                 config_file_path = "{0}{1}/{2}".format(file_dir, EVALUATOR_CONFIG_FOLDER, config_file)
                 default_config_file_path = "{0}{1}/{2}/{3}".format(file_dir, EVALUATOR_CONFIG_FOLDER,
                                                                    EVALUATOR_DEFAULT_FOLDER, config_file)
-                if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
 
-                    try:
-                        # get config file content from localization
-                        module_loc = TentacleUtil.create_localization_from_type(package_localisation,
-                                                                                parsed_module[TENTACLE_MODULE_TYPE],
-                                                                                parsed_module[TENTACLE_MODULE_SUBTYPE],
-                                                                                config_file)
+                self._try_action_on_config_or_resource_file(action,
+                                                            module_name,
+                                                            package_localisation,
+                                                            is_url,
+                                                            parsed_module,
+                                                            config_file,
+                                                            config_file_path,
+                                                            default_file_path=default_config_file_path)
 
-                        if is_url:
-                            config_file_content = TentaclePackageUtil.get_package_file_content_from_url(module_loc)
-                        else:
-                            with open(module_loc, "r") as module_file:
-                                config_file_content = module_file.read()
+        if parsed_module[TENTACLE_MODULE_RESOURCE_FILES]:
+            for res_file in parsed_module[TENTACLE_MODULE_RESOURCE_FILES]:
+                res_file_path = "{0}{1}/{2}".format(file_dir, EVALUATOR_RESOURCE_FOLDER, res_file)
 
-                        # install local config file content
-                        if action == TentacleManagerActions.INSTALL:
-                            with open(config_file_path, "w") as new_config_file:
-                                new_config_file.write(config_file_content)
-                        with open(default_config_file_path, "w") as new_default_config_file:
-                            new_default_config_file.write(config_file_content)
+                self._try_action_on_config_or_resource_file(action,
+                                                            module_name,
+                                                            package_localisation,
+                                                            is_url,
+                                                            parsed_module,
+                                                            res_file,
+                                                            res_file_path,
+                                                            read_as_bytes=True)
 
-                        if action == TentacleManagerActions.UPDATE:
-                            self.logger.info("{0} configuration file for {1} module ignored to save the current "
-                                             "configuration. The default configuration file has been updated in: {2}."
-                                             .format(config_file, module_name, default_config_file_path))
+    def _try_action_on_config_or_resource_file(self, action,
+                                               module_name,
+                                               package_localisation,
+                                               is_url,
+                                               parsed_module,
+                                               file,
+                                               file_path,
+                                               default_file_path=None,
+                                               read_as_bytes=False):
 
-                    except Exception as e:
-                        raise Exception("Fail to install configuration : {}".format(e))
+        if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
 
-                elif action == TentacleManagerActions.UNINSTALL:
-                    try:
-                        os.remove(config_file_path)
-                        os.remove(default_config_file_path)
-                    except OSError:
-                        pass
+            try:
+                # get config file content from localization
+                module_loc = TentacleUtil.create_localization_from_type(package_localisation,
+                                                                        parsed_module[TENTACLE_MODULE_TYPE],
+                                                                        parsed_module[TENTACLE_MODULE_SUBTYPE],
+                                                                        file)
+
+                if is_url:
+                    config_file_content = TentaclePackageUtil.get_package_file_content_from_url(module_loc,
+                                                                                                as_bytes=read_as_bytes)
+                else:
+                    with open(module_loc, "rb" if read_as_bytes else "r") as module_file:
+                        config_file_content = module_file.read()
+
+                # install local file content
+                if action == TentacleManagerActions.INSTALL:
+                    with open(file_path, "wb" if read_as_bytes else "w") as new_file:
+                        new_file.write(config_file_content)
+
+                # copy into default
+                if default_file_path:
+                    with open(default_file_path, "wb" if read_as_bytes else "w") as new_default_file:
+                        new_default_file.write(config_file_content)
+
+                    if action == TentacleManagerActions.UPDATE:
+                        self.logger.info("{0} configuration / resource file for {1} module ignored to save the current "
+                                         "configuration. The default configuration file has been updated in: {2}."
+                                         .format(file, module_name, default_file_path))
+
+            except Exception as e:
+                raise Exception("Fail to install configuration / resource : {}".format(e))
+
+        elif action == TentacleManagerActions.UNINSTALL:
+            try:
+                os.remove(file_path)
+
+                if default_file_path:
+                    os.remove(default_file_path)
+            except OSError:
+                pass
 
     def _has_just_processed_module(self, module_name, module_version):
         return TentacleUtil.is_module_in_list(module_name, module_version, self.just_processed_modules)

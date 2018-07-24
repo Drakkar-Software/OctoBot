@@ -4,24 +4,25 @@ var config_value_attr = "config-value";
 var current_value_attr = "current-value";
 var startup_value_attr = "startup-config-value";
 var update_url_attr = "update-url";
+var config_type_attr = "config-type";
 var config_root_class = "config-root";
 var config_container_class = "config-container";
 var config_element_class = "config-element";
 
 // dom display classes
-var success_badge = "badge-success"
-var warning_badge = "badge-warning"
-var secondary_badge = "badge-secondary"
-var primary_badge = "badge-primary"
+var success_badge = "badge-success";
+var warning_badge = "badge-warning";
+var secondary_badge = "badge-secondary";
+var primary_badge = "badge-primary";
 
-var light_list_item = "list-group-item-light"
-var success_list_item = "list-group-item-success"
+var light_list_item = "list-group-item-light";
+var success_list_item = "list-group-item-success";
 
-var activation_pending = "Activation pending restart"
-var deactivation_pending = "Deactivation pending restart"
-var unsaved_setting = "Unsaved setting"
-var activated = "Activated"
-var deactivated = "Deactivated"
+var activation_pending = "Activation pending restart";
+var deactivation_pending = "Deactivation pending restart";
+var unsaved_setting = "Unsaved setting";
+var activated = "Activated";
+var deactivated = "Deactivated";
 
 // utility functions
 function log(text){

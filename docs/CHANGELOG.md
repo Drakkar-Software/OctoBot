@@ -1,5 +1,25 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.5_2-beta
+====================
+*Released date : July 24 2018*
+
+**Warning** :
+- You have to encrypt your exchange token : **please run python tools/temp_encrypt_tool.py**
+- Notification type key changed from "type" to "notification_type"
+
+# Concerned issues :
+    #269 [Tool] Implement ConfigManager
+    #307 [Tentacle Installation] Add new key in description
+    #309 [Web Interface] Exchange configuration
+    #311 [Web Interface] Symbols configuration
+    #312 [Web Interface] Services configuration
+    #331 [Security] Encrypt user api key
+
+# New features :
+    - Api key encryption
+    - Web Interface : Full configuration (except notifications)
+    
 Changelog for 0.1.5_1-beta
 ====================
 *Released date : July 17 2018*

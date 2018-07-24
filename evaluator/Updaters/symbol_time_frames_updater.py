@@ -75,7 +75,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                     # backtesting doesn't need to wait a specific time frame to end to refresh data
                     if backtesting_enabled:
                         try:
-                            if exchange.should_update_data(time_frame):
+                            if exchange.should_update_data(time_frame, symbol):
                                 self._refresh_data(time_frame)
                         except BacktestingEndedException as e:
                             self.logger.info(e)

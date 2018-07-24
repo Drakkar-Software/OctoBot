@@ -4,7 +4,7 @@ from time import sleep
 
 from config.cst import CONFIG_WEB, CONFIG_CATEGORY_SERVICES, CONFIG_WEB_IP, CONFIG_WEB_PORT
 from interfaces import get_bot
-from interfaces.web import app_instance, load_callbacks, load_routes, load_advanced_routes
+from interfaces.web import app_instance, load_callbacks
 from interfaces.web.util.dash_dashboard import create_dashboard
 
 
@@ -27,8 +27,7 @@ class WebApp(threading.Thread):
         create_dashboard(self)
 
         load_callbacks()
-        load_routes()
-        load_advanced_routes()
+
         self.app.run_server(host=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP],
                             port=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT],
                             debug=False,

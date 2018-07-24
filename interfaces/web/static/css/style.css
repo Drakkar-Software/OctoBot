@@ -1,0 +1,13 @@
+.card-deck {
+  display: flex;
+  justify-content: flex-start;
+  flex-flow: row wrap;
+  align-items: stretch;
+}
+.card-deck .card {
+  display: block;
+  flex-basis: 33.3%;
+}
+
+// Remove color from editable link
+a:link { color: inherit; }

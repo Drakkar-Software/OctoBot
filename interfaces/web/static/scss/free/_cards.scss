@@ -1,0 +1,28 @@
+// Cards
+.card {
+  box-shadow: $z-depth-1;
+  border: 0;
+  font-weight: 400;
+  &[class*="border"] {
+    border: 1px solid $grey-base;
+    box-shadow: none;
+  }
+  .card-body {
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 400;
+    }
+    .card-title {
+      a {
+        transition: $md-card-link-transition;
+        &:hover {
+          transition: $md-card-link-transition;
+        }
+      }
+    }
+    .card-text {
+      color: $md-card-text-color;
+      font-size: $md-card-font-size;
+      font-weight: 400;
+    }
+  }
+}

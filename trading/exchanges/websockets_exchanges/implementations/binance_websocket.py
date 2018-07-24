@@ -1,7 +1,7 @@
 from binance.client import Client, BinanceAPIException
 from binance.websockets import BinanceSocketManager
-import logging
 
+from config.config import decrypt
 from config.cst import *
 from tools.symbol_util import merge_symbol
 from trading.exchanges.websockets_exchanges.abstract_websocket import AbstractWebSocket
@@ -21,10 +21,12 @@ class BinanceWebSocketClient(AbstractWebSocket):
 
     def __init__(self, config, exchange_manager):
         super().__init__(config, exchange_manager)
-        self.client = Client(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY],
-                             self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET])
+        self.client = Client(decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
+                             decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]))
         self.socket_manager = None
         self.open_sockets_keys = {}
+        self.ws_time_frames = None
+        self.ws_trader_pairs = None
 
     @staticmethod
     def get_websocket_client(config, exchange_manager):
@@ -34,8 +36,11 @@ class BinanceWebSocketClient(AbstractWebSocket):
 
     def init_web_sockets(self, time_frames, trader_pairs):
         try:
+            self.ws_time_frames = time_frames
+            self.ws_trader_pairs = trader_pairs
             self._init_price_sockets(time_frames, trader_pairs)
-            self._init_user_socket()
+            if self.exchange_manager.need_user_stream():
+                self._init_user_socket()
         except BinanceAPIException as e:
             self.logger.error("error when connecting to binance websockets: {0}".format(e))
 
@@ -150,43 +155,58 @@ class BinanceWebSocketClient(AbstractWebSocket):
             'fee': self.safe_float(order, "n", None),
         }
 
-    def all_currencies_prices_callback(self, msg):
+    def restart_sockets(self):
+        for socket_key in self.open_sockets_keys.values():
+            self.socket_manager.stop_socket(socket_key)
+        self.socket_manager.close()
+        self.init_web_sockets(self.ws_time_frames, self.ws_trader_pairs)
+        self.logger.info(f"{len(self.open_sockets_keys)} websocket(s) restarted")
 
+    def all_currencies_prices_callback(self, msg):
         # TODO
         # ORDER BOOK : Stream Name: <symbol>@depth<levels>
         # Recent trades : Stream Name: <symbol>@trade
 
-        if msg['data']['e'] == 'error':
-            # close and restart the socket
-            # self.close_sockets()
-            logging.getLogger(self.get_name()).error("error in websocket all_currencies_prices_callback, "
-                                                     "call start_sockets()")
-            self.start_sockets()
-        else:
-            msg_stream_type = msg["stream"]
+        try:
+            if 'e' in msg and msg['e'] == 'error':
+                # close and restart the socket
+                # self.close_sockets()
+                self.logger.error(f"error ({msg['m']}) in websocket all_currencies_prices_callback, "
+                                  "calling restart_sockets()")
+                self.restart_sockets()
+            else:
+                msg_stream_type = msg["stream"]
 
-            symbol_data = self.exchange_manager.get_symbol_data(self._adapt_symbol(msg["data"]["s"]))
+                symbol_data = self.exchange_manager.get_symbol_data(self._adapt_symbol(msg["data"]["s"]))
 
-            if self._TICKER_KEY in msg_stream_type:
-                if symbol_data.price_ticker_is_initialized():
-                    symbol_data.update_symbol_ticker(self.convert_into_ccxt_ticker(msg["data"]))
+                if self._TICKER_KEY in msg_stream_type:
+                    if symbol_data.price_ticker_is_initialized():
+                        symbol_data.update_symbol_ticker(self.convert_into_ccxt_ticker(msg["data"]))
 
-            elif self._KLINE_KEY in msg_stream_type:
-                time_frame = self._convert_time_frame(msg["data"]["k"]["i"])
-                if symbol_data.candles_are_initialized(time_frame):
-                    candle = self._create_candle(msg["data"]["k"])
-                    self.exchange_manager.uniformize_candles_if_necessary(candle)
-                    symbol_data.update_symbol_candles(time_frame, candle, replace_all=False)
+                elif self._KLINE_KEY in msg_stream_type:
+                    time_frame = self._convert_time_frame(msg["data"]["k"]["i"])
+                    if symbol_data.candles_are_initialized(time_frame):
+                        candle = self._create_candle(msg["data"]["k"])
+                        self.exchange_manager.uniformize_candles_if_necessary(candle)
+                        symbol_data.update_symbol_candles(time_frame, candle, replace_all=False)
+        except Exception as e:
+            self.logger.exception(e)
+            self.logger.error(f"error: {e}, restarting calling restart_sockets()")
+            self.restart_sockets()
 
     def user_callback(self, msg):
-        if msg["e"] == "outboundAccountInfo":
-            self._update_portfolio(msg)
-        elif msg["e"] == "executionReport":
-            self._update_order(msg)
-        elif msg['e'] == 'error':
-            logging.getLogger(self.get_name()).error("error in websocket user_callback, call start_sockets()")
-            self.start_sockets()
-
+        try:
+            if msg["e"] == "outboundAccountInfo":
+                self._update_portfolio(msg)
+            elif msg["e"] == "executionReport":
+                self._update_order(msg)
+            elif msg['e'] == 'error':
+                self.logger.error(f"error in websocket user_callback ({msg['m']}), calling restart_sockets()")
+                self.restart_sockets()
+        except Exception as e:
+            self.logger.exception(e)
+            self.logger.error(f"error: {e}, restarting calling restart_sockets()")
+            self.restart_sockets()
 
     def _init_price_sockets(self, time_frames, trader_pairs):
         # add klines

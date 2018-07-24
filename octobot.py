@@ -113,7 +113,7 @@ class OctoBot:
                     self.logger.error(e.args[0])
                     raise e
             else:
-                self.logger.error("{0} exchange not found".format(exchange_class_string))
+                self.logger.error(f"{exchange_class_string} exchange not found")
 
     def create_evaluation_threads(self):
         self.logger.info("Evaluation threads creation...")
@@ -151,7 +151,7 @@ class OctoBot:
                         # notify that exchange doesn't support this symbol
                         else:
                             if not self.backtesting_enabled:
-                                self.logger.warning("{0} doesn't support {1}".format(exchange.get_name(), symbol))
+                                self.logger.warning(f"{exchange.get_name()} doesn't support {symbol}")
 
     def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
         # Create real time TA evaluators
@@ -161,7 +161,7 @@ class OctoBot:
                                                                             self.relevant_evaluators)
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
-            if exchange.get_exchange_manager().time_frame_exists(time_frame.value):
+            if exchange.get_exchange_manager().time_frame_exists(time_frame.value, symbol_evaluator.get_symbol()):
                 self.symbol_threads_manager[time_frame] = EvaluatorThreadsManager(self.config,
                                                                                   time_frame,
                                                                                   symbol_time_frame_updater_thread,
@@ -172,8 +172,8 @@ class OctoBot:
                                                                                   real_time_ta_eval_list,
                                                                                   self.relevant_evaluators)
             else:
-                self.logger.error("{0} exchange is not supporting the required time frame: '{1}' for {2}.".
-                                  format(exchange.get_name(), time_frame.value, symbol_evaluator.get_symbol()))
+                self.logger.warning(f"{exchange.get_name()} exchange is not supporting the required time frame: "
+                                    f"'{time_frame.value}' for {symbol_evaluator.get_symbol()}.")
         self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
 
     def start_threads(self):

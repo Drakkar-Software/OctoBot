@@ -1,14 +1,17 @@
 from abc import *
 
+from backtesting.backtesting import Backtesting
+
 
 class AbstractService:
     __metaclass__ = ABCMeta
+
+    BACKTESTING_ENABLED = False
 
     def __init__(self):
         super().__init__()
         self.logger = None
         self.config = None
-        self.backtesting_enabled = False
         self.enabled = True
 
     @classmethod
@@ -20,6 +23,11 @@ class AbstractService:
     @abstractmethod
     def is_setup_correctly(config):
         raise NotImplementedError("is_setup_correctly not implemented")
+
+    @classmethod
+    def should_be_ready(cls, config):
+        on_backtesting = Backtesting.enabled(config)
+        return not on_backtesting or (on_backtesting and cls.BACKTESTING_ENABLED)
 
     # Used to provide a new logger for this particular indicator
     def set_logger(self, logger):

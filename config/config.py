@@ -1,7 +1,9 @@
 import json
 import logging
 
-from config.cst import CONFIG_FILE
+from cryptography.fernet import Fernet, InvalidToken
+
+from config.cst import CONFIG_FILE, OCTOBOT_KEY
 
 
 def load_config(config_file=CONFIG_FILE, error=True):
@@ -31,3 +33,19 @@ def load_config(config_file=CONFIG_FILE, error=True):
         else:
             logger.error(error_str)
     return None
+
+
+def encrypt(data):
+    try:
+        return Fernet(OCTOBOT_KEY).encrypt(data.encode())
+    except Exception as e:
+        logging.getLogger().error(f"Failed to encrypt : {data}")
+        raise e
+
+
+def decrypt(data):
+    try:
+        return Fernet(OCTOBOT_KEY).decrypt(data.encode()).decode()
+    except Exception as e:
+        logging.getLogger().error(f"Failed to decrypt : {data}")
+        raise e

@@ -70,9 +70,9 @@ class TestExchangeSimulator:
         _, exchange_inst, exchange_simulator, trader_inst = self.init_default()
 
         # first call
-        assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR)
-        assert exchange_simulator.should_update_data(TimeFrames.FOUR_HOURS)
-        assert exchange_simulator.should_update_data(TimeFrames.ONE_DAY)
+        assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR, self.DEFAULT_SYMBOL)
+        assert exchange_simulator.should_update_data(TimeFrames.FOUR_HOURS, self.DEFAULT_SYMBOL)
+        assert exchange_simulator.should_update_data(TimeFrames.ONE_DAY, self.DEFAULT_SYMBOL)
 
         # call get prices
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
@@ -80,9 +80,9 @@ class TestExchangeSimulator:
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
         # call with trader without order
-        assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR)
-        assert not exchange_simulator.should_update_data(TimeFrames.FOUR_HOURS)
-        assert not exchange_simulator.should_update_data(TimeFrames.ONE_DAY)
+        assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR, self.DEFAULT_SYMBOL)
+        assert not exchange_simulator.should_update_data(TimeFrames.FOUR_HOURS, self.DEFAULT_SYMBOL)
+        assert not exchange_simulator.should_update_data(TimeFrames.ONE_DAY, self.DEFAULT_SYMBOL)
         exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
 
         self.stop(trader_inst)

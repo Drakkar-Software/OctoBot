@@ -1,4 +1,4 @@
-from abc import *
+from abc import ABCMeta, abstractmethod
 import math
 from timeit import default_timer as timer
 
