@@ -189,7 +189,10 @@
 <div class="d-none">
     <!-- Exchange -->
     <div id="AddExchange-template-default">
-        {{ m_config_exchange_card.config_exchange_card(config=config_exchanges, exchange=config_default_value, add_class=modified_class) }}
+        {{ m_config_exchange_card.config_exchange_card( config=config_exchanges,
+                                                        exchange=config_default_value,
+                                                        keys_value="NO KEY",
+                                                        add_class=modified_class) }}
     </div>
 
     <!-- Services -->

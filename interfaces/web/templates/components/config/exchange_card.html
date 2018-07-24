@@ -1,4 +1,4 @@
-{% macro config_exchange_card(config, exchange, add_class='') -%}
+{% macro config_exchange_card(config, exchange, keys_value="*********", add_class='') -%}
     <!-- Card -->
     <div class="card mb-4 {{add_class}}">
 
@@ -18,25 +18,25 @@
                             id="exchange_api-key"
                             config-key="exchanges_{{exchange}}_api-key"
                             config-type="global_config"
-                            config-value="*********"
-                            startup-config-value="*********"
+                            config-value="{{keys_value}}"
+                            startup-config-value="{{keys_value}}"
                             data-type="text"
                             data-pk="1"
                             data-title="Enter api key"
                             class="editable editable-click config-element">
-                *********</a><br>
+                {{keys_value}}</a><br>
 
                 API Secret : <a href="#"
                             id="exchange_api-secret"
                             config-key="exchanges_{{exchange}}_api-secret"
                             config-type="global_config"
-                            config-value="************"
-                            startup-config-value="************"
+                            config-value="{{keys_value}}"
+                            startup-config-value="{{keys_value}}"
                             data-type="text"
                             data-pk="1"
                             data-title="Enter exchange api secret"
                             class="editable editable-click config-element">
-                ************</a><br>
+                {{keys_value}}</a><br>
             </p>
 
             <p class="card-text websocket">
