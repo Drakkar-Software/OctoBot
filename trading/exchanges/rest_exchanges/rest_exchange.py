@@ -1,6 +1,7 @@
 import logging
 
 from ccxt import OrderNotFound, BaseError
+from cryptography.fernet import InvalidToken
 
 from config.config import decrypt
 from config.cst import *
@@ -37,12 +38,15 @@ class RESTExchange(AbstractExchange):
     # ccxt exchange instance creation
     def create_client(self):
         if self.exchange_manager.check_config(self.get_name()):
-            self.client = self.exchange_type({
-                'apiKey': decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
-                'secret': decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]),
-                'verbose': False,
-                'enableRateLimit': True
-            })
+            try:
+                self.client = self.exchange_type({
+                    'apiKey': decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
+                    'secret': decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]),
+                    'verbose': False,
+                    'enableRateLimit': True
+                })
+            except InvalidToken:
+                self.client = self.exchange_type({'verbose': False})
         else:
             self.client = self.exchange_type({'verbose': False})
             self.logger.error("configuration issue: missing login information !")
