@@ -5,10 +5,11 @@ import shutil
 from copy import copy
 from functools import reduce
 
-from config.config import load_config
+from config.config import load_config, decrypt, encrypt
 from config.cst import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
     TEMP_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_ADVANCED_CLASSES, \
-    CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES
+    CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
+    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY
 
 
 class ConfigManager:
@@ -50,6 +51,17 @@ class ConfigManager:
 
     @staticmethod
     def jsonify_config(config):
+        # check exchange keys encryption
+        for exchange in config[CONFIG_EXCHANGES]:
+            try:
+                decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY])
+            except Exception:
+                config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]).decode()
+            try:
+                decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET])
+            except Exception:
+                config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]).decode()
+
         # remove service instances
         for service in config[CONFIG_CATEGORY_SERVICES]:
             config[CONFIG_CATEGORY_SERVICES][service].pop(CONFIG_SERVICE_INSTANCE, None)
@@ -141,4 +153,3 @@ class ConfigManager:
                 dict_dest[key] = dict_src[key]
 
         return dict_dest
-
