@@ -61,7 +61,7 @@
     "global_info": false,
     "price_alerts": false,
     "trades": false,
-    "type": 1
+    "notification_type": 1
   },
   "trader":{
     "enabled": false,
