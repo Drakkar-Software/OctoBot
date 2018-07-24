@@ -139,7 +139,7 @@ class SymbolEvaluator:
         if not self.finalize_enabled_list[exchange.get_name()]:
             self._check_finalize(exchange)
 
-        if self.finalize_enabled_list[exchange.get_name()]:
+        if self.are_all_timeframes_initialized(exchange):
             for decider in self.trading_mode_instances[exchange.get_name()].get_deciders(self.symbol):
                 decider.add_to_queue()
 
@@ -149,6 +149,9 @@ class SymbolEvaluator:
                 if decider.has_something_to_do():
                     return True
         return False
+
+    def are_all_timeframes_initialized(self, exchange):
+        return self.finalize_enabled_list[exchange.get_name()]
 
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
