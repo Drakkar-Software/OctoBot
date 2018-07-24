@@ -1,92 +1,248 @@
 {% extends "layout.html" %}
+{% import 'components/config/exchange_card.html' as m_config_exchange_card %}
+{% import 'components/config/service_card.html' as m_config_service_card %}
+{% import 'components/config/currency_card.html' as m_config_currency_card %}
+{% import 'components/config/trader_card.html' as m_config_trader_card %}
+{% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
+
+{% set config_default_value = "@config_default_value@" %}
+{% set modified_class = "warning-color" %}
+
+{% block additional_style %}
+<style>
+    li.nav-item {
+        padding-right: 5px;
+    }
+</style>
+{% endblock additional_style %}
+
 {% block body %}
-<h1>Configuration</h1>
-<div class="alert alert-primary" role="alert">
-    Any configuration change will be take into account after OctBot restarts.
-    <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="btn btn-warning btn-sm float-right">Restart Octobot</button>
+<div id="nav-config" class="animated slideInDown sticky-top">
+    <nav class="navbar nav-tabs info-color" data-toggle="affix">
+        <!-- Nav tabs -->
+         <ul class="nav mr-auto md-pills nav-justified">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#panelExchanges" role="tab">Exchanges</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelEvaluators" role="tab">Evaluators</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelTrading" role="tab">Trading</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelNotifications" role="tab">Notifications</a>
+            </li>
+             <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelServices" role="tab">Services</a>
+            </li>
+             <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#panelSymbols" role="tab">Symbols</a>
+            </li>
+        </ul>
+    </nav>
+
+    <nav class="navbar nav-tabs alert-primary">
+        Any configuration change will be take into account after OctBot restarts.
+        <ul class="nav mx-auto">
+            <li class="nav-item">
+                <a class="nav-link green" id='save-config' href="#" role="tab">Save</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link orange" id='reset-config' href="#" role="tab">Reset</a>
+            </li>
+        </ul>
+        <ul class="nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link red" href="{{ url_for('commands', cmd='restart') }}" role="tab">Restart Octobot</a>
+            </li>
+        </ul>
+    </nav>
 </div>
-<div class="accordion" id="accordionConfiguration">
-    <div class="card">
-        <div class="card-header" id="headingExchanges">
-          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseExchanges" aria-expanded="false" aria-controls="collapseExchanges">
-            <button class="btn btn-link" type="button" >
-              Exchanges
-            </button>
-          </h5>
+<div class="alert alert-danger" role="alert">
+    <h1>This page is currently in development</h1>
+</div>
+<!-- Tab panels -->
+<div class="tab-content">
+
+    <!--Panel Exchanges-->
+    <div class="tab-pane fade in show active config-root" id="panelExchanges" role="tabpanel"><br>
+        <br>
+        <div class="alert alert-success">Add a new exchange :
+            <select id="AddExchangeSelect" class="selectpicker" data-live-search="true">
+               {% for exchange in ccxt_exchanges %}
+                    <option data-tokens="{{ exchange }}">{{ exchange }}</option>
+               {% endfor %}
+            </select>
+            <button type="button" id="AddExchange" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
-        <div id="collapseExchanges" class="collapse" aria-labelledby="headingExchanges" data-parent="#accordionConfiguration">
-          <div class="card-body">
-            EXCHANGE CONFIG
-          </div>
-          <div class="card-body text-center">
-            <button class="btn btn-primary btn-lg " id='save-exchange-config'>Save</button>
-            <button class="btn btn-outline-warning btn-lg" id='reset-exchange-config'>Reset</button>
-          </div>
+        <!-- Card deck -->
+        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+            {% for exchange in config_exchanges %}
+                {{ m_config_exchange_card.config_exchange_card(config_exchanges, exchange) }}
+            {% endfor %}
         </div>
     </div>
-    <div class="card config-root">
-        <div class="card-header" id="headingEvaluators">
-            <h3 class="mb-0" data-toggle="collapse" data-target="#collapseEvaluators" aria-expanded="true" aria-controls="collapseEvaluators">
-                <button class="btn btn-link" type="button" >
-                  Evaluators
-                </button>
-                <button class="btn btn-outline-warning btn-lg float-right" id='reset-evaluator-config'>Reset</button>
-                <button class="btn btn-primary btn-lg float-right" id='save-evaluator-config'>Save</button>
-            </h3>
+
+    <!--Panel Evaluators-->
+    <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel"><br>
+
+        <div class="row config-container" update-url="{{ url_for('config') }}" id="evaluator-config-root">
+            {% for evaluator_name, activated in get_evaluator_config().items() %}
+                {{ m_config_evaluator_card.config_evaluator_card(get_evaluator_startup_config(), evaluator_name, activated) }}
+            {% endfor %}
         </div>
 
-        <div id="collapseEvaluators" class="collapse show" aria-labelledby="headingEvaluators" data-parent="#accordionConfiguration">
-          <div class="card-body config-container" update-url="{{ url_for('config', update_type='evaluator_config') }}" id="evaluator-config-root">
-            <div class="card-text row">
-              {% for evaluator_name, activated in get_evaluator_config().items() %}
-                <a href="#" onclick="return false;" class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element evaluator-config-element" id={{evaluator_name}} config-key={{evaluator_name}} current-value={{activated}} config-value={{activated}} startup-config-value={{get_evaluator_startup_config()[evaluator_name]}}>{{ evaluator_name }}
-                  <span class="float-right">
-                    <span class="badge {{'badge-warning' if get_evaluator_startup_config()[evaluator_name] != activated else ('badge-success' if activated else 'badge-secondary')}}">{{('Activation pending restart' if activated else 'Deactivation pending restart') if get_evaluator_startup_config()[evaluator_name] != activated else ('Activated' if activated else 'Deactivated')}}</span>
-                  </span>
-                </a>
-              {% endfor %}
+    </div>
+
+    <!--Panel Trading-->
+    <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel"><br>
+         <!-- Card deck -->
+        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+            {% for trader in ["Trader", "Trader Simulator"] %}
+                {{ m_config_trader_card.config_trader_card(trader) }}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!--Panel Notifications-->
+    <div class="tab-pane fade config-root" id="panelNotifications" role="tabpanel"><br>
+        <!-- Card deck -->
+        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+            <!-- Card -->
+            <div class="card mb-4">
+
+                <!--Card content-->
+                <div class="card-body">
+
+                    <!--Title-->
+                    <h4 class="card-title">Notifications</h4>
+
+                    <p class="card-text enable">
+                        Global info : <input type="checkbox" checked="checked"><br>
+                        Price alerts : <input type="checkbox" checked="checked"><br>
+                        Trades : <input type="checkbox" checked="checked"><br>
+                    </p>
+                </div>
             </div>
-          </div>
+
+            <!-- Card -->
+            <div class="card mb-4">
+
+                <!--Card content-->
+                <div class="card-body">
+
+                    <!--Title-->
+                    <h4 class="card-title">Notification type</h4>
+
+                    <p class="card-text enable">
+                        {% for service in services_list %}
+                            {{ service }} : <input type="checkbox"><br>
+                        {% endfor %}
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="card">
-        <div class="card-header" id="headingTrading">
-          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseTrading" aria-expanded="false" aria-controls="collapseTrading">
-            <button class="btn btn-link collapsed" type="button">
-              Trading
-            </button>
-          </h5>
+
+    <!--Panel Services-->
+    <div class="tab-pane fade config-root" id="panelServices" role="tabpanel"><br>
+        <div class="alert alert-success">Add a new service :
+            <select id="AddServiceSelect" class="selectpicker" data-live-search="true">
+               {% for service in services_list %}
+                    <option data-tokens="{{ service }}">{{ service }}</option>
+               {% endfor %}
+            </select>
+            <button type="button" id="AddService" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
-        <div id="collapseTrading" class="collapse" aria-labelledby="headingTrading" data-parent="#accordionConfiguration">
-          <div class="card-body">
-            TRADING CONFIG
-          </div>
-          <div class="card-body text-center">
-            <button class="btn btn-primary btn-lg " id='save-trading-config'>Save</button>
-            <button class="btn btn-outline-warning btn-lg" id='reset-trading-config'>Reset</button>
-          </div>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-header" id="headingNotifications">
-          <h5 class="mb-0" data-toggle="collapse" data-target="#collapseNotifications" aria-expanded="false" aria-controls="collapseNotifications">
-            <button class="btn btn-link collapsed" type="button">
-              Notifications
-            </button>
-          </h5>
-        </div>
-        <div id="collapseNotifications" class="collapse" aria-labelledby="headingNotifications" data-parent="#accordionConfiguration">
-          <div class="card-body">
-            NOTIFICATIONS CONFIG
-          </div>
-          <div class="card-body text-center">
-            <button class="btn btn-primary btn-lg " id='save-notification-config'>Save</button>
-            <button class="btn btn-outline-warning btn-lg" id='reset-notification-config'>Reset</button>
-          </div>
+
+        <!-- Card deck -->
+        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+            {% for service in services_list %}
+                {{ m_config_service_card.config_service_card(service) }}
+            {% endfor %}
         </div>
     </div>
-    <br>
+
+    <!--Panel Symbols-->
+    <div class="tab-pane fade config-root" id="panelSymbols" role="tabpanel"><br>
+        <div class="alert alert-success">Add a new symbol :
+            <select id="AddSymbolSelect" class="selectpicker" data-live-search="true">
+               {% for symbol in symbol_list %}
+                    <option data-tokens="{{ symbol }}">{{ symbol }}</option>
+               {% endfor %}
+            </select>
+            <button type="button" id="AddSymbol" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+        </div>
+
+        <!-- Card deck -->
+        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+            {% for crypto_currency in config_symbols %}
+               {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency) }}
+            {% endfor %}
+        </div>
+    </div>
 </div>
-<script src="{{ url_for('static', filename='js/components/configuration.js') }}"></script>
+
+<!-- Default cards -->
+<div class="d-none">
+    <!-- Exchange -->
+    <div id="AddExchange-template-default">
+        {{ m_config_exchange_card.config_exchange_card( config=config_exchanges,
+                                                        exchange=config_default_value,
+                                                        keys_value="NO KEY",
+                                                        add_class=modified_class) }}
+    </div>
+
+    <!-- Services -->
+    <div id="AddService-template-default">
+         {{ m_config_service_card.config_service_card(service=config_default_value, add_class=modified_class) }}
+    </div>
+
+    <!-- Symbols -->
+    <div id="AddSymbol-template-default">
+        {{ m_config_currency_card.config_currency_card(config_symbols=[], crypto_currency=config_default_value, add_class=modified_class) }}
+    </div>
+</div>
 {% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/configuration.js') }}"></script>
+
+<script>
+$(document).ready(function () {
+    setup_editable();
+    handle_editable();
+
+    handle_reset_buttons();
+    handle_save_buttons();
+
+    handle_evaluator_configuration_editor();
+    handle_global_configuration_editor();
+
+    $('#save-config').prop('disabled', true);
+    $('#reset-config').prop('disabled', true);
+    $('.evaluator-config-element').click(function() {
+        refresh_buttons_lock($('#evaluator-config-root'), $('#save-config'), $('#reset-config'));
+    });
+    at_least_one_temporary_element
+});
+
+// Card deck adding
+$(".add-btn").click(function() {
+    var deck = $(this).parents("." + config_root_class).find(".card-deck");
+    var select_value = $("#" + $(this).attr("id") + "Select").val();
+    var template_default = $("#" + $(this).attr("id") + "-template-default").html().replace(/{{ config_default_value }}/g, select_value);
+    deck.append(template_default).hide().fadeIn();
+    handle_editable();
+});
+
+// Card deck removing
+$(document).on("click", ".remove-btn", function() {
+    $(this).parents(".card").fadeOut("normal", function() {
+        $(this).remove();
+    });
+});
+</script>
+{% endblock additional_scripts %}

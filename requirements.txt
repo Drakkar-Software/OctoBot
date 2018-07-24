@@ -1,25 +1,40 @@
-matplotlib==2.2.2
-requests
-vaderSentiment
-pytrends
-twisted==18.4.0
-cryptography >= 2.2.1
+# Cryptocurrency trading
 python-binance
-tulipy
+twisted==18.4.0
 ccxt
-pandas
-jinja2
-colorlog
-Python-Twitter
-psutil
-plotly
-newspaper3k
+tulipy
+
+## Services
+# Reddit
 praw
+
+# Telegram
 python-telegram-bot
-gitpython
+
+# Twitter
+Python-Twitter
+
+# Web
+jinja2
+flask
 dash
 dash-table-experiments
-flask
 dash-renderer
 dash-html-components
 dash-core-components
+
+## Tools
+# Analysis tools
+newspaper3k
+pytrends
+vaderSentiment
+
+## Others
+gitpython
+psutil
+plotly
+colorlog
+cryptography >= 2.2.1
+pytz
+tzlocal
+requests

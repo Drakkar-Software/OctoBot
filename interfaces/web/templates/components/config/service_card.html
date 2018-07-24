@@ -1,0 +1,31 @@
+{% macro config_service_card(service, add_class='') -%}
+    <!-- Card -->
+    <div class="card mb-4 {{add_class}}">
+
+        <!--Card image-->
+        <div class="view overlay">
+          <!--{{ service }}-->
+        </div>
+
+        <!--Card content-->
+        <div class="card-body">
+
+            <!--Title-->
+            <h4 class="card-title">{{service}}</h4>
+
+            <p class="card-text api">
+                UserName : <a href="#" id="service_user-name" data-type="text" data-pk="1" data-title="Enter service username"
+                                      class="editable editable-click">*********</a><br>
+                Password : <a href="#" id="service_password" data-type="text" data-pk="1" data-title="Enter service password"
+                                      class="editable editable-click">*********</a></span>
+            </p>
+
+            <p class="card-text token">
+                Token : <a href="#" id="service_token" data-type="text" data-pk="1" data-title="Enter service token"
+                                      class="editable editable-click">*********</a>
+            </p>
+
+            <button type="button" class="btn btn-danger remove-btn px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
+        </div>
+    </div>
+{%- endmacro %}

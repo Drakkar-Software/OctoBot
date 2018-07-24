@@ -28,7 +28,7 @@ function handle_route_button(){
             $.ajax({
                 url: command,
                 beforeSend: function() {
-                    button.html("<i class='fas fa-circle-notch fa-spin'></i>");
+                    button.html("<i class='fa fa-circle-notch fa-spin'></i>");
                 },
                 complete: function() {
                    button.html(origin_val);
@@ -58,7 +58,7 @@ function send_and_interpret_bot_update(updated_data, update_url, dom_root_elemen
             window.console&&console.error(status);
             window.console&&console.error(error);
             if(typeof error_callback === "undefined") {
-                create_alert("danger", "Error when handling action: "+result.responseText+".", "");
+                create_alert("error", "Error when handling action: "+result.responseText+".", "");
             }
             else{
                 error_callback(updated_data, update_url, dom_root_element, result, status, error)

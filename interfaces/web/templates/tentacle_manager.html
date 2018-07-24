@@ -70,8 +70,8 @@
             <td>{{tentacle.type}}</td>
             <td>{{tentacle.subtype}}</td>
             <td>{{tentacle.version}}</td>
-            <td class="text-center"><a class="btn fas fa-download" onclick="update('{{tentacle.name}}')" data-toggle="tooltip" data-placement="right" title="Update tentacle"></a>
-                <a class="btn fas fa-trash-alt" onclick="uninstall('{{tentacle.name}}')" data-toggle="tooltip" data-placement="right" title="Uninstall tentacle"></a></td>
+            <td class="text-center"><a class="btn fa fa-download" onclick="update('{{tentacle.name}}')" data-toggle="tooltip" data-placement="right" title="Update tentacle"></a>
+                <a class="btn fa fa-trash-alt" onclick="uninstall('{{tentacle.name}}')" data-toggle="tooltip" data-placement="right" title="Uninstall tentacle"></a></td>
         </tr>
     {% endfor %}
   </tbody>
@@ -83,5 +83,8 @@
     <button type="button" class="btn btn-primary card-link" id="update_selected_tentacles" update-url="{{ url_for('tentacle_manager', update_type='update_modules') }}">Update selected tentacles</button>
     <button type="button" class="btn btn-danger card-link" id="uninstall_selected_tentacles" update-url="{{ url_for('tentacle_manager', update_type='uninstall_modules') }}">Uninstall selected tentacles</button>
 </div>
-<script src="{{ url_for('static', filename='js/components/tentacles_configuration.js') }}"></script>
 {% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/tentacles_configuration.js') }}"></script>
+{% endblock additional_scripts %}

@@ -7,11 +7,13 @@ import flask
 import numpy
 
 from config.cst import PriceIndexes
-from interfaces.web.advanced_controllers.home import get_advanced_blueprint
+from interfaces.web.advanced_controllers import advanced
+from interfaces.web.api import api
 
 server_instance = flask.Flask(__name__)
 
-server_instance.register_blueprint(get_advanced_blueprint())
+server_instance.register_blueprint(advanced)
+server_instance.register_blueprint(api)
 
 # dash
 app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
@@ -57,14 +59,14 @@ def add_to_symbol_data_history(symbol, data, time_frame, force_data_reset=False)
         # merge new data into current data
         # find index from where data is new
         new_data_index = 0
-        for i in range(1, len(data)):
-            if data[-i][PriceIndexes.IND_PRICE_TIME.value] > \
-                    symbol_data_history[symbol][time_frame][-1][PriceIndexes.IND_PRICE_TIME.value]:
+        candle_times = data[PriceIndexes.IND_PRICE_TIME.value]
+        for i in range(1, len(candle_times)):
+            if candle_times[-i] > symbol_data_history[symbol][time_frame][PriceIndexes.IND_PRICE_TIME.value][-1]:
                 new_data_index = i
             else:
                 break
         if new_data_index > 0:
-            data_list = [None]*len(PriceIndexes)
+            data_list = [None] * len(PriceIndexes)
             for i in range(len(data)):
                 data_list[i] = data[i][-new_data_index:]
             new_data = numpy.array(data_list)
@@ -110,21 +112,3 @@ def load_callbacks():
         update_evaluator_dropdown_values, \
         update_currencies_amounts, \
         update_portfolio_value
-
-
-def load_routes():
-    from .controllers.trading import portfolio
-    from .controllers.trading import orders
-    from .controllers.tentacles import tentacles
-    from .controllers.tentacles import tentacle_manager
-    from .controllers.backtesting import backtesting
-    from .controllers.backtesting import data_collector
-    from .controllers.commands import commands
-    from .controllers.commands import update
-    from .controllers.configuration import config
-    from .controllers.dashboard import dash
-    from .controllers.home import home
-
-
-def load_advanced_routes():
-    from interfaces.web.advanced_controllers.home import home

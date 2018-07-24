@@ -7,6 +7,7 @@ $tentacle_description: {
     "version": "{{ version }}",
     "requirements": {{ requirements }},
     "config_files": {{ config }},
+    "resource_files": [],
     "tests": [],
     "developing": true
 }
