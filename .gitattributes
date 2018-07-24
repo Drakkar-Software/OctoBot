@@ -1,4 +1,4 @@
-static/* linguist-vendored
+interfaces/web/static/* linguist-vendored
 docs/static/**/*.png filter=lfs diff=lfs merge=lfs -text
 docs/static/**/*.jpg filter=lfs diff=lfs merge=lfs -text
 docs/static/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
