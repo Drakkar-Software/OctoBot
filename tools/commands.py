@@ -9,6 +9,7 @@ from backtesting.collector.data_collector import DataCollector
 from config.cst import ORIGIN_URL, GIT_ORIGIN
 from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
+from tools.strategy_optimizer import StrategyOptimizer
 
 
 class Commands:
@@ -101,6 +102,13 @@ class Commands:
         except Exception as e:
             if not catch:
                 raise e
+
+    @staticmethod
+    def start_strategy_optimizer(config, commands):
+        optimizer = StrategyOptimizer(config, commands[0])
+        if optimizer.is_properly_initialized:
+            optimizer.find_optimal_configuration()
+            optimizer.print_report()
 
     @staticmethod
     def start_bot(bot, logger, catch=False):

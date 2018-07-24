@@ -70,6 +70,9 @@ def start_octobot(starting_args):
             elif starting_args.creator:
                 Commands.tentacle_creator(config, starting_args.creator)
 
+            elif starting_args.strategy_optimizer:
+                Commands.start_strategy_optimizer(config, starting_args.strategy_optimizer)
+
             else:
                 # In those cases load OctoBot
                 from octobot import OctoBot
@@ -149,6 +152,17 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c Evaluator '
                                                 'to create a new evaluator tentacles. Use: -c help to get the '
                                                 'Tentacle Creator help.',
+                        nargs='+')
+
+    parser.add_argument('-o', '--strategy_optimizer', help='Start Octobot strategy optimizer. This mode will make '
+                                                           'octobot play backtesting scenarii located in '
+                                                           'abstract_strategy_test.py with different timeframes, '
+                                                           'evaluators and risk using the trading mode set in '
+                                                           'config.json. This tool is useful to quickly test a '
+                                                           'strategy and automatically find the best compatible '
+                                                           'settings. Param is the name of the strategy class to '
+                                                           'test. Example: -o FullMixedStrategiesEvaluator'
+                                                           ' Warning: this process may take a long time.',
                         nargs='+')
 
     args = parser.parse_args()
