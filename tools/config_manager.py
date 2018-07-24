@@ -33,27 +33,31 @@ class ConfigManager:
         # when fail restore the old config
         except Exception as e:
             logging.getLogger("ConfigManager").error("Save config failed : {}".format(e))
-            ConfigManager.restore_config(config_file, temp_config_file)
+            ConfigManager.restore_config(temp_config_file, config_file)
             raise e
 
     @staticmethod
     def restore_config(new_config_file, old_config_file, remove_old_file=True, restore=True):
         try:
             if restore:
-                shutil.copy(old_config_file, new_config_file)
+                shutil.copy(new_config_file, old_config_file)
 
             if remove_old_file:
-                os.remove(old_config_file)
+                os.remove(new_config_file)
         except OSError:
             pass
 
     @staticmethod
     def jsonify_config(config):
         # remove service instances
-        for service in config[CONFIG_CATEGORY_SERVICES][0]:
-            config[CONFIG_CATEGORY_SERVICES][0][service].pop(CONFIG_SERVICE_INSTANCE, None)
+        # TODO
+        config[CONFIG_CATEGORY_SERVICES] = config[CONFIG_CATEGORY_SERVICES][0]
+
+        for service in config[CONFIG_CATEGORY_SERVICES]:
+            config[CONFIG_CATEGORY_SERVICES][service].pop(CONFIG_SERVICE_INSTANCE, None)
 
         # remove non config keys
+        # TODO
         config.pop(CONFIG_EVALUATOR, None)
         config.pop(CONFIG_INTERFACES, None)
         config.pop(CONFIG_ADVANCED_CLASSES, None)
@@ -61,7 +65,7 @@ class ConfigManager:
         config.pop(CONFIG_NOTIFICATION_INSTANCE, None)
         config.pop(CONFIG_ADVANCED_INSTANCES, None)
 
-        return json.dumps(config)
+        return json.dumps(config, indent=4, sort_keys=True)
 
     @staticmethod
     def check_config(config_file):
