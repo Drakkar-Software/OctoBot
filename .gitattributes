@@ -1,2 +1,7 @@
-interfaces/web/static/* linguist-vendored
-!interfaces/web/static/js/* linguist-vendored
+interfaces/web/static/css/* linguist-vendored
+interfaces/web/static/scss/* linguist-vendored
+interfaces/web/static/webfonts/* linguist-vendored
+interfaces/web/static/font/* linguist-vendored
+
+interfaces/web/static/js/addons/* linguist-vendored
+interfaces/web/static/js/lib/* linguist-vendored
