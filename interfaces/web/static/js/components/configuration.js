@@ -15,9 +15,21 @@ function handle_save_buttons(){
         var update_url = full_config.attr(update_url_attr);
 
         full_config.find("."+config_element_class).each(function(){
-            var new_value = $(this).attr(current_value_attr)
+            var new_value = "";
+            var config_type = $(this).attr(config_type_attr);
+
+            if(!(config_type in updated_config)){
+                updated_config[config_type] = {};
+            }
+
+            if($(this)[0].hasAttribute(current_value_attr)){
+                new_value = $(this).attr(current_value_attr);
+            }else{
+                new_value = replace_spaces(replace_break_line($(this).text()));
+            }
+
             if(new_value.toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
-                updated_config[$(this).attr(config_key_attr)]=new_value;
+                updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
             }
         })
 
@@ -60,6 +72,9 @@ function handle_evaluator_configuration_editor(){
             }
         }
     });
+}
+
+function handle_global_configuration_editor(){
 }
 
 function reset_configuration_element(element){
