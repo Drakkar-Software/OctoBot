@@ -15,12 +15,16 @@ def create_backtesting_config(wanted_symbols=["BTC/USDT"], filter_symbols=True):
         filter_wanted_symbols(config, wanted_symbols)
 
     # setup backtesting config
+    add_config_default_backtesting_values(config)
+
+    return config
+
+
+def add_config_default_backtesting_values(config):
     config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
     config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
     config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
     config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
-
-    return config
 
 
 def filter_wanted_symbols(config, wanted_symbols):

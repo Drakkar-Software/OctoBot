@@ -80,11 +80,11 @@ class AbstractStrategyTest:
         self._assert_results(run_results, profitability)
 
     def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3):
-        run_results = self._run_backtesting_with_current_config("ICX/BTC", True)
+        run_results = self._run_backtesting_with_current_config("ICX/BTC")
         self._assert_results(run_results, profitability_1)
-        run_results = self._run_backtesting_with_current_config("NEO/BTC", True, "bittrex_NEO_BTC_20180722_195942")
+        run_results = self._run_backtesting_with_current_config("NEO/BTC", "bittrex_NEO_BTC_20180722_195942")
         self._assert_results(run_results, profitability_2)
-        run_results = self._run_backtesting_with_current_config("ONT/BTC", True)
+        run_results = self._run_backtesting_with_current_config("ONT/BTC")
         self._assert_results(run_results, profitability_3)
 
     def run_test_sharp_downtrend(self, profitability):
@@ -92,31 +92,31 @@ class AbstractStrategyTest:
         self._assert_results(run_results, profitability)
 
     def run_test_flat_markets(self, profitability_1, profitability_2, profitability_3):
-        run_results = self._run_backtesting_with_current_config("NEO/BTC", True)
+        run_results = self._run_backtesting_with_current_config("NEO/BTC")
         self._assert_results(run_results, profitability_1)
-        run_results = self._run_backtesting_with_current_config("XRB/BTC", True)
+        run_results = self._run_backtesting_with_current_config("XRB/BTC")
         self._assert_results(run_results, profitability_2)
-        run_results = self._run_backtesting_with_current_config("ADA/BTC", True, "bittrex_ADA_BTC_20180722_223357")
+        run_results = self._run_backtesting_with_current_config("ADA/BTC", "bittrex_ADA_BTC_20180722_223357")
         self._assert_results(run_results, profitability_3)
 
     def run_test_slow_uptrend(self, profitability_1, profitability_2):
-        run_results = self._run_backtesting_with_current_config("BTC/USDT", True)
+        run_results = self._run_backtesting_with_current_config("BTC/USDT")
         self._assert_results(run_results, profitability_1)
-        run_results = self._run_backtesting_with_current_config("ADA/BTC", True)
+        run_results = self._run_backtesting_with_current_config("ADA/BTC")
         self._assert_results(run_results, profitability_2)
 
     def run_test_sharp_uptrend(self, profitability_1, profitability_2):
-        run_results = self._run_backtesting_with_current_config("XLM/BTC", True)
+        run_results = self._run_backtesting_with_current_config("XLM/BTC")
         self._assert_results(run_results, profitability_1)
-        run_results = self._run_backtesting_with_current_config("POWR/BTC", True)
+        run_results = self._run_backtesting_with_current_config("POWR/BTC")
         self._assert_results(run_results, profitability_2)
 
     def _assert_results(self, run_results, profitability):
         # print(f"results: {run_results} expected: {profitability}")  # convenient for building tests
         assert run_results[0] >= profitability
 
-    def _run_backtesting_with_current_config(self, symbol, copy_config_before_use=False, data_file_to_use=None):
-        config_to_use = copy.deepcopy(self.config) if copy_config_before_use else self.config
+    def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
+        config_to_use = copy.deepcopy(self.config)
         if data_file_to_use is not None:
             for index, datafile in enumerate(config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES]):
                 _, file_symbol, _ = ExchangeDataCollector.get_file_name(datafile)
