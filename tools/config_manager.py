@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 from copy import copy
+from functools import reduce
 
 from config.config import load_config
 from config.cst import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
@@ -50,9 +51,6 @@ class ConfigManager:
     @staticmethod
     def jsonify_config(config):
         # remove service instances
-        # TODO
-        config[CONFIG_CATEGORY_SERVICES] = config[CONFIG_CATEGORY_SERVICES][0]
-
         for service in config[CONFIG_CATEGORY_SERVICES]:
             config[CONFIG_CATEGORY_SERVICES][service].pop(CONFIG_SERVICE_INSTANCE, None)
 
@@ -105,8 +103,7 @@ class ConfigManager:
         ]
 
         # merge configs
-        for new_config in updated_configs:
-            new_current_config = ConfigManager.merge_dictionaries_by_appending_keys(new_current_config, new_config)
+        reduce(ConfigManager.merge_dictionaries_by_appending_keys, [new_current_config] + updated_configs)
 
         # save config
         ConfigManager.save_config(CONFIG_FILE, new_current_config, TEMP_CONFIG_FILE)
@@ -132,4 +129,17 @@ class ConfigManager:
 
     @staticmethod
     def merge_dictionaries_by_appending_keys(dict_src, dict_dest):
-        return dict((k, [v] + ([dict_dest[k]] if k in dict_dest else [])) for (k, v) in dict_src.items())
+        for key in dict_src:
+            if key in dict_dest:
+                if isinstance(dict_dest[key], dict) and isinstance(dict_src[key], dict):
+                    dict_dest[key] = ConfigManager.merge_dictionaries_by_appending_keys(dict_dest[key], dict_src[key])
+                elif dict_dest[key] == dict_src[key]:
+                    pass  # same leaf value
+                else:
+                    # config
+                    logging.getLogger().error(f"Conflict when merging dict with key : {key}")
+            else:
+                dict_dest[key] = dict_src[key]
+
+        return dict_dest
+
