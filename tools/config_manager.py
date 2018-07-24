@@ -136,7 +136,6 @@ class ConfigManager:
                 elif dict_dest[key] == dict_src[key]:
                     pass  # same leaf value
                 else:
-                    # config
                     logging.getLogger().error(f"Conflict when merging dict with key : {key}")
             else:
                 dict_dest[key] = dict_src[key]
