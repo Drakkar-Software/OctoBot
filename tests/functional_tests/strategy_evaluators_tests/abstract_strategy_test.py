@@ -18,8 +18,11 @@ DATA_FILE_EXT = ".data"
 class AbstractStrategyTest:
     __metaclass__ = ABCMeta
 
-    def init(self, strategy_evaluator_class):
-        self.config = create_backtesting_config(filter_symbols=False)
+    def init(self, strategy_evaluator_class, config=None):
+        if config is None:
+            self.config = create_backtesting_config(filter_symbols=False)
+        else:
+            self.config = config
         self.strategy_evaluator_class = strategy_evaluator_class
         self._register_only_strategy(strategy_evaluator_class)
         self._assert_init()
@@ -108,8 +111,7 @@ class AbstractStrategyTest:
         run_results = self._run_backtesting_with_current_config("POWR/BTC", True)
         self._assert_results(run_results, profitability_2)
 
-    @staticmethod
-    def _assert_results(run_results, profitability):
+    def _assert_results(self, run_results, profitability):
         # print(f"results: {run_results} expected: {profitability}")  # convenient for building tests
         assert run_results[0] >= profitability
 

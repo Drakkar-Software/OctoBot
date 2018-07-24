@@ -70,41 +70,43 @@ def start_octobot(starting_args):
             elif starting_args.creator:
                 Commands.tentacle_creator(config, starting_args.creator)
 
-            elif starting_args.strategy_optimizer:
-                Commands.start_strategy_optimizer(config, starting_args.strategy_optimizer)
-
             else:
-                # In those cases load OctoBot
-                from octobot import OctoBot
 
                 config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
                 if config[CONFIG_EVALUATOR] is None:
                     raise ConfigEvaluatorError
 
-                TelegramApp.enable(config, starting_args.telegram)
+                if starting_args.strategy_optimizer:
+                    Commands.start_strategy_optimizer(config, starting_args.strategy_optimizer)
 
-                WebService.enable(config, starting_args.web)
-
-                update_config_with_args(starting_args, config)
-
-                bot = OctoBot(config)
-
-                import interfaces
-
-                interfaces.__init__(bot, config)
-
-                if starting_args.data_collector:
-                    Commands.data_collector(config)
-
-                # start crypto bot options
                 else:
-                    if starting_args.backtesting:
-                        import backtesting
+                    # In those cases load OctoBot
+                    from octobot import OctoBot
 
-                        backtesting.__init__(bot)
+                    TelegramApp.enable(config, starting_args.telegram)
 
-                    if starting_args.start:
-                        Commands.start_bot(bot, logger)
+                    WebService.enable(config, starting_args.web)
+
+                    update_config_with_args(starting_args, config)
+
+                    bot = OctoBot(config)
+
+                    import interfaces
+
+                    interfaces.__init__(bot, config)
+
+                    if starting_args.data_collector:
+                        Commands.data_collector(config)
+
+                    # start crypto bot options
+                    else:
+                        if starting_args.backtesting:
+                            import backtesting
+
+                            backtesting.__init__(bot)
+
+                        if starting_args.start:
+                            Commands.start_bot(bot, logger)
 
     except ConfigError:
         logger.error(f"OctoBot can't start without {CONFIG_FILE} configuration file.")
