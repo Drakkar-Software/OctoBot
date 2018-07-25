@@ -221,5 +221,13 @@ $(document).on("click", ".remove-btn", function() {
         $(this).remove();
     });
 });
+
+// handle currency select
+$("select#AddCurrencySelect").change(function(){
+    var symbol = $(this).find(":selected").attr("symbol");
+
+    // filter in other select
+    $("select#AddSymbolSelect option").filter(':not(:contains(symbol))').hide();
+});
 </script>
 {% endblock additional_scripts %}
