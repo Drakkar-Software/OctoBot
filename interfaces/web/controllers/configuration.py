@@ -28,11 +28,8 @@ def config():
                 success = update_evaluator_config(request_data[EVALUATOR_CONFIG_KEY])
 
         if success:
-            # return get_rest_reply(jsonify({
-            #     GLOBAL_CONFIG_KEY: get_global_config(),
-            #     EVALUATOR_CONFIG_KEY: get_evaluator_config()
-            # }))
-            return get_rest_reply("")
+            # TODO
+            return get_rest_reply(jsonify(get_evaluator_config()))
         else:
             return get_rest_reply('{"update": "ko"}', 500)
     else:
