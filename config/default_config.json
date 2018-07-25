@@ -1,5 +1,5 @@
 {
-  "crypto_currencies":{
+  "crypto-currencies":{
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
     }
@@ -8,21 +8,21 @@
   },
   "services": {},
   "notification":{
-    "global_info": true,
-    "price_alerts": true,
+    "global-info": true,
+    "price-alerts": true,
     "trades": true,
-    "notification_type": []
+    "notification-type": []
   },
   "trader":{
     "enabled": false,
     "risk": 0.5,
-    "reference_market": "BTC",
+    "reference-market": "BTC",
     "mode": "DailyTradingMode"
   },
-  "trader_simulator":{
+  "trader-simulator":{
     "enabled": true,
     "risk": 0.5,
-    "starting_portfolio": {
+    "starting-portfolio": {
       "BTC": 10,
       "USDT": 1000
     }

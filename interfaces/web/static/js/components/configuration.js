@@ -2,6 +2,11 @@ function get_active_tab_config(){
     return $(document).find("." + config_root_class + ".active > ." + config_container_class);
 }
 
+function get_tabs_config(){
+    return $(document).find("." + config_root_class + " ." + config_container_class);
+}
+
+
 function handle_reset_buttons(){
     $("#reset-config").click(function() {
         reset_configuration_element($(this));
@@ -14,23 +19,25 @@ function handle_save_buttons(){
         var updated_config = {};
         var update_url = full_config.attr(update_url_attr);
 
-        full_config.find("."+config_element_class).each(function(){
-            var new_value = "";
-            var config_type = $(this).attr(config_type_attr);
+        get_tabs_config().each(function(){
+            $(this).find("."+config_element_class).each(function(){
+                var new_value = "";
+                var config_type = $(this).attr(config_type_attr);
 
-            if(!(config_type in updated_config)){
-                updated_config[config_type] = {};
-            }
+                if(!(config_type in updated_config)){
+                    updated_config[config_type] = {};
+                }
 
-            if($(this)[0].hasAttribute(current_value_attr)){
-                new_value = $(this).attr(current_value_attr);
-            }else{
-                new_value = replace_spaces(replace_break_line($(this).text()));
-            }
+                if($(this)[0].hasAttribute(current_value_attr)){
+                    new_value = $(this).attr(current_value_attr);
+                }else{
+                    new_value = replace_spaces(replace_break_line($(this).text()));
+                }
 
-            if(new_value.toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
-                updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
-            }
+                if(new_value.toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
+                    updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
+                }
+            })
         })
 
         // send update

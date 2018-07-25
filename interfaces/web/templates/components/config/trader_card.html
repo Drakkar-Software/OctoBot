@@ -1,4 +1,5 @@
-{% macro config_trader_card(trader, add_class='') -%}
+{% import 'components/config/editable_config.html' as m_editable_config %}
+{% macro config_trader_card(config, config_name, trader, add_class='') -%}
     <!-- Card -->
     <div class="card mb-4 {{add_class}}">
 
@@ -8,23 +9,16 @@
             <!--Title-->
             <h4 class="card-title">{{ trader }}</h4>
 
-            <p class="card-text enable">
-                Enabled : <input type="checkbox">
-            </p>
-
-            <!-- IF not simulated -->
             <p class="card-text config">
-                Risk : <span editable="integer">1</span><br>
-                Mode : <span editable="string">DailyTradingMode</span> <br>
-                Reference Market : <span editable="string">BTC</span>
-            </p>
-
-            <!-- IF simulated -->
-            <p class="card-text pf">
-                Starting portfolio :
-                - BTC : 10 <br>
-                - ETH : 20 <br>
-                - USDT : 10000
+                {% for key in config %}
+                    {{ m_editable_config.editable_key(  config,
+                                                        key,
+                                                        config_name + "_" + key,
+                                                        "global_config",
+                                                        config[key],
+                                                        config[key])
+                    }}
+                {% endfor %}
             </p>
         </div>
     </div>

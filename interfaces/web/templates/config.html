@@ -46,10 +46,10 @@
         Any configuration change will be take into account after OctBot restarts.
         <ul class="nav mx-auto">
             <li class="nav-item">
-                <a class="nav-link green" id='save-config' href="#" role="tab">Save</a>
+                <a class="nav-link green" id='save-config' href="#" role="tab">Save all</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link orange" id='reset-config' href="#" role="tab">Reset</a>
+                <a class="nav-link orange" id='reset-config' href="#" role="tab">Reset current tab</a>
             </li>
         </ul>
         <ul class="nav ml-auto">
@@ -100,9 +100,8 @@
     <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel"><br>
          <!-- Card deck -->
         <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            {% for trader in ["Trader", "Trader Simulator"] %}
-                {{ m_config_trader_card.config_trader_card(trader) }}
-            {% endfor %}
+            {{ m_config_trader_card.config_trader_card(config_trader, "trader", "Trader") }}
+            {{ m_config_trader_card.config_trader_card(config_trader_simulator, "trader-simulator", "Trader simulator") }}
         </div>
     </div>
 
@@ -160,7 +159,7 @@
         <!-- Card deck -->
         <div class="card-deck config-container" update-url="{{ url_for('config') }}">
             {% for service in services_list %}
-                {{ m_config_service_card.config_service_card(service) }}
+                {{ m_config_service_card.config_service_card(config_services, service, services_list[service]) }}
             {% endfor %}
         </div>
     </div>
@@ -197,7 +196,9 @@
 
     <!-- Services -->
     <div id="AddService-template-default">
-         {{ m_config_service_card.config_service_card(service=config_default_value, add_class=modified_class) }}
+         {{ m_config_service_card.config_service_card(  config=config_services,
+                                                        service=config_default_value,
+                                                        add_class=modified_class) }}
     </div>
 
     <!-- Symbols -->

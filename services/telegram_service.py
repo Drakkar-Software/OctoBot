@@ -7,6 +7,7 @@ from services.abstract_service import *
 
 
 class TelegramService(AbstractService):
+    REQUIRED_CONFIG = ["chat-id", "token"]
 
     def __init__(self):
         super().__init__()
@@ -22,7 +23,7 @@ class TelegramService(AbstractService):
 
     def prepare(self):
         if not self.telegram_api:
-            self.chat_id = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]["chat_id"]
+            self.chat_id = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]["chat-id"]
             self.telegram_api = telegram.Bot(
                 token=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_TOKEN])
 
@@ -56,9 +57,8 @@ class TelegramService(AbstractService):
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
-               and CONFIG_TELEGRAM in self.config[CONFIG_CATEGORY_SERVICES] \
-               and "token" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM] \
-               and "chat_id" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]
+               and CONFIG_TELEGRAM in self.config[CONFIG_CATEGORY_SERVICES]  \
+               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM])
 
     def send_message(self, content):
         try:
