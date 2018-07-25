@@ -76,44 +76,44 @@ class AbstractStrategyTest:
         raise NotImplementedError("test_sharp_uptrend not implemented")
 
     def run_test_default_run(self, profitability):
-        run_results = self._run_backtesting_with_current_config(DEFAULT_SYMBOL)
-        self._assert_results(run_results, profitability)
+        run_results, bot = self._run_backtesting_with_current_config(DEFAULT_SYMBOL)
+        self._assert_results(run_results, profitability, bot)
 
     def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3, skip_bittrex=False):
-        run_results = self._run_backtesting_with_current_config("ICX/BTC")
-        self._assert_results(run_results, profitability_1)
-        run_results = self._run_backtesting_with_current_config("ONT/BTC")
-        self._assert_results(run_results, profitability_3)
+        run_results, bot = self._run_backtesting_with_current_config("ICX/BTC")
+        self._assert_results(run_results, profitability_1, bot)
+        run_results, bot = self._run_backtesting_with_current_config("ONT/BTC")
+        self._assert_results(run_results, profitability_3, bot)
         if not skip_bittrex:
-            run_results = self._run_backtesting_with_current_config("NEO/BTC", "bittrex_NEO_BTC_20180722_195942")
-            self._assert_results(run_results, profitability_2)
+            run_results, bot = self._run_backtesting_with_current_config("NEO/BTC", "bittrex_NEO_BTC_20180722_195942")
+            self._assert_results(run_results, profitability_2, bot)
 
     def run_test_sharp_downtrend(self, profitability):
-        run_results = self._run_backtesting_with_current_config("VEN/BTC")
-        self._assert_results(run_results, profitability)
+        run_results, bot = self._run_backtesting_with_current_config("VEN/BTC")
+        self._assert_results(run_results, profitability, bot)
 
     def run_test_flat_markets(self, profitability_1, profitability_2, profitability_3, skip_bittrex=False):
-        run_results = self._run_backtesting_with_current_config("NEO/BTC")
-        self._assert_results(run_results, profitability_1)
-        run_results = self._run_backtesting_with_current_config("XRB/BTC")
-        self._assert_results(run_results, profitability_2)
+        run_results, bot = self._run_backtesting_with_current_config("NEO/BTC")
+        self._assert_results(run_results, profitability_1, bot)
+        run_results, bot = self._run_backtesting_with_current_config("XRB/BTC")
+        self._assert_results(run_results, profitability_2, bot)
         if not skip_bittrex:
-            run_results = self._run_backtesting_with_current_config("ADA/BTC", "bittrex_ADA_BTC_20180722_223357")
-            self._assert_results(run_results, profitability_3)
+            run_results, bot = self._run_backtesting_with_current_config("ADA/BTC", "bittrex_ADA_BTC_20180722_223357")
+            self._assert_results(run_results, profitability_3, bot)
 
     def run_test_slow_uptrend(self, profitability_1, profitability_2):
-        run_results = self._run_backtesting_with_current_config("BTC/USDT")
-        self._assert_results(run_results, profitability_1)
-        run_results = self._run_backtesting_with_current_config("ADA/BTC")
-        self._assert_results(run_results, profitability_2)
+        run_results, bot = self._run_backtesting_with_current_config("BTC/USDT")
+        self._assert_results(run_results, profitability_1, bot)
+        run_results, bot = self._run_backtesting_with_current_config("ADA/BTC")
+        self._assert_results(run_results, profitability_2, bot)
 
     def run_test_sharp_uptrend(self, profitability_1, profitability_2):
-        run_results = self._run_backtesting_with_current_config("XLM/BTC")
-        self._assert_results(run_results, profitability_1)
-        run_results = self._run_backtesting_with_current_config("POWR/BTC")
-        self._assert_results(run_results, profitability_2)
+        run_results, bot = self._run_backtesting_with_current_config("XLM/BTC")
+        self._assert_results(run_results, profitability_1, bot)
+        run_results, bot = self._run_backtesting_with_current_config("POWR/BTC")
+        self._assert_results(run_results, profitability_2, bot)
 
-    def _assert_results(self, run_results, profitability):
+    def _assert_results(self, run_results, profitability, bot):
         # print(f"results: {run_results} expected: {profitability}")  # convenient for building tests
         assert run_results[0] >= profitability
 
@@ -128,7 +128,7 @@ class AbstractStrategyTest:
 
         filter_wanted_symbols(config_to_use, [symbol])
         bot = create_backtesting_bot(config_to_use)
-        return start_backtesting_bot(bot)
+        return start_backtesting_bot(bot), bot
 
     def _register_only_strategy(self, strategy_evaluator_class):
         for evaluatotor_name in self.config[CONFIG_EVALUATOR]:
