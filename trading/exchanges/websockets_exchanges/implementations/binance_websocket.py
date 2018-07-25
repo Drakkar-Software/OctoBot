@@ -21,10 +21,13 @@ class BinanceWebSocketClient(AbstractWebSocket):
 
     def __init__(self, config, exchange_manager):
         super().__init__(config, exchange_manager)
-        key = self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]
-        secret = self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]
-        self.client = Client(decrypt(key) if key else key,
-                             decrypt(secret) if secret else secret)
+        try:
+            self.client = Client(decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
+                                 decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]))
+        except Exception:
+            self.client = Client("", "")
+            self.logger.error("Exchange configuration tokens are invalid : please check your configuration !")
+
         self.socket_manager = None
         self.open_sockets_keys = {}
         self.ws_time_frames = None
