@@ -5,7 +5,7 @@ from services.abstract_service import *
 
 
 class RedditService(AbstractService):
-    REQUIRED_CONFIG = ["client_id", "client_secret", "password", "username"]
+    REQUIRED_CONFIG = ["client-id", "client-secret", "password", "username"]
 
     def __init__(self):
         super().__init__()
@@ -18,8 +18,8 @@ class RedditService(AbstractService):
 
     def prepare(self):
         if not self.reddit_api:
-            self.reddit_api = praw.Reddit(client_id=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["client_id"],
-                                          client_secret=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["client_secret"],
+            self.reddit_api = praw.Reddit(client_id=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["client-id"],
+                                          client_secret=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["client-secret"],
                                           password=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["password"],
                                           user_agent='bot',
                                           username=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["username"])

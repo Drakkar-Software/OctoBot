@@ -7,7 +7,7 @@ from services.abstract_service import *
 
 
 class TelegramService(AbstractService):
-    REQUIRED_CONFIG = ["chat_id", "token"]
+    REQUIRED_CONFIG = ["chat-id", "token"]
 
     def __init__(self):
         super().__init__()
@@ -23,7 +23,7 @@ class TelegramService(AbstractService):
 
     def prepare(self):
         if not self.telegram_api:
-            self.chat_id = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]["chat_id"]
+            self.chat_id = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]["chat-id"]
             self.telegram_api = telegram.Bot(
                 token=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_TOKEN])
 
