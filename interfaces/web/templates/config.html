@@ -100,9 +100,8 @@
     <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel"><br>
          <!-- Card deck -->
         <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            {% for trader in ["Trader", "Trader Simulator"] %}
-                {{ m_config_trader_card.config_trader_card(trader) }}
-            {% endfor %}
+            {{ m_config_trader_card.config_trader_card(config_trader, "trader", "Trader") }}
+            {{ m_config_trader_card.config_trader_card(config_trader_simulator, "trader-simulator", "Trader simulator") }}
         </div>
     </div>
 

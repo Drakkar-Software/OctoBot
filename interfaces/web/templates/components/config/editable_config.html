@@ -1,0 +1,52 @@
+{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value) -%}
+        {% if config[key] is string %}
+            {{ key }} : <a href="#"
+                        config-key="{{config_name}}_{{key}}"
+                        config-type="global_config"
+                        config-value="{{config[key]}}"
+                        startup-config-value="{{config[key]}}"
+                        data-type="text"
+                        data-pk="1"
+                        class="editable editable-click config-element">
+            {{ config[key] }}</a><br>
+        {% elif config[key] is iterable %}
+            {{ key }} : <br>
+            {% for new_key in config[key] %}
+                &emsp;{{-  editable_key(  config[key],
+                                    new_key,
+                                    config_key + "_" + new_key,
+                                    config_type,
+                                    config_value[new_key],
+                                    startup_config_value[new_key])
+                -}}
+            {% endfor %}
+        {% elif config[key] == True or config[key] == False %}
+            {{ key }} :
+                 <input  type="checkbox"
+                            class="config-element"
+                            config-key="{{config_name}}_{{key}}"
+                            config-type="global_config"
+                            config-value="{{config[key]}}"
+                            startup-config-value="{{config[key]}}"><br>
+        {% elif config[key] is number %}
+           {{ key }} : <a href="#"
+                        config-key="{{config_name}}_{{key}}"
+                        config-type="global_config"
+                        config-value="{{config[key]}}"
+                        startup-config-value="{{config[key]}}"
+                        data-type="number"
+                        data-pk="1"
+                        class="editable editable-click config-element">
+            {{ config[key] }}</a><br>
+        {% else %}
+             {{ key }} : <a href="#"
+                        config-key="{{config_name}}_{{key}}"
+                        config-type="global_config"
+                        config-value="{{config[key]}}"
+                        startup-config-value="{{config[key]}}"
+                        data-type="text"
+                        data-pk="1"
+                        class="editable editable-click config-element">
+            {{ config[key] }}</a><br>
+        {% endif %}
+{%- endmacro %}

@@ -56,7 +56,8 @@
 }
 
 .editableform-loading {
-    background: url('../img/loading.gif') center center no-repeat;  
+    animation: spin 1s infinite linear;
+    -webkit-animation: spin2 1s infinite linear;
     height: 25px;
     width: auto; 
     min-width: 25px; 
@@ -124,7 +125,6 @@
 
 /* IOS-style clear button for text inputs */
 .editable-clear-x {
-   background: url('../img/clear.png') center center no-repeat;
    display: block;
    width: 13px;    
    height: 13px;
