@@ -7,7 +7,8 @@ from interfaces import get_bot
 
 from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_evaluator_config, update_evaluator_config, \
-    get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_global_config
+    get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_global_config, \
+    get_all_symbol_list
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -35,6 +36,7 @@ def config():
     else:
         g_config = get_bot().get_config()
         user_exchanges = [e for e in g_config[CONFIG_EXCHANGES]]
+
         return render_template('config.html',
 
                                config_exchanges=g_config[CONFIG_EXCHANGES],
@@ -47,5 +49,6 @@ def config():
                                ccxt_exchanges=list(set(ccxt.exchanges) - set(user_exchanges)),
                                services_list=get_services_list(),
                                symbol_list=get_symbol_list([exchange for exchange in g_config[CONFIG_EXCHANGES]]),
+                               full_symbol_list=get_all_symbol_list(),
                                get_evaluator_config=get_evaluator_config,
                                get_evaluator_startup_config=get_evaluator_startup_config)

@@ -110,7 +110,7 @@
     <div class="tab-pane fade config-root" id="panelNotifications" role="tabpanel"><br>
         <!-- Card deck -->
         <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            {{ m_config_notification.config_notification(config_notifications, "notification", services_list) }}
+            {{ m_config_notification.config_notification(config_notifications, "notification") }}
         </div>
     </div>
 
@@ -137,7 +137,12 @@
 
     <!--Panel Symbols-->
     <div class="tab-pane fade config-root" id="panelSymbols" role="tabpanel"><br>
-        <div class="alert alert-success">Add a new symbol :
+        <div class="alert alert-success">Add a new currency or symbol :
+            <select id="AddCurrencySelect" class="selectpicker" data-live-search="true">
+               {% for currency in full_symbol_list %}
+                    <option data-tokens="{{ currency }}" symbol="{{ full_symbol_list[currency] }}">{{ currency }}</option>
+               {% endfor %}
+            </select>
             <select id="AddSymbolSelect" class="selectpicker" data-live-search="true">
                {% for symbol in symbol_list %}
                     <option data-tokens="{{ symbol }}">{{ symbol }}</option>
