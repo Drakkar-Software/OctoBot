@@ -169,7 +169,7 @@ class TradesManager:
             return quantity / self.currencies_last_prices[symbol_inverted]
 
         else:
-            self.logger.error(f"Can't find matching symbol for {currency} and {self.reference_market}")
+            self.logger.warning(f"Can't find matching symbol for {currency} and {self.reference_market}")
             return 0
 
     def _evaluate_config_crypto_currencies_values(self):

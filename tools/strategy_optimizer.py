@@ -55,9 +55,9 @@ class StrategyOptimizer:
 
         nb_runs = int(len(risks) * (math.pow(nb_TFs, 2) * math.pow(nb_TAs, 2)))
 
-        self.logger.setLevel(logging.CRITICAL)
+        self.logger.setLevel(logging.ERROR)
         for handler in self.logger.parent.handlers:
-            handler.setLevel(logging.CRITICAL)
+            handler.setLevel(logging.ERROR)
 
         run_id = 1
         # test with several risks
@@ -89,10 +89,15 @@ class StrategyOptimizer:
                                                                           nb_time_frames, time_frames_conf_history)
                                         if activated_time_frames is not None:
                                             self.config[CONFIG_FORCED_TIME_FRAME] = activated_time_frames
-                                            print(f"{run_id}/{nb_runs} Run with: evaluators: {activated_evaluators}, time frames :"
-                                                  f"{activated_time_frames}, risk: {risk}")
-                                            self._run_test_suite(self.config)
-                                            print(f"Result: {self.get_result_string(self.run_results[-1])}")
+                                            print(f"{run_id}/{nb_runs} Run with: evaluators: {activated_evaluators}, "
+                                                  f"time frames :{activated_time_frames}, risk: {risk}")
+                                            try:
+                                                self._run_test_suite(self.config)
+                                                print(f"Result: {self.get_result_string(self.run_results[-1])}")
+                                            except Exception as e:
+                                                self.logger.error(f"Exception when running test suite: {e}. Skipping "
+                                                                  f"configuration")
+                                                self.logger.exception(e)
                                             run_id += 1
 
         self.logger.setLevel(logging.INFO)
@@ -115,7 +120,8 @@ class StrategyOptimizer:
                 if current_elem not in eval_conf:
                     eval_conf[current_elem] = True
                     if len(eval_conf) == nb_elements_to_consider+additional_elements_count and \
-                            ((eval_conf if dict_shaped else sorted([key.value for key in eval_conf])) in elem_conf_history):
+                            ((eval_conf if dict_shaped else sorted([key.value for key in eval_conf]))
+                             in elem_conf_history):
                         eval_conf.pop(current_elem)
                 i += 1
         if len(eval_conf) == nb_elements_to_consider+additional_elements_count:
@@ -199,7 +205,7 @@ class StrategyOptimizer:
 
         @staticmethod
         def test_slow_downtrend(strategy_tester):
-            strategy_tester.run_test_slow_downtrend(None, None, None)
+            strategy_tester.run_test_slow_downtrend(None, None, None, True)
 
         @staticmethod
         def test_sharp_downtrend(strategy_tester):
@@ -207,7 +213,7 @@ class StrategyOptimizer:
 
         @staticmethod
         def test_flat_markets(strategy_tester):
-            strategy_tester.run_test_flat_markets(None, None, None)
+            strategy_tester.run_test_flat_markets(None, None, None, True)
 
         @staticmethod
         def test_slow_uptrend(strategy_tester):
