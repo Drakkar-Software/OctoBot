@@ -125,3 +125,5 @@ config\.json
 *.ods
 
 temp_config\.json
+
+log
