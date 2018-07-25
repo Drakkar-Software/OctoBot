@@ -41,10 +41,11 @@ def update_global_config(new_config):
 
 
 def get_services_list():
-    return [
-        service().get_type()
-        for service in AbstractService.__subclasses__()
-    ]
+    services = {}
+    for service in AbstractService.__subclasses__():
+        srv = service()
+        services[srv.get_type()] = srv
+    return services
 
 
 def get_symbol_list(exchanges):

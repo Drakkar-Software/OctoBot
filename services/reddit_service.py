@@ -5,6 +5,7 @@ from services.abstract_service import *
 
 
 class RedditService(AbstractService):
+    REQUIRED_CONFIG = ["client_id", "client_secret", "password", "username"]
 
     def __init__(self):
         super().__init__()
@@ -32,10 +33,7 @@ class RedditService(AbstractService):
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
                and CONFIG_REDDIT in self.config[CONFIG_CATEGORY_SERVICES] \
-               and "client_id" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT] \
-               and "client_secret" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT] \
-               and "password" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT] \
-               and "username" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]
+               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT])
 
     def get_successful_startup_message(self):
         return "Successfully initialized using {0} account."\

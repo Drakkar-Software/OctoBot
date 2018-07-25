@@ -6,6 +6,8 @@ from services import AbstractService
 
 
 class GmailService(AbstractService):
+    REQUIRED_CONFIG = ["gmail_user", "gmail_password", "mail_dest"]
+
     def __init__(self):
         super().__init__()
         self.gmail_con = None
@@ -13,14 +15,12 @@ class GmailService(AbstractService):
     @staticmethod
     def is_setup_correctly(config):
         return CONFIG_GMAIL in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]
+               and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
                and CONFIG_GMAIL in self.config[CONFIG_CATEGORY_SERVICES] \
-               and "gmail_user" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL] \
-               and "gmail_password" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL] \
-               and "mail_dest" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]
+               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL])
 
     def get_endpoint(self):
         return self.gmail_con
@@ -57,5 +57,5 @@ class GmailService(AbstractService):
             return False
 
     def get_successful_startup_message(self):
-        return "Successfully initialized to notify {0}."\
+        return "Successfully initialized to notify {0}." \
             .format(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["mail_dest"])
