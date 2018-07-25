@@ -51,7 +51,7 @@ class StrategyOptimizer:
         all_time_frames = self.strategy_class.get_required_time_frames(self.config)
         nb_TFs = len(all_time_frames)
 
-        risks = [1]
+        risks = [0.5, 1]
 
         nb_runs = int(len(risks) * (math.pow(nb_TFs, 2) * math.pow(nb_TAs, 2)))
 
@@ -187,17 +187,14 @@ class StrategyOptimizer:
             self.profitability_results = []
 
         def run_test_suite(self, strategy_tester):
-            self.test_slow_downtrend(strategy_tester)
-            print('.', end='')
-            self.test_sharp_downtrend(strategy_tester)
-            print('.', end='')
-            self.test_flat_markets(strategy_tester)
-            print('.', end='')
-            self.test_slow_uptrend(strategy_tester)
-            print('.', end='')
-            self.test_sharp_uptrend(strategy_tester)
-            print('.')
-
+            tests = [self.test_slow_downtrend, self.test_sharp_downtrend, self.test_flat_markets,
+                     self.test_slow_uptrend, self.test_sharp_uptrend]
+            for test in tests:
+                try:
+                    test(strategy_tester)
+                except Exception as e:
+                    print(f"{strategy_tester} exception: {e}")
+                print('.', end='')
 
         @staticmethod
         def test_default_run(strategy_tester):
@@ -205,7 +202,7 @@ class StrategyOptimizer:
 
         @staticmethod
         def test_slow_downtrend(strategy_tester):
-            strategy_tester.run_test_slow_downtrend(None, None, None, True)
+            strategy_tester.run_test_slow_downtrend(None, None, None, False)
 
         @staticmethod
         def test_sharp_downtrend(strategy_tester):
@@ -213,7 +210,7 @@ class StrategyOptimizer:
 
         @staticmethod
         def test_flat_markets(strategy_tester):
-            strategy_tester.run_test_flat_markets(None, None, None, True)
+            strategy_tester.run_test_flat_markets(None, None, None, False)
 
         @staticmethod
         def test_slow_uptrend(strategy_tester):
