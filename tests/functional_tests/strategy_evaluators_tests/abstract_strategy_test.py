@@ -79,25 +79,27 @@ class AbstractStrategyTest:
         run_results = self._run_backtesting_with_current_config(DEFAULT_SYMBOL)
         self._assert_results(run_results, profitability)
 
-    def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3):
+    def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3, skip_bittrex=False):
         run_results = self._run_backtesting_with_current_config("ICX/BTC")
         self._assert_results(run_results, profitability_1)
-        run_results = self._run_backtesting_with_current_config("NEO/BTC", "bittrex_NEO_BTC_20180722_195942")
-        self._assert_results(run_results, profitability_2)
         run_results = self._run_backtesting_with_current_config("ONT/BTC")
         self._assert_results(run_results, profitability_3)
+        if not skip_bittrex:
+            run_results = self._run_backtesting_with_current_config("NEO/BTC", "bittrex_NEO_BTC_20180722_195942")
+            self._assert_results(run_results, profitability_2)
 
     def run_test_sharp_downtrend(self, profitability):
         run_results = self._run_backtesting_with_current_config("VEN/BTC")
         self._assert_results(run_results, profitability)
 
-    def run_test_flat_markets(self, profitability_1, profitability_2, profitability_3):
+    def run_test_flat_markets(self, profitability_1, profitability_2, profitability_3, skip_bittrex=False):
         run_results = self._run_backtesting_with_current_config("NEO/BTC")
         self._assert_results(run_results, profitability_1)
         run_results = self._run_backtesting_with_current_config("XRB/BTC")
         self._assert_results(run_results, profitability_2)
-        run_results = self._run_backtesting_with_current_config("ADA/BTC", "bittrex_ADA_BTC_20180722_223357")
-        self._assert_results(run_results, profitability_3)
+        if not skip_bittrex:
+            run_results = self._run_backtesting_with_current_config("ADA/BTC", "bittrex_ADA_BTC_20180722_223357")
+            self._assert_results(run_results, profitability_3)
 
     def run_test_slow_uptrend(self, profitability_1, profitability_2):
         run_results = self._run_backtesting_with_current_config("BTC/USDT")
