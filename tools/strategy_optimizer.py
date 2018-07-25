@@ -35,6 +35,9 @@ class StrategyOptimizer:
                                                     Strategies, evaluator_parent_inspection)
         self.run_results = []
         self.results_report = []
+        self.sorted_results_by_time_frame = {}
+        self.overall_sorted_results = []
+        self.all_time_frames = []
 
         if not self.strategy_class:
             self.logger.error(f"Impossible to find a strategy matching class name: {strategy_name} in installed "
@@ -49,8 +52,8 @@ class StrategyOptimizer:
         all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR])
         nb_TAs = len(all_TAs)
 
-        all_time_frames = self.strategy_class.get_required_time_frames(self.config)
-        nb_TFs = len(all_time_frames)
+        self.all_time_frames = self.strategy_class.get_required_time_frames(self.config)
+        nb_TFs = len(self.all_time_frames)
 
         risks = [0.5]
 
@@ -80,13 +83,14 @@ class StrategyOptimizer:
                             time_frames_conf_history = []
                             # test different time frames
                             for time_frame_conf_iteration in range(nb_TFs):
-                                current_forced_time_frame = all_time_frames[time_frame_conf_iteration]
+                                current_forced_time_frame = self.all_time_frames[time_frame_conf_iteration]
                                 # test with 1-n time frames at a time
                                 for nb_time_frames in range(1, nb_TFs+1):
                                     # test different configurations
                                     for j in range(nb_TFs):
                                         activated_time_frames = \
-                                            self.get_activated_evaluators(all_time_frames, current_forced_time_frame,
+                                            self.get_activated_evaluators(self.all_time_frames,
+                                                                          current_forced_time_frame,
                                                                           nb_time_frames, time_frames_conf_history)
                                         if activated_time_frames is not None:
                                             self.config[CONFIG_FORCED_TIME_FRAME] = activated_time_frames
@@ -136,23 +140,39 @@ class StrategyOptimizer:
         run_result = strategy_test_suite.get_test_suite_result()
         self.run_results.append(run_result)
 
-    def get_sorted_results(self):
-        return sorted(self.run_results, key=lambda result: result.get_average_score(), reverse=True)
+    @staticmethod
+    def get_filtered_results(results, time_frame=None):
+        return [result for result in results if time_frame is None or result.min_time_frame == time_frame]
+
+    @staticmethod
+    def get_sorted_results(results, time_frame=None):
+        return sorted(StrategyOptimizer.get_filtered_results(results, time_frame),
+                      key=lambda result: result.get_average_score(), reverse=True)
 
     def _find_optimal_configuration_using_results(self):
-        sorted_results = self.get_sorted_results()
-        self.results_report = {i: result.get_result_string() for i, result in enumerate(sorted_results)}
+        for time_frame in self.all_time_frames:
+            time_frame_sorted_results = self.get_sorted_results(self.run_results, time_frame)
+            self.sorted_results_by_time_frame[time_frame.value] = time_frame_sorted_results
+        top_values = [results[0] for results in self.sorted_results_by_time_frame.values()]
+        self.overall_sorted_results = self.get_sorted_results(top_values)
 
     @staticmethod
     def _is_relevant_evaluation_config(evaluator):
         return get_class_from_string(evaluator, TAEvaluator, TA, evaluator_parent_inspection) is not None
 
     def print_report(self):
-        self.logger.info("Full execution sorted results:")
-        for key, val in self.results_report.items():
-            self.logger.info(f"{key}: {val}")
-        self.logger.info(" ****************** Strategy Optimizer Result ********************** ")
-        self.logger.info(f"{self.strategy_class.get_name()} best configuration is: {self.results_report[0]}")
+        self.logger.info("Full execution sorted results: Minimum time frames are defining the range of the run "
+                         "since it finishes at the end of the first data, aka minimum time frame. Therefore all "
+                         "different time frames are different price actions and can't be compared independently.")
+        for time_frame, results in self.sorted_results_by_time_frame.items():
+            self.logger.info(f" *** {time_frame} minimum time frame *** ")
+            for rank, result in enumerate(results):
+                self.logger.info(f"{rank}: {result.get_result_string()}")
+        self.logger.info(f" *** Top rankings per time frame *** ")
+        for time_frame, results in self.sorted_results_by_time_frame.items():
+            self.logger.info(f"{time_frame}: {results[0].get_result_string(False)}")
+        self.logger.info(f" *** Overall best configuration for {self.strategy_class.get_name()}*** ")
+        self.logger.info(f"{self.overall_sorted_results[0].get_result_string()}")
 
     @staticmethod
     def get_all_TA(config_evaluator):
@@ -166,6 +186,7 @@ class StrategyOptimizer:
             self.trades_counts = trades_counts
             self.risk = risk
             self.time_frames = time_frames
+            self.min_time_frame = TimeFrameManager.find_min_time_frame(self.time_frames)
             self.evaluators = evaluators
             self.strategy = strategy
 
@@ -178,9 +199,6 @@ class StrategyOptimizer:
         def get_average_trades_count(self):
             return sum(self.trades_counts) / len(self.trades_counts)
 
-        def get_min_time_frame(self):
-            return TimeFrameManager.find_min_time_frame(self.time_frames)
-
         def get_evaluators_without_strategy(self):
             evals = copy.copy(self.evaluators)
             evals.pop(self.strategy)
@@ -190,8 +208,8 @@ class StrategyOptimizer:
             details = f" details: (profitabilities (bot, market):{self.run_profitabilities}, trades: " \
                       f"{self.trades_counts})" if details else ""
             return (f"{self.get_evaluators_without_strategy()} on {self.time_frames} at risk: {self.risk} "
-                    f"score: {self.get_average_score()} (the higher the better) "
-                    f"average trades: {self.get_average_trades_count()}{details}")
+                    f"score: {self.get_average_score():f} (the higher the better) "
+                    f"average trades: {self.get_average_trades_count():f}{details}")
 
     class StrategyTestSuite(AbstractStrategyTest):
 
@@ -226,7 +244,7 @@ class StrategyOptimizer:
 
         @staticmethod
         def test_slow_downtrend(strategy_tester):
-            strategy_tester.run_test_slow_downtrend(None, None, None, True)
+            strategy_tester.run_test_slow_downtrend(None, None, None, False)
 
         @staticmethod
         def test_sharp_downtrend(strategy_tester):
@@ -234,7 +252,7 @@ class StrategyOptimizer:
 
         @staticmethod
         def test_flat_markets(strategy_tester):
-            strategy_tester.run_test_flat_markets(None, None, None, True)
+            strategy_tester.run_test_flat_markets(None, None, None, False)
 
         @staticmethod
         def test_slow_uptrend(strategy_tester):
