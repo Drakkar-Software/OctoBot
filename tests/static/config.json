@@ -1,6 +1,6 @@
 {
   "time_frame": ["1h", "4h", "1d"],
-  "crypto_currencies":{
+  "crypto-currencies":{
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
     },
@@ -40,9 +40,9 @@
   },
   "services": {
     "mail": {
-      "gmail_user": "",
-      "gmail_password": "",
-      "mail_dest": ""
+      "gmail-user": "",
+      "gmail-password": "",
+      "mail-dest": ""
     },
     "twitter": {
       "api-key": "",
@@ -51,26 +51,26 @@
       "access-token-secret": ""
     },
     "reddit":{
-      "client_id": "",
-      "client_secret": "",
+      "client-id": "",
+      "client-secret": "",
       "password":"",
       "username":""
     }
   },
   "notification":{
-    "global_info": false,
-    "price_alerts": false,
+    "global-info": false,
+    "price-alerts": false,
     "trades": false,
-    "notification_type": 1
+    "notification-type": 1
   },
   "trader":{
     "enabled": false,
     "risk": 1,
     "mode": "DailyTradingMode"
   },
-  "trader_simulator":{
+  "trader-simulator":{
     "enabled": true,
-    "starting_portfolio": {
+    "starting-portfolio": {
       "BTC": 10,
       "USD": 1000
     }

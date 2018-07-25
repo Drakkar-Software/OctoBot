@@ -6,6 +6,8 @@ from services import AbstractService
 
 
 class GmailService(AbstractService):
+    REQUIRED_CONFIG = ["gmail-user", "gmail-password", "mail-dest"]
+
     def __init__(self):
         super().__init__()
         self.gmail_con = None
@@ -13,14 +15,12 @@ class GmailService(AbstractService):
     @staticmethod
     def is_setup_correctly(config):
         return CONFIG_GMAIL in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]
+               and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
                and CONFIG_GMAIL in self.config[CONFIG_CATEGORY_SERVICES] \
-               and "gmail_user" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL] \
-               and "gmail_password" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL] \
-               and "mail_dest" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]
+               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL])
 
     def get_endpoint(self):
         return self.gmail_con
@@ -35,8 +35,8 @@ class GmailService(AbstractService):
             self.gmail_con.ehlo()
             self.gmail_con.starttls()
             self.gmail_con.ehlo()
-            self.gmail_con.login(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail_user"],
-                                 self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail_password"])
+            self.gmail_con.login(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail-user"],
+                                 self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail-password"])
         except Exception as e:
             self.logger.error("Failed to connect to gmail service : {0}".format(e))
 
@@ -45,10 +45,10 @@ class GmailService(AbstractService):
             self.prepare()
             msg = email.message.Message()
             msg.add_header('Content-Type', 'text/plain')
-            msg['From'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail_user"] + "@gmail.com"
+            msg['From'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail-user"] + "@gmail.com"
             msg.set_payload(content)
             msg['Subject'] = subject
-            msg['To'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["mail_dest"]
+            msg['To'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["mail-dest"]
             self.gmail_con.sendmail(msg['From'], msg['To'], msg.as_string())
             self.gmail_con.close()
             return True
@@ -57,5 +57,5 @@ class GmailService(AbstractService):
             return False
 
     def get_successful_startup_message(self):
-        return "Successfully initialized to notify {0}."\
-            .format(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["mail_dest"])
+        return "Successfully initialized to notify {0}." \
+            .format(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["mail-dest"])

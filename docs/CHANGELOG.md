@@ -1,5 +1,18 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.5_3-beta
+====================
+*Released date : July 26 2018*
+
+**Warning** :
+- All config keys with "_" changed to "-" (for example crypto_currencies -> crypto-currencies)
+
+# Concerned issues :
+    #312 [Web Interface] Services configuration
+
+# New features :
+    - Web Interface : Services configuration
+
 Changelog for 0.1.5_2-beta
 ====================
 *Released date : July 24 2018*
@@ -12,13 +25,11 @@ Changelog for 0.1.5_2-beta
     #269 [Tool] Implement ConfigManager
     #307 [Tentacle Installation] Add new key in description
     #309 [Web Interface] Exchange configuration
-    #311 [Web Interface] Symbols configuration
-    #312 [Web Interface] Services configuration
     #331 [Security] Encrypt user api key
 
 # New features :
     - Api key encryption
-    - Web Interface : Full configuration (except notifications)
+    - Web Interface : Exchange configuration
     
 Changelog for 0.1.5_1-beta
 ====================
