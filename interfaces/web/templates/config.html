@@ -4,6 +4,7 @@
 {% import 'components/config/currency_card.html' as m_config_currency_card %}
 {% import 'components/config/trader_card.html' as m_config_trader_card %}
 {% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
+{% import 'components/config/notification_config.html' as m_config_notification %}
 
 {% set config_default_value = "@config_default_value@" %}
 {% set modified_class = "warning-color" %}
@@ -109,41 +110,7 @@
     <div class="tab-pane fade config-root" id="panelNotifications" role="tabpanel"><br>
         <!-- Card deck -->
         <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            <!-- Card -->
-            <div class="card mb-4">
-
-                <!--Card content-->
-                <div class="card-body">
-
-                    <!--Title-->
-                    <h4 class="card-title">Notifications</h4>
-
-                    <p class="card-text enable">
-                        Global info : <input type="checkbox" checked="checked"><br>
-                        Price alerts : <input type="checkbox" checked="checked"><br>
-                        Trades : <input type="checkbox" checked="checked"><br>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Card -->
-            <div class="card mb-4">
-
-                <!--Card content-->
-                <div class="card-body">
-
-                    <!--Title-->
-                    <h4 class="card-title">Notification type</h4>
-
-                    <p class="card-text enable">
-                        {% for service in services_list %}
-                            {% if service in config_services %}
-                                {{ service }} : <input type="checkbox"><br>
-                            {% endif %}
-                        {% endfor %}
-                    </p>
-                </div>
-            </div>
+            {{ m_config_notification.config_notification(config_notifications, "notification", services_list) }}
         </div>
     </div>
 
