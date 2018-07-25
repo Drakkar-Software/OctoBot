@@ -137,7 +137,9 @@
 
                     <p class="card-text enable">
                         {% for service in services_list %}
-                            {{ service }} : <input type="checkbox"><br>
+                            {% if service in config_services %}
+                                {{ service }} : <input type="checkbox"><br>
+                            {% endif %}
                         {% endfor %}
                     </p>
                 </div>
@@ -159,7 +161,9 @@
         <!-- Card deck -->
         <div class="card-deck config-container" update-url="{{ url_for('config') }}">
             {% for service in services_list %}
-                {{ m_config_service_card.config_service_card(config_services, service, services_list[service]) }}
+                {% if service in config_services %}
+                    {{ m_config_service_card.config_service_card(config_services, service, services_list[service]) }}
+                {% endif %}
             {% endfor %}
         </div>
     </div>

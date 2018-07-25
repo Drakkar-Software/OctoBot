@@ -1,7 +1,7 @@
 {% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value) -%}
         {% if config[key] is string %}
             {{ key }} : <a href="#"
-                        config-key="{{config_name}}_{{key}}"
+                        config-key="{{config_key}}"
                         config-type="global_config"
                         config-value="{{config[key]}}"
                         startup-config-value="{{config[key]}}"
@@ -24,13 +24,13 @@
             {{ key }} :
                  <input  type="checkbox"
                             class="config-element"
-                            config-key="{{config_name}}_{{key}}"
+                            config-key="{{config_key}}"
                             config-type="global_config"
                             config-value="{{config[key]}}"
                             startup-config-value="{{config[key]}}"><br>
         {% elif config[key] is number %}
            {{ key }} : <a href="#"
-                        config-key="{{config_name}}_{{key}}"
+                        config-key="{{config_key}}"
                         config-type="global_config"
                         config-value="{{config[key]}}"
                         startup-config-value="{{config[key]}}"
@@ -40,7 +40,7 @@
             {{ config[key] }}</a><br>
         {% else %}
              {{ key }} : <a href="#"
-                        config-key="{{config_name}}_{{key}}"
+                        config-key="{{config_key}}"
                         config-type="global_config"
                         config-value="{{config[key]}}"
                         startup-config-value="{{config[key]}}"
