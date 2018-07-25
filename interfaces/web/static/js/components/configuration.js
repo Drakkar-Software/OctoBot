@@ -2,6 +2,11 @@ function get_active_tab_config(){
     return $(document).find("." + config_root_class + ".active > ." + config_container_class);
 }
 
+function get_tabs_config(){
+    return $(document).find("." + config_root_class + " > ." + config_container_class);
+}
+
+
 function handle_reset_buttons(){
     $("#reset-config").click(function() {
         reset_configuration_element($(this));
@@ -10,7 +15,7 @@ function handle_reset_buttons(){
 
 function handle_save_buttons(){
     $("#save-config").click(function() {
-        var full_config = get_active_tab_config();
+        var full_config = get_tabs_config();
         var updated_config = {};
         var update_url = full_config.attr(update_url_attr);
 
