@@ -45,7 +45,7 @@ class StrategyOptimizer:
     def find_optimal_configuration(self):
         self.logger.info(f"Trying to find an optmized configuration for {self.strategy_class.get_name()} strategy")
 
-        all_TAs = self._get_all_TA(self.config[CONFIG_EVALUATOR])
+        all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR])
         nb_TAs = len(all_TAs)
 
         all_time_frames = self.strategy_class.get_required_time_frames(self.config)
@@ -91,10 +91,10 @@ class StrategyOptimizer:
                                             self.config[CONFIG_FORCED_TIME_FRAME] = activated_time_frames
                                             print(f"{run_id}/{nb_runs} Run with: evaluators: {activated_evaluators}, time frames :"
                                                   f"{activated_time_frames}, risk: {risk}")
-                                            run_id += 1
                                             self._run_test_suite(self.config)
+                                            print(f"Result: {self.get_result_string(self.run_results[-1])}")
+                                            run_id += 1
 
-        self.logger.setLevel(logging.INFO)
         self.logger.setLevel(logging.INFO)
         for handler in self.logger.parent.handlers:
             handler.setLevel(logging.INFO)
@@ -146,17 +146,19 @@ class StrategyOptimizer:
                                for profitability_result in result[PROFITABILITY]]
         return sum(bot_profitabilities) / len(bot_profitabilities)
 
+    @staticmethod
+    def get_result_string(result):
+        return (f"{StrategyOptimizer.get_all_TA(result[CONFIGURATION][CONFIG_FORCED_EVALUATOR])} on "
+                f"{result[CONFIGURATION][CONFIG_FORCED_TIME_FRAME]} at risk: "
+                f"{result[CONFIGURATION][CONFIG_TRADER][CONFIG_TRADER_RISK]} "
+                f"average profitability: {StrategyOptimizer.get_average_score(result)}")
 
     def _find_optimal_configuration_using_results(self):
         sorted_results = self.get_sorted_results()
-        self.results_report = {i: (f"{self._get_all_TA(result[CONFIGURATION][CONFIG_FORCED_EVALUATOR])} on "
-                                   f"{result[CONFIGURATION][CONFIG_FORCED_TIME_FRAME]} at risk: "
-                                   f"{result[CONFIGURATION][CONFIG_TRADER][CONFIG_TRADER_RISK]} "
-                                   f"average profitability: {self.get_average_score(result)}")
-                               for i, result in enumerate(sorted_results)}
+        self.results_report = {i: self.get_result_string(result) for i, result in enumerate(sorted_results)}
 
     @staticmethod
-    def _get_all_TA(config_evaluator):
+    def get_all_TA(config_evaluator):
         return [evaluator
                 for evaluator, activated in config_evaluator.items()
                 if activated and StrategyOptimizer._is_relevant_evaluation_config(evaluator)]
