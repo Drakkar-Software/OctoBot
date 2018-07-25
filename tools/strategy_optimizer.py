@@ -157,7 +157,7 @@ class StrategyOptimizer:
         return (f"{StrategyOptimizer.get_all_TA(result[CONFIGURATION][CONFIG_FORCED_EVALUATOR])} on "
                 f"{result[CONFIGURATION][CONFIG_FORCED_TIME_FRAME]} at risk: "
                 f"{result[CONFIGURATION][CONFIG_TRADER][CONFIG_TRADER_RISK]} "
-                f"average profitability: {StrategyOptimizer.get_average_score(result)}")
+                f"average score versus market (the higher the better): {StrategyOptimizer.get_average_score(result)}")
 
     def _find_optimal_configuration_using_results(self):
         sorted_results = self.get_sorted_results()
