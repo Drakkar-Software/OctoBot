@@ -38,6 +38,7 @@ class AbstractStrategyTest:
     # 1. ICX/BTC[30m]: -13.704206241519667 % (binance_ICX_BTC_20180716_131148)
     # 2. NEO/BTC[30m]: -41.09080962800873 % (bittrex_NEO_BTC_20180722_195942)
     # 3. ONT/BTC[30m]: -17.9185520361991 % (binance_ONT_BTC_20180722_230900)
+    # 4. XVG/BTC[30m]: -47.29729729729728 % (bittrex_XVG_BTC_20180726_211225)
     @staticmethod
     @abstractmethod
     def test_slow_downtrend(strategy_tester):
@@ -45,6 +46,7 @@ class AbstractStrategyTest:
 
     # plays a backtesting on a sharp downtrend market:
     # 1. VEN/BTC[30m] -35.26645213762865 % (binance_VEN_BTC_20180716_131148)
+    # 2. XRP/BTC[30m]: -47.41750358680059 (vs btc) % (bittrex_XRP_BTC_20180726_210927)
     @staticmethod
     @abstractmethod
     def test_sharp_downtrend(strategy_tester):
@@ -54,6 +56,7 @@ class AbstractStrategyTest:
     # 1. NEO/BTC[30m] -11.80763473053894 % (binance_NEO_BTC_20180716_131148)
     # 2. XRB/BTC[30m] -3.5209457722950255 % (binance_XRB_BTC_20180716_131148)
     # 3. ADA/BTC[30m] -6.140724946695086 % (bittrex_ADA_BTC_20180722_223357)
+    # 4. WAX/BTC[30m] -8.77598152424941 % (bittrex_WAX_BTC_20180726_205032)
     @staticmethod
     @abstractmethod
     def test_flat_markets(strategy_tester):
@@ -69,30 +72,44 @@ class AbstractStrategyTest:
 
     # plays a backtesting with this strategy on a slow uptrend market:
     # 1. XLM/BTC[30m]: 30.88185223016684 (vs btc) % (binance_XLM_BTC_20180722_234305)
-    # 1. POWR/BTC[30m]: 12.28597871355852 (vs btc) % (binance_POWR_BTC_20180722_234855)
+    # 2. POWR/BTC[30m]: 12.28597871355852 (vs btc) % (binance_POWR_BTC_20180722_234855)
     @staticmethod
     @abstractmethod
     def test_sharp_uptrend(strategy_tester):
         raise NotImplementedError("test_sharp_uptrend not implemented")
 
+    # plays a backtesting with this strategy on a slow uptrend market followed by a slow downtrend market:
+    # 1. ETC/BTC[30m] -6.428386403538222 % (bittrex_ETC_BTC_20180726_210341)
+    @staticmethod
+    @abstractmethod
+    def test_up_then_down(strategy_tester):
+        raise NotImplementedError("test_up_then_down not implemented")
+
     def run_test_default_run(self, profitability):
         run_results, bot = self._run_backtesting_with_current_config(DEFAULT_SYMBOL)
         self._assert_results(run_results, profitability, bot)
 
-    def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3, skip_bittrex=False):
+    def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3, profitability_4,
+                                skip_bittrex=False):
         run_results, bot = self._run_backtesting_with_current_config("ICX/BTC")
         self._assert_results(run_results, profitability_1, bot)
         run_results, bot = self._run_backtesting_with_current_config("ONT/BTC")
-        self._assert_results(run_results, profitability_3, bot)
+        self._assert_results(run_results, profitability_2, bot)
         if not skip_bittrex:
             run_results, bot = self._run_backtesting_with_current_config("NEO/BTC", "bittrex_NEO_BTC_20180722_195942")
+            self._assert_results(run_results, profitability_3, bot)
+            run_results, bot = self._run_backtesting_with_current_config("XVG/BTC", "bittrex_XVG_BTC_20180726_211225")
+            self._assert_results(run_results, profitability_4, bot)
+
+    def run_test_sharp_downtrend(self, profitability_1, profitability_2, skip_bittrex=False):
+        run_results, bot = self._run_backtesting_with_current_config("VEN/BTC")
+        self._assert_results(run_results, profitability_1, bot)
+        if not skip_bittrex:
+            run_results, bot = self._run_backtesting_with_current_config("XRP/BTC", "bittrex_XRP_BTC_20180726_210927")
             self._assert_results(run_results, profitability_2, bot)
 
-    def run_test_sharp_downtrend(self, profitability):
-        run_results, bot = self._run_backtesting_with_current_config("VEN/BTC")
-        self._assert_results(run_results, profitability, bot)
-
-    def run_test_flat_markets(self, profitability_1, profitability_2, profitability_3, skip_bittrex=False):
+    def run_test_flat_markets(self, profitability_1, profitability_2, profitability_3, profitability_4,
+                              skip_bittrex=False):
         run_results, bot = self._run_backtesting_with_current_config("NEO/BTC")
         self._assert_results(run_results, profitability_1, bot)
         run_results, bot = self._run_backtesting_with_current_config("XRB/BTC")
@@ -100,6 +117,8 @@ class AbstractStrategyTest:
         if not skip_bittrex:
             run_results, bot = self._run_backtesting_with_current_config("ADA/BTC", "bittrex_ADA_BTC_20180722_223357")
             self._assert_results(run_results, profitability_3, bot)
+            run_results, bot = self._run_backtesting_with_current_config("WAX/BTC", "bittrex_WAX_BTC_20180726_205032")
+            self._assert_results(run_results, profitability_4, bot)
 
     def run_test_slow_uptrend(self, profitability_1, profitability_2):
         run_results, bot = self._run_backtesting_with_current_config("BTC/USDT")
@@ -112,6 +131,11 @@ class AbstractStrategyTest:
         self._assert_results(run_results, profitability_1, bot)
         run_results, bot = self._run_backtesting_with_current_config("POWR/BTC")
         self._assert_results(run_results, profitability_2, bot)
+
+    def run_test_up_then_down(self, profitability_1, skip_bittrex=False):
+        if not skip_bittrex:
+            run_results, bot = self._run_backtesting_with_current_config("ETC/BTC", "bittrex_ETC_BTC_20180726_210341")
+            self._assert_results(run_results, profitability_1, bot)
 
     def _assert_results(self, run_results, profitability, bot):
         # print(f"results: {run_results} expected: {profitability}")  # convenient for building tests

@@ -12,9 +12,10 @@ from trading.exchanges.websockets_exchanges import AbstractWebSocket
 
 
 class ExchangeManager:
-    def __init__(self, config, exchange_type, is_simulated=False):
+    def __init__(self, config, exchange_type, is_simulated=False, rest_only=False):
         self.config = config
         self.exchange_type = exchange_type
+        self.rest_only = rest_only
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.is_ready = False
@@ -51,7 +52,7 @@ class ExchangeManager:
             self._load_constants()
 
             # create Websocket exchange if possible
-            if self.check_web_socket_config(self.exchange.get_name()):
+            if not self.rest_only and self.check_web_socket_config(self.exchange.get_name()):
                 for socket_manager in AbstractWebSocket.__subclasses__():
                     if socket_manager.get_name() == self.exchange.get_name():
                         self.exchange_web_socket = socket_manager.get_websocket_client(self.config, self)
