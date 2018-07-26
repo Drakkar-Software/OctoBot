@@ -387,3 +387,7 @@ class ExchangeSimulator(AbstractExchange):
 
 class NoCandleDataForThisTimeFrameException(Exception):
     pass
+
+
+class NoCandleDataForThisSymbolException(Exception):
+    pass
