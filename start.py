@@ -70,6 +70,9 @@ def start_octobot(starting_args):
             elif starting_args.creator:
                 Commands.tentacle_creator(config, starting_args.creator)
 
+            elif starting_args.encrypter:
+                Commands.exchange_keys_encrypter()
+
             else:
 
                 config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
@@ -143,6 +146,8 @@ if __name__ == '__main__':
     parser.add_argument('-w', '--web', help='Start web server',
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
+                        action='store_true')
+    parser.add_argument('--encrypter', help='Start the exchange api keys encrypter',
                         action='store_true')
     parser.add_argument('-p', '--packager', help='Start OctoBot Tentacles Manager. examples: -p install all '
                                                  'to install all tentacles packages and -p install [tentacle] to '
