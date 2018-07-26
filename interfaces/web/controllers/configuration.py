@@ -4,11 +4,9 @@ from flask import render_template, request, jsonify
 from config.cst import CONFIG_EXCHANGES, CONFIG_CATEGORY_SERVICES, CONFIG_CATEGORY_NOTIFICATION, \
     CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_CRYPTO_CURRENCIES, GLOBAL_CONFIG_KEY, EVALUATOR_CONFIG_KEY
 from interfaces import get_bot
-
 from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_evaluator_config, update_evaluator_config, \
-    get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_global_config, \
-    get_all_symbol_list
+    get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_all_symbol_list
 from interfaces.web.util.flask_util import get_rest_reply
 
 

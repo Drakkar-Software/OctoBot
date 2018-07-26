@@ -143,18 +143,13 @@
                     <option data-tokens="{{ currency }}" symbol="{{ full_symbol_list[currency] }}">{{ currency }}</option>
                {% endfor %}
             </select>
-            <select id="AddSymbolSelect" class="selectpicker" data-live-search="true">
-               {% for symbol in symbol_list %}
-                    <option data-tokens="{{ symbol }}">{{ symbol }}</option>
-               {% endfor %}
-            </select>
             <button type="button" id="AddSymbol" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
         <div class="card-deck config-container" update-url="{{ url_for('config') }}">
             {% for crypto_currency in config_symbols %}
-               {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency) }}
+               {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list) }}
             {% endfor %}
         </div>
     </div>
@@ -179,7 +174,11 @@
 
     <!-- Symbols -->
     <div id="AddSymbol-template-default">
-        {{ m_config_currency_card.config_currency_card(config_symbols=[], crypto_currency=config_default_value, add_class=modified_class) }}
+        {{ m_config_currency_card.config_currency_card( config_symbols=[],
+                                                        crypto_currency=config_default_value,
+                                                        symbol_list=symbol_list,
+                                                        full_symbol_list=full_symbol_list,
+                                                        add_class=modified_class) }}
     </div>
 </div>
 {% endblock %}
@@ -204,6 +203,16 @@ $(document).ready(function () {
         refresh_buttons_lock($('#evaluator-config-root'), $('#save-config'), $('#reset-config'));
     });
     at_least_one_temporary_element
+
+    // filter currencies select
+    /*$(".card .card-body .symbols").each(function(){
+        var crypto_currency_symbol = $(this).attr("crypto_currency-symbol");
+        var crypto_select = $(this).find("select").attr("id");
+
+        // filter option with not crypto_currency_symbol
+        console.log(crypto_currency_symbol);
+        $("#" + crypto_select + " option:not(:contains('+ crypto_currency_symbol +'))").remove();
+    });*/
 });
 
 // Card deck adding
@@ -220,14 +229,6 @@ $(document).on("click", ".remove-btn", function() {
     $(this).parents(".card").fadeOut("normal", function() {
         $(this).remove();
     });
-});
-
-// handle currency select
-$("select#AddCurrencySelect").change(function(){
-    var symbol = $(this).find(":selected").attr("symbol");
-
-    // filter in other select
-    $("select.AddSymbolSelect option").filter(':not(:contains(symbol))').hide();
 });
 </script>
 {% endblock additional_scripts %}

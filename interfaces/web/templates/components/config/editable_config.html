@@ -1,20 +1,20 @@
-{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value) -%}
+{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="") -%}
         {% if config[key] is string %}
-            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value) }}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] | is_dict %}
-            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value) }}
+            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] | is_list %}
-            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value) }}
+            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] | is_bool %}
-            {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value) }}
+            {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] is number %}
-            {{ editable_key_number(config, key, config_key, config_type, config_value, startup_config_value) }}
+            {{ editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% else %}
-            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value) }}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% endif %}
 {%- endmacro %}
 
-{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value) -%}
+{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
     {{ key }} : <a href="#"
             config-key="{{config_key}}"
             config-type="global_config"
@@ -26,7 +26,7 @@
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value) -%}
+{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
     {{ key }} : <br>
     {% for new_key in config[key] %}
         &emsp;{{  editable_key( config[key],
@@ -34,12 +34,13 @@
                             config_key + "_" + new_key,
                             config_type,
                             config_value[new_key],
-                            startup_config_value[new_key])
+                            startup_config_value[new_key],
+                            suggestions)
         }}
     {% endfor %}
 {%- endmacro %}
 
-{% macro editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value) -%}
+{% macro editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
     {{ key }} :
      <input     type="checkbox"
                 class="config-element"
@@ -51,7 +52,7 @@
      {% if config[key] == True %}checked{% endif %}><br>
 {%- endmacro %}
 
-{% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value) -%}
+{% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
     {{ key }} : <a href="#"
                 config-key="{{config_key}}"
                 config-type="global_config"
@@ -63,62 +64,22 @@
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value) -%}
+{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
+    {% set select_id = range(1, 2000000) | random %}
     {{ key }} :
-    <a href="#" id="country" data-type="select2" data-pk="1" data-value="ru" data-url="/post" data-title="Select country"></a>
+    <select id="{{ select_id }}" class="editable editable-click config-element" multiple="multiple">
+        {% for name in suggestions %}
+            <option value="{{ name }}"
+            {% if name in config[key] %}
+                selected="selected"
+            {% endif %}
+            >{{ name }}</option>
+        {% endfor %}
+    </select><br>
         <script>
-            $(function(){
-                //local source
-                $('#country').editable({
-                    source: [
-                          {id: 'gb', text: 'Great Britain'},
-                          {id: 'us', text: 'United States'},
-                          {id: 'ru', text: 'Russia'}
-                       ],
-                    select2: {
-                       multiple: true
-                    }
-                });
-                //remote source (simple)
-                $('#country').editable({
-                    source: '/getCountries',
-                    select2: {
-                        placeholder: 'Select Country',
-                        minimumInputLength: 1
-                    }
-                });
-                //remote source (advanced)
-                $('#country').editable({
-                    select2: {
-                        placeholder: 'Select Country',
-                        allowClear: true,
-                        minimumInputLength: 3,
-                        id: function (item) {
-                            return item.CountryId;
-                        },
-                        ajax: {
-                            url: '/getCountries',
-                            dataType: 'json',
-                            data: function (term, page) {
-                                return { query: term };
-                            },
-                            results: function (data, page) {
-                                return { results: data };
-                            }
-                        },
-                        formatResult: function (item) {
-                            return item.CountryName;
-                        },
-                        formatSelection: function (item) {
-                            return item.CountryName;
-                        },
-                        initSelection: function (element, callback) {
-                            return $.get('/getCountryById', { query: element.val() }, function (data) {
-                                callback(data);
-                            });
-                        }
-                    }
-                });
+            $("#{{ select_id }}").select2({
+                width: 'resolve', // need to override the changed default
+                tags: true
             });
         </script>
 {%- endmacro %}
