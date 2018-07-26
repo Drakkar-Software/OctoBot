@@ -9,9 +9,13 @@ Changelog for 0.1.5_3-beta
 
 # Concerned issues :
     #312 [Web Interface] Services configuration
+    #311 [Web Interface] Symbols configuration
+    #334 [Strategy configuration] create a strategy configuration otpimizer
 
 # New features :
-    - Web Interface : Services configuration
+    - Web Interface : Services & Symbols configuration
+    - Startegy optimizer
+    - Encrypter command
 
 Changelog for 0.1.5_2-beta
 ====================
