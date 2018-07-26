@@ -38,7 +38,7 @@
                 <a class="nav-link" data-toggle="tab" href="#panelServices" role="tab">Services</a>
             </li>
              <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#panelSymbols" role="tab">Symbols</a>
+                <a class="nav-link" data-toggle="tab" href="#panelCurrency" role="tab">Currencies</a>
             </li>
         </ul>
     </nav>
@@ -135,15 +135,15 @@
         </div>
     </div>
 
-    <!--Panel Symbols-->
-    <div class="tab-pane fade config-root" id="panelSymbols" role="tabpanel"><br>
-        <div class="alert alert-success">Add a new currency or symbol :
+    <!--Panel Currencies-->
+    <div class="tab-pane fade config-root" id="panelCurrency" role="tabpanel"><br>
+        <div class="alert alert-success">Add a new currency :
             <select id="AddCurrencySelect" class="selectpicker" data-live-search="true">
                {% for currency in full_symbol_list %}
                     <option data-tokens="{{ currency }}" symbol="{{ full_symbol_list[currency] }}">{{ currency }}</option>
                {% endfor %}
             </select>
-            <button type="button" id="AddSymbol" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+            <button type="button" id="AddCurrency" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
         </div>
 
         <!-- Card deck -->
@@ -172,8 +172,8 @@
                                                         add_class=modified_class) }}
     </div>
 
-    <!-- Symbols -->
-    <div id="AddSymbol-template-default">
+    <!-- Currencies -->
+    <div id="AddCurrency-template-default">
         {{ m_config_currency_card.config_currency_card( config_symbols=[],
                                                         crypto_currency=config_default_value,
                                                         symbol_list=symbol_list,
@@ -219,6 +219,7 @@ $(document).ready(function () {
 $(".add-btn").click(function() {
     var deck = $(this).parents("." + config_root_class).find(".card-deck");
     var select_value = $("#" + $(this).attr("id") + "Select").val();
+    console.log(select_value);
     var template_default = $("#" + $(this).attr("id") + "-template-default").html().replace(/{{ config_default_value }}/g, select_value);
     deck.append(template_default).hide().fadeIn();
     handle_editable();
