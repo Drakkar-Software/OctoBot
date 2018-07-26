@@ -2,10 +2,50 @@ function get_active_tab_config(){
     return $(document).find("." + config_root_class + ".active > ." + config_container_class);
 }
 
+function get_tabs_config(){
+    return $(document).find("." + config_root_class + " ." + config_container_class);
+}
+
+
 function handle_reset_buttons(){
     $("#reset-config").click(function() {
         reset_configuration_element($(this));
     })
+}
+
+function parse_new_value(element){
+    var raw_data = replace_spaces(replace_break_line(element.text()));
+
+    // simple case
+    if(element[0].hasAttribute(current_value_attr)){
+        return element.attr(current_value_attr);
+
+    // with data type
+    }else if(element[0].hasAttribute(config_data_type_attr)){
+        switch(element.attr(config_data_type_attr)) {
+            case "bool":
+                return element.is(":checked");
+                break;
+            case "list":
+                var new_value = [];
+                element.find(":selected").each(function(index, value){
+                    new_value.splice(index, 0, replace_spaces(replace_break_line(value.text)));
+                });
+                return new_value;
+                break;
+            case "number":
+                return Number(raw_data);
+                break;
+            case "text":
+            default:
+                return raw_data;
+                break;
+        }
+
+    // without information
+    }else{
+        return raw_data;
+    }
 }
 
 function handle_save_buttons(){
@@ -14,23 +54,27 @@ function handle_save_buttons(){
         var updated_config = {};
         var update_url = full_config.attr(update_url_attr);
 
-        full_config.find("."+config_element_class).each(function(){
-            var new_value = "";
-            var config_type = $(this).attr(config_type_attr);
+        get_tabs_config().each(function(){
+            $(this).find("."+config_element_class).each(function(){
+                var config_type = $(this).attr(config_type_attr);
 
-            if(!(config_type in updated_config)){
-                updated_config[config_type] = {};
-            }
+                if(!(config_type in updated_config)){
+                    updated_config[config_type] = {};
+                }
 
-            if($(this)[0].hasAttribute(current_value_attr)){
-                new_value = $(this).attr(current_value_attr);
-            }else{
-                new_value = replace_spaces(replace_break_line($(this).text()));
-            }
+                var new_value = parse_new_value($(this));
 
-            if(new_value.toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
-                updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
-            }
+                try {
+                    if(new_value.toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
+                        updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
+                    }
+                }
+                catch {
+                    if(new_value != $(this).attr(config_value_attr)){
+                        updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
+                    }
+                }
+            })
         })
 
         // send update
@@ -46,19 +90,30 @@ function handle_save_buttons_success_callback(updated_data, update_url, dom_root
     create_alert("success", "Configuration successfully updated.", "");
 }
 
-function handle_evaluator_configuration_editor(){
+function handle_configuration_editor(){
     $(".config-element").click(function(){
         var element = $(this);
+
         if (element.hasClass(config_element_class)){
             var full_config = get_active_tab_config();
             if (full_config[0].hasAttribute(update_url_attr)){
 
                 // build data update
                 var updated_config = {};
-                new_value = "true";
-                var current_value = element.attr(current_value_attr).toLowerCase();
+                new_value = parse_new_value(element);
+
+                try {
+                    var current_value = element.attr(current_value_attr).toLowerCase();
+                }
+                catch {
+                    var current_value = element.attr(current_value_attr);
+                }
+
+                // todo
                 if (current_value == "true"){
                     new_value = "false";
+                }else if(current_value == "false"){
+                    new_value = "true";
                 }
 
                 // update current value
@@ -72,9 +127,6 @@ function handle_evaluator_configuration_editor(){
             }
         }
     });
-}
-
-function handle_global_configuration_editor(){
 }
 
 function reset_configuration_element(element){

@@ -65,7 +65,7 @@ class SymbolEvaluator:
     def add_evaluator_instance_to_strategy_instances_list(self, evaluator, exchange):
         exchange_name = exchange.get_exchange().get_name()
         for strategy in self.evaluator_instances_by_strategies[exchange_name].keys():
-            if EvaluatorCreator.is_relevant_evaluator(evaluator, strategy.get_required_evaluators()):
+            if EvaluatorCreator.is_relevant_evaluator(evaluator, strategy.get_required_evaluators(self.config)):
                 evaluator_parents = evaluator.get_parent_evaluator_classes()
                 for evaluator_type in self.evaluator_instances_by_strategies[exchange_name][strategy].keys():
                     if evaluator_type in evaluator_parents:

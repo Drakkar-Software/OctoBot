@@ -11,3 +11,8 @@
 
 // Remove color from editable link
 a:link { color: inherit; }
+
+// ensure in line display
+.editable {
+    display: inline;
+}

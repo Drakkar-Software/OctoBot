@@ -7,6 +7,7 @@ from services.abstract_service import *
 
 
 class TwitterService(AbstractService):
+    REQUIRED_CONFIG = ["api-key", "api-secret", "access-token", "access-token-secret"]
 
     def __init__(self):
         super().__init__()
@@ -41,10 +42,7 @@ class TwitterService(AbstractService):
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
                and CONFIG_TWITTER in self.config[CONFIG_CATEGORY_SERVICES] \
-               and "api-key" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER] \
-               and "api-secret" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER] \
-               and "access-token" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER] \
-               and "access-token-secret" in self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]
+               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER])
 
     @staticmethod
     def decode_tweet(tweet):

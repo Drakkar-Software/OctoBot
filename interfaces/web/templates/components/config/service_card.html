@@ -1,28 +1,33 @@
-{% macro config_service_card(service, add_class='') -%}
+{% macro config_service_card(config, service_name, service, add_class='') -%}
+    {% set service_requirements = service.REQUIRED_CONFIG %}
     <!-- Card -->
     <div class="card mb-4 {{add_class}}">
 
         <!--Card image-->
         <div class="view overlay">
-          <!--{{ service }}-->
+          <!--{{ service_name }}-->
         </div>
 
         <!--Card content-->
         <div class="card-body">
 
             <!--Title-->
-            <h4 class="card-title">{{service}}</h4>
+            <h4 class="card-title">{{service_name}}</h4>
 
             <p class="card-text api">
-                UserName : <a href="#" id="service_user-name" data-type="text" data-pk="1" data-title="Enter service username"
-                                      class="editable editable-click">*********</a><br>
-                Password : <a href="#" id="service_password" data-type="text" data-pk="1" data-title="Enter service password"
-                                      class="editable editable-click">*********</a></span>
-            </p>
-
-            <p class="card-text token">
-                Token : <a href="#" id="service_token" data-type="text" data-pk="1" data-title="Enter service token"
-                                      class="editable editable-click">*********</a>
+                {% for req in service_requirements %}
+                    {{ req }} : <a href="#"
+                                        id="service_user-name"
+                                        config-key="services_{{service_name}}_{{req}}"
+                                        config-type="global_config"
+                                        config-value="{{ config[service_name][req] }}"
+                                        startup-config-value="{{ config[service_name][req] }}"
+                                        data-type="text"
+                                        data-pk="1"
+                                        data-title="Enter service {{ req }}"
+                                        class="editable editable-click config-element">
+                    {{ config[service_name][req] }}</a><br>
+                {% endfor %}
             </p>
 
             <button type="button" class="btn btn-danger remove-btn px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>

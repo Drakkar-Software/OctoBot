@@ -1,6 +1,7 @@
 from abc import *
 
-from config.cst import CONFIG_EVALUATOR_STRATEGIES, STRATEGIES_REQUIRED_TIME_FRAME, STRATEGIES_REQUIRED_EVALUATORS
+from config.cst import CONFIG_EVALUATOR_STRATEGIES, STRATEGIES_REQUIRED_TIME_FRAME, STRATEGIES_REQUIRED_EVALUATORS, \
+    CONFIG_FORCED_TIME_FRAME, CONFIG_FORCED_EVALUATOR
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.evaluator_divergence_analyser import EvaluatorDivergenceAnalyser
 from tools.time_frame_manager import TimeFrameManager
@@ -35,19 +36,23 @@ class StrategiesEvaluator(AbstractEvaluator):
         return super().get_config_file_name(config_evaluator_type)
 
     @classmethod
-    def get_required_time_frames(cls):
-        config = cls.get_evaluator_config()
-        if STRATEGIES_REQUIRED_TIME_FRAME in config:
-            return TimeFrameManager.parse_time_frames(config[STRATEGIES_REQUIRED_TIME_FRAME])
+    def get_required_time_frames(cls, config):
+        if CONFIG_FORCED_TIME_FRAME in config:
+            return TimeFrameManager.parse_time_frames(config[CONFIG_FORCED_TIME_FRAME])
+        strategy_config = cls.get_evaluator_config()
+        if STRATEGIES_REQUIRED_TIME_FRAME in strategy_config:
+            return TimeFrameManager.parse_time_frames(strategy_config[STRATEGIES_REQUIRED_TIME_FRAME])
         else:
             raise Exception("'{0}' is missing in {1}".format(STRATEGIES_REQUIRED_TIME_FRAME,
                                                              cls.get_config_file_name()))
 
     @classmethod
-    def get_required_evaluators(cls):
-        config = cls.get_evaluator_config()
-        if STRATEGIES_REQUIRED_EVALUATORS in config:
-            return config[STRATEGIES_REQUIRED_EVALUATORS]
+    def get_required_evaluators(cls, config):
+        if CONFIG_FORCED_EVALUATOR in config:
+            return config[CONFIG_FORCED_EVALUATOR]
+        strategy_config = cls.get_evaluator_config()
+        if STRATEGIES_REQUIRED_EVALUATORS in strategy_config:
+            return strategy_config[STRATEGIES_REQUIRED_EVALUATORS]
         else:
             raise Exception("'{0}' is missing in {1}".format(STRATEGIES_REQUIRED_EVALUATORS,
                                                              cls.get_config_file_name()))

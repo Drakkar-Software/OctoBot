@@ -124,7 +124,7 @@ class EvaluatorCreator:
         time_frame_list = set()
         for strategies_eval_class in AdvancedManager.create_advanced_evaluator_types_list(StrategiesEvaluator, config):
             if strategies_eval_class.is_enabled(config, False):
-                for time_frame in strategies_eval_class.get_required_time_frames():
+                for time_frame in strategies_eval_class.get_required_time_frames(config):
                     time_frame_list.add(time_frame)
         time_frame_list = TimeFrameManager.sort_time_frames(time_frame_list)
         config[CONFIG_TIME_FRAME] = time_frame_list
@@ -134,7 +134,7 @@ class EvaluatorCreator:
         evaluator_list = set()
         for strategies_eval_class in AdvancedManager.create_advanced_evaluator_types_list(StrategiesEvaluator, config):
             if strategies_eval_class.is_enabled(config, False):
-                required_evaluators = strategies_eval_class.get_required_evaluators()
+                required_evaluators = strategies_eval_class.get_required_evaluators(config)
                 if required_evaluators == CONFIG_EVALUATORS_WILDCARD:
                     return CONFIG_EVALUATORS_WILDCARD
                 else:
