@@ -244,7 +244,7 @@ class StrategyOptimizer:
 
     class StrategyTestSuite(AbstractStrategyTest):
 
-        SKIP_LONG_STEPS = True
+        SKIP_LONG_STEPS = False
 
         def __init__(self):
             super().__init__()
