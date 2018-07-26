@@ -59,6 +59,7 @@
                 config-value="{{config[key]}}"
                 startup-config-value="{{config[key]}}"
                 data-type="number"
+                data-step="0.01"
                 data-pk="1"
                 class="editable editable-click config-element">
     {{ config[key] }}</a><br>
@@ -67,7 +68,14 @@
 {% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
     {% set select_id = range(1, 2000000) | random %}
     {{ key }} :
-    <select id="{{ select_id }}" class="editable editable-click config-element" multiple="multiple">
+    <select id="{{ select_id }}"
+            config-key="{{ config_key }}"
+            config-type="global_config"
+            config-value="{{config[key]}}"
+            startup-config-value="{{config[key]}}"
+            class="editable editable-click config-element"
+            data-type="list"
+            multiple="multiple">
         {% for name in suggestions %}
             <option value="{{ name }}"
             {% if name in config[key] %}

@@ -194,8 +194,7 @@ $(document).ready(function () {
     handle_reset_buttons();
     handle_save_buttons();
 
-    handle_evaluator_configuration_editor();
-    handle_global_configuration_editor();
+    handle_configuration_editor();
 
     $('#save-config').prop('disabled', true);
     $('#reset-config').prop('disabled', true);
@@ -210,7 +209,6 @@ $(document).ready(function () {
         var crypto_select = $(this).find("select").attr("id");
 
         // filter option with not crypto_currency_symbol
-        console.log(crypto_currency_symbol);
         $("#" + crypto_select + " option:not(:contains('+ crypto_currency_symbol +'))").remove();
     });*/
 });
@@ -219,7 +217,6 @@ $(document).ready(function () {
 $(".add-btn").click(function() {
     var deck = $(this).parents("." + config_root_class).find(".card-deck");
     var select_value = $("#" + $(this).attr("id") + "Select").val();
-    console.log(select_value);
     var template_default = $("#" + $(this).attr("id") + "-template-default").html().replace(/{{ config_default_value }}/g, select_value);
     deck.append(template_default).hide().fadeIn();
     handle_editable();
