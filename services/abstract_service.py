@@ -7,6 +7,7 @@ class AbstractService:
     __metaclass__ = ABCMeta
 
     BACKTESTING_ENABLED = False
+    REQUIRED_CONFIG = []
 
     def __init__(self):
         super().__init__()
@@ -74,6 +75,12 @@ class AbstractService:
     @abstractmethod
     def get_successful_startup_message(self):
         raise NotImplementedError("get_successful_startup_message not implemented")
+
+    def check_required_config(self, config):
+        for key in self.REQUIRED_CONFIG:
+            if key not in config:
+                return False
+        return True
 
     def say_hello(self):
         self.logger.info(self.get_successful_startup_message())

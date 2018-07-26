@@ -1,13 +1,13 @@
 {% import 'components/config/editable_config.html' as m_editable_config %}
-{% macro config_trader_card(config, config_name, trader, add_class='') -%}
+{% macro config_notification(config, config_name) -%}
     <!-- Card -->
-    <div class="card mb-4 {{add_class}}">
+    <div class="card mb-4">
 
         <!--Card content-->
         <div class="card-body">
 
             <!--Title-->
-            <h4 class="card-title">{{ trader }}</h4>
+            <h4 class="card-title">Notifications</h4>
 
             <p class="card-text config">
                 {% for key in config %}

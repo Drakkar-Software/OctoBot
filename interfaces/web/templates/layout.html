@@ -30,6 +30,7 @@
 
         <!-- Editable -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-editable.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/select2.min.css') }}">
 
         <!-- Own -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -39,6 +40,26 @@
         {% endblock additional_style %}
     </head>
     <body style="{% block body_style %}{% endblock body_style %}">
+        <!-- Scripts -->
+        <!-- At the beginning of the page : be available for template scripts -->
+        <script src="{{ url_for('static', filename='js/lib/jquery-3.3.1.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/popper.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/toastr.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/mdb.min.js') }}"></script>
+
+        <script src="{{ url_for('static', filename='js/lib/jquery.dataTables.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/dataTables.min.js') }}"></script>
+
+        <script src="{{ url_for('static', filename='js/lib/bootstrap-select.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/bootstrap-editable.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/select2.full.min.js') }}"></script>
+
+        <script src="{{ url_for('static', filename='js/common/cst.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/common/util.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/common/bot_connection.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/common/dom_updater.js') }}"></script>
+
         <nav class="navbar navbar-default navbar-expand-md navbar-dark sticky-top danger-color">
             <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
                 <ul class="navbar-nav mr-auto">
@@ -117,24 +138,6 @@
         <div class="container-fluid">
             {% block body %}{% endblock %}
         </div>
-
-        <!-- Scripts -->
-        <script src="{{ url_for('static', filename='js/lib/jquery-3.3.1.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/popper.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/toastr.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/mdb.min.js') }}"></script>
-
-        <script src="{{ url_for('static', filename='js/lib/jquery.dataTables.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/dataTables.min.js') }}"></script>
-
-        <script src="{{ url_for('static', filename='js/lib/bootstrap-select.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/bootstrap-editable.min.js') }}"></script>
-
-        <script src="{{ url_for('static', filename='js/common/cst.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/common/util.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/common/bot_connection.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/common/dom_updater.js') }}"></script>
 
         {% block additional_scripts %}
         {% endblock additional_scripts %}

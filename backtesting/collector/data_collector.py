@@ -3,7 +3,7 @@ import logging
 import ccxt
 
 from backtesting.collector.exchange_collector import ExchangeDataCollector
-from config.cst import *
+from config.cst import CONFIG_TIME_FRAME, CONFIG_EXCHANGES
 from trading.exchanges.exchange_manager import ExchangeManager
 
 
@@ -14,6 +14,8 @@ class DataCollector:
 
         self.exchange_data_collectors_threads = []
         self.logger.info("Create data collectors...")
+
+        self.config[CONFIG_TIME_FRAME] = []
 
         self.create_exchange_data_collectors()
 

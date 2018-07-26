@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import sys
@@ -6,6 +7,7 @@ import threading
 from git import Repo, InvalidGitRepositoryError
 
 from backtesting.collector.data_collector import DataCollector
+from config.config import encrypt
 from config.cst import ORIGIN_URL, GIT_ORIGIN
 from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
@@ -33,7 +35,7 @@ class Commands:
             if origin.exists():
                 # update
                 for fetch_info in origin.pull():
-                    print("Updated %s to %s" % (fetch_info.ref, fetch_info.commit))
+                    print(f"Updated {fetch_info.ref} to {fetch_info.commit}")
 
                 # checkout
                 # try:
@@ -45,7 +47,7 @@ class Commands:
             else:
                 raise Exception("Cannot connect to origin")
         except Exception as e:
-            logger.info("Exception raised during updating process... ({})".format(e))
+            logger.info(f"Exception raised during updating process... ({e})")
             if not catch:
                 raise e
 
@@ -59,7 +61,7 @@ class Commands:
             return True
 
         try:
-            diff = list(repo.iter_commits('{0}..{1}/{0}'.format(repo.active_branch.name, GIT_ORIGIN)))
+            diff = list(repo.iter_commits(f'{repo.active_branch.name}..{GIT_ORIGIN}/{repo.active_branch.name}'))
             if diff:
                 if log:
                     logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
@@ -103,6 +105,32 @@ class Commands:
                 raise e
 
     @staticmethod
+    def exchange_keys_encrypter(catch=False):
+        try:
+            api_key_crypted = encrypt(input("ENTER YOUR API-KEY : ")).decode()
+            api_secret_crypted = encrypt(input("ENTER YOUR API-SECRET : ")).decode()
+            print(f"Here are your encrypted exchanges keys : \n "
+                  f"\t- API-KEY : {api_key_crypted}\n"
+                  f"\t- API-SECRET : {api_secret_crypted}\n\n"
+                  f"Your new exchange configuration is : \n"
+                  "{\n"
+                  f'\t"api-key": "{api_key_crypted}",\n'
+                  f'\t"api-secret": "{api_secret_crypted}"\n'
+                  "{\n")
+        except Exception as e:
+            if not catch:
+                logging.error(f"Fail to encrypt your exchange keys, please try again ({e}).")
+                raise e
+
+    @staticmethod
+    def start_strategy_optimizer(config, commands):
+        from tools.strategy_optimizer import StrategyOptimizer
+        optimizer = StrategyOptimizer(config, commands[0])
+        if optimizer.is_properly_initialized:
+            optimizer.find_optimal_configuration()
+            optimizer.print_report()
+
+    @staticmethod
     def start_bot(bot, logger, catch=False):
         try:
             # try to init
@@ -113,7 +141,7 @@ class Commands:
             bot.start_threads()
             bot.join_threads()
         except Exception as e:
-            logger.exception("CryptBot Exception : {0}".format(e))
+            logger.exception(f"OctoBot Exception : {e}")
             if not catch:
                 raise e
             Commands.stop_bot(bot)
@@ -125,7 +153,7 @@ class Commands:
 
     @staticmethod
     def start_new_bot(args=""):
-        python_command = "{0}/{1} ".format(os.getcwd(), "start.py")
+        python_command = f"{os.getcwd()}/start.py "
         command_args = "--pause_time=3"
         subprocess.call([sys.executable, python_command, command_args, args])
 

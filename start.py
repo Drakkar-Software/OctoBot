@@ -70,31 +70,39 @@ def start_octobot(starting_args):
             elif starting_args.creator:
                 Commands.tentacle_creator(config, starting_args.creator)
 
+            elif starting_args.encrypter:
+                Commands.exchange_keys_encrypter()
+
             else:
-                # In those cases load OctoBot
-                from octobot import OctoBot
 
                 config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
                 if config[CONFIG_EVALUATOR] is None:
                     raise ConfigEvaluatorError
 
-                TelegramApp.enable(config, starting_args.telegram)
-
-                WebService.enable(config, starting_args.web)
-
-                update_config_with_args(starting_args, config)
-
-                bot = OctoBot(config)
-
-                import interfaces
-
-                interfaces.__init__(bot, config)
-
                 if starting_args.data_collector:
                     Commands.data_collector(config)
 
-                # start crypto bot options
+                elif starting_args.strategy_optimizer:
+                    Commands.start_strategy_optimizer(config, starting_args.strategy_optimizer)
+
                 else:
+
+                    # In those cases load OctoBot
+                    from octobot import OctoBot
+
+                    TelegramApp.enable(config, starting_args.telegram)
+
+                    WebService.enable(config, starting_args.web)
+
+                    update_config_with_args(starting_args, config)
+
+                    bot = OctoBot(config)
+
+                    import interfaces
+
+                    interfaces.__init__(bot, config)
+
+                    # start crypto bot options
                     if starting_args.backtesting:
                         import backtesting
 
@@ -139,6 +147,8 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')
+    parser.add_argument('--encrypter', help='Start the exchange api keys encrypter',
+                        action='store_true')
     parser.add_argument('-p', '--packager', help='Start OctoBot Tentacles Manager. examples: -p install all '
                                                  'to install all tentacles packages and -p install [tentacle] to '
                                                  'install specific tentacle. Tentacles Manager allows to install, '
@@ -149,6 +159,17 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c Evaluator '
                                                 'to create a new evaluator tentacles. Use: -c help to get the '
                                                 'Tentacle Creator help.',
+                        nargs='+')
+
+    parser.add_argument('-o', '--strategy_optimizer', help='Start Octobot strategy optimizer. This mode will make '
+                                                           'octobot play backtesting scenarii located in '
+                                                           'abstract_strategy_test.py with different timeframes, '
+                                                           'evaluators and risk using the trading mode set in '
+                                                           'config.json. This tool is useful to quickly test a '
+                                                           'strategy and automatically find the best compatible '
+                                                           'settings. Param is the name of the strategy class to '
+                                                           'test. Example: -o FullMixedStrategiesEvaluator'
+                                                           ' Warning: this process may take a long time.',
                         nargs='+')
 
     args = parser.parse_args()
