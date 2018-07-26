@@ -13,6 +13,7 @@ from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from tests.functional_tests.strategy_evaluators_tests.abstract_strategy_test import AbstractStrategyTest
 from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
     CONFIG_EVALUATOR, CONFIG_TRADER_MODE
+from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
 
 PROFITABILITY = "profitability"
 BOT_PROFITABILITY = 0
@@ -208,10 +209,10 @@ class StrategyOptimizer:
             bot_profitabilities = [
                 profitability_result[BOT_PROFITABILITY] - profitability_result[MARKET_PROFITABILITY]
                 for profitability_result in self.run_profitabilities]
-            return sum(bot_profitabilities) / len(bot_profitabilities)
+            return sum(bot_profitabilities) / len(bot_profitabilities) if bot_profitabilities else 0
 
         def get_average_trades_count(self):
-            return sum(self.trades_counts) / len(self.trades_counts)
+            return sum(self.trades_counts) / len(self.trades_counts) if self.trades_counts else 0
 
         def get_evaluators_without_strategy(self):
             evals = copy.copy(self.evaluators)
@@ -266,6 +267,8 @@ class StrategyOptimizer:
             for test in tests:
                 try:
                     test(strategy_tester)
+                except NoCandleDataForThisTimeFrameException:
+                    pass
                 except Exception as e:
                     print(f"Exception when running test {test.__name__}: {e}")
                     self.logger.exception(e)
