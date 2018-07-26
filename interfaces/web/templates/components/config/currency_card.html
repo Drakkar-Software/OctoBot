@@ -1,5 +1,5 @@
 {% import 'components/config/editable_config.html' as m_editable_config %}
-{% macro config_currency_card(config_symbols, crypto_currency, add_class='') -%}
+{% macro config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list, add_class='') -%}
     <!-- Card -->
     <div class="card mb-4 {{add_class}}">
 
@@ -21,7 +21,8 @@
                                                         "crypto-currencies_" + crypto_currency + "_pairs",
                                                         "global_config",
                                                         config_symbols[crypto_currency]['pairs'],
-                                                        config_symbols[crypto_currency]['pairs'])
+                                                        config_symbols[crypto_currency]['pairs'],
+                                                        symbol_list)
                     }}
                 {% endif %}
             </p>
