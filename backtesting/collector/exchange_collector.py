@@ -42,10 +42,8 @@ class ExchangeDataCollector(threading.Thread):
         self.keep_running = False
 
     def _set_file_name(self, symbol):
-        return "{0}_{1}_{2}{3}".format(self.exchange.get_name(),
-                                       symbol.replace("/", "_"),
-                                       time.strftime("%Y%m%d_%H%M%S"),
-                                       self.Exchange_Data_Collector_File_Ext)
+        return f"{self.exchange.get_name()}_{symbol.replace('/', '_')}_" \
+               f"{time.strftime('%Y%m%d_%H%M%S')}{self.Exchange_Data_Collector_File_Ext}"
 
     @staticmethod
     def get_file_name(file_name):
@@ -90,7 +88,8 @@ class ExchangeDataCollector(threading.Thread):
 
     def run(self):
         self._prepare()
-        self.logger.info("{0} updating...".format(self.exchange.get_name()))
+        self.logger.info(f"Data Collector will now update this file from {self.exchange.get_name()} "
+                         f"for each new time frame update...")
         while self.keep_running:
             now = time.time()
 
@@ -106,8 +105,7 @@ class ExchangeDataCollector(threading.Thread):
                         self.file_contents[symbol][time_frame.value].append(result_df)
                         self._data_updated = True
                         self.time_frame_update[symbol][time_frame] = now
-                        self.logger.info(
-                            "{0} ({2}) on {1} updated".format(symbol, self.exchange.get_name(), time_frame))
+                        self.logger.info(f"{symbol} ({self.exchange.get_name()}) on {time_frame} updated")
 
                 if self._data_updated:
                     self._update_file(symbol)
