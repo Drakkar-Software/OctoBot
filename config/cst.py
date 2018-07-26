@@ -286,6 +286,7 @@ class TimeFrames(Enum):
     THIRTY_MINUTES = "30m"
     ONE_HOUR = "1h"
     TWO_HOURS = "2h"
+    THREE_HOURS = "3h"
     FOUR_HOURS = "4h"
     HEIGHT_HOURS = "8h"
     TWELVE_HOURS = "12h"
@@ -305,6 +306,7 @@ TimeFramesMinutes = {
     TimeFrames.THIRTY_MINUTES: 30,
     TimeFrames.ONE_HOUR: 60,
     TimeFrames.TWO_HOURS: 120,
+    TimeFrames.THREE_HOURS: 180,
     TimeFrames.FOUR_HOURS: 240,
     TimeFrames.HEIGHT_HOURS: 480,
     TimeFrames.TWELVE_HOURS: 720,
