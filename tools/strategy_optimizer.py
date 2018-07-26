@@ -57,7 +57,7 @@ class StrategyOptimizer:
         self.all_time_frames = self.strategy_class.get_required_time_frames(self.config)
         nb_TFs = len(self.all_time_frames)
 
-        risks = [1]
+        risks = [0.5, 1]
 
         nb_runs = int(len(risks) * (math.pow(nb_TFs, 2) * math.pow(nb_TAs, 2)))
 
