@@ -15,9 +15,16 @@
 
             <p class="card-text symbols">
                 {% if crypto_currency in config_symbols %}
-                    {% for symbol in config_symbols[crypto_currency]["pairs"] %}
-                        <span editable="string">{{ symbol }}</span><br>
-                    {% endfor %}
+                    <span
+                        config-key="crypto-currencies_{{crypto_currency}}_pairs"
+                        config-type="global_config"
+                        config-value="{{config_symbols[crypto_currency]['pairs']}}"
+                        startup-config-value="{{config_symbols[crypto_currency]['pairs']}}"
+                        class="config-element">
+                        {% for symbol in config_symbols[crypto_currency]["pairs"] %}
+                            {{ symbol }}<br>
+                        {% endfor %}
+                    </span>
                 {% endif %}
             </p>
 

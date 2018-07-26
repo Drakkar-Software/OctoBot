@@ -21,13 +21,14 @@
                 -}}
             {% endfor %}
         {% elif config[key] == True or config[key] == False %}
-            {{ key }} :
-                 <input  type="checkbox"
+                {{ key }} :
+                 <input     type="checkbox"
                             class="config-element"
                             config-key="{{config_key}}"
                             config-type="global_config"
                             config-value="{{config[key]}}"
-                            startup-config-value="{{config[key]}}"><br>
+                            startup-config-value="{{config[key]}}"
+                 {% if config[key] == True %}checked{% endif %}><br>
         {% elif config[key] is number %}
            {{ key }} : <a href="#"
                         config-key="{{config_key}}"
