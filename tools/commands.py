@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import sys
@@ -6,6 +7,7 @@ import threading
 from git import Repo, InvalidGitRepositoryError
 
 from backtesting.collector.data_collector import DataCollector
+from config.config import encrypt
 from config.cst import ORIGIN_URL, GIT_ORIGIN
 from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
@@ -100,6 +102,24 @@ class Commands:
             tentacle_creator_inst.parse_commands(commands)
         except Exception as e:
             if not catch:
+                raise e
+
+    @staticmethod
+    def exchange_keys_encrypter(catch=False):
+        try:
+            api_key_crypted = encrypt(input("ENTER YOUR API-KEY : ")).decode()
+            api_secret_crypted = encrypt(input("ENTER YOUR API-SECRET : ")).decode()
+            print(f"Here are your exchanges keys : \n "
+                  f"\t- API-KEY : {api_key_crypted}\n"
+                  f"\t- API-SECRET : {api_secret_crypted}\n\n"
+                  f"Your new exchange configuration is : \n"
+                  "{\n"
+                  f'\t"api-key": "{api_key_crypted}",\n'
+                  f'\t"api-secret": "{api_secret_crypted}"\n'
+                  "{\n")
+        except Exception as e:
+            if not catch:
+                logging.error(f"Fail to encrypt your exchange keys, please try again ({e}).")
                 raise e
 
     @staticmethod
