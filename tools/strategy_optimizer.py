@@ -17,6 +17,8 @@ from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATO
 PROFITABILITY = "profitability"
 BOT_PROFITABILITY = 0
 MARKET_PROFITABILITY = 1
+CONFIG = 0
+RANK = 1
 CONFIGURATION = "configuration"
 RESULT = "result"
 ACTIVATED_EVALUATORS = "activated_evaluators"
@@ -36,7 +38,7 @@ class StrategyOptimizer:
         self.run_results = []
         self.results_report = []
         self.sorted_results_by_time_frame = {}
-        self.overall_sorted_results = []
+        self.sorted_results_through_all_time_frame = {}
         self.all_time_frames = []
 
         if not self.strategy_class:
@@ -55,7 +57,7 @@ class StrategyOptimizer:
         self.all_time_frames = self.strategy_class.get_required_time_frames(self.config)
         nb_TFs = len(self.all_time_frames)
 
-        risks = [0.5]
+        risks = [1]
 
         nb_runs = int(len(risks) * (math.pow(nb_TFs, 2) * math.pow(nb_TAs, 2)))
 
@@ -153,8 +155,16 @@ class StrategyOptimizer:
         for time_frame in self.all_time_frames:
             time_frame_sorted_results = self.get_sorted_results(self.run_results, time_frame)
             self.sorted_results_by_time_frame[time_frame.value] = time_frame_sorted_results
-        top_values = [results[0] for results in self.sorted_results_by_time_frame.values()]
-        self.overall_sorted_results = self.get_sorted_results(top_values)
+
+        results_through_all_time_frame = {}
+        for results in self.sorted_results_by_time_frame.values():
+            for rank, result in enumerate(results):
+                result_summary = result.get_config_summary()
+                if result_summary not in results_through_all_time_frame:
+                    results_through_all_time_frame[result_summary] = 0
+                results_through_all_time_frame[result_summary] += rank
+        result_list = [(result, rank) for result, rank in results_through_all_time_frame.items()]
+        self.sorted_results_through_all_time_frame = sorted(result_list, key=lambda res: res[RANK])
 
     @staticmethod
     def _is_relevant_evaluation_config(evaluator):
@@ -165,14 +175,18 @@ class StrategyOptimizer:
                          "since it finishes at the end of the first data, aka minimum time frame. Therefore all "
                          "different time frames are different price actions and can't be compared independently.")
         for time_frame, results in self.sorted_results_by_time_frame.items():
-            self.logger.info(f" *** {time_frame} minimum time frame *** ")
+            self.logger.info(f" *** {time_frame} minimum time frame ranking*** ")
             for rank, result in enumerate(results):
                 self.logger.info(f"{rank}: {result.get_result_string()}")
         self.logger.info(f" *** Top rankings per time frame *** ")
         for time_frame, results in self.sorted_results_by_time_frame.items():
-            self.logger.info(f"{time_frame}: {results[0].get_result_string(False)}")
+            for i in range(0, min(len(results), 5)):
+                self.logger.info(f"{time_frame}: {results[i].get_result_string(False)}")
+        self.logger.info(f" *** Top rankings through all time frames *** ")
+        for rank, result in enumerate(self.sorted_results_through_all_time_frame[0:25]):
+            self.logger.info(f"{rank}: {result[CONFIG].get_result_string()} (time frame rank sum: {result[RANK]})")
         self.logger.info(f" *** Overall best configuration for {self.strategy_class.get_name()}*** ")
-        self.logger.info(f"{self.overall_sorted_results[0].get_result_string()}")
+        self.logger.info(f"{self.sorted_results_through_all_time_frame[0][CONFIG].get_result_string()}")
 
     @staticmethod
     def get_all_TA(config_evaluator):
@@ -204,6 +218,9 @@ class StrategyOptimizer:
             evals.pop(self.strategy)
             return [eval_name for eval_name in evals]
 
+        def get_config_summary(self):
+            return StrategyOptimizer.TestSuiteResultSummary(self)
+
         def get_result_string(self, details=True):
             details = f" details: (profitabilities (bot, market):{self.run_profitabilities}, trades: " \
                       f"{self.trades_counts})" if details else ""
@@ -211,7 +228,23 @@ class StrategyOptimizer:
                     f"score: {self.get_average_score():f} (the higher the better) "
                     f"average trades: {self.get_average_trades_count():f}{details}")
 
+    class TestSuiteResultSummary:
+        def __init__(self, test_suite_result):
+            self.evaluators = test_suite_result.get_evaluators_without_strategy()
+            self.risk = test_suite_result.risk
+
+        def get_result_string(self):
+            return f"{self.evaluators} risk: {self.risk}"
+
+        def __eq__(self, other):
+            return self.evaluators == other.evaluators and self.risk == other.risk
+
+        def __hash__(self):
+            return abs(hash(f"{self.evaluators}{self.risk}"))
+
     class StrategyTestSuite(AbstractStrategyTest):
+
+        SKIP_LONG_STEPS = True
 
         def __init__(self):
             super().__init__()
@@ -244,7 +277,8 @@ class StrategyOptimizer:
 
         @staticmethod
         def test_slow_downtrend(strategy_tester):
-            strategy_tester.run_test_slow_downtrend(None, None, None, False)
+            strategy_tester.run_test_slow_downtrend(None, None, None,
+                                                    StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
 
         @staticmethod
         def test_sharp_downtrend(strategy_tester):
@@ -252,7 +286,8 @@ class StrategyOptimizer:
 
         @staticmethod
         def test_flat_markets(strategy_tester):
-            strategy_tester.run_test_flat_markets(None, None, None, False)
+            strategy_tester.run_test_flat_markets(None, None, None,
+                                                  StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
 
         @staticmethod
         def test_slow_uptrend(strategy_tester):
