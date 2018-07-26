@@ -67,6 +67,4 @@ def start_backtesting_bot(bot):
 
 
 class SymbolNotFoundException(Exception):
-
-    def __init__(self, message):
-        super().__init__(message)
+    pass
