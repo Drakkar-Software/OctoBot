@@ -33,7 +33,7 @@ class Commands:
             if origin.exists():
                 # update
                 for fetch_info in origin.pull():
-                    print("Updated %s to %s" % (fetch_info.ref, fetch_info.commit))
+                    print(f"Updated {fetch_info.ref} to {fetch_info.commit}")
 
                 # checkout
                 # try:
@@ -45,7 +45,7 @@ class Commands:
             else:
                 raise Exception("Cannot connect to origin")
         except Exception as e:
-            logger.info("Exception raised during updating process... ({})".format(e))
+            logger.info(f"Exception raised during updating process... ({e})")
             if not catch:
                 raise e
 
@@ -59,7 +59,7 @@ class Commands:
             return True
 
         try:
-            diff = list(repo.iter_commits('{0}..{1}/{0}'.format(repo.active_branch.name, GIT_ORIGIN)))
+            diff = list(repo.iter_commits(f'{repo.active_branch.name}..{GIT_ORIGIN}/{repo.active_branch.name}'))
             if diff:
                 if log:
                     logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
@@ -121,7 +121,7 @@ class Commands:
             bot.start_threads()
             bot.join_threads()
         except Exception as e:
-            logger.exception("CryptBot Exception : {0}".format(e))
+            logger.exception(f"OctoBot Exception : {e}")
             if not catch:
                 raise e
             Commands.stop_bot(bot)
@@ -133,7 +133,7 @@ class Commands:
 
     @staticmethod
     def start_new_bot(args=""):
-        python_command = "{0}/{1} ".format(os.getcwd(), "start.py")
+        python_command = f"{os.getcwd()}/start.py "
         command_args = "--pause_time=3"
         subprocess.call([sys.executable, python_command, command_args, args])
 
