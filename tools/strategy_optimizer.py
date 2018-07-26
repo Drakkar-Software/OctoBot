@@ -242,6 +242,7 @@ class StrategyOptimizer:
 
     class StrategyTestSuite(AbstractStrategyTest):
 
+        # set to True to skip bigger scenarii and make tests faster
         SKIP_LONG_STEPS = False
 
         def __init__(self):
@@ -260,7 +261,7 @@ class StrategyOptimizer:
 
         def run_test_suite(self, strategy_tester):
             tests = [self.test_slow_downtrend, self.test_sharp_downtrend, self.test_flat_markets,
-                     self.test_slow_uptrend, self.test_sharp_uptrend]
+                     self.test_slow_uptrend, self.test_sharp_uptrend, self.test_up_then_down]
             print('| ', end='')
             for test in tests:
                 try:
@@ -279,16 +280,17 @@ class StrategyOptimizer:
 
         @staticmethod
         def test_slow_downtrend(strategy_tester):
-            strategy_tester.run_test_slow_downtrend(None, None, None,
+            strategy_tester.run_test_slow_downtrend(None, None, None, None,
                                                     StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
 
         @staticmethod
         def test_sharp_downtrend(strategy_tester):
-            strategy_tester.run_test_sharp_downtrend(None)
+            strategy_tester.run_test_sharp_downtrend(None, None,
+                                                     StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
 
         @staticmethod
         def test_flat_markets(strategy_tester):
-            strategy_tester.run_test_flat_markets(None, None, None,
+            strategy_tester.run_test_flat_markets(None, None, None, None,
                                                   StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
 
         @staticmethod
@@ -298,6 +300,11 @@ class StrategyOptimizer:
         @staticmethod
         def test_sharp_uptrend(strategy_tester):
             strategy_tester.run_test_sharp_uptrend(None, None)
+
+        @staticmethod
+        def test_up_then_down(strategy_tester):
+            strategy_tester.run_test_up_then_down(None,
+                                                  StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
 
         def _assert_results(self, run_results, profitability, bot):
             self._profitability_results.append(run_results)
