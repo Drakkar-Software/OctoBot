@@ -52,3 +52,18 @@ def config():
                                full_symbol_list=get_all_symbol_list(),
                                get_evaluator_config=get_evaluator_config,
                                get_evaluator_startup_config=get_evaluator_startup_config)
+
+
+@server_instance.template_filter()
+def is_dict(value):
+    return isinstance(value, dict)
+
+
+@server_instance.template_filter()
+def is_list(value):
+    return isinstance(value, list)
+
+
+@server_instance.template_filter()
+def is_bool(value):
+    return isinstance(value, bool)

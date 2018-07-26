@@ -1,3 +1,4 @@
+{% import 'components/config/editable_config.html' as m_editable_config %}
 {% macro config_currency_card(config_symbols, crypto_currency, add_class='') -%}
     <!-- Card -->
     <div class="card mb-4 {{add_class}}">
@@ -15,16 +16,13 @@
 
             <p class="card-text symbols">
                 {% if crypto_currency in config_symbols %}
-                    <span
-                        config-key="crypto-currencies_{{crypto_currency}}_pairs"
-                        config-type="global_config"
-                        config-value="{{config_symbols[crypto_currency]['pairs']}}"
-                        startup-config-value="{{config_symbols[crypto_currency]['pairs']}}"
-                        class="config-element">
-                        {% for symbol in config_symbols[crypto_currency]["pairs"] %}
-                            {{ symbol }}<br>
-                        {% endfor %}
-                    </span>
+                     {{ m_editable_config.editable_key( config_symbols,
+                                                        crypto_currency,
+                                                        "crypto-currencies_" + crypto_currency + "_pairs",
+                                                        "global_config",
+                                                        config_symbols[crypto_currency]['pairs'],
+                                                        config_symbols[crypto_currency]['pairs'])
+                    }}
                 {% endif %}
             </p>
 

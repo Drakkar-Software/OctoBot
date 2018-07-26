@@ -1,53 +1,124 @@
 {% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value) -%}
         {% if config[key] is string %}
-            {{ key }} : <a href="#"
-                        config-key="{{config_key}}"
-                        config-type="global_config"
-                        config-value="{{config[key]}}"
-                        startup-config-value="{{config[key]}}"
-                        data-type="text"
-                        data-pk="1"
-                        class="editable editable-click config-element">
-            {{ config[key] }}</a><br>
-        {% elif config[key] is iterable %}
-            {{ key }} : <br>
-            {% for new_key in config[key] %}
-                &emsp;{{-  editable_key(  config[key],
-                                    new_key,
-                                    config_key + "_" + new_key,
-                                    config_type,
-                                    config_value[new_key],
-                                    startup_config_value[new_key])
-                -}}
-            {% endfor %}
-        {% elif config[key] == True or config[key] == False %}
-                {{ key }} :
-                 <input     type="checkbox"
-                            class="config-element"
-                            config-key="{{config_key}}"
-                            config-type="global_config"
-                            config-value="{{config[key]}}"
-                            startup-config-value="{{config[key]}}"
-                 {% if config[key] == True %}checked{% endif %}><br>
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value) }}
+        {% elif config[key] | is_dict %}
+            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value) }}
+        {% elif config[key] | is_list %}
+            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value) }}
+        {% elif config[key] | is_bool %}
+            {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value) }}
         {% elif config[key] is number %}
-           {{ key }} : <a href="#"
-                        config-key="{{config_key}}"
-                        config-type="global_config"
-                        config-value="{{config[key]}}"
-                        startup-config-value="{{config[key]}}"
-                        data-type="number"
-                        data-pk="1"
-                        class="editable editable-click config-element">
-            {{ config[key] }}</a><br>
+            {{ editable_key_number(config, key, config_key, config_type, config_value, startup_config_value) }}
         {% else %}
-             {{ key }} : <a href="#"
-                        config-key="{{config_key}}"
-                        config-type="global_config"
-                        config-value="{{config[key]}}"
-                        startup-config-value="{{config[key]}}"
-                        data-type="text"
-                        data-pk="1"
-                        class="editable editable-click config-element">
-            {{ config[key] }}</a><br>
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value) }}
         {% endif %}
+{%- endmacro %}
+
+{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value) -%}
+    {{ key }} : <a href="#"
+            config-key="{{config_key}}"
+            config-type="global_config"
+            config-value="{{config[key]}}"
+            startup-config-value="{{config[key]}}"
+            data-type="text"
+            data-pk="1"
+            class="editable editable-click config-element">
+    {{ config[key] }}</a><br>
+{%- endmacro %}
+
+{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value) -%}
+    {{ key }} : <br>
+    {% for new_key in config[key] %}
+        &emsp;{{  editable_key( config[key],
+                            new_key,
+                            config_key + "_" + new_key,
+                            config_type,
+                            config_value[new_key],
+                            startup_config_value[new_key])
+        }}
+    {% endfor %}
+{%- endmacro %}
+
+{% macro editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value) -%}
+    {{ key }} :
+     <input     type="checkbox"
+                class="config-element"
+                config-key="{{config_key}}"
+                config-type="global_config"
+                config-value="{{config[key]}}"
+                startup-config-value="{{config[key]}}"
+                data-type="bool"
+     {% if config[key] == True %}checked{% endif %}><br>
+{%- endmacro %}
+
+{% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value) -%}
+    {{ key }} : <a href="#"
+                config-key="{{config_key}}"
+                config-type="global_config"
+                config-value="{{config[key]}}"
+                startup-config-value="{{config[key]}}"
+                data-type="number"
+                data-pk="1"
+                class="editable editable-click config-element">
+    {{ config[key] }}</a><br>
+{%- endmacro %}
+
+{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value) -%}
+    {{ key }} :
+    <a href="#" id="country" data-type="select2" data-pk="1" data-value="ru" data-url="/post" data-title="Select country"></a>
+        <script>
+            $(function(){
+                //local source
+                $('#country').editable({
+                    source: [
+                          {id: 'gb', text: 'Great Britain'},
+                          {id: 'us', text: 'United States'},
+                          {id: 'ru', text: 'Russia'}
+                       ],
+                    select2: {
+                       multiple: true
+                    }
+                });
+                //remote source (simple)
+                $('#country').editable({
+                    source: '/getCountries',
+                    select2: {
+                        placeholder: 'Select Country',
+                        minimumInputLength: 1
+                    }
+                });
+                //remote source (advanced)
+                $('#country').editable({
+                    select2: {
+                        placeholder: 'Select Country',
+                        allowClear: true,
+                        minimumInputLength: 3,
+                        id: function (item) {
+                            return item.CountryId;
+                        },
+                        ajax: {
+                            url: '/getCountries',
+                            dataType: 'json',
+                            data: function (term, page) {
+                                return { query: term };
+                            },
+                            results: function (data, page) {
+                                return { results: data };
+                            }
+                        },
+                        formatResult: function (item) {
+                            return item.CountryName;
+                        },
+                        formatSelection: function (item) {
+                            return item.CountryName;
+                        },
+                        initSelection: function (element, callback) {
+                            return $.get('/getCountryById', { query: element.val() }, function (data) {
+                                callback(data);
+                            });
+                        }
+                    }
+                });
+            });
+        </script>
 {%- endmacro %}
