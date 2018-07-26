@@ -15,14 +15,10 @@ from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATO
     CONFIG_EVALUATOR, CONFIG_TRADER_MODE
 from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
 
-PROFITABILITY = "profitability"
 BOT_PROFITABILITY = 0
 MARKET_PROFITABILITY = 1
 CONFIG = 0
 RANK = 1
-CONFIGURATION = "configuration"
-RESULT = "result"
-ACTIVATED_EVALUATORS = "activated_evaluators"
 
 
 class StrategyOptimizer:
@@ -100,7 +96,7 @@ class StrategyOptimizer:
                                             print(f"{run_id}/{nb_runs} Run with: evaluators: {activated_evaluators}, "
                                                   f"time frames :{activated_time_frames}, risk: {risk}")
                                             self._run_test_suite(self.config)
-                                            print(f"Result: {self.run_results[-1].get_result_string(False)}")
+                                            print(f" => Result: {self.run_results[-1].get_result_string(False)}")
                                             run_id += 1
 
         self.logger.setLevel(logging.INFO)
@@ -108,7 +104,8 @@ class StrategyOptimizer:
             handler.setLevel(logging.INFO)
         self._find_optimal_configuration_using_results()
 
-    def get_activated_evaluators(self, all_elements, current_forced_element, nb_elements_to_consider,
+    @staticmethod
+    def get_activated_evaluators(all_elements, current_forced_element, nb_elements_to_consider,
                                  elem_conf_history, default_element=None, dict_shaped=False):
         eval_conf = {current_forced_element: True}
         additional_elements_count = 0
@@ -264,6 +261,7 @@ class StrategyOptimizer:
         def run_test_suite(self, strategy_tester):
             tests = [self.test_slow_downtrend, self.test_sharp_downtrend, self.test_flat_markets,
                      self.test_slow_uptrend, self.test_sharp_uptrend]
+            print('| ', end='')
             for test in tests:
                 try:
                     test(strategy_tester)
@@ -272,7 +270,8 @@ class StrategyOptimizer:
                 except Exception as e:
                     print(f"Exception when running test {test.__name__}: {e}")
                     self.logger.exception(e)
-                print('.', end='')
+                print('#', end='')
+            print(' |', end='')
 
         @staticmethod
         def test_default_run(strategy_tester):
