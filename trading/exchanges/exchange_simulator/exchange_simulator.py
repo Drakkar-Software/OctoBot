@@ -145,15 +145,19 @@ class ExchangeSimulator(AbstractExchange):
 
     # Will use the One Minute time frame
     def _create_ticker(self, symbol, index):
-        nb_candles = len(self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value])
-        if index >= nb_candles:
-            tf = self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value][-1]
-            self.logger.warning(f"Impossible to simulate price ticker for {symbol} at candle index {index} "
-                                f"(only {nb_candles} candles are available). "
-                                f"Creating ticker using the last available candle.")
+        if self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value in self._get_symbol_data(symbol):
+            nb_candles = len(self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value])
+            if index >= nb_candles:
+                tf = self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value][-1]
+                self.logger.warning(f"Impossible to simulate price ticker for {symbol} at candle index {index} "
+                                    f"(only {nb_candles} candles are available). "
+                                    f"Creating ticker using the last available candle.")
+            else:
+                tf = self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value][index]
+            return tf[PriceIndexes.IND_PRICE_CLOSE.value]
         else:
-            tf = self._get_symbol_data(symbol)[self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value][index]
-        return tf[PriceIndexes.IND_PRICE_CLOSE.value]
+            raise NoCandleDataForThisTimeFrameException(
+                f"No candle data for {self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value} time frame for {symbol}.")
 
     def _create_recent_trades(self, symbol, timeframe, index):
         tf = self._get_symbol_data(symbol)[timeframe.value][index]
@@ -371,3 +375,9 @@ class ExchangeSimulator(AbstractExchange):
 
     def get_uniform_timestamp(self, timestamp):
         return timestamp / 1000
+
+
+class NoCandleDataForThisTimeFrameException(Exception):
+
+    def __init__(self, message):
+        super().__init__(message)
