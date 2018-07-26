@@ -29,10 +29,16 @@ def add_config_default_backtesting_values(config):
 
 def filter_wanted_symbols(config, wanted_symbols):
     # filters to keep only relevant currencies
+    found_symbol = False
     wanted_symbols_set = set(wanted_symbols)
     for cryptocurrency, symbols in config[CONFIG_CRYPTO_CURRENCIES].items():
         if not wanted_symbols_set.intersection(symbols[CONFIG_CRYPTO_PAIRS]):
             config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency] = {CONFIG_CRYPTO_PAIRS: []}
+        else:
+            found_symbol = True
+
+    if not found_symbol:
+        raise SymbolNotFoundException(f"No symbol matching {wanted_symbols} found in configuration file.")
 
 
 def create_backtesting_bot(config):
@@ -52,6 +58,15 @@ def start_backtesting_bot(bot):
             logging.getLogger(f"fail to stop forcing exit for exchange {exchange_inst.get_name()}")
 
     bot.create_evaluation_threads()
+    if not bot.get_symbols_threads_manager():
+        raise RuntimeError(f"No candles data for the current configuration. Please ensure your configuration file is "
+                           f"correct and has the required backtesting data file for the activated symbols.")
     bot.start_threads()
     bot.join_threads()
     return Backtesting.get_profitability(bot)
+
+
+class SymbolNotFoundException(Exception):
+
+    def __init__(self, message):
+        super().__init__(message)

@@ -213,12 +213,18 @@ class ExchangeSimulator(AbstractExchange):
                                           self._get_candle_index(to_use_time_frame, symbol),
                                           symbol)
 
+    def _ensure_available_data(self, symbol):
+        if symbol not in self.data:
+            raise NoCandleDataForThisSymbolException(f"No candles data for {symbol} symbol.")
+
     def get_candles_exact(self, symbol, time_frame, min_index, max_index, return_list=True):
+        self._ensure_available_data(symbol)
         candles = self.data[symbol][time_frame.value][min_index:max_index]
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
         return self.get_symbol_data(symbol).get_symbol_prices(time_frame, None, return_list)
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
+        self._ensure_available_data(symbol)
         candles = self._extract_data_with_limit(symbol, time_frame)
         if time_frame is not None:
             self.time_frame_get_times[symbol][time_frame.value] += 1
@@ -231,6 +237,7 @@ class ExchangeSimulator(AbstractExchange):
             return [self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR]
 
     def get_recent_trades(self, symbol, limit=50):
+        self._ensure_available_data(symbol)
         time_frame_to_use = TimeFrameManager.find_min_time_frame(self._get_used_time_frames(symbol))
         index = 0
         if symbol in self.time_frames_offset and time_frame_to_use.value in self.time_frames_offset[symbol] \
@@ -289,6 +296,7 @@ class ExchangeSimulator(AbstractExchange):
         return self.data
 
     def get_price_ticker(self, symbol):
+        self._ensure_available_data(symbol)
         result = {
             "symbol": symbol,
             ExchangeConstantsTickersColumns.LAST.value: self._create_ticker(
@@ -378,6 +386,12 @@ class ExchangeSimulator(AbstractExchange):
 
 
 class NoCandleDataForThisTimeFrameException(Exception):
+
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class NoCandleDataForThisSymbolException(Exception):
 
     def __init__(self, message):
         super().__init__(message)
