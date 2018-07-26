@@ -6,5 +6,3 @@ coveralls
 
 tox
 tox-travis
-
-matplotlib==2.2.2
