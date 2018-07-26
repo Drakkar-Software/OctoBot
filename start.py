@@ -76,10 +76,14 @@ def start_octobot(starting_args):
                 if config[CONFIG_EVALUATOR] is None:
                     raise ConfigEvaluatorError
 
-                if starting_args.strategy_optimizer:
+                if starting_args.data_collector:
+                    Commands.data_collector(config)
+
+                elif starting_args.strategy_optimizer:
                     Commands.start_strategy_optimizer(config, starting_args.strategy_optimizer)
 
                 else:
+
                     # In those cases load OctoBot
                     from octobot import OctoBot
 
@@ -95,18 +99,14 @@ def start_octobot(starting_args):
 
                     interfaces.__init__(bot, config)
 
-                    if starting_args.data_collector:
-                        Commands.data_collector(config)
-
                     # start crypto bot options
-                    else:
-                        if starting_args.backtesting:
-                            import backtesting
+                    if starting_args.backtesting:
+                        import backtesting
 
-                            backtesting.__init__(bot)
+                        backtesting.__init__(bot)
 
-                        if starting_args.start:
-                            Commands.start_bot(bot, logger)
+                    if starting_args.start:
+                        Commands.start_bot(bot, logger)
 
     except ConfigError:
         logger.error(f"OctoBot can't start without {CONFIG_FILE} configuration file.")
