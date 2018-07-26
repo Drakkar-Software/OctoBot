@@ -109,7 +109,7 @@ class Commands:
         try:
             api_key_crypted = encrypt(input("ENTER YOUR API-KEY : ")).decode()
             api_secret_crypted = encrypt(input("ENTER YOUR API-SECRET : ")).decode()
-            print(f"Here are your exchanges keys : \n "
+            print(f"Here are your encrypted exchanges keys : \n "
                   f"\t- API-KEY : {api_key_crypted}\n"
                   f"\t- API-SECRET : {api_secret_crypted}\n\n"
                   f"Your new exchange configuration is : \n"
