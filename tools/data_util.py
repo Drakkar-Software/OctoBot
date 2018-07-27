@@ -5,7 +5,10 @@ class DataUtil:
 
     @staticmethod
     def normalize_data(data):
-        return (data - np.mean(data)) / (data.max() - data.min())
+        if len(data):
+            return (data - np.mean(data)) / (data.max() - data.min())
+        else:
+            return data
 
     @staticmethod
     def drop_nan(data):
