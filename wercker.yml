@@ -7,3 +7,4 @@ build:
     - internal/docker-run:
         image: octobot-docker-image
         name: octobotTestContainer
+        cmd: -m pytest
