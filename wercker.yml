@@ -1,0 +1,11 @@
+box: python:3.6
+build:
+  steps:
+    - internal/docker-build:
+        dockerfile: Dockerfile
+        image-name: octobot-docker-image
+        build-args: "octobot_branch=dev"
+    - internal/docker-run:
+        image: octobot-docker-image
+        name: octobotTestContainer
+        cmd: -m pytest
