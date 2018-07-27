@@ -32,7 +32,7 @@ RUN cp ./config/default_evaluator_config.json ./config/evaluator_config.json
 RUN pip3 install -U setuptools
 RUN pip3 install -r pre_requirements.txt
 RUN pip3 install -r requirements.txt
-RUN if [ "x$octobot_branch" == "dev" ] ; then pip3 install -r dev_requirements.txt ; fi
+RUN if [ "$octobot_branch" == "dev" ] ; then pip3 install -r dev_requirements.txt ; fi
 
 # install evaluators
 RUN rm -rf ./tentacles
