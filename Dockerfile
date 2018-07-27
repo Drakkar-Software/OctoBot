@@ -30,4 +30,6 @@ COPY /bot/octobot OctoBot/
 
 # entry point
 ENTRYPOINT ["python"]
+
+# entry point's default argument
 CMD ["start.py"]
