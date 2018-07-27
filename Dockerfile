@@ -27,4 +27,6 @@ RUN python start.py -p install all
 
 # entry point
 ENTRYPOINT ["python"]
+
+# entry point's default argument
 CMD ["start.py"]
