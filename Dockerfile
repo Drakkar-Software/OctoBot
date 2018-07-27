@@ -1,5 +1,9 @@
 FROM python:3
 
+ARG octobot_branch="beta"
+
+LABEL octobot_version="0.1.5_3-beta"
+
 # Update Software repository
 RUN apt-get update
 RUN apt install git -y
@@ -8,10 +12,13 @@ RUN apt install git -y
 WORKDIR /bot
 RUN git clone https://github.com/Drakkar-Software/OctoBot /bot/octobot
 WORKDIR /bot/octobot
-RUN git checkout dev
+RUN git checkout $octobot_branch
 
 # install dependencies
 RUN bash ./docs/install/linux_installer.sh
+
+# clean apt
+RUN rm -rf /var/lib/apt/lists/*
 
 # configuration
 RUN cp ./config/default_config.json ./config.json
