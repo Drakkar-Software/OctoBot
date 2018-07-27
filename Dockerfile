@@ -8,10 +8,9 @@ LABEL octobot_version="0.1.5_3-beta"
 RUN apt-get update
 RUN apt install git -y
 
-WORKDIR /bot
-
 # Associate current user dir to octobot installation folder
-ADD . /bot/octobot
+ADD . /bot
+WORKDIR /bot
 
 # Set up octobot's environment
 RUN git clone https://github.com/Drakkar-Software/OctoBot /bot/octobot
