@@ -14,7 +14,7 @@ RUN git checkout dev
 RUN bash ./docs/install/linux_installer.sh
 
 # configuration
-RUN cp ./config/default_config.json ./config/config.json
+RUN cp ./config/default_config.json ./config.json
 RUN cp ./config/default_evaluator_config.json ./config/evaluator_config.json
 
 # python libs
@@ -24,6 +24,9 @@ RUN pip3 install -r requirements.txt
 # install evaluators
 RUN rm -rf ./tentacles
 RUN python start.py -p install all
+
+# copy in remote
+COPY /bot/octobot OctoBot/
 
 # entry point
 ENTRYPOINT ["python"]
