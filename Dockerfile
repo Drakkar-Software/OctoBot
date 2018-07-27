@@ -8,8 +8,12 @@ LABEL octobot_version="0.1.5_3-beta"
 RUN apt-get update
 RUN apt install git -y
 
-# Set up dev environment
 WORKDIR /bot
+
+# Associate current user dir to octobot installation folder
+ADD . /bot/octobot
+
+# Set up octobot's environment
 RUN git clone https://github.com/Drakkar-Software/OctoBot /bot/octobot
 WORKDIR /bot/octobot
 RUN git checkout $octobot_branch
@@ -31,9 +35,6 @@ RUN pip3 install -r requirements.txt
 # install evaluators
 RUN rm -rf ./tentacles
 RUN python start.py -p install all
-
-# copy in remote
-COPY /bot/octobot OctoBot/
 
 # entry point
 ENTRYPOINT ["python"]
