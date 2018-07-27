@@ -1,7 +1,8 @@
 build:
+  steps:
     - internal/docker-build:
-      dockerfile: Dockerfile
-      image-name: octobot-docker-image
+        dockerfile: Dockerfile
+        image-name: octobot-docker-image
     - internal/docker-run:
-      image: octobot-docker-image
-      name: octobotTestContainer
+        image: octobot-docker-image
+        name: octobotTestContainer
