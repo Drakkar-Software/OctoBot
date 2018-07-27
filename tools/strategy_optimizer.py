@@ -6,6 +6,7 @@ from tools.class_inspector import get_class_from_string, evaluator_parent_inspec
 from tools.time_frame_manager import TimeFrameManager
 from tests.test_utils.backtesting_util import add_config_default_backtesting_values
 from tests.test_utils.config import load_test_config
+from tools.data_util import DataUtil
 from evaluator.TA.TA_evaluator import TAEvaluator
 from evaluator import TA
 from evaluator import Strategies
@@ -19,6 +20,8 @@ BOT_PROFITABILITY = 0
 MARKET_PROFITABILITY = 1
 CONFIG = 0
 RANK = 1
+TRADES = 0
+TRADES_IN_RESULT = 2
 
 
 class StrategyOptimizer:
@@ -27,7 +30,8 @@ class StrategyOptimizer:
         self.is_properly_initialized = False
         self.logger = logging.getLogger(self.__class__.__name__)
         self.config = load_test_config()
-        self.config[CONFIG_TRADER][CONFIG_TRADER_MODE] = config[CONFIG_TRADER][CONFIG_TRADER_MODE]
+        self.trading_mode = config[CONFIG_TRADER][CONFIG_TRADER_MODE]
+        self.config[CONFIG_TRADER][CONFIG_TRADER_MODE] = self.trading_mode
         self.config[CONFIG_EVALUATOR] = config[CONFIG_EVALUATOR]
         add_config_default_backtesting_values(self.config)
         self.strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
@@ -46,7 +50,6 @@ class StrategyOptimizer:
             self.is_properly_initialized = True
 
     def find_optimal_configuration(self):
-        self.logger.info(f"Trying to find an optmized configuration for {self.strategy_class.get_name()} strategy")
 
         all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR])
         nb_TAs = len(all_TAs)
@@ -55,6 +58,10 @@ class StrategyOptimizer:
         nb_TFs = len(self.all_time_frames)
 
         risks = [0.5, 1]
+
+        self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} strategy "
+                         f"using {self.trading_mode} trading mode, {all_TAs} technical evaluator(s), "
+                         f"{self.all_time_frames} time frames and {risks} risk(s).")
 
         nb_runs = int(len(risks) * (math.pow(nb_TFs, 2) * math.pow(nb_TAs, 2)))
 
@@ -159,9 +166,12 @@ class StrategyOptimizer:
             for rank, result in enumerate(results):
                 result_summary = result.get_config_summary()
                 if result_summary not in results_through_all_time_frame:
-                    results_through_all_time_frame[result_summary] = 0
-                results_through_all_time_frame[result_summary] += rank
-        result_list = [(result, rank) for result, rank in results_through_all_time_frame.items()]
+                    results_through_all_time_frame[result_summary] = [[], 0]
+                results_through_all_time_frame[result_summary][RANK] += rank
+                results_through_all_time_frame[result_summary][TRADES] += result.trades_counts
+
+        result_list = [(result, trades_and_rank[RANK], DataUtil.mean(trades_and_rank[TRADES]))
+                       for result, trades_and_rank in results_through_all_time_frame.items()]
         self.sorted_results_through_all_time_frame = sorted(result_list, key=lambda res: res[RANK])
 
     @staticmethod
@@ -182,9 +192,12 @@ class StrategyOptimizer:
                 self.logger.info(f"{time_frame}: {results[i].get_result_string(False)}")
         self.logger.info(f" *** Top rankings through all time frames *** ")
         for rank, result in enumerate(self.sorted_results_through_all_time_frame[0:25]):
-            self.logger.info(f"{rank}: {result[CONFIG].get_result_string()} (time frame rank sum: {result[RANK]})")
-        self.logger.info(f" *** Overall best configuration for {self.strategy_class.get_name()}*** ")
-        self.logger.info(f"{self.sorted_results_through_all_time_frame[0][CONFIG].get_result_string()}")
+            self.logger.info(f"{rank}: {result[CONFIG].get_result_string()} (time frame rank sum: {result[RANK]}) "
+                             f"average trades count: {result[TRADES_IN_RESULT]:f}")
+        self.logger.info(f" *** Overall best configuration for {self.strategy_class.get_name()} using "
+                         f"{self.trading_mode} trading mode *** ")
+        self.logger.info(f"{self.sorted_results_through_all_time_frame[0][CONFIG].get_result_string()} average "
+                         f"trades count: {result[TRADES_IN_RESULT]:f}")
 
     @staticmethod
     def get_all_TA(config_evaluator):
@@ -206,10 +219,10 @@ class StrategyOptimizer:
             bot_profitabilities = [
                 profitability_result[BOT_PROFITABILITY] - profitability_result[MARKET_PROFITABILITY]
                 for profitability_result in self.run_profitabilities]
-            return sum(bot_profitabilities) / len(bot_profitabilities) if bot_profitabilities else 0
+            return DataUtil.mean(bot_profitabilities)
 
         def get_average_trades_count(self):
-            return sum(self.trades_counts) / len(self.trades_counts) if self.trades_counts else 0
+            return DataUtil.mean(self.trades_counts)
 
         def get_evaluators_without_strategy(self):
             evals = copy.copy(self.evaluators)
