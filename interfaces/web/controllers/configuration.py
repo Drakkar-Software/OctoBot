@@ -46,9 +46,9 @@ def config():
                                config_symbols=g_config[CONFIG_CRYPTO_CURRENCIES],
                                config_reference_market=g_config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET],
 
-                               ccxt_exchanges=list(set(ccxt.exchanges) - set(user_exchanges)),
+                               ccxt_exchanges=sorted(list(set(ccxt.exchanges) - set(user_exchanges))),
                                services_list=get_services_list(),
-                               symbol_list=get_symbol_list([exchange for exchange in g_config[CONFIG_EXCHANGES]]),
+                               symbol_list=sorted(get_symbol_list([exchange for exchange in g_config[CONFIG_EXCHANGES]])),
                                full_symbol_list=get_all_symbol_list(),
                                evaluator_config=get_evaluator_config(),
                                evaluator_startup_config=get_evaluator_startup_config())

@@ -140,7 +140,7 @@
     <div class="tab-pane fade config-root" id="panelCurrency" role="tabpanel"><br>
         <div class="alert alert-success">Add a new currency :
             <select id="AddCurrencySelect" class="selectpicker" data-live-search="true" reference_market="{{ config_reference_market }}">
-               {% for currency in full_symbol_list %}
+               {% for currency in full_symbol_list|sort() %}
                     {% if currency not in config_symbols %}
                         <option data-tokens="{{ currency }}" symbol="{{ full_symbol_list[currency] }}">{{ currency }}</option>
                     {% endif %}
@@ -233,7 +233,9 @@ $(".add-btn").click(function() {
     if(deck.find("div[name='"+select_value+"']").length == 0){
         var template_default = $("#" + $(this).attr("id") + "-template-default").html().replace(/{{ config_default_value }}/g, select_value);
         template_default = template_default.replace(/card-text symbols default/g, "card-text symbols")
-        template_default = template_default.replace(/{{ config_default_symbol }}.png/g, select_symbol.toLowerCase() + ".png")
+        if(isDefined(select_symbol)){
+            template_default = template_default.replace(/{{ config_default_symbol }}.png/g, select_symbol.toLowerCase() + ".png")
+        }
         deck.append(template_default).hide().fadeIn();
         handle_editable();
 
