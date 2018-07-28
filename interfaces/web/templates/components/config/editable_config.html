@@ -1,20 +1,20 @@
-{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="") -%}
+{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="", no_select=False) -%}
         {% if config[key] is string %}
-            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
         {% elif config[key] | is_dict %}
-            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
+            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
         {% elif config[key] | is_list %}
-            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
+            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
         {% elif config[key] | is_bool %}
-            {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
+            {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
         {% elif config[key] is number %}
-            {{ editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
+            {{ editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
         {% else %}
-            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
         {% endif %}
 {%- endmacro %}
 
-{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
+{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
     {{ key }} : <a href="#"
             config-key="{{config_key}}"
             config-type="global_config"
@@ -26,7 +26,7 @@
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
+{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
     {{ key }} : <br>
     {% for new_key in config[key] %}
         &emsp;{{  editable_key( config[key],
@@ -35,12 +35,13 @@
                             config_type,
                             config_value[new_key],
                             startup_config_value[new_key],
-                            suggestions)
+                            suggestions,
+                            no_select)
         }}
     {% endfor %}
 {%- endmacro %}
 
-{% macro editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
+{% macro editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
     {{ key }} :
      <input     type="checkbox"
                 class="config-element"
@@ -52,7 +53,7 @@
      {% if config[key] == True %}checked{% endif %}><br>
 {%- endmacro %}
 
-{% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
+{% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
     {{ key }} : <a href="#"
                 config-key="{{config_key}}"
                 config-type="global_config"
@@ -65,29 +66,32 @@
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
-    {% set select_id = range(1, 2000000) | random %}
+{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
     {{ key }} :
-    <select id="{{ select_id }}"
-            config-key="{{ config_key }}"
+    <select config-key="{{ config_key }}"
             config-type="global_config"
             config-value="{{config[key]}}"
             startup-config-value="{{config[key]}}"
-            class="editable editable-click config-element"
+            class="editable editable-click config-element multi-select-element"
             data-type="list"
             multiple="multiple">
         {% for name in suggestions %}
             <option value="{{ name }}"
-            {% if name in config[key] %}
+            {% if not no_select and name in config[key] %}
                 selected="selected"
             {% endif %}
-            >{{ name }}</option>
+            >
+                {{ name }}
+            </option>
         {% endfor %}
-    </select><br>
-        <script>
-            $("#{{ select_id }}").select2({
-                width: 'resolve', // need to override the changed default
-                tags: true
-            });
-        </script>
+    </select>
+    {% if not no_select %}
+    <br>
+    <script>
+        $(".multi-select-element").select2({
+            width: 'resolve', // need to override the changed default
+            tags: true
+        });
+    </script>
+    {% endif %}
 {%- endmacro %}
