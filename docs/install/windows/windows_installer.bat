@@ -38,6 +38,9 @@ echo **Installing modules...**
 cd ..
 %python_cmd% start.py -p install all
 
+echo **Installation done.**
+pause
+
 REM Once done, exit the batch file -- skips executing the errorNoPython section
 goto:eof
 
