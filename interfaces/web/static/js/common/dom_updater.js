@@ -47,9 +47,14 @@ function update_element_temporary_look(element){
 function at_least_one_temporary_element(root_element){
     at_least_one_element = false;
     root_element.find("."+config_element_class).each(function(){
-        if($(this).attr(current_value_attr).toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
-            at_least_one_element = true;
-            return false;
+        var current_attr = $(this).attr(current_value_attr);
+        var config_attr = $(this).attr(current_value_attr);
+
+        if (isDefined(current_attr) && isDefined(current_attr)) {
+            if(current_attr.toLowerCase() != config_attr.toLowerCase()){
+                at_least_one_element = true;
+                return false;
+            }
         }
     });
     return at_least_one_element;
@@ -92,13 +97,22 @@ function update_dom(root_element, message){
         new_value_type = typeof(new_value);
         new_value_string = new_value.toString();
         var to_update_element = root_element.find("#"+conf_key);
-        if (to_update_element.attr(config_value_attr).toLowerCase() != new_value_string){
-            to_update_element.attr(config_value_attr, new_value_string);
-            if(new_value_type == "boolean"){
-                change_boolean(to_update_element, new_value, new_value_string);
-            }
 
+        var attr = to_update_element.attr(config_value_attr);
+
+        if (isDefined(attr)) {
+            if (attr.toLowerCase() != new_value_string){
+                to_update_element.attr(config_value_attr, new_value_string);
+                if(new_value_type == "boolean"){
+                    change_boolean(to_update_element, new_value, new_value_string);
+                }
+
+            }
+        }else{
+            // todo find cards to update using returned data
+            to_update_element.removeClass(modified_class)
         }
+
     }
 }
 

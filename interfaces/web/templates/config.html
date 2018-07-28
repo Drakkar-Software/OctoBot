@@ -7,6 +7,7 @@
 {% import 'components/config/notification_config.html' as m_config_notification %}
 
 {% set config_default_value = "Bitcoin" %}
+{% set config_default_symbol = "btc" %}
 {% set modified_class = "warning-color" %}
 
 {% block additional_style %}
@@ -151,7 +152,7 @@
         <!-- Card deck -->
         <div class="card-deck config-container" update-url="{{ url_for('config') }}">
             {% for crypto_currency in config_symbols %}
-               {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list) }}
+               {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list, symbol=config_symbols[crypto_currency]['pairs'][0].split('/')[0].lower() if crypto_currency in config_symbols and config_symbols[crypto_currency]['pairs']) }}
             {% endfor %}
         </div>
     </div>
@@ -182,7 +183,8 @@
                                                         full_symbol_list=full_symbol_list,
                                                         add_class=modified_class,
                                                         no_select=True,
-                                                        additional_classes="default") }}
+                                                        additional_classes="default",
+                                                        symbol= config_default_symbol ) }}
     </div>
 </div>
 {% endblock %}
@@ -231,6 +233,7 @@ $(".add-btn").click(function() {
     if(deck.find("div[name='"+select_value+"']").length == 0){
         var template_default = $("#" + $(this).attr("id") + "-template-default").html().replace(/{{ config_default_value }}/g, select_value);
         template_default = template_default.replace(/card-text symbols default/g, "card-text symbols")
+        template_default = template_default.replace(/{{ config_default_symbol }}.png/g, select_symbol.toLowerCase() + ".png")
         deck.append(template_default).hide().fadeIn();
         handle_editable();
 

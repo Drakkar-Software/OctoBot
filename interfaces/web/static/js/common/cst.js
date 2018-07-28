@@ -15,6 +15,7 @@ var success_badge = "badge-success";
 var warning_badge = "badge-warning";
 var secondary_badge = "badge-secondary";
 var primary_badge = "badge-primary";
+var modified_class = "warning-color";
 
 var light_list_item = "list-group-item-light";
 var success_list_item = "list-group-item-success";
@@ -28,4 +29,8 @@ var deactivated = "Deactivated";
 // utility functions
 function log(text){
     window.console&&console.log(text);
+}
+
+function isDefined(thing){
+    return (typeof thing !== typeof undefined && thing !== false)
 }

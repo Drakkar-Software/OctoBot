@@ -67,7 +67,6 @@
 {%- endmacro %}
 
 {% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
-    {{ key }} :
     <select config-key="{{ config_key }}"
             config-type="global_config"
             config-value="{{config[key]}}"
