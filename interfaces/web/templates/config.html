@@ -138,7 +138,7 @@
     <!--Panel Currencies-->
     <div class="tab-pane fade config-root" id="panelCurrency" role="tabpanel"><br>
         <div class="alert alert-success">Add a new currency :
-            <select id="AddCurrencySelect" class="selectpicker" data-live-search="true">
+            <select id="AddCurrencySelect" class="selectpicker" data-live-search="true" reference_market="{{ config_reference_market }}">
                {% for currency in full_symbol_list %}
                     {% if currency not in config_symbols %}
                         <option data-tokens="{{ currency }}" symbol="{{ full_symbol_list[currency] }}">{{ currency }}</option>
@@ -222,7 +222,10 @@ $(document).ready(function () {
 $(".add-btn").click(function() {
 
     var deck = $(this).parents("." + config_root_class).find(".card-deck");
-    var select_value = $("#" + $(this).attr("id") + "Select").val();
+    var select_input = $("#" + $(this).attr("id") + "Select");
+    var select_value = select_input.val();
+    var select_symbol = select_input.children(["data-tokens='"+select_value+"'"]).attr("symbol");
+    var reference_market = select_input.attr("reference_market");
 
     // check if not already added
     if(deck.find("div[name='"+select_value+"']").length == 0){
@@ -231,6 +234,20 @@ $(".add-btn").click(function() {
         deck.append(template_default).hide().fadeIn();
         handle_editable();
 
+        // select options with reference market if any
+        $('.multi-select-element').each(function () {
+            if ($(this).siblings('.select2').length == 0 && !$(this).parent().hasClass('default')){
+                $('.multi-select-element').children("option").each(function () {
+                    var symbols = $(this).attr("value").split("/");
+                    if (symbols[0] == select_symbol && symbols[1] == reference_market){
+                        $(this).attr("selected", "selected");
+                    }
+                });
+            }
+        });
+
+
+        // add select2 selector
         $('.multi-select-element').each(function () {
             if ($(this).siblings('.select2').length == 0 && !$(this).parent().hasClass('default')){
                 $(this).select2({
