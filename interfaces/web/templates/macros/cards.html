@@ -2,18 +2,19 @@
     <!-- Card -->
     <div class="card mb-4">
 
+    <!--Title-->
+    <div class="card-header">{{currency}}</div>
+
     <!--Card image-->
-    <div class="view overlay">
+    <div class="view overlay animated fadeIn">
       <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/{{ currency.lower() }}.png" alt="Can't find image for {{ currency }} :(">
       <a href="#!">
-        <div class="mask rgba-white-slight"></div>
+        <div class="mask rgba-white-slight waves-effect waves-light"></div>
       </a>
     </div>
 
     <!--Card content-->
     <div class="card-body">
-        <!--Title-->
-        <h4 class="card-title">{{ currency }}</h4>
         <p class="card-text">
             <h6>Quantity</h6>
             Free : {{ total_portfolio[currency]["available"] }} {{ currency }}<br>
