@@ -48,8 +48,8 @@ def config():
                                services_list=get_services_list(),
                                symbol_list=get_symbol_list([exchange for exchange in g_config[CONFIG_EXCHANGES]]),
                                full_symbol_list=get_all_symbol_list(),
-                               get_evaluator_config=get_evaluator_config,
-                               get_evaluator_startup_config=get_evaluator_startup_config)
+                               evaluator_config=get_evaluator_config(),
+                               evaluator_startup_config=get_evaluator_startup_config())
 
 
 @server_instance.template_filter()
