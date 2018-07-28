@@ -224,7 +224,7 @@ $(".add-btn").click(function() {
     var deck = $(this).parents("." + config_root_class).find(".card-deck");
     var select_input = $("#" + $(this).attr("id") + "Select");
     var select_value = select_input.val();
-    var select_symbol = select_input.children(["data-tokens='"+select_value+"'"]).attr("symbol");
+    var select_symbol = select_input.children("[data-tokens='"+select_value+"']").attr("symbol");
     var reference_market = select_input.attr("reference_market");
 
     // check if not already added
@@ -237,7 +237,7 @@ $(".add-btn").click(function() {
         // select options with reference market if any
         $('.multi-select-element').each(function () {
             if ($(this).siblings('.select2').length == 0 && !$(this).parent().hasClass('default')){
-                $('.multi-select-element').children("option").each(function () {
+                $(this).children("option").each(function () {
                     var symbols = $(this).attr("value").split("/");
                     if (symbols[0] == select_symbol && symbols[1] == reference_market){
                         $(this).attr("selected", "selected");
