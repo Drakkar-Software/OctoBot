@@ -15,6 +15,9 @@ from services import WebService
 from tools.errors import ConfigError, ConfigEvaluatorError
 
 
+# Keep string '+' operator to ensure backward compatibility in this file
+
+
 def _log_uncaught_exceptions(ex_cls, ex, tb):
     logging.exception(''.join(traceback.format_tb(tb)))
     logging.exception('{0}: {1}'.format(ex_cls, ex))
@@ -113,7 +116,7 @@ def start_octobot(starting_args):
                         Commands.start_bot(bot, logger)
 
     except ConfigError:
-        logger.error(f"OctoBot can't start without {CONFIG_FILE} configuration file.")
+        logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")
         sys.exit(-1)
 
     except ModuleNotFoundError as e:
@@ -123,14 +126,13 @@ def start_octobot(starting_args):
         sys.exit(-1)
 
     except ConfigEvaluatorError:
-        logger.error(f"OctoBot can't start without {CONFIG_EVALUATOR_FILE_PATH} configuration file."
+        logger.error("OctoBot can't start without" + CONFIG_EVALUATOR_FILE_PATH + "configuration file."
                      "\nThis file is generated on tentacle "
                      "installation using the following command:\nstart.py -p install all")
         sys.exit(-1)
 
 
 def check_python_version():
-    # Keep string '+' operator to ensure backward compatibility
     current_version = sys.version_info
     if not current_version >= MIN_PYTHON_VERSION:
         logging.error(" OctoBot requires Python version to be higher or equal to Python " + str(MIN_PYTHON_VERSION[0])
