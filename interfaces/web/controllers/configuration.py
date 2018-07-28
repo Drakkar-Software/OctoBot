@@ -2,7 +2,8 @@ import ccxt
 from flask import render_template, request, jsonify
 
 from config.cst import CONFIG_EXCHANGES, CONFIG_CATEGORY_SERVICES, CONFIG_CATEGORY_NOTIFICATION, \
-    CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_CRYPTO_CURRENCIES, GLOBAL_CONFIG_KEY, EVALUATOR_CONFIG_KEY
+    CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_CRYPTO_CURRENCIES, GLOBAL_CONFIG_KEY, EVALUATOR_CONFIG_KEY, \
+    CONFIG_TRADER_REFERENCE_MARKET
 from interfaces import get_bot
 from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_evaluator_config, update_evaluator_config, \
@@ -43,6 +44,7 @@ def config():
                                config_notifications=g_config[CONFIG_CATEGORY_NOTIFICATION],
                                config_services=g_config[CONFIG_CATEGORY_SERVICES],
                                config_symbols=g_config[CONFIG_CRYPTO_CURRENCIES],
+                               config_reference_market=g_config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET],
 
                                ccxt_exchanges=list(set(ccxt.exchanges) - set(user_exchanges)),
                                services_list=get_services_list(),
