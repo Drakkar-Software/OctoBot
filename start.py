@@ -4,24 +4,10 @@ import sys
 import traceback
 from logging.config import fileConfig
 from time import sleep
-
-MIN_PYTHON_VERSION = (3, 6)
-
-# check python version
-current_version = sys.version_info
-if not current_version >= MIN_PYTHON_VERSION:
-    logging.error(" OctoBot requires Python version to be higher or equal to Python " + str(MIN_PYTHON_VERSION[0])
-                  + "." + str(MIN_PYTHON_VERSION[1]) + " current Python version is " + str(current_version[0])
-                  + "." + str(current_version[1]) + "\n"
-                  + "You can download Python last versions on: https://www.python.org/downloads/")
-    sys.exit(-1)
-
-# if compatible version, can proceed with imports
-
+from tools.commands import Commands
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
-from tools.commands import Commands
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
 from tools.errors import ConfigError, ConfigEvaluatorError
