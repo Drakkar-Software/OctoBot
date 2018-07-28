@@ -14,7 +14,7 @@
             <!--Title-->
             <h4 class="card-title">{{service_name}}</h4>
 
-            <p class="card-text api">
+            <p class="card-text api" name={{service_name}}>
                 {% for req in service_requirements %}
                     {{ req }} : <a href="#"
                                         id="service_user-name"
