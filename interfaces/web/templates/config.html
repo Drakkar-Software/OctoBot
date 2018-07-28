@@ -90,8 +90,8 @@
     <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel"><br>
 
         <div class="row config-container" update-url="{{ url_for('config') }}" id="evaluator-config-root">
-            {% for evaluator_name, activated in get_evaluator_config().items() %}
-                {{ m_config_evaluator_card.config_evaluator_card(get_evaluator_startup_config(), evaluator_name, activated) }}
+            {% for evaluator_name, activated in evaluator_config.items() %}
+                {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
             {% endfor %}
         </div>
 
