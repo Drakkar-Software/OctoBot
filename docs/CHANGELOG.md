@@ -1,5 +1,17 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.6-beta
+====================
+*Released date : July 29 2018*
+
+# Concerned issues :
+    #340 [Strategy optimizer] add trading mode and average trades count in final report
+    #341 Web Interface] Currencies and services configuration
+
+# New features :
+    - Web Interface : Services, Exchange, Symbols configuration improvements
+    - Improve Startegy optimizer
+
 Changelog for 0.1.5_3-beta
 ====================
 *Released date : July 26 2018*
