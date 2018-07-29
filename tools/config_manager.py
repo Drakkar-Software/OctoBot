@@ -108,6 +108,7 @@ class ConfigManager:
             new_current_config[CONFIG_CATEGORY_SERVICES][service].pop(CONFIG_SERVICE_INSTANCE, None)
 
         # remove non config keys
+        # TODO
         new_current_config.pop(CONFIG_EVALUATOR, None)
         new_current_config.pop(CONFIG_INTERFACES, None)
         new_current_config.pop(CONFIG_ADVANCED_CLASSES, None)
