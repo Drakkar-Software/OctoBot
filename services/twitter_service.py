@@ -7,7 +7,7 @@ from services.abstract_service import *
 
 
 class TwitterService(AbstractService):
-    REQUIRED_CONFIG = ["api-key", "api-secret", "access-token", "access-token-secret"]
+    REQUIRED_CONFIG = {"api-key": "", "api-secret": "", "access-token": "", "access-token-secret": ""}
 
     def __init__(self):
         super().__init__()

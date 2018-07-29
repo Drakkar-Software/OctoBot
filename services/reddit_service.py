@@ -5,7 +5,7 @@ from services.abstract_service import *
 
 
 class RedditService(AbstractService):
-    REQUIRED_CONFIG = ["client-id", "client-secret", "password", "username"]
+    REQUIRED_CONFIG = {"client-id": "", "client-secret": "", "password": "", "username": ""}
 
     def __init__(self):
         super().__init__()

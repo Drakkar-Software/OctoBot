@@ -1,5 +1,5 @@
 {% import 'components/config/editable_config.html' as m_editable_config %}
-{% macro config_service_card(config, service_name, service, add_class='') -%}
+{% macro config_service_card(config, service_name, service, add_class='', default_values=False) -%}
     {% set service_requirements = service.REQUIRED_CONFIG %}
     <!-- Card -->
     <div class="card mb-4 {{add_class}}">
@@ -10,19 +10,19 @@
         </div>
 
         <!--Card content-->
-        <div class="card-body">
+        <div class="card-body" name={{service_name}}>
 
             <!--Title-->
             <h4 class="card-title">{{service_name}}</h4>
 
-            <p class="card-text api" name={{service_name}}>
+            <p class="card-text api">
                 {% for req in service_requirements %}
-                    {{ m_editable_config.editable_key(  config[service_name],
+                    {{ m_editable_config.editable_key(  service_requirements if default_values else config[service_name],
                                                         req,
                                                         service_name + "_" + req,
                                                         "global_config",
-                                                        config[service_name][req],
-                                                        config[service_name][req],
+                                                        service_requirements[req] if default_values else config[service_name][req],
+                                                        service_requirements[req] if default_values else config[service_name][req],
                                                         number_step=1)
                     }}
                 {% endfor %}

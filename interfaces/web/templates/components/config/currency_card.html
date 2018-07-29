@@ -24,8 +24,8 @@
                                                         crypto_currency,
                                                         "crypto-currencies_" + crypto_currency,
                                                         "global_config",
-                                                        config_symbols[crypto_currency]['pairs'],
-                                                        config_symbols[crypto_currency]['pairs'],
+                                                        config_symbols[crypto_currency]['pairs'] if crypto_currency in config_symbols else [],
+                                                        config_symbols[crypto_currency]['pairs'] if crypto_currency in config_symbols else [],
                                                         symbol_list,
                                                         no_select)
                     }}
