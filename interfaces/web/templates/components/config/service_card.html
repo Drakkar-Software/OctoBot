@@ -19,7 +19,7 @@
                 {% for req in service_requirements %}
                     {{ m_editable_config.editable_key(  service_requirements if default_values else config[service_name],
                                                         req,
-                                                        service_name + "_" + req,
+                                                        "services_" + service_name + "_" + req,
                                                         "global_config",
                                                         service_requirements[req] if default_values else config[service_name][req],
                                                         service_requirements[req] if default_values else config[service_name][req],

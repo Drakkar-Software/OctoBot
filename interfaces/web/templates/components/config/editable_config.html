@@ -74,7 +74,9 @@
             startup-config-value="{{config[key]}}"
             class="editable editable-click config-element multi-select-element"
             data-type="list"
-            multiple="multiple">
+            multiple="multiple"
+            style="width:100%;"
+            >
         {% for name in suggestions %}
             <option value="{{ name }}"
             {% if not no_select and name in config[key] %}
@@ -89,7 +91,8 @@
     <br>
     <script>
         $(".multi-select-element").select2({
-            width: 'resolve', // need to override the changed default
+            dropdownAutoWidth : true,
+
             tags: true
         });
     </script>

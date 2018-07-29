@@ -29,6 +29,8 @@ var deactivated = "Deactivated";
 var config_default_value = "Bitcoin";
 var config_default_symbol = "btc";
 
+var evaluator_config_type = "evaluator_config";
+
 // utility functions
 function log(text){
     window.console&&console.log(text);

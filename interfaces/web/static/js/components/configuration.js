@@ -181,29 +181,32 @@ function handle_configuration_editor(){
             var full_config = get_active_tab_config();
             if (full_config[0].hasAttribute(update_url_attr)){
 
-                // build data update
-                var updated_config = {};
-                new_value = parse_new_value(element);
+                if (element[0].hasAttribute(config_type_attr) && element.attr(config_type_attr) == evaluator_config_type){
 
-                try {
-                    var current_value = element.attr(current_value_attr).toLowerCase();
+                    // build data update
+                    var updated_config = {};
+                    new_value = parse_new_value(element);
+
+                    try {
+                        var current_value = element.attr(current_value_attr).toLowerCase();
+                    }
+                    catch {
+                        var current_value = element.attr(current_value_attr);
+                    }
+
+                    // todo
+                    if (current_value == "true"){
+                        new_value = "false";
+                    }else if(current_value == "false"){
+                        new_value = "true";
+                    }
+
+                    // update current value
+                    element.attr(current_value_attr, new_value);
+
+                    //update dom
+                    update_element_temporary_look(element);
                 }
-                catch {
-                    var current_value = element.attr(current_value_attr);
-                }
-
-                // todo
-                if (current_value == "true"){
-                    new_value = "false";
-                }else if(current_value == "false"){
-                    new_value = "true";
-                }
-
-                // update current value
-                element.attr(current_value_attr, new_value);
-
-                //update dom
-                update_element_temporary_look(element);
 
                 //add or remove exit confirm if necessary
                 add_or_remove_exit_confirm_if_necessary(full_config, 'Are you sure you want to exit configuration without saving ?');

@@ -60,11 +60,11 @@ class ConfigManager:
         # check exchange keys encryption
         for exchange in config[CONFIG_EXCHANGES]:
             try:
-                decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY])
+                decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY], silent_on_invalid_token=True)
             except Exception:
                 config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]).decode()
             try:
-                decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET])
+                decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET], silent_on_invalid_token=True)
             except Exception:
                 config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]).decode()
 
@@ -149,22 +149,38 @@ class ConfigManager:
         return new_config
 
     @staticmethod
-    def merge_dictionaries_by_appending_keys(dict_src, dict_dest):
+    def are_of_compatible_type(val1, val2):
+        return \
+            (
+                type(val1) == type(val2) or
+                    ((type(val1) is float or type(val1) is int) and
+                     (type(val2) is float or type(val2) is int))) \
+            and \
+            (
+                    isinstance(val1, bool) or isinstance(val1, str) or
+                    isinstance(val1, float) or isinstance(val1, int)
+            )
+
+    @staticmethod
+    def merge_dictionaries_by_appending_keys(dict_dest, dict_src):
         for key in dict_src:
             src_val = dict_src[key]
             if key in dict_dest:
                 dest_val = dict_dest[key]
-                if isinstance(dest_val, dict) and isinstance(src_val, dict):
-                    dict_dest[key] = ConfigManager.merge_dictionaries_by_appending_keys(dest_val, src_val)
-                elif dest_val == src_val:
-                    pass  # same leaf value
-                elif type(dest_val) == type(src_val) and \
-                    (isinstance(dest_val, bool) or isinstance(dest_val, str)
-                     or isinstance(dest_val, float) or isinstance(dest_val, int)):
-                    # simple type: update value
-                    dict_dest[key] = src_val
+                if not key == "notification-type":
+                    if isinstance(dest_val, dict) and isinstance(src_val, dict):
+                        dict_dest[key] = ConfigManager.merge_dictionaries_by_appending_keys(dest_val, src_val)
+                    elif dest_val == src_val:
+                        pass  # same leaf value
+                    elif ConfigManager.are_of_compatible_type(dest_val, src_val):
+                        # simple type: update value
+                        dict_dest[key] = src_val
+                    elif isinstance(dest_val, list) and isinstance(src_val, list):
+                            dict_dest[key] = src_val
+                    else:
+                        get_logger().error(f"Conflict when merging dict with key : {key}")
                 else:
-                    get_logger().error(f"Conflict when merging dict with key : {key}")
+                    get_logger().warning(f"{key} configuration editing ignored because not implemented yet")
             else:
                 dict_dest[key] = src_val
 
