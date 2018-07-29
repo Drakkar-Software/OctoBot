@@ -43,9 +43,13 @@ def encrypt(data):
         raise e
 
 
-def decrypt(data):
+def decrypt(data, silent_on_invalid_token=False):
     try:
         return Fernet(OCTOBOT_KEY).decrypt(data.encode()).decode()
+    except InvalidToken as e:
+        if not silent_on_invalid_token:
+            logging.getLogger().error(f"Failed to decrypt : {data} ({e})")
+        raise e
     except Exception as e:
-        logging.getLogger().error(f"Failed to decrypt : {data}")
+        logging.getLogger().error(f"Failed to decrypt : {data} ({e})")
         raise e
