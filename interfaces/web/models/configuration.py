@@ -75,4 +75,3 @@ def get_all_symbol_list():
         }
     except Exception as e:
         logging.getLogger().error(f"Failed to get currencies list from coinmarketcap : {e}")
-        return {}

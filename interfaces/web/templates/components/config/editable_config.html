@@ -2,7 +2,7 @@
         {% if config[key] is string %}
             {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] | is_dict %}
-            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
+            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step) }}
         {% elif config[key] | is_list %}
             {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
         {% elif config[key] | is_bool %}
@@ -26,7 +26,7 @@
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
+{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step) -%}
     {{ key }} : <br>
     {% for new_key in config[key] %}
         &emsp;{{  editable_key( config[key],
@@ -36,7 +36,8 @@
                             config_value[new_key],
                             startup_config_value[new_key],
                             suggestions,
-                            no_select)
+                            no_select,
+                            number_step)
         }}
     {% endfor %}
 {%- endmacro %}

@@ -7,7 +7,7 @@ from services import AbstractService
 
 
 class WebService(AbstractService):
-    REQUIRED_CONFIG = ["port"]
+    REQUIRED_CONFIG = {"port": 5000}
 
     BACKTESTING_ENABLED = True
 

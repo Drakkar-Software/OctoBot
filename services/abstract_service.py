@@ -7,7 +7,7 @@ class AbstractService:
     __metaclass__ = ABCMeta
 
     BACKTESTING_ENABLED = False
-    REQUIRED_CONFIG = []
+    REQUIRED_CONFIG = {}
 
     def __init__(self):
         super().__init__()

@@ -26,6 +26,9 @@ var unsaved_setting = "Unsaved setting";
 var activated = "Activated";
 var deactivated = "Deactivated";
 
+var config_default_value = "Bitcoin";
+var config_default_symbol = "btc";
+
 // utility functions
 function log(text){
     window.console&&console.log(text);

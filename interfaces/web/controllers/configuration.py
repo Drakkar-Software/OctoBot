@@ -3,7 +3,7 @@ from flask import render_template, request, jsonify
 
 from config.cst import CONFIG_EXCHANGES, CONFIG_CATEGORY_SERVICES, CONFIG_CATEGORY_NOTIFICATION, \
     CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_CRYPTO_CURRENCIES, GLOBAL_CONFIG_KEY, EVALUATOR_CONFIG_KEY, \
-    CONFIG_TRADER_REFERENCE_MARKET
+    CONFIG_TRADER_REFERENCE_MARKET, UPDATED_CONFIG_SEPARATOR
 from interfaces import get_bot
 from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_evaluator_config, update_evaluator_config, \
@@ -35,6 +35,10 @@ def config():
     else:
         g_config = get_bot().get_config()
         user_exchanges = [e for e in g_config[CONFIG_EXCHANGES]]
+        full_exchange_list = list(set(ccxt.exchanges) - set(user_exchanges))
+
+        # can't handle exchanges containing UPDATED_CONFIG_SEPARATOR character in their name
+        full_exchange_list = [exchange for exchange in full_exchange_list if UPDATED_CONFIG_SEPARATOR not in exchange]
 
         return render_template('config.html',
 
@@ -46,12 +50,13 @@ def config():
                                config_symbols=g_config[CONFIG_CRYPTO_CURRENCIES],
                                config_reference_market=g_config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET],
 
-                               ccxt_exchanges=sorted(list(set(ccxt.exchanges) - set(user_exchanges))),
+                               ccxt_exchanges=sorted(full_exchange_list),
                                services_list=get_services_list(),
                                symbol_list=sorted(get_symbol_list([exchange for exchange in g_config[CONFIG_EXCHANGES]])),
                                full_symbol_list=get_all_symbol_list(),
                                evaluator_config=get_evaluator_config(),
-                               evaluator_startup_config=get_evaluator_startup_config())
+                               evaluator_startup_config=get_evaluator_startup_config()
+                               )
 
 
 @server_instance.template_filter()
