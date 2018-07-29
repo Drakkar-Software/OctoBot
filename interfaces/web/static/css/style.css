@@ -16,3 +16,9 @@ a:link { color: inherit; }
 .editable {
     display: inline;
 }
+
+body {
+    background: url('../../assets/images/octobot.svg');
+    background-repeat: no-repeat;
+    background-size: cover;
+}
