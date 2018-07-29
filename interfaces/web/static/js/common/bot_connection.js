@@ -13,10 +13,13 @@ function get_update(){
 }
 
 function manage_alert(raw_data){
-    data = JSON.parse(raw_data)
-    $.each(data, function(i, item) {
-        create_alert(data[i].Level, data[i].Title, data[i].Message);
-    })
+    try{
+        data = JSON.parse(raw_data)
+        $.each(data, function(i, item) {
+            create_alert(data[i].Level, data[i].Title, data[i].Message);
+        })
+    }
+    catch{}
 }
 
 function handle_route_button(){
