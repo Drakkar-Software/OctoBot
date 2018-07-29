@@ -1,20 +1,20 @@
-{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="", no_select=False) -%}
+{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="", no_select=False, number_step=0.01) -%}
         {% if config[key] is string %}
-            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] | is_dict %}
             {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
         {% elif config[key] | is_list %}
             {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
         {% elif config[key] | is_bool %}
-            {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
+            {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] is number %}
-            {{ editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
+            {{ editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, number_step) }}
         {% else %}
-            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% endif %}
 {%- endmacro %}
 
-{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
+{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
     {{ key }} : <a href="#"
             config-key="{{config_key}}"
             config-type="global_config"
@@ -41,7 +41,7 @@
     {% endfor %}
 {%- endmacro %}
 
-{% macro editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
+{% macro editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
     {{ key }} :
      <input     type="checkbox"
                 class="config-element"
@@ -53,14 +53,14 @@
      {% if config[key] == True %}checked{% endif %}><br>
 {%- endmacro %}
 
-{% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
+{% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, number_step) -%}
     {{ key }} : <a href="#"
                 config-key="{{config_key}}"
                 config-type="global_config"
                 config-value="{{config[key]}}"
                 startup-config-value="{{config[key]}}"
                 data-type="number"
-                data-step="0.01"
+                data-step="{{number_step}}"
                 data-pk="1"
                 class="editable editable-click config-element">
     {{ config[key] }}</a><br>
