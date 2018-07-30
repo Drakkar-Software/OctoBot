@@ -48,15 +48,15 @@
         <span class="white-text"> Any configuration change will be take into account after OctBot restarts.</span>
         <ul class="nav mx-auto">
             <li class="nav-item">
-                <a class="nav-link green" id='save-config' href="#" role="tab">Save all</a>
+                <a class="nav-link btn green" id='save-config' href="#" role="tab">Save all</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link orange" id='reset-config' href="#" role="tab">Reset current tab</a>
+                <a class="nav-link btn orange" id='reset-config' href="#" role="tab">Reset current tab</a>
             </li>
         </ul>
         <ul class="nav ml-auto">
             <li class="nav-item">
-                <a class="nav-link red" href="{{ url_for('commands', cmd='restart') }}" role="tab">Restart Octobot</a>
+                <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="nav-link btn red">Restart Octobot</button>
             </li>
         </ul>
     </nav>
