@@ -13,15 +13,96 @@ function handle_reset_buttons(){
     })
 }
 
+function handle_remove_buttons(){
+    // Card deck removing
+    $(document).on("click", ".remove-btn", function() {
+        $(this).parents(".card").fadeOut("normal", function() {
+            $(this).remove();
+        });
+    });
+}
+
+function handle_add_buttons(){
+    // Card deck adding
+    $(".add-btn").click(function() {
+
+        var button_id = $(this).attr("id")
+
+        var deck = $(this).parents("." + config_root_class).find(".card-deck");
+        var select_input = $("#" + button_id + "Select");
+        var select_value = select_input.val();
+        var target_template = $("#" + button_id + "-template-default")
+
+        // currencies
+        var select_symbol = select_input.children("[data-tokens='"+select_value+"']").attr("symbol");
+        var reference_market = select_input.attr("reference_market");
+
+        //services
+        if (button_id == "AddService"){
+            target_template = $("#" + button_id + "-template-default-"+select_value);
+        }
+
+        // check if not already added
+        if(deck.find("div[name='"+select_value+"']").length == 0){
+            var template_default = target_template.html().replace(new RegExp(config_default_value,"g"), select_value);
+            template_default = template_default.replace(new RegExp("card-text symbols default","g"), "card-text symbols")
+            if(isDefined(select_symbol)){
+                template_default = template_default.replace(new RegExp(config_default_symbol + ".png","g"), select_symbol.toLowerCase() + ".png")
+            }
+            deck.append(template_default).hide().fadeIn();
+            handle_editable();
+
+            // select options with reference market if any
+            $('.multi-select-element').each(function () {
+                if ($(this).siblings('.select2').length == 0 && !$(this).parent().hasClass('default')){
+                    $(this).children("option").each(function () {
+                        var symbols = $(this).attr("value").split("/");
+                        if (symbols[0] == select_symbol && symbols[1] == reference_market){
+                            $(this).attr("selected", "selected");
+                        }
+                    });
+                }
+            });
+
+
+            // add select2 selector
+            $('.multi-select-element').each(function () {
+                if ($(this).siblings('.select2').length == 0 && !$(this).parent().hasClass('default')){
+                    $(this).select2({
+                        width: 'resolve', // need to override the changed default
+                        tags: true
+                    });
+                }
+            });
+        }
+
+    });
+}
+
 function parse_new_value(element){
     var raw_data = replace_spaces(replace_break_line(element.text()));
 
     // simple case
     if(element[0].hasAttribute(current_value_attr)){
-        return element.attr(current_value_attr);
-
+        value = replace_spaces(replace_break_line(element.attr(current_value_attr)));
+        if(element[0].hasAttribute(config_data_type_attr)){
+            switch(element.attr(config_data_type_attr)) {
+                case "bool":
+                    return value == true || value == "true";
+                    break;
+                case "number":
+                    return Number(value);
+                    break;
+                default:
+                    return value;
+                    break;
+            }
+        }else{
+            return value;
+        }
+    }
     // with data type
-    }else if(element[0].hasAttribute(config_data_type_attr)){
+    else if(element[0].hasAttribute(config_data_type_attr)){
         switch(element.attr(config_data_type_attr)) {
             case "bool":
                 return element.is(":checked");
@@ -36,7 +117,6 @@ function parse_new_value(element){
             case "number":
                 return Number(raw_data);
                 break;
-            case "text":
             default:
                 return raw_data;
                 break;
@@ -64,15 +144,18 @@ function handle_save_buttons(){
 
                 var new_value = parse_new_value($(this));
 
-                try {
-                    if(new_value.toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
-                        updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
-                    }
+                var new_value_str = new_value.toString();
+                if(new_value instanceof Array && new_value.length > 0){
+                    //need to format array to match python string representation of config
+                    var str_array = []
+                    $.each(new_value, function(i, val) {
+                        str_array.push("'"+val+"'");
+                    });
+                    new_value_str = "[" + str_array.join(", ") + "]";
                 }
-                catch {
-                    if(new_value != $(this).attr(config_value_attr)){
-                        updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
-                    }
+
+                if(new_value_str.toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
+                    updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
                 }
             })
         })
@@ -98,29 +181,32 @@ function handle_configuration_editor(){
             var full_config = get_active_tab_config();
             if (full_config[0].hasAttribute(update_url_attr)){
 
-                // build data update
-                var updated_config = {};
-                new_value = parse_new_value(element);
+                if (element[0].hasAttribute(config_type_attr) && element.attr(config_type_attr) == evaluator_config_type){
 
-                try {
-                    var current_value = element.attr(current_value_attr).toLowerCase();
+                    // build data update
+                    var updated_config = {};
+                    new_value = parse_new_value(element);
+
+                    try {
+                        var current_value = element.attr(current_value_attr).toLowerCase();
+                    }
+                    catch {
+                        var current_value = element.attr(current_value_attr);
+                    }
+
+                    // todo
+                    if (current_value == "true"){
+                        new_value = "false";
+                    }else if(current_value == "false"){
+                        new_value = "true";
+                    }
+
+                    // update current value
+                    element.attr(current_value_attr, new_value);
+
+                    //update dom
+                    update_element_temporary_look(element);
                 }
-                catch {
-                    var current_value = element.attr(current_value_attr);
-                }
-
-                // todo
-                if (current_value == "true"){
-                    new_value = "false";
-                }else if(current_value == "false"){
-                    new_value = "true";
-                }
-
-                // update current value
-                element.attr(current_value_attr, new_value);
-
-                //update dom
-                update_element_temporary_look(element);
 
                 //add or remove exit confirm if necessary
                 add_or_remove_exit_confirm_if_necessary(full_config, 'Are you sure you want to exit configuration without saving ?');

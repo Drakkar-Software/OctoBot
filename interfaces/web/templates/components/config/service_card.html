@@ -1,5 +1,7 @@
-{% macro config_service_card(config, service_name, service, add_class='') -%}
+{% import 'components/config/editable_config.html' as m_editable_config %}
+{% macro config_service_card(config, service_name, service, add_class='', default_values=False) -%}
     {% set service_requirements = service.REQUIRED_CONFIG %}
+
     <!-- Card -->
     <div class="card mb-4 {{add_class}}">
 
@@ -9,24 +11,21 @@
         </div>
 
         <!--Card content-->
-        <div class="card-body">
+        <div class="card-body" name={{service_name}}>
 
             <!--Title-->
             <h4 class="card-title">{{service_name}}</h4>
 
             <p class="card-text api">
                 {% for req in service_requirements %}
-                    {{ req }} : <a href="#"
-                                        id="service_user-name"
-                                        config-key="services_{{service_name}}_{{req}}"
-                                        config-type="global_config"
-                                        config-value="{{ config[service_name][req] }}"
-                                        startup-config-value="{{ config[service_name][req] }}"
-                                        data-type="text"
-                                        data-pk="1"
-                                        data-title="Enter service {{ req }}"
-                                        class="editable editable-click config-element">
-                    {{ config[service_name][req] }}</a><br>
+                    {{ m_editable_config.editable_key(  service_requirements if default_values else config[service_name],
+                                                        req,
+                                                        "services_" + service_name + "_" + req,
+                                                        "global_config",
+                                                        service_requirements[req] if default_values else config[service_name][req],
+                                                        service_requirements[req] if default_values else config[service_name][req],
+                                                        number_step=1)
+                    }}
                 {% endfor %}
             </p>
 

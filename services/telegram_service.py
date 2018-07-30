@@ -7,7 +7,7 @@ from services.abstract_service import *
 
 
 class TelegramService(AbstractService):
-    REQUIRED_CONFIG = ["chat-id", "token"]
+    REQUIRED_CONFIG = {"chat-id": "", "token": ""}
 
     def __init__(self):
         super().__init__()

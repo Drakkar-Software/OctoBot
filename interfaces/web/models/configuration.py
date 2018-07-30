@@ -46,10 +46,12 @@ def update_global_config(new_config):
 
 def get_services_list():
     services = {}
+    services_names = []
     for service in AbstractService.__subclasses__():
         srv = service()
         services[srv.get_type()] = srv
-    return services
+        services_names.append(srv.get_name())
+    return services, services_names
 
 
 def get_symbol_list(exchanges):
@@ -75,4 +77,3 @@ def get_all_symbol_list():
         }
     except Exception as e:
         logging.getLogger().error(f"Failed to get currencies list from coinmarketcap : {e}")
-        return {}
