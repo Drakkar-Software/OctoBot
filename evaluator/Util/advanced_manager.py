@@ -86,11 +86,13 @@ class AdvancedManager:
             AdvancedManager._get_advanced_classes_list(config)[class_name].append(class_type)
 
     @staticmethod
-    def get_classes(config, class_type):
+    def get_classes(config, class_type, get_all_classes=False):
+        classes = []
         if class_type.get_name() in AdvancedManager._get_advanced_classes_list(config):
-            return AdvancedManager._get_advanced_classes_list(config)[class_type.get_name()]
-        else:
-            return [class_type]
+            classes = AdvancedManager._get_advanced_classes_list(config)[class_type.get_name()]
+        if not classes or get_all_classes:
+            classes.append(class_type)
+        return classes
 
     @staticmethod
     def get_class(config, class_type):
@@ -127,3 +129,12 @@ class AdvancedManager:
                 for eval_class_type in AdvancedManager.get_classes(config, eval_class):
                     evaluator_advanced_eval_class_list.append(eval_class_type)
         return evaluator_advanced_eval_class_list
+
+    @staticmethod
+    def get_all_classes(evaluator_class, config):
+        evaluator_all_classes_list = []
+        for evaluator_subclass in evaluator_class.__subclasses__():
+            for eval_class in evaluator_subclass.__subclasses__():
+                for eval_class_type in AdvancedManager.get_classes(config, eval_class, True):
+                    evaluator_all_classes_list.append(eval_class_type)
+        return evaluator_all_classes_list
