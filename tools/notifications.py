@@ -49,7 +49,7 @@ class Notification:
             self.logger.error(f"Failed to notify all : {e}")
 
     def gmail_notification_available(self, key=None):
-        if self.enabled(key) and NotificationTypes.MAIL.value in self.notification_type:
+        if self.enabled(key) and GmailService.get_name() in self.notification_type:
             if GmailService.is_setup_correctly(self.config):
                 return True
         return False
@@ -64,7 +64,7 @@ class Notification:
             self.logger.debug("Mail disabled")
 
     def telegram_notification_available(self, key=None):
-        if self.enabled(key) and NotificationTypes.TELEGRAM.value in self.notification_type:
+        if self.enabled(key) and TelegramService.get_name() in self.notification_type:
             if TelegramService.is_setup_correctly(self.config):
                 return True
         return False
@@ -79,7 +79,7 @@ class Notification:
             self.logger.debug("Telegram disabled")
 
     def twitter_notification_available(self, key=None):
-        if self.enabled(key) and NotificationTypes.TWITTER.value in self.notification_type:
+        if self.enabled(key) and TwitterService.get_name() in self.notification_type:
             if TwitterService.is_setup_correctly(self.config):
                 return True
         return False
@@ -107,7 +107,8 @@ class Notification:
         return None
 
     def web_interface_notification_available(self, key=None):
-        if self.enabled(key) and WebService.is_setup_correctly(self.config):
+        if self.enabled(key) and WebService.get_name() in self.notification_type and \
+                WebService.is_setup_correctly(self.config):
             if self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_ENABLED_OPTION]:
                 return True
         return False
@@ -244,12 +245,6 @@ class OrdersNotification(Notification):
 
         if self.web_interface_notification_available(CONFIG_NOTIFICATION_TRADES):
             self.web_interface_notification_factory(InterfaceLevel.INFO, title, content)
-
-
-class NotificationTypes(Enum):
-    MAIL = 1
-    TWITTER = 2
-    TELEGRAM = 3
 
 
 class InterfaceLevel(Enum):

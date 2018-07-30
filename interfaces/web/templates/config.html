@@ -111,7 +111,7 @@
     <div class="tab-pane fade config-root" id="panelNotifications" role="tabpanel"><br>
         <!-- Card deck -->
         <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            {{ m_config_notification.config_notification(config_notifications, "notification") }}
+            {{ m_config_notification.config_notification(config_notifications, "notification", service_name_list) }}
         </div>
     </div>
 
