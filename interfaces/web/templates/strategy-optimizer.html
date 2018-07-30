@@ -1,69 +1,72 @@
 {% extends "layout.html" %}
 {% block body %}
-<h1>Strategy optimizer</h1>
-<h2>Settings</h2>
-<div class="input-group mb-3">
-  <div class="input-group-prepend">
-    <label class="input-group-text" for="strategySelect">Strategy</label>
-  </div>
-  <select class="custom-select" id="strategySelect">
-    {% for strategy in strategies %}
-    <option value={{strategy}}
-    {% if strategy == current_strategy %}
-        selected="selected"
-    {% endif %}>
-      {{strategy}}
-    </option>
-    {% endfor %}
-  </select>
+<div class="card">
+    <div class="card-header"><h1>Strategy optimizer</h1></div>
+    <div class="card-body">
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="strategySelect">Strategy</label>
+          </div>
+          <select class="custom-select" id="strategySelect">
+            {% for strategy in strategies %}
+            <option value={{strategy}}
+            {% if strategy == current_strategy %}
+                selected="selected"
+            {% endif %}>
+              {{strategy}}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="timeFramesSelect">Time Frames</label>
+          </div>
+          <select class="custom-select multi-select-element" id="timeFramesSelect" multiple="multiple">
+            {% for timeframe in time_frames %}
+            <option value={{timeframe}}
+            {% if loop.index == 0 %}
+                selected="selected"
+            {% endif %}>
+              {{timeframe}}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="evaluatorsSelect">Evaluators</label>
+          </div>
+          <select class="custom-select multi-select-element" id="evaluatorsSelect" multiple="multiple">
+            {% for evaluator in evaluators %}
+            <option value={{evaluator}}
+            {% if loop.index == 0 %}
+                selected="selected"
+            {% endif %}>
+              {{evaluator}}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="risksSelect">Risks</label>
+          </div>
+          <select class="custom-select multi-select-element" id="risksSelect" multiple="multiple">
+            {% for risk in risks %}
+            <option value={{risk}}
+            {% if loop.index == 0 %}
+                selected="selected"
+            {% endif %}>
+              {{risk}}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <h2>Number of simulations <span id="numberOfSimulatons" class="badge badge-light">10</span></h2>
+        <button type="button" class="btn btn-primary">Start optimizer</button>
+    </div>
 </div>
-<div class="input-group mb-3">
-  <div class="input-group-prepend">
-    <label class="input-group-text" for="timeFramesSelect">Time Frames</label>
-  </div>
-  <select class="custom-select multi-select-element" id="timeFramesSelect" multiple="multiple">
-    {% for timeframe in time_frames %}
-    <option value={{timeframe}}
-    {% if loop.index == 0 %}
-        selected="selected"
-    {% endif %}>
-      {{timeframe}}
-    </option>
-    {% endfor %}
-  </select>
-</div>
-<div class="input-group mb-3">
-  <div class="input-group-prepend">
-    <label class="input-group-text" for="evaluatorsSelect">Evaluators</label>
-  </div>
-  <select class="custom-select multi-select-element" id="evaluatorsSelect" multiple="multiple">
-    {% for evaluator in evaluators %}
-    <option value={{evaluator}}
-    {% if loop.index == 0 %}
-        selected="selected"
-    {% endif %}>
-      {{evaluator}}
-    </option>
-    {% endfor %}
-  </select>
-</div>
-<div class="input-group mb-3">
-  <div class="input-group-prepend">
-    <label class="input-group-text" for="risksSelect">Risks</label>
-  </div>
-  <select class="custom-select multi-select-element" id="risksSelect" multiple="multiple">
-    {% for risk in risks %}
-    <option value={{risk}}
-    {% if loop.index == 0 %}
-        selected="selected"
-    {% endif %}>
-      {{risk}}
-    </option>
-    {% endfor %}
-  </select>
-</div>
-<h2>Number of simulations <span id="numberOfSimulatons" class="badge badge-light">10</span></h2>
-<button type="button" class="btn btn-primary">Start optimizer</button>
 {% endblock %}
 
 {% block additional_scripts %}
