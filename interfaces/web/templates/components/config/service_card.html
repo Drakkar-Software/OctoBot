@@ -5,6 +5,8 @@
     <!-- Card -->
     <div class="card mb-4 {{add_class}}">
 
+        <div class="card-header"><h4>{{service_name}}</h4></div>
+
         <!--Card image-->
         <div class="view overlay">
           <!--{{ service_name }}-->
@@ -12,9 +14,6 @@
 
         <!--Card content-->
         <div class="card-body" name={{service_name}}>
-
-            <!--Title-->
-            <h4 class="card-title">{{service_name}}</h4>
 
             <p class="card-text api">
                 {% for req in service_requirements %}

@@ -16,7 +16,7 @@ function handle_reset_buttons(){
 function handle_remove_buttons(){
     // Card deck removing
     $(document).on("click", ".remove-btn", function() {
-        $(this).parents(".card").fadeOut("normal", function() {
+        $(this).closest(".card").fadeOut("normal", function() {
             $(this).remove();
         });
     });

@@ -10,29 +10,31 @@
 {%- endmacro %}
 
 {% block body %}
-<h1>Orders</h1>
-<br>
-<h2>Open orders</h2>
-<div>
-  <table id="open_order_datatable" class="table table-striped table-bordered table-hover table-light">
-    <caption>List of open orders</caption>
-  <thead>
-    <tr>
-        <th scope="col">#</th>
-        <th scope="col">Exchange</th>
-        <th scope="col">Symbol</th>
-        <th scope="col">Type</th>
-        <th scope="col">Price</th>
-        <th scope="col">Quantity</th>
-        <th scope="col">Real / Simulated</th>
-        <th scope="col">Creation</th>
-    </tr>
-  </thead>
-  <tbody>
-    {{ extract_orders(real_trades_history, "Real") }}
-    {{ extract_orders(simulated_open_orders, "Simulated") }}
-  </tbody>
-  </table>
+<div class="card">
+    <div class="card-header"><h2>Open orders</h2></div>
+    <div class="card-body">
+        <div class="table-responsive">
+          <table id="open_order_datatable" class="table table-striped table-bordered table-hover">
+            <caption>List of open orders</caption>
+          <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Exchange</th>
+                <th scope="col">Symbol</th>
+                <th scope="col">Type</th>
+                <th scope="col">Price</th>
+                <th scope="col">Quantity</th>
+                <th scope="col">Real / Simulated</th>
+                <th scope="col">Creation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ extract_orders(real_trades_history, "Real") }}
+            {{ extract_orders(simulated_open_orders, "Simulated") }}
+          </tbody>
+          </table>
+        </div>
+    </div>
 </div>
 <br>
 <!--<h2>Order history</h2>-->
