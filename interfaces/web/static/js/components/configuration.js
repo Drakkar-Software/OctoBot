@@ -1,5 +1,5 @@
 function get_active_tab_config(){
-    return $(document).find("." + config_root_class + ".active > ." + config_container_class);
+    return $(document).find("." + config_root_class + ".active").find("." + config_container_class);
 }
 
 function get_tabs_config(){
