@@ -6,3 +6,4 @@ from . import dash
 from . import home
 from . import dashboard
 from . import trading
+from . import strategy_optimizer
