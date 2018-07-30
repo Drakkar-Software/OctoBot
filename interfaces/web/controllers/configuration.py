@@ -40,6 +40,9 @@ def config():
         # can't handle exchanges containing UPDATED_CONFIG_SEPARATOR character in their name
         full_exchange_list = [exchange for exchange in full_exchange_list if UPDATED_CONFIG_SEPARATOR not in exchange]
 
+        # service lists
+        service_list, service_name_list = get_services_list()
+
         return render_template('config.html',
 
                                config_exchanges=g_config[CONFIG_EXCHANGES],
@@ -51,7 +54,8 @@ def config():
                                config_reference_market=g_config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET],
 
                                ccxt_exchanges=sorted(full_exchange_list),
-                               services_list=get_services_list(),
+                               services_list=service_list,
+                               service_name_list=service_name_list,
                                symbol_list=sorted(get_symbol_list([exchange for exchange in g_config[CONFIG_EXCHANGES]])),
                                full_symbol_list=get_all_symbol_list(),
                                evaluator_config=get_evaluator_config(),
