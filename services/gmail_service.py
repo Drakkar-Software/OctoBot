@@ -6,7 +6,7 @@ from services import AbstractService
 
 
 class GmailService(AbstractService):
-    REQUIRED_CONFIG = ["gmail-user", "gmail-password", "mail-dest"]
+    REQUIRED_CONFIG = {"gmail-user": "", "gmail-password": "", "mail-dest": ""}
 
     def __init__(self):
         super().__init__()

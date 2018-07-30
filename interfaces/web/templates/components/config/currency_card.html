@@ -1,30 +1,34 @@
 {% import 'components/config/editable_config.html' as m_editable_config %}
-{% macro config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list, add_class='') -%}
+{% macro config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list, add_class='', no_select=False, additional_classes="", symbol="") -%}
     <!-- Card -->
-    <div class="card mb-4 {{add_class}}">
+    <div class="card {{add_class}} mb-3" style="max-width: 18rem;">
+
+        <!--Title-->
+        <div class="card-header">{{crypto_currency}}</div>
 
         <!--Card image-->
-        <div class="view overlay">
-          <!--{{ crypto_currency }}-->
+        <div class="view overlay animated fadeIn">
+            <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/{{symbol}}.png"
+                alt="Can't find image for {{ crypto_currency }} :("
+                style="height:40%">
+            <a href="#!">
+                <div class="mask rgba-white-slight waves-effect waves-light"></div>
+            </a>
         </div>
 
         <!--Card content-->
-        <div class="card-body">
+        <div class="card-body" name={{crypto_currency}}>
 
-            <!--Title-->
-            <h4 class="card-title">{{crypto_currency}}</h4>
-
-            <p class="card-text symbols">
-                {% if crypto_currency in config_symbols %}
+            <p class="card-text symbols {{additional_classes}}">
                      {{ m_editable_config.editable_key( config_symbols,
                                                         crypto_currency,
                                                         "crypto-currencies_" + crypto_currency,
                                                         "global_config",
-                                                        config_symbols[crypto_currency]['pairs'],
-                                                        config_symbols[crypto_currency]['pairs'],
-                                                        symbol_list)
+                                                        config_symbols[crypto_currency]['pairs'] if crypto_currency in config_symbols else [],
+                                                        config_symbols[crypto_currency]['pairs'] if crypto_currency in config_symbols else [],
+                                                        symbol_list,
+                                                        no_select)
                     }}
-                {% endif %}
             </p>
 
             <button type="button" class="btn btn-danger remove-btn px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>

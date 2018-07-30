@@ -4,14 +4,16 @@ import sys
 import traceback
 from logging.config import fileConfig
 from time import sleep
-
+from tools.commands import Commands
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
-from tools.commands import Commands
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
 from tools.errors import ConfigError, ConfigEvaluatorError
+
+
+# Keep string '+' operator to ensure backward compatibility in this file
 
 
 def _log_uncaught_exceptions(ex_cls, ex, tb):
@@ -112,7 +114,7 @@ def start_octobot(starting_args):
                         Commands.start_bot(bot, logger)
 
     except ConfigError:
-        logger.error(f"OctoBot can't start without {CONFIG_FILE} configuration file.")
+        logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")
         sys.exit(-1)
 
     except ModuleNotFoundError as e:
@@ -122,7 +124,7 @@ def start_octobot(starting_args):
         sys.exit(-1)
 
     except ConfigEvaluatorError:
-        logger.error(f"OctoBot can't start without {CONFIG_EVALUATOR_FILE_PATH} configuration file."
+        logger.error("OctoBot can't start without" + CONFIG_EVALUATOR_FILE_PATH + "configuration file."
                      "\nThis file is generated on tentacle "
                      "installation using the following command:\nstart.py -p install all")
         sys.exit(-1)

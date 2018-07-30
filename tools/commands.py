@@ -112,11 +112,9 @@ class Commands:
             print(f"Here are your encrypted exchanges keys : \n "
                   f"\t- API-KEY : {api_key_crypted}\n"
                   f"\t- API-SECRET : {api_secret_crypted}\n\n"
-                  f"Your new exchange configuration is : \n"
-                  "{\n"
+                  f"Your new exchange key configuration is : \n"
                   f'\t"api-key": "{api_key_crypted}",\n'
-                  f'\t"api-secret": "{api_secret_crypted}"\n'
-                  "{\n")
+                  f'\t"api-secret": "{api_secret_crypted}"\n')
         except Exception as e:
             if not catch:
                 logging.error(f"Fail to encrypt your exchange keys, please try again ({e}).")
