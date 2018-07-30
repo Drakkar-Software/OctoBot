@@ -49,15 +49,16 @@ class StrategyOptimizer:
         else:
             self.is_properly_initialized = True
 
-    def find_optimal_configuration(self):
+    def find_optimal_configuration(self, TAs=None, time_frames=None, risks=None):
 
-        all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR])
+        all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
         nb_TAs = len(all_TAs)
 
-        self.all_time_frames = self.strategy_class.get_required_time_frames(self.config)
+        self.all_time_frames = self.strategy_class.get_required_time_frames(self.config) \
+            if time_frames is None else time_frames
         nb_TFs = len(self.all_time_frames)
 
-        risks = [0.5, 1]
+        risks = [0.5, 1] if risks is None else risks
 
         self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} strategy "
                          f"using {self.trading_mode} trading mode, {all_TAs} technical evaluator(s), "
