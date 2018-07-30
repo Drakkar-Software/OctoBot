@@ -42,7 +42,7 @@
         {% block additional_style %}
         {% endblock additional_style %}
     </head>
-    <body style="{% block body_style %}{% endblock body_style %}">
+    <body class="bg-dark" style="{% block body_style %}{% endblock body_style %}">
         <!-- Scripts -->
         <!-- At the beginning of the page : be available for template scripts -->
         <script src="{{ url_for('static', filename='js/lib/jquery-3.3.1.min.js') }}"></script>
