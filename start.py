@@ -125,8 +125,8 @@ def start_octobot(starting_args):
 
     except ConfigEvaluatorError:
         logger.error("OctoBot can't start without" + CONFIG_EVALUATOR_FILE_PATH + "configuration file."
-                     "\nThis file is generated on tentacle "
-                     "installation using the following command:\nstart.py -p install all")
+                                                                                  "\nThis file is generated on tentacle "
+                                                                                  "installation using the following command:\nstart.py -p install all")
         sys.exit(-1)
 
 

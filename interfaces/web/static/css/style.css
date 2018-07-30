@@ -61,3 +61,11 @@ body:before {
  .card .card-deck .card .card-text{
     background-color: #4B515D !important;
 }
+
+.card a:link {
+    color: #33b5e5 !important;
+}
+
+.card a:hover {
+    color: #42a5f5 !important;
+}
