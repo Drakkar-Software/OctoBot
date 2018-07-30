@@ -21,7 +21,7 @@ dash
 dash-table-experiments
 dash-renderer
 dash-html-components
-dash-core-components==0.22
+dash-core-components==0.26.0
 
 ## Tools
 # Analysis tools
