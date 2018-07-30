@@ -168,20 +168,17 @@ class ConfigManager:
             src_val = dict_src[key]
             if key in dict_dest:
                 dest_val = dict_dest[key]
-                if not key == "notification-type":
-                    if isinstance(dest_val, dict) and isinstance(src_val, dict):
-                        dict_dest[key] = ConfigManager.merge_dictionaries_by_appending_keys(dest_val, src_val)
-                    elif dest_val == src_val:
-                        pass  # same leaf value
-                    elif ConfigManager.are_of_compatible_type(dest_val, src_val):
-                        # simple type: update value
+                if isinstance(dest_val, dict) and isinstance(src_val, dict):
+                    dict_dest[key] = ConfigManager.merge_dictionaries_by_appending_keys(dest_val, src_val)
+                elif dest_val == src_val:
+                    pass  # same leaf value
+                elif ConfigManager.are_of_compatible_type(dest_val, src_val):
+                    # simple type: update value
+                    dict_dest[key] = src_val
+                elif isinstance(dest_val, list) and isinstance(src_val, list):
                         dict_dest[key] = src_val
-                    elif isinstance(dest_val, list) and isinstance(src_val, list):
-                            dict_dest[key] = src_val
-                    else:
-                        get_logger().error(f"Conflict when merging dict with key : {key}")
                 else:
-                    get_logger().warning(f"{key} configuration editing ignored because not implemented yet")
+                    get_logger().error(f"Conflict when merging dict with key : {key}")
             else:
                 dict_dest[key] = src_val
 
