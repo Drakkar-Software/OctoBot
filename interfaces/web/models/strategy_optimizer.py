@@ -54,3 +54,8 @@ def get_current_strategy():
         return strategy_list[0] if strategy_list else ""
 
 
+def start_optimizer(strategy, time_frames, evaluators, risks):
+    print(strategy)
+    print(time_frames)
+    print(evaluators)
+    print(risks)
