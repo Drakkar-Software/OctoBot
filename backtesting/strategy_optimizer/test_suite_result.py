@@ -2,7 +2,6 @@ import copy
 
 from tools.time_frame_manager import TimeFrameManager
 from tools.data_util import DataUtil
-from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer
 
 
 class TestSuiteResult:
@@ -34,7 +33,7 @@ class TestSuiteResult:
         return [eval_name for eval_name in evals]
 
     def get_config_summary(self):
-        return StrategyOptimizer.TestSuiteResultSummary(self)
+        return TestSuiteResultSummary(self)
 
     def get_result_string(self, details=True):
         details = f" details: (profitabilities (bot, market):{self.run_profitabilities}, trades: " \
@@ -43,16 +42,17 @@ class TestSuiteResult:
                 f"score: {self.get_average_score():f} (the higher the better) "
                 f"average trades: {self.get_average_trades_count():f}{details}")
 
-    class TestSuiteResultSummary:
-        def __init__(self, test_suite_result):
-            self.evaluators = test_suite_result.get_evaluators_without_strategy()
-            self.risk = test_suite_result.risk
 
-        def get_result_string(self):
-            return f"{self.evaluators} risk: {self.risk}"
+class TestSuiteResultSummary:
+    def __init__(self, test_suite_result):
+        self.evaluators = test_suite_result.get_evaluators_without_strategy()
+        self.risk = test_suite_result.risk
 
-        def __eq__(self, other):
-            return self.evaluators == other.evaluators and self.risk == other.risk
+    def get_result_string(self):
+        return f"{self.evaluators} risk: {self.risk}"
 
-        def __hash__(self):
-            return abs(hash(f"{self.evaluators}{self.risk}"))
+    def __eq__(self, other):
+        return self.evaluators == other.evaluators and self.risk == other.risk
+
+    def __hash__(self):
+        return abs(hash(f"{self.evaluators}{self.risk}"))
