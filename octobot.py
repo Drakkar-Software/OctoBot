@@ -7,7 +7,8 @@ import ccxt
 from backtesting.backtesting import Backtesting
 from config.cst import CONFIG_FILE, CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
-    NOTIFICATION_STOPPING_MESSAGE, CONFIG_TRADER, CONFIG_TRADER_MODE
+    NOTIFICATION_STOPPING_MESSAGE, CONFIG_TRADER, CONFIG_TRADER_MODE, BOT_TOOLS_RECORDER, \
+    BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
@@ -39,6 +40,13 @@ class OctoBot:
         self.config = config
         self.startup_config = copy.deepcopy(config)
         self.ready = False
+
+        # tools: used for alternative operations on a bot on the fly (ex: backtesting started from web interface)
+        self.tools = {
+            BOT_TOOLS_BACKTESTING: None,
+            BOT_TOOLS_STRATEGY_OPTIMIZER: None,
+            BOT_TOOLS_RECORDER: None,
+        }
 
         # Logger
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -307,3 +315,6 @@ class OctoBot:
 
     def get_startup_config(self):
         return self.startup_config
+
+    def get_tools(self):
+        return self.tools
