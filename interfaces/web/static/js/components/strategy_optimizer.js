@@ -37,7 +37,7 @@ function start_optimizer_success_callback(data, update_url, source, msg, status)
 function start_optimizer_error_callback(data, update_url, source, result, status, error){
     source.prop('disabled', false);
     $("#progess_bar").hide();
-    create_alert("danger", "Error when starting optimizer: "+result.responseText, "");
+    create_alert("error", "Error when starting optimizer: "+result.responseText, "");
 }
 
 $(document).ready(function() {

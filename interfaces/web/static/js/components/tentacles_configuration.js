@@ -63,7 +63,7 @@ function modules_operation_error_callback(updated_data, update_url, dom_root_ele
         disable_select_action_buttons();
     });
     $("#selected_tentacles_operation").hide();
-    create_alert("danger", "Error when managing modules: "+result.responseText, "");
+    create_alert("error", "Error when managing modules: "+result.responseText, "");
 }
 
 function packages_operation_success_callback(updated_data, update_url, dom_root_element, msg, status){
@@ -81,7 +81,7 @@ function packages_operation_error_callback(updated_data, update_url, dom_root_el
         disable_select_action_buttons();
     });
     $("#packages_action_progess_bar").hide();
-    create_alert("danger", "Error when managing packages: "+result.responseText, "");
+    create_alert("error", "Error when managing packages: "+result.responseText, "");
 }
 
 function register_and_install_package_success_callback(updated_data, update_url, dom_root_element, msg, status){
@@ -99,7 +99,7 @@ function register_and_install_package_success_callback(updated_data, update_url,
 }
 
 function register_and_install_package_error_callback(updated_data, update_url, dom_root_element, result, status, error){
-    create_alert("danger", "Error when getting package: "+result.responseText, "");
+    create_alert("error", "Error when getting package: "+result.responseText, "");
     $("#register_and_install_package_progess_bar").hide();
     disable_packages_operations(false);
 }
@@ -119,7 +119,7 @@ function post_package_action_success_callback(updated_data, update_url, dom_root
 }
 
 function post_package_action_error_callback(updated_data, update_url, dom_root_element, result, status, error){
-    create_alert("danger", "Error during package handling: "+result.responseText, "");
+    create_alert("error", "Error during package handling: "+result.responseText, "");
     $("#tentacles_packages_table").load(location.href + " #tentacles_packages_table");
     $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
         disable_select_action_buttons();
