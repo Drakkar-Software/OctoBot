@@ -2,7 +2,7 @@ from flask import render_template, request, jsonify
 
 from interfaces.web import server_instance
 from interfaces.web.models.strategy_optimizer import get_strategies_list, get_current_strategy, get_time_frames_list, \
-    get_evaluators_list, get_risks_list, start_optimizer
+    get_evaluators_list, get_risks_list, start_optimizer, get_optimizer_results
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -33,6 +33,12 @@ def strategy_optimizer():
             return get_rest_reply(jsonify(reply))
         else:
             return get_rest_reply('{"update": "ko"}', 500)
+
+    elif request.method == 'GET':
+        target = request.args["target"]
+        if target == "strategy_optimizer_results":
+            optimizer_results = get_optimizer_results()
+            return get_rest_reply(jsonify(optimizer_results))
 
     else:
         return render_template('strategy-optimizer.html',
