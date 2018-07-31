@@ -59,3 +59,12 @@ def start_optimizer(strategy, time_frames, evaluators, risks):
     print(time_frames)
     print(evaluators)
     print(risks)
+
+def get_optimizer_results():
+    id = "id"
+    evaluators = "evaluators"
+    time_frames = "time_frames"
+    risk = "risk"
+    score = "score"
+    average_trades = "average_trades"
+    return []
