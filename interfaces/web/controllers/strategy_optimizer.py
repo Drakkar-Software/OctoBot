@@ -40,7 +40,6 @@ def strategy_optimizer():
                 optimizer_results = get_optimizer_results()
                 return jsonify(optimizer_results)
             if target == "optimizer_report":
-                print('optimizer_report')
                 optimizer_report = get_optimizer_report()
                 return jsonify(optimizer_report)
             elif target == "optimizer_status":
