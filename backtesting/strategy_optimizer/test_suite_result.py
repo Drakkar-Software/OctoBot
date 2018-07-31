@@ -9,6 +9,14 @@ class TestSuiteResult:
     BOT_PROFITABILITY = 0
     MARKET_PROFITABILITY = 1
 
+    INDEX = "id"
+    EVALUATORS = "evaluators"
+    TIME_FRAMES = "time_frames"
+    RISK = "risk"
+    SCORE = "score"
+    AVERAGE_TRADES = "average_trades"
+
+
     def __init__(self, run_profitabilities, trades_counts, risk, time_frames, evaluators, strategy):
         self.run_profitabilities = run_profitabilities
         self.trades_counts = trades_counts
@@ -41,6 +49,16 @@ class TestSuiteResult:
         return (f"{self.get_evaluators_without_strategy()} on {self.time_frames} at risk: {self.risk} "
                 f"score: {self.get_average_score():f} (the higher the better) "
                 f"average trades: {self.get_average_trades_count():f}{details}")
+
+    def get_result_dict(self, index=0):
+        return {
+            self.INDEX: index,
+            self.EVALUATORS: self.get_evaluators_without_strategy(),
+            self.TIME_FRAMES: self.time_frames,
+            self.RISK: self.risk,
+            self.SCORE: round(self.get_average_score(), 5),
+            self.AVERAGE_TRADES: round(self.get_average_trades_count(), 5),
+        }
 
 
 class TestSuiteResultSummary:

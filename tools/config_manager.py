@@ -60,13 +60,21 @@ class ConfigManager:
         # check exchange keys encryption
         for exchange in config[CONFIG_EXCHANGES]:
             try:
-                decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY], silent_on_invalid_token=True)
+                try:
+                    decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY], silent_on_invalid_token=True)
+                except Exception:
+                    config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]).decode()
+
+                try:
+                    decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET], silent_on_invalid_token=True)
+                except Exception:
+                    config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]).decode()
+
             except Exception:
-                config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]).decode()
-            try:
-                decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET], silent_on_invalid_token=True)
-            except Exception:
-                config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]).decode()
+                config[CONFIG_EXCHANGES][exchange] = {
+                    CONFIG_EXCHANGE_KEY: "",
+                    CONFIG_EXCHANGE_SECRET: ""
+                }
 
         return json.dumps(config, indent=4, sort_keys=True)
 
