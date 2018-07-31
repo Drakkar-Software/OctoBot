@@ -25,7 +25,7 @@ class StrategyOptimizer:
 
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logging.getLogger(self.get_name())
         self.config = load_test_config()
         self.trading_mode = config[CONFIG_TRADER][CONFIG_TRADER_MODE]
         self.config[CONFIG_TRADER][CONFIG_TRADER_MODE] = self.trading_mode
@@ -87,10 +87,10 @@ class StrategyOptimizer:
                         for nb_evaluators in range(1, nb_TAs+1):
                             # test different configurations
                             for i in range(nb_TAs):
-                                activated_evaluators = self.get_activated_evaluators(all_TAs, current_forced_evaluator,
-                                                                                     nb_evaluators, eval_conf_history,
-                                                                                     self.strategy_class.get_name(),
-                                                                                     True)
+                                activated_evaluators = self.get_activated_element(all_TAs, current_forced_evaluator,
+                                                                                  nb_evaluators, eval_conf_history,
+                                                                                  self.strategy_class.get_name(),
+                                                                                  True)
                                 if activated_evaluators is not None:
                                     self.config[CONFIG_FORCED_EVALUATOR] = activated_evaluators
                                     time_frames_conf_history = []
@@ -102,10 +102,10 @@ class StrategyOptimizer:
                                             # test different configurations
                                             for j in range(nb_TFs):
                                                 activated_time_frames = \
-                                                    self.get_activated_evaluators(self.all_time_frames,
-                                                                                  current_forced_time_frame,
-                                                                                  nb_time_frames,
-                                                                                  time_frames_conf_history)
+                                                    self.get_activated_element(self.all_time_frames,
+                                                                               current_forced_time_frame,
+                                                                               nb_time_frames,
+                                                                               time_frames_conf_history)
                                                 if activated_time_frames is not None:
                                                     self.config[CONFIG_FORCED_TIME_FRAME] = activated_time_frames
                                                     print(f"{self.run_id}/{self.total_nb_runs} Run with: evaluators: "
@@ -116,13 +116,14 @@ class StrategyOptimizer:
                                                           f"{self.run_results[-1].get_result_string(False)}")
                                                     self.run_id += 1
 
-                set_global_logger_level(logging.INFO)
                 self._find_optimal_configuration_using_results()
 
             finally:
+                set_global_logger_level(logging.INFO)
                 self.is_computing = False
+                self.logger.info(f"{self.get_name()} finished computation.")
         else:
-            raise RuntimeError(f"{self.__class__.__name__} is already computing: processed "
+            raise RuntimeError(f"{self.get_name()} is already computing: processed "
                                f"{self.run_id}/{self.total_nb_runs} processed")
 
     def _run_test_suite(self, config):
@@ -180,9 +181,13 @@ class StrategyOptimizer:
     def get_is_computing(self):
         return self.is_computing
 
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
+
     @staticmethod
-    def get_activated_evaluators(all_elements, current_forced_element, nb_elements_to_consider,
-                                 elem_conf_history, default_element=None, dict_shaped=False):
+    def get_activated_element(all_elements, current_forced_element, nb_elements_to_consider,
+                              elem_conf_history, default_element=None, dict_shaped=False):
         eval_conf = {current_forced_element: True}
         additional_elements_count = 0
         if default_element is not None:
