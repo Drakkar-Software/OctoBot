@@ -40,6 +40,8 @@ function start_optimizer_error_callback(data, update_url, source, result, status
     create_alert("error", "Error when starting optimizer: "+result.responseText, "");
 }
 
+$(document).ready(function() {
+
 var columnsDef = [
     {
         "title": "#",
@@ -96,8 +98,6 @@ var columnsDef = [
         }
     }
 ];
-
-$(document).ready(function() {
 
     check_disabled();
 

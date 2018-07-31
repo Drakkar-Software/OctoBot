@@ -97,4 +97,12 @@ def get_optimizer_results():
             SCORE: 42,
             AVERAGE_TRADES: 6,
         })
+    a.append({
+            INDEX: 2,
+            EVALUATORS: "fdsfs",
+            TIME_FRAMES: "ffd",
+            RISK: 41,
+            SCORE: 42,
+            AVERAGE_TRADES: 6,
+        })
     return a
