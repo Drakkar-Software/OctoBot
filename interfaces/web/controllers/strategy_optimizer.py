@@ -24,7 +24,7 @@ def strategy_optimizer():
                     risks = request_data["risks"]
                     success, reply = start_optimizer(strategy, time_frames, evaluators, risks)
                 except Exception as e:
-                    return get_rest_reply('{"start_optimizer": "ko: '+e+'"}', 500)
+                    return get_rest_reply('{"start_optimizer": "ko: ' + e + '"}', 500)
 
         if success:
             # TODO
@@ -34,10 +34,12 @@ def strategy_optimizer():
 
     elif request.method == 'GET':
         if request.args:
-            target = request.args["target"]
-            if target == "strategy_optimizer_results":
+            print(request.args)
+            target = request.args["update_type"]
+            if target == "optimizer_results":
                 optimizer_results = get_optimizer_results()
-                return get_rest_reply(jsonify(optimizer_results))
+                print(jsonify(optimizer_results))
+                return jsonify(optimizer_results)
 
         else:
             return render_template('strategy-optimizer.html',

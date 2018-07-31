@@ -40,8 +40,67 @@ function start_optimizer_error_callback(data, update_url, source, result, status
     create_alert("error", "Error when starting optimizer: "+result.responseText, "");
 }
 
+var columnsDef = [
+    {
+        "title": "#",
+        "targets": 0,
+        "data": "id",
+        "name": "id",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    },
+    {
+        "title": "Evaluators",
+        "targets": 1,
+        "data": "evaluators",
+        "name": "evaluators",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    },
+    {
+        "title": "Time Frames",
+        "targets": 2,
+        "data": "time_frames",
+        "name": "time_frames",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    },
+    {
+        "title": "Risk",
+        "targets": 3,
+        "data": "risk",
+        "name": "risk",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    },
+    {
+        "title": "Score",
+        "targets": 4,
+        "data": "score",
+        "name": "score",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    },
+    {
+        "title": "Average trades count",
+        "targets": 5,
+        "data": "average_trades",
+        "name": "average_trades",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    }
+];
+
 $(document).ready(function() {
+
     check_disabled();
+
     $(".multi-select-element").select2({
         dropdownAutoWidth : true,
         multiple: true,
@@ -54,5 +113,19 @@ $(document).ready(function() {
     $("#startOptimizer").click(function(){
         start_optimizer($(this));
     });
-    $("#results_datatable").DataTable()
+
+    var table = $("#results_datatable").DataTable({
+        ajax: {
+            "url": $("#results_datatable").attr(update_url_attr)
+        },
+        deferRender: true,
+        autoWidth: true,
+        autoFill: true,
+        columnDefs: columnsDef
+    })
+
+    setInterval(function(){refresh_message_table(table);}, 500);
+    function refresh_message_table(table){
+        table.ajax.reload( null, false );
+    }
 });
