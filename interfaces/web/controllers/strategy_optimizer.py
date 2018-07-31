@@ -35,16 +35,17 @@ def strategy_optimizer():
             return get_rest_reply('{"update": "ko"}', 500)
 
     elif request.method == 'GET':
-        target = request.args["target"]
-        if target == "strategy_optimizer_results":
-            optimizer_results = get_optimizer_results()
-            return get_rest_reply(jsonify(optimizer_results))
+        if request.args:
+            target = request.args["target"]
+            if target == "strategy_optimizer_results":
+                optimizer_results = get_optimizer_results()
+                return get_rest_reply(jsonify(optimizer_results))
 
-    else:
-        return render_template('strategy-optimizer.html',
-                               strategies=get_strategies_list(),
-                               current_strategy=get_current_strategy(),
-                               time_frames=get_time_frames_list(),
-                               evaluators=get_evaluators_list(),
-                               risks=get_risks_list())
+        else:
+            return render_template('strategy-optimizer.html',
+                                   strategies=get_strategies_list(),
+                                   current_strategy=get_current_strategy(),
+                                   time_frames=get_time_frames_list(),
+                                   evaluators=get_evaluators_list(),
+                                   risks=get_risks_list())
 
