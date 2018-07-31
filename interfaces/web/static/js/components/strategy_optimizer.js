@@ -116,7 +116,8 @@ $(document).ready(function() {
 
     var table = $("#results_datatable").DataTable({
         ajax: {
-            "url": $("#results_datatable").attr(update_url_attr)
+            "url": $("#results_datatable").attr(update_url_attr),
+            "dataSrc": ""
         },
         deferRender: true,
         autoWidth: true,
