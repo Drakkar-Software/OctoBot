@@ -1,3 +1,4 @@
+import threading
 
 
 from interfaces import get_bot
@@ -6,6 +7,8 @@ from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator import Strategies
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
+from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER
+from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer
 
 
 def get_strategies_list():
@@ -55,16 +58,22 @@ def get_current_strategy():
 
 
 def start_optimizer(strategy, time_frames, evaluators, risks):
-    print(strategy)
-    print(time_frames)
-    print(evaluators)
-    print(risks)
+    tools = get_bot().get_tools
+    if not tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
+        tools[BOT_TOOLS_STRATEGY_OPTIMIZER] = StrategyOptimizer(get_bot().get_config(), strategy)
+    optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
+    if optimizer.get_is_computing():
+        return False, "Optimizer already running"
+    else:
+        # thread = threading.Thread(target=optimizer.find_optimal_configuration, args=(time_frames, evaluators, risks))
+        # thread.start()
+        return True, "Optimizer started"
+
 
 def get_optimizer_results():
-    id = "id"
-    evaluators = "evaluators"
-    time_frames = "time_frames"
-    risk = "risk"
-    score = "score"
-    average_trades = "average_trades"
-    return []
+    optimizer = get_bot().get_tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
+    if optimizer:
+        results = optimizer.get_results()
+        return [result.get_result_dict(i) for i, result in enumerate(results)]
+    else:
+        return []
