@@ -23,7 +23,6 @@ def strategy_optimizer():
                     evaluators = request_data["evaluators"]
                     risks = request_data["risks"]
                     success, reply = start_optimizer(strategy, time_frames, evaluators, risks)
-                    reply = "Strategy optimizer launched"
                 except Exception as e:
                     return get_rest_reply('{"start_optimizer": "ko: '+e+'"}', 500)
 
@@ -31,7 +30,7 @@ def strategy_optimizer():
             # TODO
             return get_rest_reply(jsonify(reply))
         else:
-            return get_rest_reply('{"start_optimizer": "ko"}', 500)
+            return get_rest_reply(reply, 500)
 
     elif request.method == 'GET':
         if request.args:
