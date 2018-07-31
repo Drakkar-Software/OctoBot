@@ -16,7 +16,7 @@ from interfaces.web.util.flask_util import get_rest_reply
 def config():
     if request.method == 'POST':
         request_data = request.get_json()
-        success = False
+        success = True
 
         if request_data:
             # update global config if required
