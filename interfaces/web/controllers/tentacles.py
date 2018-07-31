@@ -9,12 +9,13 @@ from interfaces.web.models.tentacles import get_tentacles_packages, \
 
 @server_instance.route("/tentacles")
 def tentacles():
-    return render_template('tentacles.html')
+    return render_template('tentacles.html',
+                           get_tentacles=get_tentacles)
 
 
-@server_instance.route("/tentacle_manager")
-@server_instance.route('/tentacle_manager', methods=['GET', 'POST'])
-def tentacle_manager():
+@server_instance.route("/tentacle_packages")
+@server_instance.route('/tentacle_packages', methods=['GET', 'POST'])
+def tentacle_packages():
     if request.method == 'POST':
         update_type = request.args["update_type"]
         if update_type == "add_package":
@@ -76,6 +77,5 @@ def tentacle_manager():
                 return get_rest_reply('{"Need at least one element be selected": "ko"}', 500)
 
     else:
-        return render_template('tentacle_manager.html',
-                               get_tentacles_packages=get_tentacles_packages,
-                               get_tentacles=get_tentacles)
+        return render_template('tentacle_packages.html',
+                               get_tentacles_packages=get_tentacles_packages)

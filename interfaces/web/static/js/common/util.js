@@ -15,3 +15,11 @@ function replace_break_line(str, replacement=""){
 function replace_spaces(str, replacement=""){
     return str.replace(/ /g, replacement);
 }
+
+function get_selected_options(element){
+    var selected_options = []
+    element.find(":selected").each(function(){
+        selected_options.push($(this).val())
+    });
+    return selected_options
+}

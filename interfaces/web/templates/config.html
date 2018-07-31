@@ -20,7 +20,7 @@
 
 {% block body %}
 <div id="nav-config" class="animated slideInDown sticky-top">
-    <nav class="navbar nav-tabs info-color" data-toggle="affix">
+    <nav class="navbar nav-tabs navbar-dark primary-color-dark" data-toggle="affix">
         <!-- Nav tabs -->
          <ul class="nav mr-auto md-pills nav-justified">
             <li class="nav-item">
@@ -44,116 +44,147 @@
         </ul>
     </nav>
 
-    <nav class="navbar nav-tabs alert-primary">
-        Any configuration change will be take into account after OctBot restarts.
+    <nav class="navbar nav-tabs navbar-dark primary-color">
+        <span class="white-text"> Any configuration change will be take into account after OctBot restarts.</span>
         <ul class="nav mx-auto">
             <li class="nav-item">
-                <a class="nav-link green" id='save-config' href="#" role="tab">Save all</a>
+                <a class="nav-link btn green" id='save-config' href="#" role="tab">Save all</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link orange" id='reset-config' href="#" role="tab">Reset current tab</a>
+                <a class="nav-link btn orange" id='reset-config' href="#" role="tab">Reset current tab</a>
             </li>
         </ul>
         <ul class="nav ml-auto">
             <li class="nav-item">
-                <a class="nav-link red" href="{{ url_for('commands', cmd='restart') }}" role="tab">Restart Octobot</a>
+                <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="nav-link btn red">Restart Octobot</button>
             </li>
         </ul>
     </nav>
-</div>
-<div class="alert alert-danger" role="alert">
-    <h1>This page is currently in development</h1>
 </div>
 <!-- Tab panels -->
 <div class="tab-content">
 
     <!--Panel Exchanges-->
     <div class="tab-pane fade in show active config-root" id="panelExchanges" role="tabpanel"><br>
-        <br>
-        <div class="alert alert-success">Add a new exchange :
-            <select id="AddExchangeSelect" class="selectpicker" data-live-search="true">
-               {% for exchange in ccxt_exchanges %}
-                    <option data-tokens="{{ exchange }}">{{ exchange }}</option>
-               {% endfor %}
-            </select>
-            <button type="button" id="AddExchange" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
-        </div>
-
-        <!-- Card deck -->
-        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            {% for exchange in config_exchanges %}
-                {{ m_config_exchange_card.config_exchange_card(config_exchanges, exchange) }}
-            {% endfor %}
+        <div class="card">
+            <div class="card-header"><h2>Exchanges</h2></div>
+            <div class="card-body">
+                <div class="card">
+                    <div class="card-body">Add a new exchange :
+                        <select id="AddExchangeSelect" class="selectpicker" data-live-search="true">
+                           {% for exchange in ccxt_exchanges %}
+                                <option data-tokens="{{ exchange }}">{{ exchange }}</option>
+                           {% endfor %}
+                        </select>
+                        <button type="button" id="AddExchange" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+                    </div>
+                </div>
+                <br>
+                <!-- Card deck -->
+                <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                    {% for exchange in config_exchanges %}
+                        {{ m_config_exchange_card.config_exchange_card(config_exchanges, exchange) }}
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
 
     <!--Panel Evaluators-->
     <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel"><br>
-
-        <div class="row config-container" update-url="{{ url_for('config') }}" id="evaluator-config-root">
-            {% for evaluator_name, activated in evaluator_config.items() %}
-                {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
-            {% endfor %}
+        <div class="card">
+            <div class="card-header"><h2>Evaluators</h2></div>
+            <div class="card-body">
+                <div class="row config-container" update-url="{{ url_for('config') }}" id="evaluator-config-root">
+                    {% for evaluator_name, activated in evaluator_config.items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
+                    {% endfor %}
+                </div>
+            </div>
         </div>
-
     </div>
 
     <!--Panel Trading-->
     <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel"><br>
-         <!-- Card deck -->
-        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            {{ m_config_trader_card.config_trader_card(config_trader, "trader", "Trader") }}
-            {{ m_config_trader_card.config_trader_card(config_trader_simulator, "trader-simulator", "Trader simulator") }}
+        <div class="card">
+            <div class="card-header"><h2>Trading</h2></div>
+            <div class="card-body">
+                 <!-- Card deck -->
+                <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                    {{ m_config_trader_card.config_trader_card(config_trader, "trader", "Trader") }}
+                    {{ m_config_trader_card.config_trader_card(config_trader_simulator, "trader-simulator", "Trader simulator") }}
+                </div>
+            </div>
         </div>
     </div>
 
     <!--Panel Notifications-->
     <div class="tab-pane fade config-root" id="panelNotifications" role="tabpanel"><br>
-        <!-- Card deck -->
-        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            {{ m_config_notification.config_notification(config_notifications, "notification", service_name_list) }}
+        <div class="card">
+            <div class="card-header"><h2>Notifications</h2></div>
+            <div class="card-body">
+                <!-- Card deck -->
+                <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                    {{ m_config_notification.config_notification(config_notifications, "notification", service_name_list) }}
+                </div>
+            </div>
         </div>
     </div>
 
     <!--Panel Services-->
     <div class="tab-pane fade config-root" id="panelServices" role="tabpanel"><br>
-        <div class="alert alert-success">Add a new service :
-            <select id="AddServiceSelect" class="selectpicker" data-live-search="true">
-               {% for service in services_list | sort() %}
-                    <option data-tokens="{{ service }}">{{ service }}</option>
-               {% endfor %}
-            </select>
-            <button type="button" id="AddService" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
-        </div>
-
-        <!-- Card deck -->
-        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            {% for service in services_list %}
-                {% if service in config_services %}
-                    {{ m_config_service_card.config_service_card(config_services, service, services_list[service]) }}
-                {% endif %}
-            {% endfor %}
+        <div class="card">
+            <div class="card-header"><h2>Services</h2></div>
+            <div class="card-body">
+                <div class="card">
+                    <div class="card-body">Add a new service :
+                    <select id="AddServiceSelect" class="selectpicker" data-live-search="true">
+                       {% for service in services_list | sort() %}
+                            <option data-tokens="{{ service }}">{{ service }}</option>
+                       {% endfor %}
+                    </select>
+                    <button type="button" id="AddService" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+                    </div>
+                </div>
+                <br>
+                <!-- Card deck -->
+                <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                    {% for service in services_list %}
+                        {% if service in config_services %}
+                            {{ m_config_service_card.config_service_card(config_services, service, services_list[service]) }}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
 
     <!--Panel Currencies-->
     <div class="tab-pane fade config-root" id="panelCurrency" role="tabpanel"><br>
-        <div class="alert alert-success">Add a new currency :
-            <select id="AddCurrencySelect" class="selectpicker" data-live-search="true" reference_market="{{ config_reference_market }}">
-               {% for currency in full_symbol_list | sort() %}
-                    {% if currency not in config_symbols %}
-                        <option data-tokens="{{ currency }}" symbol="{{ full_symbol_list[currency] }}">{{ currency }}</option>
-                    {% endif %}
-               {% endfor %}
-            </select>
-            <button type="button" id="AddCurrency" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
-        </div>
-
-        <!-- Card deck -->
-        <div class="card-deck config-container" update-url="{{ url_for('config') }}">
-            {% for crypto_currency in config_symbols %}
-               {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list, symbol=config_symbols[crypto_currency]['pairs'][0].split('/')[0].lower() if crypto_currency in config_symbols and config_symbols[crypto_currency]['pairs']) }}
-            {% endfor %}
+        <div class="card">
+            <div class="card-header"><h2>Currencies</h2></div>
+            <div class="card-body">
+                <div class="card">
+                    <div class="card-body">
+                        Add a new currency :
+                        <select id="AddCurrencySelect" class="selectpicker" data-live-search="true" reference_market="{{ config_reference_market }}">
+                           {% for currency in full_symbol_list | sort() %}
+                                {% if currency not in config_symbols %}
+                                    <option data-tokens="{{ currency }}" symbol="{{ full_symbol_list[currency] }}">{{ currency }}</option>
+                                {% endif %}
+                           {% endfor %}
+                        </select>
+                        <button type="button" id="AddCurrency" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+                    </div>
+                </div>
+                <br>
+                <!-- Card deck -->
+                <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                    {% for crypto_currency in config_symbols %}
+                       {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list, symbol=config_symbols[crypto_currency]['pairs'][0].split('/')[0].lower() if crypto_currency in config_symbols and config_symbols[crypto_currency]['pairs']) }}
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -1,5 +1,5 @@
 function get_active_tab_config(){
-    return $(document).find("." + config_root_class + ".active > ." + config_container_class);
+    return $(document).find("." + config_root_class + ".active").find("." + config_container_class);
 }
 
 function get_tabs_config(){
@@ -16,7 +16,7 @@ function handle_reset_buttons(){
 function handle_remove_buttons(){
     // Card deck removing
     $(document).on("click", ".remove-btn", function() {
-        $(this).parents(".card").fadeOut("normal", function() {
+        $(this).closest(".card").fadeOut("normal", function() {
             $(this).remove();
         });
     });

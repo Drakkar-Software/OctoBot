@@ -3,7 +3,6 @@ import copy
 import math
 
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
-from tools.time_frame_manager import TimeFrameManager
 from tests.test_utils.backtesting_util import add_config_default_backtesting_values
 from tests.test_utils.config import load_test_config
 from tools.data_util import DataUtil
@@ -11,13 +10,10 @@ from evaluator.TA.TA_evaluator import TAEvaluator
 from evaluator import TA
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
-from tests.functional_tests.strategy_evaluators_tests.abstract_strategy_test import AbstractStrategyTest
 from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
     CONFIG_EVALUATOR, CONFIG_TRADER_MODE
-from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
+from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 
-BOT_PROFITABILITY = 0
-MARKET_PROFITABILITY = 1
 CONFIG = 0
 RANK = 1
 TRADES = 0
@@ -49,15 +45,16 @@ class StrategyOptimizer:
         else:
             self.is_properly_initialized = True
 
-    def find_optimal_configuration(self):
+    def find_optimal_configuration(self, TAs=None, time_frames=None, risks=None):
 
-        all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR])
+        all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
         nb_TAs = len(all_TAs)
 
-        self.all_time_frames = self.strategy_class.get_required_time_frames(self.config)
+        self.all_time_frames = self.strategy_class.get_required_time_frames(self.config) \
+            if time_frames is None else time_frames
         nb_TFs = len(self.all_time_frames)
 
-        risks = [0.5, 1]
+        risks = [0.5, 1] if risks is None else risks
 
         self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} strategy "
                          f"using {self.trading_mode} trading mode, {all_TAs} technical evaluator(s), "
@@ -141,11 +138,14 @@ class StrategyOptimizer:
         return None
 
     def _run_test_suite(self, config):
-        strategy_test_suite = StrategyOptimizer.StrategyTestSuite()
+        strategy_test_suite = StrategyTestSuite()
         strategy_test_suite.init(self.strategy_class, copy.deepcopy(config))
         strategy_test_suite.run_test_suite(strategy_test_suite)
         run_result = strategy_test_suite.get_test_suite_result()
         self.run_results.append(run_result)
+
+    def get_results(self):
+        return self.run_results
 
     @staticmethod
     def get_filtered_results(results, time_frame=None):
@@ -204,122 +204,3 @@ class StrategyOptimizer:
         return [evaluator
                 for evaluator, activated in config_evaluator.items()
                 if activated and StrategyOptimizer._is_relevant_evaluation_config(evaluator)]
-
-    class TestSuiteResult:
-        def __init__(self, run_profitabilities, trades_counts, risk, time_frames, evaluators, strategy):
-            self.run_profitabilities = run_profitabilities
-            self.trades_counts = trades_counts
-            self.risk = risk
-            self.time_frames = time_frames
-            self.min_time_frame = TimeFrameManager.find_min_time_frame(self.time_frames)
-            self.evaluators = evaluators
-            self.strategy = strategy
-
-        def get_average_score(self):
-            bot_profitabilities = [
-                profitability_result[BOT_PROFITABILITY] - profitability_result[MARKET_PROFITABILITY]
-                for profitability_result in self.run_profitabilities]
-            return DataUtil.mean(bot_profitabilities)
-
-        def get_average_trades_count(self):
-            return DataUtil.mean(self.trades_counts)
-
-        def get_evaluators_without_strategy(self):
-            evals = copy.copy(self.evaluators)
-            evals.pop(self.strategy)
-            return [eval_name for eval_name in evals]
-
-        def get_config_summary(self):
-            return StrategyOptimizer.TestSuiteResultSummary(self)
-
-        def get_result_string(self, details=True):
-            details = f" details: (profitabilities (bot, market):{self.run_profitabilities}, trades: " \
-                      f"{self.trades_counts})" if details else ""
-            return (f"{self.get_evaluators_without_strategy()} on {self.time_frames} at risk: {self.risk} "
-                    f"score: {self.get_average_score():f} (the higher the better) "
-                    f"average trades: {self.get_average_trades_count():f}{details}")
-
-    class TestSuiteResultSummary:
-        def __init__(self, test_suite_result):
-            self.evaluators = test_suite_result.get_evaluators_without_strategy()
-            self.risk = test_suite_result.risk
-
-        def get_result_string(self):
-            return f"{self.evaluators} risk: {self.risk}"
-
-        def __eq__(self, other):
-            return self.evaluators == other.evaluators and self.risk == other.risk
-
-        def __hash__(self):
-            return abs(hash(f"{self.evaluators}{self.risk}"))
-
-    class StrategyTestSuite(AbstractStrategyTest):
-
-        # set to True to skip bigger scenarii and make tests faster
-        SKIP_LONG_STEPS = False
-
-        def __init__(self):
-            super().__init__()
-            self._profitability_results = []
-            self._trades_counts = []
-            self.logger = logging.getLogger(self.__class__.__name__)
-
-        def get_test_suite_result(self):
-            return StrategyOptimizer.TestSuiteResult(self._profitability_results,
-                                                     self._trades_counts,
-                                                     self.config[CONFIG_TRADER][CONFIG_TRADER_RISK],
-                                                     self.config[CONFIG_FORCED_TIME_FRAME],
-                                                     self.config[CONFIG_FORCED_EVALUATOR],
-                                                     self.strategy_evaluator_class.get_name())
-
-        def run_test_suite(self, strategy_tester):
-            tests = [self.test_slow_downtrend, self.test_sharp_downtrend, self.test_flat_markets,
-                     self.test_slow_uptrend, self.test_sharp_uptrend, self.test_up_then_down]
-            print('| ', end='')
-            for test in tests:
-                try:
-                    test(strategy_tester)
-                except NoCandleDataForThisTimeFrameException:
-                    pass
-                except Exception as e:
-                    print(f"Exception when running test {test.__name__}: {e}")
-                    self.logger.exception(e)
-                print('#', end='')
-            print(' |', end='')
-
-        @staticmethod
-        def test_default_run(strategy_tester):
-            strategy_tester.run_test_default_run(None)
-
-        @staticmethod
-        def test_slow_downtrend(strategy_tester):
-            strategy_tester.run_test_slow_downtrend(None, None, None, None,
-                                                    StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
-
-        @staticmethod
-        def test_sharp_downtrend(strategy_tester):
-            strategy_tester.run_test_sharp_downtrend(None, None,
-                                                     StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
-
-        @staticmethod
-        def test_flat_markets(strategy_tester):
-            strategy_tester.run_test_flat_markets(None, None, None, None,
-                                                  StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
-
-        @staticmethod
-        def test_slow_uptrend(strategy_tester):
-            strategy_tester.run_test_slow_uptrend(None, None)
-
-        @staticmethod
-        def test_sharp_uptrend(strategy_tester):
-            strategy_tester.run_test_sharp_uptrend(None, None)
-
-        @staticmethod
-        def test_up_then_down(strategy_tester):
-            strategy_tester.run_test_up_then_down(None,
-                                                  StrategyOptimizer.StrategyTestSuite.SKIP_LONG_STEPS)
-
-        def _assert_results(self, run_results, profitability, bot):
-            self._profitability_results.append(run_results)
-            trader = next(iter(bot.get_exchange_trader_simulators().values()))
-            self._trades_counts.append(len(trader.get_trades_manager().get_trade_history()))

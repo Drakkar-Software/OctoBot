@@ -1,36 +1,47 @@
 {% extends "layout.html" %}
 {% block body %}
-<h1>Tentacles</h1>
-<br>
-<div class="alert alert-danger" role="alert">
-    <h1>This page is currently in development</h1>
+<div class="card">
+    <div class="card-header"><h1>Tentacles</h1></div>
+    <div class="card-body">
+        <table class="table table-striped table-bordered table-sm table-hover" id="tentacles_modules_table">
+          <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Package</th>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Function</th>
+                <th scope="col">Version</th>
+                <th scope="col" class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="module-table" update-update-url="{{ url_for('tentacle_packages', update_type='update_modules') }}" uninstall-update-url="{{ url_for('tentacle_packages', update_type='uninstall_modules') }}">
+            {% for tentacle in get_tentacles().values() %}
+                <tr>
+                    <td class="selectable_tentacle"><input type="checkbox" module="{{tentacle.name}}" class="tentacle-module-checkbox"></td>
+                    <td class="selectable_tentacle">{{tentacle.package_name}}</td>
+                    <td class="selectable_tentacle">{{tentacle.name}}</td>
+                    <td class="selectable_tentacle">{{tentacle.type}}</td>
+                    <td class="selectable_tentacle">{{tentacle.subtype}}</td>
+                    <td class="selectable_tentacle">{{tentacle.version}}</td>
+                    <td class="text-center"><a class="btn fa fa-download" onclick="update('{{tentacle.name}}')" data-toggle="tooltip" data-placement="right" title="Update tentacle"></a>
+                        <a class="btn fa fa-trash-alt" onclick="uninstall('{{tentacle.name}}')" data-toggle="tooltip" data-placement="right" title="Uninstall tentacle"></a></td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class='progress' id='selected_tentacles_operation' style='display: none;'>
+          <div class='progress-bar progress-bar-striped bg-danger progress-bar-animated' role='progressbar' aria-valuenow='100' aria-valuemin='0' aria-valuemax='100' style='width: 100%;'></div>
+        </div>
+        <div class="btn-group btn-group text-center" role="group">
+            <button type="button" class="btn btn-primary card-link" id="update_selected_tentacles" update-url="{{ url_for('tentacle_packages', update_type='update_modules') }}">Update selected tentacles</button>
+            <button type="button" class="btn btn-danger card-link" id="uninstall_selected_tentacles" update-url="{{ url_for('tentacle_packages', update_type='uninstall_modules') }}">Uninstall selected tentacles</button>
+        </div>
+    </div>
 </div>
-<h2>TradingModes</h2>
-<div class="list-group">
-  <a class="list-group-item list-group-item-action" id="DailyTradingMode">DailyTradingMode</a>
-  <a class="list-group-item list-group-item-action" id="HighFrequencyMode">HighFrequencyMode</a>
-  <a class="list-group-item list-group-item-action" id="HybridMode">HybridMode</a>
-</div>
-<br>
-<h2>Strategies</h2>
-<div class="list-group">
-  <a class="list-group-item list-group-item-action" id="FullStrategy">FullStrategy</a>
-  <a class="list-group-item list-group-item-action" id="MAHighFrequencyStrategy">MAHighFrequencyStrategy</a>
-</div>
-<br>
-<button type="button" class="btn btn-primary">Apply</button>
+
 {% endblock %}
 
 {% block additional_scripts %}
-<script>
-$(document).ready(function () {
-    $(".list-group-item").click(function(){
-        if ($(this).hasClass("active")){
-            $(this).removeClass("active");
-        }else{
-            $(this).toggleClass("active");
-        }
-    });
-});
-</script>
+<script src="{{ url_for('static', filename='js/components/tentacles_configuration.js') }}"></script>
 {% endblock additional_scripts %}
