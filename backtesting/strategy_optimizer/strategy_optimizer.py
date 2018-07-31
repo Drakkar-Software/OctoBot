@@ -57,6 +57,8 @@ class StrategyOptimizer:
             # set is_computing to True to prevent any simultaneous start
             self.is_computing = True
 
+            self.run_results = []
+
             try:
                 all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
                 nb_TAs = len(all_TAs)

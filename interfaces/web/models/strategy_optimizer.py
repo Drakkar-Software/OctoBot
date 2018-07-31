@@ -76,33 +76,20 @@ def start_optimizer(strategy, time_frames, evaluators, risks):
 
 
 def get_optimizer_results():
-    # optimizer = get_bot().get_tools()[BOT_TOOLS_STRATEGY_OPTIMIZER]
-    # if optimizer:
-    #     results = optimizer.get_results()
-    #     return [result.get_result_dict(i) for i, result in enumerate(results)]
-    # else:
-    #     return []
-    INDEX = "id"
-    EVALUATORS = "evaluators"
-    TIME_FRAMES = "time_frames"
-    RISK = "risk"
-    SCORE = "score"
-    AVERAGE_TRADES = "average_trades"
-    a= []
-    a.append({
-            INDEX: 1,
-            EVALUATORS: "fdsfs",
-            TIME_FRAMES: "ffd",
-            RISK: 41,
-            SCORE: 42,
-            AVERAGE_TRADES: 6,
-        })
-    a.append({
-            INDEX: 2,
-            EVALUATORS: "fdsfs",
-            TIME_FRAMES: "ffd",
-            RISK: 41,
-            SCORE: 42,
-            AVERAGE_TRADES: 6,
-        })
-    return a
+    optimizer = get_bot().get_tools()[BOT_TOOLS_STRATEGY_OPTIMIZER]
+    if optimizer:
+        results = optimizer.get_results()
+        return [result.get_result_dict(i) for i, result in enumerate(results)]
+    else:
+        return []
+
+
+def get_optimizer_status():
+    optimizer = get_bot().get_tools()[BOT_TOOLS_STRATEGY_OPTIMIZER]
+    if optimizer:
+        if optimizer.get_is_computing():
+            return "computing"
+        else:
+            return "finished"
+    else:
+        return "not started"

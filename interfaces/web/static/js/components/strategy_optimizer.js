@@ -25,13 +25,31 @@ function start_optimizer(source){
     send_and_interpret_bot_update(data, update_url, source, start_optimizer_success_callback, start_optimizer_error_callback);
 }
 
+function lock_inputs(lock=true){
+    if ( $("#strategySelect").prop('disabled') != lock){
+        $("#strategySelect").prop('disabled', lock);
+    }
+    if ( $("#timeFramesSelect").prop('disabled') != lock){
+        $("#timeFramesSelect").prop('disabled', lock);
+    }
+    if ( $("#evaluatorsSelect").prop('disabled') != lock){
+        $("#evaluatorsSelect").prop('disabled', lock);
+    }
+    if ( $("#risksSelect").prop('disabled') != lock){
+        $("#risksSelect").prop('disabled', lock);
+    }
+    if(!($("#progess_bar").is(":visible")) && lock){
+        $("#progess_bar").show();
+    }
+    else if (!lock){
+        $("#progess_bar").hide();
+    }
+
+}
+
 function start_optimizer_success_callback(data, update_url, source, msg, status){
     create_alert("success", msg, "");
-    $("#results_datatable_card").show();
-    $("#strategySelect").prop('disabled', true);
-    $("#timeFramesSelect").prop('disabled', true);
-    $("#evaluatorsSelect").prop('disabled', true);
-    $("#risksSelect").prop('disabled', true);
+    lock_inputs();
 }
 
 function start_optimizer_error_callback(data, update_url, source, result, status, error){
@@ -40,7 +58,27 @@ function start_optimizer_error_callback(data, update_url, source, result, status
     create_alert("error", "Error when starting optimizer: "+result.responseText, "");
 }
 
-$(document).ready(function() {
+
+
+function check_optimizer_state(){
+    url = $("#strategyOptimizerInputs").attr(update_url_attr);
+    $.get(url,function(data, status){
+        if(data == "computing"){
+            lock_inputs();
+            first_refresh_state = data;
+        }
+        else{
+            lock_inputs(false);
+            if(data == "finished" && first_refresh_state != "" && first_refresh_state != "finished"){
+                create_alert("success", "Strategy optimized finished simulations.", "");
+                first_refresh_state="finished";
+            }
+        }
+        if(first_refresh_state == ""){
+            first_refresh_state = data;
+        }
+    });
+}
 
 var columnsDef = [
     {
@@ -99,6 +137,10 @@ var columnsDef = [
     }
 ];
 
+var first_refresh_state = ""
+
+$(document).ready(function() {
+
     check_disabled();
 
     $(".multi-select-element").select2({
@@ -125,8 +167,13 @@ var columnsDef = [
         columnDefs: columnsDef
     })
 
+
     setInterval(function(){refresh_message_table(table);}, 500);
     function refresh_message_table(table){
         table.ajax.reload( null, false );
+        if(table.rows().count() > 0){
+            $("#results_datatable_card").show();
+        }
+        check_optimizer_state();
     }
 });

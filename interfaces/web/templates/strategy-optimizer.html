@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block body %}
-<div class="card">
+<div class="card" id="strategyOptimizerInputs" update-url="{{ url_for('strategy_optimizer', update_type='optimizer_status') }}">
     <div class="card-header"><h1>Strategy optimizer</h1></div>
     <div class="card-body">
         <div class="input-group mb-3">
@@ -71,7 +71,7 @@
     </div>
 </div>
 
-<div id="results_datatable_card" class="card" >
+<div id="results_datatable_card" class="card" style='display: none;'>
     <div class="card-header"><h2>Results</h2></div>
     <div class="card-body">
         <div class="table-responsive">
