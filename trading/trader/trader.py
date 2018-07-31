@@ -179,7 +179,7 @@ class Trader:
         return new_order
 
     def cancel_order(self, order):
-        if not order.is_cancelled():
+        if not order.is_cancelled() and not order.is_filled():
             with order as odr:
                 odr.cancel_order()
                 self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} at {odr.get_origin_price()}"
