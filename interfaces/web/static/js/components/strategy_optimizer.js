@@ -243,7 +243,7 @@ $(document).ready(function() {
     })
 
 
-    setInterval(function(){refresh_message_table(iterationTable,reportTable);}, 500);
+    setInterval(function(){refresh_message_table(iterationTable,reportTable);}, 1500);
     function refresh_message_table(iterationTable, reportTable){
         iterationTable.ajax.reload( null, false );
         if(iterationTable.rows().count() > 0){
