@@ -210,6 +210,9 @@ class Order:
     def get_linked_portfolio(self):
         return self.linked_portfolio
 
+    def is_filled(self):
+        return self.status == OrderStatus.FILLED
+
     def is_cancelled(self):
         return self.status == OrderStatus.CANCELED
 
