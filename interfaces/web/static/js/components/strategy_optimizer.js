@@ -15,6 +15,7 @@ function check_disabled(){
 
 function start_optimizer(source){
     $("#progess_bar").show();
+    $("#progess_bar_anim").css('width', '0%').attr("aria-valuenow", '0')
     source.prop('disabled', true);
     var update_url = source.attr(update_url_attr);
     var data = {};
@@ -39,9 +40,11 @@ function lock_inputs(lock=true){
         $("#risksSelect").prop('disabled', lock);
     }
     if(!($("#progess_bar").is(":visible")) && lock){
+        $("#progess_bar_anim").css('width', '0%').attr("aria-valuenow", '0')
         $("#progess_bar").show();
     }
     else if (!lock){
+        $("#progess_bar_anim").css('width', '100%').attr("aria-valuenow", '100')
         $("#progess_bar").hide();
     }
 
@@ -60,27 +63,41 @@ function start_optimizer_error_callback(data, update_url, source, result, status
 
 
 
-function check_optimizer_state(){
+function check_optimizer_state(reportTable){
     url = $("#strategyOptimizerInputs").attr(update_url_attr);
     $.get(url,function(data, status){
-        if(data == "computing"){
+        var status = data["status"];
+        var progress = data["progress"]
+        if(status == "computing"){
             lock_inputs();
-            first_refresh_state = data;
+            $("#progess_bar_anim").css('width', progress+'%').attr("aria-valuenow", progress)
+            first_refresh_state = status;
+            if($("#report_datatable_card").is(":visible")){
+                $("#report_datatable_card").hide();
+            }
         }
         else{
             lock_inputs(false);
-            if(data == "finished" && first_refresh_state != "" && first_refresh_state != "finished"){
-                create_alert("success", "Strategy optimized finished simulations.", "");
-                first_refresh_state="finished";
+            if(status == "finished"){
+                if(!$("#report_datatable_card").is(":visible")){
+                    $("#report_datatable_card").show();
+                }
+                if(reportTable.rows().count() == 0){
+                    reportTable.ajax.reload( null, false );
+                }
+                if(first_refresh_state != "" && first_refresh_state != "finished"){
+                    create_alert("success", "Strategy optimized finished simulations.", "");
+                    first_refresh_state="finished";
+                }
             }
         }
         if(first_refresh_state == ""){
-            first_refresh_state = data;
+            first_refresh_state = status;
         }
     });
 }
 
-var columnsDef = [
+var iterationColumnsDef = [
     {
         "title": "#",
         "targets": 0,
@@ -137,6 +154,53 @@ var columnsDef = [
     }
 ];
 
+var reportColumnsDef = [
+    {
+        "title": "#",
+        "targets": 0,
+        "data": "id",
+        "name": "id",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    },
+    {
+        "title": "Evaluators",
+        "targets": 1,
+        "data": "evaluators",
+        "name": "evaluators",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    },
+    {
+        "title": "Risk",
+        "targets": 2,
+        "data": "risk",
+        "name": "risk",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    },
+    {
+        "title": "Average trades count",
+        "targets": 3,
+        "data": "average_trades",
+        "name": "average_trades",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    },
+    {
+        "title": "Rank score (the lower the better)",
+        "targets": 4,
+        "data": "score",
+        "name": "score",
+        "render": function(data, type, row, meta){
+            return data;
+        }
+    }
+];
 var first_refresh_state = ""
 
 $(document).ready(function() {
@@ -156,7 +220,18 @@ $(document).ready(function() {
         start_optimizer($(this));
     });
 
-    var table = $("#results_datatable").DataTable({
+    var reportTable = $("#report_datatable").DataTable({
+        ajax: {
+            "url": $("#report_datatable").attr(update_url_attr),
+            "dataSrc": ""
+        },
+        deferRender: true,
+        autoWidth: true,
+        autoFill: true,
+        columnDefs: reportColumnsDef
+    })
+
+    var iterationTable = $("#results_datatable").DataTable({
         ajax: {
             "url": $("#results_datatable").attr(update_url_attr),
             "dataSrc": ""
@@ -164,16 +239,16 @@ $(document).ready(function() {
         deferRender: true,
         autoWidth: true,
         autoFill: true,
-        columnDefs: columnsDef
+        columnDefs: iterationColumnsDef
     })
 
 
-    setInterval(function(){refresh_message_table(table);}, 500);
-    function refresh_message_table(table){
-        table.ajax.reload( null, false );
-        if(table.rows().count() > 0){
+    setInterval(function(){refresh_message_table(iterationTable,reportTable);}, 500);
+    function refresh_message_table(iterationTable, reportTable){
+        iterationTable.ajax.reload( null, false );
+        if(iterationTable.rows().count() > 0){
             $("#results_datatable_card").show();
         }
-        check_optimizer_state();
+        check_optimizer_state(reportTable);
     }
 });

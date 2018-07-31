@@ -13,6 +13,7 @@ from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
     CONFIG_EVALUATOR, CONFIG_TRADER_MODE
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
+from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 from tools.logging_util import set_global_logger_level
 
 CONFIG = 0
@@ -38,6 +39,7 @@ class StrategyOptimizer:
         self.sorted_results_by_time_frame = {}
         self.sorted_results_through_all_time_frame = {}
         self.all_time_frames = []
+        self.current_test_suite = None
 
         self.is_computing = False
         self.run_id = 0
@@ -121,6 +123,7 @@ class StrategyOptimizer:
                 self._find_optimal_configuration_using_results()
 
             finally:
+                self.current_test_suite = None
                 set_global_logger_level(logging.INFO)
                 self.is_computing = False
                 self.logger.info(f"{self.get_name()} finished computation.")
@@ -129,10 +132,10 @@ class StrategyOptimizer:
                                f"{self.run_id}/{self.total_nb_runs} processed")
 
     def _run_test_suite(self, config):
-        strategy_test_suite = StrategyTestSuite()
-        strategy_test_suite.init(self.strategy_class, copy.deepcopy(config))
-        strategy_test_suite.run_test_suite(strategy_test_suite)
-        run_result = strategy_test_suite.get_test_suite_result()
+        self.current_test_suite = StrategyTestSuite()
+        self.current_test_suite.init(self.strategy_class, copy.deepcopy(config))
+        self.current_test_suite.run_test_suite(self.current_test_suite)
+        run_result = self.current_test_suite.get_test_suite_result()
         self.run_results.append(run_result)
 
     def _find_optimal_configuration_using_results(self):
@@ -173,6 +176,17 @@ class StrategyOptimizer:
                          f"{self.trading_mode} trading mode *** ")
         self.logger.info(f"{self.sorted_results_through_all_time_frame[0][CONFIG].get_result_string()} average "
                          f"trades count: {result[TRADES_IN_RESULT]:f}")
+
+    def get_current_test_suite_progress(self):
+        return self.current_test_suite.get_progress() if self.current_test_suite else 0
+
+    def get_report(self):
+        # index, evaluators, risk, score, trades
+        results = [TestSuiteResult.convert_result_into_dict(rank, result[CONFIG].get_evaluators(), "",
+                                                            result[CONFIG].get_risk(), result[RANK],
+                                                            result[TRADES_IN_RESULT])
+                   for rank, result in enumerate(self.sorted_results_through_all_time_frame[0:100])]
+        return results
 
     def get_results(self):
         return self.run_results
