@@ -18,8 +18,9 @@ function disable_packages_operations(should_lock=true){
     if($("#register_and_install_package_input").val() != ""){
         $("#register_and_install_package_button").prop('disabled', should_lock);
     }
-    $("#update_selected_tentacles").prop('disabled', should_lock);
-    $("#uninstall_selected_tentacles").prop('disabled', should_lock);
+    var should_disable_buttons = get_selected_modules() <= 0;
+    $('#uninstall_selected_tentacles').prop('disabled', should_disable_buttons);
+    $('#update_selected_tentacles').prop('disabled', should_disable_buttons);
 
 }
 
@@ -53,7 +54,7 @@ function modules_operation_success_callback(updated_data, update_url, dom_root_e
         disable_select_action_buttons();
     });
     $("#selected_tentacles_operation").hide();
-    create_alert("success", "Module operation success: "+msg, "");
+    create_alert("success", "Tentacle operation success: "+msg, "");
 }
 
 function modules_operation_error_callback(updated_data, update_url, dom_root_element, result, status, error){
@@ -128,7 +129,6 @@ function post_package_action_error_callback(updated_data, update_url, dom_root_e
 }
 
 function get_selected_modules(){
-    log("get_selected_modules");
     var selected_modules = []
     $("#module-table").find("input[type='checkbox']:checked").each(function(){
         selected_modules.push($(this).attr("module"))
@@ -171,11 +171,20 @@ function handle_tentacles_buttons(){
 function disable_select_action_buttons(){
     $('#update_selected_tentacles').prop('disabled', true);
     $('#uninstall_selected_tentacles').prop('disabled', true);
- $('.tentacle-module-checkbox').click(function() {
-     var should_disable_buttons = get_selected_modules() <= 0;
-     $('#uninstall_selected_tentacles').prop('disabled', should_disable_buttons);
-     $('#update_selected_tentacles').prop('disabled', should_disable_buttons);
- });
+    $('.selectable_tentacle').click(function () {
+        // use parent not to trigger selection on button column use
+        row = $(this).parent()
+        if (row.hasClass("table-info")){
+            row.removeClass("table-info");
+            row.find(".tentacle-module-checkbox").prop('checked', false);
+        }else{
+            row.toggleClass("table-info");
+            row.find(".tentacle-module-checkbox").prop('checked', true);
+        }
+        var should_disable_buttons = get_selected_modules() <= 0;
+        $('#uninstall_selected_tentacles').prop('disabled', should_disable_buttons);
+        $('#update_selected_tentacles').prop('disabled', should_disable_buttons);
+    });
 }
 
 $(document).ready(function() {
@@ -185,4 +194,7 @@ $(document).ready(function() {
     $('#register_and_install_package_button').prop('disabled', $(this).val() == '');
  });
  disable_select_action_buttons();
+ var table = $('#tentacles_modules_table').DataTable({
+    "paging":   false,
+ })
 });

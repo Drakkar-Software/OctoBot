@@ -122,7 +122,7 @@ class Commands:
 
     @staticmethod
     def start_strategy_optimizer(config, commands):
-        from tools.strategy_optimizer import StrategyOptimizer
+        from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer
         optimizer = StrategyOptimizer(config, commands[0])
         if optimizer.is_properly_initialized:
             optimizer.find_optimal_configuration()

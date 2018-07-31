@@ -1,20 +1,11 @@
-.card-deck {
-  display: flex;
-  justify-content: flex-start;
-  flex-flow: row wrap;
-  align-items: stretch;
-}
-.card-deck .card {
-  display: block;
-  flex-basis: 33.3%;
-}
-
-// Remove color from editable link
-a:link { color: inherit; }
-
 // ensure in line display
 .editable {
     display: inline;
+}
+
+html, body{
+   height: 100%;
+   min-height: 100%;
 }
 
 body:before {
@@ -25,7 +16,6 @@ body:before {
     z-index: -1;
 
     background-image: url('../../assets/images/octobot.svg');
-    background-color: #d1d1e0;
 
     background-repeat: no-repeat;
     background-size: cover;
@@ -33,4 +23,54 @@ body:before {
     height: 100%;
     opacity : 0.2;
 
+}
+
+/* Cards */
+.card-deck {
+  display: flex;
+  justify-content: flex-start;
+  flex-flow: row wrap;
+  align-items: stretch;
+}
+.card {
+  display: block;
+  flex-basis: 33.3%;
+  .rounded-bottom !important;
+}
+
+/* elegant-color white-text */
+
+/* Theme */
+/* Elegant */
+.card,
+.card-body,
+.card-text,
+.select2-selection__choice
+{
+    background-color: #3E4551 !important;
+}
+
+.card,
+.card-body,
+.card-text,
+.select2 li span,
+.card-text{
+    color: white !important;
+}
+
+.card .card,
+.card .card .card-body,
+.card .card .card-text,
+.card .card-deck .card,
+.card .card-deck .card .card-body,
+ .card .card-deck .card .card-text{
+    background-color: #4B515D !important;
+}
+
+.card a:link {
+    color: #33b5e5 !important;
+}
+
+.card a:hover {
+    color: #42a5f5 !important;
 }
