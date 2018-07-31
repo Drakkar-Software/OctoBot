@@ -84,12 +84,20 @@ def get_optimizer_results():
         return []
 
 
+def get_optimizer_report():
+    if get_optimizer_status()[0] == "finished":
+        optimizer = get_bot().get_tools()[BOT_TOOLS_STRATEGY_OPTIMIZER]
+        return optimizer.get_report()
+    else:
+        return []
+
+
 def get_optimizer_status():
     optimizer = get_bot().get_tools()[BOT_TOOLS_STRATEGY_OPTIMIZER]
     if optimizer:
         if optimizer.get_is_computing():
-            return "computing"
+            return "computing", optimizer.get_current_test_suite_progress()
         else:
-            return "finished"
+            return "finished", 100
     else:
-        return "not started"
+        return "not started", 0

@@ -2,7 +2,8 @@ from flask import render_template, request, jsonify
 
 from interfaces.web import server_instance
 from interfaces.web.models.strategy_optimizer import get_strategies_list, get_current_strategy, get_time_frames_list, \
-    get_evaluators_list, get_risks_list, start_optimizer, get_optimizer_results, get_optimizer_status
+    get_evaluators_list, get_risks_list, start_optimizer, get_optimizer_results, get_optimizer_status, \
+    get_optimizer_report
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -38,9 +39,14 @@ def strategy_optimizer():
             if target == "optimizer_results":
                 optimizer_results = get_optimizer_results()
                 return jsonify(optimizer_results)
+            if target == "optimizer_report":
+                print('optimizer_report')
+                optimizer_report = get_optimizer_report()
+                return jsonify(optimizer_report)
             elif target == "optimizer_status":
-                optimizer_status = get_optimizer_status()
-                return jsonify(optimizer_status)
+                optimizer_status, progress = get_optimizer_status()
+                status = {"status": optimizer_status, "progress": progress}
+                return jsonify(status)
 
 
         else:

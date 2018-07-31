@@ -16,7 +16,6 @@ class TestSuiteResult:
     SCORE = "score"
     AVERAGE_TRADES = "average_trades"
 
-
     def __init__(self, run_profitabilities, trades_counts, risk, time_frames, evaluators, strategy):
         self.run_profitabilities = run_profitabilities
         self.trades_counts = trades_counts
@@ -51,13 +50,19 @@ class TestSuiteResult:
                 f"average trades: {self.get_average_trades_count():f}{details}")
 
     def get_result_dict(self, index=0):
+        return self.convert_result_into_dict(index, self.get_evaluators_without_strategy(), self.time_frames,
+                                             self.risk, round(self.get_average_score(), 5),
+                                             round(self.get_average_trades_count(), 5))
+
+    @staticmethod
+    def convert_result_into_dict(index, evaluators, time_frames, risk, score, trades):
         return {
-            self.INDEX: index,
-            self.EVALUATORS: self.get_evaluators_without_strategy(),
-            self.TIME_FRAMES: self.time_frames,
-            self.RISK: self.risk,
-            self.SCORE: round(self.get_average_score(), 5),
-            self.AVERAGE_TRADES: round(self.get_average_trades_count(), 5),
+            TestSuiteResult.INDEX: index,
+            TestSuiteResult.EVALUATORS: evaluators,
+            TestSuiteResult.TIME_FRAMES: time_frames,
+            TestSuiteResult.RISK: risk,
+            TestSuiteResult.SCORE: score,
+            TestSuiteResult.AVERAGE_TRADES: trades,
         }
 
 
@@ -65,6 +70,12 @@ class TestSuiteResultSummary:
     def __init__(self, test_suite_result):
         self.evaluators = test_suite_result.get_evaluators_without_strategy()
         self.risk = test_suite_result.risk
+
+    def get_evaluators(self):
+        return self.evaluators
+
+    def get_risk(self):
+        return self.risk
 
     def get_result_string(self):
         return f"{self.evaluators} risk: {self.risk}"
