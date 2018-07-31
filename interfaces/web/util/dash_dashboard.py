@@ -20,6 +20,10 @@ def create_dashboard(web_app):
         first_cryptocurrency = ""
 
     web_app.app.layout = html.Div(children=[
+        html.Link(
+            rel='stylesheet',
+            href='/static/css/dashboard.css'
+        ),
         dcc.Graph(id='portfolio-value-graph', animate=True),
 
         dt.DataTable(
