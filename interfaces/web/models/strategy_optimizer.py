@@ -7,6 +7,7 @@ from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator import Strategies
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
+from tools.time_frame_manager import TimeFrameManager
 from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER
 from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer
 
@@ -58,15 +59,19 @@ def get_current_strategy():
 
 
 def start_optimizer(strategy, time_frames, evaluators, risks):
-    tools = get_bot().get_tools
+    tools = get_bot().get_tools()
     if not tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
         tools[BOT_TOOLS_STRATEGY_OPTIMIZER] = StrategyOptimizer(get_bot().get_config(), strategy)
     optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
     if optimizer.get_is_computing():
         return False, "Optimizer already running"
     else:
-        # thread = threading.Thread(target=optimizer.find_optimal_configuration, args=(time_frames, evaluators, risks))
-        # thread.start()
+        formatted_time_frames = TimeFrameManager.parse_time_frames(time_frames)
+        float_risks = [float(risk) for risk in risks]
+        thread = threading.Thread(target=optimizer.find_optimal_configuration, args=(evaluators,
+                                                                                     formatted_time_frames,
+                                                                                     float_risks))
+        thread.start()
         return True, "Optimizer started"
 
 
