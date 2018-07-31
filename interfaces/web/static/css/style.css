@@ -3,6 +3,11 @@
     display: inline;
 }
 
+html, body{
+   height: 100%;
+   min-height: 100%;
+}
+
 body:before {
     content: "";
     position: fixed;
