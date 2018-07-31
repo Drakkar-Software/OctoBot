@@ -1,5 +1,21 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.6_1-beta
+====================
+*Released date : August 1 2018*
+
+# Concerned issues :
+    #346 refactored tentacles and packages pages
+    #347 initialized strategy optimizer page
+    #350 [Web Interface] black theme
+    #355 [Bug] StopLossOrders set negative portfolio when backtesting 
+
+# New features :
+    - Web Interface : Strategy optimizer
+
+# Bug fixes :
+    - Fix mutli symbols backtesting
+
 Changelog for 0.1.6-beta
 ====================
 *Released date : July 30 2018*
