@@ -36,7 +36,6 @@ class Backtesting:
                 self.logger.info(" *** Backtesting ended ****")
 
             if self.force_exit_at_end:
-                time.sleep(12000)
                 os._exit(0)
 
     def print_trades_history(self):
