@@ -28,7 +28,6 @@ def strategy_optimizer():
                     return get_rest_reply('{"start_optimizer": "ko: ' + e + '"}', 500)
 
         if success:
-            # TODO
             return get_rest_reply(jsonify(reply))
         else:
             return get_rest_reply(reply, 500)
