@@ -1,8 +1,7 @@
-import json
 import os
-import gzip
 
 from config.cst import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes
+from backtesting.collector.data_file_manager import read_data_file
 
 
 class DataCollectorParser:
@@ -16,15 +15,8 @@ class DataCollectorParser:
 
     @staticmethod
     def get_file_content(file_name):
-        try:
-            # try zipfile
-            with gzip.open(file_name, 'r') as file_to_parse:
-                file_content = DataCollectorParser.merge_arrays(json.loads(file_to_parse.read()))
-        except OSError as e:
-            # try without unzip
-            with open(file_name) as file_to_parse:
-                file_content = DataCollectorParser.merge_arrays(json.loads(file_to_parse.read()))
-        return file_content
+        file_content = read_data_file(file_name)
+        return DataCollectorParser.merge_arrays(file_content)
 
     @staticmethod
     def merge_arrays(arrays):
