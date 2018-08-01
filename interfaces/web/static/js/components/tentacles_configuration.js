@@ -131,7 +131,7 @@ function post_package_action_error_callback(updated_data, update_url, dom_root_e
 function get_selected_modules(){
     var selected_modules = []
     $("#module-table").find("input[type='checkbox']:checked").each(function(){
-        selected_modules.push($(this).attr("module"))
+        selected_modules.push($(this).attr("module"));
     });
     return selected_modules
 }
@@ -175,10 +175,10 @@ function disable_select_action_buttons(){
         // use parent not to trigger selection on button column use
         row = $(this).parent()
         if (row.hasClass("table-info")){
-            row.removeClass("table-info");
+            row.removeClass(selected_item_class);
             row.find(".tentacle-module-checkbox").prop('checked', false);
         }else{
-            row.toggleClass("table-info");
+            row.toggleClass(selected_item_class);
             row.find(".tentacle-module-checkbox").prop('checked', true);
         }
         var should_disable_buttons = get_selected_modules() <= 0;
