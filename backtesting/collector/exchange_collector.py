@@ -1,16 +1,12 @@
-import json
 import logging
-import os
 import threading
 import time
-import gzip
 
 from config.cst import *
-from tools.symbol_util import merge_currencies
+from backtesting.collector.data_file_manager import build_file_name, write_data_file
 
 
 class ExchangeDataCollector(threading.Thread):
-    Exchange_Data_Collector_File_Ext = ".data"
 
     def __init__(self, config, exchange):
         super().__init__()
@@ -41,35 +37,17 @@ class ExchangeDataCollector(threading.Thread):
     def stop(self):
         self.keep_running = False
 
-    def _set_file_name(self, symbol):
-        return f"{self.exchange.get_name()}_{symbol.replace('/', '_')}_" \
-               f"{time.strftime('%Y%m%d_%H%M%S')}{self.Exchange_Data_Collector_File_Ext}"
-
-    @staticmethod
-    def get_file_name(file_name):
-        data = os.path.basename(file_name).split("_")
-        try:
-            exchange_name = data[0]
-            symbol = merge_currencies(data[1], data[2])
-            timestamp = data[3] + data[4].replace(ExchangeDataCollector.Exchange_Data_Collector_File_Ext, "")
-        except KeyError:
-            exchange_name = None
-            symbol = None
-            timestamp = None
-
-        return exchange_name, symbol, timestamp
-
-    def _prepare_files(self):
+    def _prepare_files_content(self):
         for symbol in self.symbols:
             self.file_contents[symbol] = {}
             self.time_frame_update[symbol] = {}
-            self.file_names[symbol] = self._set_file_name(symbol)
+            self.file_names[symbol] = build_file_name(self.exchange, symbol)
             for time_frame in self.time_frames:
                 self.file_contents[symbol][time_frame.value] = None
 
     def _prepare(self):
         self.logger.info("{0} prepare...".format(self.exchange.get_name()))
-        self._prepare_files()
+        self._prepare_files_content()
         for symbol in self.symbols:
             for time_frame in self.time_frames:
                 # write all available data for this time frame
@@ -82,9 +60,8 @@ class ExchangeDataCollector(threading.Thread):
 
     def _update_file(self, symbol):
         file_name = CONFIG_DATA_COLLECTOR_PATH + self.file_names[symbol]
-        with gzip.open(file_name, 'wt') as json_file:
-            json.dump(self.file_contents[symbol], json_file)
-            self.logger.info(f"{symbol} candles data saved in: {file_name}")
+        write_data_file(file_name, self.file_contents[symbol])
+        self.logger.info(f"{symbol} candles data saved in: {file_name}")
 
     def run(self):
         self._prepare()
