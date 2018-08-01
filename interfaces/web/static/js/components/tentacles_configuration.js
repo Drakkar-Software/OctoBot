@@ -174,7 +174,7 @@ function disable_select_action_buttons(){
     $('.selectable_tentacle').click(function () {
         // use parent not to trigger selection on button column use
         row = $(this).parent()
-        if (row.hasClass("table-info")){
+        if (row.hasClass(selected_item_class)){
             row.removeClass(selected_item_class);
             row.find(".tentacle-module-checkbox").prop('checked', false);
         }else{
