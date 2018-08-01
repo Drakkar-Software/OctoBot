@@ -150,14 +150,5 @@ class Commands:
         os._exit(0)
 
     @staticmethod
-    def start_new_bot(args=""):
-        python_command = f"{os.getcwd()}/start.py "
-        command_args = "--pause_time=3"
-        subprocess.Popen([sys.executable, python_command, command_args, args])
-
-    @staticmethod
-    def restart_bot(bot, args=""):
-        start_new_bot_thread = threading.Thread(target=Commands.start_new_bot, args=(args,))
-        start_new_bot_thread.start()
-        start_new_bot_thread.join()
-        Commands.stop_bot(bot)
+    def restart_bot():
+        os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
