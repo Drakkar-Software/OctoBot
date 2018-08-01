@@ -65,10 +65,12 @@ CONFIG_TRADER_REFERENCE_MARKET = "reference-market"
 DEFAULT_REFERENCE_MARKET = "BTC"
 MARKET_SEPARATOR = "/"
 CURRENCY_DEFAULT_MAX_PRICE_DIGITS = 8
+
 CONFIG_SIMULATOR_FEES = "fees"
 CONFIG_SIMULATOR_FEES_MAKER = "maker"
 CONFIG_SIMULATOR_FEES_TAKER = "taker"
-CONFIG_DEFAULT_SIMULATOR_FEES = 0.1
+CONFIG_SIMULATOR_FEES_WITHDRAW = "withdraw"
+CONFIG_DEFAULT_SIMULATOR_FEES = 0
 
 CONFIG_PORTFOLIO_INFO = "info"
 CONFIG_PORTFOLIO_FREE = "free"
@@ -418,8 +420,6 @@ class ExchangeConstantsTickersInfoColumns(Enum):
 
 
 class ExchangeConstantsMarketStatusColumns(Enum):
-    TAKER = "taker"
-    MAKER = "maker"
     SYMBOL = "symbol"
     ID = "id"
     CURRENCY = "base"
@@ -440,6 +440,19 @@ class ExchangeConstantsMarketStatusColumns(Enum):
     LIMITS_COST_MIN = "min"  # order cost should be > min
     LIMITS_COST_MAX = "max"  # order cost should be < max
     INFO = "info"
+
+
+class ExchangeConstantsFeesColumns(Enum):
+    TYPE = "type"
+    CURRENCY = "currency"
+    RATE = "rate"
+    COST = "cost"
+
+
+class ExchangeConstantsMarketPropertyColumns(Enum):
+    TAKER = "taker"  # trading
+    MAKER = "maker"  # trading
+    FEE = "fee"  # withdraw
 
 
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='
