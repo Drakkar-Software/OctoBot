@@ -198,3 +198,6 @@ class RESTExchange(AbstractExchange):
 
     def get_uniform_timestamp(self, timestamp):
         return timestamp / 1000
+
+    def get_trade_fee(self, symbol, order_type, side, quantity, price):
+        return self.client.calculate_fee(symbol=symbol, type=order_type, side=side, amount=quantity, price=price)

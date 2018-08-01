@@ -84,3 +84,7 @@ class AbstractExchange:
     @abstractmethod
     def get_uniform_timestamp(self, timestamp):
         pass
+
+    @abstractmethod
+    def get_trade_fee(self, symbol, order_type, side, quantity, price):
+        pass

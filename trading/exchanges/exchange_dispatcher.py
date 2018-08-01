@@ -164,6 +164,21 @@ class ExchangeDispatcher(AbstractExchange):
     def get_uniform_timestamp(self, timestamp):
         return self.exchange.get_uniform_timestamp(timestamp)
 
+    # returns {
+    #     'type': takerOrMaker,
+    #     'currency': 'BTC', // the unified fee currency code
+    #     'rate': percentage, // the fee rate, 0.05% = 0.0005, 1% = 0.01, ...
+    #     'cost': feePaid, // the fee cost (amount * fee rate)
+    # }
+    def get_trade_fee(self, symbol, order_type, side, quantity, price):
+        return self.exchange.get_trade_fee(
+            symbol=symbol,
+            order_type=order_type,
+            side=side,
+            quantity=quantity,
+            price=price,
+        )
+
     # returns (taker, maker) tuple
     def get_fees(self, symbol):
         # TODO temporary implementation waiting for more accurate fee management
