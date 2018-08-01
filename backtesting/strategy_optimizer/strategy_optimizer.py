@@ -184,7 +184,7 @@ class StrategyOptimizer:
         # index, evaluators, risk, score, trades
         results = [TestSuiteResult.convert_result_into_dict(rank, result[CONFIG].get_evaluators(), "",
                                                             result[CONFIG].get_risk(), result[RANK],
-                                                            result[TRADES_IN_RESULT])
+                                                            round(result[TRADES_IN_RESULT], 5))
                    for rank, result in enumerate(self.sorted_results_through_all_time_frame[0:100])]
         return results
 

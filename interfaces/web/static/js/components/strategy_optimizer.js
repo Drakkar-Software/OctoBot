@@ -108,7 +108,7 @@ var iterationColumnsDef = [
         }
     },
     {
-        "title": "Evaluators",
+        "title": "Evaluator(s)",
         "targets": 1,
         "data": "evaluators",
         "name": "evaluators",
@@ -117,7 +117,7 @@ var iterationColumnsDef = [
         }
     },
     {
-        "title": "Time Frames",
+        "title": "Time Frame(s)",
         "targets": 2,
         "data": "time_frames",
         "name": "time_frames",
@@ -135,19 +135,19 @@ var iterationColumnsDef = [
         }
     },
     {
-        "title": "Score",
+        "title": "Average trades count",
         "targets": 4,
-        "data": "score",
-        "name": "score",
+        "data": "average_trades",
+        "name": "average_trades",
         "render": function(data, type, row, meta){
             return data;
         }
     },
     {
-        "title": "Average trades count",
+        "title": "Score: the higher the better",
         "targets": 5,
-        "data": "average_trades",
-        "name": "average_trades",
+        "data": "score",
+        "name": "score",
         "render": function(data, type, row, meta){
             return data;
         }
@@ -165,7 +165,7 @@ var reportColumnsDef = [
         }
     },
     {
-        "title": "Evaluators",
+        "title": "Evaluator(s)",
         "targets": 1,
         "data": "evaluators",
         "name": "evaluators",
@@ -192,7 +192,7 @@ var reportColumnsDef = [
         }
     },
     {
-        "title": "Rank score (the lower the better)",
+        "title": "Comparative score: the lower the better",
         "targets": 4,
         "data": "score",
         "name": "score",
