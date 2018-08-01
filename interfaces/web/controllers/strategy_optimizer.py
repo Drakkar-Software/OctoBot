@@ -48,7 +48,7 @@ def strategy_optimizer():
 
 
         else:
-            return render_template('strategy-optimizer.html',
+            return render_template('strategy_optimizer.html',
                                    strategies=get_strategies_list(),
                                    current_strategy=get_current_strategy(),
                                    time_frames=get_time_frames_list(),
