@@ -2,12 +2,12 @@
 {% block body %}
 <div class="card" id="strategyOptimizerInputs" update-url="{{ url_for('strategy_optimizer', update_type='optimizer_status') }}">
     <div class="card-header"><h1>Strategy optimizer</h1></div>
-    <div class="card-body">
-        <div class="input-group mb-3">
-          <div class="input-group-prepend">
+    <div class="card-body container">
+        <div class="input-group ">
+          <div class="input-group-prepend mb-3">
             <label class="input-group-text" for="strategySelect">Strategy</label>
           </div>
-          <select class="custom-select" id="strategySelect">
+          <select class="custom-select mb-9" id="strategySelect">
             {% for strategy in strategies %}
             <option value={{strategy}}
             {% if strategy == current_strategy %}
@@ -18,11 +18,11 @@
             {% endfor %}
           </select>
         </div>
-        <div class="input-group mb-3">
-          <div class="input-group-prepend">
+        <div class="input-group ">
+          <div class="input-group-prepend mb-3">
             <label class="input-group-text" for="evaluatorsSelect">Evaluators</label>
           </div>
-          <select class="custom-select multi-select-element" id="evaluatorsSelect" multiple="multiple">
+          <select class="custom-select multi-select-element mb-9" id="evaluatorsSelect" multiple="multiple">
             {% for evaluator in evaluators %}
             <option value={{evaluator}}
             {% if loop.index == 0 %}
@@ -33,11 +33,11 @@
             {% endfor %}
           </select>
         </div>
-        <div class="input-group mb-3">
-          <div class="input-group-prepend">
+        <div class="input-group ">
+          <div class="input-group-prepend mb-3">
             <label class="input-group-text" for="timeFramesSelect">Time Frames</label>
           </div>
-          <select class="custom-select multi-select-element" id="timeFramesSelect" multiple="multiple">
+          <select class="custom-select multi-select-element mb-9" id="timeFramesSelect" multiple="multiple">
             {% for timeframe in time_frames %}
             <option value={{timeframe}}
             {% if loop.index == 0 %}
@@ -48,11 +48,11 @@
             {% endfor %}
           </select>
         </div>
-        <div class="input-group mb-3">
-          <div class="input-group-prepend">
+        <div class="input-group ">
+          <div class="input-group-prepend mb-3">
             <label class="input-group-text" for="risksSelect">Risks</label>
           </div>
-          <select class="custom-select multi-select-element" id="risksSelect" multiple="multiple">
+          <select class="custom-select multi-select-element mb-9" id="risksSelect" multiple="multiple">
             {% for risk in risks %}
             <option value={{risk}}
             {% if loop.index == 0 %}
