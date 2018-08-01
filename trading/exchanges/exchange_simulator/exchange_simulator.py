@@ -1,14 +1,14 @@
-import time
 import copy
+import time
 
 from backtesting import get_bot
 from backtesting.backtesting import Backtesting, BacktestingEndedException
-from backtesting.collector.data_parser import DataCollectorParser
 from backtesting.collector.data_file_manager import interpret_file_name
+from backtesting.collector.data_parser import DataCollectorParser
 from config.cst import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACKTESTING, \
     SIMULATOR_LAST_PRICES_TO_CHECK, ORDER_CREATION_LAST_TRADES_TO_USE, CONFIG_BACKTESTING_DATA_FILES, PriceIndexes, \
     TimeFramesMinutes, ExchangeConstantsTickersColumns, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, \
-    CONFIG_SIMULATOR_FEES_MAKER, ExchangeConstantsFeesColumns, CONFIG_DEFAULT_SIMULATOR_FEES, \
+    CONFIG_SIMULATOR_FEES_MAKER, CONFIG_DEFAULT_SIMULATOR_FEES, \
     ExchangeConstantsMarketPropertyColumns, CONFIG_SIMULATOR_FEES_TAKER, CONFIG_SIMULATOR_FEES_WITHDRAW
 from tools.time_frame_manager import TimeFrameManager
 from trading import AbstractExchange
@@ -181,7 +181,7 @@ class ExchangeSimulator(AbstractExchange):
         for trade in trades:
             created_trades.append(
                 {
-                    "price": trade*self.recent_trades_multiplier_factor,
+                    "price": trade * self.recent_trades_multiplier_factor,
                     "timestamp": timestamp
                 }
             )
@@ -243,7 +243,7 @@ class ExchangeSimulator(AbstractExchange):
         time_frame_to_use = TimeFrameManager.find_min_time_frame(self._get_used_time_frames(symbol))
         index = 0
         if symbol in self.time_frames_offset and time_frame_to_use.value in self.time_frames_offset[symbol] \
-           and time_frame_to_use.value in self.time_frame_get_times[symbol]:
+                and time_frame_to_use.value in self.time_frame_get_times[symbol]:
             # -2 because take into account the +1 in self.time_frame_get_times and the fact that it's an index
             index = self.time_frames_offset[symbol][time_frame_to_use.value] \
                     + self.time_frame_get_times[symbol][time_frame_to_use.value] \
@@ -383,7 +383,7 @@ class ExchangeSimulator(AbstractExchange):
     def get_uniform_timestamp(self, timestamp):
         return timestamp / 1000
 
-    def get_fee(self, symbol=None):
+    def get_fees(self, symbol=None):
         result_fees = {
             ExchangeConstantsMarketPropertyColumns.TAKER.value: CONFIG_DEFAULT_SIMULATOR_FEES,
             ExchangeConstantsMarketPropertyColumns.MAKER.value: CONFIG_DEFAULT_SIMULATOR_FEES,
@@ -397,16 +397,16 @@ class ExchangeSimulator(AbstractExchange):
 
             if CONFIG_SIMULATOR_FEES_MAKER in self.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES]:
                 result_fees[ExchangeConstantsMarketPropertyColumns.TAKER.value] = \
-                self.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES][CONFIG_SIMULATOR_FEES_TAKER]
+                    self.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES][CONFIG_SIMULATOR_FEES_TAKER]
 
             if CONFIG_SIMULATOR_FEES_WITHDRAW in self.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES]:
                 result_fees[ExchangeConstantsMarketPropertyColumns.FEE.value] = \
-                self.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES][CONFIG_SIMULATOR_FEES_WITHDRAW]
+                    self.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES][CONFIG_SIMULATOR_FEES_WITHDRAW]
 
         return result_fees
 
-    def get_trade_fee(self, symbol, order_type, side, quantity, price):
-        symbol_fees = self.get_fee(symbol)
+    def get_trade_fee(self, symbol, order_type, quantity, price):
+        symbol_fees = self.get_fees(symbol)
 
 
 class NoCandleDataForThisTimeFrameException(Exception):
