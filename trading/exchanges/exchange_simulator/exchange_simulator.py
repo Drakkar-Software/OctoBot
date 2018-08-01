@@ -4,7 +4,7 @@ import copy
 from backtesting import get_bot
 from backtesting.backtesting import Backtesting, BacktestingEndedException
 from backtesting.collector.data_parser import DataCollectorParser
-from backtesting.collector.exchange_collector import ExchangeDataCollector
+from backtesting.collector.data_file_manager import interpret_file_name
 from config.cst import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACKTESTING, \
     SIMULATOR_LAST_PRICES_TO_CHECK, ORDER_CREATION_LAST_TRADES_TO_USE,CONFIG_BACKTESTING_DATA_FILES, PriceIndexes, \
     TimeFramesMinutes, ExchangeConstantsTickersColumns
@@ -71,7 +71,7 @@ class ExchangeSimulator(AbstractExchange):
 
         # parse files
         for file in self.config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES]:
-            exchange_name, symbol, timestamp = ExchangeDataCollector.get_file_name(file)
+            exchange_name, symbol, timestamp = interpret_file_name(file)
             if exchange_name is not None and symbol is not None and timestamp is not None:
 
                 # check if symbol data already in symbols

@@ -7,7 +7,7 @@ from config.cst import CONFIG_EVALUATOR, CONFIG_BACKTESTING, CONFIG_BACKTESTING_
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
-from backtesting.collector.exchange_collector import ExchangeDataCollector
+from backtesting.collector.data_file_manager import interpret_file_name
 
 
 DEFAULT_SYMBOL = "ICX/BTC"
@@ -145,7 +145,7 @@ class AbstractStrategyTest:
         config_to_use = copy.deepcopy(self.config)
         if data_file_to_use is not None:
             for index, datafile in enumerate(config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES]):
-                _, file_symbol, _ = ExchangeDataCollector.get_file_name(datafile)
+                _, file_symbol, _ = interpret_file_name(datafile)
                 if symbol == file_symbol:
                     config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES][index] = \
                         DATA_FILE_PATH + data_file_to_use + DATA_FILE_EXT
