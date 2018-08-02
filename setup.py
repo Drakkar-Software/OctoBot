@@ -43,5 +43,6 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    ext_modules=cythonize(extensions),
+    ext_modules=cythonize(extensions,
+                          compiler_directives={'profile': True}),
 )

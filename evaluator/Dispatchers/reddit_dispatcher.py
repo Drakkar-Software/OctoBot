@@ -94,7 +94,7 @@ class RedditDispatcher(AbstractDispatcher):
             except RequestException:
                 # probably a connexion loss, try again
                 time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
-            except InvalidToken:
+            except InvalidToken as e:
                 # expired, try again
                 self.logger.error(f"Error when receiving Reddit feed: '{e}'")
                 self.logger.exception(e)
