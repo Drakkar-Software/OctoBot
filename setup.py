@@ -1,7 +1,7 @@
 import os
 
 from Cython.Build import cythonize
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 
 from config.cst import VERSION
 
@@ -12,15 +12,14 @@ REQUIRED = open('requirements.txt').read()
 REQUIRED_DEV = open('dev_requirements.txt').read()
 
 # building
-excluded_files = ["setup.py", "__init__.py"]
-excluded_folder = ["tentacles", "tests", "docs", "logs"]
-source_files = [os.path.join(root, name)
-                for root, dirs, files in os.walk(".")
-                for name in files
-                if name.endswith(".py") and name not in excluded_files and dirs not in excluded_folder]
-
+packages = find_packages()
+excluded_dirs = ["tentacles"]
 extensions = [
-    Extension(NAME, source_files),
+    Extension(package, [os.path.join(root, name)
+                        for root, dirs, files in os.walk(f"./{package.replace('.', os.path.sep)}")
+                        for name in files
+                        if name.endswith(".py")])
+    for package in packages
 ]
 
 setup(
