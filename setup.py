@@ -46,6 +46,7 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     ext_modules=cythonize(extensions,
+                          build_dir="build",
                           compiler_directives={"boundscheck": False,
                                                "language_level": 3}),
 )
