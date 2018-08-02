@@ -3,7 +3,7 @@ import copy
 import math
 
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
-from tests.test_utils.backtesting_util import create_blank_config_using_loaded_one
+from backtesting.backtesting_util import create_blank_config_using_loaded_one
 from tools.data_util import DataUtil
 from evaluator.TA.TA_evaluator import TAEvaluator
 from evaluator import TA

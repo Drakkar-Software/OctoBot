@@ -92,7 +92,7 @@ def start_backtesting_bot(bot, in_thread=False):
         try:
             exchange_inst.backtesting.force_exit_at_end = False
         except Exception:
-            logging.getLogger(f"fail to stop forcing exit for exchange {exchange_inst.get_name()}")
+            logging.getLogger(f"fail to stop force exit for exchange {exchange_inst.get_name()}")
 
     bot.create_evaluation_threads()
     if not bot.get_symbols_threads_manager():
@@ -102,7 +102,8 @@ def start_backtesting_bot(bot, in_thread=False):
 
     if not in_thread:
         bot.join_threads()
-        return Backtesting.get_profitability(bot)
+        trader = next(iter(bot.get_exchange_trader_simulators().values()))
+        return Backtesting.get_profitability(trader)
     else:
         return True
 
