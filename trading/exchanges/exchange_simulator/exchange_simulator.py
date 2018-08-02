@@ -1,7 +1,6 @@
 import copy
 import time
 
-from backtesting import get_bot
 from backtesting.backtesting import Backtesting, BacktestingEndedException
 from backtesting.collector.data_file_manager import interpret_file_name
 from backtesting.collector.data_parser import DataCollectorParser
@@ -89,14 +88,13 @@ class ExchangeSimulator(AbstractExchange):
                         self.data[symbol] = self.fix_timestamps(data)
 
     def fix_timestamps(self, data):
-        if get_bot() is not None:
-            for time_frame in data:
-                need_to_uniform_timestamps = self.exchange_manager.need_to_uniformize_timestamp(
-                    data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value])
-                for data_list in data[time_frame]:
-                    if need_to_uniform_timestamps:
-                        data_list[PriceIndexes.IND_PRICE_TIME.value] = \
-                            self.get_uniform_timestamp(data_list[PriceIndexes.IND_PRICE_TIME.value])
+        for time_frame in data:
+            need_to_uniform_timestamps = self.exchange_manager.need_to_uniformize_timestamp(
+                data[time_frame][0][PriceIndexes.IND_PRICE_TIME.value])
+            for data_list in data[time_frame]:
+                if need_to_uniform_timestamps:
+                    data_list[PriceIndexes.IND_PRICE_TIME.value] = \
+                        self.get_uniform_timestamp(data_list[PriceIndexes.IND_PRICE_TIME.value])
         return data
 
     # returns price data for a given symbol
@@ -401,6 +399,7 @@ class ExchangeSimulator(AbstractExchange):
 
     def get_backtesting(self):
         return self.backtesting
+
     def get_fees(self, symbol=None):
         result_fees = {
             ExchangeConstantsMarketPropertyColumns.TAKER.value: CONFIG_DEFAULT_SIMULATOR_FEES,

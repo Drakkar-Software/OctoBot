@@ -1,6 +1,5 @@
 from backtesting.collector.data_file_manager import get_all_available_data_files, get_file_description
 from backtesting.backtester import Backtester
-from tests.test_utils.backtesting_util import get_standalone_backtesting_bot, start_backtesting_bot
 from interfaces import get_bot
 from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
 
@@ -13,7 +12,7 @@ def get_data_files_with_description():
     return files_with_description
 
 
-def start_backtesting_using_files(files):
+def start_backtesting_using_specific_files(files):
     try:
         tools = get_bot().get_tools()
         if tools[BOT_TOOLS_STRATEGY_OPTIMIZER] and tools[BOT_TOOLS_STRATEGY_OPTIMIZER].get_is_computing():
@@ -21,10 +20,12 @@ def start_backtesting_using_files(files):
         elif tools[BOT_TOOLS_BACKTESTING] and tools[BOT_TOOLS_BACKTESTING].get_is_computing():
             return False, "A backtesting is already running"
         else:
-            bot, ignored_files = get_standalone_backtesting_bot(get_bot().get_config(), files)
-            tools[BOT_TOOLS_BACKTESTING] = Backtester(bot)
-            if start_backtesting_bot(bot, in_thread=True):
-                return True, "Backtesting started"
+            backtester = Backtester(get_bot().get_config(), files)
+            tools[BOT_TOOLS_BACKTESTING] = backtester
+            if backtester.start_backtesting(in_thread=True):
+                ignored_files = backtester.get_ignored_files()
+                ignored_files_info = "" if not ignored_files else f" ignored files: {ignored_files}"
+                return True, f"Backtesting started{ignored_files_info}"
             else:
                 return False, "Impossible to start backtesting"
     except Exception as e:

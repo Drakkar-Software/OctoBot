@@ -2,7 +2,6 @@ import logging
 import os
 import time
 
-from backtesting import get_bot
 from config.cst import *
 from tools.pretty_printer import PrettyPrinter
 
@@ -42,7 +41,7 @@ class Backtesting:
                 os._exit(0)
 
     def print_trades_history(self):
-        trader = next(iter(get_bot().get_exchange_trader_simulators().values()))
+        trader = self.get_trader()
         trades_history = trader.get_trades_manager().get_trade_history()
         trades_history_string = ""
         for trade in trades_history:
@@ -51,17 +50,16 @@ class Backtesting:
 
     def print_global_report(self):
         try:
-            bot = get_bot()
+            trader = self.get_trader()
 
-            profitability, market_average_profitability = self.get_profitability(bot)
-            reference_market = self.get_reference_market(bot)
-            portfolio = self.get_portfolio(bot)
-            accuracy_info = "" if len(self.symbols_to_test) < 2 else "\nPlease note that multi symbol backtesting is " \
-                                                                     "slightly random due to Octbot's multithreaded " \
-                                                                     "architecture used to process all symbols as fast as" \
-                                                                     " possible. This randomness is kept for backtesting " \
-                                                                     "in order to be as close as possible from reality. " \
-                                                                     "Single symbol backtesting is 100% determinist."
+            profitability, market_average_profitability = self.get_profitability(trader)
+            reference_market = self.get_reference_market(trader)
+            portfolio = self.get_portfolio(trader)
+            accuracy_info = "" if len(self.symbols_to_test) < 2 else \
+                "\nPlease note that multi symbol backtesting is slightly random due to Octbot's multithreaded " \
+                "architecture used to process all symbols as fast as possible. This randomness is kept for " \
+                "backtesting in order to be as close as possible from reality. Single symbol backtesting is " \
+                "100% determinist."
 
             self.logger.info(f"End portfolio: "
                              f"{PrettyPrinter.global_portfolio_pretty_print(portfolio,' | ')}")
@@ -74,22 +72,21 @@ class Backtesting:
         except Exception as e:
             logging.exception(e)
 
-    def _get_symbol_report(self, symbol, bot):
+    def _get_symbol_report(self, symbol, trader):
         market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
 
         # profitability
         total_profitability = 0
-        for trader in bot.get_exchange_trader_simulators().values():
-            _, profitability, _, _ = trader.get_trades_manager().get_profitability()
-            total_profitability += profitability
+        _, profitability, _, _ = trader.get_trades_manager().get_profitability()
+        total_profitability += profitability
 
         # vs market
         return self.get_market_delta(market_data)
 
     def print_symbol_report(self, symbol):
-        self.logger.info(f"{symbol} Profitability : Market {self._get_symbol_report(symbol, get_bot()) * 100}%")
+        self.logger.info(f"{symbol} Profitability : Market {self._get_symbol_report(symbol, self.get_trader()) * 100}%")
 
-    def get_dict_formatted_report(self, bot):
+    def get_dict_formatted_report(self):
         SYMBOL_REPORT = "symbol_report"
         BOT_REPORT = "bot_report"
         report = {
@@ -97,32 +94,34 @@ class Backtesting:
             BOT_REPORT: {}
         }
 
-        profitability, market_average_profitability = self.get_profitability(bot)
+        trader = self.get_trader()
+
+        profitability, market_average_profitability = self.get_profitability(trader)
 
         for symbol in self.symbols_to_test:
-            report[SYMBOL_REPORT].append({symbol: self._get_symbol_report(symbol, bot)})
+            report[SYMBOL_REPORT].append({symbol: self._get_symbol_report(symbol, trader)})
 
         report[BOT_REPORT] = {
             "profitability": profitability,
             "market_average_profitability": market_average_profitability,
-            "reference_market": self.get_reference_market(bot),
-            "end_portfolio": self.get_portfolio(bot)
+            "reference_market": self.get_reference_market(trader),
+            "end_portfolio": self.get_portfolio(trader)
         }
         return report
 
+    def get_trader(self):
+        return self.exchange_simulator.get_exchange_manager().get_trader()
+
     @staticmethod
-    def get_reference_market(bot):
-        trader = next(iter(bot.get_exchange_trader_simulators().values()))
+    def get_reference_market(trader):
         return trader.get_trades_manager().get_reference()
 
     @staticmethod
-    def get_portfolio(bot):
-        trader = next(iter(bot.get_exchange_trader_simulators().values()))
+    def get_portfolio(trader):
         return trader.get_portfolio().get_portfolio()
 
     @staticmethod
-    def get_profitability(bot):
-        trader = next(iter(bot.get_exchange_trader_simulators().values()))
+    def get_profitability(trader):
         trade_manager = trader.get_trades_manager()
         _, profitability, _, market_average_profitability = trade_manager.get_profitability(True)
         return profitability, market_average_profitability

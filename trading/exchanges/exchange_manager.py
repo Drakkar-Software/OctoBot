@@ -24,6 +24,7 @@ class ExchangeManager:
         self.exchange = None
         self.exchange_web_socket = None
         self.exchange_dispatcher = None
+        self.trader = None
 
         self.client_symbols = []
         self.client_time_frames = {}
@@ -32,6 +33,12 @@ class ExchangeManager:
         self.time_frames = []
 
         self.create_exchanges()
+
+    def register_trader(self, trader):
+        self.trader = trader
+
+    def get_trader(self):
+        return self.trader
 
     def _load_constants(self):
         self._load_config_symbols_and_time_frames()
