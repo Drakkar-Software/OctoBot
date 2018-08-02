@@ -99,7 +99,7 @@ class Backtesting:
         profitability, market_average_profitability = self.get_profitability(trader)
 
         for symbol in self.symbols_to_test:
-            report[SYMBOL_REPORT].append({symbol: self._get_symbol_report(symbol, trader)})
+            report[SYMBOL_REPORT].append({symbol: self._get_symbol_report(symbol, trader) * 100})
 
         report[BOT_REPORT] = {
             "profitability": profitability,
