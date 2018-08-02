@@ -174,7 +174,6 @@ class ExchangeDispatcher(AbstractExchange):
         return self.exchange.get_trade_fee(
             symbol=symbol,
             order_type=order_type,
-            side=side,
             quantity=quantity,
             price=price,
         )
