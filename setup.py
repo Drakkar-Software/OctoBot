@@ -11,11 +11,13 @@ DESCRIPTION = open('README.md').read() + '\n\n' + open('docs/CHANGELOG.md').read
 REQUIRED = open('requirements.txt').read()
 REQUIRED_DEV = open('dev_requirements.txt').read()
 
-excluded_files = ["setup.py"]
+# building
+excluded_files = ["setup.py", "__init__.py"]
+excluded_folder = ["tentacles", "tests", "docs", "logs"]
 source_files = [os.path.join(root, name)
                 for root, dirs, files in os.walk(".")
                 for name in files
-                if name.endswith(".py") and name not in excluded_files]
+                if name.endswith(".py") and name not in excluded_files and dirs not in excluded_folder]
 
 extensions = [
     Extension(NAME, source_files),
