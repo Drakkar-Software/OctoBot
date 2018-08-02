@@ -1,6 +1,6 @@
 import ccxt
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_MSECONDS, PriceIndexes
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_SECONDS, PriceIndexes
 from tests.test_utils.config import load_test_config
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader_simulator import TraderSimulator
@@ -51,7 +51,7 @@ class TestExchangeSimulator:
 
         # end is end -1 with DEFAULT_TF difference
         assert first_data[PriceIndexes.IND_PRICE_CLOSE.value][-1] == second_data[PriceIndexes.IND_PRICE_CLOSE.value][-2]
-        assert first_data[PriceIndexes.IND_PRICE_TIME.value][-1] + HOURS_TO_MSECONDS == second_data[
+        assert first_data[PriceIndexes.IND_PRICE_TIME.value][-1] + HOURS_TO_SECONDS == second_data[
             PriceIndexes.IND_PRICE_TIME.value][-1]
 
     def test_get_recent_trades(self):
