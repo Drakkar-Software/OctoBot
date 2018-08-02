@@ -18,7 +18,7 @@
           <tbody>
             {% for file, description in data_files.items() %}
                 <tr class="selectable_datafile">
-                    <td><input type="checkbox" class="dataFileCheckbox" data-file="{{file}}"></td>
+                    <td><input type="checkbox" class="dataFileCheckbox" data-file="{{file}}" symbol="{{description.symbol}}"></td>
                     <td>{{file}}</td>
                     <td>{{description.symbol}}</td>
                     <td>{{description.exchange}}</td>
