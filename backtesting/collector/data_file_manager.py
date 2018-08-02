@@ -32,7 +32,7 @@ def interpret_file_name(file_name):
 
 def build_file_name(exchange, symbol):
     return f"{exchange.get_name()}_{symbol.replace('/', '_')}_" \
-           f"{time.strftime(Exchange_Data_Collector_File_Time_Format)}{DATA_FILE_EXT}"
+           f"{time.strftime(DATA_FILE_TIME_WRITE_FORMAT)}{DATA_FILE_EXT}"
 
 
 def write_data_file(file_name, content, ):
