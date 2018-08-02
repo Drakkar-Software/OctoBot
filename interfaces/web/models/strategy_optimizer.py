@@ -8,7 +8,7 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator import Strategies
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
 from tools.time_frame_manager import TimeFrameManager
-from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER
+from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
 from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer
 
 
@@ -63,8 +63,11 @@ def start_optimizer(strategy, time_frames, evaluators, risks):
     if not tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
         tools[BOT_TOOLS_STRATEGY_OPTIMIZER] = StrategyOptimizer(get_bot().get_config(), strategy)
     optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
+    backtester = tools[BOT_TOOLS_BACKTESTING]
     if optimizer.get_is_computing():
         return False, "Optimizer already running"
+    elif backtester.get_is_computing():
+        return False, "A backtesting is already running"
     else:
         formatted_time_frames = TimeFrameManager.parse_time_frames(time_frames)
         float_risks = [float(risk) for risk in risks]
@@ -93,8 +96,9 @@ def get_optimizer_report():
 
 
 def get_optimizer_status():
-    optimizer = get_bot().get_tools()[BOT_TOOLS_STRATEGY_OPTIMIZER]
-    if optimizer:
+    tools = get_bot().get_tools()
+    if tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
+        optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
         if optimizer.get_is_computing():
             return "computing", optimizer.get_current_test_suite_progress()
         else:

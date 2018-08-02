@@ -18,9 +18,12 @@ class Backtesting:
         self.symbols_to_test = set()
         self.init_symbols_to_test()
 
+    def get_is_finished(self):
+        return len(self.ended_symbols) == len(self.symbols_to_test)
+
     def end(self, symbol):
         self.ended_symbols.add(symbol)
-        if len(self.ended_symbols) == len(self.symbols_to_test):
+        if self.get_is_finished():
             try:
                 self.logger.info(" **** Backtesting report ****")
                 self.logger.info(" ========= Trades =========")
@@ -47,42 +50,75 @@ class Backtesting:
         self.logger.info(trades_history_string.strip())
 
     def print_global_report(self):
-        trader = next(iter(get_bot().get_exchange_trader_simulators().values()))
-        trade_manager = trader.get_trades_manager()
-        profitability, market_average_profitability = self.get_profitability(get_bot())
+        try:
+            bot = get_bot()
 
-        reference_market = trade_manager.get_reference()
-        portfolio = trader.get_portfolio()
-        accuracy_info = "" if len(self.symbols_to_test) < 2 else "\nPlease note that multi symbol backtesting is " \
-                                                                 "slightly random due to Octbot's multithreaded " \
-                                                                 "architecture used to process all symbols as fast as" \
-                                                                 " possible. This randomness is kept for backtesting " \
-                                                                 "in order to be as close as possible from reality. " \
-                                                                 "Single symbol backtesting is 100% determinist."
+            profitability, market_average_profitability = self.get_profitability(bot)
+            reference_market = self.get_reference_market(bot)
+            portfolio = self.get_portfolio(bot)
+            accuracy_info = "" if len(self.symbols_to_test) < 2 else "\nPlease note that multi symbol backtesting is " \
+                                                                     "slightly random due to Octbot's multithreaded " \
+                                                                     "architecture used to process all symbols as fast as" \
+                                                                     " possible. This randomness is kept for backtesting " \
+                                                                     "in order to be as close as possible from reality. " \
+                                                                     "Single symbol backtesting is 100% determinist."
 
-        self.logger.info(f"End portfolio: "
-                         f"{PrettyPrinter.global_portfolio_pretty_print(portfolio.get_portfolio(),' | ')}")
+            self.logger.info(f"End portfolio: "
+                             f"{PrettyPrinter.global_portfolio_pretty_print(portfolio,' | ')}")
 
-        self.logger.info(f"Global market profitability (vs {reference_market}) : "
-                         f"{market_average_profitability}% | Octobot : {profitability}%{accuracy_info}")
+            self.logger.info(f"Global market profitability (vs {reference_market}) : "
+                             f"{market_average_profitability}% | Octobot : {profitability}%{accuracy_info}")
 
-        backtesting_time = time.time() - self.begin_time
-        self.logger.info(f"Simulation lasted {backtesting_time} sec")
+            backtesting_time = time.time() - self.begin_time
+            self.logger.info(f"Simulation lasted {backtesting_time} sec")
+        except Exception as e:
+            logging.exception(e)
 
-    def print_symbol_report(self, symbol):
+    def _get_symbol_report(self, symbol, bot):
         market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
 
         # profitability
         total_profitability = 0
-        for trader in get_bot().get_exchange_trader_simulators().values():
+        for trader in bot.get_exchange_trader_simulators().values():
             _, profitability, _, _ = trader.get_trades_manager().get_profitability()
             total_profitability += profitability
 
         # vs market
-        market_delta = self.get_market_delta(market_data)
+        return self.get_market_delta(market_data)
 
-        # log
-        self.logger.info(f"{symbol} Profitability : Market {market_delta * 100}%")
+    def print_symbol_report(self, symbol):
+        self.logger.info(f"{symbol} Profitability : Market {self._get_symbol_report(symbol, get_bot()) * 100}%")
+
+    def get_dict_formatted_report(self, bot):
+        SYMBOL_REPORT = "symbol_report"
+        BOT_REPORT = "bot_report"
+        report = {
+            SYMBOL_REPORT: [],
+            BOT_REPORT: {}
+        }
+
+        profitability, market_average_profitability = self.get_profitability(bot)
+
+        for symbol in self.symbols_to_test:
+            report[SYMBOL_REPORT].append({symbol: self._get_symbol_report(symbol, bot)})
+
+        report[BOT_REPORT] = {
+            "profitability": profitability,
+            "market_average_profitability": market_average_profitability,
+            "reference_market": self.get_reference_market(bot),
+            "end_portfolio": self.get_portfolio(bot)
+        }
+        return report
+
+    @staticmethod
+    def get_reference_market(bot):
+        trader = next(iter(bot.get_exchange_trader_simulators().values()))
+        return trader.get_trades_manager().get_reference()
+
+    @staticmethod
+    def get_portfolio(bot):
+        trader = next(iter(bot.get_exchange_trader_simulators().values()))
+        return trader.get_portfolio().get_portfolio()
 
     @staticmethod
     def get_profitability(bot):

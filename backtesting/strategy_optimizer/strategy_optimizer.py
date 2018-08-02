@@ -3,8 +3,7 @@ import copy
 import math
 
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
-from tests.test_utils.backtesting_util import add_config_default_backtesting_values
-from tests.test_utils.config import load_test_config
+from tests.test_utils.backtesting_util import create_blank_config_using_loaded_one
 from tools.data_util import DataUtil
 from evaluator.TA.TA_evaluator import TAEvaluator
 from evaluator import TA
@@ -27,11 +26,8 @@ class StrategyOptimizer:
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
         self.logger = logging.getLogger(self.get_name())
-        self.config = load_test_config()
         self.trading_mode = config[CONFIG_TRADER][CONFIG_TRADER_MODE]
-        self.config[CONFIG_TRADER][CONFIG_TRADER_MODE] = self.trading_mode
-        self.config[CONFIG_EVALUATOR] = config[CONFIG_EVALUATOR]
-        add_config_default_backtesting_values(self.config)
+        self.config = create_blank_config_using_loaded_one(config)
         self.strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                     Strategies, evaluator_parent_inspection)
         self.run_results = []
