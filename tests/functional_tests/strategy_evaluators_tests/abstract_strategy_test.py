@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import copy
 
-from tests.test_utils.backtesting_util import create_backtesting_config, create_backtesting_bot, \
+from backtesting.backtesting_util import create_backtesting_config, create_backtesting_bot, \
     start_backtesting_bot, filter_wanted_symbols
 from config.cst import CONFIG_EVALUATOR, CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES
 from evaluator import Strategies
@@ -137,7 +137,7 @@ class AbstractStrategyTest:
             self._assert_results(run_results, profitability_1, bot)
 
     def _assert_results(self, run_results, profitability, bot):
-        # print(f"results: {run_results} expected: {profitability}")  # convenient for building tests
+        print(f"results: {run_results} expected: {profitability}")  # convenient for building tests
         assert run_results[0] >= profitability
 
     def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):

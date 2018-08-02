@@ -1,5 +1,5 @@
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
-from tests.test_utils.backtesting_util import start_backtesting_bot, get_standalone_backtesting_bot
+from backtesting.backtesting_util import start_backtesting_bot, get_standalone_backtesting_bot
 
 
 class Backtester:
