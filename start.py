@@ -3,13 +3,13 @@ import logging
 import sys
 import traceback
 from logging.config import fileConfig
-from time import sleep
-from tools.commands import Commands
+
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
+from tools.commands import Commands
 from tools.errors import ConfigError, ConfigEvaluatorError
 
 
@@ -38,9 +38,6 @@ def update_config_with_args(starting_args, config):
 
 
 def start_octobot(starting_args):
-    if starting_args.pause_time is not None:
-        sleep(starting_args.pause_time)
-
     fileConfig('config/logging_config.ini')
 
     logger = logging.getLogger("OctoBot Launcher")
@@ -144,7 +141,6 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
-    parser.add_argument('-tp', '--pause_time', type=int, help='time to pause before starting the bot')
     parser.add_argument('-w', '--web', help='Start web server',
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
