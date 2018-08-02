@@ -16,6 +16,7 @@ var warning_badge = "badge-warning";
 var secondary_badge = "badge-secondary";
 var primary_badge = "badge-primary";
 var modified_class = "warning-color";
+var selected_item_class = "primary-color";
 
 var light_list_item = "list-group-item-light";
 var success_list_item = "list-group-item-success";

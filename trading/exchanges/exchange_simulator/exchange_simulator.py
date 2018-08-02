@@ -12,6 +12,7 @@ from config.cst import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_
     ExchangeConstantsMarketPropertyColumns, CONFIG_SIMULATOR_FEES_TAKER, CONFIG_SIMULATOR_FEES_WITHDRAW
 from tools.time_frame_manager import TimeFrameManager
 from trading import AbstractExchange
+from tools.data_util import DataUtil
 
 
 class ExchangeSimulator(AbstractExchange):
@@ -36,6 +37,7 @@ class ExchangeSimulator(AbstractExchange):
 
         self.time_frame_get_times = {}
         self.time_frames_offset = {}
+        self.min_time_frame_to_consider = {}
 
         self.DEFAULT_LIMIT = 100
         self.MIN_LIMIT = 30
@@ -256,15 +258,16 @@ class ExchangeSimulator(AbstractExchange):
 
     def _find_min_time_frame_to_consider(self, time_frames, symbol):
         time_frames_to_consider = copy.copy(time_frames)
-        min_time_frame_to_consider = None
-        while not min_time_frame_to_consider and time_frames_to_consider:
+        self.min_time_frame_to_consider[symbol] = None
+        while not self.min_time_frame_to_consider[symbol] and time_frames_to_consider:
             potential_min_time_frame_to_consider = TimeFrameManager.find_min_time_frame(time_frames_to_consider).value
             if potential_min_time_frame_to_consider in self.data[symbol]:
-                min_time_frame_to_consider = potential_min_time_frame_to_consider
+                self.min_time_frame_to_consider[symbol] = potential_min_time_frame_to_consider
             else:
                 time_frames_to_consider.remove(potential_min_time_frame_to_consider)
-        if min_time_frame_to_consider:
-            return self.data[symbol][min_time_frame_to_consider][self.MIN_LIMIT][PriceIndexes.IND_PRICE_TIME.value]
+        if self.min_time_frame_to_consider[symbol]:
+            return self.data[symbol][self.min_time_frame_to_consider[symbol]][self.MIN_LIMIT] \
+                [PriceIndexes.IND_PRICE_TIME.value]
         else:
             self.logger.error(f"No data for the timeframes: {time_frames} in loaded backtesting file.")
             if Backtesting.enabled(self.config):
@@ -280,19 +283,32 @@ class ExchangeSimulator(AbstractExchange):
     """
 
     def init_candles_offset(self, time_frames, symbol):
-        min_time_frame_to_consider = self._find_min_time_frame_to_consider(time_frames, symbol)
+        min_time_frame_to_consider = dict()
+        min_time_frame_to_consider[symbol] = self._find_min_time_frame_to_consider(time_frames, symbol)
         if symbol not in self.time_frames_offset:
             self.time_frames_offset[symbol] = {}
         for time_frame in time_frames:
             if time_frame.value in self.data[symbol]:
                 found_index = False
                 for index, candle in enumerate(self.data[symbol][time_frame.value]):
-                    if candle[PriceIndexes.IND_PRICE_TIME.value] >= min_time_frame_to_consider:
+                    if candle[PriceIndexes.IND_PRICE_TIME.value] >= min_time_frame_to_consider[symbol]:
                         found_index = True
                         self.time_frames_offset[symbol][time_frame.value] = index
                         break
                 if not found_index:
                     self.time_frames_offset[symbol][time_frame.value] = len(self.data[symbol][time_frame.value]) - 1
+
+    def get_progress(self):
+        if not self.min_time_frame_to_consider:
+            return 0
+        else:
+            progresses = []
+            for symbol in self.time_frame_get_times:
+                if symbol in self.min_time_frame_to_consider:
+                    current = self.time_frame_get_times[symbol][self.min_time_frame_to_consider[symbol]]
+                    max = len(self.data[symbol][self.min_time_frame_to_consider[symbol]])
+                    progresses.append(current/max)
+            return int(DataUtil.mean(progresses)*100)
 
     def get_data(self):
         return self.data
@@ -383,6 +399,8 @@ class ExchangeSimulator(AbstractExchange):
     def get_uniform_timestamp(self, timestamp):
         return timestamp / 1000
 
+    def get_backtesting(self):
+        return self.backtesting
     def get_fees(self, symbol=None):
         result_fees = {
             ExchangeConstantsMarketPropertyColumns.TAKER.value: CONFIG_DEFAULT_SIMULATOR_FEES,
