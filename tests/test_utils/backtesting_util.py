@@ -1,10 +1,47 @@
 import logging
+from copy import deepcopy
 
 from config.cst import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, \
-    CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
+    CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_BACKTESTING_DATA_FILES, \
+    CONFIG_TRADER_MODE, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, CONFIG_DATA_COLLECTOR_PATH
 from octobot import OctoBot
 from tests.test_utils.config import load_test_config
 from backtesting.backtesting import Backtesting
+from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
+from tools.symbol_util import split_symbol
+
+
+def create_blank_config_using_loaded_one(loaded_config, other_config=None):
+    new_config = other_config if other_config else load_test_config()
+    trading_mode = deepcopy(loaded_config[CONFIG_TRADER][CONFIG_TRADER_MODE])
+    risk = deepcopy(loaded_config[CONFIG_TRADER][CONFIG_TRADER_RISK])
+    new_config[CONFIG_TRADER][CONFIG_TRADER_MODE] = trading_mode
+    new_config[CONFIG_TRADER][CONFIG_TRADER_RISK] = risk
+    new_config[CONFIG_EVALUATOR] = deepcopy(loaded_config[CONFIG_EVALUATOR])
+    add_config_default_backtesting_values(new_config)
+    return new_config
+
+
+def get_standalone_backtesting_bot(config, data_files):
+    config_to_use = create_blank_config_using_loaded_one(config)
+    config_to_use[CONFIG_CRYPTO_CURRENCIES] = {}
+    config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = []
+    ignored_files = []
+    if data_files:
+        for data_file_to_use in data_files:
+            _, file_symbol, _ = interpret_file_name(data_file_to_use)
+            currency, market = split_symbol(file_symbol)
+            full_file_path = CONFIG_DATA_COLLECTOR_PATH + data_file_to_use
+            full_file_path += full_file_path if not full_file_path.endswith(DATA_FILE_EXT) else ""
+            if currency not in config_to_use[CONFIG_CRYPTO_CURRENCIES]:
+                config_to_use[CONFIG_CRYPTO_CURRENCIES][currency] = {CONFIG_CRYPTO_PAIRS: []}
+            if file_symbol not in config_to_use[CONFIG_CRYPTO_CURRENCIES][currency][CONFIG_CRYPTO_PAIRS]:
+                config_to_use[CONFIG_CRYPTO_CURRENCIES][currency][CONFIG_CRYPTO_PAIRS].append(file_symbol)
+                config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES].append(full_file_path)
+            else:
+                ignored_files.append(data_file_to_use)
+
+    return create_backtesting_bot(config_to_use), ignored_files
 
 
 def create_backtesting_config(wanted_symbols=["BTC/USDT"], filter_symbols=True):
@@ -46,7 +83,7 @@ def create_backtesting_bot(config):
     return bot
 
 
-def start_backtesting_bot(bot):
+def start_backtesting_bot(bot, in_thread=False):
     bot.create_exchange_traders()
 
     # fix backtesting exit
@@ -62,8 +99,12 @@ def start_backtesting_bot(bot):
         raise RuntimeError(f"No candles data for the current configuration. Please ensure your configuration file is "
                            f"correct and has the required backtesting data file for the activated symbols.")
     bot.start_threads()
-    bot.join_threads()
-    return Backtesting.get_profitability(bot)
+
+    if not in_thread:
+        bot.join_threads()
+        return Backtesting.get_profitability(bot)
+    else:
+        return True
 
 
 class SymbolNotFoundException(Exception):
