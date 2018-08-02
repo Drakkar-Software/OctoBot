@@ -1,7 +1,7 @@
 from flask import render_template, request, jsonify
 
 from interfaces.web import server_instance
-from interfaces.web.models.backtesting import get_data_files_with_description, start_backtesting_using_files, \
+from interfaces.web.models.backtesting import get_data_files_with_description, start_backtesting_using_specific_files, \
     get_backtesting_report,get_backtesting_status
 from interfaces.web.util.flask_util import get_rest_reply
 
@@ -15,7 +15,7 @@ def backtesting():
         reply = "Action failed"
         if action_type == "start_backtesting":
             files = request.get_json()
-            success, reply = start_backtesting_using_files(files)
+            success, reply = start_backtesting_using_specific_files(files)
 
         if success:
             return get_rest_reply(jsonify(reply))

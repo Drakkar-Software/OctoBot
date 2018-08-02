@@ -101,12 +101,6 @@ def start_octobot(starting_args):
 
                     interfaces.__init__(bot, config)
 
-                    # start crypto bot options
-                    if starting_args.backtesting:
-                        import backtesting
-
-                        backtesting.__init__(bot)
-
                     if starting_args.start:
                         Commands.start_bot(bot, logger)
 
