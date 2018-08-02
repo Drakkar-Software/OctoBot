@@ -7,12 +7,11 @@ from config.cst import CONFIG_EVALUATOR, CONFIG_BACKTESTING, CONFIG_BACKTESTING_
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
-from backtesting.collector.data_file_manager import interpret_file_name
+from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
 
 
 DEFAULT_SYMBOL = "ICX/BTC"
 DATA_FILE_PATH = "tests/static/"
-DATA_FILE_EXT = ".data"
 
 
 class AbstractStrategyTest:
