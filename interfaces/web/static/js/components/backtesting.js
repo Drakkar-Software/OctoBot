@@ -40,10 +40,20 @@ function load_report(){
     url = $("#backtestingReport").attr(update_url_attr);
     $.get(url,function(data, status){
         $("#bProf").html(data["bot_report"]["profitability"]);
-        $("#mProf").html(JSON.stringify(data["symbol_report"][0]));
         $("#maProf").html(data["bot_report"]["market_average_profitability"]);
+        var symbol_reports = []
+        $.each( data["symbol_report"], function( index, value ) {
+            $.each( value, function( symbol, profitability ) {
+                symbol_reports.push(symbol+": "+profitability);
+            });
+        });
+        $("#mProf").html(symbol_reports.join(", "));
         $("#refM").html(data["bot_report"]["reference_market"]);
-        $("#ePort").html(JSON.stringify(data["bot_report"]["end_portfolio"]));
+        var portfolio_reports = []
+            $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
+                portfolio_reports.push(symbol+": "+holdings["total"]);
+            });
+        $("#ePort").html(portfolio_reports.join(", "));
     });
 }
 
@@ -89,7 +99,17 @@ function handle_file_selection(){
             row.find(".dataFileCheckbox").prop('checked', false);
         }else{
             row.toggleClass(selected_item_class);
-            row.find(".dataFileCheckbox").prop('checked', true);
+            var checkbox = row.find(".dataFileCheckbox");
+            var symbol = checkbox.attr("symbol");
+            var data_file = checkbox.attr("data-file");
+            checkbox.prop('checked', true);
+            // uncheck same symbols from other rows if any
+            $("#dataFilesTable").find("input[type='checkbox']:checked").each(function(){
+                if($(this).attr("symbol") == symbol && !($(this).attr("data-file") == data_file)){
+                    $(this).parent().parent().removeClass(selected_item_class);
+                    $(this).prop('checked', false);
+                }
+            });
         }
         lock_interface();
     });
