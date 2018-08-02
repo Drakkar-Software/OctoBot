@@ -40,10 +40,20 @@ function load_report(){
     url = $("#backtestingReport").attr(update_url_attr);
     $.get(url,function(data, status){
         $("#bProf").html(data["bot_report"]["profitability"]);
-        $("#mProf").html(JSON.stringify(data["symbol_report"][0]));
         $("#maProf").html(data["bot_report"]["market_average_profitability"]);
+        var symbol_reports = []
+        $.each( data["symbol_report"], function( index, value ) {
+            $.each( value, function( symbol, profitability ) {
+                symbol_reports.push(symbol+": "+profitability);
+            });
+        });
+        $("#mProf").html(symbol_reports.join(", "));
         $("#refM").html(data["bot_report"]["reference_market"]);
-        $("#ePort").html(JSON.stringify(data["bot_report"]["end_portfolio"]));
+        var portfolio_reports = []
+            $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
+                portfolio_reports.push(symbol+": "+holdings["total"]);
+            });
+        $("#ePort").html(portfolio_reports.join(", "));
     });
 }
 
