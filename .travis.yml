@@ -15,8 +15,11 @@ install:
 script:
   - pip3 install -r dev_requirements.txt
   - pytest --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests
+# create binary
   - pyinstaller start.py
+  - GITHUB_TOKEN=${repo_token} ./docs/delivery/travis_delivery.sh
+after_failure:
+  - dmesg | grep -i kill
+  - sleep 4 # to prevent sudden log truncation
 after_success:
   - coveralls
-
-
