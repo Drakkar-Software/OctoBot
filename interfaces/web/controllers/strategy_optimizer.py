@@ -54,4 +54,3 @@ def strategy_optimizer():
                                    time_frames=get_time_frames_list(),
                                    evaluators=get_evaluators_list(),
                                    risks=get_risks_list())
-

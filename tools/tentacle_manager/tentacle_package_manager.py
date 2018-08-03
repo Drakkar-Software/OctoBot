@@ -415,8 +415,9 @@ class TentaclePackageManager:
                     default_config_file_content = evaluator_config_file_r.read()
                     try:
                         config_content = json.loads(default_config_file_content)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"impossible to load content of configuration file: "
+                                       f"{evaluator_config_file}: {e}")
             if os.path.isfile(CONFIG_DEFAULT_EVALUATOR_FILE):
                 with open(CONFIG_DEFAULT_EVALUATOR_FILE, "r") as default_evaluator_config_file_r:
                     default_config_file_content = default_evaluator_config_file_r.read()
