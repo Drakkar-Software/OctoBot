@@ -23,3 +23,13 @@ function get_selected_options(element){
     });
     return selected_options
 }
+
+
+// utility functions
+function isDefined(thing){
+    return (typeof thing !== typeof undefined && thing !== false)
+}
+
+function log(text){
+    window.console&&console.log(text);
+}

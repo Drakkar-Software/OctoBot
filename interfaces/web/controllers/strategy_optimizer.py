@@ -42,8 +42,8 @@ def strategy_optimizer():
                 optimizer_report = get_optimizer_report()
                 return jsonify(optimizer_report)
             elif target == "optimizer_status":
-                optimizer_status, progress = get_optimizer_status()
-                status = {"status": optimizer_status, "progress": progress}
+                optimizer_status, progress, overall_progress = get_optimizer_status()
+                status = {"status": optimizer_status, "progress": progress, "overall_progress": overall_progress}
                 return jsonify(status)
 
 

@@ -61,16 +61,27 @@ function start_optimizer_error_callback(data, update_url, source, result, status
     create_alert("error", "Error when starting optimizer: "+result.responseText, "");
 }
 
+function update_progress(progress, overall_progress){
+    $("#progess_bar_anim").css('width', progress+'%').attr("aria-valuenow", progress)
 
+    nb_progress = Number(overall_progress)
+
+    if(isDefined(progressChart)){
+        progressChart.data.datasets[0].data[0] = nb_progress;
+        progressChart.data.datasets[0].data[1] = 100 - nb_progress;
+        progressChart.update();
+    }
+}
 
 function check_optimizer_state(reportTable){
     url = $("#strategyOptimizerInputs").attr(update_url_attr);
     $.get(url,function(data, status){
         var status = data["status"];
-        var progress = data["progress"]
+        var progress = data["progress"];
+        var overall_progress = data["overall_progress"];
         if(status == "computing"){
             lock_inputs();
-            $("#progess_bar_anim").css('width', progress+'%').attr("aria-valuenow", progress)
+            update_progress(progress, overall_progress)
             first_refresh_state = status;
             if($("#report_datatable_card").is(":visible")){
                 $("#report_datatable_card").hide();
@@ -202,6 +213,23 @@ var reportColumnsDef = [
     }
 ];
 var first_refresh_state = ""
+
+var progressChart = new Chart($("#optimize_doughnutChart")[0].getContext('2d'), {
+    type: 'doughnut',
+    data: {
+        labels: ["Done", "Remaining"],
+        datasets: [
+            {
+                data: [0, 100],
+                backgroundColor: ["#F7464A","#949FB1"],
+                hoverBackgroundColor: ["#FF5A5E", "#A8B3C5"]
+            }
+        ]
+    },
+    options: {
+        responsive: true
+    }
+});
 
 $(document).ready(function() {
 

@@ -64,9 +64,17 @@
           </select>
         </div>
         <h2>Number of simulations <span id="numberOfSimulatons" class="badge badge-light">10</span></h2>
-        <div class='progress' id='progess_bar' style='display: none;'>
-            <div id='progess_bar_anim' class='progress-bar progress-bar-striped bg-danger progress-bar-animated' role='progressbar' aria-valuenow='100' aria-valuemin='0' aria-valuemax='100' style='width: 100%;'></div>
-        </div>
+        <span id='progess_bar' style='display: none;'>
+            <div class="card-title">
+                <h2>Strategy optimizer in progress</h2>
+            </div>
+            <div>
+                <canvas id="optimize_doughnutChart"></canvas>
+            </div>
+            <div class='progress'>
+                <div id='progess_bar_anim' class='progress-bar progress-bar-striped bg-danger progress-bar-animated' role='progressbar' aria-valuenow='100' aria-valuemin='0' aria-valuemax='100' style='width: 100%;'></div>
+            </div>
+        </span>
         <button id="startOptimizer" type="button" class="btn btn-primary" update-url="{{ url_for('strategy_optimizer', update_type='start_optimizer') }}">Start optimizer</button>
     </div>
 </div>

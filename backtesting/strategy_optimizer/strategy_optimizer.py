@@ -173,15 +173,21 @@ class StrategyOptimizer:
         self.logger.info(f"{self.sorted_results_through_all_time_frame[0][CONFIG].get_result_string()} average "
                          f"trades count: {result[TRADES_IN_RESULT]:f}")
 
+    def get_overall_progress(self):
+        return int((self.run_id-1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
+
     def get_current_test_suite_progress(self):
         return self.current_test_suite.get_progress() if self.current_test_suite else 0
 
     def get_report(self):
         # index, evaluators, risk, score, trades
-        results = [TestSuiteResult.convert_result_into_dict(rank, result[CONFIG].get_evaluators(), "",
-                                                            result[CONFIG].get_risk(), result[RANK],
-                                                            round(result[TRADES_IN_RESULT], 5))
-                   for rank, result in enumerate(self.sorted_results_through_all_time_frame[0:100])]
+        if self.sorted_results_through_all_time_frame:
+            results = [TestSuiteResult.convert_result_into_dict(rank, result[CONFIG].get_evaluators(), "",
+                                                                result[CONFIG].get_risk(), result[RANK],
+                                                                round(result[TRADES_IN_RESULT], 5))
+                       for rank, result in enumerate(self.sorted_results_through_all_time_frame[0:100])]
+        else:
+            results = []
         return results
 
     def get_results(self):
