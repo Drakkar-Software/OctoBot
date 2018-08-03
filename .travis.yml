@@ -15,6 +15,7 @@ install:
 script:
   - pip3 install -r dev_requirements.txt
   - pytest --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests
+  - pyinstaller --recurse-all start.py
 after_success:
   - coveralls
 
