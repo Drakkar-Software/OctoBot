@@ -5,7 +5,7 @@ class DataUtil:
 
     @staticmethod
     def normalize_data(data):
-        if len(data):
+        if data:
             return (data - np.mean(data)) / (data.max() - data.min())
         else:
             return data

@@ -62,8 +62,8 @@ def get_symbol_list(exchanges):
             inst = getattr(ccxt, exchange)({'verbose': False})
             inst.load_markets()
             result += inst.symbols
-        except Exception:
-            pass
+        except Exception as e:
+            logging.getLogger().error(f"error when oading symbol list for {exchange}: {e}")
 
     return list(set(result))
 

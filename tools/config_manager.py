@@ -144,7 +144,7 @@ class ConfigManager:
         new_config = {}
         current_dict = new_config
 
-        for i in range(len(parsed_data_array)):
+        for i, _ in enumerate(parsed_data_array):
             if i > 0:
                 if i == len(parsed_data_array) - 1:
                     current_dict[parsed_data_array[i]] = new_data
@@ -159,16 +159,12 @@ class ConfigManager:
 
     @staticmethod
     def are_of_compatible_type(val1, val2):
-        return \
-            (
-                type(val1) == type(val2) or
-                    ((type(val1) is float or type(val1) is int) and
-                     (type(val2) is float or type(val2) is int))) \
-            and \
-            (
-                    isinstance(val1, bool) or isinstance(val1, str) or
-                    isinstance(val1, float) or isinstance(val1, int)
-            )
+        return (
+                (
+                    isinstance(val1, val2.__class__) or
+                    (isinstance(val1, (float, int)) and isinstance(val2, (float, int)))
+                ) and isinstance(val1, (bool, str, float, int))
+        )
 
     @staticmethod
     def merge_dictionaries_by_appending_keys(dict_dest, dict_src):
