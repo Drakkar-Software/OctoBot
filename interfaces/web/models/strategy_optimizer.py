@@ -66,7 +66,7 @@ def start_optimizer(strategy, time_frames, evaluators, risks):
     backtester = tools[BOT_TOOLS_BACKTESTING]
     if optimizer.get_is_computing():
         return False, "Optimizer already running"
-    elif backtester.get_is_computing():
+    elif backtester and backtester.get_is_computing():
         return False, "A backtesting is already running"
     else:
         formatted_time_frames = TimeFrameManager.parse_time_frames(time_frames)
@@ -100,8 +100,8 @@ def get_optimizer_status():
     if tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
         optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
         if optimizer.get_is_computing():
-            return "computing", optimizer.get_current_test_suite_progress()
+            return "computing", optimizer.get_current_test_suite_progress(), optimizer.get_overall_progress()
         else:
-            return "finished", 100
+            return "finished", 100, 100
     else:
-        return "not started", 0
+        return "not started", 0, 0

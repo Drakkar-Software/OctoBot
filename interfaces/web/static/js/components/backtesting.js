@@ -47,7 +47,7 @@ function load_report(){
                 symbol_reports.push(symbol+": "+profitability);
             });
         });
-        $("#mProf").html(symbol_reports.join(", "));
+        $("#sProf").html(symbol_reports.join(", "));
         $("#refM").html(data["bot_report"]["reference_market"]);
         var portfolio_reports = []
             $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
@@ -57,6 +57,10 @@ function load_report(){
     });
 }
 
+function update_progress(progress){
+    $("#progess_bar_anim").css('width', progress+'%').attr("aria-valuenow", progress)
+}
+
 function check_backtesting_state(){
     url = $("#backtestingPage").attr(update_url_attr);
     $.get(url,function(data, status){
@@ -64,7 +68,7 @@ function check_backtesting_state(){
         var progress = data["progress"]
         if(status == "computing"){
             $("#backtesting_progress_bar").show();
-            $("#progess_bar_anim").css('width', progress+'%').attr("aria-valuenow", progress)
+            update_progress(progress);
             first_refresh_state = status;
             if($("#backtestingReport").is(":visible")){
                 $("#backtestingReport").hide();
@@ -115,7 +119,7 @@ function handle_file_selection(){
     });
 }
 
-var first_refresh_state = ""
+var first_refresh_state = "";
 
 $(document).ready(function() {
     handle_backtesting_buttons();
