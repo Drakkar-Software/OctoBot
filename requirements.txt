@@ -30,7 +30,6 @@ pytrends
 vaderSentiment
 
 ## Others
-numba
 gitpython
 psutil
 plotly
