@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.6.6
 
 ARG octobot_branch="beta"
 ARG octobot_install_dir="Octobot"
