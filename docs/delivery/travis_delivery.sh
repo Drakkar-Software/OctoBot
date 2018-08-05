@@ -1,6 +1,6 @@
 #!/bin/sh
 
-pyinstaller start.py
+pyinstaller start.py --onefile
 
 git config --global user.email "travis@travis-ci.org"
 git config --global user.name "Travis CI"
