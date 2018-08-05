@@ -21,3 +21,7 @@ test_script:
   - "%PYTHON%\\python.exe -m pip install -r dev_requirements.txt"
   - "%PYTHON%\\python.exe -m pytest tests/unit_tests"
   - "%PYTHON%\\python.exe -m pytest tests/functional_tests"
+
+on_success:
+  # if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "beta" ];
+  - bash ./docs/delivery/appveyor_delivery.cmd
