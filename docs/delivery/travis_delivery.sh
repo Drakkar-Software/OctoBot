@@ -9,4 +9,4 @@ git add --force dist/
 git commit -a -m "TEST"
 git remote remove origin
 git remote add origin https://${GH_TOKEN}@${GH_REF}.git
-git push origin --tags HEAD:master
+git push origin --tags HEAD:$(GIT_BRANCH)
