@@ -1,8 +1,5 @@
 from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
-
-import pyximport
-pyximport.install()
 from trading.exchanges.exchange_symbol_data import SymbolData
 
 """
