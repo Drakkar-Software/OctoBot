@@ -1,7 +1,9 @@
-from trading.exchanges.exchange_symbol_data import SymbolData
 from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
-from config.cst import ExchangeConstantsMarketStatusColumns as ecmsc
+
+import pyximport
+pyximport.install()
+from trading.exchanges.exchange_symbol_data import SymbolData
 
 """
 This class supervise exchange call by : 
