@@ -6,7 +6,7 @@ git config --global user.name "Travis CI"
 
 git checkout travis-builds
 git add --force dist/
-git commit -a -m "TEST"
+git commit -a -m "TRAVIS : test release"
 git remote remove origin
 git remote add origin https://${GH_TOKEN}@${GH_REF}.git
-git push origin $(GIT_BRANCH)
+git push origin HEAD:$(GIT_BRANCH)
