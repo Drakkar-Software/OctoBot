@@ -12,7 +12,6 @@ from services import WebService
 from tools.commands import Commands
 from tools.errors import ConfigError, ConfigEvaluatorError
 
-
 # Keep string '+' operator to ensure backward compatibility in this file
 
 
