@@ -9,4 +9,4 @@ git add --force dist/
 git commit -a -m "TRAVIS : binary push"
 git remote remove origin
 git remote add origin https://${GH_TOKEN}@${GH_REF}.git
-git push origin HEAD:dev
+git push origin HEAD:travis-builds
