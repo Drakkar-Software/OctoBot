@@ -10,8 +10,8 @@ git config --global user.name "Travis CI"
 
 git clone -b ${TRAVIS_BRANCH} --single-branch git://${GH_REPO} ${REPO}
 
-cp -r ./${BUILD_DIR} ${REPO}/${BUILD_DIR}
-cd ${REPO}
+cp -r ./${BUILD_DIR} ./${REPO}/${BUILD_DIR}
+cd ./${REPO}
 
 git add -f ./${BUILD_DIR}
 git commit -a -m "TRAVIS : binary push"
