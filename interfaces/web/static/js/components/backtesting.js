@@ -20,8 +20,12 @@ function start_error_callback(updated_data, update_url, dom_root_element, result
 
 function get_selected_files(){
     var selected_modules = []
-    $("#dataFilesTable").find("input[type='checkbox']:checked").each(function(){
-        selected_modules.push($(this).attr("data-file"));
+    dataFilesTable.rows(
+        function ( idx, data, node ) {
+            return $(node).find("input[type='checkbox']:checked").length > 0 ? true : false;
+        }
+    ).eq(0).each(function( index ) {
+        selected_modules.push(dataFilesTable.row( index ).data()[1]);
     });
     return selected_modules
 }
@@ -95,6 +99,7 @@ function check_backtesting_state(){
 }
 
 function handle_file_selection(){
+    $(".selectable_datafile").unbind('click');
     $('.selectable_datafile').click(function () {
         // use parent not to trigger selection on button column use
         row = $(this)
@@ -121,12 +126,15 @@ function handle_file_selection(){
 
 var first_refresh_state = "";
 
+var dataFilesTable = $('#dataFilesTable').DataTable();
+
 $(document).ready(function() {
     handle_backtesting_buttons();
     handle_file_selection();
+    $('#dataFilesTable').on("draw.dt", function(){
+        handle_file_selection();
+    });
     lock_interface();
-
-    var table = $('#dataFilesTable').DataTable()
 
     setInterval(function(){refresh_status();}, 1000);
     function refresh_status(){
