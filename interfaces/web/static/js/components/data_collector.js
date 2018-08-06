@@ -19,7 +19,7 @@ function delete_error_callback(updated_data, update_url, dom_root_element, resul
     create_alert("error", result.responseText, "");
 }
 
-function lock_ui(lock=true){
+function lock_collector_ui(lock=true){
     if(lock){
         $("#collector_operation").show();
     }else{
@@ -29,7 +29,7 @@ function lock_ui(lock=true){
 }
 
 function start_collector(){
-    lock_ui();
+    lock_collector_ui();
     var request = {}
     request["exchange"] = $('#exchangeSelect').val();
     request["symbol"] = $('#symbolSelect').val();
@@ -39,7 +39,7 @@ function start_collector(){
 
 function collector_success_callback(updated_data, update_url, dom_root_element, msg, status){
     create_alert("success", msg, "");
-    lock_ui(false);
+    lock_collector_ui(false);
     $("#collector_data").load(location.href + " #collector_data",function(){
         dataFilesTable = $('#dataFilesTable').DataTable();
         handle_data_files_buttons();
@@ -48,7 +48,7 @@ function collector_success_callback(updated_data, update_url, dom_root_element, 
 
 function collector_error_callback(updated_data, update_url, dom_root_element, result, status, error){
     create_alert("error", result.responseText, "");
-    lock_ui(false);
+    lock_collector_ui(false);
 }
 
 function update_symbol_list(url, exchange){
