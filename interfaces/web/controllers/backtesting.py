@@ -2,7 +2,7 @@ from flask import render_template, request, jsonify
 
 from interfaces.web import server_instance
 from interfaces.web.models.backtesting import get_data_files_with_description, start_backtesting_using_specific_files, \
-    get_backtesting_report,get_backtesting_status
+    get_backtesting_report,get_backtesting_status, get_delete_data_file
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -39,5 +39,21 @@ def backtesting():
 
 
 @server_instance.route("/data_collector")
+@server_instance.route('/data_collector', methods=['GET', 'POST'])
 def data_collector():
-    return render_template('data_collector.html')
+    if request.method == 'POST':
+        action_type = request.args["action_type"]
+        success = False
+        reply = "Action failed"
+        if action_type == "delete_data_file":
+            file = request.get_json()
+            success, reply = get_delete_data_file(file)
+
+        if success:
+            return get_rest_reply(jsonify(reply))
+        else:
+            return get_rest_reply(reply, 500)
+
+    elif request.method == 'GET':
+        return render_template('data_collector.html',
+                               data_files=get_data_files_with_description())

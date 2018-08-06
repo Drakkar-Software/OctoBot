@@ -101,7 +101,6 @@ function check_backtesting_state(){
 function handle_file_selection(){
     $(".selectable_datafile").unbind('click');
     $('.selectable_datafile').click(function () {
-        // use parent not to trigger selection on button column use
         row = $(this)
         if (row.hasClass(selected_item_class)){
             row.removeClass(selected_item_class);
