@@ -13,7 +13,7 @@ from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATO
     CONFIG_EVALUATOR, CONFIG_TRADER_MODE
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
-from tools.logging_util import set_global_logger_level
+from tools.logging_util import set_global_logger_level, get_global_logger_level
 
 CONFIG = 0
 RANK = 1
@@ -56,6 +56,8 @@ class StrategyOptimizer:
             self.is_computing = True
 
             self.run_results = []
+
+            previous_log_level = get_global_logger_level()
 
             try:
                 all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
@@ -120,7 +122,7 @@ class StrategyOptimizer:
 
             finally:
                 self.current_test_suite = None
-                set_global_logger_level(logging.INFO)
+                set_global_logger_level(previous_log_level)
                 self.is_computing = False
                 self.logger.info(f"{self.get_name()} finished computation.")
         else:
