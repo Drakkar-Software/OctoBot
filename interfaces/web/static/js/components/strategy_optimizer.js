@@ -69,9 +69,8 @@ function update_progress(progress, overall_progress){
     nb_progress = Number(overall_progress)
 
     if(isDefined(progressChart)){
-        progressChart.data.datasets[0].data[0] = nb_progress;
-        progressChart.data.datasets[0].data[1] = 100 - nb_progress;
-        progressChart.update();
+        update_circular_progress_doughnut(progressChart, nb_progress, 100 - nb_progress);
+        $("#optimize_doughnutChart_progress").html(nb_progress.toString()+"%");
     }
 }
 
@@ -216,22 +215,7 @@ var reportColumnsDef = [
 ];
 var first_refresh_state = ""
 
-var progressChart = new Chart($("#optimize_doughnutChart")[0].getContext('2d'), {
-    type: 'doughnut',
-    data: {
-        labels: ["Done", "Remaining"],
-        datasets: [
-            {
-                data: [0, 100],
-                backgroundColor: ["#F7464A","#949FB1"],
-                hoverBackgroundColor: ["#FF5A5E", "#A8B3C5"]
-            }
-        ]
-    },
-    options: {
-        responsive: true
-    }
-});
+var progressChart = create_circular_progress_doughnut();
 
 $(document).ready(function() {
 
