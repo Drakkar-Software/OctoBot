@@ -1,4 +1,6 @@
 sudo: enabled
+os:
+  - linux
 language: python
 python:
   - 3.6
@@ -15,8 +17,6 @@ install:
 script:
   - pip3 install -r dev_requirements.txt
   - pytest --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests
-# create binary
-  - pyinstaller start.py
 # if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "beta" ];
   - bash ./docs/delivery/travis_delivery.sh
 after_failure:
