@@ -10,7 +10,7 @@ git config --global user.name "Travis CI"
 
 git clone -b ${TRAVIS_BRANCH} --single-branch git://${GH_REPO} ${GH_REPO_NAME}
 
-cp -r ./${BUILD_DIR} ./${GH_REPO_NAME}
+cp -rf ./${BUILD_DIR} ./${GH_REPO_NAME}
 cd ./${GH_REPO_NAME}
 
 git add -f ./${BUILD_DIR}
