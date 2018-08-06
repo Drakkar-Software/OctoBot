@@ -8,16 +8,17 @@ from trading.exchanges.exchange_manager import ExchangeManager
 
 
 class DataCollector:
-    def __init__(self, config):
+    def __init__(self, config, auto_start=True):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.exchange_data_collectors_threads = []
-        self.logger.info("Create data collectors...")
 
         self.config[CONFIG_TIME_FRAME] = []
 
-        self.create_exchange_data_collectors()
+        if auto_start:
+            self.logger.info("Create data collectors...")
+            self.create_exchange_data_collectors()
 
     def create_exchange_data_collectors(self):
         available_exchanges = ccxt.exchanges
@@ -25,7 +26,7 @@ class DataCollector:
             if exchange_class_string in available_exchanges:
                 exchange_type = getattr(ccxt, exchange_class_string)
 
-                exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False)
+                exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False, rest_only=True)
                 exchange_inst = exchange_manager.get_exchange()
 
                 exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst)
@@ -38,6 +39,15 @@ class DataCollector:
                     self.exchange_data_collectors_threads.append(exchange_data_collector)
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
+
+    def execute_with_specific_target(self, exchange, symbol):
+        exchange_type = getattr(ccxt, exchange)
+        exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False, rest_only=True,
+                                           ignore_config=True)
+        exchange_inst = exchange_manager.get_exchange()
+        exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst, symbol)
+        files = exchange_data_collector.load_available_data()
+        return files[0]
 
     def stop(self):
         for data_collector in self.exchange_data_collectors_threads:

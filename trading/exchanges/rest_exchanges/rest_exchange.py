@@ -36,11 +36,18 @@ class RESTExchange(AbstractExchange):
 
     # ccxt exchange instance creation
     def create_client(self):
-        if self.exchange_manager.check_config(self.get_name()):
+        if self.exchange_manager.ignore_config or self.exchange_manager.check_config(self.get_name()):
             try:
+                if self.exchange_manager.ignore_config:
+                    key = ""
+                    secret = ""
+                else:
+                    key = decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY])
+                    secret = decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET])
+
                 self.client = self.exchange_type({
-                    'apiKey': decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
-                    'secret': decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]),
+                    'apiKey': key,
+                    'secret': secret,
                     'verbose': False,
                     'enableRateLimit': True
                 })

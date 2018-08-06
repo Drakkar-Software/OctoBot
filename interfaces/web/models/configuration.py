@@ -4,7 +4,7 @@ import logging
 import ccxt
 import requests
 
-from config.cst import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL
+from config.cst import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, UPDATED_CONFIG_SEPARATOR
 from interfaces import get_bot
 from services import AbstractService
 from tools.config_manager import ConfigManager
@@ -63,7 +63,7 @@ def get_symbol_list(exchanges):
             inst.load_markets()
             result += inst.symbols
         except Exception as e:
-            logging.getLogger().error(f"error when oading symbol list for {exchange}: {e}")
+            logging.getLogger().error(f"error when loading symbol list for {exchange}: {e}")
 
     return list(set(result))
 
@@ -77,3 +77,23 @@ def get_all_symbol_list():
         }
     except Exception as e:
         logging.getLogger().error(f"Failed to get currencies list from coinmarketcap : {e}")
+
+
+def get_full_exchange_list(remove_config_exchanges=False):
+    g_config = get_bot().get_config()
+    if remove_config_exchanges:
+        user_exchanges = [e for e in g_config[CONFIG_EXCHANGES]]
+        full_exchange_list = list(set(ccxt.exchanges) - set(user_exchanges))
+    else:
+        full_exchange_list = list(set(ccxt.exchanges))
+    # can't handle exchanges containing UPDATED_CONFIG_SEPARATOR character in their name
+    return [exchange for exchange in full_exchange_list if UPDATED_CONFIG_SEPARATOR not in exchange]
+
+
+def get_current_exchange():
+    g_config = get_bot().get_config()
+    exchanges = g_config[CONFIG_EXCHANGES]
+    if exchanges:
+        return next(iter(exchanges))
+    else:
+        return "binance"
