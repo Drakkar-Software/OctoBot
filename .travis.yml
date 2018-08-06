@@ -1,7 +1,6 @@
 sudo: enabled
 os:
   - linux
-  - osx
 language: python
 python:
   - 3.6
