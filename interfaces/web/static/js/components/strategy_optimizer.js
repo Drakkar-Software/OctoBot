@@ -1,6 +1,8 @@
 function recompute_nb_iterations(){
     var nb_selected = 0;
-    nb_selected = $("#risksSelect").find(":selected").length*Math.pow($("#timeFramesSelect").find(":selected").length, 2)*Math.pow($("#evaluatorsSelect").find(":selected").length,2);
+    nb_eval_iter = Math.pow(2, $("#evaluatorsSelect").find(":selected").length)-1;
+    nb_tf_iter = Math.pow(2, $("#timeFramesSelect").find(":selected").length)-1;
+    nb_selected = $("#risksSelect").find(":selected").length*nb_eval_iter*nb_tf_iter;
     $("#numberOfSimulatons").text(nb_selected);
 }
 
