@@ -75,6 +75,7 @@ class StrategyOptimizer:
 
                 self.total_nb_runs = int(len(risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
 
+                self.logger.info("Setting logging level to logging.ERROR to limit messages.")
                 set_global_logger_level(logging.ERROR)
 
                 self.run_id = 1
@@ -125,6 +126,7 @@ class StrategyOptimizer:
                 set_global_logger_level(previous_log_level)
                 self.is_computing = False
                 self.logger.info(f"{self.get_name()} finished computation.")
+                self.logger.info("Logging level restored.")
         else:
             raise RuntimeError(f"{self.get_name()} is already computing: processed "
                                f"{self.run_id}/{self.total_nb_runs} processed")
