@@ -17,5 +17,5 @@ git add -f ./${BUILD_DIR}
 git commit -a -m "TRAVIS : binary push"
 
 git remote remove origin
-git remote add origin https://${GH_TOKEN}@${GH_REF}.git
+git remote add origin https://${GH_TOKEN}@${GH_REPO}.git
 git push origin ${TRAVIS_BRANCH}
