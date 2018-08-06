@@ -71,7 +71,7 @@ class StrategyOptimizer:
                                  f"strategy using {self.trading_mode} trading mode, {all_TAs} technical evaluator(s), "
                                  f"{self.all_time_frames} time frames and {risks} risk(s).")
 
-                self.total_nb_runs = int(len(risks) * (math.pow(nb_TFs, 2) * math.pow(nb_TAs, 2)))
+                self.total_nb_runs = int(len(risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
 
                 set_global_logger_level(logging.ERROR)
 
