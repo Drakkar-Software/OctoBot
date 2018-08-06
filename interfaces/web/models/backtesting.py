@@ -1,4 +1,4 @@
-from backtesting.collector.data_file_manager import get_all_available_data_files, get_file_description
+from backtesting.collector.data_file_manager import get_all_available_data_files, get_file_description, delete_data_file
 from backtesting.backtester import Backtester
 from interfaces import get_bot
 from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
@@ -49,3 +49,11 @@ def get_backtesting_report():
         backtester = tools[BOT_TOOLS_BACKTESTING]
         return backtester.get_report()
     return {}
+
+
+def get_delete_data_file(file_name):
+    deleted, error = delete_data_file(file_name)
+    if deleted:
+        return True, f"{file_name} deleted"
+    else:
+        return False, f"Can't delete {file_name} ({error})"

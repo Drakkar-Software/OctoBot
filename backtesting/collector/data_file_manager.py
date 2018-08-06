@@ -2,7 +2,7 @@ import time
 import json
 import gzip
 from os.path import basename, isfile, join, splitext
-from os import listdir
+from os import listdir, remove
 
 from tools.symbol_util import merge_currencies
 from tools.time_frame_manager import TimeFrameManager
@@ -99,3 +99,15 @@ def get_all_available_data_files():
              for file in listdir(path)
              if isfile(join(path, file)) and splitext(file)[1] == DATA_FILE_EXT]
     return files
+
+
+def delete_data_file(file_name):
+    try:
+        file_path = join(CONFIG_DATA_COLLECTOR_PATH, file_name)
+        if isfile(file_path):
+            remove(file_path)
+            return True, ""
+        else:
+            return False, f"file can't be found"
+    except Exception as e:
+        return False, e
