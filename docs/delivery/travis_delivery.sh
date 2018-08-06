@@ -1,6 +1,6 @@
 #!/bin/sh
 
-pyinstaller start.py
+pyinstaller start.py --onfile
 
 BUILD_DIR="dist"
 MESSAGE=$(git log --format=%B -n 1 $TRAVIS_COMMIT)
