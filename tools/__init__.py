@@ -1,5 +1,6 @@
 import logging
 import sys
+import pyximport
 
 MIN_PYTHON_VERSION = (3, 6)
 
@@ -11,5 +12,7 @@ if not current_version >= MIN_PYTHON_VERSION:
                   + "." + str(current_version[1]) + "\n"
                   + "You can download Python last versions on: https://www.python.org/downloads/")
     sys.exit(-1)
+
+pyximport.install()
 
 # if compatible version, can proceed with imports
