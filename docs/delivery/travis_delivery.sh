@@ -9,8 +9,8 @@ git config --global user.email "travis@travis-ci.org"
 git config --global user.name "Travis CI"
 
 git clone git://${GH_REPO} ${TRAVIS_BRANCH}
-cp -r ./${BUILD_DIR} ${GH_REPO_NAME}/${BUILD_DIR}
-cd ${REPO}
+cp -r ./${BUILD_DIR} ${TRAVIS_BRANCH}/${BUILD_DIR}
+cd ${TRAVIS_BRANCH}
 
 git add -f ./${BUILD_DIR}
 git commit -a -m "TRAVIS : binary push"
