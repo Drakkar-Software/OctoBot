@@ -41,13 +41,17 @@ class DataCollector:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
 
     def execute_with_specific_target(self, exchange, symbol):
-        exchange_type = getattr(ccxt, exchange)
-        exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False, rest_only=True,
-                                           ignore_config=True)
-        exchange_inst = exchange_manager.get_exchange()
-        exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst, symbol)
-        files = exchange_data_collector.load_available_data()
-        return files[0]
+        try:
+            exchange_type = getattr(ccxt, exchange)
+            exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False, rest_only=True,
+                                               ignore_config=True)
+            exchange_inst = exchange_manager.get_exchange()
+            exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst, symbol)
+            files = exchange_data_collector.load_available_data()
+            return files[0]
+        except Exception as e:
+            self.logger.exception(e)
+            raise e
 
     def stop(self):
         for data_collector in self.exchange_data_collectors_threads:

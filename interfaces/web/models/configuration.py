@@ -65,7 +65,10 @@ def get_symbol_list(exchanges):
         except Exception as e:
             logging.getLogger().error(f"error when loading symbol list for {exchange}: {e}")
 
-    return list(set(result))
+    # filter symbols with a "." or no "/" because bot can't handle them for now
+    symbols = [res for res in result if "/" in res]
+
+    return list(set(symbols))
 
 
 def get_all_symbol_list():
