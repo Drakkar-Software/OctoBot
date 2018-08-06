@@ -49,7 +49,7 @@ class EvaluatorCreator:
                 is_evaluator_to_be_used = True
                 social_eval_class_instance.set_logger(logging.getLogger(social_eval_class.get_name()))
                 social_eval_class_instance.set_symbol(symbol)
-                social_eval_class_instance.prepare()
+                social_eval_class_instance.load_available_data()
 
                 # If evaluator is a dispatcher client --> check if dispatcher exists
                 # else warn and pass this evaluator

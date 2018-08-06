@@ -12,10 +12,11 @@ from trading.exchanges.websockets_exchanges import AbstractWebSocket
 
 
 class ExchangeManager:
-    def __init__(self, config, exchange_type, is_simulated=False, rest_only=False):
+    def __init__(self, config, exchange_type, is_simulated=False, rest_only=False, ignore_config=False):
         self.config = config
         self.exchange_type = exchange_type
         self.rest_only = rest_only
+        self.ignore_config = ignore_config
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.is_ready = False
