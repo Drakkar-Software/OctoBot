@@ -15,7 +15,7 @@ cp -rf ./${BUILD_DIR} ./${GH_REPO_NAME}
 cd ./${GH_REPO_NAME}
 
 git add -f ./${BUILD_DIR}
-git commit -a -m "TRAVIS : binary push"
+git commit -a -m "TRAVIS : binary push - ${TRAVIS_OS_NAME}"
 
 git remote remove origin
 git remote add origin https://${GH_TOKEN}@${GH_REPO}.git
