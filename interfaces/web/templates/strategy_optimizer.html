@@ -69,7 +69,7 @@
                 <h2>Strategy optimizer in progress</h2>
             </div>
             <div>
-                <canvas id="optimize_doughnutChart"></canvas>
+                <canvas id="optimize_doughnutChart" height="70%"></canvas>
             </div>
             <div class='progress'>
                 <div id='progess_bar_anim' class='progress-bar progress-bar-striped bg-danger progress-bar-animated' role='progressbar' aria-valuenow='100' aria-valuemin='0' aria-valuemax='100' style='width: 100%;'></div>
@@ -122,5 +122,6 @@
 {% endblock %}
 
 {% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/custom_elements.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/strategy_optimizer.js') }}"></script>
 {% endblock additional_scripts %}
