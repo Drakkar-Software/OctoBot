@@ -1,8 +1,4 @@
 sudo: enabled
-os:
-  - linux
-  - osx
-  - windows
 language: python
 python:
   - 3.6
