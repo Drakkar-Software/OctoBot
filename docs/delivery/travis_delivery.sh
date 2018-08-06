@@ -14,4 +14,4 @@ git remote remove origin
 git remote add origin https://${GH_TOKEN}@${GH_REF}.git
 git pull travis-builds
 
-git push origin HEAD:travis-builds
+git push origin
