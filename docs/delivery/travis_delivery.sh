@@ -8,10 +8,10 @@ MESSAGE=$(git log --format=%B -n 1 $TRAVIS_COMMIT)
 git config --global user.email "travis@travis-ci.org"
 git config --global user.name "Travis CI"
 
-git clone -b ${TRAVIS_BRANCH} --single-branch git://${GH_REPO} ${REPO}
+git clone -b ${TRAVIS_BRANCH} --single-branch git://${GH_REPO} ${GH_REPO_NAME}
 
-cp -r ./${BUILD_DIR} ./${REPO}
-cd ./${REPO}
+cp -r ./${BUILD_DIR} ./${GH_REPO_NAME}
+cd ./${GH_REPO_NAME}
 
 git add -f ./${BUILD_DIR}
 git commit -a -m "TRAVIS : binary push"
