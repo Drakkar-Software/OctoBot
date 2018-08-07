@@ -1,6 +1,5 @@
 import logging
 import sys
-import pyximport
 
 MIN_PYTHON_VERSION = (3, 6)
 
@@ -13,6 +12,7 @@ if not current_version >= MIN_PYTHON_VERSION:
                   + "You can download Python last versions on: https://www.python.org/downloads/")
     sys.exit(-1)
 
-pyximport.install()
+# binary tentacle importation
+sys.path.append(os.path.dirname(sys.executable))
 
 # if compatible version, can proceed with imports
