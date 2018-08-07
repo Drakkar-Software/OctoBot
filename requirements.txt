@@ -27,7 +27,6 @@ vaderSentiment
 ## Others
 gitpython
 psutil
-plotly
 colorlog
 cryptography >= 2.2.1
 pytz
