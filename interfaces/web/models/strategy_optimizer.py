@@ -21,9 +21,7 @@ def get_strategies_list():
         return []
 
 
-def get_time_frames_list(strategy_name=None):
-    if strategy_name is None:
-        strategy_name = get_current_strategy()
+def get_time_frames_list(strategy_name):
     if strategy_name:
         strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                Strategies, evaluator_parent_inspection)
@@ -32,9 +30,7 @@ def get_time_frames_list(strategy_name=None):
         return []
 
 
-def get_evaluators_list(strategy_name=None):
-    if strategy_name is None:
-        strategy_name = get_current_strategy()
+def get_evaluators_list(strategy_name):
     if strategy_name:
         strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                Strategies, evaluator_parent_inspection)
