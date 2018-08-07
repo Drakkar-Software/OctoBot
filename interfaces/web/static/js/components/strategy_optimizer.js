@@ -63,6 +63,25 @@ function start_optimizer_error_callback(data, update_url, source, result, status
     create_alert("error", "Error when starting optimizer: "+result.responseText, "");
 }
 
+function populate_select(element, options){
+    element.empty(); // remove old options
+    $.each(options, function(key,value) {
+        if (key == 0){
+            element.append($('<option selected = "selected" value="' + value + '" ></option>').attr("value", value).text(value));
+        }else{
+            element.append($('<option value="' + value + '" ></option>').attr("value", value).text(value));
+        }
+    });
+}
+
+function update_strategy_params(url, strategy){
+    var data = {strategy_name: strategy};
+    $.get(url, data, function(data, status){
+        populate_select($("#evaluatorsSelect"), data["evaluators"]);
+        populate_select($("#timeFramesSelect"), data["time_frames"]);
+    });
+}
+
 function update_progress(progress, overall_progress){
     $("#progess_bar_anim").css('width', progress+'%').attr("aria-valuenow", progress)
 
@@ -220,6 +239,10 @@ var progressChart = create_circular_progress_doughnut();
 $(document).ready(function() {
 
     check_disabled();
+
+    $('#strategySelect').on('input', function() {
+        update_strategy_params($('#strategySelect').attr(update_url_attr), $('#strategySelect').val())
+    });
 
     $(".multi-select-element").select2({
         dropdownAutoWidth : true,

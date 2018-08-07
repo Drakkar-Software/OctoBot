@@ -35,7 +35,7 @@ def build_file_name(exchange, symbol):
            f"{time.strftime(DATA_FILE_TIME_WRITE_FORMAT)}{DATA_FILE_EXT}"
 
 
-def write_data_file(file_name, content, ):
+def write_data_file(file_name, content):
     with gzip.open(file_name, 'wt') as json_file:
         json.dump(content, json_file)
 

@@ -13,7 +13,7 @@ function create_circular_progress_doughnut(label1="% Done", label2="% Remaining"
         },
         options: {
             responsive: true,
-            cutoutPercentage: 90
+            cutoutPercentage: 80
         }
     });
 }

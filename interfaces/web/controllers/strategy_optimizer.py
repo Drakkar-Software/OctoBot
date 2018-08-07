@@ -45,12 +45,19 @@ def strategy_optimizer():
                 optimizer_status, progress, overall_progress = get_optimizer_status()
                 status = {"status": optimizer_status, "progress": progress, "overall_progress": overall_progress}
                 return jsonify(status)
-
+            if target == "strategy_params":
+                strategy_name = request.args["strategy_name"]
+                params = {
+                    "time_frames": list(get_time_frames_list(strategy_name)),
+                    "evaluators": list(get_evaluators_list(strategy_name))
+                }
+                return jsonify(params)
 
         else:
+            current_strategy = get_current_strategy()
             return render_template('strategy_optimizer.html',
                                    strategies=get_strategies_list(),
-                                   current_strategy=get_current_strategy(),
-                                   time_frames=get_time_frames_list(),
-                                   evaluators=get_evaluators_list(),
+                                   current_strategy=current_strategy,
+                                   time_frames=get_time_frames_list(current_strategy),
+                                   evaluators=get_evaluators_list(current_strategy),
                                    risks=get_risks_list())
