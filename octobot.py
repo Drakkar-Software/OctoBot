@@ -162,11 +162,15 @@ class OctoBot:
                                 self.logger.warning(f"{exchange.get_name()} doesn't support {symbol}")
 
     def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
-        # Create real time TA evaluators
-        real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
-                                                                            exchange,
-                                                                            symbol_evaluator.get_symbol(),
-                                                                            self.relevant_evaluators)
+
+        if Backtesting.enabled(self.config):
+            real_time_ta_eval_list = []
+        else:
+            # Create real time TA evaluators
+            real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
+                                                                                exchange,
+                                                                                symbol_evaluator.get_symbol(),
+                                                                                self.relevant_evaluators)
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
             if exchange.get_exchange_manager().time_frame_exists(time_frame.value, symbol_evaluator.get_symbol()):
