@@ -17,6 +17,7 @@ Python-Twitter
 # Web
 jinja2
 flask
+werkzeug
 dash
 dash-table-experiments
 dash-renderer
