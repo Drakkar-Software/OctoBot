@@ -1,8 +1,11 @@
+import logging
+
+
 from backtesting.collector.data_file_manager import get_all_available_data_files, get_file_description, delete_data_file
 from backtesting.backtester import Backtester
 from backtesting.collector.data_collector import DataCollector
 from interfaces import get_bot
-from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
+from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, CONFIG_DATA_COLLECTOR_PATH
 
 
 def get_data_files_with_description():
@@ -62,7 +65,6 @@ def get_delete_data_file(file_name):
 
 def collect_data_file(exchange, symbol):
     success = False
-    result = ""
     data_collector = DataCollector(get_bot().get_config(), False)
 
     try:
@@ -76,3 +78,15 @@ def collect_data_file(exchange, symbol):
         return success, f"{result} saved"
     else:
         return success, f"Can't collect data for {symbol} on {exchange} ({result})"
+
+
+def save_data_file(name, file):
+    try:
+        file.save(CONFIG_DATA_COLLECTOR_PATH+name)
+        message = f"{name} saved"
+        logging.getLogger("DataCollectorWebInterfaceModel").info(message)
+        return True, message
+    except Exception as e:
+        message = f"Error when saving file: {e}. File can't be saved."
+        logging.getLogger("DataCollectorWebInterfaceModel").error(message)
+        return False, message

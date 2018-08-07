@@ -32,9 +32,9 @@
     </div>
 </div>
 
-
 <br>
-<div id="results_datatable_card" class="card">
+
+<div class="card">
     <div class="card-header"><h2>Data collection</h2></div>
     <div class="card-body">
       <div class="input-group">
@@ -71,8 +71,29 @@
     <button id="collect_data" type="button" class="btn btn-primary" update-url="{{ url_for('data_collector', action_type='start_collector') }}">Collect new data</button>
 </div>
 
+<br>
+
+<div class="card">
+    <div class="card-header"><h2>Import data file</h2></div>
+    <div class="card-body">
+        <form id="importForm" action = "{{ url_for('data_collector', action_type='import_data_file') }}" method = "POST"
+         enctype = "multipart/form-data">
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" id="inputFile" name="file" accept=".data">
+                <label class="custom-file-label" for="inputFile" id="inputFileLabel">Choose data file</label>
+            </div>
+            <button class="btn btn-primary" type="submit" id="importFileButton">Import data file</button>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block additional_scripts %}
 <script src="{{ url_for('static', filename='js/components/data_collector.js') }}"></script>
+{% if alert %}
+<script>
+    display_alert("{{alert["success"]}}", "{{alert["message"]}}")
+</script>
+{% endif %}
 {% endblock additional_scripts %}
