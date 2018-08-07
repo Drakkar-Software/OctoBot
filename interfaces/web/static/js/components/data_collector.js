@@ -5,6 +5,15 @@ function handle_data_files_buttons(){
         var update_url = $("#dataFilesTable").attr(update_url_attr);
         send_and_interpret_bot_update(request, update_url, $(this), delete_success_callback, delete_error_callback)
     });
+
+}
+
+function handle_file_selection(){
+    var input_elem = $('#inputFile');
+    var file_name = input_elem.val().split('\\').pop();
+    $('#inputFileLabel').html(file_name);
+    has_valid_name = file_name.indexOf(".data") !== -1;
+    $('#importFileButton').attr('disabled', !has_valid_name);
 }
 
 function delete_success_callback(updated_data, update_url, dom_root_element, msg, status){
@@ -28,6 +37,13 @@ function lock_collector_ui(lock=true){
     $('#collect_data').prop('disabled', lock);
 }
 
+function reload_table(){
+    $("#collector_data").load(location.href.split("?")[0] + " #collector_data",function(){
+        dataFilesTable = $('#dataFilesTable').DataTable();
+        handle_data_files_buttons();
+    });
+}
+
 function start_collector(){
     lock_collector_ui();
     var request = {}
@@ -40,15 +56,20 @@ function start_collector(){
 function collector_success_callback(updated_data, update_url, dom_root_element, msg, status){
     create_alert("success", msg, "");
     lock_collector_ui(false);
-    $("#collector_data").load(location.href + " #collector_data",function(){
-        dataFilesTable = $('#dataFilesTable').DataTable();
-        handle_data_files_buttons();
-    });
+    reload_table();
 }
 
 function collector_error_callback(updated_data, update_url, dom_root_element, result, status, error){
     create_alert("error", result.responseText, "");
     lock_collector_ui(false);
+}
+
+function display_alert(success, message){
+    if(success == "True"){
+        create_alert("success", message, "");
+    }else{
+        create_alert("error", message, "");
+    }
 }
 
 function update_symbol_list(url, exchange){
@@ -67,6 +88,7 @@ var dataFilesTable = $('#dataFilesTable').DataTable();
 
 $(document).ready(function() {
     handle_data_files_buttons();
+    $('#importFileButton').attr('disabled', true);
     $('#dataFilesTable').on("draw.dt", function(){
         handle_data_files_buttons();
     });
@@ -75,5 +97,8 @@ $(document).ready(function() {
     });
     $('#collect_data').click(function(){
         start_collector();
+    });
+    $('#inputFile').on('change',function(){
+        handle_file_selection();
     });
 });
