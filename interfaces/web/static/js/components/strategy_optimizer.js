@@ -65,7 +65,7 @@ function start_optimizer_error_callback(data, update_url, source, result, status
 
 function populate_select(element, options){
     element.empty(); // remove old options
-    $.each(options, function(key,value) {
+    $.each(options, function(key, value) {
         if (key == 0){
             element.append($('<option selected = "selected" value="' + value + '" ></option>').attr("value", value).text(value));
         }else{
@@ -74,11 +74,33 @@ function populate_select(element, options){
     });
 }
 
+function set_selected(element, selected){
+    element.find("option").each(function(){
+        $(this).removeAttr('selected');
+    });
+    $.each(selected, function(key, value){
+        element.find("option[value="+value+"]").each(function(){
+            $(this).attr('selected',true);
+        });
+    });
+}
+
 function update_strategy_params(url, strategy){
     var data = {strategy_name: strategy};
     $.get(url, data, function(data, status){
         populate_select($("#evaluatorsSelect"), data["evaluators"]);
         populate_select($("#timeFramesSelect"), data["time_frames"]);
+    });
+}
+
+function get_current_run_params(){
+    var url = $("#paramSettings").attr(update_url_attr);
+    $.get(url, data, function(data, status){
+        set_selected($("#strategySelect"), data["strategy_name"]);
+        set_selected($("#evaluatorsSelect"), data["evaluators"]);
+        set_selected($("#timeFramesSelect"), data["time_frames"]);
+        set_selected($("#risksSelect"), data["risks"]);
+        set_selected($("#tradingModeSelect"), data["trading_mode"]);
     });
 }
 
@@ -102,6 +124,10 @@ function check_optimizer_state(reportTable){
         if(status == "computing"){
             lock_inputs();
             update_progress(progress, overall_progress)
+            if (first_refresh_state == ""){
+                // if just loaded this page: get current run parameters
+                get_current_run_params();
+            }
             first_refresh_state = status;
             if($("#report_datatable_card").is(":visible")){
                 $("#report_datatable_card").hide();
@@ -119,6 +145,10 @@ function check_optimizer_state(reportTable){
                 if(first_refresh_state != "" && first_refresh_state != "finished"){
                     create_alert("success", "Strategy optimized finished simulations.", "");
                     first_refresh_state="finished";
+                }
+                if (first_refresh_state == ""){
+                    // if just loaded this page: get current run parameters
+                    get_current_run_params();
                 }
             }
         }

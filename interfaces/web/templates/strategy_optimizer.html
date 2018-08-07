@@ -2,7 +2,19 @@
 {% block body %}
 <div class="card" id="strategyOptimizerInputs" update-url="{{ url_for('strategy_optimizer', update_type='optimizer_status') }}">
     <div class="card-header"><h1>Strategy optimizer</h1></div>
-    <div class="card-body">
+    <div class="card-body" id="paramSettings" update-url="{{ url_for('strategy_optimizer', update_type='run_params') }}">
+        <div class="input-group">
+          <div class="input-group-prepend mb-3">
+            <label class="input-group-text" for="tradingModeSelect">
+                Trading Mode
+            </label>
+          </div>
+          <select class="custom-select mb-9" id="tradingModeSelect" disabled>
+            <option value={{trading_mode}} selected="selected">
+              {{trading_mode}}
+            </option>
+          </select>
+        </div>
         <div class="input-group">
           <div class="input-group-prepend mb-3">
             <label class="input-group-text" for="strategySelect">
@@ -126,4 +138,7 @@
 {% block additional_scripts %}
 <script src="{{ url_for('static', filename='js/common/custom_elements.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/strategy_optimizer.js') }}"></script>
+<script>
+    recompute_nb_iterations();
+</script>
 {% endblock additional_scripts %}
