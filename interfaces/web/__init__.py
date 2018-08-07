@@ -2,7 +2,6 @@ import copy
 import logging
 import time
 
-import dash
 import flask
 import numpy
 
@@ -14,10 +13,6 @@ server_instance = flask.Flask(__name__)
 
 server_instance.register_blueprint(advanced)
 server_instance.register_blueprint(api)
-
-# dash
-app_instance = dash.Dash(__name__, sharing=True, server=server_instance, url_base_pathname='/dashboard')
-app_instance.config['suppress_callback_exceptions'] = True
 
 # disable Flask logging
 log = logging.getLogger('werkzeug')
@@ -100,15 +95,3 @@ def get_symbol_data_history(symbol, time_frame):
 
 def get_notifications():
     return notifications
-
-
-def load_callbacks():
-    from interfaces.web.controllers.dash import update_values, \
-        update_strategy_values, \
-        update_time_frame_dropdown_options, \
-        update_symbol_dropdown_options, \
-        update_symbol_dropdown_value, \
-        update_evaluator_dropdown_options, \
-        update_evaluator_dropdown_values, \
-        update_currencies_amounts, \
-        update_portfolio_value
