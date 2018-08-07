@@ -5,6 +5,7 @@ from time import sleep
 from config.cst import CONFIG_WEB, CONFIG_CATEGORY_SERVICES, CONFIG_WEB_IP, CONFIG_WEB_PORT
 from interfaces import get_bot
 from interfaces.web import server_instance
+from interfaces.web.controllers import load_routes
 
 
 class WebApp(threading.Thread):
@@ -21,6 +22,8 @@ class WebApp(threading.Thread):
 
         # Define the WSGI application object
         self.app = server_instance
+
+        load_routes()
 
         self.app.run(host=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP],
                      port=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT],
