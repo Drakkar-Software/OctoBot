@@ -230,7 +230,10 @@ class ExchangeSimulator(AbstractExchange):
         candles = self._extract_data_with_limit(symbol, time_frame)
         if time_frame is not None:
             self.time_frame_get_times[symbol][time_frame.value] += 1
-        self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
+            # if it's at least the second iteration: only use the last candle, otherwise use all
+            if self.time_frame_get_times[symbol][time_frame.value] > 1:
+                candles = candles[-1]
+        self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles)
 
     def _get_used_time_frames(self, symbol):
         if symbol in self.time_frames_offset:
