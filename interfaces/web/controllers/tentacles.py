@@ -9,7 +9,7 @@ from interfaces.web.models.tentacles import get_tentacles_packages, \
 
 @server_instance.route("/tentacles")
 def tentacles():
-    return render_template('tentacles.html',
+    return render_template("tentacles.html",
                            get_tentacles=get_tentacles)
 
 
@@ -81,5 +81,5 @@ def tentacle_packages():
         return _handle_tentacles_pages_post(update_type)
 
     else:
-        return render_template('tentacle_packages.html',
+        return render_template("tentacle_packages.html",
                                get_tentacles_packages=get_tentacles_packages)
