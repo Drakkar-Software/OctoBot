@@ -79,10 +79,11 @@ function set_selected(element, selected){
         $(this).removeAttr('selected');
     });
     $.each(selected, function(key, value){
-        element.find("option[value="+value+"]").each(function(){
+        element.find("option[value='"+value+"']").each(function(){
             $(this).attr('selected',true);
         });
     });
+    element.trigger('change');
 }
 
 function update_strategy_params(url, strategy){
@@ -99,6 +100,7 @@ function get_current_run_params(){
         set_selected($("#strategySelect"), data["strategy_name"]);
         set_selected($("#evaluatorsSelect"), data["evaluators"]);
         set_selected($("#timeFramesSelect"), data["time_frames"]);
+        data["risks"][0] = "1.0"; // force 1.0 to comply with interface
         set_selected($("#risksSelect"), data["risks"]);
         set_selected($("#tradingModeSelect"), data["trading_mode"]);
     });
