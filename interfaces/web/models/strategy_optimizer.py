@@ -8,7 +8,7 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator import Strategies
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
 from tools.time_frame_manager import TimeFrameManager
-from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
+from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, CONFIG_TRADER, CONFIG_TRADER_MODE
 from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer
 
 
@@ -89,6 +89,25 @@ def get_optimizer_report():
         return optimizer.get_report()
     else:
         return []
+
+
+def get_current_run_params():
+    tools = get_bot().get_tools()
+    params = {}
+    if tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
+        optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
+        params = {
+            "strategy_name": [optimizer.strategy_class.get_name()],
+            "time_frames": [tf.value for tf in optimizer.all_time_frames],
+            "evaluators": optimizer.all_TAs,
+            "risks": optimizer.risks,
+            "trading_mode": [optimizer.trading_mode]
+        }
+    return params
+
+
+def get_trading_mode():
+    return get_bot().get_config()[CONFIG_TRADER][CONFIG_TRADER_MODE]
 
 
 def get_optimizer_status():
