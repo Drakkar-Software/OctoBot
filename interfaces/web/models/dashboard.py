@@ -4,7 +4,7 @@ from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
     get_symbol_data_history
 from tools.symbol_util import split_symbol
-from tools.timestamp_util import timestamps_to_local
+from tools.timestamp_util import convert_timestamps_to_datetime
 
 GET_SYMBOL_SEPARATOR = "|"
 
@@ -49,7 +49,9 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
                     add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
                     data = get_symbol_data_history(symbol, time_frame)
 
-                    data_x = timestamps_to_local(data[PriceIndexes.IND_PRICE_TIME.value])
+                    data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value],
+                                                            format="%y-%m-%d %H:%M:%S",
+                                                            force_timezone=True)
 
                     if list_arrays:
                         return {
