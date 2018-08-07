@@ -12,6 +12,7 @@ def tentacles():
     return render_template('tentacles.html',
                            get_tentacles=get_tentacles)
 
+
 def _handle_tentacles_pages_post(update_type):
     if update_type == "add_package":
         request_data = request.get_json()
