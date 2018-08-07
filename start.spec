@@ -6,7 +6,7 @@ block_cipher = None
 a = Analysis(['start.py'],
              pathex=['/home/herklos/dev/drakkars/OctoBot'],
              binaries=[],
-             datas=[ ('./docs/delivery/data/vader_lexicon.txt', './vaderSentiment/vader_lexicon.txt') ],
+             datas=[],
              hiddenimports=["colorlog", "tulipy", "vaderSentiment", "vaderSentiment.vaderSentiment",
              "tools.decoding_encoding", "newspaper", "pytrends", "pytrends.exceptions", "pytrends.request",
              "evaluator.Dispatchers.reddit_dispatcher", "evaluator.Dispatchers.twitter_dispatcher"],
