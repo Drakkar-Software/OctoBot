@@ -8,22 +8,13 @@
     <h1>Welcome to OctoBot</h1>
 </div>
 
-<!--<div class="view animated fadeIn">-->
-  <!--<img src="../assets/images/octobot.svg" class="img-fluid mx-auto" alt="OctoBot" style="width:40%">-->
-    <!--<div class="mask flex-center waves-effect waves-light"></div>-->
-<!--</div>-->
-
-<!-- Footer -->
-<footer class="page-footer font-small red lighten-2">
-
-  <!-- Copyright -->
-  <div class="footer-copyright text-center py-3">Follow OctoBot project updates on
-    <a href="https://github.com/Drakkar-Software" target="_blank"><i class="fab fa-github"></i> GitHub</a>
-    <a href="https://twitter.com/HerklosBotCrypt" target="_blank"><i class="fab fa-twitter"></i></a>
-  </div>
-  <!-- Copyright -->
-
-</footer>
-<!-- Footer -->
-
+<div id="graph-symbol-price"></div>
 {% endblock %}
+
+{% block additional_scripts %}
+    <script src="{{ url_for('static', filename='js/components/dashboard.js') }}"></script>
+
+    <script>
+        create_candlestick_graph("graph-symbol-price", [], [], [], [], []);
+    </script>
+{% endblock additional_scripts %}
