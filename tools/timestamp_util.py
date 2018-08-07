@@ -1,24 +1,20 @@
-from datetime import datetime
 import time
-import pytz
-import tzlocal
-
+from datetime import datetime
 
 _EPOCH = time.time()
-LOCAL_TIMEZONE = tzlocal.get_localzone()
 TIMEZONE_DELTA = datetime.fromtimestamp(_EPOCH) - datetime.utcfromtimestamp(_EPOCH)
 
 
-def convert_timestamp_to_datetime(timestamp, from_timezone=pytz.utc, to_timezone=LOCAL_TIMEZONE, force_timezone=False):
-    converted_time = datetime.fromtimestamp(timestamp, tz=from_timezone).astimezone(to_timezone)
-    if force_timezone:
-        return converted_time + TIMEZONE_DELTA
-    return converted_time
+def convert_timestamp_to_datetime(timestamp, format='%d/%m/%y %H:%M'):
+    return datetime.fromtimestamp(timestamp_to_local(timestamp)).strftime(format)
 
 
-def convert_timestamps_to_datetime(timestamps, from_timezone=pytz.utc,
-                                   to_timezone=LOCAL_TIMEZONE, force_timezone=False):
-    return [convert_timestamp_to_datetime(timestamp, from_timezone, to_timezone, force_timezone)
+def timestamp_to_local(timestamp):
+    return timestamp + TIMEZONE_DELTA.seconds
+
+
+def timestamps_to_local(timestamps):
+    return [timestamp_to_local(timestamp)
             for timestamp in timestamps]
 
 

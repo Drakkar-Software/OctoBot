@@ -15,7 +15,6 @@
     <script src="{{ url_for('static', filename='js/components/dashboard.js') }}"></script>
 
     <script>
-        get_symbol_price_graph("binance", "BTC|USDT", "1h");
-        create_candlestick_graph("graph-symbol-price", [], [], [], [], []);
+        get_symbol_price_graph("graph-symbol-price", "binance", "BTC|USDT", "1h");
     </script>
 {% endblock additional_scripts %}

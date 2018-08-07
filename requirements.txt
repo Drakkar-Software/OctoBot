@@ -29,6 +29,4 @@ gitpython
 psutil
 colorlog
 cryptography >= 2.2.1
-pytz
-tzlocal
 requests

@@ -1,23 +1,27 @@
-function get_symbol_price_graph(exchange_name, symbol, time_frame){
+function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame){
+    const ajax_url = "/dashboard/currency_price_graph_update/"+ exchange_name +"/" + symbol + "/" + time_frame;
     $.ajax({
-        url: "/dashboard/currency_graph_update/"+ exchange_name +"/" + symbol + "/" + time_frame,
+        url: ajax_url,
         type: "POST",
         dataType: "json",
         contentType: 'application/json',
-        data: null,
         success: function(msg, status){
-            console.log(msg);
+            create_candlestick_graph(element_id, msg);
         },
         error: function(result, status, error){
-            window.console&&console.error(result);
-            window.console&&console.error(status);
             window.console&&console.error(error);
         },
     });
 }
 
-function create_candlestick_graph(element_id, data_time, data_close, data_high, data_low, data_open){
-    var price_trace = {
+function create_candlestick_graph(element_id, symbol_price_data){
+    const data_time = symbol_price_data["time"];
+    const data_close = symbol_price_data["close"];
+    const data_high = symbol_price_data["high"];
+    const data_low = symbol_price_data["low"];
+    const data_open = symbol_price_data["open"];
+
+    const price_trace = {
       x: data_time,
       close: data_close,
       decreasing: {line: {color: '#7F7F7F'}},
@@ -31,9 +35,9 @@ function create_candlestick_graph(element_id, data_time, data_close, data_high, 
       yaxis: 'y'
     };
 
-    var data = [price_trace];
+    const data = [price_trace];
 
-    var layout = {
+    const layout = {
       dragmode: 'zoom',
       margin: {
         r: 10,
@@ -55,5 +59,6 @@ function create_candlestick_graph(element_id, data_time, data_close, data_high, 
       }
     };
 
+    console.log(data);
     Plotly.plot(element_id, data, layout);
 }
