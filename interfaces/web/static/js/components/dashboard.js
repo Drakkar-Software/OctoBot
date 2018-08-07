@@ -24,9 +24,9 @@ function create_candlestick_graph(element_id, symbol_price_data){
     const price_trace = {
       x: data_time,
       close: data_close,
-      decreasing: {line: {color: '#7F7F7F'}},
+      decreasing: {line: {color: '#F65A33'}},
       high: data_high,
-      increasing: {line: {color: '#17BECF'}},
+      increasing: {line: {color: '#7DF98D'}},
       line: {color: 'rgba(31,119,180,1)'},
       low: data_low,
       open: data_open,
@@ -56,6 +56,11 @@ function create_candlestick_graph(element_id, symbol_price_data){
         autorange: true,
         domain: [0, 1],
         type: 'linear'
+      },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: {
+        color: "white"
       }
     };
 
