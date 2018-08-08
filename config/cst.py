@@ -1,5 +1,6 @@
 from enum import Enum
 
+PROJECT_NAME = "Octobot"
 SHORT_VERSION = "0.1.6"
 MINOR_VERSION = "1"
 VERSION_DEV_PHASE = "beta"
