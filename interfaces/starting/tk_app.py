@@ -28,7 +28,7 @@ class TkApp(threading.Thread):
             self.window.geometry("500x430")
 
             # background
-            background_image = PhotoImage(file="interfaces/web/assets/images/octopus.png")
+            background_image = PhotoImage(file="interfaces/web/assets/images/octobot.png")
             background_label = Label(self.window, image=background_image)
             background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
