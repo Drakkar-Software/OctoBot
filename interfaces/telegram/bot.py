@@ -1,5 +1,5 @@
-import logging
 import copy
+import logging
 import os
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
@@ -106,7 +106,7 @@ class TelegramApp:
     @staticmethod
     def command_ping(_, update):
         update.message.reply_text("I'm alive since {0}.".format(
-            convert_timestamp_to_datetime((get_bot().get_start_time())).strftime('%Y-%m-%d %H:%M:%S')))
+            convert_timestamp_to_datetime(get_bot().get_start_time(), '%Y-%m-%d %H:%M:%S')))
 
     @staticmethod
     def command_risk(_, update):
