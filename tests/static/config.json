@@ -75,10 +75,12 @@
     "trades": false,
     "notification-type": 1
   },
-  "trader":{
-    "enabled": false,
+  "trading":{
     "risk": 1,
     "mode": "DailyTradingMode"
+  },
+  "trader":{
+    "enabled": false
   },
   "trader-simulator":{
     "enabled": true,

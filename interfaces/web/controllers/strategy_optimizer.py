@@ -3,7 +3,7 @@ from flask import render_template, request, jsonify
 from interfaces.web import server_instance
 from interfaces.web.models.strategy_optimizer import get_strategies_list, get_current_strategy, get_time_frames_list, \
     get_evaluators_list, get_risks_list, start_optimizer, get_optimizer_results, get_optimizer_status, \
-    get_optimizer_report
+    get_optimizer_report, get_current_run_params, get_trading_mode
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -60,4 +60,6 @@ def strategy_optimizer():
                                    current_strategy=current_strategy,
                                    time_frames=get_time_frames_list(current_strategy),
                                    evaluators=get_evaluators_list(current_strategy),
-                                   risks=get_risks_list())
+                                   risks=get_risks_list(),
+                                   trading_mode=get_trading_mode(),
+                                   run_params=get_current_run_params())

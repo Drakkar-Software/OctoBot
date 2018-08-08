@@ -2,7 +2,7 @@ import logging
 
 
 from tests.functional_tests.strategy_evaluators_tests.abstract_strategy_test import AbstractStrategyTest
-from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME
+from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME
 from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 
@@ -22,7 +22,7 @@ class StrategyTestSuite(AbstractStrategyTest):
     def get_test_suite_result(self):
         return TestSuiteResult(self._profitability_results,
                                self._trades_counts,
-                               self.config[CONFIG_TRADER][CONFIG_TRADER_RISK],
+                               self.config[CONFIG_TRADING][CONFIG_TRADER_RISK],
                                self.config[CONFIG_FORCED_TIME_FRAME],
                                self.config[CONFIG_FORCED_EVALUATOR],
                                self.strategy_evaluator_class.get_name())

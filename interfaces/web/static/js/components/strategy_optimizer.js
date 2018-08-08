@@ -65,7 +65,7 @@ function start_optimizer_error_callback(data, update_url, source, result, status
 
 function populate_select(element, options){
     element.empty(); // remove old options
-    $.each(options, function(key,value) {
+    $.each(options, function(key, value) {
         if (key == 0){
             element.append($('<option selected = "selected" value="' + value + '" ></option>').attr("value", value).text(value));
         }else{

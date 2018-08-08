@@ -111,6 +111,9 @@
             <div class="card-body">
                  <!-- Card deck -->
                 <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                    <span class="col-lg-12">
+                        {{ m_config_trader_card.config_trader_card(config_trading, "trading", "Trading settings") }}
+                    </span>
                     {{ m_config_trader_card.config_trader_card(config_trader, "trader", "Trader") }}
                     {{ m_config_trader_card.config_trader_card(config_trader_simulator, "trader-simulator", "Trader simulator") }}
                 </div>
