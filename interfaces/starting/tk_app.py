@@ -24,6 +24,7 @@ class TkApp(threading.Thread):
             self.window.protocol("WM_DELETE_WINDOW", self.close_callback)
             # window settings
             self.window.title(PROJECT_NAME + " - Launcher")
+            self.window.iconbitmap('interfaces/web/static/favicon.ico')
             self.window.geometry("500x430")
 
             # background
@@ -32,7 +33,7 @@ class TkApp(threading.Thread):
             background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
             # buttons
-            start_button = Button(self.window, text="Start Octobot", command=self.start_callback)
+            start_button = Button(self.window, text="Open OctoBot", command=self.start_callback)
             start_button.pack()
             self.window.mainloop()
 
@@ -48,8 +49,7 @@ class TkApp(threading.Thread):
         while get_bot() is None or not get_bot().is_ready():
             sleep(0.1)
 
-        webbrowser.open(f"http://{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP]}:"
-                        f"{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT]}")
+        webbrowser.open(f"http://localhost:{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT]}")
 
     def stop(self):
         self.window.quit()
