@@ -90,7 +90,7 @@ def start_octobot(starting_args):
 
                     TelegramApp.enable(config, starting_args.telegram)
 
-                    WebService.enable(config, starting_args.web)
+                    WebService.enable(config, not starting_args.no_web)
 
                     update_config_with_args(starting_args, config)
 
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--update', help='update OctoBot with the latest version available',
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
-    parser.add_argument('-w', '--web', help='Start web server',
+    parser.add_argument('-nw', '--no_web', help="Don't start web server",
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')
