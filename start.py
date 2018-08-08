@@ -7,6 +7,7 @@ from logging.config import fileConfig
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
+from interfaces import starting
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
 from tools.commands import Commands
@@ -99,6 +100,7 @@ def start_octobot(starting_args):
                     import interfaces
 
                     interfaces.__init__(bot, config)
+                    starting.__init__(config)
 
                     if starting_args.start:
                         Commands.start_bot(bot, logger)

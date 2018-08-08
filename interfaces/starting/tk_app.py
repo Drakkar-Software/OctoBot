@@ -1,14 +1,19 @@
 import _tkinter
 import logging
 import threading
+import webbrowser
+from time import sleep
 from tkinter import *
 
-from config.cst import PROJECT_NAME
+from config.cst import PROJECT_NAME, CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT, CONFIG_WEB_IP
+from interfaces import get_bot
+from tools.commands import Commands
 
 
 class TkApp(threading.Thread):
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
+        self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.window = None
         self.start()
@@ -16,6 +21,7 @@ class TkApp(threading.Thread):
     def run(self):
         try:
             self.window = Tk()
+            self.window.protocol("WM_DELETE_WINDOW", self.close_callback)
             # window settings
             self.window.title(PROJECT_NAME + " - Launcher")
             self.window.geometry("500x430")
@@ -33,8 +39,17 @@ class TkApp(threading.Thread):
         except _tkinter.TclError as e:
             self.logger.error("Failed to start tk_app" + str(e))
 
+    @staticmethod
+    def close_callback():
+        Commands.stop_bot(get_bot())
+
     def start_callback(self):
-        pass
+        # wait bot is ready
+        while get_bot() is None or not get_bot().is_ready():
+            sleep(0.1)
+
+        webbrowser.open(f"http://{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP]}:"
+                        f"{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT]}")
 
     def stop(self):
         self.window.quit()
