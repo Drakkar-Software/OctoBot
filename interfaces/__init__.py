@@ -1,5 +1,3 @@
-from interfaces.starting.tk_app import TkApp
-
 bot_instance = None
 global_config = None
 reference_market = None
@@ -12,13 +10,6 @@ def __init__(bot, config):
 
     global global_config
     global_config = config
-
-    start_tk_app()
-
-
-def start_tk_app():
-    global tk_app
-    tk_app = TkApp()
 
 
 def get_bot():
