@@ -24,10 +24,12 @@
           <select class="custom-select mb-9" id="strategySelect" update-url="{{ url_for('strategy_optimizer', update_type='strategy_params') }}">
             {% for strategy in strategies %}
                 <option value={{strategy}}
-                {% if strategy == current_strategy %}
-                    selected="selected"
-                {% endif %}>
-                  {{strategy}}
+                    {% if run_params['strategy_name'] and strategy in run_params['strategy_name'] %}
+                        selected="selected"
+                    {% elif strategy == current_strategy %}
+                        selected="selected"
+                    {% endif %}>
+                      {{strategy}}
                 </option>
             {% endfor %}
           </select>
@@ -39,10 +41,12 @@
           <select class="custom-select multi-select-element mb-9" id="evaluatorsSelect" multiple="multiple">
             {% for evaluator in evaluators %}
                 <option value={{evaluator}}
-                {% if loop.index == 1 %}
-                    selected="selected"
-                {% endif %}>
-                  {{evaluator}}
+                    {% if run_params['evaluators'] and evaluator in run_params['evaluators'] %}
+                        selected="selected"
+                    {% elif loop.index == 1 %}
+                        selected="selected"
+                    {% endif %}>
+                      {{evaluator}}
                 </option>
             {% endfor %}
           </select>
@@ -54,10 +58,12 @@
           <select class="custom-select multi-select-element mb-9" id="timeFramesSelect" multiple="multiple">
             {% for timeframe in time_frames %}
                 <option value={{timeframe}}
-                {% if loop.index == 1 %}
-                    selected="selected"
-                {% endif %}>
-                  {{timeframe}}
+                    {% if run_params['time_frames'] and timeframe in run_params['time_frames'] %}
+                        selected="selected"
+                    {% elif loop.index == 1 %}
+                        selected="selected"
+                    {% endif %}>
+                      {{timeframe}}
                 </option>
             {% endfor %}
           </select>
@@ -69,10 +75,12 @@
           <select class="custom-select multi-select-element mb-9" id="risksSelect" multiple="multiple">
             {% for risk in risks %}
                 <option value={{risk}}
-                {% if loop.index == 1 %}
-                    selected="selected"
-                {% endif %}>
-                  {{risk}}
+                    {% if run_params['risks'] and risk in run_params['risks'] %}
+                        selected="selected"
+                    {% elif loop.index == 1 %}
+                        selected="selected"
+                    {% endif %}>
+                      {{risk}}
                 </option>
             {% endfor %}
           </select>

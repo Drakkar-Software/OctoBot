@@ -93,7 +93,13 @@ def get_optimizer_report():
 
 def get_current_run_params():
     tools = get_bot().get_tools()
-    params = {}
+    params = {
+        "strategy_name": [],
+        "time_frames": [],
+        "evaluators": [],
+        "risks": [],
+        "trading_mode": []
+    }
     if tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
         optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
         params = {
