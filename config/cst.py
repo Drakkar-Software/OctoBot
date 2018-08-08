@@ -232,6 +232,7 @@ TEMP_RESTORE_CONFIG_FILE = "temp_config.json"
 CONFIG_EVALUATOR_FILE = "evaluator_config.json"
 CONFIG_EVALUATOR_FILE_PATH = f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{CONFIG_EVALUATOR_FILE}"
 CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
+DEFAULT_CONFIG_FILE = "config/default_config.json"
 
 # Tentacle Config
 STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"
