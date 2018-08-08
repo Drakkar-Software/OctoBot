@@ -17,12 +17,6 @@ Python-Twitter
 # Web
 jinja2
 flask
-werkzeug
-dash
-dash-table-experiments
-dash-renderer
-dash-html-components
-dash-core-components==0.22
 
 ## Tools
 # Analysis tools
@@ -33,9 +27,6 @@ vaderSentiment
 ## Others
 gitpython
 psutil
-plotly
 colorlog
 cryptography >= 2.2.1
-pytz
-tzlocal
 requests
