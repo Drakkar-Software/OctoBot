@@ -9,7 +9,7 @@ from evaluator.TA.TA_evaluator import TAEvaluator
 from evaluator import TA
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
-from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
+from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
     CONFIG_EVALUATOR, CONFIG_TRADER_MODE
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
@@ -26,7 +26,7 @@ class StrategyOptimizer:
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
         self.logger = logging.getLogger(self.get_name())
-        self.trading_mode = config[CONFIG_TRADER][CONFIG_TRADER_MODE]
+        self.trading_mode = config[CONFIG_TRADING][CONFIG_TRADER_MODE]
         self.config = create_blank_config_using_loaded_one(config)
         self.strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                     Strategies, evaluator_parent_inspection)
@@ -35,6 +35,8 @@ class StrategyOptimizer:
         self.sorted_results_by_time_frame = {}
         self.sorted_results_through_all_time_frame = {}
         self.all_time_frames = []
+        self.all_TAs = []
+        self.risks = []
         self.current_test_suite = None
 
         self.is_computing = False
@@ -60,37 +62,38 @@ class StrategyOptimizer:
             previous_log_level = get_global_logger_level()
 
             try:
-                all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
-                nb_TAs = len(all_TAs)
+                self.all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
+                nb_TAs = len(self.all_TAs)
 
                 self.all_time_frames = self.strategy_class.get_required_time_frames(self.config) \
                     if time_frames is None else time_frames
                 nb_TFs = len(self.all_time_frames)
 
-                risks = [0.5, 1] if risks is None else risks
+                self.risks = [0.5, 1] if risks is None else risks
 
                 self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} "
-                                 f"strategy using {self.trading_mode} trading mode, {all_TAs} technical evaluator(s), "
-                                 f"{self.all_time_frames} time frames and {risks} risk(s).")
+                                 f"strategy using {self.trading_mode} trading mode, {self.all_TAs} "
+                                 f"technical evaluator(s), {self.all_time_frames} time frames and {self.risks} risk(s).")
 
-                self.total_nb_runs = int(len(risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
+                self.total_nb_runs = int(len(self.risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
 
                 self.logger.info("Setting logging level to logging.ERROR to limit messages.")
                 set_global_logger_level(logging.ERROR)
 
                 self.run_id = 1
                 # test with several risks
-                for risk in risks:
-                    self.config[CONFIG_TRADER][CONFIG_TRADER_RISK] = risk
+                for risk in self.risks:
+                    self.config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
                     eval_conf_history = []
                     # test with several evaluators
                     for evaluator_conf_iteration in range(nb_TAs):
-                        current_forced_evaluator = all_TAs[evaluator_conf_iteration]
+                        current_forced_evaluator = self.all_TAs[evaluator_conf_iteration]
                         # test with 1-n evaluators at a time
                         for nb_evaluators in range(1, nb_TAs+1):
                             # test different configurations
                             for i in range(nb_TAs):
-                                activated_evaluators = self.get_activated_element(all_TAs, current_forced_evaluator,
+                                activated_evaluators = self.get_activated_element(self.all_TAs,
+                                                                                  current_forced_evaluator,
                                                                                   nb_evaluators, eval_conf_history,
                                                                                   self.strategy_class.get_name(),
                                                                                   True)

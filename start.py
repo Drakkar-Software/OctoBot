@@ -6,7 +6,8 @@ from logging.config import fileConfig
 
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
-    CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
+    CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
+    CONFIG_TRADER_RISK
 from interfaces import starting
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
@@ -34,7 +35,7 @@ def update_config_with_args(starting_args, config):
         config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
 
     if starting_args.risk is not None and 0 < starting_args.risk <= 1:
-        config[CONFIG_TRADER][CONFIG_TRADER_RISK] = starting_args.risk
+        config[CONFIG_TRADING][CONFIG_TRADER_RISK] = starting_args.risk
 
 
 def start_octobot(starting_args):
@@ -116,9 +117,9 @@ def start_octobot(starting_args):
         sys.exit(-1)
 
     except ConfigEvaluatorError:
-        logger.error("OctoBot can't start without" + CONFIG_EVALUATOR_FILE_PATH + "configuration file."
-                                                                                  "\nThis file is generated on tentacle "
-                                                                                  "installation using the following command:\nstart.py -p install all")
+        logger.error("OctoBot can't start without" + CONFIG_EVALUATOR_FILE_PATH
+                     + "configuration file.\nThis file is generated on tentacle "
+                       "installation using the following command:\nstart.py -p install all")
         sys.exit(-1)
 
 

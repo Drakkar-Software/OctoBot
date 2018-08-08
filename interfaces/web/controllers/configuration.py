@@ -1,6 +1,6 @@
 from flask import render_template, request, jsonify
 
-from config.cst import CONFIG_EXCHANGES, CONFIG_CATEGORY_SERVICES, CONFIG_CATEGORY_NOTIFICATION, \
+from config.cst import CONFIG_EXCHANGES, CONFIG_CATEGORY_SERVICES, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADING, \
     CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_CRYPTO_CURRENCIES, GLOBAL_CONFIG_KEY, EVALUATOR_CONFIG_KEY, \
     CONFIG_TRADER_REFERENCE_MARKET
 from interfaces import get_bot
@@ -41,12 +41,13 @@ def config():
         return render_template('config.html',
 
                                config_exchanges=g_config[CONFIG_EXCHANGES],
+                               config_trading=g_config[CONFIG_TRADING],
                                config_trader=g_config[CONFIG_TRADER],
                                config_trader_simulator=g_config[CONFIG_SIMULATOR],
                                config_notifications=g_config[CONFIG_CATEGORY_NOTIFICATION],
                                config_services=g_config[CONFIG_CATEGORY_SERVICES],
                                config_symbols=g_config[CONFIG_CRYPTO_CURRENCIES],
-                               config_reference_market=g_config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET],
+                               config_reference_market=g_config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET],
 
                                ccxt_exchanges=sorted(get_full_exchange_list(True)),
                                services_list=service_list,
