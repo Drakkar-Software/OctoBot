@@ -24,7 +24,11 @@ class TkApp(threading.Thread):
             self.window.protocol("WM_DELETE_WINDOW", self.close_callback)
             # window settings
             self.window.title(PROJECT_NAME + " - Launcher")
-            self.window.iconbitmap('interfaces/web/static/favicon.ico')
+            try:
+                self.window.iconbitmap('interfaces/web/static/favicon.ico')
+            except Exception as e:
+                self.logger.error("Failed to load tk window icon" + str(e))
+
             self.window.geometry("500x430")
 
             # background
