@@ -15,7 +15,7 @@ body:before {
     right: 0;
     z-index: -1;
 
-    background-image: url('../../assets/images/octobot.svg');
+    background-image: url('../img/svg/octobot.svg');
 
     background-repeat: no-repeat;
     background-size: cover;
