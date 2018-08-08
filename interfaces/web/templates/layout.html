@@ -50,6 +50,7 @@
         <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/lib/toastr.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/lib/mdb.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/lib/plotly.min.js') }}"></script>
 
         <script src="{{ url_for('static', filename='js/lib/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/lib/dataTables.min.js') }}"></script>
@@ -68,9 +69,6 @@
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('home') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dash') }}">Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('config') }}">Configuration</a>
@@ -144,6 +142,8 @@
         <div class="container-fluid">
             {% block body %}{% endblock %}
         </div>
+
+        {% include "footer.html" %}
 
         {% block additional_scripts %}
         {% endblock additional_scripts %}

@@ -1,29 +1,19 @@
 {% extends "layout.html" %}
 {% block body %}
-<br>
-<div class="alert alert-danger" role="alert">
-    <h1>This page is currently in development</h1>
-</div>
-<div class="alert alert-info" role="alert">
-    <h1>Welcome to OctoBot</h1>
-</div>
-
-<!--<div class="view animated fadeIn">-->
-  <!--<img src="../assets/images/octobot.svg" class="img-fluid mx-auto" alt="OctoBot" style="width:40%">-->
-    <!--<div class="mask flex-center waves-effect waves-light"></div>-->
-<!--</div>-->
-
-<!-- Footer -->
-<footer class="page-footer font-small red lighten-2">
-
-  <!-- Copyright -->
-  <div class="footer-copyright text-center py-3">Follow OctoBot project updates on
-    <a href="https://github.com/Drakkar-Software" target="_blank"><i class="fab fa-github"></i> GitHub</a>
-    <a href="https://twitter.com/HerklosBotCrypt" target="_blank"><i class="fab fa-twitter"></i></a>
-  </div>
-  <!-- Copyright -->
-
-</footer>
-<!-- Footer -->
-
+    <br>
+    <div class="card">
+        <div class="card-header"><h2>Symbol price</h2></div>
+        <div class="card-body">
+            <div id="graph-symbol-price"></div>
+        </div>
+    </div>
+    <br>
 {% endblock %}
+
+{% block additional_scripts %}
+    <script src="{{ url_for('static', filename='js/components/dashboard.js') }}"></script>
+
+    <script>
+        get_symbol_price_graph("graph-symbol-price", "binance", "BTC|USDT", "1h");
+    </script>
+{% endblock additional_scripts %}
