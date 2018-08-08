@@ -45,9 +45,6 @@ def strategy_optimizer():
                 optimizer_status, progress, overall_progress = get_optimizer_status()
                 status = {"status": optimizer_status, "progress": progress, "overall_progress": overall_progress}
                 return jsonify(status)
-            if target == "run_params":
-                params = get_current_run_params()
-                return jsonify(params)
             if target == "strategy_params":
                 strategy_name = request.args["strategy_name"]
                 params = {
@@ -64,4 +61,5 @@ def strategy_optimizer():
                                    time_frames=get_time_frames_list(current_strategy),
                                    evaluators=get_evaluators_list(current_strategy),
                                    risks=get_risks_list(),
-                                   trading_mode=get_trading_mode())
+                                   trading_mode=get_trading_mode(),
+                                   run_params=get_current_run_params())
