@@ -9,7 +9,7 @@ from evaluator.TA.TA_evaluator import TAEvaluator
 from evaluator import TA
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
-from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
+from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
     CONFIG_EVALUATOR, CONFIG_TRADER_MODE
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
@@ -26,7 +26,7 @@ class StrategyOptimizer:
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
         self.logger = logging.getLogger(self.get_name())
-        self.trading_mode = config[CONFIG_TRADER][CONFIG_TRADER_MODE]
+        self.trading_mode = config[CONFIG_TRADING][CONFIG_TRADER_MODE]
         self.config = create_blank_config_using_loaded_one(config)
         self.strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                     Strategies, evaluator_parent_inspection)
@@ -83,7 +83,7 @@ class StrategyOptimizer:
                 self.run_id = 1
                 # test with several risks
                 for risk in self.risks:
-                    self.config[CONFIG_TRADER][CONFIG_TRADER_RISK] = risk
+                    self.config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
                     eval_conf_history = []
                     # test with several evaluators
                     for evaluator_conf_iteration in range(nb_TAs):

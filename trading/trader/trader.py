@@ -1,7 +1,7 @@
 import copy
 import logging
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.order import OrderConstants
@@ -17,7 +17,7 @@ class Trader:
         self.exchange = exchange
         self.config = config
         self.risk = None
-        self.set_risk(self.config[CONFIG_TRADER][CONFIG_TRADER_RISK])
+        self.set_risk(self.config[CONFIG_TRADING][CONFIG_TRADER_RISK])
         self.logger = logging.getLogger(self.__class__.__name__)
 
         if not hasattr(self, 'simulate'):

@@ -1,6 +1,6 @@
 import logging
 
-from config.cst import CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
+from config.cst import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
     CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 from tools.symbol_util import merge_currencies, split_symbol
@@ -39,8 +39,8 @@ class TradesManager:
     @staticmethod
     def get_reference_market(config):
         # The reference market is the currency unit of the calculated quantity value
-        if CONFIG_TRADER_REFERENCE_MARKET in config[CONFIG_TRADER]:
-            return config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET]
+        if CONFIG_TRADER_REFERENCE_MARKET in config[CONFIG_TRADING]:
+            return config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET]
         else:
             return DEFAULT_REFERENCE_MARKET
 

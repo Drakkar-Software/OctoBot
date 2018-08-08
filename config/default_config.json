@@ -13,15 +13,16 @@
     "trades": true,
     "notification-type": []
   },
-  "trader":{
-    "enabled": false,
+  "trading":{
     "risk": 0.5,
     "reference-market": "BTC",
     "mode": "DailyTradingMode"
   },
+  "trader":{
+    "enabled": false
+  },
   "trader-simulator":{
     "enabled": true,
-    "risk": 0.5,
     "starting-portfolio": {
       "BTC": 10,
       "USDT": 1000
