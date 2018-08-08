@@ -8,6 +8,7 @@ from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK
+from interfaces import starting
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
 from tools.commands import Commands
@@ -91,7 +92,7 @@ def start_octobot(starting_args):
 
                     TelegramApp.enable(config, starting_args.telegram)
 
-                    WebService.enable(config, starting_args.web)
+                    WebService.enable(config, not starting_args.no_web)
 
                     update_config_with_args(starting_args, config)
 
@@ -100,6 +101,7 @@ def start_octobot(starting_args):
                     import interfaces
 
                     interfaces.__init__(bot, config)
+                    starting.__init__(config)
 
                     if starting_args.start:
                         Commands.start_bot(bot, logger)
@@ -130,12 +132,12 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data_collector',
                         help='start the data collector process to create data for backtesting',
                         action='store_true')
-    parser.add_argument('-u', '--update', help='update OctoBot with the latest version available',
-                        action='store_true')
     parser.add_argument('-b', '--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
+    parser.add_argument('-u', '--update', help='update OctoBot with the latest version available',
+                        action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
-    parser.add_argument('-w', '--web', help='Start web server',
+    parser.add_argument('-nw', '--no_web', help="Don't start web server",
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')

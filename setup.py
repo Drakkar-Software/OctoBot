@@ -1,5 +1,4 @@
-from Cython.Build import cythonize
-from setuptools import setup, Extension
+from setuptools import setup
 
 from config.cst import VERSION
 
@@ -31,5 +30,4 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    # ext_modules=cythonize('trading/exchanges/exchange_symbol_data.pyx'),
 )

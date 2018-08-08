@@ -23,9 +23,7 @@ class PrettyPrinter:
             PrettyPrinter.get_min_string_from_number(order.get_origin_price()),
             market,
             order.get_exchange().get_name(),
-            convert_timestamp_to_datetime(
-                order.get_creation_time()
-            ).strftime('%d/%m/%y %H:%M'))
+            convert_timestamp_to_datetime(order.get_creation_time()))
 
     @staticmethod
     def trade_pretty_printer(trade):
@@ -47,9 +45,7 @@ class PrettyPrinter:
             PrettyPrinter.get_min_string_from_number(trade.get_price()),
             market,
             trade.get_exchange_name(),
-            convert_timestamp_to_datetime(
-                trade.get_filled_time()
-            ).strftime('%d/%m/%y %H:%M'))
+            convert_timestamp_to_datetime(trade.get_filled_time()))
 
     @staticmethod
     def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):

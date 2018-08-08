@@ -1,8 +1,12 @@
-from flask import render_template
+from flask import jsonify
 
 from interfaces.web import server_instance
+from interfaces.web.models.dashboard import *
 
 
-@server_instance.route("/dash")
-def dash():
-    return render_template('dashboard.html')
+@server_instance.route('/dashboard/currency_price_graph_update/<exchange_name>/<symbol>/<time_frame>',
+                       methods=['GET', 'POST'])
+def currency_price_graph_update(exchange_name, symbol, time_frame):
+    return jsonify(get_currency_price_graph_update(exchange_name,
+                                                   get_value_from_dict_or_string(symbol),
+                                                   get_value_from_dict_or_string(time_frame, True)))
