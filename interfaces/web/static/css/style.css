@@ -37,6 +37,10 @@ body:before {
   flex-basis: 33.3%;
   .rounded-bottom !important;
 }
+.medium-size {
+  max-width: 18rem;
+  min-width: 12rem;
+}
 
 /* elegant-color white-text */
 
