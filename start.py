@@ -129,8 +129,6 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data_collector',
                         help='start the data collector process to create data for backtesting',
                         action='store_true')
-    parser.add_argument('-u', '--update', help='update OctoBot with the latest version available',
-                        action='store_true')
     parser.add_argument('-b', '--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
