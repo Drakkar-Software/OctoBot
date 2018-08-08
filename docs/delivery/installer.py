@@ -5,7 +5,7 @@ import requests
 
 from config.cst import DEFAULT_CONFIG_FILE, CONFIG_FILE
 
-FOLDERS_TO_CREATE = ["log"]
+FOLDERS_TO_CREATE = ["logs"]
 FILES_TO_DOWNLOAD = [(
                      "https://raw.githubusercontent.com/cjhutto/vaderSentiment/master/vaderSentiment/emoji_utf8_lexicon.txt",
                      "vaderSentiment/emoji_utf8_lexicon.txt"),

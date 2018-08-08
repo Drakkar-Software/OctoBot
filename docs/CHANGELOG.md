@@ -1,5 +1,19 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.1.7-beta
+====================
+*Released date : August 8 2018*
+
+**Warning** :
+- Trading key changed : [See wiki trading page](https://github.com/Drakkar-Software/OctoBot/wiki/Trading)
+
+
+# Concerned issues :
+
+# New features :
+
+# Bug fixes :
+
 Changelog for 0.1.6_1-beta
 ====================
 *Released date : August 1 2018*
