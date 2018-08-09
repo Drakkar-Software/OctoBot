@@ -70,6 +70,27 @@ body:before {
     background-color: #4B515D !important;
 }
 
+.card .deck-container-modified {
+    background-color: #FF8800 !important;
+    -webkit-transition: all 0.5s ease;
+    -moz-transition: all 0.5s ease;
+    -o-transition: all 0.5s ease;
+    transition: all 0.5s ease;
+}
+
+.card .card-modified,
+.card .card-modified .card-body,
+.card .card-modified .card-text,
+.card .card-deck .card-modified,
+.card .card-deck .card-modified .card-body,
+ .card .card-deck .card-modified .card-text{
+    background-color: #FF8800 !important;
+    -webkit-transition: all 0.5s ease;
+    -moz-transition: all 0.5s ease;
+    -o-transition: all 0.5s ease;
+    transition: all 0.5s ease;
+}
+
 .card a:link {
     color: #33b5e5 !important;
 }

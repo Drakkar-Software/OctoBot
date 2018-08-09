@@ -1,6 +1,6 @@
 {% macro config_exchange_card(config, exchange, keys_value="*********", add_class='') -%}
     <!-- Card -->
-    <div class="card mb-4 {{add_class}}">
+    <div class="card mb-4 {{add_class}} config-card">
 
         <div class="card-header"><h4>{{exchange}}</h4></div>
 
@@ -10,7 +10,7 @@
         </div>
 
         <!--Card content-->
-        <div class="card-body" name={{exchange}}>
+        <div class="card-body" name={{exchange}} config-key=exchanges_{{exchange}}>
 
             <p class="card-text api">
                 API Key : <a href="#"
