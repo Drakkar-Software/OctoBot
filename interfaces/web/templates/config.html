@@ -51,7 +51,7 @@
                 <a class="nav-link btn green" id='save-config' href="#" role="tab">Save all</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link btn orange" id='reset-config' href="#" role="tab">Reset current tab</a>
+                <a class="nav-link btn orange" id='reset-config' href="#" role="tab">Reset all</a>
             </li>
         </ul>
         <ul class="nav ml-auto">
@@ -231,35 +231,4 @@
 
 {% block additional_scripts %}
 <script src="{{ url_for('static', filename='js/components/configuration.js') }}"></script>
-
-<script>
-$(document).ready(function () {
-    setup_editable();
-    handle_editable();
-
-    handle_reset_buttons();
-    handle_save_buttons();
-
-    handle_add_buttons();
-    handle_remove_buttons();
-
-    handle_configuration_editor();
-
-    $('#save-config').prop('disabled', true);
-    $('#reset-config').prop('disabled', true);
-    $('.evaluator-config-element').click(function() {
-        refresh_buttons_lock($('#evaluator-config-root'), $('#save-config'), $('#reset-config'));
-    });
-
-    // filter currencies select
-    /*$(".card .card-body .symbols").each(function(){
-        var crypto_currency_symbol = $(this).parent().attr("crypto_currency-symbol");
-        log(crypto_currency_symbol)
-        var crypto_select = $(this).find("select").attr("id");
-
-        // filter option with not crypto_currency_symbol
-        // $("#" + crypto_select + " option:not(:contains('+ crypto_currency_symbol +'))").remove();
-    });*/
-});
-</script>
 {% endblock additional_scripts %}
