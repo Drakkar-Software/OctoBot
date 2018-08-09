@@ -48,9 +48,9 @@ function at_least_one_temporary_element(root_element){
     at_least_one_element = false;
     root_element.find("."+config_element_class).each(function(){
         var current_attr = $(this).attr(current_value_attr);
-        var config_attr = $(this).attr(current_value_attr);
+        var config_attr = $(this).attr(config_value_attr);
 
-        if (isDefined(current_attr) && isDefined(current_attr)) {
+        if (isDefined(current_attr) && isDefined(config_attr)) {
             if(current_attr.toLowerCase() != config_attr.toLowerCase()){
                 at_least_one_element = true;
                 return false;

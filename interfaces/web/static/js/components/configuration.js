@@ -9,7 +9,7 @@ function get_tabs_config(){
 
 function handle_reset_buttons(){
     $("#reset-config").click(function() {
-        reset_configuration_element($(this));
+        reset_configuration_element();
     })
 }
 
@@ -185,12 +185,12 @@ function handle_configuration_editor(){
 
                     // build data update
                     var updated_config = {};
-                    new_value = parse_new_value(element);
+                    var new_value = parse_new_value(element);
 
                     try {
                         var current_value = element.attr(current_value_attr).toLowerCase();
                     }
-                    catch {
+                    catch(e) {
                         var current_value = element.attr(current_value_attr);
                     }
 
@@ -215,20 +215,9 @@ function handle_configuration_editor(){
     });
 }
 
-function reset_configuration_element(element){
-    var full_config = get_active_tab_config();
-    full_config.find("."+ config_element_class).each(function(){
-        if($(this).attr(current_value_attr).toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
-            // update current value
-            $(this).attr(current_value_attr, $(this).attr(config_value_attr));
-            //update dom
-            update_element_temporary_look($(this));
-        }
-    });
-    refresh_buttons_lock(get_active_tab_config(), $('#save-config'), $('#reset-config'))
-
-    //add or remove exit confirm if necessary
-    add_or_remove_exit_confirm_if_necessary(full_config, 'Are you sure you want to exit configuration without saving ?');
+function reset_configuration_element(){
+    add_or_remove_confirm_before_exit_page(false);
+    location.reload();
 }
 
 function refresh_buttons_lock(root_element, button1, button2){
@@ -236,3 +225,16 @@ function refresh_buttons_lock(root_element, button1, button2){
     button1.prop('disabled', should_unlock);
     button2.prop('disabled', should_unlock);
 }
+
+$(document).ready(function() {
+    setup_editable();
+    handle_editable();
+
+    handle_reset_buttons();
+    handle_save_buttons();
+
+    handle_add_buttons();
+    handle_remove_buttons();
+
+    handle_configuration_editor();
+});
