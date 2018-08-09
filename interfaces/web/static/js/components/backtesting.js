@@ -31,7 +31,11 @@ function get_selected_files(){
 }
 
 function lock_interface(lock=true){
-    $('#startBacktesting').prop('disabled', get_selected_files() <= 0);
+    var should_lock = lock;
+    if(!should_lock){
+        should_lock = get_selected_files() <= 0;
+    }
+    $('#startBacktesting').prop('disabled', should_lock);
 }
 
 function handle_backtesting_buttons(){
@@ -119,7 +123,7 @@ function handle_file_selection(){
                 }
             });
         }
-        lock_interface();
+        lock_interface(false);
     });
 }
 
