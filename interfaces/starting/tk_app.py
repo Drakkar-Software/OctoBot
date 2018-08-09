@@ -2,6 +2,7 @@ import _tkinter
 import logging
 import threading
 import webbrowser
+import socket
 from time import sleep
 from tkinter import *
 
@@ -53,7 +54,8 @@ class TkApp(threading.Thread):
         while get_bot() is None or not get_bot().is_ready():
             sleep(0.1)
 
-        webbrowser.open(f"http://localhost:{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT]}")
+        webbrowser.open(f"http://{socket.gethostbyname(socket.gethostname())}:"
+                        f"{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT]}")
 
     def stop(self):
         self.window.quit()
