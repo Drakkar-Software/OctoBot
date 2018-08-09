@@ -2,7 +2,7 @@
 
 Changelog for 0.1.7-beta
 ====================
-*Released date : August 8 2018*
+*Released date : August 13 2018*
 
 **Warning** :
 - Trading key changed : [See wiki trading page](https://github.com/Drakkar-Software/OctoBot/wiki/Trading)
@@ -11,6 +11,12 @@ Changelog for 0.1.7-beta
 # Concerned issues :
 
 # New features :
+    - TK app
+    - Installer App
+    - Web interface : backtesting & data collector
+    - Startegy optimizer improvements
+    - Web interface : reset & remove in config
+    - Web interface : home with custum dashboard
 
 # Bug fixes :
 
