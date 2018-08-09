@@ -147,18 +147,18 @@ function handle_save_buttons(){
                 var new_value_str = new_value.toString();
                 if(new_value instanceof Array && new_value.length > 0){
                     //need to format array to match python string representation of config
-                    var str_array = []
+                    var str_array = [];
                     $.each(new_value, function(i, val) {
                         str_array.push("'"+val+"'");
                     });
                     new_value_str = "[" + str_array.join(", ") + "]";
                 }
-
-                if(new_value_str.toLowerCase() != $(this).attr(config_value_attr).toLowerCase() ){
-                    updated_config[config_type][$(this).attr(config_key_attr)] = new_value;
+                var config_key = $(this).attr(config_key_attr);
+                if(value_changed(new_value_str, $(this).attr(config_value_attr), config_key)){
+                    updated_config[config_type][config_key] = new_value;
                 }
             })
-        })
+        });
 
         // send update
         send_and_interpret_bot_update(updated_config, update_url, full_config, handle_save_buttons_success_callback);
@@ -167,13 +167,25 @@ function handle_save_buttons(){
     })
 }
 
+function value_changed(new_val, dom_conf_val, config_key){
+    var lower_case_val = new_val.toLowerCase();
+    if(new_val.toLowerCase() !== dom_conf_val.toLowerCase()){
+        return true;
+    }else if (config_key in validated_updated_global_config){
+        return lower_case_val !== validated_updated_global_config[config_key];
+    }else{
+        return false;
+    }
+
+}
+
 function handle_save_buttons_success_callback(updated_data, update_url, dom_root_element, msg, status){
+    updated_validated_updated_global_config(msg["global_updated_config"]);
     update_dom(dom_root_element, msg);
-    refresh_buttons_lock(get_active_tab_config(), $('#save-config'), $('#reset-config'))
     create_alert("success", "Configuration successfully updated.", "");
 }
 
-function handle_configuration_editor(){
+function handle_evaluator_configuration_editor(){
     $(".config-element").click(function(){
         var element = $(this);
 
@@ -181,7 +193,7 @@ function handle_configuration_editor(){
             var full_config = get_active_tab_config();
             if (full_config[0].hasAttribute(update_url_attr)){
 
-                if (element[0].hasAttribute(config_type_attr) && element.attr(config_type_attr) == evaluator_config_type){
+                if (element[0].hasAttribute(config_type_attr) && element.attr(config_type_attr) === evaluator_config_type){
 
                     // build data update
                     var updated_config = {};
@@ -195,9 +207,9 @@ function handle_configuration_editor(){
                     }
 
                     // todo
-                    if (current_value == "true"){
+                    if (current_value === "true"){
                         new_value = "false";
-                    }else if(current_value == "false"){
+                    }else if(current_value === "false"){
                         new_value = "true";
                     }
 
@@ -220,11 +232,13 @@ function reset_configuration_element(){
     location.reload();
 }
 
-function refresh_buttons_lock(root_element, button1, button2){
-    var should_unlock = !at_least_one_temporary_element(root_element);
-    button1.prop('disabled', should_unlock);
-    button2.prop('disabled', should_unlock);
+function updated_validated_updated_global_config(updated_data){
+    for (var conf_key in updated_data) {
+        validated_updated_global_config[conf_key] = updated_data[conf_key];
+    }
 }
+
+var validated_updated_global_config = {};
 
 $(document).ready(function() {
     setup_editable();
@@ -236,5 +250,5 @@ $(document).ready(function() {
     handle_add_buttons();
     handle_remove_buttons();
 
-    handle_configuration_editor();
+    handle_evaluator_configuration_editor();
 });
