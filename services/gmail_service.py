@@ -57,5 +57,4 @@ class GmailService(AbstractService):
             return False
 
     def get_successful_startup_message(self):
-        return "Successfully initialized to notify {0}." \
-            .format(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["mail-dest"])
+        return f"Successfully initialized to notify {self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]['mail-dest']}."

@@ -60,9 +60,8 @@ class WebService(AbstractService):
         config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_ENABLED_OPTION] = is_enabled
 
     def _get_web_server_url(self):
-        return "{0}:{1}"\
-            .format(socket.gethostbyname(socket.gethostname()),
-                    self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT])
+        return f"{socket.gethostbyname(socket.gethostname())}:" \
+               f"{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT]}"
 
     def get_successful_startup_message(self):
-        return "Interface successfully initialized and accessible at: http://{0}.".format(self._get_web_server_url())
+        return f"Interface successfully initialized and accessible at: http://{self._get_web_server_url()}."

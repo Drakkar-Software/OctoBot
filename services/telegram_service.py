@@ -72,7 +72,7 @@ class TelegramService(AbstractService):
                 self.logger.error(f"failed to send message : {e}")
 
     def _get_bot_url(self):
-        return "https://web.telegram.org/#/im?p={0}".format(self.telegram_api.get_me().name)
+        return f"https://web.telegram.org/#/im?p={self.telegram_api.get_me().name}"
 
     def get_successful_startup_message(self):
-        return "Successfully initialized and accessible at: {0}.".format(self._get_bot_url())
+        return f"Successfully initialized and accessible at: {self._get_bot_url()}."
