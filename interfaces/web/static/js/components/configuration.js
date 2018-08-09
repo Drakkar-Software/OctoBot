@@ -17,10 +17,11 @@ function handle_remove_buttons(){
     // Card deck removing
     $(document).on("click", ".remove-btn", function() {
         var deleted_element_key = get_card_config_key($(this));
-        if ($.inArray(deleted_element_key, deleted_global_config_elements) === -1 && $(this).hasClass(added_class)){
+        var deck = get_deck_container($(this));
+        var card = get_card_container($(this));
+        if ($.inArray(deleted_element_key, deleted_global_config_elements) === -1 && !card.hasClass(added_class)){
             deleted_global_config_elements.push(deleted_element_key);
         }
-        var deck = get_deck_container($(this));
         $(this).closest(".card").fadeOut("normal", function() {
             $(this).remove();
             check_deck_modifications(deck);
