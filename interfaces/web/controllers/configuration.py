@@ -27,9 +27,14 @@ def config():
             if EVALUATOR_CONFIG_KEY in request_data and request_data[EVALUATOR_CONFIG_KEY]:
                 success = update_evaluator_config(request_data[EVALUATOR_CONFIG_KEY])
 
+            response = {
+                "evaluator_updated_config": request_data[EVALUATOR_CONFIG_KEY],
+                "global_updated_config": request_data[GLOBAL_CONFIG_KEY]
+            }
+
         if success:
             # TODO
-            return get_rest_reply(jsonify(get_evaluator_config()))
+            return get_rest_reply(jsonify(response))
         else:
             return get_rest_reply('{"update": "ko"}', 500)
     else:

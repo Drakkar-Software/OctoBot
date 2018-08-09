@@ -92,9 +92,9 @@ function change_boolean(to_update_element, new_value, new_value_string){
 
 function update_dom(root_element, message){
     var config_value_attr = "config-value"
-    for (var conf_key in message) {
-        var new_value = message[conf_key];
-        new_value_type = typeof(new_value);
+    for (var conf_key in message["evaluator_updated_config"]) {
+        var new_value = message["evaluator_updated_config"][conf_key];
+        new_value_type = "boolean";
         new_value_string = new_value.toString();
         var to_update_element = root_element.find("#"+conf_key);
 
@@ -104,7 +104,8 @@ function update_dom(root_element, message){
             if (attr.toLowerCase() != new_value_string){
                 to_update_element.attr(config_value_attr, new_value_string);
                 if(new_value_type == "boolean"){
-                    change_boolean(to_update_element, new_value, new_value_string);
+                    var bool_val = new_value.toLowerCase() === "true";
+                    change_boolean(to_update_element, bool_val, new_value_string);
                 }
 
             }
