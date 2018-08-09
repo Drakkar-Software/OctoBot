@@ -8,7 +8,8 @@
 
 {% set config_default_value = "Bitcoin" %}
 {% set config_default_symbol = "btc" %}
-{% set modified_class = "warning-color" %}
+{% set added_class = "new_element" %}
+
 
 {% block additional_style %}
 <style>
@@ -48,7 +49,7 @@
         <span class="white-text"> Any configuration change will be take into account after OctBot restarts.</span>
         <ul class="nav mx-auto">
             <li class="nav-item">
-                <a class="nav-link btn green" id='save-config' href="#" role="tab">Save all</a>
+                <a class="nav-link btn green" id='save-config' href="#" role="tab" update-url="{{ url_for('config') }}">Save all</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link btn orange" id='reset-config' href="#" role="tab">Reset all</a>
@@ -62,13 +63,13 @@
     </nav>
 </div>
 <!-- Tab panels -->
-<div class="tab-content">
+<div class="tab-content" id="super-container">
 
     <!--Panel Exchanges-->
     <div class="tab-pane fade in show active config-root" id="panelExchanges" role="tabpanel"><br>
         <div class="card">
             <div class="card-header"><h2>Exchanges</h2></div>
-            <div class="card-body">
+            <div class="card-body deck-container">
                 <div class="card">
                     <div class="card-body">Add a new exchange :
                         <select id="AddExchangeSelect" class="selectpicker" data-live-search="true">
@@ -81,7 +82,7 @@
                 </div>
                 <br>
                 <!-- Card deck -->
-                <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                <div class="card-deck config-container">
                     {% for exchange in config_exchanges %}
                         {{ m_config_exchange_card.config_exchange_card(config_exchanges, exchange) }}
                     {% endfor %}
@@ -95,7 +96,7 @@
         <div class="card">
             <div class="card-header"><h2>Evaluators</h2></div>
             <div class="card-body">
-                <div class="row config-container" update-url="{{ url_for('config') }}" id="evaluator-config-root">
+                <div class="row config-container" id="evaluator-config-root">
                     {% for evaluator_name, activated in evaluator_config.items() %}
                         {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
                     {% endfor %}
@@ -108,9 +109,9 @@
     <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel"><br>
         <div class="card">
             <div class="card-header"><h2>Trading</h2></div>
-            <div class="card-body">
+            <div class="card-body deck-container">
                  <!-- Card deck -->
-                <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                <div class="card-deck config-container">
                     <span class="col-lg-12">
                         {{ m_config_trader_card.config_trader_card(config_trading, "trading", "Trading settings") }}
                     </span>
@@ -125,9 +126,9 @@
     <div class="tab-pane fade config-root" id="panelNotifications" role="tabpanel"><br>
         <div class="card">
             <div class="card-header"><h2>Notifications</h2></div>
-            <div class="card-body">
+            <div class="card-body deck-container">
                 <!-- Card deck -->
-                <div class="card-deck config-container" update-url="{{ url_for('config') }}">
+                <div class="card-deck config-container">
                     {{ m_config_notification.config_notification(config_notifications, "notification", service_name_list) }}
                 </div>
             </div>
@@ -138,7 +139,7 @@
     <div class="tab-pane fade config-root" id="panelServices" role="tabpanel"><br>
         <div class="card">
             <div class="card-header"><h2>Services</h2></div>
-            <div class="card-body">
+            <div class="card-body deck-container">
                 <div class="card">
                     <div class="card-body">Add a new service :
                     <select id="AddServiceSelect" class="selectpicker" data-live-search="true">
@@ -166,7 +167,7 @@
     <div class="tab-pane fade config-root" id="panelCurrency" role="tabpanel"><br>
         <div class="card">
             <div class="card-header"><h2>Currencies</h2></div>
-            <div class="card-body">
+            <div class="card-body deck-container">
                 <div class="card">
                     <div class="card-body">
                         Add a new currency :
@@ -198,8 +199,8 @@
     <div id="AddExchange-template-default">
         {{ m_config_exchange_card.config_exchange_card( config=config_exchanges,
                                                         exchange=config_default_value,
-                                                        keys_value="NO KEY",
-                                                        add_class=modified_class ) }}
+                                                        add_class=added_class,
+                                                        keys_value="NO KEY") }}
     </div>
 
     <!-- Services -->
@@ -209,7 +210,7 @@
             {{ m_config_service_card.config_service_card(  config_services,
                                                            service,
                                                            services_list[service],
-                                                           add_class=modified_class,
+                                                           add_class=added_class,
                                                            default_values=True ) }}
             </div>
         {% endfor %}
@@ -221,7 +222,7 @@
                                                         crypto_currency=config_default_value,
                                                         symbol_list=symbol_list,
                                                         full_symbol_list=full_symbol_list,
-                                                        add_class=modified_class,
+                                                        add_class=added_class,
                                                         no_select=True,
                                                         additional_classes="default",
                                                         symbol= config_default_symbol ) }}

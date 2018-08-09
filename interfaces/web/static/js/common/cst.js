@@ -18,6 +18,12 @@ var primary_badge = "badge-primary";
 var modified_class = "warning-color";
 var selected_item_class = "primary-color";
 
+var card_class_modified = "card-modified";
+var deck_container_modified_class = "deck-container-modified";
+var deck_container_class = "deck-container";
+var config_card_class = "config-card";
+var added_class = "new_element";
+
 var light_list_item = "list-group-item-light";
 var success_list_item = "list-group-item-success";
 
