@@ -133,6 +133,16 @@ function card_edit_handler(e, params){
 
 }
 
+function something_is_unsaved(){
+
+    var config_root = $("#super-container");
+    return (
+        config_root.find("."+card_class_modified).length > 0
+            || config_root.find("."+deck_container_modified_class).length > 0
+            || config_root.find("."+primary_badge).length > 0
+    )
+}
+
 function parse_new_value(element){
     var raw_data = replace_spaces(replace_break_line(element.text()));
 
@@ -257,7 +267,7 @@ function get_value_changed(new_val, dom_conf_val, config_key){
 function handle_save_buttons_success_callback(updated_data, update_url, dom_root_element, msg, status){
     updated_validated_updated_global_config(msg["global_updated_config"]);
     update_dom(dom_root_element, msg);
-    create_alert("success", "Configuration successfully updated.", "");
+    create_alert("success", "Configuration successfully updated. Restart OctoBot for it to be applied", "");
 }
 
 function handle_evaluator_configuration_editor(){
@@ -265,12 +275,10 @@ function handle_evaluator_configuration_editor(){
         var element = $(this);
 
         if (element.hasClass(config_element_class)){
-            var full_config = get_active_tab_config();
 
             if (element[0].hasAttribute(config_type_attr) && element.attr(config_type_attr) === evaluator_config_type){
 
                 // build data update
-                var updated_config = {};
                 var new_value = parse_new_value(element);
 
                 try {
@@ -293,15 +301,12 @@ function handle_evaluator_configuration_editor(){
                 //update dom
                 update_element_temporary_look(element);
             }
-
-            //add or remove exit confirm if necessary
-            add_or_remove_exit_confirm_if_necessary(full_config, 'Are you sure you want to exit configuration without saving ?');
         }
     });
 }
 
 function reset_configuration_element(){
-    add_or_remove_confirm_before_exit_page(false);
+    remove_exit_confirm_function();
     location.reload();
 }
 
@@ -327,4 +332,6 @@ $(document).ready(function() {
     handle_evaluator_configuration_editor();
 
     register_edit_events();
+
+    register_exit_confirm_function(something_is_unsaved)
 });
