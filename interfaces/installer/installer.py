@@ -70,13 +70,14 @@ class Installer:
             latest_release_data = json.loads(requests.get(GITHUB_LATEST_RELEASE_URL).text)
             latest_version = latest_release_data["tag_name"]
 
+            # try to found in current folder binary
             octobot_binaries = glob.glob(f'{PROJECT_NAME}*')
 
             # if current octobot binary found
             if octobot_binaries:
                 logging.info(f"{PROJECT_NAME} installation found, analyzing...")
 
-                # temp --> check if current version is <
+                # TODO temp --> check if current version is <
                 self.download_binary(latest_release_data)
             else:
                 self.download_binary(latest_release_data)
@@ -118,4 +119,5 @@ class Installer:
 
     def update_tentacles(self):
         # TODO : call current binary "-p install all"
+        # os.execl("", ["-p", "install", "all"])
         self.installer_app.inc_progress(5, to_max=True)
