@@ -41,24 +41,23 @@ def update_config_with_args(starting_args, config):
 def start_octobot(starting_args):
     fileConfig(LOGGING_CONFIG_FILE)
 
-    logger = logging.getLogger(f"{PROJECT_NAME} Launcher")
+    logger = logging.getLogger("OctoBot Launcher")
 
     # Force new log file creation not to log at the previous one's end.
     logger.parent.handlers[1].doRollover()
 
     sys.excepthook = _log_uncaught_exceptions
 
-    # Version
-    logger.info("Version : {0}".format(LONG_VERSION))
-
     try:
         # Test update
         if starting_args.update:
             Commands.update(logger)
         elif starting_args.version:
-            # let the previous logger show the version
-            pass
+            print(LONG_VERSION)
         else:
+            # Version
+            logger.info("Version : {0}".format(LONG_VERSION))
+
             Commands.check_bot_update(logger)
 
             logger.info("Loading config files...")
