@@ -8,7 +8,7 @@ function start_backtesting(){
 }
 
 function start_success_callback(updated_data, update_url, dom_root_element, msg, status){
-    $("#progess_bar_anim").css('width', 0+'%').attr("aria-valuenow", 0)
+    $("#progess_bar_anim").css('width', 0+'%').attr("aria-valuenow", 0);
     create_alert("success", msg, "");
 }
 
@@ -22,7 +22,7 @@ function get_selected_files(){
     var selected_modules = []
     dataFilesTable.rows(
         function ( idx, data, node ) {
-            return $(node).find("input[type='checkbox']:checked").length > 0 ? true : false;
+            return $(node).find("input[type='checkbox']:checked").length > 0;
         }
     ).eq(0).each(function( index ) {
         selected_modules.push(dataFilesTable.row( index ).data()[1]);
@@ -45,11 +45,11 @@ function handle_backtesting_buttons(){
 }
 
 function load_report(){
-    url = $("#backtestingReport").attr(update_url_attr);
+    var url = $("#backtestingReport").attr(update_url_attr);
     $.get(url,function(data, status){
         $("#bProf").html(data["bot_report"]["profitability"]);
         $("#maProf").html(data["bot_report"]["market_average_profitability"]);
-        var symbol_reports = []
+        var symbol_reports = [];
         $.each( data["symbol_report"], function( index, value ) {
             $.each( value, function( symbol, profitability ) {
                 symbol_reports.push(symbol+": "+profitability);
@@ -57,12 +57,28 @@ function load_report(){
         });
         $("#sProf").html(symbol_reports.join(", "));
         $("#refM").html(data["bot_report"]["reference_market"]);
-        var portfolio_reports = []
+        var portfolio_reports = [];
             $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
                 portfolio_reports.push(symbol+": "+holdings["total"]);
             });
         $("#ePort").html(portfolio_reports.join(", "));
+
+        add_graphs(data["symbols_with_time_frames_frames"]);
     });
+}
+
+function add_graphs(symbols_with_time_frames){
+     var result_graph_id = "result-graph-";
+        var graph_symbol_price_id = "graph-symbol-price-";
+        var result_graphs = $("#result-graphs");
+        result_graphs.empty();
+        $.each(symbols_with_time_frames, function (symbol, time_frame) {
+            var target_template = $("#"+result_graph_id+config_default_value);
+            var graph_card = target_template.html().replace(new RegExp(config_default_value,"g"), symbol);
+            result_graphs.append(graph_card);
+            var formated_symbol = symbol.replace(new RegExp("/","g"), "|");
+            get_symbol_price_graph(graph_symbol_price_id+symbol, "ExchangeSimulator", formated_symbol, time_frame, true);
+        })
 }
 
 function update_progress(progress){
@@ -70,14 +86,14 @@ function update_progress(progress){
 }
 
 function check_backtesting_state(){
-    url = $("#backtestingPage").attr(update_url_attr);
+    var url = $("#backtestingPage").attr(update_url_attr);
     $.get(url,function(data, status){
-        var status = data["status"];
-        var progress = data["progress"]
-        if(status == "computing"){
+        var backtesting_status = data["status"];
+        var progress = data["progress"];
+        if(backtesting_status === "computing"){
             $("#backtesting_progress_bar").show();
             update_progress(progress);
-            first_refresh_state = status;
+            first_refresh_state = backtesting_status;
             if($("#backtestingReport").is(":visible")){
                 $("#backtestingReport").hide();
             }
@@ -85,19 +101,19 @@ function check_backtesting_state(){
         else{
             lock_interface(false);
             $("#backtesting_progress_bar").hide();
-            if(status == "finished"){
+            if(backtesting_status === "finished"){
                 if(!$("#backtestingReport").is(":visible")){
                     $("#backtestingReport").show();
                     load_report();
                 }
-                if(first_refresh_state != "" && first_refresh_state != "finished"){
+                if(first_refresh_state !== "" && first_refresh_state !== "finished"){
                     create_alert("success", "Backtesting finished.", "");
                     first_refresh_state="finished";
                 }
             }
         }
-        if(first_refresh_state == ""){
-            first_refresh_state = status;
+        if(first_refresh_state === ""){
+            first_refresh_state = backtesting_status;
         }
     });
 }
@@ -117,7 +133,7 @@ function handle_file_selection(){
             checkbox.prop('checked', true);
             // uncheck same symbols from other rows if any
             $("#dataFilesTable").find("input[type='checkbox']:checked").each(function(){
-                if($(this).attr("symbol") == symbol && !($(this).attr("data-file") == data_file)){
+                if($(this).attr("symbol") === symbol && !($(this).attr("data-file") === data_file)){
                     $(this).parent().parent().removeClass(selected_item_class);
                     $(this).prop('checked', false);
                 }

@@ -35,3 +35,6 @@ class Backtester:
 
     def start_backtesting(self, in_thread=False):
         return start_backtesting_bot(self.octobot, in_thread=in_thread)
+
+    def get_bot(self):
+        return self.octobot

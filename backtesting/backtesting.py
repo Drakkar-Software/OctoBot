@@ -89,9 +89,11 @@ class Backtesting:
     def get_dict_formatted_report(self):
         SYMBOL_REPORT = "symbol_report"
         BOT_REPORT = "bot_report"
+        SYMBOLS_WITH_TF = "symbols_with_time_frames_frames"
         report = {
             SYMBOL_REPORT: [],
-            BOT_REPORT: {}
+            BOT_REPORT: {},
+            SYMBOLS_WITH_TF: {}
         }
 
         trader = self.get_trader()
@@ -100,6 +102,7 @@ class Backtesting:
 
         for symbol in self.symbols_to_test:
             report[SYMBOL_REPORT].append({symbol: self._get_symbol_report(symbol, trader) * 100})
+            report[SYMBOLS_WITH_TF][symbol] = self.exchange_simulator.get_min_time_frame(symbol)
 
         report[BOT_REPORT] = {
             "profitability": profitability,
