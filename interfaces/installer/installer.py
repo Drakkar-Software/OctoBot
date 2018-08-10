@@ -70,25 +70,35 @@ class Installer:
             latest_release_data = json.loads(requests.get(GITHUB_LATEST_RELEASE_URL).text)
             latest_version = latest_release_data["tag_name"]
 
-            self.installer_app.inc_progress(2)
-
             octobot_binaries = glob.glob(f'{PROJECT_NAME}*')
 
             # if current octobot binary found
             if octobot_binaries:
                 logging.info(f"{PROJECT_NAME} installation found, analyzing...")
 
+                # temp
+                self.download_binary(latest_release_data)
             else:
                 self.download_binary(latest_release_data)
 
+            pass
         except Exception as e:
             logging.error(f"Failed to download latest release data : {e}")
 
     def download_binary(self, latest_release_data):
         binary = latest_release_data["assets"][0]
-        r = requests.get(binary["url"], stream=True)
+
+        final_size = binary["size"]
+        binary_progress_importance = 75
+        increment = (binary_progress_importance / (final_size / 1024))
+
+        r = requests.get(binary["browser_download_url"], stream=True)
         path = binary["name"]
-        self.installer_app.inc_progress(5)
+        if r.status_code == 200:
+            with open(path, 'wb') as f:
+                for chunk in r.iter_content(1024):
+                    f.write(chunk)
+                    self.installer_app.inc_progress(increment)
 
     def update_tentacles(self):
-        self.installer_app.inc_progress(5, to_max=True)
+        self.installer_app.inc_progress(to_max=True)
