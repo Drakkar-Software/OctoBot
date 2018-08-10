@@ -7,7 +7,7 @@ from logging.config import fileConfig
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
-    CONFIG_TRADER_RISK
+    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE
 from interfaces import starting
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
@@ -39,7 +39,7 @@ def update_config_with_args(starting_args, config):
 
 
 def start_octobot(starting_args):
-    fileConfig('config/logging_config.ini')
+    fileConfig(LOGGING_CONFIG_FILE)
 
     logger = logging.getLogger("OctoBot Launcher")
 
