@@ -13,13 +13,14 @@ from tools.config_manager import ConfigManager
 def get_global_config():
     return get_bot().get_config()
 
+def get_edited_config():
+    return get_bot().get_edited_config()
 
 def get_global_startup_config():
     return get_bot().get_startup_config()
 
-
 def get_evaluator_config():
-    return get_bot().get_config()[CONFIG_EVALUATOR]
+    return get_edited_config()[CONFIG_EVALUATOR]
 
 
 def get_evaluator_startup_config():
@@ -35,10 +36,10 @@ def update_evaluator_config(new_config):
         return False
 
 
-def update_global_config(new_config):
-    current_config = get_global_config()
+def update_global_config(new_config, delete=False):
+    current_edited_config = get_edited_config()
     # try:
-    ConfigManager.update_global_config(new_config, current_config)
+    ConfigManager.update_global_config(new_config, current_edited_config, update_input=True, delete=delete)
     return True
     # except Exception:
     #     return False

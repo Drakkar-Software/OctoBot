@@ -128,7 +128,6 @@ function card_edit_handler(e, params){
         });
     }
 
-
     toogle_card_modified(card_container, something_changed);
 
 }
@@ -198,6 +197,7 @@ function handle_save_buttons(){
         var updated_config = {};
         var update_url = $("#save-config").attr(update_url_attr);
 
+        // take all tabs into account
         get_tabs_config().each(function(){
             $(this).find("."+config_element_class).each(function(){
                 var config_type = $(this).attr(config_type_attr);
@@ -214,6 +214,9 @@ function handle_save_buttons(){
                 }
             })
         });
+
+        // take removed elements into account
+        updated_config["removed_elements"] = deleted_global_config_elements;
 
         // send update
         send_and_interpret_bot_update(updated_config, update_url, full_config, handle_save_buttons_success_callback);
@@ -314,6 +317,7 @@ function updated_validated_updated_global_config(updated_data){
     for (var conf_key in updated_data) {
         validated_updated_global_config[conf_key] = updated_data[conf_key];
     }
+    deleted_global_config_elements = [];
 }
 
 var validated_updated_global_config = {};
