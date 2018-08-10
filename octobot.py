@@ -39,6 +39,7 @@ class OctoBot:
         self.start_time = time.time()
         self.config = config
         self.startup_config = copy.deepcopy(config)
+        self.edited_config = copy.deepcopy(config)
         self.ready = False
 
         # tools: used for alternative operations on a bot on the fly (ex: backtesting started from web interface)
@@ -319,6 +320,9 @@ class OctoBot:
 
     def get_startup_config(self):
         return self.startup_config
+
+    def get_edited_config(self):
+        return self.edited_config
 
     def get_tools(self):
         return self.tools

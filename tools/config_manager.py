@@ -18,6 +18,8 @@ def get_logger():
 
 class ConfigManager:
 
+    DELETE_ELEMENT_VALUE = ""
+
     @staticmethod
     def save_config(config_file, config, temp_restore_config_file, json_data=None):
         try:
@@ -108,7 +110,7 @@ class ConfigManager:
                 evaluator_config_file_w.write(json.dumps(current_config, indent=4, sort_keys=True))
 
     @staticmethod
-    def update_global_config(to_update_data, current_config):
+    def update_global_config(to_update_data, current_config, update_input=False, delete=False):
         new_current_config = copy(current_config)
 
         # remove service instances
@@ -127,13 +129,21 @@ class ConfigManager:
         # now can make a deep copy
         new_current_config = deepcopy(new_current_config)
 
-        updated_configs = [
-            ConfigManager.parse_and_update(data_key, data_value)
-            for data_key, data_value in to_update_data.items()
-        ]
-
-        # merge configs
-        reduce(ConfigManager.merge_dictionaries_by_appending_keys, [new_current_config] + updated_configs)
+        if delete:
+            removed_configs = [ConfigManager.parse_and_update(data_key, ConfigManager.DELETE_ELEMENT_VALUE)
+                               for data_key in to_update_data]
+            reduce(ConfigManager.clear_dictionaries_by_keys, [new_current_config] + removed_configs)
+            if update_input:
+                reduce(ConfigManager.clear_dictionaries_by_keys, [current_config] + removed_configs)
+        else:
+            updated_configs = [
+                ConfigManager.parse_and_update(data_key, data_value)
+                for data_key, data_value in to_update_data.items()
+            ]
+            # merge configs
+            reduce(ConfigManager.merge_dictionaries_by_appending_keys, [new_current_config] + updated_configs)
+            if update_input:
+                reduce(ConfigManager.merge_dictionaries_by_appending_keys, [current_config] + updated_configs)
 
         # save config
         ConfigManager.save_config(CONFIG_FILE, new_current_config, TEMP_RESTORE_CONFIG_FILE)
@@ -185,5 +195,20 @@ class ConfigManager:
                     get_logger().error(f"Conflict when merging dict with key : {key}")
             else:
                 dict_dest[key] = src_val
+
+        return dict_dest
+
+    @staticmethod
+    def clear_dictionaries_by_keys(dict_dest, dict_src):
+        for key in dict_src:
+            src_val = dict_src[key]
+            if key in dict_dest:
+                dest_val = dict_dest[key]
+                if src_val == ConfigManager.DELETE_ELEMENT_VALUE:
+                    dict_dest.pop(key)
+                elif isinstance(dest_val, dict) and isinstance(src_val, dict):
+                    dict_dest[key] = ConfigManager.clear_dictionaries_by_keys(dest_val, src_val)
+                else:
+                    get_logger().error(f"Conflict when deleting dict element with key : {key}")
 
         return dict_dest

@@ -185,6 +185,9 @@ function confirm_all_modified_classes(container){
     container.find("."+card_class_modified).each(function () {
         toogle_class($(this), card_class_modified, false);
     });
+    container.find("."+added_class).each(function () {
+        toogle_class($(this), added_class, false);
+    });
 }
 
 function toogle_class(elem, class_type, toogle=true){
