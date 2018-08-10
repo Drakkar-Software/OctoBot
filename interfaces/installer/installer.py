@@ -86,7 +86,20 @@ class Installer:
             logging.error(f"Failed to download latest release data : {e}")
 
     def download_binary(self, latest_release_data):
-        binary = latest_release_data["assets"][0]
+        # TEMP Choose binary
+        binary = None
+
+        # windows
+        if os.name == 'nt':
+            binary = latest_release_data["assets"][1]
+
+        # linux
+        if os.name == 'posix':
+            binary = latest_release_data["assets"][0]
+
+        # mac
+        if os.name == 'mac':
+            pass
 
         final_size = binary["size"]
         binary_progress_importance = 75
@@ -101,4 +114,4 @@ class Installer:
                     self.installer_app.inc_progress(increment)
 
     def update_tentacles(self):
-        self.installer_app.inc_progress(to_max=True)
+        self.installer_app.inc_progress(5, to_max=True)
