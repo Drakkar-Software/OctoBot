@@ -65,10 +65,28 @@
           </tr>
           </tbody>
         </table>
+
+        <div id="result-graphs">
+        </div>
+
+
     </span>
+</div>
+
+<div class="d-none">
+    <!--Symbol graph template -->
+    <div class="card result-graph" id="result-graph-Bitcoin">
+        <div class="card-header">
+            <h3 role="symbol">Bitcoin</h3>
+        </div>
+        <div class="card-body">
+            <div id="graph-symbol-price-Bitcoin"></div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/dashboard.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/backtesting.js') }}"></script>
 {% endblock additional_scripts %}

@@ -1,5 +1,5 @@
 from backtesting.backtesting import Backtesting
-from config.cst import TimeFrames, PriceIndexes, PriceStrings
+from config.cst import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING
 from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
     get_symbol_data_history
@@ -29,16 +29,25 @@ def get_value_from_dict_or_string(data, is_time_frame=False):
             return data
 
 
-def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arrays=True):
+def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arrays=True, backtesting=False):
+    bot = get_bot()
+    if backtesting and bot.get_tools() and bot.get_tools()[BOT_TOOLS_BACKTESTING]:
+        bot = bot.get_tools()[BOT_TOOLS_BACKTESTING].get_bot()
     symbol = parse_get_symbol(symbol)
-    symbol_evaluator_list = get_bot().get_symbol_evaluator_list()
-    in_backtesting = Backtesting.enabled(get_global_config())
-    exchange_list = get_bot().get_exchanges_list()
+    symbol_evaluator_list = bot.get_symbol_evaluator_list()
+    in_backtesting = Backtesting.enabled(get_global_config()) or backtesting
+
+    exchange = exchange_name
+    exchange_list = bot.get_exchanges_list()
+    if backtesting:
+        exchanges = [key for key in exchange_list if exchange_name in key]
+        if exchanges:
+            exchange = exchanges[0]
 
     if time_frame is not None:
         if symbol_evaluator_list:
             evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_thread_managers(
-                exchange_list[exchange_name])
+                exchange_list[exchange])
 
             if time_frame in evaluator_thread_managers:
                 evaluator_thread_manager = evaluator_thread_managers[time_frame]

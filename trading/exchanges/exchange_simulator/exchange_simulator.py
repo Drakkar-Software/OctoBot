@@ -299,6 +299,12 @@ class ExchangeSimulator(AbstractExchange):
                 if not found_index:
                     self.time_frames_offset[symbol][time_frame.value] = len(self.data[symbol][time_frame.value]) - 1
 
+    def get_min_time_frame(self, symbol):
+        if symbol in self.min_time_frame_to_consider:
+            return self.min_time_frame_to_consider[symbol]
+        else:
+            return None
+
     def get_progress(self):
         if not self.min_time_frame_to_consider:
             return 0
