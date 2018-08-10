@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['installer.py'],
+a = Analysis(['../../interfaces/installer/installer_app.py'],
              pathex=['/home/herklos/dev/drakkars/OctoBot'],
              binaries=[],
              datas=[],
