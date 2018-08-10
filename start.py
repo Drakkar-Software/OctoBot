@@ -7,7 +7,7 @@ from logging.config import fileConfig
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
-    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE
+    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, PROJECT_NAME, VERSION
 from interfaces import starting
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
@@ -41,7 +41,7 @@ def update_config_with_args(starting_args, config):
 def start_octobot(starting_args):
     fileConfig(LOGGING_CONFIG_FILE)
 
-    logger = logging.getLogger("OctoBot Launcher")
+    logger = logging.getLogger(f"{PROJECT_NAME} Launcher")
 
     # Force new log file creation not to log at the previous one's end.
     logger.parent.handlers[1].doRollover()
@@ -55,6 +55,9 @@ def start_octobot(starting_args):
         # Test update
         if starting_args.update:
             Commands.update(logger)
+        elif starting_args.version:
+            # let the previous logger show the version
+            pass
         else:
             Commands.check_bot_update(logger)
 
@@ -126,6 +129,8 @@ def start_octobot(starting_args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OctoBot')
     parser.add_argument('start', help='start the OctoBot',
+                        action='store_true')
+    parser.add_argument('-v', '--version', help='show OctoBot current version',
                         action='store_true')
     parser.add_argument('-s', '--simulate', help='start the OctoBot with the trader simulator',
                         action='store_true')
