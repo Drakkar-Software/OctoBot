@@ -27,10 +27,9 @@ FILES_TO_DOWNLOAD = [
 
 GITHUB_LATEST_RELEASE_URL = f"{GITHUB_API_CONTENT_URL}/repos/{GITHUB_REPOSITORY}/releases/latest"
 
-if __name__ == '__main__':
-    logger = logging.getLogger(f"{PROJECT_NAME} Installer")
 
-    logger.info(f"is checking your environment...")
+def create_environment():
+    logging.info(f"{PROJECT_NAME} is checking your environment...")
     # download files
     for file_to_dl in FILES_TO_DOWNLOAD:
         file_content = requests.get(file_to_dl[0]).text
@@ -49,11 +48,26 @@ if __name__ == '__main__':
         if not os.path.exists(folder) and folder:
             os.makedirs(folder)
 
+    logging.info(f"Your {PROJECT_NAME} environment is ready !")
+
+
+def update_binary():
     # parse latest release
     try:
+        logging.info(f"{PROJECT_NAME} is checking for updates...")
         latest_release_data = json.loads(requests.get(GITHUB_LATEST_RELEASE_URL).text)
-        pass
+        latest_version = latest_release_data["tag_name"]
     except Exception as e:
-        logger.error(f"Failed to download latest release data : {e}")
+        loggign.error(f"Failed to download latest release data : {e}")
 
+
+def update_tentacles():
+    pass
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    create_environment()
+    update_binary()
+    update_tentacles()
     # TODO install tentacles
