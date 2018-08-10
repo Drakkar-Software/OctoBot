@@ -76,7 +76,7 @@ class Installer:
             if octobot_binaries:
                 logging.info(f"{PROJECT_NAME} installation found, analyzing...")
 
-                # temp
+                # temp --> check if current version is <
                 self.download_binary(latest_release_data)
             else:
                 self.download_binary(latest_release_data)
@@ -106,7 +106,10 @@ class Installer:
         increment = (binary_progress_importance / (final_size / 1024))
 
         r = requests.get(binary["browser_download_url"], stream=True)
-        path = binary["name"]
+
+        binary_name, binary_ext = os.path.splitext(binary["name"])
+        path = f"{PROJECT_NAME}{binary_ext}"
+
         if r.status_code == 200:
             with open(path, 'wb') as f:
                 for chunk in r.iter_content(1024):
@@ -114,4 +117,5 @@ class Installer:
                     self.installer_app.inc_progress(increment)
 
     def update_tentacles(self):
+        # TODO : call current binary "-p install all"
         self.installer_app.inc_progress(5, to_max=True)
