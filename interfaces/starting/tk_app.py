@@ -11,13 +11,11 @@ from tools.commands import Commands
 
 class StartingApp(TkApp):
     def __init__(self, config):
-        super().__init__()
         self.config = config
 
         self.window_title = f"{PROJECT_NAME} - Launcher"
         self.window_background_text = f"{PROJECT_NAME} is running"
-
-        self.start()
+        super().__init__()
 
     @staticmethod
     def close_callback():
