@@ -1,3 +1,4 @@
+import glob
 import json
 import logging
 import os
@@ -26,7 +27,6 @@ FILES_TO_DOWNLOAD = [
 ]
 
 GITHUB_LATEST_RELEASE_URL = f"{GITHUB_API_CONTENT_URL}/repos/{GITHUB_REPOSITORY}/releases/latest"
-
 
 def create_environment():
     logging.info(f"{PROJECT_NAME} is checking your environment...")
@@ -57,8 +57,30 @@ def update_binary():
         logging.info(f"{PROJECT_NAME} is checking for updates...")
         latest_release_data = json.loads(requests.get(GITHUB_LATEST_RELEASE_URL).text)
         latest_version = latest_release_data["tag_name"]
+
+        octobot_binaries = glob.glob(f'{PROJECT_NAME}*')
+
+        # if current octobot binary found
+        if octobot_binaries:
+            logging.info(f"{PROJECT_NAME} installation found, analyzing...")
+
+        else:
+            download_binary(latest_release_data)
+
     except Exception as e:
-        loggign.error(f"Failed to download latest release data : {e}")
+        logging.error(f"Failed to download latest release data : {e}")
+
+
+def download_binary(latest_release_data):
+    binary = latest_release_data["assets"][0]
+    r = requests.get(binary["url"], stream=True)
+    path = binary["name"]
+    with open(path, 'wb') as f:
+        total_length = int(r.headers.get('content-length'))
+        for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length / 1024) + 1):
+            if chunk:
+                f.write(chunk)
+                f.flush()
 
 
 def update_tentacles():
