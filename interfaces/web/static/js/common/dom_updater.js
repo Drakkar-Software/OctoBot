@@ -44,31 +44,6 @@ function update_element_temporary_look(element){
     }
 }
 
-function at_least_one_temporary_element(root_element){
-    var at_least_one_element = false;
-    root_element.find("."+config_element_class).each(function(){
-        var current_attr = $(this).attr(current_value_attr);
-        var config_attr = $(this).attr(config_value_attr);
-
-        if (isDefined(current_attr) && isDefined(config_attr)) {
-            if(current_attr.toLowerCase() !== config_attr.toLowerCase()){
-                at_least_one_element = true;
-                return false;
-            }
-        }
-    });
-    return at_least_one_element;
-}
-
-function add_or_remove_exit_confirm_if_necessary(root_element, message){
-    if(at_least_one_temporary_element(root_element)){
-        add_or_remove_confirm_before_exit_page(true, message);
-    }
-    else{
-        add_or_remove_confirm_before_exit_page(false);
-    }
-}
-
 function change_boolean(to_update_element, new_value, new_value_string){
     var badge = to_update_element.find(".badge");
     var startup_value = to_update_element.attr(startup_value_attr).toLowerCase();
@@ -188,24 +163,28 @@ function update_status(status){
     }
 }
 
-function add_or_remove_confirm_before_exit_page(add, message){
+function register_exit_confirm_function(check_function) {
     var exit_event = 'beforeunload';
-    if(add){
-        $(window).bind(exit_event, function(){
-          return message;
-        });
-    }else{
-        $(window).off(exit_event);
-    }
+    $(window).bind(exit_event, function(){
+      if(check_function()){
+          return "Exit without saving ?";
+      }
+    });
 }
+
+function remove_exit_confirm_function(){
+    var exit_event = 'beforeunload';
+    $(window).off(exit_event);
+}
+
 
 function confirm_all_modified_classes(container){
     container.find("."+deck_container_modified_class).each(function () {
         toogle_class($(this), deck_container_modified_class, false);
-    })
+    });
     container.find("."+card_class_modified).each(function () {
         toogle_class($(this), card_class_modified, false);
-    })
+    });
 }
 
 function toogle_class(elem, class_type, toogle=true){
