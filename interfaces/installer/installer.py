@@ -5,7 +5,6 @@ import os
 import subprocess
 from distutils.version import LooseVersion
 from subprocess import PIPE
-from time import sleep
 
 import requests
 
@@ -45,8 +44,6 @@ class Installer:
         self.create_environment()
         binary_path = self.update_binary()
         self.update_tentacles(binary_path)
-
-        sleep(5)
 
     def create_environment(self):
         logging.info(f"{PROJECT_NAME} is checking your environment...")
@@ -160,6 +157,8 @@ class Installer:
                 for chunk in r.iter_content(1024):
                     f.write(chunk)
                     self.installer_app.inc_progress(increment)
+
+        return path
 
     def update_tentacles(self, binary_path):
         # if install required
