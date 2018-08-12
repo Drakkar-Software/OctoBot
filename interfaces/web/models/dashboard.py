@@ -4,7 +4,8 @@ from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
     get_symbol_data_history
 from tools.symbol_util import split_symbol
-from tools.timestamp_util import convert_timestamps_to_datetime
+from tools.timestamp_util import convert_timestamps_to_datetime, convert_timestamp_to_datetime
+from interfaces.trading_util import get_trades_history
 
 GET_SYMBOL_SEPARATOR = "|"
 
@@ -27,6 +28,29 @@ def get_value_from_dict_or_string(data, is_time_frame=False):
                 return TimeFrames(data)
         else:
             return data
+
+
+def _format_trades(trade_history):
+    trade_time_key = "time"
+    trade_price_key = "price"
+    trade_description_key = "trade_description"
+    trade_order_side_key = "order_side"
+    trades = {
+        trade_time_key: [],
+        trade_price_key: [],
+        trade_description_key: [],
+        trade_order_side_key: []
+    }
+
+    for trades_per_trader in trade_history:
+        for trade in trades_per_trader:
+            trades[trade_time_key].append(convert_timestamp_to_datetime(trade.get_filled_time(),
+                                                                        format="%y-%m-%d %H:%M:%S"))
+            trades[trade_price_key].append(trade.get_price())
+            trades[trade_description_key].append(f"{trade.get_order_type().name}: {trade.get_quantity()}")
+            trades[trade_order_side_key].append(trade.get_side().value)
+
+    return trades
 
 
 def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arrays=True, backtesting=False):
@@ -54,16 +78,34 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
                 data = evaluator_thread_manager.get_evaluator().get_data()
 
                 if data is not None:
+
+                    candles_key = "candles"
+                    real_trades_key = "real_trades"
+                    simulated_trades_key = "simulated_trades"
+                    result_dict = {
+                        candles_key: [],
+                        real_trades_key: [],
+                        simulated_trades_key: [],
+                    }
+
                     _, pair_tag = split_symbol(symbol)
                     add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
                     data = get_symbol_data_history(symbol, time_frame)
 
                     data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value],
                                                             format="%y-%m-%d %H:%M:%S",
-                                                            force_timezone=True)
+                                                            force_timezone=False)
+
+                    real_trades_history, simulated_trades_history = get_trades_history(bot, symbol)
+
+                    if real_trades_history:
+                        result_dict[real_trades_key] = _format_trades(real_trades_history)
+
+                    if real_trades_history:
+                        result_dict[simulated_trades_key] = _format_trades(simulated_trades_history)
 
                     if list_arrays:
-                        return {
+                        result_dict[candles_key] = {
                             PriceStrings.STR_PRICE_TIME.value: data_x,
                             PriceStrings.STR_PRICE_CLOSE.value: data[PriceIndexes.IND_PRICE_CLOSE.value].tolist(),
                             PriceStrings.STR_PRICE_LOW.value: data[PriceIndexes.IND_PRICE_LOW.value].tolist(),
@@ -71,11 +113,12 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
                             PriceStrings.STR_PRICE_HIGH.value: data[PriceIndexes.IND_PRICE_HIGH.value].tolist()
                         }
                     else:
-                        return {
+                        result_dict[candles_key] = {
                             PriceStrings.STR_PRICE_TIME.value: data_x,
                             PriceStrings.STR_PRICE_CLOSE.value: data[PriceIndexes.IND_PRICE_CLOSE.value],
                             PriceStrings.STR_PRICE_LOW.value: data[PriceIndexes.IND_PRICE_LOW.value],
                             PriceStrings.STR_PRICE_OPEN.value: data[PriceIndexes.IND_PRICE_OPEN.value],
                             PriceStrings.STR_PRICE_HIGH.value: data[PriceIndexes.IND_PRICE_HIGH.value]
                         }
+                    return result_dict
     return None

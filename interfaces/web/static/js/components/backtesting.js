@@ -95,6 +95,7 @@ function check_backtesting_state(){
         const progress_bar = $("#backtesting_progress_bar");
 
         if(backtesting_status === "computing"){
+            lock_interface(true);
             progress_bar.show();
             update_progress(progress);
             first_refresh_state = backtesting_status;
