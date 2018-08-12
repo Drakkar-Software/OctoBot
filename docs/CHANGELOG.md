@@ -2,7 +2,7 @@
 
 Changelog for 0.1.7-beta
 ====================
-*Released date : August 13 2018*
+*Released date : August 15 2018*
 
 **Warning** :
 - Trading key changed : [See wiki trading page](https://github.com/Drakkar-Software/OctoBot/wiki/Trading)

@@ -467,4 +467,10 @@ class ExchangeConstantsMarketPropertyColumns(Enum):
     FEE = "fee"  # withdraw
 
 
+class DeliveryPlatformsName(Enum):
+    WINDOWS = "windows"
+    LINUX = "linux"
+    MAC = "mac"
+
+
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='

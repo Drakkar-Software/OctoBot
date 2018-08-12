@@ -32,8 +32,6 @@ class InstallerApp(TkApp):
         if to_max:
             self.progress["value"] = self.PROGRESS_MAX
             self.progress_label["text"] = f"{self.PROGRESS_MAX}%"
-
-            self.stop()
         else:
             self.progress["value"] += inc_size
             self.progress_label["text"] = f"{round(self.progress['value'], 2)}%"
