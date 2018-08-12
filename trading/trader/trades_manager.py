@@ -59,6 +59,16 @@ class TradesManager:
     def get_trade_history(self):
         return self.trade_history
 
+    def select_trade_history(self, symbol=None):
+        if symbol is not None:
+            filtered_trades = []
+            for trade in self.trade_history:
+                if trade.get_symbol() == symbol:
+                    filtered_trades.append(trade)
+            return filtered_trades
+        else:
+            return self.trade_history
+
     def add_new_trade_in_history(self, trade):
         if trade not in self.trade_history:
             self.trade_history.append(trade)
