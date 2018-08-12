@@ -314,8 +314,8 @@ class ExchangeSimulator(AbstractExchange):
                 if symbol in self.min_time_frame_to_consider:
                     current = self.time_frame_get_times[symbol][self.min_time_frame_to_consider[symbol]]
                     nb_max = len(self.data[symbol][self.min_time_frame_to_consider[symbol]])
-                    progresses.append(current/nb_max)
-            return int(DataUtil.mean(progresses)*100)
+                    progresses.append(current / nb_max)
+            return int(DataUtil.mean(progresses) * 100)
 
     def get_data(self):
         return self.data

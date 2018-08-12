@@ -19,7 +19,7 @@ function manage_alert(raw_data){
             create_alert(data[i].Level, data[i].Title, data[i].Message);
         })
     }
-    catch{}
+    catch(error) {}
 }
 
 function handle_route_button(){

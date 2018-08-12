@@ -1,5 +1,5 @@
 function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, backtesting=false){
-    var backtesting_enabled = backtesting ? "backtesting" : "live";
+    let backtesting_enabled = backtesting ? "backtesting" : "live";
     const ajax_url = "/dashboard/currency_price_graph_update/"+ exchange_name +"/" + symbol + "/"
         + time_frame + "/" + backtesting_enabled;
     $.ajax({
