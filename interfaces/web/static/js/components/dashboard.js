@@ -33,6 +33,7 @@ function create_candlesticks(candles){
       low: data_low,
       open: data_open,
       type: 'candlestick',
+      name: 'Prices',
       xaxis: 'x',
       yaxis: 'y'
     };
@@ -129,6 +130,5 @@ function create_candlestick_graph(element_id, symbol_price_data, symbol, exchang
       }
     };
 
-    console.log(data);
     Plotly.plot(element_id, data, layout);
 }

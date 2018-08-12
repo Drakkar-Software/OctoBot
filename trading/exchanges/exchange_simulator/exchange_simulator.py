@@ -140,10 +140,25 @@ class ExchangeSimulator(AbstractExchange):
             current_time_frame_sec = TimeFramesMinutes[time_frame]
             current_time_frame_updated_times = self.time_frame_get_times[symbol][time_frame.value]
 
-            time_refresh_condition = (smallest_time_frame_updated_times_to_compare - (
-                    current_time_frame_updated_times * (current_time_frame_sec / smallest_time_frame_sec)) >= 0)
+            try:
 
-            return time_refresh_condition
+                time_refresh_first_condition = (smallest_time_frame_updated_times_to_compare - (
+                        current_time_frame_updated_times * (current_time_frame_sec / smallest_time_frame_sec)) >= 0)
+                if time_refresh_first_condition:
+                    smallest_time_frame_timestamp = self._get_current_timestamp(smallest_time_frame, symbol, 1)
+                    wanted_time_frame_timestamp = self._get_current_timestamp(time_frame, symbol)
+                    return wanted_time_frame_timestamp <= smallest_time_frame_timestamp + (smallest_time_frame_sec / 2)
+
+                else:
+                    return False
+            except IndexError:
+                return True
+
+    def _get_current_timestamp(self, time_frame, symbol, backwards=0):
+        time_frame_index = self._get_candle_index(time_frame.value, symbol)
+        if time_frame_index - backwards > 0:
+            time_frame_index = time_frame_index - backwards
+        return self.data[symbol][time_frame.value][time_frame_index][PriceIndexes.IND_PRICE_TIME.value]
 
     # Will use the One Minute time frame
     def _create_ticker(self, symbol, index):
@@ -293,8 +308,13 @@ class ExchangeSimulator(AbstractExchange):
                 found_index = False
                 for index, candle in enumerate(self.data[symbol][time_frame.value]):
                     if candle[PriceIndexes.IND_PRICE_TIME.value] >= min_time_frame_to_consider[symbol]:
+                        index_to_use = index
+                        if candle[PriceIndexes.IND_PRICE_TIME.value] > min_time_frame_to_consider[symbol] and \
+                                index > 0:
+                            # if superior: take the prvious one
+                            index_to_use = index-1
                         found_index = True
-                        self.time_frames_offset[symbol][time_frame.value] = index
+                        self.time_frames_offset[symbol][time_frame.value] = index_to_use
                         break
                 if not found_index:
                     self.time_frames_offset[symbol][time_frame.value] = len(self.data[symbol][time_frame.value]) - 1
