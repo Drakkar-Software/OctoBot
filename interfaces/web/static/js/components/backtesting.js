@@ -2,8 +2,8 @@
 function start_backtesting(){
     $("#backtesting_progress_bar").show();
     lock_interface();
-    var request = get_selected_files()
-    var update_url = $("#startBacktesting").attr("start-url");
+    const request = get_selected_files();
+    const update_url = $("#startBacktesting").attr("start-url");
     send_and_interpret_bot_update(request, update_url, null, start_success_callback, start_error_callback)
 }
 
@@ -19,7 +19,7 @@ function start_error_callback(updated_data, update_url, dom_root_element, result
 }
 
 function get_selected_files(){
-    var selected_modules = []
+    let selected_modules = [];
     dataFilesTable.rows(
         function ( idx, data, node ) {
             return $(node).find("input[type='checkbox']:checked").length > 0;
@@ -27,11 +27,11 @@ function get_selected_files(){
     ).eq(0).each(function( index ) {
         selected_modules.push(dataFilesTable.row( index ).data()[1]);
     });
-    return selected_modules
+    return selected_modules;
 }
 
 function lock_interface(lock=true){
-    var should_lock = lock;
+    let should_lock = lock;
     if(!should_lock){
         should_lock = get_selected_files() <= 0;
     }
@@ -45,11 +45,11 @@ function handle_backtesting_buttons(){
 }
 
 function load_report(){
-    var url = $("#backtestingReport").attr(update_url_attr);
-    $.get(url,function(data, status){
+    const url = $("#backtestingReport").attr(update_url_attr);
+    $.get(url,function(data){
         $("#bProf").html(data["bot_report"]["profitability"]);
         $("#maProf").html(data["bot_report"]["market_average_profitability"]);
-        var symbol_reports = [];
+        let symbol_reports = [];
         $.each( data["symbol_report"], function( index, value ) {
             $.each( value, function( symbol, profitability ) {
                 symbol_reports.push(symbol+": "+profitability);
@@ -57,7 +57,7 @@ function load_report(){
         });
         $("#sProf").html(symbol_reports.join(", "));
         $("#refM").html(data["bot_report"]["reference_market"]);
-        var portfolio_reports = [];
+        let portfolio_reports = [];
             $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
                 portfolio_reports.push(symbol+": "+holdings["total"]);
             });
@@ -68,17 +68,17 @@ function load_report(){
 }
 
 function add_graphs(symbols_with_time_frames){
-     var result_graph_id = "result-graph-";
-        var graph_symbol_price_id = "graph-symbol-price-";
-        var result_graphs = $("#result-graphs");
-        result_graphs.empty();
-        $.each(symbols_with_time_frames, function (symbol, time_frame) {
-            var target_template = $("#"+result_graph_id+config_default_value);
-            var graph_card = target_template.html().replace(new RegExp(config_default_value,"g"), symbol);
-            result_graphs.append(graph_card);
-            var formated_symbol = symbol.replace(new RegExp("/","g"), "|");
-            get_symbol_price_graph(graph_symbol_price_id+symbol, "ExchangeSimulator", formated_symbol, time_frame, true);
-        })
+    const result_graph_id = "result-graph-";
+    const graph_symbol_price_id = "graph-symbol-price-";
+    let result_graphs = $("#result-graphs");
+    result_graphs.empty();
+    $.each(symbols_with_time_frames, function (symbol, time_frame) {
+        const target_template = $("#"+result_graph_id+config_default_value);
+        const graph_card = target_template.html().replace(new RegExp(config_default_value,"g"), symbol);
+        result_graphs.append(graph_card);
+        const formated_symbol = symbol.replace(new RegExp("/","g"), "|");
+        get_symbol_price_graph(graph_symbol_price_id+symbol, "ExchangeSimulator", formated_symbol, time_frame, true);
+    })
 }
 
 function update_progress(progress){
@@ -86,24 +86,28 @@ function update_progress(progress){
 }
 
 function check_backtesting_state(){
-    var url = $("#backtestingPage").attr(update_url_attr);
+    const url = $("#backtestingPage").attr(update_url_attr);
     $.get(url,function(data, status){
-        var backtesting_status = data["status"];
-        var progress = data["progress"];
+        let backtesting_status = data["status"];
+        let progress = data["progress"];
+
+        const report = $("#backtestingReport");
+        const progress_bar = $("#backtesting_progress_bar");
+
         if(backtesting_status === "computing"){
-            $("#backtesting_progress_bar").show();
+            progress_bar.show();
             update_progress(progress);
             first_refresh_state = backtesting_status;
-            if($("#backtestingReport").is(":visible")){
-                $("#backtestingReport").hide();
+            if(report.is(":visible")){
+                report.hide();
             }
         }
         else{
             lock_interface(false);
-            $("#backtesting_progress_bar").hide();
+            progress_bar.hide();
             if(backtesting_status === "finished"){
-                if(!$("#backtestingReport").is(":visible")){
-                    $("#backtestingReport").show();
+                if(!report.is(":visible")){
+                    report.show();
                     load_report();
                 }
                 if(first_refresh_state !== "" && first_refresh_state !== "finished"){
@@ -119,17 +123,18 @@ function check_backtesting_state(){
 }
 
 function handle_file_selection(){
-    $(".selectable_datafile").unbind('click');
-    $('.selectable_datafile').click(function () {
-        row = $(this)
-        if (row.hasClass(selected_item_class)){
-            row.removeClass(selected_item_class);
-            row.find(".dataFileCheckbox").prop('checked', false);
+    const selectable_datafile = $(".selectable_datafile");
+    selectable_datafile.unbind('click');
+    selectable_datafile.click(function () {
+        const row_element = $(this);
+        if (row_element.hasClass(selected_item_class)){
+            row_element.removeClass(selected_item_class);
+            row_element.find(".dataFileCheckbox").prop('checked', false);
         }else{
-            row.toggleClass(selected_item_class);
-            var checkbox = row.find(".dataFileCheckbox");
-            var symbol = checkbox.attr("symbol");
-            var data_file = checkbox.attr("data-file");
+            row_element.toggleClass(selected_item_class);
+            const checkbox = row_element.find(".dataFileCheckbox");
+            const symbol = checkbox.attr("symbol");
+            const data_file = checkbox.attr("data-file");
             checkbox.prop('checked', true);
             // uncheck same symbols from other rows if any
             $("#dataFilesTable").find("input[type='checkbox']:checked").each(function(){
@@ -143,9 +148,9 @@ function handle_file_selection(){
     });
 }
 
-var first_refresh_state = "";
+let first_refresh_state = "";
 
-var dataFilesTable = $('#dataFilesTable').DataTable();
+const dataFilesTable = $('#dataFilesTable').DataTable();
 
 $(document).ready(function() {
     handle_backtesting_buttons();
