@@ -4,13 +4,13 @@ block_cipher = None
 
 
 a = Analysis(['../../launcher.py'],
-             pathex=['/home/herklos/dev/drakkars/OctoBot'],
+             pathex=['../../'],
              binaries=[],
-             datas=[('../../interfaces', 'interfaces')],
-             hiddenimports=["glob", "subprocess", "json", "requests", "os", "logging", "tkinter", "tkinter.ttk"],
+             datas=[('../../interfaces/web', 'interfaces/web')],
+             hiddenimports=["glob", "subprocess", "json", "requests", "os", "logging", "tkinter", "tkinter.ttk", "distutils", "distutils.version"],
              hookspath=[],
              runtime_hooks=[],
-             excludes=["interfaces.launcher"],
+             excludes=["interfaces.launcher.launcher_app", "interfaces.launcher.launcher_controller"],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
