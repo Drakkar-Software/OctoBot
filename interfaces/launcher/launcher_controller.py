@@ -10,7 +10,6 @@ import requests
 
 from config.cst import CONFIG_FILE, PROJECT_NAME, GITHUB_API_CONTENT_URL, GITHUB_REPOSITORY, GITHUB_RAW_CONTENT_URL, \
     VERSION_DEV_PHASE, DEFAULT_CONFIG_FILE, LOGGING_CONFIG_FILE, DeliveryPlatformsName, TENTACLES_PATH
-from interfaces.launcher import create_environment_file
 
 FOLDERS_TO_CREATE = ["logs"]
 FILES_TO_DOWNLOAD = [
@@ -37,8 +36,6 @@ CREATE_FOLDERS_PROGRESS_SIZE = 5
 BINARY_DOWNLOAD_PROGRESS_SIZE = 75
 TENTACLES_UPDATE_INSTALL_PROGRESS_SIZE = 15
 
-LAUNCHER_VERSION = "1.0.0"
-
 
 class Launcher:
     def __init__(self, inst_app):
@@ -52,7 +49,16 @@ class Launcher:
         logging.info(f"{PROJECT_NAME} is checking your environment...")
         # download files
         for file_to_dl in FILES_TO_DOWNLOAD:
-            create_environment_file(file_to_dl[0], file_to_dl[1])
+            file_content = requests.get(file_to_dl[0]).text
+            directory = os.path.dirname(file_to_dl[1])
+
+            if not os.path.exists(directory) and directory:
+                os.makedirs(directory)
+
+            file_name = file_to_dl[1]
+            if not os.path.isfile(file_name) and file_name:
+                with open(file_name, "w") as new_file_from_dl:
+                    new_file_from_dl.write(file_content)
 
         self.installer_app.inc_progress(LIB_FILES_DOWNLOAD_PROGRESS_SIZE)
 
@@ -166,7 +172,3 @@ class Launcher:
             logging.info(f"Tentacles : all default tentacles has been updated.")
 
         self.installer_app.inc_progress(TENTACLES_UPDATE_INSTALL_PROGRESS_SIZE, to_max=True)
-
-    @staticmethod
-    def get_version():
-        return LAUNCHER_VERSION
