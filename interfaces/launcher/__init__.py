@@ -1,3 +1,8 @@
+import os
+
+import requests
+
+
 def create_environment_file(file_to_dl, result_file_path):
     file_content = requests.get(file_to_dl).text
     directory = os.path.dirname(result_file_path)
