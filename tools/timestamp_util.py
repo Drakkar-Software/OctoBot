@@ -5,14 +5,14 @@ _EPOCH = time.time()
 TIMEZONE_DELTA = datetime.fromtimestamp(_EPOCH) - datetime.utcfromtimestamp(_EPOCH)
 
 
-def convert_timestamp_to_datetime(timestamp, format='%d/%m/%y %H:%M', force_timezone=False):
+def convert_timestamp_to_datetime(timestamp, time_format='%d/%m/%y %H:%M', force_timezone=False):
     if force_timezone:
         timestamp += TIMEZONE_DELTA.seconds
-    return datetime.fromtimestamp(timestamp).strftime(format)
+    return datetime.fromtimestamp(timestamp).strftime(time_format)
 
 
-def convert_timestamps_to_datetime(timestamps, format='%d/%m/%y %H:%M', force_timezone=False):
-    return [convert_timestamp_to_datetime(timestamp, format=format, force_timezone=force_timezone)
+def convert_timestamps_to_datetime(timestamps, time_format='%d/%m/%y %H:%M', force_timezone=False):
+    return [convert_timestamp_to_datetime(timestamp, time_format=time_format, force_timezone=force_timezone)
             for timestamp in timestamps]
 
 

@@ -45,7 +45,7 @@ def _format_trades(trade_history):
     for trades_per_trader in trade_history:
         for trade in trades_per_trader:
             trades[trade_time_key].append(convert_timestamp_to_datetime(trade.get_filled_time(),
-                                                                        format="%y-%m-%d %H:%M:%S"))
+                                                                        time_format="%y-%m-%d %H:%M:%S"))
             trades[trade_price_key].append(trade.get_price())
             trades[trade_description_key].append(f"{trade.get_order_type().name}: {trade.get_quantity()}")
             trades[trade_order_side_key].append(trade.get_side().value)
@@ -93,7 +93,7 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
                     data = get_symbol_data_history(symbol, time_frame)
 
                     data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value],
-                                                            format="%y-%m-%d %H:%M:%S",
+                                                            time_format="%y-%m-%d %H:%M:%S",
                                                             force_timezone=False)
 
                     real_trades_history, simulated_trades_history = get_trades_history(bot, symbol)
