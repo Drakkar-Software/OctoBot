@@ -46,6 +46,10 @@ class AbstractWebSocket:
     def init_web_sockets(self, time_frames, trader_pairs):
         raise NotImplementedError("init_web_sockets not implemented")
 
+    @abstractmethod
+    def close_and_restart_sockets(self):
+        raise NotImplementedError("close_and_restart_sockets not implemented")
+
     # ============== ccxt adaptation methods ==============
     def init_ccxt_order_from_other_source(self, ccxt_order):
         if self.exchange_manager.get_personal_data().get_orders_are_initialized():
