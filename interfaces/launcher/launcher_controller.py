@@ -103,8 +103,7 @@ class Launcher:
             else:
                 return self.download_binary(latest_release_data)
         except Exception as e:
-            logging.error(f"Failed to download latest release data : {e}")
-            raise e
+            logging.exception(f"Failed to download latest release data : {e}")
 
     @staticmethod
     def get_latest_release_data():
@@ -112,8 +111,11 @@ class Launcher:
 
     @staticmethod
     def execute_command_on_current_bot(binary_path, commands):
-        cmd = [f"./{binary_path}"] + commands
-        return subprocess.Popen(cmd, stdout=PIPE).stdout.read().rstrip().decode()
+        try:
+            cmd = [f"./{binary_path}"] + commands
+            return subprocess.Popen(cmd, stdout=PIPE).stdout.read().rstrip().decode()
+        except PermissionError:
+            logging.exception(f"Failed to run bot with command {commands} : {e}")
 
     @staticmethod
     def get_asset_from_release_data(latest_release_data):
