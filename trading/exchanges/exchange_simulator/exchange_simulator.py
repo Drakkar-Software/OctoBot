@@ -17,6 +17,7 @@ from tools.data_util import DataUtil
 class ExchangeSimulator(AbstractExchange):
     def __init__(self, config, exchange_type, exchange_manager):
         super().__init__(config, exchange_type)
+        self.initializing = True
         self.exchange_manager = exchange_manager
 
         if CONFIG_BACKTESTING not in self.config:
@@ -51,6 +52,7 @@ class ExchangeSimulator(AbstractExchange):
 
         self.backtesting = Backtesting(self.config, self)
         self._prepare()
+        self.initializing = False
 
     def get_available_timeframes(self):
         client_timeframes = {}
@@ -422,6 +424,9 @@ class ExchangeSimulator(AbstractExchange):
 
     def get_backtesting(self):
         return self.backtesting
+
+    def get_is_initializing(self):
+        return self.initializing
 
     def get_fees(self, symbol=None):
         result_fees = {
