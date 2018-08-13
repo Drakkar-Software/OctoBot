@@ -4,15 +4,15 @@ from tkinter.ttk import Progressbar, Label
 
 from config.cst import PROJECT_NAME
 from interfaces.app_util import TkApp
-from interfaces.installer.installer import Installer
+from interfaces.launcher.launcher import Installer
 
 
-class InstallerApp(TkApp):
+class LauncherApp(TkApp):
     PROGRESS_MIN = 0
     PROGRESS_MAX = 100
 
     def __init__(self):
-        self.window_title = f"{PROJECT_NAME} - Installer"
+        self.window_title = f"{PROJECT_NAME} - Launcher"
         self.progress = None
         self.progress_label = None
 
@@ -49,5 +49,5 @@ class InstallerApp(TkApp):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    installer_app = InstallerApp()
+    installer_app = LauncherApp()
     installer = Installer(installer_app)
