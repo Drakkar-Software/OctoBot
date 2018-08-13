@@ -30,14 +30,14 @@ def get_standalone_backtesting_bot(config, data_files):
     config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = []
     ignored_files = []
     reference_market = _get_reference_market(data_files, config)
+    if DEFAULT_REFERENCE_MARKET != reference_market:
+        _switch_reference_market(config_to_use, reference_market)
     if data_files:
         for data_file_to_use in data_files:
             _, file_symbol, _ = interpret_file_name(data_file_to_use)
             currency, market = split_symbol(file_symbol)
             full_file_path = CONFIG_DATA_COLLECTOR_PATH + data_file_to_use
             full_file_path += full_file_path if not full_file_path.endswith(DATA_FILE_EXT) else ""
-            if DEFAULT_REFERENCE_MARKET != reference_market:
-                _switch_reference_market(config_to_use, market)
             if currency not in config_to_use[CONFIG_CRYPTO_CURRENCIES]:
                 config_to_use[CONFIG_CRYPTO_CURRENCIES][currency] = {CONFIG_CRYPTO_PAIRS: []}
             if file_symbol not in config_to_use[CONFIG_CRYPTO_CURRENCIES][currency][CONFIG_CRYPTO_PAIRS]:
