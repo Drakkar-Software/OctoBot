@@ -2,28 +2,25 @@ import datetime
 
 from flask import render_template
 
-from interfaces.trading_util import get_traders, get_open_orders, get_trades_history
+from interfaces.trading_util import get_open_orders, get_trades_history, get_global_portfolio_currencies_amounts
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
 
 
 @server_instance.route("/portfolio")
 def portfolio():
-    total_portfolio = {}
-    traders = get_traders()
+    real_portfolio, simulated_portfolio = get_global_portfolio_currencies_amounts()
 
-    for trader in traders:
-        for currency, amounts in trader.get_portfolio().get_portfolio().items():
-            if currency in total_portfolio:
-                total_portfolio[currency][Portfolio.TOTAL] += amounts[Portfolio.TOTAL]
-                total_portfolio[currency][Portfolio.AVAILABLE] += amounts[Portfolio.AVAILABLE]
-            else:
-                total_portfolio[currency] = {
-                    Portfolio.TOTAL: amounts[Portfolio.TOTAL],
-                    Portfolio.AVAILABLE: amounts[Portfolio.AVAILABLE],
-                }
+    filtered_real_portfolio = {currency: amounts
+                               for currency, amounts in real_portfolio.items()
+                               if amounts[Portfolio.TOTAL] > 0}
+    filtered_simulated_portfolio = {currency: amounts
+                                    for currency, amounts in simulated_portfolio.items()
+                                    if amounts[Portfolio.TOTAL] > 0}
 
-    return render_template('portfolio.html', total_portfolio=total_portfolio)
+    return render_template('portfolio.html',
+                           simulated_portfolio=filtered_simulated_portfolio,
+                           real_portfolio=filtered_real_portfolio)
 
 
 @server_instance.route("/orders")
