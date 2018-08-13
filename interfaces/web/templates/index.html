@@ -3,7 +3,7 @@
     <br>
     <div class="card">
         <div class="card-header"><h2>Symbol price</h2></div>
-        <div class="card-body">
+        <div class="card-body" id="first_symbol_graph" update-url="{{ url_for('first_symbol') }}" >
             <div id="graph-symbol-price"></div>
         </div>
     </div>
@@ -14,6 +14,6 @@
     <script src="{{ url_for('static', filename='js/components/dashboard.js') }}"></script>
 
     <script>
-        get_symbol_price_graph("graph-symbol-price", "binance", "BTC|USDT", "1h");
+        get_first_symbol_price_graph("graph-symbol-price");
     </script>
 {% endblock additional_scripts %}
