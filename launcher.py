@@ -19,6 +19,7 @@ sys.path.append(os.path.dirname(sys.executable))
 def update_launcher(force=False):
     for file in LAUNCHER_FILES:
         create_launcher_files(f"{LAUNCHER_URL}/{file}", f"{LAUNCHER_PATH}/{file}", force=force)
+    logging.info("Launcher updated")
 
 
 def create_launcher_files(file_to_dl, result_file_path, force=False):
