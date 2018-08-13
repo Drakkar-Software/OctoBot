@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 from time import sleep
 from tkinter.ttk import Progressbar, Label, Button
@@ -34,14 +35,15 @@ class LauncherApp(TkApp):
         self.update_bot_button = Button(self.window, command=self.update_bot_handler, text="Update Octobot")
         self.update_bot_button.pack()
 
-        self.update_launcher_button = Button(self.window, command=self.update_launcher_handler, text="Update Launcher")
-        self.update_launcher_button.pack()
-
         self.progress = Progressbar(self.window, orient="horizontal",
                                     length=200, mode="determinate")
         self.progress.pack()
         self.progress_label = Label(self.window, text=f"{self.PROGRESS_MIN}%")
         self.progress_label.pack()
+
+        self.update_launcher_button = Button(self.window, command=self.update_launcher_handler, text="Update Launcher")
+        self.update_launcher_button.pack()
+
         self.progress["value"] = self.PROGRESS_MIN
         self.progress["maximum"] = self.PROGRESS_MAX
 
@@ -57,7 +59,16 @@ class LauncherApp(TkApp):
         self.update_bot(self)
 
     def update_launcher_handler(self):
-        os.execl(sys.executable, "--update_launcher")
+        launcher_process = subprocess.Popen([sys.executable, "--update_launcher"])
+
+        if launcher_process:
+            self.hide()
+            launcher_process.wait()
+
+            new_launcher_process = subprocess.Popen([sys.executable])
+
+            if new_launcher_process:
+                self.stop()
 
     def start_bot_handler(self):
         bot_process = Launcher.execute_command_on_detached_bot()
