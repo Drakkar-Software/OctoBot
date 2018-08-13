@@ -57,7 +57,6 @@ CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
-CONFIG_EXCHANGE_WEB_SOCKET = "web-socket"
 CONFIG_EXCHANGE_KEY = "api-key"
 CONFIG_EXCHANGE_SECRET = "api-secret"
 CONFIG_TRADING = "trading"
