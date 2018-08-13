@@ -1,7 +1,6 @@
 import os
 import subprocess
 import sys
-from time import sleep
 from tkinter.ttk import Progressbar, Label, Button
 
 from config.cst import PROJECT_NAME
@@ -80,7 +79,7 @@ class LauncherApp(TkApp):
 
     @staticmethod
     def update_bot(app=None):
-        launcher = launcher_controller.Launcher(app)
+        launcher_controller.Launcher(app)
 
     @staticmethod
     def export_logs():
