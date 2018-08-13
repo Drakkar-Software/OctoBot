@@ -34,16 +34,19 @@ class TkApp(threading.Thread):
             self.window.geometry("500x430")
 
             # background
-            background_image = PhotoImage(file="interfaces/web/static/img/octobot.png")
-            background_label = Label(self.window,
-                                     image=background_image,
-                                     text=self.window_background_text,
-                                     compound=CENTER)
+            try:
+                background_image = PhotoImage(file="interfaces/web/static/img/octobot.png")
+                background_label = Label(self.window,
+                                         image=background_image,
+                                         text=self.window_background_text,
+                                         compound=CENTER)
 
-            background_label.place(x=0,
-                                   y=0,
-                                   relwidth=1,
-                                   relheight=1)
+                background_label.place(x=0,
+                                       y=0,
+                                       relwidth=1,
+                                       relheight=1)
+            except Exception as e:
+                self.logger.error("Failed to load tk window background" + str(e))
 
             self.create_components()
 
