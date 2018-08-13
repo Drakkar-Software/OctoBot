@@ -41,6 +41,7 @@ class OctoBot:
         self.startup_config = copy.deepcopy(config)
         self.edited_config = copy.deepcopy(config)
         self.ready = False
+        self.watcher = None
 
         # tools: used for alternative operations on a bot on the fly (ex: backtesting started from web interface)
         self.tools = {
@@ -200,6 +201,8 @@ class OctoBot:
             manager.start_threads()
 
         for thread in self.symbol_time_frame_updater_threads:
+            if self.watcher is not None:
+                thread.set_watcher(self.watcher)
             thread.start()
 
         for thread in self.dispatchers_list:
@@ -270,6 +273,9 @@ class OctoBot:
             exchange.stop()
 
         self.logger.info("Threads stopped.")
+
+    def set_watcher(self, watcher):
+        self.watcher = watcher
 
     @staticmethod
     def get_trading_mode_class(config):

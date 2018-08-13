@@ -44,19 +44,32 @@ function handle_backtesting_buttons(){
     });
 }
 
-function load_report(){
+function load_report(should_alert=False){
     const url = $("#backtestingReport").attr(update_url_attr);
     $.get(url,function(data){
-        $("#bProf").html(data["bot_report"]["profitability"]);
-        $("#maProf").html(data["bot_report"]["market_average_profitability"]);
-        let symbol_reports = [];
-        $.each( data["symbol_report"], function( index, value ) {
-            $.each( value, function( symbol, profitability ) {
-                symbol_reports.push(symbol+": "+profitability);
+        let profitability = "";
+        let all_profitability = "";
+        if ("error" in data) {
+            let error_message = "Error during backtesting ("+data["error"]+"), more details in logs.";
+            profitability = error_message;
+            if(should_alert){
+                create_alert("error", error_message, "");
+            }
+            all_profitability = profitability;
+        }else{
+            profitability = data["bot_report"]["profitability"];
+            let symbol_reports = [];
+            $.each( data["symbol_report"], function( index, value ) {
+                $.each( value, function( symbol, profitability ) {
+                    symbol_reports.push(symbol+": "+profitability);
+                });
             });
-        });
-        $("#sProf").html(symbol_reports.join(", "));
+            all_profitability = symbol_reports.join(", ");
+        }
+        $("#bProf").html(profitability);
+        $("#maProf").html(data["bot_report"]["market_average_profitability"]);
         $("#refM").html(data["bot_report"]["reference_market"]);
+        $("#sProf").html(all_profitability);
         let portfolio_reports = [];
             $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
                 portfolio_reports.push(symbol+": "+holdings["total"]);
@@ -107,13 +120,14 @@ function check_backtesting_state(){
             lock_interface(false);
             progress_bar.hide();
             if(backtesting_status === "finished"){
-                if(!report.is(":visible")){
-                    report.show();
-                    load_report();
-                }
-                if(first_refresh_state !== "" && first_refresh_state !== "finished"){
+                let should_alert = first_refresh_state !== "" && first_refresh_state !== "finished";
+                if(should_alert){
                     create_alert("success", "Backtesting finished.", "");
                     first_refresh_state="finished";
+                }
+                if(!report.is(":visible")){
+                    report.show();
+                    load_report(should_alert);
                 }
             }
         }

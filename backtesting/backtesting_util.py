@@ -83,7 +83,7 @@ def create_backtesting_bot(config):
     return bot
 
 
-def start_backtesting_bot(bot, in_thread=False):
+def start_backtesting_bot(bot, in_thread=False, watcher=None):
     bot.create_exchange_traders()
 
     # fix backtesting exit
@@ -98,6 +98,10 @@ def start_backtesting_bot(bot, in_thread=False):
     if not bot.get_symbols_threads_manager():
         raise RuntimeError(f"No candles data for the current configuration. Please ensure your configuration file is "
                            f"correct and has the required backtesting data file for the activated symbols.")
+
+    if watcher is not None:
+        bot.set_watcher(watcher)
+
     bot.start_threads()
 
     if not in_thread:

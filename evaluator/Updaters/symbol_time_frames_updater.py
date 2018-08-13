@@ -22,6 +22,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
         self.time_frame_last_update = {}
         self.keep_running = True
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.watcher = None
 
     # add a time frame to watch and its related evaluator thread manager
     def register_evaluator_thread_manager(self, time_frame, evaluator_thread_manager):
@@ -43,60 +44,66 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
     # start background refresher
     def run(self):
-        time_frames = self.evaluator_threads_manager_by_time_frame.keys()
+        try:
+            time_frames = self.evaluator_threads_manager_by_time_frame.keys()
 
-        # sort time frames to update them in order of accuracy
-        time_frames = TimeFrameManager.sort_time_frames(time_frames)
+            # sort time frames to update them in order of accuracy
+            time_frames = TimeFrameManager.sort_time_frames(time_frames)
 
-        if time_frames:
-            exchange = None
+            if time_frames:
+                exchange = None
 
-            # figure out from an evaluator if back testing is running for this symbol
-            evaluator_thread_manager = next(iter(self.evaluator_threads_manager_by_time_frame.values()))
-            symbol = evaluator_thread_manager.get_symbol()
+                # figure out from an evaluator if back testing is running for this symbol
+                evaluator_thread_manager = next(iter(self.evaluator_threads_manager_by_time_frame.values()))
+                symbol = evaluator_thread_manager.get_symbol()
 
-            # test if we need to initialize backtesting features
-            backtesting_enabled = Backtesting.enabled(evaluator_thread_manager.get_evaluator().get_config())
-            if backtesting_enabled:
-                exchange = evaluator_thread_manager.exchange.get_exchange()
-                exchange.init_candles_offset(time_frames, symbol)
+                # test if we need to initialize backtesting features
+                backtesting_enabled = Backtesting.enabled(evaluator_thread_manager.get_evaluator().get_config())
+                if backtesting_enabled:
+                    exchange = evaluator_thread_manager.exchange.get_exchange()
+                    exchange.init_candles_offset(time_frames, symbol)
 
-            # init refreshed_times at 0 for each time frame
-            self.refreshed_times = {key: 0 for key in time_frames}
+                # init refreshed_times at 0 for each time frame
+                self.refreshed_times = {key: 0 for key in time_frames}
 
-            # init last refresh times at 0 for each time frame
-            self.time_frame_last_update = {key: 0 for key in time_frames}
+                # init last refresh times at 0 for each time frame
+                self.time_frame_last_update = {key: 0 for key in time_frames}
 
-            while self.keep_running:
-                now = time.time()
+                while self.keep_running:
+                    now = time.time()
 
-                for time_frame in time_frames:
+                    for time_frame in time_frames:
 
-                    # backtesting doesn't need to wait a specific time frame to end to refresh data
-                    if backtesting_enabled:
-                        try:
-                            if exchange.should_update_data(time_frame, symbol):
+                        # backtesting doesn't need to wait a specific time frame to end to refresh data
+                        if backtesting_enabled:
+                            try:
+                                if exchange.should_update_data(time_frame, symbol):
+                                    self._refresh_data(time_frame)
+                            except BacktestingEndedException as e:
+                                self.logger.info(e)
+                                self.keep_running = False
+                                exchange.end_backtesting(symbol)
+                                break
+
+                        # if data from this time frame needs an update
+                        elif now - self.time_frame_last_update[time_frame] \
+                                >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
+                            try:
                                 self._refresh_data(time_frame)
-                        except BacktestingEndedException as e:
-                            self.logger.info(e)
-                            self.keep_running = False
-                            exchange.end_backtesting(symbol)
-                            break
+                            except Exception as e:
+                                self.logger.error(f" when refreshing data for time frame {time_frame} for {symbol}: {e}")
+                                self.logger.exception(e)
 
-                    # if data from this time frame needs an update
-                    elif now - self.time_frame_last_update[time_frame] \
-                            >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                        try:
-                            self._refresh_data(time_frame)
-                        except Exception as e:
-                            self.logger.error(f" when refreshing data for time frame {time_frame} for {symbol}: {e}")
-                            self.logger.exception(e)
+                            self.time_frame_last_update[time_frame] = time.time()
 
-                        self.time_frame_last_update[time_frame] = time.time()
+                    self._update_pause(backtesting_enabled, now)
+            else:
+                self.logger.warning("no time frames to monitor, going to sleep.")
 
-                self._update_pause(backtesting_enabled, now)
-        else:
-            self.logger.warning("no time frames to monitor, going to sleep.")
+        except Exception as e:
+            self.logger.exception(e)
+            if self.watcher is not None:
+                self.watcher.set_error(e)
 
     # calculate thread sleep between each refresh
     def _update_pause(self, backtesting_enabled, now):
@@ -124,3 +131,6 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
     def get_refreshed_times(self, time_frame):
         return self.refreshed_times[time_frame]
+
+    def set_watcher(self, watcher):
+        self.watcher = watcher
