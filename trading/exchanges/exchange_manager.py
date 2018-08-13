@@ -2,7 +2,7 @@ import logging
 
 from config.cst import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
-    PriceIndexes, CONFIG_WILDCARD
+    PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET
 from tools.time_frame_manager import TimeFrameManager
 from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
@@ -60,7 +60,7 @@ class ExchangeManager:
             self._load_constants()
 
             # create Websocket exchange if possible
-            if not self.rest_only:
+            if not self.rest_only and self.check_web_socket_config(self.exchange.get_name()):
                 for socket_manager in AbstractWebSocket.__subclasses__():
                     # add websocket exchange if available
                     if socket_manager.get_name() == self.exchange.get_name():
@@ -107,6 +107,13 @@ class ExchangeManager:
             return False
         else:
             return True
+
+    def force_disable_web_socket(self, exchange_name):
+        return CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
+            and not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]
+
+    def check_web_socket_config(self, exchange_name):
+        return self.check_config(exchange_name) and not self.force_disable_web_socket(exchange_name)
 
     def enabled(self):
         # if we can get candlestick data
