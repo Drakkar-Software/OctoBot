@@ -12,7 +12,7 @@ function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, b
         },
         error: function(result, status, error){
             window.console&&console.error(error);
-        },
+        }
     });
 }
 
