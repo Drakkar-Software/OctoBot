@@ -4,6 +4,7 @@ import logging
 
 from config.cst import GITHUB_RAW_CONTENT_URL, GITHUB_REPOSITORY, LAUNCHER_FILE, LAUNCHER_PATH
 from interfaces.launcher import create_environment_file
+from interfaces.launcher.launcher_app import LauncherApp
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
