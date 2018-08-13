@@ -81,6 +81,18 @@ class ExchangeManager:
 
         self.is_ready = True
 
+    def reset_websocket_exchange(self):
+        if self.exchange_web_socket:
+
+            # clear databases
+            self.exchange_dispatcher.reset_symbols_data()
+            self.exchange_dispatcher.reset_exchange_personal_data()
+
+            # close and restart websockets
+            self.exchange_web_socket.close_and_restart_sockets()
+
+            # databases will be filled at the next calls similarly to bot startup process
+
     # should be used only in specific case
     def get_ccxt_exchange(self):
         return self.exchange

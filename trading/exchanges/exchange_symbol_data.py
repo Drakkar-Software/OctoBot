@@ -1,8 +1,9 @@
 import logging
+import time
 
 import numpy as np
 
-from config.cst import PriceIndexes
+from config.cst import PriceIndexes, TimeFramesMinutes, MINUTE_TO_SECONDS
 
 
 class SymbolData:
@@ -18,6 +19,8 @@ class SymbolData:
         self.recent_trades = []
         self.symbol_ticker = None
 
+        self.previous_candle_time = {}
+
         self.are_recent_trades_initialized = False
         self.logger = logging.getLogger("{0} - {1}".format(self.__class__.__name__, self.symbol))
 
@@ -27,18 +30,33 @@ class SymbolData:
 
     # candle functions
     def update_symbol_candles(self, time_frame, new_symbol_candles_data, replace_all=False):
+        current_time = time.time()
         if time_frame is not None and time_frame not in self.symbol_candles or replace_all:
             self.symbol_candles[time_frame] = CandleData(new_symbol_candles_data)
+            self.previous_candle_time[time_frame] = current_time
 
         else:
             candle_data = self.symbol_candles[time_frame]
             # else check if we should edit the last candle or move to a new one
             if candle_data.should_add_new_candle(new_symbol_candles_data[PriceIndexes.IND_PRICE_TIME.value]):
                 candle_data.change_current_candle(new_symbol_candles_data)
+                self.previous_candle_time[time_frame] = current_time
 
             # only need to edit the last candle
             else:
                 candle_data.set_last_candle(new_symbol_candles_data)
+
+    def ensure_data_validity(self, time_frame):
+        previous_candle_timestamp = self._get_previous_candle_timestamp(time_frame)
+        error_allowance = 1.2
+        current_time = time.time()
+        if previous_candle_timestamp is not None:
+            # if update time from the previous time frame is greater than this given time frame:
+            # data did not get updated => data are invalid
+            if current_time - previous_candle_timestamp > \
+                    TimeFramesMinutes[time_frame]*MINUTE_TO_SECONDS*error_allowance:
+                return False
+        return True
 
     # ticker functions
     def update_symbol_ticker(self, new_symbol_ticker_data):
@@ -80,6 +98,12 @@ class SymbolData:
     @staticmethod
     def _has_candle_changed(candle_data, start_candle_time):
         return candle_data.time_candles_list[-1] < start_candle_time
+
+    def _get_previous_candle_timestamp(self, time_frame):
+        if time_frame in self.previous_candle_time:
+            return self.previous_candle_time[time_frame]
+        else:
+            return None
 
     def candles_are_initialized(self, time_frame):
         if time_frame in self.symbol_candles and self.symbol_candles[time_frame].is_initialized:
