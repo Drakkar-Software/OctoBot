@@ -3,6 +3,7 @@ from tkinter.ttk import Progressbar, Label
 
 from config.cst import PROJECT_NAME
 from interfaces.app_util import TkApp
+from interfaces.launcher import LAUNCHER_VERSION, launcher_controller
 
 
 class LauncherApp(TkApp):
@@ -43,3 +44,16 @@ class LauncherApp(TkApp):
 
     def stop(self):
         self.window.quit()
+
+
+def start_launcher(args):
+    if args.version:
+        print(LAUNCHER_VERSION)
+    else:
+        if args.update:
+            pass
+        elif args.update_launcher:
+            pass
+        else:
+            installer_app = LauncherApp()
+            installer = launcher_controller.Launcher(installer_app)
