@@ -47,7 +47,8 @@
   "exchanges": {
     "binance": {
       "api-key": "",
-      "api-secret": ""
+      "api-secret": "",
+      "web-socket": false
     }
   },
   "services": {
