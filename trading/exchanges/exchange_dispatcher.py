@@ -96,7 +96,7 @@ class ExchangeDispatcher(AbstractExchange):
         else:
             self.resetting_web_socket = True
             # otherwise: reset web socket and recall method
-            self.logger.info("web socket seems to be disconnected, trying to restart it.")
+            self.logger.warning("web socket seems to be disconnected, trying to restart it")
             self.get_exchange_manager().reset_websocket_exchange()
             self.resetting_web_socket = False
 
