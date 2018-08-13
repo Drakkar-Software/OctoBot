@@ -1,9 +1,12 @@
 import os
-from tkinter.ttk import Progressbar, Label
+import sys
+from time import sleep
+from tkinter.ttk import Progressbar, Label, Button
 
 from config.cst import PROJECT_NAME
 from interfaces.app_util import TkApp
 from interfaces.launcher import launcher_controller
+from interfaces.launcher.launcher_controller import Launcher
 
 LAUNCHER_VERSION = "1.0.0"
 
@@ -25,14 +28,14 @@ class LauncherApp(TkApp):
 
     def create_components(self):
         # buttons
-        self.start_bot_button = Button(master, command=self.start_bot_handler, text="Start Octobot")
-        self.start_bot_button.grid()
+        self.start_bot_button = Button(self.window, command=self.start_bot_handler, text="Start Octobot")
+        self.start_bot_button.pack()
 
-        self.update_bot_button = Button(master, command=self.update_bot_handler, text="Start Octobot")
-        self.update_bot_button.grid()
+        self.update_bot_button = Button(self.window, command=self.update_bot_handler, text="Update Octobot")
+        self.update_bot_button.pack()
 
-        self.update_launcher_button = Button(master, command=self.update_launcher_handler, text="Start Octobot")
-        self.update_launcher_button.grid()
+        self.update_launcher_button = Button(self.window, command=self.update_launcher_handler, text="Update Launcher")
+        self.update_launcher_button.pack()
 
         self.progress = Progressbar(self.window, orient="horizontal",
                                     length=200, mode="determinate")
@@ -54,10 +57,15 @@ class LauncherApp(TkApp):
         self.update_bot(self)
 
     def update_launcher_handler(self):
-        os.execl(sys.executable, os.path.abspath(__file__), ["--update_launcher"])
+        os.execl(sys.executable, "--update_launcher")
 
     def start_bot_handler(self):
-        installer = launcher_controller.Launcher(self)
+        bot_process = Launcher.execute_command_on_detached_bot()
+
+        if bot_process:
+            self.hide()
+            bot_process.wait()
+            self.stop()
 
     @staticmethod
     def update_bot(app=None):
@@ -73,6 +81,9 @@ class LauncherApp(TkApp):
 
     def start_app(self):
         self.window.mainloop()
+
+    def hide(self):
+        self.window.withdraw()
 
     def stop(self):
         self.window.quit()
