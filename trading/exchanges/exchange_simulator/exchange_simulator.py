@@ -142,17 +142,11 @@ class ExchangeSimulator(AbstractExchange):
 
             try:
 
-                time_refresh_first_condition = (smallest_time_frame_updated_times_to_compare - (
-                        current_time_frame_updated_times * (current_time_frame_sec / smallest_time_frame_sec)) >= 0)
-                if time_refresh_first_condition:
-                    smallest_time_frame_timestamp = self._get_current_timestamp(smallest_time_frame, symbol, 1)
-                    wanted_time_frame_timestamp = self._get_current_timestamp(time_frame, symbol)
-                    return wanted_time_frame_timestamp <= smallest_time_frame_timestamp + (smallest_time_frame_sec / 2)
-
-                else:
-                    return False
+                smallest_time_frame_timestamp = self._get_current_timestamp(smallest_time_frame, symbol, 1)
+                wanted_time_frame_timestamp = self._get_current_timestamp(time_frame, symbol)
+                return wanted_time_frame_timestamp <= smallest_time_frame_timestamp + (smallest_time_frame_sec / 2)
             except IndexError:
-                return True
+                return False
 
     def _get_current_timestamp(self, time_frame, symbol, backwards=0):
         time_frame_index = self._get_candle_index(time_frame.value, symbol)
