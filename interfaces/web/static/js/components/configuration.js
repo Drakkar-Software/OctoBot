@@ -220,8 +220,6 @@ function handle_save_buttons(){
 
         // send update
         send_and_interpret_bot_update(updated_config, update_url, full_config, handle_save_buttons_success_callback);
-
-        add_or_remove_confirm_before_exit_page(false);
     })
 }
 
