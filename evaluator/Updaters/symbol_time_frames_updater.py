@@ -104,6 +104,10 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
             self.logger.exception(e)
             if self.watcher is not None:
                 self.watcher.set_error(e)
+        
+        finally:
+            if not self.exchange.get_backtesting().get_is_finished():
+                self.watcher.set_error("Backtesting did not finish properly.")
 
     # calculate thread sleep between each refresh
     def _update_pause(self, backtesting_enabled, now):
