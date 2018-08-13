@@ -105,7 +105,7 @@ def start_octobot(starting_args):
                     interfaces.__init__(bot, config)
                     try:
                         starting.__init__(config)
-                    except ModuleNotFoundError as e:
+                    except Exception as e:
                         logging.error(f"Can't find {e} module, impossible to display GUI")
 
                     if starting_args.start:
