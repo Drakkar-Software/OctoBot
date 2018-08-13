@@ -6,7 +6,7 @@ block_cipher = None
 a = Analysis(['../../launcher.py'],
              pathex=['../../'],
              binaries=[],
-             datas=[('../../interfaces/web/static', 'interfaces/web/static')],
+             datas=[('../../interfaces/web', 'interfaces/web')],
              hiddenimports=["glob", "subprocess", "json", "requests", "os", "logging",
              "tkinter", "tkinter.ttk", "distutils", "distutils.version", "config.cst", "logging"],
              hookspath=[],
