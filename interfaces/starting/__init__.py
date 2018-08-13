@@ -10,4 +10,4 @@ try:
         global tk_app
         tk_app = StartingApp(config)
 except ModuleNotFoundError as e:
-    logging.exception(e)
+    logging.error(f"Can't find {e} module, impossible to display GUI")
