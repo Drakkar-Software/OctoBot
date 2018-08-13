@@ -6,11 +6,14 @@ class Backtester:
 
     def __init__(self, config, files=[]):
         self.octobot, self.ignored_files = get_standalone_backtesting_bot(config, files)
+        self.error = None
 
     def get_ignored_files(self):
         return self.ignored_files
 
     def get_is_computing(self):
+        if self.error is not None:
+            return False
         simulator = self._get_exchange_simulator()
         if simulator:
             return not simulator.get_backtesting().get_is_finished()
@@ -25,7 +28,10 @@ class Backtester:
     def get_report(self):
         simulator = self._get_exchange_simulator()
         if simulator:
-            return simulator.get_backtesting().get_dict_formatted_report()
+            report = simulator.get_backtesting().get_dict_formatted_report()
+            if self.error is not None:
+                report["error"] = str(self.error)
+            return report
         return {}
 
     def _get_exchange_simulator(self):
@@ -34,7 +40,12 @@ class Backtester:
                 return exchange.get_exchange()
 
     def start_backtesting(self, in_thread=False):
-        return start_backtesting_bot(self.octobot, in_thread=in_thread)
+        self.error = None
+        return start_backtesting_bot(self.octobot, in_thread=in_thread, watcher=self)
 
     def get_bot(self):
         return self.octobot
+
+    def set_error(self, error):
+        self.error = error
+
