@@ -80,13 +80,12 @@ class Launcher:
             latest_release_data = self.get_latest_release_data()
 
             # try to found in current folder binary
-            octobot_binaries = glob.glob(f'{PROJECT_NAME}*')
+            binary_path = self.get_local_bot_binary()
 
             # if current octobot binary found
-            if octobot_binaries:
+            if binary_path:
                 logging.info(f"{PROJECT_NAME} installation found, analyzing...")
 
-                binary_path = next(iter(octobot_binaries))
                 last_release_version = latest_release_data["tag_name"]
                 current_bot_version = self.execute_command_on_current_bot(binary_path, ["--version"])
 
@@ -109,16 +108,43 @@ class Launcher:
             logging.exception(f"Failed to download latest release data : {e}")
 
     @staticmethod
+    def get_local_bot_binary():
+        # try to found in current folder binary
+        octobot_binaries = glob.glob(f'{PROJECT_NAME}*')
+
+        try:
+            octobot_binary = next(iter(octobot_binaries))
+        except Exception:
+            octobot_binary = None
+
+        if octobot_binary and os.name == 'posix':
+            octobot_binary = "./" + octobot_binary
+
+        return octobot_binary
+
+    @staticmethod
     def get_latest_release_data():
         return json.loads(requests.get(GITHUB_LATEST_RELEASE_URL).text)
 
     @staticmethod
     def execute_command_on_current_bot(binary_path, commands):
         try:
-            cmd = [f"./{binary_path}"] + commands
+            cmd = [f"{binary_path}"] + commands
             return subprocess.Popen(cmd, stdout=PIPE).stdout.read().rstrip().decode()
         except PermissionError:
             logging.exception(f"Failed to run bot with command {commands} : {e}")
+
+    @staticmethod
+    def execute_command_on_detached_bot(binary_path=None, commands=None):
+        try:
+            if not binary_path:
+                binary_path = Launcher.get_local_bot_binary()
+
+            cmd = [f"{binary_path}"] + (commands if commands else [])
+            return subprocess.Popen(cmd)
+        except Exception as e:
+            logging.exception(f"Failed to run detached bot with command {commands} : {e}")
+            return None
 
     @staticmethod
     def get_asset_from_release_data(latest_release_data):
