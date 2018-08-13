@@ -88,7 +88,12 @@ class Launcher:
                 last_release_version = latest_release_data["tag_name"]
                 current_bot_version = self.execute_command_on_current_bot(binary_path, ["--version"])
 
-                if LooseVersion(current_bot_version) < LooseVersion(last_release_version):
+                try:
+                    check_new_version = LooseVersion(current_bot_version) < LooseVersion(last_release_version)
+                except AttributeError:
+                    check_new_version = False
+
+                if check_new_version:
                     logging.info(f"Upgrading {PROJECT_NAME} : from {current_bot_version} to {last_release_version}...")
                     return self.download_binary(latest_release_data, replace=True)
                 else:
