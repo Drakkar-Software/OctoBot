@@ -3,7 +3,9 @@ from tkinter.ttk import Progressbar, Label
 
 from config.cst import PROJECT_NAME
 from interfaces.app_util import TkApp
-from interfaces.launcher import LAUNCHER_VERSION, launcher_controller
+from interfaces.launcher import launcher_controller
+
+LAUNCHER_VERSION = "1.0.0"
 
 
 class LauncherApp(TkApp):
@@ -14,11 +16,24 @@ class LauncherApp(TkApp):
         self.window_title = f"{PROJECT_NAME} - Launcher"
         self.progress = None
         self.progress_label = None
+        self.start_bot_button = None
+        self.update_bot_button = None
+        self.update_launcher_button = None
+        self.export_logs_button = None
 
         super().__init__()
 
     def create_components(self):
         # buttons
+        self.start_bot_button = Button(master, command=self.start_bot_handler, text="Start Octobot")
+        self.start_bot_button.grid()
+
+        self.update_bot_button = Button(master, command=self.update_bot_handler, text="Start Octobot")
+        self.update_bot_button.grid()
+
+        self.update_launcher_button = Button(master, command=self.update_launcher_handler, text="Start Octobot")
+        self.update_launcher_button.grid()
+
         self.progress = Progressbar(self.window, orient="horizontal",
                                     length=200, mode="determinate")
         self.progress.pack()
@@ -35,6 +50,23 @@ class LauncherApp(TkApp):
             self.progress["value"] += inc_size
             self.progress_label["text"] = f"{round(self.progress['value'], 2)}%"
 
+    def update_bot_handler(self):
+        self.update_bot(self)
+
+    def update_launcher_handler(self):
+        os.execl(sys.executable, os.path.abspath(__file__), ["--update_launcher"])
+
+    def start_bot_handler(self):
+        installer = launcher_controller.Launcher(self)
+
+    @staticmethod
+    def update_bot(app=None):
+        launcher = launcher_controller.Launcher(app)
+
+    @staticmethod
+    def export_logs():
+        pass
+
     @staticmethod
     def close_callback():
         os._exit(0)
@@ -44,16 +76,3 @@ class LauncherApp(TkApp):
 
     def stop(self):
         self.window.quit()
-
-
-def start_launcher(args):
-    if args.version:
-        print(LAUNCHER_VERSION)
-    else:
-        if args.update:
-            pass
-        elif args.update_launcher:
-            pass
-        else:
-            installer_app = LauncherApp()
-            installer = launcher_controller.Launcher(installer_app)

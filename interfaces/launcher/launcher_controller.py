@@ -60,14 +60,16 @@ class Launcher:
                 with open(file_name, "w") as new_file_from_dl:
                     new_file_from_dl.write(file_content)
 
-        self.installer_app.inc_progress(LIB_FILES_DOWNLOAD_PROGRESS_SIZE)
+        if self.installer_app:
+            self.installer_app.inc_progress(LIB_FILES_DOWNLOAD_PROGRESS_SIZE)
 
         # create folders
         for folder in FOLDERS_TO_CREATE:
             if not os.path.exists(folder) and folder:
                 os.makedirs(folder)
 
-        self.installer_app.inc_progress(CREATE_FOLDERS_PROGRESS_SIZE)
+        if self.installer_app:
+            self.installer_app.inc_progress(CREATE_FOLDERS_PROGRESS_SIZE)
 
         logging.info(f"Your {PROJECT_NAME} environment is ready !")
 
@@ -98,7 +100,8 @@ class Launcher:
                     return self.download_binary(latest_release_data, replace=True)
                 else:
                     logging.info(f"Nothing to do : {PROJECT_NAME} is up to date")
-                    self.installer_app.inc_progress(BINARY_DOWNLOAD_PROGRESS_SIZE)
+                    if self.installer_app:
+                        self.installer_app.inc_progress(BINARY_DOWNLOAD_PROGRESS_SIZE)
                     return binary_path
             else:
                 return self.download_binary(latest_release_data)
@@ -163,7 +166,8 @@ class Launcher:
             with open(path, 'wb') as f:
                 for chunk in r.iter_content(1024):
                     f.write(chunk)
-                    self.installer_app.inc_progress(increment)
+                    if self.installer_app:
+                        self.installer_app.inc_progress(increment)
 
         return path
 
@@ -178,4 +182,5 @@ class Launcher:
             self.execute_command_on_current_bot(binary_path, ["-p", "update", "all"])
             logging.info(f"Tentacles : all default tentacles has been updated.")
 
-        self.installer_app.inc_progress(TENTACLES_UPDATE_INSTALL_PROGRESS_SIZE, to_max=True)
+        if self.installer_app:
+            self.installer_app.inc_progress(TENTACLES_UPDATE_INSTALL_PROGRESS_SIZE, to_max=True)
