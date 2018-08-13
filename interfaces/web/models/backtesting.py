@@ -8,6 +8,9 @@ from interfaces import get_bot
 from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, CONFIG_DATA_COLLECTOR_PATH
 
 
+LOGGER = logging.getLogger("DataCollectorWebInterfaceModel")
+
+
 def get_data_files_with_description():
     files = get_all_available_data_files()
     files_with_description = {
@@ -33,6 +36,7 @@ def start_backtesting_using_specific_files(files):
             else:
                 return False, "Impossible to start backtesting"
     except Exception as e:
+        LOGGER.exception(e)
         return False, f"Error when starting backtesting: {e}"
 
 
@@ -84,9 +88,9 @@ def save_data_file(name, file):
     try:
         file.save(CONFIG_DATA_COLLECTOR_PATH+name)
         message = f"{name} saved"
-        logging.getLogger("DataCollectorWebInterfaceModel").info(message)
+        LOGGER.info(message)
         return True, message
     except Exception as e:
         message = f"Error when saving file: {e}. File can't be saved."
-        logging.getLogger("DataCollectorWebInterfaceModel").error(message)
+        LOGGER.error(message)
         return False, message
