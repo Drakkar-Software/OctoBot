@@ -53,6 +53,25 @@ def _format_trades(trade_history):
     return trades
 
 
+def get_first_symbol_data():
+    bot = get_bot()
+    exchanges = bot.get_exchanges_list()
+    if exchanges:
+        exchange = next(iter(exchanges.values()))
+        evaluators = bot.get_symbol_evaluator_list()
+        if evaluators:
+            symbol_evaluator = next(iter(evaluators.values()))
+            etms = symbol_evaluator.get_evaluator_thread_managers(exchange)
+            if etms:
+                time_frame = next(iter(etms))
+                return {
+                    "exchange": exchange.get_name(),
+                    "symbol": symbol_evaluator.get_symbol(),
+                    "time_frame": time_frame.value
+                }
+    return {}
+
+
 def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arrays=True, backtesting=False):
     bot = get_bot()
     if backtesting and bot.get_tools() and bot.get_tools()[BOT_TOOLS_BACKTESTING]:

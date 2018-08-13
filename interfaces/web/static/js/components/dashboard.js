@@ -8,10 +8,20 @@ function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, b
         dataType: "json",
         contentType: 'application/json',
         success: function(msg, status){
-            create_candlestick_graph(element_id, msg, symbol, exchange_name);
+            create_candlestick_graph(element_id, msg, symbol, exchange_name, time_frame);
         },
         error: function(result, status, error){
             window.console&&console.error(error);
+        }
+    });
+}
+
+function get_first_symbol_price_graph(element_id) {
+    const url = $("#first_symbol_graph").attr(update_url_attr);
+    $.get(url,function(data) {
+        if("time_frame" in data){
+            let formatted_symbol = data["symbol"].replace(new RegExp("/","g"), "|");
+            get_symbol_price_graph(element_id, data["exchange"], formatted_symbol, data["time_frame"]);
         }
     });
 }
@@ -84,7 +94,7 @@ function create_trades(trades, trader){
     }
 }
 
-function create_candlestick_graph(element_id, symbol_price_data, symbol, exchange_name){
+function create_candlestick_graph(element_id, symbol_price_data, symbol, exchange_name, time_frame){
     const candles = symbol_price_data["candles"];
     const real_trades = symbol_price_data["real_trades"];
     const simulated_trades = symbol_price_data["simulated_trades"];
@@ -96,9 +106,9 @@ function create_candlestick_graph(element_id, symbol_price_data, symbol, exchang
 
     const data = [price_trace, real_trader_trades, simulator_trades];
 
-    var graph_title = symbol
+    var graph_title = symbol;
     if (exchange_name !== "ExchangeSimulator"){
-        graph_title = graph_title + " (" + exchange_name + ")";
+        graph_title = graph_title + " (" + exchange_name + ", time frame: " + time_frame +")";
     }
 
     const layout = {
