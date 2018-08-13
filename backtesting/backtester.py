@@ -16,7 +16,7 @@ class Backtester:
             return False
         simulator = self._get_exchange_simulator()
         if simulator:
-            return not simulator.get_backtesting().get_is_finished()
+            return simulator.get_is_initializing() or not simulator.get_backtesting().get_is_finished()
         return False
 
     def get_progress(self):

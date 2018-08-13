@@ -3,7 +3,9 @@ from copy import deepcopy
 
 from config.cst import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, \
     CONFIG_SIMULATOR, CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, \
-    CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADER_MODE, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, CONFIG_DATA_COLLECTOR_PATH
+    CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADER_MODE, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, \
+    CONFIG_DATA_COLLECTOR_PATH, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_STARTING_PORTFOLIO, \
+    CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO, DEFAULT_REFERENCE_MARKET
 from octobot import OctoBot
 from tests.test_utils.config import load_test_config
 from backtesting.backtesting import Backtesting
@@ -27,12 +29,15 @@ def get_standalone_backtesting_bot(config, data_files):
     config_to_use[CONFIG_CRYPTO_CURRENCIES] = {}
     config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = []
     ignored_files = []
+    reference_market = _get_reference_market(data_files, config)
     if data_files:
         for data_file_to_use in data_files:
             _, file_symbol, _ = interpret_file_name(data_file_to_use)
             currency, market = split_symbol(file_symbol)
             full_file_path = CONFIG_DATA_COLLECTOR_PATH + data_file_to_use
             full_file_path += full_file_path if not full_file_path.endswith(DATA_FILE_EXT) else ""
+            if DEFAULT_REFERENCE_MARKET != reference_market:
+                _switch_reference_market(config_to_use, market)
             if currency not in config_to_use[CONFIG_CRYPTO_CURRENCIES]:
                 config_to_use[CONFIG_CRYPTO_CURRENCIES][currency] = {CONFIG_CRYPTO_PAIRS: []}
             if file_symbol not in config_to_use[CONFIG_CRYPTO_CURRENCIES][currency][CONFIG_CRYPTO_PAIRS]:
@@ -110,6 +115,25 @@ def start_backtesting_bot(bot, in_thread=False, watcher=None):
         return Backtesting.get_profitability(trader)
     else:
         return True
+
+
+def _switch_reference_market(config_to_use, market):
+    config_to_use[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET] = market
+    config_to_use[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO][market] = \
+        CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO
+
+
+def _get_reference_market(data_files, config):
+    reference_market = None
+    for data_file in data_files:
+        _, file_symbol, _ = interpret_file_name(data_file)
+        currency, market = split_symbol(file_symbol)
+        if reference_market is None:
+            reference_market = market
+        elif not reference_market == market:
+            # more than one reference market in data_files: use first reference market
+            return reference_market
+    return reference_market if reference_market is not None else DEFAULT_REFERENCE_MARKET
 
 
 class SymbolNotFoundException(Exception):

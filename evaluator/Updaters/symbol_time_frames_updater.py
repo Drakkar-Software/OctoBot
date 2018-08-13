@@ -44,6 +44,9 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
     # start background refresher
     def run(self):
+        exchange = None
+        symbol = None
+        error = None
         try:
             time_frames = self.evaluator_threads_manager_by_time_frame.keys()
 
@@ -51,7 +54,6 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
             time_frames = TimeFrameManager.sort_time_frames(time_frames)
 
             if time_frames:
-                exchange = None
 
                 # figure out from an evaluator if back testing is running for this symbol
                 evaluator_thread_manager = next(iter(self.evaluator_threads_manager_by_time_frame.values()))
@@ -91,7 +93,8 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                             try:
                                 self._refresh_data(time_frame)
                             except Exception as e:
-                                self.logger.error(f" when refreshing data for time frame {time_frame} for {symbol}: {e}")
+                                self.logger.error(f" when refreshing data for time frame {time_frame} for {symbol}: "
+                                                  f"{e}")
                                 self.logger.exception(e)
 
                             self.time_frame_last_update[time_frame] = time.time()
@@ -103,11 +106,13 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
         except Exception as e:
             self.logger.exception(e)
             if self.watcher is not None:
-                self.watcher.set_error(e)
+                error = e
         
         finally:
-            if not self.exchange.get_backtesting().get_is_finished():
-                self.watcher.set_error("Backtesting did not finish properly.")
+            if exchange is not None and symbol is not None and not exchange.get_backtesting().get_is_finished(symbol):
+                if error is None:
+                    error = "backtesting did not finish properly."
+                self.watcher.set_error(error)
 
     # calculate thread sleep between each refresh
     def _update_pause(self, backtesting_enabled, now):

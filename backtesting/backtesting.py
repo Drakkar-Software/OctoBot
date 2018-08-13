@@ -17,8 +17,11 @@ class Backtesting:
         self.symbols_to_test = set()
         self.init_symbols_to_test()
 
-    def get_is_finished(self):
-        return len(self.ended_symbols) == len(self.symbols_to_test)
+    def get_is_finished(self, symbol=None):
+        if symbol is None:
+            return len(self.ended_symbols) == len(self.symbols_to_test)
+        else:
+            return symbol in self.ended_symbols
 
     def end(self, symbol):
         self.ended_symbols.add(symbol)

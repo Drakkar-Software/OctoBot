@@ -47,6 +47,7 @@ CONFIG_ADVANCED_INSTANCES = "advanced_instances"
 # Backtesting
 CONFIG_BACKTESTING = "backtesting"
 CONFIG_BACKTESTING_DATA_FILES = "files"
+CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO = 10000
 
 # Data collector
 CONFIG_DATA_COLLECTOR = "data_collector"
@@ -56,7 +57,6 @@ CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
-CONFIG_EXCHANGE_WEB_SOCKET = "web-socket"
 CONFIG_EXCHANGE_KEY = "api-key"
 CONFIG_EXCHANGE_SECRET = "api-secret"
 CONFIG_TRADING = "trading"
