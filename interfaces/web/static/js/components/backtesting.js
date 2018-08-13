@@ -47,25 +47,22 @@ function handle_backtesting_buttons(){
 function load_report(should_alert=False){
     const url = $("#backtestingReport").attr(update_url_attr);
     $.get(url,function(data){
-        let profitability = "";
-        let all_profitability = "";
+        let profitability = data["bot_report"]["profitability"];
         if ("error" in data) {
-            let error_message = "Error during backtesting ("+data["error"]+"), more details in logs.";
-            profitability = error_message;
-            if(should_alert){
+            let error_message = "Warning: error during backtesting (" + data["error"] + "), more details in logs.";
+            profitability = profitability + " " + error_message;
+            if (should_alert) {
                 create_alert("error", error_message, "");
             }
-            all_profitability = profitability;
-        }else{
-            profitability = data["bot_report"]["profitability"];
-            let symbol_reports = [];
-            $.each( data["symbol_report"], function( index, value ) {
-                $.each( value, function( symbol, profitability ) {
-                    symbol_reports.push(symbol+": "+profitability);
-                });
-            });
-            all_profitability = symbol_reports.join(", ");
         }
+
+        let symbol_reports = [];
+        $.each( data["symbol_report"], function( index, value ) {
+            $.each( value, function( symbol, profitability ) {
+                symbol_reports.push(symbol+": "+profitability);
+            });
+        });
+        let all_profitability = symbol_reports.join(", ");
         $("#bProf").html(profitability);
         $("#maProf").html(data["bot_report"]["market_average_profitability"]);
         $("#refM").html(data["bot_report"]["reference_market"]);
