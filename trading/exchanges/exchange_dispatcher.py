@@ -91,7 +91,7 @@ class ExchangeDispatcher(AbstractExchange):
         # first check if reset is not already running
         if self.resetting_web_socket:
             # if true: a reset is being processed in another thread, wait for it to be over and recall method
-            while self.exchange_manager.get_is_resetting_web_socket():
+            while self.resetting_web_socket:
                 time.sleep(0.01)
         else:
             self.resetting_web_socket = True
