@@ -41,9 +41,7 @@ class TkApp(threading.Thread):
             # set style
             self.style = Style()
             self.style.configure('Bot.TButton',
-                                 background=BACKGROUND_COLOR,
-                                 foreground=FOREGROUND_COLOR,
-                                 border=0)
+                                 background=BACKGROUND_COLOR)
             self.style.map('Bot.TButton',
                            background=[('active', ACTIVE_COLOR)],
                            relief=[('pressed', '!disabled', 'sunken')])
