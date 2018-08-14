@@ -1,7 +1,9 @@
-from trading.exchanges.exchange_symbol_data import SymbolData
+import time
+
+
 from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
-from config.cst import ExchangeConstantsMarketStatusColumns as ecmsc
+from trading.exchanges.exchange_symbol_data import SymbolData
 
 """
 This class supervise exchange call by : 
@@ -16,11 +18,20 @@ class ExchangeDispatcher(AbstractExchange):
 
         self.exchange = exchange
         self.exchange_web_socket = exchange_web_socket
+        self.symbols_data = None
 
-        self.symbols_data = {}
+        self.resetting_web_socket = False
+
+        self.reset_symbols_data()
         self.exchange_personal_data = ExchangePersonalData()
 
         self.logger.info(f"online with REST api {' and web socket api' if self.exchange_web_socket else ''}")
+
+    def reset_symbols_data(self):
+        self.symbols_data = {}
+
+    def reset_exchange_personal_data(self):
+        self.exchange_personal_data = ExchangePersonalData()
 
     def _web_socket_available(self):
         return self.exchange_web_socket
@@ -60,11 +71,39 @@ class ExchangeDispatcher(AbstractExchange):
 
     def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         symbol_data = self.get_symbol_data(symbol)
-
+        from_web_socket = False
         if not self._web_socket_available() or not symbol_data.candles_are_initialized(time_frame):
             self.exchange.get_symbol_prices(symbol=symbol, time_frame=time_frame, limit=limit)
+        else:
+            from_web_socket = True
 
-        return symbol_data.get_symbol_prices(time_frame, limit, return_list)
+        symbol_prices = symbol_data.get_symbol_prices(time_frame, limit, return_list)
+
+        if from_web_socket:
+            # web socket: ensure data are the most recent one otherwise restart web socket
+            if not symbol_data.ensure_data_validity(time_frame):
+                self._handle_web_socket_reset()
+                return self.get_symbol_prices(symbol, time_frame, limit, return_list)
+
+        return symbol_prices
+
+    def _handle_web_socket_reset(self):
+        # first check if reset is not already running
+        if self.resetting_web_socket:
+            # if true: a reset is being processed in another thread, wait for it to be over and recall method
+            while self.resetting_web_socket:
+                time.sleep(0.01)
+        else:
+            self.resetting_web_socket = True
+            # otherwise: reset web socket and recall method
+            self.logger.warning("web socket seems to be disconnected, trying to restart it")
+            try:
+                self.get_exchange_manager().reset_websocket_exchange()
+            except Exception as e:
+                self.logger.error("Error when trying to restart web socket")
+                self.logger.exception(e)
+            finally:
+                self.resetting_web_socket = False
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
@@ -164,8 +203,24 @@ class ExchangeDispatcher(AbstractExchange):
     def get_uniform_timestamp(self, timestamp):
         return self.exchange.get_uniform_timestamp(timestamp)
 
-    # returns (taker, maker) tuple
+    # returns {
+    #     'type': takerOrMaker,
+    #     'currency': 'BTC', // the unified fee currency code
+    #     'rate': percentage, // the fee rate, 0.05% = 0.0005, 1% = 0.01, ...
+    #     'cost': feePaid, // the fee cost (amount * fee rate)
+    # }
+    def get_trade_fee(self, symbol, order_type, quantity, price):
+        return self.exchange.get_trade_fee(
+            symbol=symbol,
+            order_type=order_type,
+            quantity=quantity,
+            price=price,
+        )
+
+    # returns {
+    #       "taker": taker_fee,
+    #       "maker": maker_fee,
+    #       "withdraw": withdraw_fee
+    # }
     def get_fees(self, symbol):
-        # TODO temporary implementation waiting for more accurate fee management
-        market_status = self.exchange.get_market_status(symbol)
-        return market_status[ecmsc.TAKER.value], market_status[ecmsc.MAKER.value]
+        return self.exchange.get_fees(symbol=symbol)

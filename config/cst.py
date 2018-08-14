@@ -1,14 +1,26 @@
 from enum import Enum
 
-SHORT_VERSION = "0.1.6"
-MINOR_VERSION = "0"
+PROJECT_NAME = "OctoBot"
+SHORT_VERSION = "0.1.7"
+MINOR_VERSION = ""
 VERSION_DEV_PHASE = "beta"
 VERSION = f"{SHORT_VERSION}-{VERSION_DEV_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}_{MINOR_VERSION}-{VERSION_DEV_PHASE}"
 
-GIT_ORIGIN = "origin"
-ORIGIN_URL = "https://github.com/Drakkar-Software/OctoBot.git"
+# github
+GITHUB = "github"
+GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
+GITHUB_API_CONTENT_URL = "https://api.github.com"
+GITHUB_BASE_URL = "https://github.com"
+GITHUB_ORGANISATION = "Drakkar-Software"
+GITHUB_REPOSITORY = f"{GITHUB_ORGANISATION}/{PROJECT_NAME}"
+GITHUB_URL = f"{GITHUB_BASE_URL}/{GITHUB_REPOSITORY}"
 
+# git
+GIT_ORIGIN = "origin"
+ORIGIN_URL = f"{GITHUB_URL}.git"
+
+# constants
 MSECONDS_TO_SECONDS = 1000
 MINUTE_TO_SECONDS = 60
 HOURS_TO_SECONDS = MINUTE_TO_SECONDS * 60
@@ -35,6 +47,7 @@ CONFIG_ADVANCED_INSTANCES = "advanced_instances"
 # Backtesting
 CONFIG_BACKTESTING = "backtesting"
 CONFIG_BACKTESTING_DATA_FILES = "files"
+CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO = 10000
 
 # Data collector
 CONFIG_DATA_COLLECTOR = "data_collector"
@@ -44,11 +57,11 @@ CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
-CONFIG_EXCHANGE_WEB_SOCKET = "web-socket"
 CONFIG_EXCHANGE_KEY = "api-key"
 CONFIG_EXCHANGE_SECRET = "api-secret"
-CONFIG_TRADER = "trader"
+CONFIG_EXCHANGE_WEB_SOCKET = "web-socket"
 CONFIG_TRADING = "trading"
+CONFIG_TRADER = "trader"
 CONFIG_TRADER_MODES = "modes"
 CONFIG_SIMULATOR = "trader-simulator"
 CONFIG_STARTING_PORTFOLIO = "starting-portfolio"
@@ -65,6 +78,13 @@ CONFIG_TRADER_REFERENCE_MARKET = "reference-market"
 DEFAULT_REFERENCE_MARKET = "BTC"
 MARKET_SEPARATOR = "/"
 CURRENCY_DEFAULT_MAX_PRICE_DIGITS = 8
+
+CONFIG_SIMULATOR_FEES = "fees"
+CONFIG_SIMULATOR_FEES_MAKER = "maker"
+CONFIG_SIMULATOR_FEES_TAKER = "taker"
+CONFIG_SIMULATOR_FEES_WITHDRAW = "withdraw"
+CONFIG_DEFAULT_FEES = 0.1
+CONFIG_DEFAULT_SIMULATOR_FEES = 0
 
 CONFIG_PORTFOLIO_INFO = "info"
 CONFIG_PORTFOLIO_FREE = "free"
@@ -156,9 +176,6 @@ CONFIG_INTERFACES_WEB = "web"
 CONFIG_INTERFACES_TELEGRAM = "telegram"
 
 # Tentacles (packages)
-GITHUB = "github"
-GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"
-GITHUB_BASE_URL = "https://github.com"
 PYTHON_INIT_FILE = "__init__.py"
 TENTACLES_PATH = "tentacles"
 TENTACLES_EVALUATOR_PATH = "Evaluator"
@@ -171,7 +188,7 @@ TENTACLES_EVALUATOR_STRATEGIES_PATH = "Strategies"
 TENTACLES_EVALUATOR_UTIL_PATH = "Util"
 TENTACLES_TRADING_MODE_PATH = "Mode"
 TENTACLES_PYTHON_INIT_CONTENT = "from .Default import *\nfrom .Advanced import *\n"
-TENTACLES_PUBLIC_REPOSITORY = "Drakkar-Software/OctoBot-Tentacles"
+TENTACLES_PUBLIC_REPOSITORY = f"{GITHUB_ORGANISATION}/{PROJECT_NAME}-Tentacles"
 TENTACLES_PUBLIC_LIST = "tentacles_list.json"
 TENTACLES_DEFAULT_BRANCH = "master"
 EVALUATOR_DEFAULT_FOLDER = "Default"
@@ -225,6 +242,8 @@ TEMP_RESTORE_CONFIG_FILE = "temp_config.json"
 CONFIG_EVALUATOR_FILE = "evaluator_config.json"
 CONFIG_EVALUATOR_FILE_PATH = f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{CONFIG_EVALUATOR_FILE}"
 CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
+DEFAULT_CONFIG_FILE = "config/default_config.json"
+LOGGING_CONFIG_FILE = "config/logging_config.ini"
 
 # Tentacle Config
 STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"
@@ -236,6 +255,9 @@ UPDATED_CONFIG_SEPARATOR = "_"
 GLOBAL_CONFIG_KEY = "global_config"
 EVALUATOR_CONFIG_KEY = "evaluator_config"
 COIN_MARKET_CAP_CURRENCIES_LIST_URL = "https://api.coinmarketcap.com/v2/listings/"
+
+# launcher
+LAUNCHER_PATH = "interfaces/launcher"
 
 
 class TentacleManagerActions(Enum):
@@ -414,8 +436,6 @@ class ExchangeConstantsTickersInfoColumns(Enum):
 
 
 class ExchangeConstantsMarketStatusColumns(Enum):
-    TAKER = "taker"
-    MAKER = "maker"
     SYMBOL = "symbol"
     ID = "id"
     CURRENCY = "base"
@@ -436,6 +456,25 @@ class ExchangeConstantsMarketStatusColumns(Enum):
     LIMITS_COST_MIN = "min"  # order cost should be > min
     LIMITS_COST_MAX = "max"  # order cost should be < max
     INFO = "info"
+
+
+class ExchangeConstantsFeesColumns(Enum):
+    TYPE = "type"
+    CURRENCY = "currency"
+    RATE = "rate"
+    COST = "cost"
+
+
+class ExchangeConstantsMarketPropertyColumns(Enum):
+    TAKER = "taker"  # trading
+    MAKER = "maker"  # trading
+    FEE = "fee"  # withdraw
+
+
+class DeliveryPlatformsName(Enum):
+    WINDOWS = "windows"
+    LINUX = "linux"
+    MAC = "mac"
 
 
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='

@@ -56,20 +56,20 @@ class TwitterService(AbstractService):
         try:
             return self.split_tweet_content(content=content, tweet_id=None)
         except Exception as e:
-            self.logger.error("Failed to send tweet : {0}".format(e))
+            self.logger.error(f"Failed to send tweet : {e}")
         return None
 
     def respond(self, tweet_id, content):
         try:
             return self.split_tweet_content(content=content, tweet_id=tweet_id)
         except Exception as e:
-            self.logger.error("Failed to send tweet : {0}".format(e))
+            self.logger.error(f"Failed to send tweet : {e}")
         return None
 
     def split_tweet_content(self, content, counter=None, counter_max=None, tweet_id=None):
         # add twitter counter at the beginning
         if counter is not None and counter_max is not None:
-            content = "{0}/{1} {2}".format(counter, counter_max, content)
+            content = f"{counter}/{counter_max} {content}"
             counter += 1
 
         # get the current content size
@@ -111,7 +111,7 @@ class TwitterService(AbstractService):
         return self.twitter_api.GetStatus(tweet_id)
 
     def _get_twitter_url(self):
-        return "https://twitter.com/{0}".format(self.twitter_api.VerifyCredentials().screen_name)
+        return f"https://twitter.com/{self.twitter_api.VerifyCredentials().screen_name}"
 
     def get_successful_startup_message(self):
-        return "Successfully initialized and accessible at: {0}.".format(self._get_twitter_url())
+        return f"Successfully initialized and accessible at: {self._get_twitter_url()}."

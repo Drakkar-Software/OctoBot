@@ -1,6 +1,6 @@
 {% macro config_exchange_card(config, exchange, keys_value="*********", add_class='') -%}
     <!-- Card -->
-    <div class="card mb-4 {{add_class}}">
+    <div class="card mb-4 {{add_class}} config-card">
 
         <div class="card-header"><h4>{{exchange}}</h4></div>
 
@@ -10,7 +10,7 @@
         </div>
 
         <!--Card content-->
-        <div class="card-body" name={{exchange}}>
+        <div class="card-body" name={{exchange}} config-key=exchanges_{{exchange}}>
 
             <p class="card-text api">
                 API Key : <a href="#"
@@ -36,14 +36,6 @@
                             data-title="Enter exchange api secret"
                             class="editable editable-click config-element">
                 {{keys_value}}</a><br>
-            </p>
-
-            <p class="card-text websocket">
-              Websocket :
-                    {% if "web_socket" in exchange and exchange["web_socket"] == True %}
-                        <!--checked-->
-                    {% endif %}
-                    <input disabled type="checkbox">
             </p>
 
             <button type="button" class="btn btn-danger remove-btn px-3"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>

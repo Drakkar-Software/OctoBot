@@ -20,6 +20,10 @@ def get_global_config():
     return global_config
 
 
+def get_tk_app():
+    return tk_app
+
+
 def set_default_time_frame(time_frame):
     global default_time_frame
     default_time_frame = time_frame
@@ -33,7 +37,8 @@ def get_reference_market():
     global reference_market
     if reference_market is None:
         try:
-            reference_market = next(iter(get_bot().get_exchange_traders().values())).get_trades_manager().get_reference()
+            reference_market = next(
+                iter(get_bot().get_exchange_traders().values())).get_trades_manager().get_reference()
         except StopIteration:
             reference_market = None
     return reference_market

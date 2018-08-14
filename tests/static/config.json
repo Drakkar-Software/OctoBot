@@ -47,7 +47,8 @@
   "exchanges": {
     "binance": {
       "api-key": "",
-      "api-secret": ""
+      "api-secret": "",
+      "web-socket": false
     }
   },
   "services": {
@@ -75,10 +76,12 @@
     "trades": false,
     "notification-type": 1
   },
-  "trader":{
-    "enabled": false,
+  "trading":{
     "risk": 1,
     "mode": "DailyTradingMode"
+  },
+  "trader":{
+    "enabled": false
   },
   "trader-simulator":{
     "enabled": true,

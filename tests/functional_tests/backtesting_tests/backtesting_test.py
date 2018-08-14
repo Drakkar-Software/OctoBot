@@ -1,4 +1,4 @@
-from tests.test_utils.backtesting_util import create_backtesting_config, create_backtesting_bot, start_backtesting_bot
+from backtesting.backtesting_util import create_backtesting_config, create_backtesting_bot, start_backtesting_bot
 
 
 def test_backtesting():

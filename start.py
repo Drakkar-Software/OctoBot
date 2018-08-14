@@ -3,13 +3,15 @@ import logging
 import sys
 import traceback
 from logging.config import fileConfig
-from time import sleep
-from tools.commands import Commands
+
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
-    CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADER_RISK
+    CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
+    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE
+from interfaces import starting
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
+from tools.commands import Commands
 from tools.errors import ConfigError, ConfigEvaluatorError
 
 
@@ -34,14 +36,11 @@ def update_config_with_args(starting_args, config):
         config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
 
     if starting_args.risk is not None and 0 < starting_args.risk <= 1:
-        config[CONFIG_TRADER][CONFIG_TRADER_RISK] = starting_args.risk
+        config[CONFIG_TRADING][CONFIG_TRADER_RISK] = starting_args.risk
 
 
 def start_octobot(starting_args):
-    if starting_args.pause_time is not None:
-        sleep(starting_args.pause_time)
-
-    fileConfig('config/logging_config.ini')
+    fileConfig(LOGGING_CONFIG_FILE)
 
     logger = logging.getLogger("OctoBot Launcher")
 
@@ -50,15 +49,12 @@ def start_octobot(starting_args):
 
     sys.excepthook = _log_uncaught_exceptions
 
-    # Version
-    logger.info("Version : {0}".format(LONG_VERSION))
-
     try:
-        # Test update
-        if starting_args.update:
-            Commands.update(logger)
+        if starting_args.version:
+            print(LONG_VERSION)
         else:
-            Commands.check_bot_update(logger)
+            # Version
+            logger.info("Version : {0}".format(LONG_VERSION))
 
             logger.info("Loading config files...")
             config = load_config(error=False)
@@ -94,7 +90,7 @@ def start_octobot(starting_args):
 
                     TelegramApp.enable(config, starting_args.telegram)
 
-                    WebService.enable(config, starting_args.web)
+                    WebService.enable(config, not starting_args.no_web)
 
                     update_config_with_args(starting_args, config)
 
@@ -103,12 +99,10 @@ def start_octobot(starting_args):
                     import interfaces
 
                     interfaces.__init__(bot, config)
-
-                    # start crypto bot options
-                    if starting_args.backtesting:
-                        import backtesting
-
-                        backtesting.__init__(bot)
+                    try:
+                        starting.__init__(config)
+                    except NameError as e:
+                        logging.error(f"{e}, impossible to display GUI")
 
                     if starting_args.start:
                         Commands.start_bot(bot, logger)
@@ -124,9 +118,9 @@ def start_octobot(starting_args):
         sys.exit(-1)
 
     except ConfigEvaluatorError:
-        logger.error("OctoBot can't start without" + CONFIG_EVALUATOR_FILE_PATH + "configuration file."
-                                                                                  "\nThis file is generated on tentacle "
-                                                                                  "installation using the following command:\nstart.py -p install all")
+        logger.error("OctoBot can't start without" + CONFIG_EVALUATOR_FILE_PATH
+                     + "configuration file.\nThis file is generated on tentacle "
+                       "installation using the following command:\nstart.py -p install all")
         sys.exit(-1)
 
 
@@ -134,18 +128,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OctoBot')
     parser.add_argument('start', help='start the OctoBot',
                         action='store_true')
+    parser.add_argument('-v', '--version', help='show OctoBot current version',
+                        action='store_true')
     parser.add_argument('-s', '--simulate', help='start the OctoBot with the trader simulator',
                         action='store_true')
     parser.add_argument('-d', '--data_collector',
                         help='start the data collector process to create data for backtesting',
                         action='store_true')
-    parser.add_argument('-u', '--update', help='update OctoBot with the latest version available',
-                        action='store_true')
     parser.add_argument('-b', '--backtesting', help='enable the backtesting option and use the backtesting config',
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
-    parser.add_argument('-tp', '--pause_time', type=int, help='time to pause before starting the bot')
-    parser.add_argument('-w', '--web', help='Start web server',
+    parser.add_argument('-nw', '--no_web', help="Don't start web server",
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')

@@ -40,17 +40,17 @@ class TestTrader:
         config, exchange_inst, trader_inst = self.init_default()
         self.stop(trader_inst)
 
-        config[CONFIG_TRADER][CONFIG_TRADER_RISK] = 0
+        config[CONFIG_TRADING][CONFIG_TRADER_RISK] = 0
         trader_1 = Trader(config, exchange_inst)
         assert trader_1.get_risk() == CONFIG_TRADER_RISK_MIN
         self.stop(trader_1)
 
-        config[CONFIG_TRADER][CONFIG_TRADER_RISK] = 2
+        config[CONFIG_TRADING][CONFIG_TRADER_RISK] = 2
         trader_2 = Trader(config, exchange_inst)
         assert trader_2.get_risk() == CONFIG_TRADER_RISK_MAX
         self.stop(trader_2)
 
-        config[CONFIG_TRADER][CONFIG_TRADER_RISK] = 0.5
+        config[CONFIG_TRADING][CONFIG_TRADER_RISK] = 0.5
         trader_2 = Trader(config, exchange_inst)
         assert trader_2.get_risk() == 0.5
         self.stop(trader_2)

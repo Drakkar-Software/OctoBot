@@ -3,7 +3,7 @@
     {% set service_requirements = service.REQUIRED_CONFIG %}
 
     <!-- Card -->
-    <div class="card mb-4 {{add_class}}">
+    <div class="card mb-4 {{add_class}} config-card">
 
         <div class="card-header"><h4>{{service_name}}</h4></div>
 
@@ -13,7 +13,7 @@
         </div>
 
         <!--Card content-->
-        <div class="card-body" name={{service_name}}>
+        <div class="card-body" name={{service_name}} config-key=services_{{service_name}}>
 
             <p class="card-text api">
                 {% for req in service_requirements %}

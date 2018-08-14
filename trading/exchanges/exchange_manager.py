@@ -1,8 +1,9 @@
 import logging
+import time
 
-from config.cst import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_WEB_SOCKET, \
-    CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
-    PriceIndexes, CONFIG_WILDCARD
+from config.cst import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
+    CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
+    PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET
 from tools.time_frame_manager import TimeFrameManager
 from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
@@ -12,10 +13,14 @@ from trading.exchanges.websockets_exchanges import AbstractWebSocket
 
 
 class ExchangeManager:
-    def __init__(self, config, exchange_type, is_simulated=False, rest_only=False):
+
+    WEB_SOCKET_RESET_MIN_INTERVAL = 15
+
+    def __init__(self, config, exchange_type, is_simulated=False, rest_only=False, ignore_config=False):
         self.config = config
         self.exchange_type = exchange_type
         self.rest_only = rest_only
+        self.ignore_config = ignore_config
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.is_ready = False
@@ -24,6 +29,9 @@ class ExchangeManager:
         self.exchange = None
         self.exchange_web_socket = None
         self.exchange_dispatcher = None
+        self.trader = None
+
+        self.last_web_socket_reset = None
 
         self.client_symbols = []
         self.client_time_frames = {}
@@ -32,6 +40,12 @@ class ExchangeManager:
         self.time_frames = []
 
         self.create_exchanges()
+
+    def register_trader(self, trader):
+        self.trader = trader
+
+    def get_trader(self):
+        return self.trader
 
     def _load_constants(self):
         self._load_config_symbols_and_time_frames()
@@ -54,6 +68,7 @@ class ExchangeManager:
             # create Websocket exchange if possible
             if not self.rest_only and self.check_web_socket_config(self.exchange.get_name()):
                 for socket_manager in AbstractWebSocket.__subclasses__():
+                    # add websocket exchange if available
                     if socket_manager.get_name() == self.exchange.get_name():
                         self.exchange_web_socket = socket_manager.get_websocket_client(self.config, self)
 
@@ -72,6 +87,27 @@ class ExchangeManager:
 
         self.is_ready = True
 
+    def did_not_just_try_to_reset_web_socket(self):
+        if self.last_web_socket_reset is None:
+            return True
+        else:
+            return time.time() - self.last_web_socket_reset > self.WEB_SOCKET_RESET_MIN_INTERVAL
+
+    def reset_websocket_exchange(self):
+        if self.exchange_web_socket and self.did_not_just_try_to_reset_web_socket():
+
+            # set web socket reset time
+            self.last_web_socket_reset = time.time()
+
+            # clear databases
+            self.exchange_dispatcher.reset_symbols_data()
+            self.exchange_dispatcher.reset_exchange_personal_data()
+
+            # close and restart websockets
+            self.exchange_web_socket.close_and_restart_sockets()
+
+            # databases will be filled at the next calls similarly to bot startup process
+
     # should be used only in specific case
     def get_ccxt_exchange(self):
         return self.exchange
@@ -87,10 +123,12 @@ class ExchangeManager:
         else:
             return True
 
+    def force_disable_web_socket(self, exchange_name):
+        return CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
+            and not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]
+
     def check_web_socket_config(self, exchange_name):
-        return self.check_config(exchange_name) \
-               and CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
-               and self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]
+        return self.check_config(exchange_name) and not self.force_disable_web_socket(exchange_name)
 
     def enabled(self):
         # if we can get candlestick data

@@ -3,9 +3,11 @@ from trading.trader.portfolio import Portfolio
 from tools.timestamp_util import convert_timestamps_to_datetime
 
 
-def get_traders():
-    return [trader for trader in get_bot().get_exchange_traders().values()] + \
-           [trader for trader in get_bot().get_exchange_trader_simulators().values()]
+def get_traders(bot=None):
+    if bot is None:
+        bot = get_bot()
+    return [trader for trader in bot.get_exchange_traders().values()] + \
+           [trader for trader in bot.get_exchange_trader_simulators().values()]
 
 
 def get_portfolio_current_value():
@@ -73,16 +75,16 @@ def set_enable_trading(enable):
             trader.set_enabled(enable)
 
 
-def get_trades_history():
+def get_trades_history(bot=None, symbol=None):
     simulated_trades_history = []
     real_trades_history = []
-    traders = get_traders()
+    traders = get_traders(bot)
 
     for trader in traders:
         if trader.get_simulate():
-            simulated_trades_history.append(trader.get_trades_manager().get_trade_history())
+            simulated_trades_history.append(trader.get_trades_manager().select_trade_history(symbol))
         else:
-            real_trades_history.append(trader.get_trades_manager().get_trade_history())
+            real_trades_history.append(trader.get_trades_manager().select_trade_history(symbol))
 
     return real_trades_history, simulated_trades_history
 

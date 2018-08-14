@@ -32,7 +32,7 @@ wheels/
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+# *.spec
 
 # Installer logs
 pip-log.txt
@@ -111,9 +111,7 @@ config/evaluator_config.json
 
 # Data
 backtesting/collector/data/**
-
 logs/matrix_history\.data
-
 logs/OctoBot\.log\.*
 
 # Tentacles
@@ -121,9 +119,6 @@ tentacles
 config\.json
 
 *.csv
-
 *.ods
-
 temp_config\.json
-
 log

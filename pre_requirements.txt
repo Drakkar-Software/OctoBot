@@ -1,3 +1,4 @@
+pandas==0.20.3
 numpy
 Cython
 lxml==4.2.3

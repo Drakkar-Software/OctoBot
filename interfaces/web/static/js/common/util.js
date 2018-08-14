@@ -23,3 +23,34 @@ function get_selected_options(element){
     });
     return selected_options
 }
+
+
+// utility functions
+function isDefined(thing){
+    return (typeof thing !== typeof undefined && thing !== false)
+}
+
+function log(text){
+    window.console&&console.log(text);
+}
+
+function get_events(elem, event_type){
+    return $._data( elem[0], 'events' )[event_type];
+}
+
+function add_event_if_not_already_added(elem, event_type, handler){
+    if(!check_has_event_using_handler(elem, event_type, handler)){
+        elem.on(event_type, handler);
+    }
+}
+
+function check_has_event_using_handler(elem, event_type, handler){
+    var events = get_events(elem, event_type);
+    var has_events = false;
+    $.each(events, function () {
+        if($(this)[0]["handler"] === handler){
+            has_events = true;
+        }
+    });
+    return has_events;
+}

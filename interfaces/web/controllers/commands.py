@@ -18,7 +18,7 @@ def commands(cmd=None):
         return jsonify("Success")
 
     elif cmd == "restart":
-        Commands.restart_bot(get_bot(), args="--web")
+        Commands.restart_bot()
         return jsonify("Success")
 
     elif cmd == "stop":

@@ -3,17 +3,17 @@ import copy
 import math
 
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
-from tests.test_utils.backtesting_util import add_config_default_backtesting_values
-from tests.test_utils.config import load_test_config
+from backtesting.backtesting_util import create_blank_config_using_loaded_one
 from tools.data_util import DataUtil
 from evaluator.TA.TA_evaluator import TAEvaluator
 from evaluator import TA
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
-from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
+from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
     CONFIG_EVALUATOR, CONFIG_TRADER_MODE
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
-from tools.logging_util import set_global_logger_level
+from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
+from tools.logging_util import set_global_logger_level, get_global_logger_level
 
 CONFIG = 0
 RANK = 1
@@ -25,12 +25,9 @@ class StrategyOptimizer:
 
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.config = load_test_config()
-        self.trading_mode = config[CONFIG_TRADER][CONFIG_TRADER_MODE]
-        self.config[CONFIG_TRADER][CONFIG_TRADER_MODE] = self.trading_mode
-        self.config[CONFIG_EVALUATOR] = config[CONFIG_EVALUATOR]
-        add_config_default_backtesting_values(self.config)
+        self.logger = logging.getLogger(self.get_name())
+        self.trading_mode = config[CONFIG_TRADING][CONFIG_TRADER_MODE]
+        self.config = create_blank_config_using_loaded_one(config)
         self.strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                     Strategies, evaluator_parent_inspection)
         self.run_results = []
@@ -38,6 +35,9 @@ class StrategyOptimizer:
         self.sorted_results_by_time_frame = {}
         self.sorted_results_through_all_time_frame = {}
         self.all_time_frames = []
+        self.all_TAs = []
+        self.risks = []
+        self.current_test_suite = None
 
         self.is_computing = False
         self.run_id = 0
@@ -57,40 +57,46 @@ class StrategyOptimizer:
             # set is_computing to True to prevent any simultaneous start
             self.is_computing = True
 
+            self.run_results = []
+
+            previous_log_level = get_global_logger_level()
+
             try:
-                all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
-                nb_TAs = len(all_TAs)
+                self.all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
+                nb_TAs = len(self.all_TAs)
 
                 self.all_time_frames = self.strategy_class.get_required_time_frames(self.config) \
                     if time_frames is None else time_frames
                 nb_TFs = len(self.all_time_frames)
 
-                risks = [0.5, 1] if risks is None else risks
+                self.risks = [0.5, 1] if risks is None else risks
 
                 self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} "
-                                 f"strategy using {self.trading_mode} trading mode, {all_TAs} technical evaluator(s), "
-                                 f"{self.all_time_frames} time frames and {risks} risk(s).")
+                                 f"strategy using {self.trading_mode} trading mode, {self.all_TAs} "
+                                 f"technical evaluator(s), {self.all_time_frames} time frames and {self.risks} risk(s).")
 
-                self.total_nb_runs = int(len(risks) * (math.pow(nb_TFs, 2) * math.pow(nb_TAs, 2)))
+                self.total_nb_runs = int(len(self.risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
 
+                self.logger.info("Setting logging level to logging.ERROR to limit messages.")
                 set_global_logger_level(logging.ERROR)
 
                 self.run_id = 1
                 # test with several risks
-                for risk in risks:
-                    self.config[CONFIG_TRADER][CONFIG_TRADER_RISK] = risk
+                for risk in self.risks:
+                    self.config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
                     eval_conf_history = []
                     # test with several evaluators
                     for evaluator_conf_iteration in range(nb_TAs):
-                        current_forced_evaluator = all_TAs[evaluator_conf_iteration]
+                        current_forced_evaluator = self.all_TAs[evaluator_conf_iteration]
                         # test with 1-n evaluators at a time
                         for nb_evaluators in range(1, nb_TAs+1):
                             # test different configurations
                             for i in range(nb_TAs):
-                                activated_evaluators = self.get_activated_evaluators(all_TAs, current_forced_evaluator,
-                                                                                     nb_evaluators, eval_conf_history,
-                                                                                     self.strategy_class.get_name(),
-                                                                                     True)
+                                activated_evaluators = self.get_activated_element(self.all_TAs,
+                                                                                  current_forced_evaluator,
+                                                                                  nb_evaluators, eval_conf_history,
+                                                                                  self.strategy_class.get_name(),
+                                                                                  True)
                                 if activated_evaluators is not None:
                                     self.config[CONFIG_FORCED_EVALUATOR] = activated_evaluators
                                     time_frames_conf_history = []
@@ -102,10 +108,10 @@ class StrategyOptimizer:
                                             # test different configurations
                                             for j in range(nb_TFs):
                                                 activated_time_frames = \
-                                                    self.get_activated_evaluators(self.all_time_frames,
-                                                                                  current_forced_time_frame,
-                                                                                  nb_time_frames,
-                                                                                  time_frames_conf_history)
+                                                    self.get_activated_element(self.all_time_frames,
+                                                                               current_forced_time_frame,
+                                                                               nb_time_frames,
+                                                                               time_frames_conf_history)
                                                 if activated_time_frames is not None:
                                                     self.config[CONFIG_FORCED_TIME_FRAME] = activated_time_frames
                                                     print(f"{self.run_id}/{self.total_nb_runs} Run with: evaluators: "
@@ -116,20 +122,23 @@ class StrategyOptimizer:
                                                           f"{self.run_results[-1].get_result_string(False)}")
                                                     self.run_id += 1
 
-                set_global_logger_level(logging.INFO)
                 self._find_optimal_configuration_using_results()
 
             finally:
+                self.current_test_suite = None
+                set_global_logger_level(previous_log_level)
                 self.is_computing = False
+                self.logger.info(f"{self.get_name()} finished computation.")
+                self.logger.info("Logging level restored.")
         else:
-            raise RuntimeError(f"{self.__class__.__name__} is already computing: processed "
+            raise RuntimeError(f"{self.get_name()} is already computing: processed "
                                f"{self.run_id}/{self.total_nb_runs} processed")
 
     def _run_test_suite(self, config):
-        strategy_test_suite = StrategyTestSuite()
-        strategy_test_suite.init(self.strategy_class, copy.deepcopy(config))
-        strategy_test_suite.run_test_suite(strategy_test_suite)
-        run_result = strategy_test_suite.get_test_suite_result()
+        self.current_test_suite = StrategyTestSuite()
+        self.current_test_suite.init(self.strategy_class, copy.deepcopy(config))
+        self.current_test_suite.run_test_suite(self.current_test_suite)
+        run_result = self.current_test_suite.get_test_suite_result()
         self.run_results.append(run_result)
 
     def _find_optimal_configuration_using_results(self):
@@ -171,6 +180,23 @@ class StrategyOptimizer:
         self.logger.info(f"{self.sorted_results_through_all_time_frame[0][CONFIG].get_result_string()} average "
                          f"trades count: {result[TRADES_IN_RESULT]:f}")
 
+    def get_overall_progress(self):
+        return int((self.run_id-1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
+
+    def get_current_test_suite_progress(self):
+        return self.current_test_suite.get_progress() if self.current_test_suite else 0
+
+    def get_report(self):
+        # index, evaluators, risk, score, trades
+        if self.sorted_results_through_all_time_frame:
+            results = [TestSuiteResult.convert_result_into_dict(rank, result[CONFIG].get_evaluators(), "",
+                                                                result[CONFIG].get_risk(), result[RANK],
+                                                                round(result[TRADES_IN_RESULT], 5))
+                       for rank, result in enumerate(self.sorted_results_through_all_time_frame[0:100])]
+        else:
+            results = []
+        return results
+
     def get_results(self):
         return self.run_results
 
@@ -180,9 +206,13 @@ class StrategyOptimizer:
     def get_is_computing(self):
         return self.is_computing
 
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
+
     @staticmethod
-    def get_activated_evaluators(all_elements, current_forced_element, nb_elements_to_consider,
-                                 elem_conf_history, default_element=None, dict_shaped=False):
+    def get_activated_element(all_elements, current_forced_element, nb_elements_to_consider,
+                              elem_conf_history, default_element=None, dict_shaped=False):
         eval_conf = {current_forced_element: True}
         additional_elements_count = 0
         if default_element is not None:

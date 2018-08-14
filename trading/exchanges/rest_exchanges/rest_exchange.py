@@ -36,11 +36,18 @@ class RESTExchange(AbstractExchange):
 
     # ccxt exchange instance creation
     def create_client(self):
-        if self.exchange_manager.check_config(self.get_name()):
+        if self.exchange_manager.ignore_config or self.exchange_manager.check_config(self.get_name()):
             try:
+                if self.exchange_manager.ignore_config:
+                    key = ""
+                    secret = ""
+                else:
+                    key = decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY])
+                    secret = decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET])
+
                 self.client = self.exchange_type({
-                    'apiKey': decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
-                    'secret': decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]),
+                    'apiKey': key,
+                    'secret': secret,
                     'verbose': False,
                     'enableRateLimit': True
                 })
@@ -53,9 +60,9 @@ class RESTExchange(AbstractExchange):
         self.client.logger.setLevel(logging.INFO)
 
     def get_market_status(self, symbol):
-        if symbol in self.client.markets:
-            return self.fix_market_status(self.client.markets[symbol])
-        else:
+        try:
+            return self.fix_market_status(self.client.find_market(symbol))
+        except Exception:
             self.logger.error(f"Fail to get market status of {symbol}")
             return {}
 
@@ -196,5 +203,35 @@ class RESTExchange(AbstractExchange):
             self.logger.error(f"Failed to create order : {e} ({order_desc})")
         return None
 
+    def get_trade_fee(self, symbol, order_type, quantity, price):
+        return self.client.calculate_fee(symbol=symbol,
+                                         type=order_type,
+                                         side=self._get_side(order_type),
+                                         amount=quantity,
+                                         price=price)
+
+    def get_fees(self, symbol):
+        try:
+            market_status = self.client.find_market(symbol)
+            return {
+                ExchangeConstantsMarketPropertyColumns.TAKER.value:
+                    market_status[ExchangeConstantsMarketPropertyColumns.TAKER.value],
+                ExchangeConstantsMarketPropertyColumns.MAKER.value:
+                    market_status[ExchangeConstantsMarketPropertyColumns.MAKER.value],
+                ExchangeConstantsMarketPropertyColumns.FEE.value:
+                    market_status[ExchangeConstantsMarketPropertyColumns.FEE.value],
+            }
+        except Exception as e:
+            self.logger.error(f"Fees data for {symbol} was not found ({e})")
+            return {
+                ExchangeConstantsMarketPropertyColumns.TAKER.value: CONFIG_DEFAULT_FEES,
+                ExchangeConstantsMarketPropertyColumns.MAKER.value: CONFIG_DEFAULT_FEES,
+                ExchangeConstantsMarketPropertyColumns.FEE.value: CONFIG_DEFAULT_FEES
+            }
+
     def get_uniform_timestamp(self, timestamp):
         return timestamp / 1000
+
+    @staticmethod
+    def _get_side(order_type):
+        return "buy" if order_type == TraderOrderType.BUY_LIMIT or order_type == TraderOrderType.BUY_MARKET else "sell"

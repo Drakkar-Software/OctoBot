@@ -160,7 +160,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
             'fee': self.safe_float(order, "n", None),
         }
 
-    def restart_sockets(self):
+    def close_and_restart_sockets(self):
         for socket_key in self.open_sockets_keys.values():
             self.socket_manager.stop_socket(socket_key)
         self.socket_manager.close()
@@ -178,7 +178,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
                 # self.close_sockets()
                 self.logger.error(f"error ({msg['m']}) in websocket all_currencies_prices_callback, "
                                   "calling restart_sockets()")
-                self.restart_sockets()
+                self.close_and_restart_sockets()
             else:
                 msg_stream_type = msg["stream"]
 
@@ -197,7 +197,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
         except Exception as e:
             self.logger.exception(e)
             self.logger.error(f"error: {e}, restarting calling restart_sockets()")
-            self.restart_sockets()
+            self.close_and_restart_sockets()
 
     def user_callback(self, msg):
         try:
@@ -207,11 +207,11 @@ class BinanceWebSocketClient(AbstractWebSocket):
                 self._update_order(msg)
             elif msg['e'] == 'error':
                 self.logger.error(f"error in websocket user_callback ({msg['m']}), calling restart_sockets()")
-                self.restart_sockets()
+                self.close_and_restart_sockets()
         except Exception as e:
             self.logger.exception(e)
             self.logger.error(f"error: {e}, restarting calling restart_sockets()")
-            self.restart_sockets()
+            self.close_and_restart_sockets()
 
     def _init_price_sockets(self, time_frames, trader_pairs):
         # add klines
