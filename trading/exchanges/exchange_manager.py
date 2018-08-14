@@ -1,4 +1,5 @@
 import logging
+import time
 
 from config.cst import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
@@ -12,6 +13,9 @@ from trading.exchanges.websockets_exchanges import AbstractWebSocket
 
 
 class ExchangeManager:
+
+    WEB_SOCKET_RESET_MIN_INTERVAL = 15
+
     def __init__(self, config, exchange_type, is_simulated=False, rest_only=False, ignore_config=False):
         self.config = config
         self.exchange_type = exchange_type
@@ -26,6 +30,8 @@ class ExchangeManager:
         self.exchange_web_socket = None
         self.exchange_dispatcher = None
         self.trader = None
+
+        self.last_web_socket_reset = None
 
         self.client_symbols = []
         self.client_time_frames = {}
@@ -81,8 +87,17 @@ class ExchangeManager:
 
         self.is_ready = True
 
+    def did_not_just_try_to_reset_web_socket(self):
+        if self.last_web_socket_reset is None:
+            return True
+        else:
+            return time.time() - self.last_web_socket_reset > self.WEB_SOCKET_RESET_MIN_INTERVAL
+
     def reset_websocket_exchange(self):
-        if self.exchange_web_socket:
+        if self.exchange_web_socket and self.did_not_just_try_to_reset_web_socket():
+
+            # set web socket reset time
+            self.last_web_socket_reset = time.time()
 
             # clear databases
             self.exchange_dispatcher.reset_symbols_data()
