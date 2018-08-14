@@ -1,7 +1,7 @@
 import socket
 import webbrowser
 from time import sleep
-from tkinter import *
+from tkinter.ttk import Button
 
 from config.cst import PROJECT_NAME, CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT
 from interfaces import get_bot
@@ -15,6 +15,9 @@ class StartingApp(TkApp):
 
         self.window_title = f"{PROJECT_NAME} - Launcher"
         self.window_background_text = f"{PROJECT_NAME} is running"
+
+        self.start_button = None
+
         super().__init__()
 
     @staticmethod
@@ -23,8 +26,8 @@ class StartingApp(TkApp):
 
     def create_components(self):
         # buttons
-        start_button = Button(self.window, text="Open OctoBot", command=self.start_callback)
-        start_button.pack()
+        self.start_button = Button(self.top_frame, command=self.start_callback, text="Open OctoBot")
+        self.start_button.grid(row=1, column=1)
 
     def start_callback(self):
         # wait bot is ready
