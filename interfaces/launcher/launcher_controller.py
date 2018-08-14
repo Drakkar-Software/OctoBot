@@ -43,7 +43,10 @@ class Launcher:
 
         self.create_environment()
         binary_path = self.update_binary()
-        self.update_tentacles(binary_path)
+        if binary_path:
+            self.update_tentacles(binary_path)
+        else:
+            logging.error(f"No {PROJECT_NAME} found to update tentacles.")
 
     def create_environment(self):
         logging.info(f"{PROJECT_NAME} is checking your environment...")
@@ -57,8 +60,8 @@ class Launcher:
 
             file_name = file_to_dl[1]
             if not os.path.isfile(file_name) and file_name:
-                with open(file_name, "w") as new_file_from_dl:
-                    new_file_from_dl.write(file_content)
+                with open(file_name, "wb") as new_file_from_dl:
+                    new_file_from_dl.write(file_content.encode())
 
         if self.installer_app:
             self.installer_app.inc_progress(LIB_FILES_DOWNLOAD_PROGRESS_SIZE)
@@ -109,18 +112,22 @@ class Launcher:
 
     @staticmethod
     def get_local_bot_binary():
-        # try to found in current folder binary
-        octobot_binaries = glob.glob(f'{PROJECT_NAME}*')
+        binary = None
 
         try:
-            octobot_binary = next(iter(octobot_binaries))
-        except Exception:
-            octobot_binary = None
+            # try to found in current folder binary
+            if os.name == 'posix':
+                binary = "./" + next(iter(glob.glob(f'{PROJECT_NAME}*')))
 
-        if octobot_binary and os.name == 'posix':
-            octobot_binary = "./" + octobot_binary
+            elif os.name == 'nt':
+                binary = next(iter(glob.glob(f'{PROJECT_NAME}*.exe')))
 
-        return octobot_binary
+            elif os.name == 'mac':
+                pass
+        except StopIteration:
+            binary = None
+
+        return binary
 
     @staticmethod
     def get_latest_release_data():
@@ -165,37 +172,40 @@ class Launcher:
         # search for corresponding release
         for asset in latest_release_data["assets"]:
             asset_name, _ = os.path.splitext(asset["name"])
-            if asset_name == f"{PROJECT_NAME}_{os_name.value}":
+            if f"{PROJECT_NAME}_{os_name.value}" in asset_name:
                 return asset
-
         return None
 
     def download_binary(self, latest_release_data, replace=False):
         binary = self.get_asset_from_release_data(latest_release_data)
 
-        final_size = binary["size"]
-        increment = (BINARY_DOWNLOAD_PROGRESS_SIZE / (final_size / 1024))
+        if binary:
+            final_size = binary["size"]
+            increment = (BINARY_DOWNLOAD_PROGRESS_SIZE / (final_size / 1024))
 
-        r = requests.get(binary["browser_download_url"], stream=True)
+            r = requests.get(binary["browser_download_url"], stream=True)
 
-        binary_name, binary_ext = os.path.splitext(binary["name"])
-        path = f"{PROJECT_NAME}{binary_ext}"
+            binary_name, binary_ext = os.path.splitext(binary["name"])
+            path = f"{PROJECT_NAME}{binary_ext}"
 
-        if r.status_code == 200:
+            if r.status_code == 200:
 
-            if replace and os.path.isfile(path):
-                try:
-                    os.remove(path)
-                except OSError:
-                    logging.error(f"Can't remove old version binary : {e}")
+                if replace and os.path.isfile(path):
+                    try:
+                        os.remove(path)
+                    except OSError:
+                        logging.error(f"Can't remove old version binary : {e}")
 
-            with open(path, 'wb') as f:
-                for chunk in r.iter_content(1024):
-                    f.write(chunk)
-                    if self.installer_app:
-                        self.installer_app.inc_progress(increment)
+                with open(path, 'wb') as f:
+                    for chunk in r.iter_content(1024):
+                        f.write(chunk)
+                        if self.installer_app:
+                            self.installer_app.inc_progress(increment)
 
-        return path
+            return path
+        else:
+            logging.error("Release not found on server")
+            return None
 
     def update_tentacles(self, binary_path):
         # if install required
