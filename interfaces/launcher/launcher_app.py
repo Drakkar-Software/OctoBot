@@ -60,7 +60,7 @@ class LauncherApp(TkApp):
         # bottom
         self.progress = Progressbar(self.bottom_frame, orient="horizontal",
                                     length=200, mode="determinate", style='Bot.Horizontal.TProgressbar')
-        self.progress.grid(row=1, column=1, padx=5)
+        self.progress.grid(row=1, column=1, padx=5, pady=5)
         self.progress_label = Label(self.bottom_frame, text=f"{self.PROGRESS_MIN}%", style='Bot.TLabel')
         self.progress_label.grid(row=1, column=2, padx=5)
 

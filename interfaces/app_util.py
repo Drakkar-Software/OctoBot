@@ -1,9 +1,12 @@
 import _tkinter
 import logging
+import os
 import threading
+import tkinter
 from abc import *
 from tkinter import PhotoImage, CENTER, Tk
-from tkinter.ttk import Style, Label, Frame
+from tkinter.font import Font
+from tkinter.ttk import Style, Frame
 
 from config.cst import PROJECT_NAME
 
@@ -12,6 +15,7 @@ FOREGROUND_COLOR = "#a6a6a6"
 PROGRESS_BAR_COLOR = "#0067F8"
 ACTIVE_COLOR = "#414141"
 FOCUS_COLOR = "#bebebe"
+BUTTON_TEXT_COLOR = "black" if os.name == 'nt' else "white"
 WINDOW_SIZE_WIDTH = 700
 WINDOW_SIZE_HEIGHT = 700
 
@@ -41,7 +45,8 @@ class TkApp(threading.Thread):
             # set style
             self.style = Style()
             self.style.configure('Bot.TButton',
-                                 background=BACKGROUND_COLOR)
+                                 background=BACKGROUND_COLOR,
+                                 foreground=BUTTON_TEXT_COLOR)
             self.style.map('Bot.TButton',
                            background=[('active', ACTIVE_COLOR)],
                            relief=[('pressed', '!disabled', 'sunken')])
@@ -68,11 +73,11 @@ class TkApp(threading.Thread):
             # background
             try:
                 background_image = PhotoImage(file="interfaces/web/static/img/octobot.png")
-                background_label = Label(self.window,
-                                         image=background_image,
-                                         text=self.window_background_text,
-                                         compound=CENTER,
-                                         style='Bot.TLabel')
+                background_label = tkinter.Label(self.window,
+                                                 image=background_image,
+                                                 text=self.window_background_text,
+                                                 compound=CENTER,
+                                                 background=BACKGROUND_COLOR)
 
                 background_label.place(x=0,
                                        y=0,
