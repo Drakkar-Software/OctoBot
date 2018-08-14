@@ -16,7 +16,7 @@ class TkApp(threading.Thread):
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.style_config = Style()
-        self.style_config.theme_use('default')
+        self.style_config.theme_use('equilux')
 
         self.window = None
         self.window_title = f"{PROJECT_NAME}"

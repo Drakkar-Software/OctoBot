@@ -25,16 +25,10 @@ class LauncherApp(TkApp):
         self.export_logs_button = None
 
         super().__init__()
-        super().style_config.configure(self.window,
-                                       background="dark",
-                                       foreground='white',
-                                       padding=0,
-                                       borderwidth=0)
 
     def create_components(self):
         # buttons
-        self.start_bot_button = Button(self.window, command=self.start_bot_handler, text="Start Octobot",
-                                       style=style.Notebook)
+        self.start_bot_button = Button(self.window, command=self.start_bot_handler, text="Start Octobot")
         self.start_bot_button.pack()
 
         self.update_bot_button = Button(self.window, command=self.update_bot_handler, text="Update Octobot")

@@ -7,12 +7,13 @@ from logging.config import fileConfig
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
-    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, PROJECT_NAME, VERSION
+    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE
 from interfaces import starting
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
 from tools.commands import Commands
 from tools.errors import ConfigError, ConfigEvaluatorError
+
 
 # Keep string '+' operator to ensure backward compatibility in this file
 
@@ -49,16 +50,11 @@ def start_octobot(starting_args):
     sys.excepthook = _log_uncaught_exceptions
 
     try:
-        # Test update
-        if starting_args.update:
-            Commands.update(logger)
-        elif starting_args.version:
+        if starting_args.version:
             print(LONG_VERSION)
         else:
             # Version
             logger.info("Version : {0}".format(LONG_VERSION))
-
-            Commands.check_bot_update(logger)
 
             logger.info("Loading config files...")
             config = load_config(error=False)
@@ -140,8 +136,6 @@ if __name__ == '__main__':
                         help='start the data collector process to create data for backtesting',
                         action='store_true')
     parser.add_argument('-b', '--backtesting', help='enable the backtesting option and use the backtesting config',
-                        action='store_true')
-    parser.add_argument('-u', '--update', help='update OctoBot with the latest version available',
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
     parser.add_argument('-nw', '--no_web', help="Don't start web server",
