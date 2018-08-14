@@ -5,7 +5,6 @@ import threading
 import tkinter
 from abc import *
 from tkinter import PhotoImage, CENTER, Tk
-from tkinter.font import Font
 from tkinter.ttk import Style, Frame
 
 from config.cst import PROJECT_NAME

@@ -9,6 +9,21 @@ Changelog for 0.1.7-beta
 
 
 # Concerned issues :
+    #218 [Bin] Thinking about octobot binary 
+    #288 [Binance Websocket] Handle exchange maintenance and websocket reconnection
+    #305 [Refactor] refactor overall code 
+    #321 [Web Interface] add backtesting section 
+    #342 [Web Interface] Handle save and reset features in font end
+    #343 [Web Interface] Handle removal of card elements
+    #347 [Web Interface] Add strategy optimizer in backtesting
+    #355 [Bug] StopLossOrders set negative portfolio when backtesting 
+    #356 [Web Interface] Octobot doesn't restart onclick 
+    #359 [Web Interface][Configuration] Improve user interface 
+    #360 [Web Interface] Add data recording section
+    #368 [Experiment][Web interface] without dash 
+    #369 [Configuration] Split trading settings into trading section instead of trader
+    #373 [Interface] Create launcher 
+    #374 [Configuration] Remove websocket from configuration and use if by default when available 
 
 # New features :
     - TK app
@@ -19,6 +34,7 @@ Changelog for 0.1.7-beta
     - Web interface : home with custum dashboard
 
 # Bug fixes :
+    - StopLossOrders set negative portfolio when backtesting 
 
 Changelog for 0.1.6_1-beta
 ====================
