@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+from threading import Thread
 from tkinter.ttk import Progressbar, Label, Button
 
 from config.cst import PROJECT_NAME
@@ -23,6 +24,8 @@ class LauncherApp(TkApp):
         self.update_bot_button = None
         self.update_launcher_button = None
         self.export_logs_button = None
+
+        self.processing = None
 
         super().__init__()
 
@@ -55,34 +58,42 @@ class LauncherApp(TkApp):
             self.progress_label["text"] = f"{self.PROGRESS_MAX}%"
         else:
             self.progress["value"] += inc_size
-            self.progress_label["text"] = f"{round(self.progress['value'], 2)}%"
+            self.progress_label["text"] = f"{round(self.progress['value'], 1)}%"
 
     def update_bot_handler(self):
-        self.update_bot(self)
+        if not self.processing:
+            thread = Thread(target=self.update_bot, args=(self,))
+            thread.start()
 
     def update_launcher_handler(self):
-        launcher_process = subprocess.Popen([sys.executable, "--update_launcher"])
+        if not self.processing:
+            launcher_process = subprocess.Popen([sys.executable, "--update_launcher"])
 
-        if launcher_process:
-            self.hide()
-            launcher_process.wait()
+            if launcher_process:
+                self.hide()
+                launcher_process.wait()
 
-            new_launcher_process = subprocess.Popen([sys.executable])
+                new_launcher_process = subprocess.Popen([sys.executable])
 
-            if new_launcher_process:
-                self.stop()
+                if new_launcher_process:
+                    self.stop()
 
     def start_bot_handler(self):
-        bot_process = Launcher.execute_command_on_detached_bot()
+        if not self.processing:
+            bot_process = Launcher.execute_command_on_detached_bot()
 
-        if bot_process:
-            self.hide()
-            bot_process.wait()
-            self.stop()
+            if bot_process:
+                self.hide()
+                bot_process.wait()
+                self.stop()
 
     @staticmethod
     def update_bot(app=None):
+        if app:
+            app.processing = True
         launcher_controller.Launcher(app)
+        if app:
+            app.processing = False
 
     @staticmethod
     def export_logs():
