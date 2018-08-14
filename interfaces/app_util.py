@@ -3,6 +3,7 @@ import logging
 import threading
 from abc import *
 from tkinter import PhotoImage, Label, CENTER, Tk
+from tkinter.ttk import Style
 
 from config.cst import PROJECT_NAME
 
@@ -13,6 +14,9 @@ class TkApp(threading.Thread):
     def __init__(self):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
+
+        self.style_config = Style()
+        self.style_config.theme_use('default')
 
         self.window = None
         self.window_title = f"{PROJECT_NAME}"
