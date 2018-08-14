@@ -62,8 +62,8 @@ class TkApp(threading.Thread):
                 self.logger.error("Failed to load tk window background" + str(e))
 
             # frames
-            self.top_frame = Frame(self.window)
-            self.bottom_frame = Frame(self.window)
+            self.top_frame = Frame(self.window, bg=BACKGROUND_COLOR)
+            self.bottom_frame = Frame(self.window, bg=BACKGROUND_COLOR)
             self.top_frame.pack(side="top", fill="y", expand=False)
             self.bottom_frame.pack(side="bottom", fill="y", expand=False)
 
