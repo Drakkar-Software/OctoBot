@@ -29,7 +29,7 @@ tensorflow
 tensorflow-tensorboard
 
 ## Others
-gitpython
+ttkthemes
 psutil
 colorlog
 cryptography >= 2.2.1
