@@ -7,7 +7,8 @@ from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator import Strategies
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
-from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER
+from tools.time_frame_manager import TimeFrameManager
+from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, CONFIG_TRADING, CONFIG_TRADER_MODE
 from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer
 
 
@@ -20,9 +21,7 @@ def get_strategies_list():
         return []
 
 
-def get_time_frames_list(strategy_name=None):
-    if strategy_name is None:
-        strategy_name = get_current_strategy()
+def get_time_frames_list(strategy_name):
     if strategy_name:
         strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                Strategies, evaluator_parent_inspection)
@@ -31,9 +30,7 @@ def get_time_frames_list(strategy_name=None):
         return []
 
 
-def get_evaluators_list(strategy_name=None):
-    if strategy_name is None:
-        strategy_name = get_current_strategy()
+def get_evaluators_list(strategy_name):
     if strategy_name:
         strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                Strategies, evaluator_parent_inspection)
@@ -58,22 +55,74 @@ def get_current_strategy():
 
 
 def start_optimizer(strategy, time_frames, evaluators, risks):
-    tools = get_bot().get_tools
+    tools = get_bot().get_tools()
     if not tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
         tools[BOT_TOOLS_STRATEGY_OPTIMIZER] = StrategyOptimizer(get_bot().get_config(), strategy)
     optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
+    backtester = tools[BOT_TOOLS_BACKTESTING]
     if optimizer.get_is_computing():
         return False, "Optimizer already running"
+    elif backtester and backtester.get_is_computing():
+        return False, "A backtesting is already running"
     else:
-        # thread = threading.Thread(target=optimizer.find_optimal_configuration, args=(time_frames, evaluators, risks))
-        # thread.start()
+        formatted_time_frames = TimeFrameManager.parse_time_frames(time_frames)
+        float_risks = [float(risk) for risk in risks]
+        thread = threading.Thread(target=optimizer.find_optimal_configuration, args=(evaluators,
+                                                                                     formatted_time_frames,
+                                                                                     float_risks))
+        thread.start()
         return True, "Optimizer started"
 
 
 def get_optimizer_results():
-    optimizer = get_bot().get_tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
+    optimizer = get_bot().get_tools()[BOT_TOOLS_STRATEGY_OPTIMIZER]
     if optimizer:
         results = optimizer.get_results()
         return [result.get_result_dict(i) for i, result in enumerate(results)]
     else:
         return []
+
+
+def get_optimizer_report():
+    if get_optimizer_status()[0] == "finished":
+        optimizer = get_bot().get_tools()[BOT_TOOLS_STRATEGY_OPTIMIZER]
+        return optimizer.get_report()
+    else:
+        return []
+
+
+def get_current_run_params():
+    tools = get_bot().get_tools()
+    params = {
+        "strategy_name": [],
+        "time_frames": [],
+        "evaluators": [],
+        "risks": [],
+        "trading_mode": []
+    }
+    if tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
+        optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
+        params = {
+            "strategy_name": [optimizer.strategy_class.get_name()],
+            "time_frames": [tf.value for tf in optimizer.all_time_frames],
+            "evaluators": optimizer.all_TAs,
+            "risks": optimizer.risks,
+            "trading_mode": [optimizer.trading_mode]
+        }
+    return params
+
+
+def get_trading_mode():
+    return get_bot().get_config()[CONFIG_TRADING][CONFIG_TRADER_MODE]
+
+
+def get_optimizer_status():
+    tools = get_bot().get_tools()
+    if tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
+        optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
+        if optimizer.get_is_computing():
+            return "computing", optimizer.get_current_test_suite_progress(), optimizer.get_overall_progress()
+        else:
+            return "finished", 100, 100
+    else:
+        return "not started", 0, 0

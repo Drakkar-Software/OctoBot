@@ -18,11 +18,12 @@ class RedditService(AbstractService):
 
     def prepare(self):
         if not self.reddit_api:
-            self.reddit_api = praw.Reddit(client_id=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["client-id"],
-                                          client_secret=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["client-secret"],
-                                          password=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["password"],
-                                          user_agent='bot',
-                                          username=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["username"])
+            self.reddit_api = \
+                praw.Reddit(client_id=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["client-id"],
+                            client_secret=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["client-secret"],
+                            password=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["password"],
+                            user_agent='bot',
+                            username=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["username"])
 
     def get_type(self):
         return CONFIG_REDDIT
@@ -36,5 +37,5 @@ class RedditService(AbstractService):
                and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT])
 
     def get_successful_startup_message(self):
-        return "Successfully initialized using {0} account."\
-            .format(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["username"])
+        return f"Successfully initialized using {self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]['username']}" \
+               f" account."

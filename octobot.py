@@ -7,7 +7,7 @@ import ccxt
 from backtesting.backtesting import Backtesting
 from config.cst import CONFIG_FILE, CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
-    NOTIFICATION_STOPPING_MESSAGE, CONFIG_TRADER, CONFIG_TRADER_MODE, BOT_TOOLS_RECORDER, \
+    NOTIFICATION_STOPPING_MESSAGE, CONFIG_TRADING, CONFIG_TRADER_MODE, BOT_TOOLS_RECORDER, \
     BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.Util.advanced_manager import AdvancedManager
@@ -39,7 +39,9 @@ class OctoBot:
         self.start_time = time.time()
         self.config = config
         self.startup_config = copy.deepcopy(config)
+        self.edited_config = copy.deepcopy(config)
         self.ready = False
+        self.watcher = None
 
         # tools: used for alternative operations on a bot on the fly (ex: backtesting started from web interface)
         self.tools = {
@@ -162,11 +164,15 @@ class OctoBot:
                                 self.logger.warning(f"{exchange.get_name()} doesn't support {symbol}")
 
     def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
-        # Create real time TA evaluators
-        real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
-                                                                            exchange,
-                                                                            symbol_evaluator.get_symbol(),
-                                                                            self.relevant_evaluators)
+
+        if Backtesting.enabled(self.config):
+            real_time_ta_eval_list = []
+        else:
+            # Create real time TA evaluators
+            real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
+                                                                                exchange,
+                                                                                symbol_evaluator.get_symbol(),
+                                                                                self.relevant_evaluators)
         symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
         for time_frame in self.time_frames:
             if exchange.get_exchange_manager().time_frame_exists(time_frame.value, symbol_evaluator.get_symbol()):
@@ -195,6 +201,8 @@ class OctoBot:
             manager.start_threads()
 
         for thread in self.symbol_time_frame_updater_threads:
+            if self.watcher is not None:
+                thread.set_watcher(self.watcher)
             thread.start()
 
         for thread in self.dispatchers_list:
@@ -266,10 +274,13 @@ class OctoBot:
 
         self.logger.info("Threads stopped.")
 
+    def set_watcher(self, watcher):
+        self.watcher = watcher
+
     @staticmethod
     def get_trading_mode_class(config):
-        if CONFIG_TRADER in config and CONFIG_TRADER_MODE in config[CONFIG_TRADER]:
-            trading_mode_class = get_deep_class_from_string(config[CONFIG_TRADER][CONFIG_TRADER_MODE],
+        if CONFIG_TRADING in config and CONFIG_TRADER_MODE in config[CONFIG_TRADING]:
+            trading_mode_class = get_deep_class_from_string(config[CONFIG_TRADING][CONFIG_TRADER_MODE],
                                                             modes)
 
             if trading_mode_class is not None:
@@ -315,6 +326,9 @@ class OctoBot:
 
     def get_startup_config(self):
         return self.startup_config
+
+    def get_edited_config(self):
+        return self.edited_config
 
     def get_tools(self):
         return self.tools

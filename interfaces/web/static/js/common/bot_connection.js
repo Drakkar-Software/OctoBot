@@ -1,6 +1,6 @@
 function get_update(){
     $.ajax({
-      url: "/update",
+      url: "/update"
     }).done(function(data) {
         unlock_ui();
 
@@ -14,20 +14,20 @@ function get_update(){
 
 function manage_alert(raw_data){
     try{
-        data = JSON.parse(raw_data)
+        const data = JSON.parse(raw_data);
         $.each(data, function(i, item) {
             create_alert(data[i].Level, data[i].Title, data[i].Message);
         })
     }
-    catch{}
+    catch(error) {}
 }
 
 function handle_route_button(){
     $(".btn").click(function(){
-        button = $(this)
+        const button = $(this);
         if (button[0].hasAttribute('route')){
-            command = button.attr('route');
-            origin_val = button.text();
+            const command = button.attr('route');
+            const origin_val = button.text();
             $.ajax({
                 url: command,
                 beforeSend: function() {
@@ -66,7 +66,7 @@ function send_and_interpret_bot_update(updated_data, update_url, dom_root_elemen
             else{
                 error_callback(updated_data, update_url, dom_root_element, result, status, error)
             }
-        },
+        }
     })
 }
 

@@ -10,6 +10,7 @@ class AbstractExchange:
         self.exchange_type = exchange_type
         self.name = self.exchange_type.__name__
         self.logger = logging.getLogger("{0} - {1}".format(self.__class__.__name__, self.name))
+        self.trader = None
 
         self.exchange_manager = None
 
@@ -83,4 +84,12 @@ class AbstractExchange:
 
     @abstractmethod
     def get_uniform_timestamp(self, timestamp):
+        pass
+
+    @abstractmethod
+    def get_fees(self, symbol):
+        pass
+
+    @abstractmethod
+    def get_trade_fee(self, symbol, order_type, quantity, price):
         pass

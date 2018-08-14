@@ -2,7 +2,7 @@ import logging
 
 
 from tests.functional_tests.strategy_evaluators_tests.abstract_strategy_test import AbstractStrategyTest
-from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADER, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME
+from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME
 from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 
@@ -17,22 +17,28 @@ class StrategyTestSuite(AbstractStrategyTest):
         self._profitability_results = []
         self._trades_counts = []
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.current_progress = 0
 
     def get_test_suite_result(self):
         return TestSuiteResult(self._profitability_results,
                                self._trades_counts,
-                               self.config[CONFIG_TRADER][CONFIG_TRADER_RISK],
+                               self.config[CONFIG_TRADING][CONFIG_TRADER_RISK],
                                self.config[CONFIG_FORCED_TIME_FRAME],
                                self.config[CONFIG_FORCED_EVALUATOR],
                                self.strategy_evaluator_class.get_name())
+
+    def get_progress(self):
+        return self.current_progress
 
     def run_test_suite(self, strategy_tester):
         tests = [self.test_slow_downtrend, self.test_sharp_downtrend, self.test_flat_markets,
                  self.test_slow_uptrend, self.test_sharp_uptrend, self.test_up_then_down]
         print('| ', end='')
-        for test in tests:
+        nb_tests = len(tests)
+        for i, test in enumerate(tests):
             try:
                 test(strategy_tester)
+                self.current_progress = int((i+1)/nb_tests*100)
             except NoCandleDataForThisTimeFrameException:
                 pass
             except Exception as e:

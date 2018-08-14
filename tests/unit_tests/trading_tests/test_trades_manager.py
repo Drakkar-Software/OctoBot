@@ -25,7 +25,7 @@ class TestTradesManager:
         config, _, trader_inst, _ = self.init_default()
         assert TradesManager.get_reference_market(config) == DEFAULT_REFERENCE_MARKET
 
-        config[CONFIG_TRADER][CONFIG_TRADER_REFERENCE_MARKET] = "ETH"
+        config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET] = "ETH"
         assert TradesManager.get_reference_market(config) == "ETH"
 
         self.stop(trader_inst)

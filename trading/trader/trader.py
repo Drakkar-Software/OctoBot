@@ -1,7 +1,7 @@
 import copy
 import logging
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.order import OrderConstants
@@ -17,7 +17,7 @@ class Trader:
         self.exchange = exchange
         self.config = config
         self.risk = None
-        self.set_risk(self.config[CONFIG_TRADER][CONFIG_TRADER_RISK])
+        self.set_risk(self.config[CONFIG_TRADING][CONFIG_TRADER_RISK])
         self.logger = logging.getLogger(self.__class__.__name__)
 
         if not hasattr(self, 'simulate'):
@@ -32,6 +32,8 @@ class Trader:
         self.order_manager = OrdersManager(config, self)
 
         self.trader_type_str = REAL_TRADER_STR
+
+        self.exchange.get_exchange_manager().register_trader(self)
 
         if order_refresh_time is not None:
             self.order_manager.set_order_refresh_time(order_refresh_time)
@@ -179,7 +181,7 @@ class Trader:
         return new_order
 
     def cancel_order(self, order):
-        if not order.is_cancelled():
+        if not order.is_cancelled() and not order.is_filled():
             with order as odr:
                 odr.cancel_order()
                 self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} at {odr.get_origin_price()}"

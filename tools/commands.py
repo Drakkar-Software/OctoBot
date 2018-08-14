@@ -1,80 +1,14 @@
 import logging
 import os
-import subprocess
 import sys
-import threading
-
-from git import Repo, InvalidGitRepositoryError
 
 from backtesting.collector.data_collector import DataCollector
 from config.config import encrypt
-from config.cst import ORIGIN_URL, GIT_ORIGIN
 from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
 
 
 class Commands:
-    @staticmethod
-    def update(logger, catch=False):
-        logger.info("Updating...")
-        try:
-            try:
-                repo = Repo(os.getcwd())
-            except InvalidGitRepositoryError:
-                logger.error("Impossible to update if OctoBot. "
-                             "This error can appear when OctoBot's folder is not a git repository.")
-                return
-            # git = repo.git
-
-            # check origin
-            try:
-                origin = repo.remote(GIT_ORIGIN)
-            except Exception:
-                origin = repo.create_remote(GIT_ORIGIN, url=ORIGIN_URL)
-
-            if origin.exists():
-                # update
-                for fetch_info in origin.pull():
-                    print(f"Updated {fetch_info.ref} to {fetch_info.commit}")
-
-                # checkout
-                # try:
-                #     git.branch(VERSION_DEV_PHASE)
-                # except Exception:
-                #     repo.create_head(VERSION_DEV_PHASE, origin.refs.VERSION_DEV_PHASE)
-
-                logger.info("Updated")
-            else:
-                raise Exception("Cannot connect to origin")
-        except Exception as e:
-            logger.info(f"Exception raised during updating process... ({e})")
-            if not catch:
-                raise e
-
-    @staticmethod
-    def check_bot_update(logger, log=True):
-        try:
-            repo = Repo(os.getcwd())
-        except InvalidGitRepositoryError:
-            logger.warning("Impossible to check if OctoBot is up to date. "
-                           "This error can appear when OctoBot's folder is not a git repository.")
-            return True
-
-        try:
-            diff = list(repo.iter_commits(f'{repo.active_branch.name}..{GIT_ORIGIN}/{repo.active_branch.name}'))
-            if diff:
-                if log:
-                    logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
-                return False
-            else:
-                if log:
-                    logger.info("Octobot is up to date :)")
-                return True
-        except Exception:
-            if log:
-                logger.warning("Octobot is not up to date, please use '-u' or '--update' to get the latest release")
-            return False
-
     @staticmethod
     def data_collector(config, catch=False):
         data_collector_inst = None
@@ -150,13 +84,5 @@ class Commands:
         os._exit(0)
 
     @staticmethod
-    def start_new_bot(args=""):
-        python_command = f"{os.getcwd()}/start.py "
-        command_args = "--pause_time=3"
-        subprocess.call([sys.executable, python_command, command_args, args])
-
-    @staticmethod
-    def restart_bot(bot, args=""):
-        start_new_bot_thread = threading.Thread(target=Commands.start_new_bot, args=(args,))
-        start_new_bot_thread.start()
-        Commands.stop_bot(bot)
+    def restart_bot():
+        os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)

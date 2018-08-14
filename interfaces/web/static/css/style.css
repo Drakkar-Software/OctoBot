@@ -1,4 +1,3 @@
-// ensure in line display
 .editable {
     display: inline;
 }
@@ -15,7 +14,7 @@ body:before {
     right: 0;
     z-index: -1;
 
-    background-image: url('../../assets/images/octobot.svg');
+    background-image: url('../img/svg/octobot.svg');
 
     background-repeat: no-repeat;
     background-size: cover;
@@ -36,6 +35,10 @@ body:before {
   display: block;
   flex-basis: 33.3%;
   .rounded-bottom !important;
+}
+.medium-size {
+  max-width: 18rem;
+  min-width: 12rem;
 }
 
 /* elegant-color white-text */
@@ -65,6 +68,27 @@ body:before {
 .card .card-deck .card .card-body,
  .card .card-deck .card .card-text{
     background-color: #4B515D !important;
+}
+
+.card .deck-container-modified {
+    background-color: #FF8800 !important;
+    -webkit-transition: all 0.5s ease;
+    -moz-transition: all 0.5s ease;
+    -o-transition: all 0.5s ease;
+    transition: all 0.5s ease;
+}
+
+.card .card-modified,
+.card .card-modified .card-body,
+.card .card-modified .card-text,
+.card .card-deck .card-modified,
+.card .card-deck .card-modified .card-body,
+ .card .card-deck .card-modified .card-text{
+    background-color: #FF8800 !important;
+    -webkit-transition: all 0.5s ease;
+    -moz-transition: all 0.5s ease;
+    -o-transition: all 0.5s ease;
+    transition: all 0.5s ease;
 }
 
 .card a:link {

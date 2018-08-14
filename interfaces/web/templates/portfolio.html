@@ -7,14 +7,27 @@
 }
 </style>
 <div class="card">
-    <div class="card-header"><h1>Portfolio</h1></div>
+    {% if real_portfolio %}
+    <div class="card-header"><h1>Real portfolio</h1></div>
     <div class="card-body">
         <br>
         <div class="card-deck">
-            {% for currency in total_portfolio %}
-                {{ m_cards.currency_card(currency, total_portfolio) }}
+            {% for currency in real_portfolio %}
+                {{ m_cards.currency_card(currency, real_portfolio) }}
             {% endfor %}
         </div>
     </div>
+    {% endif %}
+    {% if simulated_portfolio %}
+    <div class="card-header"><h1>Simulated portfolio</h1></div>
+    <div class="card-body">
+        <br>
+        <div class="card-deck">
+            {% for currency in simulated_portfolio %}
+                {{ m_cards.currency_card(currency, simulated_portfolio) }}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -24,12 +24,11 @@ class ServiceCreator:
                             service_instance
                         service_instance.say_hello()
                     except Exception as e:
-                        logger.error("{0} preparation produced the following error: {1}"
-                                     .format(service_class.get_name(), e))
+                        logger.error(f"{service_class.get_name()} preparation produced the following error: {e}")
                 else:
                     if service_instance.get_should_warn():
-                        logger.warning("{0} can't be initialized: configuration is missing, wrong or incomplete !"
-                                       .format(service_class.get_name()))
+                        logger.warning(f"{service_class.get_name()} can't be initialized: configuration is missing, "
+                                       f"wrong or incomplete !")
 
     @staticmethod
     def get_service_instances(config):

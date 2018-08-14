@@ -14,16 +14,16 @@ function update_list_item(list_item, new_class){
 }
 
 function update_element_temporary_look(element){
-    var set_to_activated = element.attr(current_value_attr).toLowerCase() == "true";
-    var set_to_temporary = element.attr(current_value_attr).toLowerCase() != element.attr(config_value_attr).toLowerCase();
-    var is_back_to_startup_value = element.attr(startup_value_attr).toLowerCase() == element.attr(config_value_attr).toLowerCase();
+    var set_to_activated = element.attr(current_value_attr).toLowerCase() === "true";
+    var set_to_temporary = element.attr(current_value_attr).toLowerCase() !== element.attr(config_value_attr).toLowerCase();
+    var is_back_to_startup_value = element.attr(startup_value_attr).toLowerCase() === element.attr(config_value_attr).toLowerCase();
     if(element.hasClass("list-group-item")){
         // list item
-        list_class = (set_to_activated ? success_list_item : light_list_item);
+        var list_class = (set_to_activated ? success_list_item : light_list_item);
         update_list_item(element, list_class);
     }
     var badge = element.find(".badge");
-    if(typeof badge != "undefined") {
+    if(typeof badge !== "undefined") {
         if(set_to_temporary){
             update_badge(badge, unsaved_setting, primary_badge);
         }else{
@@ -44,35 +44,10 @@ function update_element_temporary_look(element){
     }
 }
 
-function at_least_one_temporary_element(root_element){
-    at_least_one_element = false;
-    root_element.find("."+config_element_class).each(function(){
-        var current_attr = $(this).attr(current_value_attr);
-        var config_attr = $(this).attr(current_value_attr);
-
-        if (isDefined(current_attr) && isDefined(current_attr)) {
-            if(current_attr.toLowerCase() != config_attr.toLowerCase()){
-                at_least_one_element = true;
-                return false;
-            }
-        }
-    });
-    return at_least_one_element;
-}
-
-function add_or_remove_exit_confirm_if_necessary(root_element, message){
-    if(at_least_one_temporary_element(root_element)){
-        add_or_remove_confirm_before_exit_page(true, message);
-    }
-    else{
-        add_or_remove_confirm_before_exit_page(false);
-    }
-}
-
 function change_boolean(to_update_element, new_value, new_value_string){
     var badge = to_update_element.find(".badge");
     var startup_value = to_update_element.attr(startup_value_attr).toLowerCase();
-    var is_back_to_startup_value = startup_value == new_value_string;
+    var is_back_to_startup_value = startup_value === new_value_string;
     if(new_value){
         update_list_item(to_update_element, success_list_item);
         if (!is_back_to_startup_value){
@@ -91,20 +66,27 @@ function change_boolean(to_update_element, new_value, new_value_string){
 }
 
 function update_dom(root_element, message){
-    var config_value_attr = "config-value"
-    for (var conf_key in message) {
-        var new_value = message[conf_key];
-        new_value_type = typeof(new_value);
-        new_value_string = new_value.toString();
+    var config_value_attr = "config-value";
+
+    // update global configuration
+    var super_container = $("#super-container");
+    confirm_all_modified_classes(super_container);
+
+    // update evaluators
+    for (var conf_key in message["evaluator_updated_config"]) {
+        var new_value = message["evaluator_updated_config"][conf_key];
+        var new_value_type = "boolean";
+        var new_value_string = new_value.toString();
         var to_update_element = root_element.find("#"+conf_key);
 
         var attr = to_update_element.attr(config_value_attr);
 
         if (isDefined(attr)) {
-            if (attr.toLowerCase() != new_value_string){
+            if (attr.toLowerCase() !== new_value_string){
                 to_update_element.attr(config_value_attr, new_value_string);
-                if(new_value_type == "boolean"){
-                    change_boolean(to_update_element, new_value, new_value_string);
+                if(new_value_type === "boolean"){
+                    var bool_val = new_value.toLowerCase() === "true";
+                    change_boolean(to_update_element, bool_val, new_value_string);
                 }
 
             }
@@ -117,7 +99,7 @@ function update_dom(root_element, message){
 }
 
 function create_alert(a_level, a_title, a_msg, url="_blank"){
-    toastr[a_level](a_msg, a_title)
+    toastr[a_level](a_msg, a_title);
 
     toastr.options = {
       "closeButton": false,
@@ -149,8 +131,8 @@ function unlock_ui(){
 }
 
 function update_status(status){
-    icon_status = $("#navbar-bot-status")
-    icon_reboot = $("#navbar-bot-reboot")
+    var icon_status = $("#navbar-bot-status");
+    var icon_reboot = $("#navbar-bot-reboot");
 
     // if refreshed page
     if (icon_status.hasClass("fa-spinner")){
@@ -181,13 +163,45 @@ function update_status(status){
     }
 }
 
-function add_or_remove_confirm_before_exit_page(add, message){
-    exit_event = 'beforeunload'
-    if(add){
-        $(window).bind(exit_event, function(){
-          return message;
-        });
-    }else{
-        $(window).off(exit_event);
+function register_exit_confirm_function(check_function) {
+    var exit_event = 'beforeunload';
+    $(window).bind(exit_event, function(){
+      if(check_function()){
+          return "Exit without saving ?";
+      }
+    });
+}
+
+function remove_exit_confirm_function(){
+    var exit_event = 'beforeunload';
+    $(window).off(exit_event);
+}
+
+
+function confirm_all_modified_classes(container){
+    container.find("."+deck_container_modified_class).each(function () {
+        toogle_class($(this), deck_container_modified_class, false);
+    });
+    container.find("."+card_class_modified).each(function () {
+        toogle_class($(this), card_class_modified, false);
+    });
+    container.find("."+added_class).each(function () {
+        toogle_class($(this), added_class, false);
+    });
+}
+
+function toogle_class(elem, class_type, toogle=true){
+    if(toogle && !elem.hasClass(class_type)){
+        elem.addClass(class_type, 500);
+    }else if(!toogle && elem.hasClass(class_type)){
+        elem.removeClass(class_type);
     }
+}
+
+function toogle_deck_container_modified(container, modified=true) {
+    toogle_class(container, deck_container_modified_class, modified);
+}
+
+function toogle_card_modified(card, modified=true) {
+    toogle_class(card, card_class_modified, modified);
 }
