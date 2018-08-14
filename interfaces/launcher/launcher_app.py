@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 from threading import Thread
+from time import sleep
 from tkinter.ttk import Progressbar, Label, Button
 
 from config.cst import PROJECT_NAME
@@ -22,6 +23,8 @@ class LauncherApp(TkApp):
         self.progress_label = None
         self.start_bot_button = None
         self.update_bot_button = None
+        self.bot_version_label = None
+        self.launcher_version_label = None
         self.update_launcher_button = None
         self.export_logs_button = None
 
@@ -30,19 +33,31 @@ class LauncherApp(TkApp):
         super().__init__()
 
     def create_components(self):
+        # bot update
+        self.update_bot_button = Button(self.top_frame, command=self.update_bot_handler,
+                                        text="Update Octobot", style='Bot.TButton')
+        self.bot_version_label = Label(self.top_frame,
+                                       text="",
+                                       style='Bot.TLabel')
+        self.update_bot_button.grid(row=1, column=2, padx=200, pady=5)
+        self.bot_version_label.grid(row=1, column=1)
+        self.update_bot_version()
+
+        # launcher update
+        self.update_launcher_button = Button(self.top_frame, command=self.update_launcher_handler,
+                                             text="Update Launcher", style='Bot.TButton')
+        self.launcher_version_label = Label(self.top_frame,
+                                            text=f"Launcher version : {LAUNCHER_VERSION}",
+                                            style='Bot.TLabel')
+        self.update_launcher_button.grid(row=2, column=2, padx=200, pady=5)
+        self.launcher_version_label.grid(row=2, column=1, )
+
         # buttons
         self.start_bot_button = Button(self.top_frame, command=self.start_bot_handler,
                                        text="Start Octobot", style='Bot.TButton')
-        self.start_bot_button.grid(row=1, column=2, padx=15)
+        self.start_bot_button.grid(row=3, column=1)
 
-        self.update_bot_button = Button(self.top_frame, command=self.update_bot_handler,
-                                        text="Update Octobot", style='Bot.TButton')
-        self.update_bot_button.grid(row=1, column=1, padx=15)
-
-        self.update_launcher_button = Button(self.top_frame, command=self.update_launcher_handler,
-                                             text="Update Launcher", style='Bot.TButton')
-        self.update_launcher_button.grid(row=1, column=3, padx=15)
-
+        # bottom
         self.progress = Progressbar(self.bottom_frame, orient="horizontal",
                                     length=200, mode="determinate", style='Bot.Horizontal.TProgressbar')
         self.progress.grid(row=1, column=1, padx=5)
@@ -90,6 +105,14 @@ class LauncherApp(TkApp):
                 bot_process.wait()
                 self.stop()
 
+    def update_bot_version(self):
+        current_server_version = launcher_controller.Launcher.get_current_server_version()
+        current_bot_version = launcher_controller.Launcher.get_current_bot_version()
+        self.bot_version_label["text"] = f"Bot version : " \
+                                         f"{current_bot_version if current_bot_version else 'Not found'}" \
+                                         f" (Latest : " \
+                                         f"{current_server_version if current_server_version else 'Not found'})"
+
     @staticmethod
     def update_bot(app=None):
         if app:
@@ -97,6 +120,8 @@ class LauncherApp(TkApp):
         launcher_controller.Launcher(app)
         if app:
             app.processing = False
+            sleep(1)
+            app.update_bot_version()
 
     @staticmethod
     def export_logs():

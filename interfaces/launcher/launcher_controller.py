@@ -51,7 +51,7 @@ class Launcher:
     def create_environment(self):
         self.installer_app.inc_progress(0, to_min=True)
         logging.info(f"{PROJECT_NAME} is checking your environment...")
-        
+
         # download files
         for file_to_dl in FILES_TO_DOWNLOAD:
             file_content = requests.get(file_to_dl[0]).text
@@ -92,7 +92,7 @@ class Launcher:
                 logging.info(f"{PROJECT_NAME} installation found, analyzing...")
 
                 last_release_version = latest_release_data["tag_name"]
-                current_bot_version = self.execute_command_on_current_bot(binary_path, ["--version"])
+                current_bot_version = self.get_current_bot_version(binary_path)
 
                 try:
                     check_new_version = LooseVersion(current_bot_version) < LooseVersion(last_release_version)
@@ -111,6 +111,12 @@ class Launcher:
                 return self.download_binary(latest_release_data)
         except Exception as e:
             logging.exception(f"Failed to download latest release data : {e}")
+
+    @staticmethod
+    def get_current_bot_version(binary_path=None):
+        if not binary_path:
+            binary_path = Launcher.get_local_bot_binary()
+        return Launcher.execute_command_on_current_bot(binary_path, ["--version"])
 
     @staticmethod
     def get_local_bot_binary():
@@ -132,6 +138,12 @@ class Launcher:
         return binary
 
     @staticmethod
+    def get_current_server_version(latest_release_data=None):
+        if not latest_release_data:
+            latest_release_data = Launcher.get_latest_release_data()
+        return latest_release_data["tag_name"]
+
+    @staticmethod
     def get_latest_release_data():
         return json.loads(requests.get(GITHUB_LATEST_RELEASE_URL).text)
 
@@ -140,8 +152,10 @@ class Launcher:
         try:
             cmd = [f"{binary_path}"] + commands
             return subprocess.Popen(cmd, stdout=PIPE).stdout.read().rstrip().decode()
-        except PermissionError:
-            logging.exception(f"Failed to run bot with command {commands} : {e}")
+        except PermissionError as e:
+            logging.error(f"Failed to run bot with command {commands} : {e}")
+        except FileNotFoundError as e:
+            logging.error(f"Can't find a valid binary")
 
     @staticmethod
     def execute_command_on_detached_bot(binary_path=None, commands=None):
@@ -152,7 +166,7 @@ class Launcher:
             cmd = [f"{binary_path}"] + (commands if commands else [])
             return subprocess.Popen(cmd)
         except Exception as e:
-            logging.exception(f"Failed to run detached bot with command {commands} : {e}")
+            logging.error(f"Failed to run detached bot with command {commands} : {e}")
             return None
 
     @staticmethod
