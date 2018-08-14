@@ -28,20 +28,20 @@ class LauncherApp(TkApp):
 
     def create_components(self):
         # buttons
-        self.start_bot_button = Button(self.window, command=self.start_bot_handler, text="Start Octobot")
-        self.start_bot_button.pack()
+        self.start_bot_button = Button(self.top_frame, command=self.start_bot_handler, text="Start Octobot")
+        self.start_bot_button.grid(row=1, column=2)
 
-        self.update_bot_button = Button(self.window, command=self.update_bot_handler, text="Update Octobot")
-        self.update_bot_button.pack()
+        self.update_bot_button = Button(self.top_frame, command=self.update_bot_handler, text="Update Octobot")
+        self.update_bot_button.grid(row=1, column=1)
 
-        self.progress = Progressbar(self.window, orient="horizontal",
+        self.progress = Progressbar(self.bottom_frame, orient="horizontal",
                                     length=200, mode="determinate")
-        self.progress.pack()
-        self.progress_label = Label(self.window, text=f"{self.PROGRESS_MIN}%")
-        self.progress_label.pack()
+        self.progress.grid(row=1, column=1)
+        self.progress_label = Label(self.bottom_frame, text=f"{self.PROGRESS_MIN}%")
+        self.progress_label.grid(row=1, column=2)
 
-        self.update_launcher_button = Button(self.window, command=self.update_launcher_handler, text="Update Launcher")
-        self.update_launcher_button.pack()
+        self.update_launcher_button = Button(self.top_frame, command=self.update_launcher_handler, text="Update Launcher")
+        self.update_launcher_button.grid(row=1, column=3)
 
         self.progress["value"] = self.PROGRESS_MIN
         self.progress["maximum"] = self.PROGRESS_MAX
