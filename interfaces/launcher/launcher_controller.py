@@ -49,7 +49,9 @@ class Launcher:
             logging.error(f"No {PROJECT_NAME} found to update tentacles.")
 
     def create_environment(self):
+        self.installer_app.inc_progress(0, to_min=True)
         logging.info(f"{PROJECT_NAME} is checking your environment...")
+        
         # download files
         for file_to_dl in FILES_TO_DOWNLOAD:
             file_content = requests.get(file_to_dl[0]).text

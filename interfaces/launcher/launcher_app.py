@@ -25,7 +25,7 @@ class LauncherApp(TkApp):
         self.update_launcher_button = None
         self.export_logs_button = None
 
-        self.processing = None
+        self.processing = False
 
         super().__init__()
 
@@ -52,10 +52,13 @@ class LauncherApp(TkApp):
         self.progress["value"] = self.PROGRESS_MIN
         self.progress["maximum"] = self.PROGRESS_MAX
 
-    def inc_progress(self, inc_size, to_max=False):
+    def inc_progress(self, inc_size, to_min=False, to_max=False):
         if to_max:
             self.progress["value"] = self.PROGRESS_MAX
             self.progress_label["text"] = f"{self.PROGRESS_MAX}%"
+        elif to_min:
+            self.progress["value"] = self.PROGRESS_MIN
+            self.progress_label["text"] = f"{self.PROGRESS_MIN}%"
         else:
             self.progress["value"] += inc_size
             self.progress_label["text"] = f"{round(self.progress['value'], 1)}%"
