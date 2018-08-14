@@ -29,7 +29,6 @@ tensorflow
 tensorflow-tensorboard
 
 ## Others
-ttkthemes
 psutil
 colorlog
 cryptography >= 2.2.1

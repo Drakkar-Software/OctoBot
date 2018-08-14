@@ -2,13 +2,14 @@ import _tkinter
 import logging
 import threading
 from abc import *
-from tkinter import PhotoImage, Label, BOTTOM, Canvas, Frame, CENTER
-
-from ttkthemes import ThemedTk
+from tkinter import PhotoImage, Label, Frame, CENTER, Tk
+from tkinter.ttk import Button, Style
 
 from config.cst import PROJECT_NAME
 
 BACKGROUND_COLOR = "#464646"
+FOREGROUND_COLOR = "#a6a6a6"
+FOCUS_COLOR = "#bebebe"
 WINDOW_SIZE = 600
 
 
@@ -23,6 +24,8 @@ class TkApp(threading.Thread):
         self.window_title = f"{PROJECT_NAME}"
         self.window_background_text = ""
 
+        self.style = None
+
         self.top_frame = None
         self.bottom_frame = None
 
@@ -30,8 +33,13 @@ class TkApp(threading.Thread):
 
     def run(self):
         try:
-            self.window = ThemedTk()
-            self.window.set_theme("equilux")
+            self.window = Tk()
+
+            # set style
+            self.style = Style()
+            self.style.configure('Bot.TButton',
+                                 background=BACKGROUND_COLOR,
+                                 foreground=FOREGROUND_COLOR)
 
             # window settings
             self.window.title(self.window_title)
@@ -72,7 +80,7 @@ class TkApp(threading.Thread):
             self.start_app()
 
         except _tkinter.TclError as e:
-            self.logger.error("Failed to start tk_app" + str(e))
+            self.logger.exception(f"Failed to start tk_app : {e}")
 
     @staticmethod
     @abstractmethod

@@ -26,6 +26,7 @@ exe = EXE(pyz,
           name='OctoBot',
           debug=False,
           strip=False,
+          icon="../../interfaces/web/static/favicon.ico",
           upx=True,
           runtime_tmpdir=None,
           console=True )
