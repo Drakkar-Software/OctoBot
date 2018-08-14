@@ -97,8 +97,13 @@ class ExchangeDispatcher(AbstractExchange):
             self.resetting_web_socket = True
             # otherwise: reset web socket and recall method
             self.logger.warning("web socket seems to be disconnected, trying to restart it")
-            self.get_exchange_manager().reset_websocket_exchange()
-            self.resetting_web_socket = False
+            try:
+                self.get_exchange_manager().reset_websocket_exchange()
+            except Exception as e:
+                self.logger.error("Error when trying to restart web socket")
+                self.logger.exception(e)
+            finally:
+                self.resetting_web_socket = False
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
