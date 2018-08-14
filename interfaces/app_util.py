@@ -2,10 +2,14 @@ import _tkinter
 import logging
 import threading
 from abc import *
-from tkinter import PhotoImage, Label, CENTER, Tk
-from tkinter.ttk import Style
+from tkinter import PhotoImage, Label, BOTTOM, Canvas, Frame, CENTER
+
+from ttkthemes import ThemedTk
 
 from config.cst import PROJECT_NAME
+
+BACKGROUND_COLOR = "#464646"
+WINDOW_SIZE = 600
 
 
 class TkApp(threading.Thread):
@@ -15,27 +19,31 @@ class TkApp(threading.Thread):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
 
-        self.style_config = Style()
-        self.style_config.theme_use('equilux')
-
         self.window = None
         self.window_title = f"{PROJECT_NAME}"
         self.window_background_text = ""
+
+        self.top_frame = None
+        self.bottom_frame = None
 
         self.start()
 
     def run(self):
         try:
-            self.window = Tk()
-            self.window.protocol("WM_DELETE_WINDOW", self.close_callback)
+            self.window = ThemedTk()
+            self.window.set_theme("equilux")
+
             # window settings
             self.window.title(self.window_title)
+            self.window.protocol("WM_DELETE_WINDOW", self.close_callback)
+            # self.window.configure(background=BACKGROUND_COLOR)
+
             try:
                 self.window.iconbitmap('interfaces/web/static/favicon.ico')
             except Exception as e:
                 self.logger.error("Failed to load tk window icon" + str(e))
 
-            self.window.geometry("500x430")
+            self.window.geometry(f"{WINDOW_SIZE}x{WINDOW_SIZE}")
 
             # background
             try:
@@ -43,7 +51,8 @@ class TkApp(threading.Thread):
                 background_label = Label(self.window,
                                          image=background_image,
                                          text=self.window_background_text,
-                                         compound=CENTER)
+                                         compound=CENTER,
+                                         bg=BACKGROUND_COLOR)
 
                 background_label.place(x=0,
                                        y=0,
@@ -51,6 +60,12 @@ class TkApp(threading.Thread):
                                        relheight=1)
             except Exception as e:
                 self.logger.error("Failed to load tk window background" + str(e))
+
+            # frames
+            self.top_frame = Frame(self.window)
+            self.bottom_frame = Frame(self.window)
+            self.top_frame.pack(side="top", fill="y", expand=False)
+            self.bottom_frame.pack(side="bottom", fill="y", expand=False)
 
             self.create_components()
 
