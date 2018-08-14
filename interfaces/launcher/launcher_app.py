@@ -30,21 +30,21 @@ class LauncherApp(TkApp):
         # buttons
         self.start_bot_button = Button(self.top_frame, command=self.start_bot_handler,
                                        text="Start Octobot", style='Bot.TButton')
-        self.start_bot_button.grid(row=1, column=2)
+        self.start_bot_button.grid(row=1, column=2, padx=15)
 
         self.update_bot_button = Button(self.top_frame, command=self.update_bot_handler,
                                         text="Update Octobot", style='Bot.TButton')
-        self.update_bot_button.grid(row=1, column=1)
-
-        self.progress = Progressbar(self.bottom_frame, orient="horizontal",
-                                    length=200, mode="determinate")
-        self.progress.grid(row=1, column=1)
-        self.progress_label = Label(self.bottom_frame, text=f"{self.PROGRESS_MIN}%")
-        self.progress_label.grid(row=1, column=2)
+        self.update_bot_button.grid(row=1, column=1, padx=15)
 
         self.update_launcher_button = Button(self.top_frame, command=self.update_launcher_handler,
                                              text="Update Launcher", style='Bot.TButton')
-        self.update_launcher_button.grid(row=1, column=3)
+        self.update_launcher_button.grid(row=1, column=3, padx=15)
+
+        self.progress = Progressbar(self.bottom_frame, orient="horizontal",
+                                    length=200, mode="determinate", style='Bot.Horizontal.TProgressbar')
+        self.progress.grid(row=1, column=1, padx=5)
+        self.progress_label = Label(self.bottom_frame, text=f"{self.PROGRESS_MIN}%", style='Bot.TLabel')
+        self.progress_label.grid(row=1, column=2, padx=5)
 
         self.progress["value"] = self.PROGRESS_MIN
         self.progress["maximum"] = self.PROGRESS_MAX

@@ -2,15 +2,18 @@ import _tkinter
 import logging
 import threading
 from abc import *
-from tkinter import PhotoImage, Label, Frame, CENTER, Tk
-from tkinter.ttk import Button, Style
+from tkinter import PhotoImage, CENTER, Tk
+from tkinter.ttk import Style, Label, Frame
 
 from config.cst import PROJECT_NAME
 
 BACKGROUND_COLOR = "#464646"
 FOREGROUND_COLOR = "#a6a6a6"
+PROGRESS_BAR_COLOR = "#0067F8"
+ACTIVE_COLOR = "#414141"
 FOCUS_COLOR = "#bebebe"
-WINDOW_SIZE = 600
+WINDOW_SIZE_WIDTH = 500
+WINDOW_SIZE_HEIGHT = 500
 
 
 class TkApp(threading.Thread):
@@ -39,7 +42,18 @@ class TkApp(threading.Thread):
             self.style = Style()
             self.style.configure('Bot.TButton',
                                  background=BACKGROUND_COLOR,
-                                 foreground=FOREGROUND_COLOR)
+                                 foreground=FOREGROUND_COLOR,
+                                 border=0)
+            self.style.map('Bot.TButton',
+                           background=[('active', ACTIVE_COLOR)],
+                           relief=[('pressed', '!disabled', 'sunken')])
+            self.style.configure('Bot.TFrame', background=BACKGROUND_COLOR)
+            self.style.configure('Bot.TLabel',
+                                 background=BACKGROUND_COLOR,
+                                 foreground="white")
+            self.style.configure('Bot.Horizontal.TProgressbar',
+                                 foreground=PROGRESS_BAR_COLOR,
+                                 background=PROGRESS_BAR_COLOR)
 
             # window settings
             self.window.title(self.window_title)
@@ -51,7 +65,7 @@ class TkApp(threading.Thread):
             except Exception as e:
                 self.logger.error("Failed to load tk window icon" + str(e))
 
-            self.window.geometry(f"{WINDOW_SIZE}x{WINDOW_SIZE}")
+            self.window.geometry(f"{WINDOW_SIZE_WIDTH}x{WINDOW_SIZE_HEIGHT}")
 
             # background
             try:
@@ -60,7 +74,7 @@ class TkApp(threading.Thread):
                                          image=background_image,
                                          text=self.window_background_text,
                                          compound=CENTER,
-                                         bg=BACKGROUND_COLOR)
+                                         style='Bot.TLabel')
 
                 background_label.place(x=0,
                                        y=0,
@@ -70,8 +84,8 @@ class TkApp(threading.Thread):
                 self.logger.error("Failed to load tk window background" + str(e))
 
             # frames
-            self.top_frame = Frame(self.window, bg=BACKGROUND_COLOR)
-            self.bottom_frame = Frame(self.window, bg=BACKGROUND_COLOR)
+            self.top_frame = Frame(self.window, style='Bot.TFrame')
+            self.bottom_frame = Frame(self.window, style='Bot.TFrame')
             self.top_frame.pack(side="top", fill="y", expand=False)
             self.bottom_frame.pack(side="bottom", fill="y", expand=False)
 
