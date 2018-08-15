@@ -181,11 +181,11 @@
                         <button type="button" id="AddCurrency" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
                     </div>
                 </div>
-                {%  if not full_symbol_list %}
-                    <div class="alert alert-warning" role="alert">Can't find any symbol suggestion because no exchange were configured.</div>
+                <br>
+                {%  if not symbol_list %}
+                    <div class="alert alert-danger" role="alert">Can't find any symbol suggestion because no exchange were configured.</div>
                     <br>
                 {% endif %}
-                <br>
                 <!-- Card deck -->
                 <div class="card-deck config-container" update-url="{{ url_for('config') }}">
                     {% for crypto_currency in config_symbols %}
