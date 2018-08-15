@@ -41,7 +41,10 @@ OctoBot's installation is **very simple**... because **very documented** !
 More details in [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation) and it's done !
 
 ## Usage
-After the installation have a look at the 
+- Just start the launcher
+- Click on "Start Octobot"
+
+For more information have a look at the 
 [usage wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Usage) to know all the features of the OctoBot.
 
 ## Roadmap
