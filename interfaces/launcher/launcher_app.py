@@ -3,7 +3,7 @@ import subprocess
 import sys
 from threading import Thread
 from time import sleep
-from tkinter.dialog import Dialog
+from tkinter.dialog import Dialog, DIALOG_ICON
 from tkinter.ttk import Progressbar, Label, Button
 
 from config.cst import PROJECT_NAME
@@ -124,8 +124,8 @@ class LauncherApp(TkApp):
             sleep(1)
             app.update_bot_version()
 
-    def show_alert(self, text):
-        return Dialog(self.window, text=text)
+    def show_alert(self, text, strings=("OK",), title="Alert", bitmap=DIALOG_ICON, default=0):
+        return Dialog(self.window, text=text, title=title, bitmap=bitmap, default=default, strings=strings)
 
     @staticmethod
     def export_logs():
