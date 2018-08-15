@@ -12,7 +12,7 @@ import requests
 from config.cst import CONFIG_FILE, PROJECT_NAME, GITHUB_API_CONTENT_URL, GITHUB_REPOSITORY, GITHUB_RAW_CONTENT_URL, \
     VERSION_DEV_PHASE, DEFAULT_CONFIG_FILE, LOGGING_CONFIG_FILE, DeliveryPlatformsName, TENTACLES_PATH
 
-FOLDERS_TO_CREATE = ["logs"]
+FOLDERS_TO_CREATE = ["logs", "backtesting/collector/data"]
 FILES_TO_DOWNLOAD = [
     (
         f"{GITHUB_RAW_CONTENT_URL}/cjhutto/vaderSentiment/master/vaderSentiment/emoji_utf8_lexicon.txt",
