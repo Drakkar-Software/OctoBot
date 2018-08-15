@@ -5,6 +5,7 @@ import os
 import subprocess
 from distutils.version import LooseVersion
 from subprocess import PIPE
+from tkinter.messagebox import WARNING
 
 import requests
 
@@ -39,17 +40,23 @@ TENTACLES_UPDATE_INSTALL_PROGRESS_SIZE = 15
 
 class Launcher:
     def __init__(self, inst_app):
-        self.installer_app = inst_app
+        self.launcher_app = inst_app
 
         self.create_environment()
         binary_path = self.update_binary()
+
+        # give binary execution rights if necessary
+        if binary_path:
+            self.binary_execution_rights(binary_path)
+
+        # if update tentacles
         if binary_path:
             self.update_tentacles(binary_path)
         else:
             logging.error(f"No {PROJECT_NAME} found to update tentacles.")
 
     def create_environment(self):
-        self.installer_app.inc_progress(0, to_min=True)
+        self.launcher_app.inc_progress(0, to_min=True)
         logging.info(f"{PROJECT_NAME} is checking your environment...")
 
         # download files
@@ -65,16 +72,16 @@ class Launcher:
                 with open(file_name, "wb") as new_file_from_dl:
                     new_file_from_dl.write(file_content.encode())
 
-        if self.installer_app:
-            self.installer_app.inc_progress(LIB_FILES_DOWNLOAD_PROGRESS_SIZE)
+        if self.launcher_app:
+            self.launcher_app.inc_progress(LIB_FILES_DOWNLOAD_PROGRESS_SIZE)
 
         # create folders
         for folder in FOLDERS_TO_CREATE:
             if not os.path.exists(folder) and folder:
                 os.makedirs(folder)
 
-        if self.installer_app:
-            self.installer_app.inc_progress(CREATE_FOLDERS_PROGRESS_SIZE)
+        if self.launcher_app:
+            self.launcher_app.inc_progress(CREATE_FOLDERS_PROGRESS_SIZE)
 
         logging.info(f"Your {PROJECT_NAME} environment is ready !")
 
@@ -104,8 +111,8 @@ class Launcher:
                     return self.download_binary(latest_release_data, replace=True)
                 else:
                     logging.info(f"Nothing to do : {PROJECT_NAME} is up to date")
-                    if self.installer_app:
-                        self.installer_app.inc_progress(BINARY_DOWNLOAD_PROGRESS_SIZE)
+                    if self.launcher_app:
+                        self.launcher_app.inc_progress(BINARY_DOWNLOAD_PROGRESS_SIZE)
                     return binary_path
             else:
                 return self.download_binary(latest_release_data)
@@ -215,8 +222,8 @@ class Launcher:
                 with open(path, 'wb') as f:
                     for chunk in r.iter_content(1024):
                         f.write(chunk)
-                        if self.installer_app:
-                            self.installer_app.inc_progress(increment)
+                        if self.launcher_app:
+                            self.launcher_app.inc_progress(increment)
 
             return path
         else:
@@ -234,5 +241,22 @@ class Launcher:
             self.execute_command_on_current_bot(binary_path, ["-p", "update", "all"])
             logging.info(f"Tentacles : all default tentacles has been updated.")
 
-        if self.installer_app:
-            self.installer_app.inc_progress(TENTACLES_UPDATE_INSTALL_PROGRESS_SIZE, to_max=True)
+        if self.launcher_app:
+            self.launcher_app.inc_progress(TENTACLES_UPDATE_INSTALL_PROGRESS_SIZE, to_max=True)
+
+    def binary_execution_rights(self, binary_path):
+        if os.name == 'posix':
+
+            try:
+                rights_process = subprocess.Popen(["chmod", "+x", binary_path])
+            except Exception as e:
+                logging.error(f"Failed to give execution rights to {binary_path} : {e}")
+                rights_process = None
+
+            if not rights_process:
+                # show message if user has to type the command
+                message = f"{PROJECT_NAME} binary need execution rights, " \
+                          f"please type in a command line 'sudo chmod +x ./{PROJECT_NAME}'"
+                logging.warning(message)
+                if self.launcher_app:
+                    self.launcher_app.show_alert(f"{message} and then press OK", bitmap=WARNING)

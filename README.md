@@ -33,7 +33,12 @@ To activate trading on an exchange, just configure OctoBot with your api keys as
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** !
 
-Just follow the [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation) and it's done !
+- Open the OctoBot [release page](https://github.com/Drakkar-Software/OctoBot/releases)
+- Download launcher (*laucher_windows.exe* or *launcher_linux*)
+- Start the launcher
+- Click on "Update OctoBot"
+
+More details in [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation) and it's done !
 
 ## Usage
 After the installation have a look at the 
