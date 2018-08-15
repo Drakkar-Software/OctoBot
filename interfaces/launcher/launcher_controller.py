@@ -45,13 +45,9 @@ class Launcher:
         self.create_environment()
         binary_path = self.update_binary()
 
-        # alert for linux user to give bot binary execution rights
-        if os.name == 'posix' and binary_path:
-            message = f"{PROJECT_NAME} binary need execution rights, " \
-                      f"please type in a command line 'sudo chmod +x ./{PROJECT_NAME}'"
-            logging.warning(message)
-            if self.launcher_app:
-                self.launcher_app.show_alert(f"{message} and then press OK", bitmap=WARNING)
+        # give binary execution rights if necessary
+        if binary_path:
+            self.binary_execution_rights(binary_path)
 
         # if update tentacles
         if binary_path:
@@ -247,3 +243,20 @@ class Launcher:
 
         if self.launcher_app:
             self.launcher_app.inc_progress(TENTACLES_UPDATE_INSTALL_PROGRESS_SIZE, to_max=True)
+
+    def binary_execution_rights(self, binary_path):
+        if os.name == 'posix':
+
+            try:
+                rights_process = subprocess.Popen(["chmod", "+x", binary_path])
+            except Exception as e:
+                logging.error(f"Failed to give execution rights to {binary_path} : {e}")
+                rights_process = None
+
+            if not rights_process:
+                # show message if user has to type the command
+                message = f"{PROJECT_NAME} binary need execution rights, " \
+                          f"please type in a command line 'sudo chmod +x ./{PROJECT_NAME}'"
+                logging.warning(message)
+                if self.launcher_app:
+                    self.launcher_app.show_alert(f"{message} and then press OK", bitmap=WARNING)
