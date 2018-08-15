@@ -34,7 +34,8 @@ Changelog for 0.1.7-beta
     - Web interface : home with custum dashboard
 
 # Bug fixes :
-    - StopLossOrders set negative portfolio when backtesting 
+    - StopLossOrders set negative portfolio when backtesting
+    - Fix default config interface problems
 
 Changelog for 0.1.6_1-beta
 ====================
