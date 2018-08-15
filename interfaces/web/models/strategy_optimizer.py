@@ -51,7 +51,7 @@ def get_current_strategy():
         return first_symbol_evaluator.get_strategies_eval_list(first_exchange)[0].get_name()
     except Exception:
         strategy_list = get_strategies_list()
-        return strategy_list[0] if strategy_list else ""
+        return next(iter(strategy_list)) if strategy_list else ""
 
 
 def start_optimizer(strategy, time_frames, evaluators, risks):

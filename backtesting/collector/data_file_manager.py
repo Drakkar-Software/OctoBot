@@ -95,9 +95,12 @@ def get_file_description(file_name):
 
 def get_all_available_data_files():
     path = CONFIG_DATA_COLLECTOR_PATH
-    files = [file
-             for file in listdir(path)
-             if isfile(join(path, file)) and splitext(file)[1] == DATA_FILE_EXT]
+    try:
+        files = [file
+                 for file in listdir(path)
+                 if isfile(join(path, file)) and splitext(file)[1] == DATA_FILE_EXT]
+    except FileNotFoundError:
+        files = []
     return files
 
 
