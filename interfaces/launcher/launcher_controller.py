@@ -5,6 +5,7 @@ import os
 import subprocess
 from distutils.version import LooseVersion
 from subprocess import PIPE
+from tkinter.messagebox import WARNING
 
 import requests
 
@@ -45,13 +46,12 @@ class Launcher:
         binary_path = self.update_binary()
 
         # alert for linux user to give bot binary execution rights
-        if os.name == 'posix':
+        if os.name == 'posix' and binary_path:
             message = f"{PROJECT_NAME} binary need execution rights, " \
                       f"please type in a command line 'sudo chmod +x ./{PROJECT_NAME}'"
+            logging.warning(message)
             if self.launcher_app:
-                self.launcher_app.show_alert(message)
-            else:
-                logging.warning(message)
+                self.launcher_app.show_alert(f"{message} and then press OK", bitmap=WARNING)
 
         # if update tentacles
         if binary_path:
