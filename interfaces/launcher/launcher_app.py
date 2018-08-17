@@ -11,7 +11,7 @@ from interfaces.app_util import TkApp
 from interfaces.launcher import launcher_controller
 from interfaces.launcher.launcher_controller import Launcher
 
-LAUNCHER_VERSION = "1.0.1"
+LAUNCHER_VERSION = "1.0.2"
 
 
 class LauncherApp(TkApp):

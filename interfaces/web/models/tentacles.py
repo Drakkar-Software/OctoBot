@@ -19,8 +19,9 @@ def get_tentacles_packages():
         default_tentacles_repo: get_package_name(default_tentacles_repo_desc_file,
                                                  get_is_url(default_tentacles_repo_desc_file))
     }
-    for tentacle_package in get_bot().get_config()[CONFIG_TENTACLES_KEY]:
-        packages[tentacle_package] = get_package_name(tentacle_package, get_is_url(tentacle_package))
+    if CONFIG_TENTACLES_KEY in get_bot().get_config():
+        for tentacle_package in get_bot().get_config()[CONFIG_TENTACLES_KEY]:
+            packages[tentacle_package] = get_package_name(tentacle_package, get_is_url(tentacle_package))
     return packages
 
 

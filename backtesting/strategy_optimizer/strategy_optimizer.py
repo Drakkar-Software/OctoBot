@@ -51,7 +51,6 @@ class StrategyOptimizer:
             self.is_properly_initialized = True
 
     def find_optimal_configuration(self, TAs=None, time_frames=None, risks=None):
-
         if not self.is_computing:
 
             # set is_computing to True to prevent any simultaneous start
