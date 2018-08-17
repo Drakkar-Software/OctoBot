@@ -182,6 +182,10 @@
                     </div>
                 </div>
                 <br>
+                {%  if not symbol_list %}
+                    <div class="alert alert-danger" role="alert">Can't find any symbol suggestion because no exchange were configured.</div>
+                    <br>
+                {% endif %}
                 <!-- Card deck -->
                 <div class="card-deck config-container" update-url="{{ url_for('config') }}">
                     {% for crypto_currency in config_symbols %}

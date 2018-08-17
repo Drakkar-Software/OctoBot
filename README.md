@@ -22,14 +22,6 @@ OctoBot is highly customizable using its configuration and tentacles system. You
 Octobot's main feature is **evolution** : you can [install](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager), 
 [modify](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot) and even [create](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
 
-## Exchanges
-[![Binance](../assets/binance-logo.png)](https://www.binance.com)
-[![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
-[![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
-
-Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges#octobot-official-supported-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
-To activate trading on an exchange, just configure OctoBot with your api keys as described [on the wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges).
-
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** !
 
@@ -46,6 +38,15 @@ More details in [installation wiki page](https://github.com/Drakkar-Software/Oct
 
 For more information have a look at the 
 [usage wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Usage) to know all the features of the OctoBot.
+
+
+## Exchanges
+[![Binance](../assets/binance-logo.png)](https://www.binance.com)
+[![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
+[![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
+
+Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges#octobot-official-supported-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
+To activate trading on an exchange, just configure OctoBot with your api keys as described [on the wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges).
 
 ## Roadmap
 [![Roadmap](../assets/roadmap.svg)](https://github.com/Drakkar-Software/OctoBot/tree/assets/roadmap.png)
