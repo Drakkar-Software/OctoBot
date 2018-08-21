@@ -1,144 +1,81 @@
-function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, backtesting=false){
-    let backtesting_enabled = backtesting ? "backtesting" : "live";
-    const ajax_url = "/dashboard/currency_price_graph_update/"+ exchange_name +"/" + symbol + "/"
-        + time_frame + "/" + backtesting_enabled;
-    $.ajax({
-        url: ajax_url,
-        type: "POST",
-        dataType: "json",
-        contentType: 'application/json',
-        success: function(msg, status){
-            create_candlestick_graph(element_id, msg, symbol, exchange_name, time_frame);
-        },
-        error: function(result, status, error){
-            window.console&&console.error(error);
+let bot_simulated_profitability = undefined;
+let bot_real_profitability = undefined;
+let market_profitability = undefined;
+let profitability_chart = undefined;
+
+function get_profitability(){
+    let url = $("#profitability_graph").attr(update_url_attr);
+    $.get(url,function(data, status){
+        bot_simulated_profitability = data["bot_simulated_profitability"];
+        bot_real_profitability = data["bot_real_profitability"];
+        market_profitability = data["market_average_profitability"];
+        if(is_worth_displaying_profitability()){
+            $("#graph-profitability-description").html("");
+            display_profitability("graph-profitability");
+        }
+        else{
+            $("#graph-profitability-description").html("<h4>Nothing to display yet: profitability is 0 for the moment.</h4>")
         }
     });
+
 }
 
-function get_first_symbol_price_graph(element_id) {
-    const url = $("#first_symbol_graph").attr(update_url_attr);
-    $.get(url,function(data) {
-        if("time_frame" in data){
-            let formatted_symbol = data["symbol"].replace(new RegExp("/","g"), "|");
-            get_symbol_price_graph(element_id, data["exchange"], formatted_symbol, data["time_frame"]);
+function should_display_profitability(profitability){
+    return isDefined(profitability) && (isDefined(profitability_chart) || Math.abs(profitability) >= 0.05);
+}
+
+function is_worth_displaying_profitability(){
+    return (
+        should_display_profitability(bot_simulated_profitability)
+        || should_display_profitability(bot_real_profitability)
+        || should_display_profitability(market_profitability)
+    );
+}
+
+function fill_profitabiliy_bar(profitability, reference_profitability, label, labels, backgroundColors, borderColor, profitabilities){
+    if(isDefined(profitability)){
+        let color = ['rgba(255, 99, 132, 0.2)', 'rgba(255, 99, 132, 1)'];
+        if(profitability >= reference_profitability){
+            color = ['rgba(75, 192, 192, 0.2)', 'rgba(75, 192, 192, 1)'];
         }
-    });
-}
-
-function create_candlesticks(candles){
-    const data_time = candles["time"];
-    const data_close = candles["close"];
-    const data_high = candles["high"];
-    const data_low = candles["low"];
-    const data_open = candles["open"];
-
-    return {
-      x: data_time,
-      close: data_close,
-      decreasing: {line: {color: '#F65A33'}},
-      high: data_high,
-      increasing: {line: {color: '#7DF98D'}},
-      line: {color: 'rgba(31,119,180,1)'},
-      low: data_low,
-      open: data_open,
-      type: 'candlestick',
-      name: 'Prices',
-      xaxis: 'x',
-      yaxis: 'y'
-    };
-}
-
-function create_trades(trades, trader){
-
-    if (isDefined(trades) && isDefined(trades["time"]) && trades["time"].length > 0) {
-        const data_time = trades["time"];
-        const data_price = trades["price"];
-        const data_trade_description = trades["trade_description"];
-        const data_order_side = trades["order_side"];
-
-        const marker_size = trader === "Simulator" ? 16 : 18;
-        const marker_opacity = trader === "Simulator" ? 0.6 : 0.75;
-
-        const sell_color = "#ff0000";
-        const buy_color = "#009900";
-        const colors = [];
-        $.each(data_order_side, function (index, value) {
-            if (value === "sell") {
-                colors.push(sell_color);
-            } else {
-                colors.push(buy_color);
-            }
-        });
-
-        const line_with = trader === "Simulator" ? 0 : 2;
-
-        return {
-            x: data_time,
-            y: data_price,
-            mode: 'markers',
-            name: trader,
-            text: data_trade_description,
-            marker: {
-                color: colors,
-                // color: buy_color,
-                size: marker_size,
-                opacity: marker_opacity,
-                line: {
-                    width: line_with
-                }
-            }
-        }
-    }else{
-        return {}
+        labels.push(label);
+        backgroundColors.push(color[0]);
+        borderColor.push(color[1]);
+        profitabilities.push(profitability);
     }
 }
 
-function create_candlestick_graph(element_id, symbol_price_data, symbol, exchange_name, time_frame){
-    const candles = symbol_price_data["candles"];
-    const real_trades = symbol_price_data["real_trades"];
-    const simulated_trades = symbol_price_data["simulated_trades"];
-
-    const price_trace = create_candlesticks(candles);
-
-    const real_trader_trades = create_trades(real_trades, "Real trader");
-    const simulator_trades = create_trades(simulated_trades, "Simulator");
-
-    const data = [price_trace, real_trader_trades, simulator_trades];
-
-    var graph_title = symbol;
-    if (exchange_name !== "ExchangeSimulator"){
-        graph_title = graph_title + " (" + exchange_name + ", time frame: " + time_frame +")";
+function display_profitability(element_id){
+    if(isDefined(market_profitability)){
+        let labels = [];
+        let backgroundColors = [];
+        let borderColor = [];
+        let profitabilities = [];
+        fill_profitabiliy_bar(bot_real_profitability, market_profitability, "OctoBot Real Trader Profitability", labels, backgroundColors, borderColor, profitabilities);
+        fill_profitabiliy_bar(bot_simulated_profitability, market_profitability, "OctoBot Trader Simulator Profitability", labels, backgroundColors, borderColor, profitabilities);
+        fill_profitabiliy_bar(market_profitability, 0, "Watched symbols average profitability", labels, backgroundColors, borderColor, profitabilities);
+        let datasets = [{
+            label: '% Profitability',
+            data: profitabilities,
+            backgroundColor: backgroundColors,
+            borderColor: borderColor,
+            color: 'white',
+            borderWidth: 1
+        }];
+        if(!isDefined(profitability_chart)){
+            profitability_chart = create_bars_chart($("#graph-profitability")[0], labels, datasets, 0, false);
+        }else{
+            update_bars_chart(profitability_chart, datasets);
+        }
     }
-
-    const layout = {
-      title: graph_title,
-      dragmode: 'zoom',
-      margin: {
-        r: 10,
-        t: 25,
-        b: 40,
-        l: 60
-      },
-      showlegend: true,
-      xaxis: {
-        autorange: true,
-        domain: [0, 1],
-        title: 'Date',
-        type: 'date'
-      },
-      yaxis: {
-        autorange: true,
-        domain: [0, 1],
-        type: 'linear',
-        title: 'Price'
-      },
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      font: {
-        color: "white"
-      }
-    };
-
-    Plotly.plot(element_id, data, layout);
 }
+
+function update_dashboard(){
+    get_profitability();
+}
+
+$(document).ready(function() {
+    get_profitability();
+    get_first_symbol_price_graph("graph-symbol-price");
+    setInterval(function(){ update_dashboard(); }, 15000);
+});

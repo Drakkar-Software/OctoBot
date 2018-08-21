@@ -120,9 +120,9 @@ class TelegramApp:
     @staticmethod
     def command_profitability(_, update):
         has_real_trader, has_simulated_trader, \
-        real_global_profitability, simulated_global_profitability, \
-        real_percent_profitability, simulated_percent_profitability, \
-        market_average_profitability = get_global_profitability()
+            real_global_profitability, simulated_global_profitability, \
+            real_percent_profitability, simulated_percent_profitability, \
+            market_average_profitability = get_global_profitability()
         profitability_string = ""
         if has_real_trader:
             profitability_string = "{0}Global profitability : {1} ({2}%), market: {3}%{4}".format(
