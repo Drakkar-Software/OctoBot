@@ -102,7 +102,7 @@ def start_octobot(starting_args):
                     try:
                         starting.__init__(config)
                     except NameError as e:
-                        logging.error(f"{e}, impossible to display GUI")
+                        logging.error("{0}, impossible to display GUI".format(e))
 
                     if starting_args.start:
                         Commands.start_bot(bot, logger)
