@@ -43,7 +43,12 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                     social_eval["last_refresh_time"] = now
                     if social_eval["last_refresh"] >= social_eval["refresh_rate"]:
                         social_eval["last_refresh"] = 0
-                        social_eval["social_evaluator_class_inst"].get_data()
-                        social_eval["social_evaluator_class_inst"].eval()
+
+                        try:
+                            social_eval["social_evaluator_class_inst"].get_data()
+                            social_eval["social_evaluator_class_inst"].eval()
+                        except Exception as e:
+                            self.logger.error(f"Error during Social not threaded update eval() or get_data() "
+                                              f"{social_eval['social_evaluator_class_inst']} : {e}")
 
                 time.sleep(SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE)
