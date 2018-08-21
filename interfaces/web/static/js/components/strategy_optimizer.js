@@ -94,7 +94,7 @@ function update_progress(progress, overall_progress){
 }
 
 function check_optimizer_state(reportTable){
-    url = $("#strategyOptimizerInputs").attr(update_url_attr);
+    var url = $("#strategyOptimizerInputs").attr(update_url_attr);
     $.get(url,function(data, status){
         var status = data["status"];
         var progress = data["progress"];
@@ -234,7 +234,7 @@ var reportColumnsDef = [
 ];
 var first_refresh_state = ""
 
-var progressChart = create_circular_progress_doughnut();
+var progressChart = create_circular_progress_doughnut($("#optimize_doughnutChart")[0]);
 
 $(document).ready(function() {
 
