@@ -1,5 +1,5 @@
 import copy
-import logging
+from tools.logging.logging_util import get_logger
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR
@@ -18,7 +18,7 @@ class Trader:
         self.config = config
         self.risk = None
         self.set_risk(self.config[CONFIG_TRADING][CONFIG_TRADER_RISK])
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         if not hasattr(self, 'simulate'):
             self.simulate = False

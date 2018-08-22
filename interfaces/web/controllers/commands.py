@@ -1,13 +1,13 @@
-import logging
-import json
+from tools.logging.logging_util import get_logger
+from copy import copy
 from flask import render_template, jsonify
 
-from interfaces.web import server_instance, get_notifications, flush_notifications
+from interfaces.web import server_instance, get_notifications, flush_notifications, get_errors_count
 from interfaces import get_bot
 from tools.commands import Commands
 
 
-logger = logging.getLogger("ServerInstance Controller")
+logger = get_logger("ServerInstance Controller")
 
 
 @server_instance.route("/commands")
@@ -30,6 +30,9 @@ def commands(cmd=None):
 
 @server_instance.route("/update")
 def update():
-    notifications_result = json.dumps(get_notifications(), ensure_ascii=False)
+    update_data = {
+        "notifications": copy(get_notifications()),
+        "errors_count": get_errors_count()
+    }
     flush_notifications()
-    return notifications_result
+    return jsonify(update_data)

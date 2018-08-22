@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import time
 
 from config.cst import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
@@ -21,7 +21,7 @@ class ExchangeManager:
         self.exchange_type = exchange_type
         self.rest_only = rest_only
         self.ignore_config = ignore_config
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         self.is_ready = False
         self.is_simulated = is_simulated

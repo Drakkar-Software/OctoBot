@@ -1,11 +1,11 @@
-import logging
+from tools.logging.logging_util import get_logger
 import pprint
 from abc import ABCMeta
 from enum import Enum
 
 from config.cst import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
-    CONFIG_NOTIFICATION_TRADES, CONFIG_ENABLED_OPTION, CONFIG_WEB, CONFIG_NOTIFICATION_TYPE
+    CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE
 from interfaces.web import add_notification
 from services import TwitterService, TelegramService, WebService
 from services.gmail_service import GmailService
@@ -18,7 +18,7 @@ class Notification:
 
     def __init__(self, config):
         self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.notification_type = self.config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_NOTIFICATION_TYPE]
         self._enable = self.config[CONFIG_CATEGORY_NOTIFICATION]
 
@@ -107,11 +107,9 @@ class Notification:
         return None
 
     def web_interface_notification_available(self, key=None):
-        if self.enabled(key) and WebService.get_name() in self.notification_type and \
-                WebService.is_setup_correctly(self.config):
-            if self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_ENABLED_OPTION]:
-                return True
-        return False
+        return self.enabled(key) and \
+               WebService.get_name() in self.notification_type and \
+               WebService.is_available(self.config)
 
     def web_interface_notification_factory(self, level, title, message):
         if self.web_interface_notification_available():

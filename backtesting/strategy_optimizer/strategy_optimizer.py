@@ -1,4 +1,5 @@
 import logging
+from tools.logging.logging_util import get_logger
 import copy
 import math
 
@@ -13,7 +14,7 @@ from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUAT
     CONFIG_EVALUATOR, CONFIG_TRADER_MODE
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
-from tools.logging_util import set_global_logger_level, get_global_logger_level
+from tools.logging.logging_util import set_global_logger_level, get_global_logger_level
 
 CONFIG = 0
 RANK = 1
@@ -25,7 +26,7 @@ class StrategyOptimizer:
 
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
-        self.logger = logging.getLogger(self.get_name())
+        self.logger = get_logger(self.get_name())
         self.trading_mode = config[CONFIG_TRADING][CONFIG_TRADER_MODE]
         self.config = create_blank_config_using_loaded_one(config)
         self.strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,

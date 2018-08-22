@@ -1,6 +1,6 @@
 import threading
 import time
-import logging
+from tools.logging.logging_util import get_logger
 import copy
 
 from backtesting.backtesting import Backtesting, BacktestingEndedException
@@ -21,7 +21,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
         self.refreshed_times = {}
         self.time_frame_last_update = {}
         self.keep_running = True
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.watcher = None
 
     # add a time frame to watch and its related evaluator thread manager

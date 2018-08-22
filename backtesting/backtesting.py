@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import os
 import time
 
@@ -12,7 +12,7 @@ class Backtesting:
         self.begin_time = time.time()
         self.force_exit_at_end = exit_at_end
         self.exchange_simulator = exchange_simulator
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.ended_symbols = set()
         self.symbols_to_test = set()
         self.init_symbols_to_test()
@@ -73,7 +73,7 @@ class Backtesting:
             backtesting_time = time.time() - self.begin_time
             self.logger.info(f"Simulation lasted {backtesting_time} sec")
         except Exception as e:
-            logging.exception(e)
+            self.logger.exception(e)
 
     def _get_symbol_report(self, symbol, trader):
         market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]

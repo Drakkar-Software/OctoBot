@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import time
 
 import numpy as np
@@ -22,7 +22,7 @@ class SymbolData:
         self.previous_candle_time = {}
 
         self.are_recent_trades_initialized = False
-        self.logger = logging.getLogger("{0} - {1}".format(self.__class__.__name__, self.symbol))
+        self.logger = get_logger("{0} - {1}".format(self.__class__.__name__, self.symbol))
 
     '''
     Called by exchange dispatcher

@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 
 from tests.functional_tests.strategy_evaluators_tests.abstract_strategy_test import AbstractStrategyTest
@@ -16,7 +16,7 @@ class StrategyTestSuite(AbstractStrategyTest):
         super().__init__()
         self._profitability_results = []
         self._trades_counts = []
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.current_progress = 0
 
     def get_test_suite_result(self):

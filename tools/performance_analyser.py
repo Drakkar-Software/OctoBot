@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import os
 import threading
 import time
@@ -13,7 +13,7 @@ class PerformanceAnalyser(threading.Thread):
         super().__init__()
         self.keep_running = True
         self.interval = CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN * MINUTE_TO_SECONDS
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.pid = os.getpid()
         self.py = psutil.Process(self.pid)
 

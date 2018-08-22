@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 
 from config.cst import CONFIG_TENTACLES_KEY, TENTACLE_PACKAGE_DESCRIPTION
@@ -9,7 +9,7 @@ from tools.tentacle_manager.tentacle_package_util import get_is_url, get_package
 from tools.tentacle_manager.tentacle_manager import TentacleManager
 
 
-logger = logging.getLogger("TentaclesModel")
+logger = get_logger("TentaclesModel")
 
 
 def get_tentacles_packages():

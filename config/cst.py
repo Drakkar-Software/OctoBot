@@ -7,6 +7,10 @@ VERSION_DEV_PHASE = "beta"
 VERSION = f"{SHORT_VERSION}-{VERSION_DEV_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}_{MINOR_VERSION}-{VERSION_DEV_PHASE}"
 
+# logs
+LOG_DATABASE = "log_db"
+LOG_NEW_ERRORS_COUNT = "log_new_errors_count"
+
 # github
 GITHUB = "github"
 GITHUB_RAW_CONTENT_URL = "https://raw.githubusercontent.com"

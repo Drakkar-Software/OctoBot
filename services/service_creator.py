@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 from services.abstract_service import *
 from config.cst import *
 
@@ -11,11 +11,11 @@ class ServiceCreator:
 
     @staticmethod
     def create_services(config, backtesting_enabled):
-        logger = logging.getLogger(ServiceCreator.get_name())
+        logger = get_logger(ServiceCreator.get_name())
         for service_class in AbstractService.__subclasses__():
             service_instance = service_class()
             if service_instance.get_is_enabled() and (not backtesting_enabled or service_instance.BACKTESTING_ENABLED):
-                service_instance.set_logger(logging.getLogger(service_class.get_name()))
+                service_instance.set_logger(get_logger(service_class.get_name()))
                 service_instance.set_config(config)
                 if service_instance.has_required_configuration():
                     try:

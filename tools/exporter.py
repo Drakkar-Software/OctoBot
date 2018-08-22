@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 from config.cst import EVALUATION_SAVING_COLUMN_SEPARATOR, EVALUATION_SAVING_ROW_SEPARATOR, \
     EVALUATION_SAVING_FILE_ENDING
@@ -8,7 +8,7 @@ class MatrixExporter:
     def __init__(self, matrix, symbol):
         self.matrix = matrix
         self.symbol = symbol
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.evaluation_save_file = self._get_evaluation_save_file_name()
         self.is_evaluation_save_file_initialised = False
 

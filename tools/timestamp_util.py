@@ -27,3 +27,7 @@ def is_valid_timestamp(timestamp):
         except OverflowError:
             return False
     return True
+
+
+def get_now_time(time_format='%Y-%m-%d %H:%M:%S'):
+    return datetime.fromtimestamp(time.time()).strftime(time_format)

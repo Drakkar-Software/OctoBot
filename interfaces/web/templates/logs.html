@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% import 'macros/tables.html' as m_tables %}
+
+{% macro extract_logs(logs_list) -%}
+    {% for log in logs_list %}
+        {{ m_tables.logs_tr(log) }}
+    {% endfor %}
+{%- endmacro %}
+
+{% block body %}
+<div class="card">
+    <div class="card-header"><h2>Execution Information</h2></div>
+    <div class="card-body">
+        <div class="table-responsive">
+          <table id="logs_datatable" class="table table-striped table-bordered table-hover">
+            <caption>Full current and previous OctoBot executions information stored in logs/OctoBot.log files.</caption>
+          <thead>
+            <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Level</th>
+                <th scope="col">Source</th>
+                <th scope="col">Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ extract_logs(logs) }}
+          </tbody>
+          </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block additional_scripts %}
+<script>
+    $(document).ready(function () {
+      $('#logs_datatable').DataTable()
+    });
+</script>
+{% endblock additional_scripts %}

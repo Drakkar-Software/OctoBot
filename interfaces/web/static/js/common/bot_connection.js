@@ -12,11 +12,16 @@ function get_update(){
   });
 }
 
-function manage_alert(raw_data){
+function manage_alert(data){
     try{
-        const data = JSON.parse(raw_data);
-        $.each(data, function(i, item) {
-            create_alert(data[i].Level, data[i].Title, data[i].Message);
+        let errors_count = data["errors_count"];
+        if(errors_count > 0){
+            $("#errors-count-badge").text(errors_count);
+        }else{
+            $("#errors-count-badge").cleanData();
+        }
+        $.each(data["notifications"], function(i, item) {
+            create_alert(item["Level"], item["Title"], item["Message"]);
         })
     }
     catch(error) {}

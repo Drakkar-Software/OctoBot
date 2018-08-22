@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import threading
 import time
 
@@ -26,7 +26,7 @@ class ExchangeDataCollector(threading.Thread):
             if self.exchange.get_exchange_manager().time_frame_exists(time_frame.value):
                 self.time_frames.append(time_frame)
 
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
     def get_symbols(self):
         return self.symbols

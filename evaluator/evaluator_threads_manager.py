@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 from config.cst import CONFIG_EVALUATORS_WILDCARD, EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE, \
     CONFIG_SAVE_EVALUATION
@@ -39,7 +39,7 @@ class EvaluatorThreadsManager:
         self.matrix_exporter = MatrixExporter(self.matrix, self.symbol)
 
         self.thread_name = f"TA THREAD MANAGER - {self.symbol} - {self.exchange.get_name()} - {self.time_frame}"
-        self.logger = logging.getLogger(self.thread_name)
+        self.logger = get_logger(self.thread_name)
 
         # Create Evaluator
         self.evaluator = Evaluator()

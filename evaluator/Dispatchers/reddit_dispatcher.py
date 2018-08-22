@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import time
 from prawcore.exceptions import RequestException, ResponseException, OAuthException, InvalidToken, ServerError
 
@@ -13,7 +13,7 @@ class RedditDispatcher(AbstractDispatcher):
 
     def __init__(self, config):
         super().__init__(config)
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.subreddits = None
         self.counter = 0
         self.connect_attempts = 0

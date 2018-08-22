@@ -1,5 +1,5 @@
 import json
-import logging
+from tools.logging.logging_util import get_logger
 import os
 import shutil
 from copy import copy, deepcopy
@@ -13,7 +13,7 @@ from config.cst import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_
 
 
 def get_logger():
-    return logging.getLogger(ConfigManager.__name__)
+    return get_logger(ConfigManager.__name__)
 
 
 class ConfigManager:
