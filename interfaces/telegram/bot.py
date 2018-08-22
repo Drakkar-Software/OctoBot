@@ -1,5 +1,5 @@
 import copy
-import logging
+from tools.logging.logging_util import get_logger
 import os
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
@@ -27,7 +27,7 @@ class TelegramApp:
         self.telegram_service = telegram_service
         self.telegram_updater = telegram_updater
         self.dispatcher = self.telegram_updater.dispatcher
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         self.add_handlers()
 

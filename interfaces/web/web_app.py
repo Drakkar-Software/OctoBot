@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import threading
 from time import sleep
 
@@ -12,7 +12,7 @@ class WebApp(threading.Thread):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.app = None
 
     def run(self):

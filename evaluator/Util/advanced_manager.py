@@ -1,7 +1,7 @@
 from config.cst import CONFIG_ADVANCED_CLASSES, CONFIG_ADVANCED_INSTANCES
 from evaluator.Util.abstract_util import AbstractUtil
 from evaluator.abstract_evaluator import AbstractEvaluator
-import logging
+from tools.logging.logging_util import get_logger
 
 
 class AdvancedManager:
@@ -98,7 +98,7 @@ class AdvancedManager:
     def get_class(config, class_type):
         classes = AdvancedManager.get_classes(config, class_type)
         if classes and len(classes) > 1:
-            logging.getLogger(AdvancedManager.__name__).warning("More than one instance of {0} available, using {1}.".
+            get_logger(AdvancedManager.__name__).warning("More than one instance of {0} available, using {1}.".
                                                                 format(class_type, classes[0]))
         return classes[0]
 

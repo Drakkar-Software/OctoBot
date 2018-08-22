@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import threading
 import time
 
@@ -16,7 +16,7 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
         super().__init__()
         self.social_evaluator_list = social_evaluator_list
         self.social_evaluator_list_timers = []
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self._create_eval_timers()
         self.keep_running = True
 

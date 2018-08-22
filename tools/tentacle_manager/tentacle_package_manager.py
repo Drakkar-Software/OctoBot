@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import os
 import json
 
@@ -18,7 +18,7 @@ class TentaclePackageManager:
     def __init__(self, config, tentacle_manager):
         self.config = config
         self.tentacle_manager = tentacle_manager
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.just_processed_modules = []
         self.installed_modules = {}
         self.max_steps = None
@@ -399,7 +399,7 @@ class TentaclePackageManager:
     @staticmethod
     def update_evaluator_config_file(evaluator_config_file=CONFIG_EVALUATOR_FILE_PATH):
 
-        logger = logging.getLogger(TentaclePackageManager.__name__)
+        logger = get_logger(TentaclePackageManager.__name__)
         try:
             logger.info("Updating {} using new data...".format(evaluator_config_file))
 

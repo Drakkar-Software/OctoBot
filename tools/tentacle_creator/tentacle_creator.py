@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import os
 
 from jinja2.nativetypes import NativeEnvironment
@@ -16,7 +16,7 @@ class TentacleCreator:
         self.config = config
         self.templates = {}
         self.config_templates = {}
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
     @staticmethod
     def get_template_path(name):

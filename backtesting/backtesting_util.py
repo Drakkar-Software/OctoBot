@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 from copy import deepcopy
 
 from config.cst import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, \
@@ -29,7 +29,7 @@ def get_standalone_backtesting_bot(config, data_files):
     config_to_use[CONFIG_CRYPTO_CURRENCIES] = {}
     config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = []
     ignored_files = []
-    reference_market = _get_reference_market(data_files, config)
+    reference_market = _get_reference_market(data_files)
     if DEFAULT_REFERENCE_MARKET != reference_market:
         _switch_reference_market(config_to_use, reference_market)
     if data_files:
@@ -97,7 +97,7 @@ def start_backtesting_bot(bot, in_thread=False, watcher=None):
         try:
             exchange_inst.backtesting.force_exit_at_end = False
         except Exception:
-            logging.getLogger(f"fail to stop force exit for exchange {exchange_inst.get_name()}")
+            get_logger(f"fail to stop force exit for exchange {exchange_inst.get_name()}")
 
     bot.create_evaluation_threads()
     if not bot.get_symbols_threads_manager():
@@ -123,7 +123,7 @@ def _switch_reference_market(config_to_use, market):
         CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO
 
 
-def _get_reference_market(data_files, config):
+def _get_reference_market(data_files):
     reference_market = None
     for data_file in data_files:
         _, file_symbol, _ = interpret_file_name(data_file)

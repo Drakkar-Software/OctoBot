@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import os
 import sys
 
@@ -51,7 +51,7 @@ class Commands:
                   f'\t"api-secret": "{api_secret_crypted}"\n')
         except Exception as e:
             if not catch:
-                logging.error(f"Fail to encrypt your exchange keys, please try again ({e}).")
+                get_logger(Commands.__name__).error(f"Fail to encrypt your exchange keys, please try again ({e}).")
                 raise e
 
     @staticmethod

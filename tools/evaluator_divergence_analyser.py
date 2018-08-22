@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 from config.cst import START_PENDING_EVAL_NOTE
 from tools.evaluators_util import check_valid_eval_note
@@ -16,7 +16,7 @@ class EvaluatorDivergenceAnalyser:
 
         self.DIVERGENCE_THRESHOLD = 0.25
 
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
     def update(self, matrix):
         self.average_note = 0

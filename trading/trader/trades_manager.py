@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 from config.cst import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
     CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
@@ -16,7 +16,7 @@ class TradesManager:
         self.trader = trader
         self.portfolio = trader.get_portfolio()
         self.exchange = trader.get_exchange()
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         self.trade_history = []
         self.profitability = 0

@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import threading
 from time import sleep
 import copy
@@ -22,7 +22,7 @@ class OrdersManager(threading.Thread):
         self.trader = trader
         self.order_list = []
         self.last_symbol_prices = {}
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         if self.trader.get_exchange().is_web_socket_available():
             self.order_refresh_time = ORDER_REFRESHER_TIME_WS

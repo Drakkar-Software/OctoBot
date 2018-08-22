@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import threading
 from queue import Queue
 
@@ -13,7 +13,7 @@ class AsynchronousServer:
         self.is_computing = False
         self.queue = Queue()
         self.callback_method = callback_method
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
     def has_something_to_do(self):
         return not self.queue.empty() or self.is_computing

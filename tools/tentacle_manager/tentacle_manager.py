@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 import tools.tentacle_manager.tentacle_package_util as TentaclePackageUtil
 import tools.tentacle_manager.tentacle_util as TentacleUtil
@@ -15,7 +15,7 @@ class TentacleManager:
         self.tentacle_package_manager = TentaclePackageManager(config, self)
         self.default_package = None
         self.advanced_package_list = []
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.force_actions = False
 
     def install_tentacle_package(self, package_path_or_url, force=False):

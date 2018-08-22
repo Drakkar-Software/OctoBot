@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 import twitter
 
@@ -11,7 +11,7 @@ class TwitterDispatcher(AbstractDispatcher):
 
     def __init__(self, config):
         super().__init__(config)
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.user_ids = []
         self.hashtags = []
         self.counter = 0
