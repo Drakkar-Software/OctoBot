@@ -22,6 +22,7 @@ class StrategyTestSuite(AbstractBacktestingTest):
         self._trades_counts = []
         self.logger = get_logger(self.__class__.__name__)
         self.current_progress = 0
+        self.exceptions = []
 
     def get_test_suite_result(self):
         return TestSuiteResult(self._profitability_results,
@@ -34,7 +35,11 @@ class StrategyTestSuite(AbstractBacktestingTest):
     def get_progress(self):
         return self.current_progress
 
+    def get_exceptions(self):
+        return self.exceptions
+
     def run_test_suite(self, strategy_tester):
+        self.exceptions = []
         tests = [self.test_slow_downtrend, self.test_sharp_downtrend, self.test_flat_markets,
                  self.test_slow_uptrend, self.test_sharp_uptrend, self.test_up_then_down]
         print('| ', end='')
@@ -48,8 +53,10 @@ class StrategyTestSuite(AbstractBacktestingTest):
             except Exception as e:
                 print(f"Exception when running test {test.__name__}: {e}")
                 self.logger.exception(e)
+                self.exceptions.append(e)
             print('#', end='')
         print(' |', end='')
+        return not self.exceptions
 
     @staticmethod
     def test_default_run(strategy_tester):

@@ -105,7 +105,7 @@ def start_backtesting_bot(bot, in_thread=False, watcher=None):
     bot.create_evaluation_threads()
     if not bot.get_symbols_threads_manager():
         raise RuntimeError(f"No candles data for the current configuration. Please ensure the required data files for "
-                           f"the activated symbols are available.")
+                           f"the activated symbol(s) are available. Symbol(s): {list(bot.get_symbols_list())}")
 
     if watcher is not None:
         bot.set_watcher(watcher)
