@@ -58,6 +58,9 @@ class StrategyOptimizer:
             self.is_computing = True
 
             self.run_results = []
+            self.results_report = []
+            self.sorted_results_by_time_frame = {}
+            self.sorted_results_through_all_time_frame = {}
 
             previous_log_level = get_global_logger_level()
 
