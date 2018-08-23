@@ -9,7 +9,7 @@ from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 class StrategyTestSuite(AbstractBacktestingTest):
 
     # set to True to skip bigger scenarii and make tests faster
-    SKIP_LONG_STEPS = True
+    SKIP_LONG_STEPS = False
 
     def __init__(self):
         super().__init__()
