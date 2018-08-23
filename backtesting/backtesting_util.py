@@ -7,18 +7,20 @@ from config.cst import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_
     CONFIG_DATA_COLLECTOR_PATH, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_STARTING_PORTFOLIO, \
     CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO, DEFAULT_REFERENCE_MARKET
 from octobot import OctoBot
-from tests.test_utils.config import load_test_config
+from config.config import load_config
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
 from tools.symbol_util import split_symbol
 
 
 def create_blank_config_using_loaded_one(loaded_config, other_config=None):
-    new_config = other_config if other_config else load_test_config()
+    new_config = other_config if other_config else load_config()
     trading_mode = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADER_MODE])
     risk = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADER_RISK])
+    starting_portfolio = deepcopy(loaded_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO])
     new_config[CONFIG_TRADING][CONFIG_TRADER_MODE] = trading_mode
     new_config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
+    new_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO] = starting_portfolio
     new_config[CONFIG_EVALUATOR] = deepcopy(loaded_config[CONFIG_EVALUATOR])
     add_config_default_backtesting_values(new_config)
     return new_config
@@ -49,9 +51,7 @@ def get_standalone_backtesting_bot(config, data_files):
     return create_backtesting_bot(config_to_use), ignored_files
 
 
-def create_backtesting_config(wanted_symbols=["BTC/USDT"], filter_symbols=True):
-    # launch a bot
-    config = load_test_config()
+def create_backtesting_config(config, wanted_symbols=["BTC/USDT"], filter_symbols=True):
 
     if filter_symbols:
         filter_wanted_symbols(config, wanted_symbols)
