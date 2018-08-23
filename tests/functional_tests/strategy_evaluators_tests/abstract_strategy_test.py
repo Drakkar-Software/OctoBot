@@ -10,6 +10,7 @@ from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
 from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
 from tests.test_utils.config import load_test_config
+from services.web_service import WebService
 
 
 DEFAULT_SYMBOL = "ICX/BTC"
@@ -41,6 +42,8 @@ class AbstractStrategyTest(AbstractBacktestingTest):
                     config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES][index] = \
                         DATA_FILE_PATH + data_file_to_use + DATA_FILE_EXT
 
+        # do not activate web interface on standalone backtesting bot
+        WebService.enable(config_to_use, False)
         filter_wanted_symbols(config_to_use, [symbol])
         bot = create_backtesting_bot(config_to_use)
         return start_backtesting_bot(bot), bot

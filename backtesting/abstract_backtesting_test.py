@@ -1,12 +1,8 @@
 from abc import ABCMeta, abstractmethod
-import copy
-
-from backtesting.backtesting_util import create_backtesting_bot, start_backtesting_bot, filter_wanted_symbols
-from config.cst import CONFIG_EVALUATOR, CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_CRYPTO_CURRENCIES
+from config.cst import CONFIG_EVALUATOR
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
-from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
 
 
 DEFAULT_SYMBOL = "ICX/BTC"
@@ -15,46 +11,46 @@ DATA_FILE_PATH = "tests/static/"
 
 SYMBOLS = {
     "Bitcoin": {
-      "pairs" : ["BTC/USDT"]
+      "pairs": ["BTC/USDT"]
     },
     "Neo": {
-      "pairs" : ["NEO/BTC"]
+      "pairs": ["NEO/BTC"]
     },
     "Ethereum": {
-      "pairs" : ["ETH/USDT"]
+      "pairs": ["ETH/USDT"]
     },
     "Icon": {
-      "pairs" : ["ICX/BTC"]
+      "pairs": ["ICX/BTC"]
     },
     "VeChain": {
-      "pairs" : ["VEN/BTC"]
+      "pairs": ["VEN/BTC"]
     },
     "Nano": {
-      "pairs" : ["XRB/BTC"]
+      "pairs": ["XRB/BTC"]
     },
     "Cardano": {
-      "pairs" : ["ADA/BTC"]
+      "pairs": ["ADA/BTC"]
     },
-    "Ontology":{
-      "pairs" : ["ONT/BTC"]
+    "Ontology": {
+      "pairs": ["ONT/BTC"]
     },
-    "Stellar":{
-      "pairs" : ["XLM/BTC"]
+    "Stellar": {
+      "pairs": ["XLM/BTC"]
     },
-    "Power Ledger":{
-      "pairs" : ["POWR/BTC"]
+    "Power Ledger": {
+      "pairs": ["POWR/BTC"]
     },
-    "Ethereum Classic":{
-      "pairs" : ["ETC/BTC"]
+    "Ethereum Classic": {
+      "pairs": ["ETC/BTC"]
     },
-    "WAX":{
-      "pairs" : ["WAX/BTC"]
+    "WAX": {
+      "pairs": ["WAX/BTC"]
     },
-    "XRP":{
-      "pairs" : ["XRP/BTC"]
+    "XRP": {
+      "pairs": ["XRP/BTC"]
     },
-    "Verge":{
-      "pairs" : ["XVG/BTC"]
+    "Verge": {
+      "pairs": ["XVG/BTC"]
     }
 }
 
@@ -147,6 +143,10 @@ class AbstractBacktestingTest:
     def _assert_results(self, run_results, profitability, bot):
         raise NotImplementedError("_assert_results not implemented")
 
+    @abstractmethod
+    def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
+        raise NotImplementedError("_run_backtesting_with_current_config not implemented")
+
     def run_test_default_run(self, profitability):
         run_results, bot = self._run_backtesting_with_current_config(DEFAULT_SYMBOL)
         self._assert_results(run_results, profitability, bot)
@@ -198,21 +198,6 @@ class AbstractBacktestingTest:
         if not skip_bittrex:
             run_results, bot = self._run_backtesting_with_current_config("ETC/BTC", "bittrex_ETC_BTC_20180726_210341")
             self._assert_results(run_results, profitability_1, bot)
-
-    def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
-        config_to_use = copy.deepcopy(self.config)
-        config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = copy.copy(DATA_FILES)
-        config_to_use[CONFIG_CRYPTO_CURRENCIES] = copy.deepcopy(SYMBOLS)
-        if data_file_to_use is not None:
-            for index, datafile in enumerate(DATA_FILES):
-                _, file_symbol, _ = interpret_file_name(datafile)
-                if symbol == file_symbol:
-                    config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES][index] = \
-                        DATA_FILE_PATH + data_file_to_use + DATA_FILE_EXT
-
-        filter_wanted_symbols(config_to_use, [symbol])
-        bot = create_backtesting_bot(config_to_use)
-        return start_backtesting_bot(bot), bot
 
     def _register_only_strategy(self, strategy_evaluator_class):
         for evaluatotor_name in self.config[CONFIG_EVALUATOR]:
