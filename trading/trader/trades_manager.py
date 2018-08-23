@@ -4,6 +4,7 @@ from config.cst import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_R
     CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 from tools.symbol_util import merge_currencies, split_symbol
+from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 
 """ TradesManager will store all trades performed by the exchange trader
 Another feature of TradesManager is the profitability calculation
@@ -179,7 +180,11 @@ class TradesManager:
             return quantity / self.currencies_last_prices[symbol_inverted]
 
         else:
-            self.logger.warning(f"Can't find matching symbol for {currency} and {self.reference_market}")
+            if not isinstance(self.exchange.get_exchange(), ExchangeSimulator):
+                # do not log warning in backtesting or tests
+                self.logger.warning(f"Can't find matching symbol for {currency} and {self.reference_market}")
+            else:
+                self.logger.info(f"Can't find matching symbol for {currency} and {self.reference_market}")
             return 0
 
     def _evaluate_config_crypto_currencies_values(self):
