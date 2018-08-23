@@ -121,8 +121,9 @@ def get_optimizer_status():
     if tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
         optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
         if optimizer.get_is_computing():
-            return "computing", optimizer.get_current_test_suite_progress(), optimizer.get_overall_progress()
+            return "computing", optimizer.get_current_test_suite_progress(), optimizer.get_overall_progress(), \
+                   optimizer.get_errors_description()
         else:
-            return "finished", 100, 100
+            return "finished", 100, 100, optimizer.get_errors_description()
     else:
-        return "not started", 0, 0
+        return "not started", 0, 0, None

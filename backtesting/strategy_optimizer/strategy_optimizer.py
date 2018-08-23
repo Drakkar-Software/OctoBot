@@ -39,6 +39,7 @@ class StrategyOptimizer:
         self.all_TAs = []
         self.risks = []
         self.current_test_suite = None
+        self.errors = set()
 
         self.is_computing = False
         self.run_id = 0
@@ -57,6 +58,7 @@ class StrategyOptimizer:
             # set is_computing to True to prevent any simultaneous start
             self.is_computing = True
 
+            self.errors = set()
             self.run_results = []
             self.results_report = []
             self.sorted_results_by_time_frame = {}
@@ -140,7 +142,9 @@ class StrategyOptimizer:
     def _run_test_suite(self, config):
         self.current_test_suite = StrategyTestSuite()
         self.current_test_suite.init(self.strategy_class, copy.deepcopy(config))
-        self.current_test_suite.run_test_suite(self.current_test_suite)
+        no_error = self.current_test_suite.run_test_suite(self.current_test_suite)
+        if not no_error:
+            self.errors = self.errors.union(set(str(e) for e in self.current_test_suite.get_exceptions()))
         run_result = self.current_test_suite.get_test_suite_result()
         self.run_results.append(run_result)
 
@@ -208,6 +212,12 @@ class StrategyOptimizer:
 
     def get_is_computing(self):
         return self.is_computing
+
+    def get_errors_description(self):
+        if self.errors:
+            return f"{', '.join(self.errors)[0:350]} ..."
+        else:
+            return None
 
     @classmethod
     def get_name(cls):

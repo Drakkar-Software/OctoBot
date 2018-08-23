@@ -1,8 +1,7 @@
 function recompute_nb_iterations(){
-    var nb_selected = 0;
-    nb_eval_iter = Math.pow(2, $("#evaluatorsSelect").find(":selected").length)-1;
-    nb_tf_iter = Math.pow(2, $("#timeFramesSelect").find(":selected").length)-1;
-    nb_selected = $("#risksSelect").find(":selected").length*nb_eval_iter*nb_tf_iter;
+    var nb_eval_iter = Math.pow(2, $("#evaluatorsSelect").find(":selected").length)-1;
+    var nb_tf_iter = Math.pow(2, $("#timeFramesSelect").find(":selected").length)-1;
+    var nb_selected = $("#risksSelect").find(":selected").length*nb_eval_iter*nb_tf_iter;
     $("#numberOfSimulatons").text(nb_selected);
 }
 
@@ -49,6 +48,7 @@ function lock_inputs(lock=true){
         $("#progess_bar_anim").css('width', '100%').attr("aria-valuenow", '100')
         $("#progess_bar").hide();
     }
+    check_disabled();
 
 }
 
@@ -95,35 +95,51 @@ function update_progress(progress, overall_progress){
 
 function check_optimizer_state(reportTable){
     var url = $("#strategyOptimizerInputs").attr(update_url_attr);
-    $.get(url,function(data, status){
+    $.get(url,function(data, request_status){
         var status = data["status"];
         var progress = data["progress"];
         var overall_progress = data["overall_progress"];
-        if(status == "computing"){
+        var errors = data["errors"];
+        var error_div = $("#error_info");
+        var error_text_div = $("#error_info_text");
+        var report_datatable_card = $("#report_datatable_card");
+        var has_errors = errors !== null;
+        var alert_type = "success";
+        var alert_additional_text = "Strategy optimized finished simulations.";
+        if(has_errors){
+            error_text_div.text(errors);
+            error_div.show();
+            alert_type = "error";
+            alert_additional_text = "Strategy optimized finished simulations with error(s)."
+        }else{
+            error_text_div.text("");
+            error_div.hide();
+        }
+        if(status === "computing"){
             lock_inputs();
             update_progress(progress, overall_progress)
             first_refresh_state = status;
-            if($("#report_datatable_card").is(":visible")){
-                $("#report_datatable_card").hide();
+            if(report_datatable_card.is(":visible")){
+                report_datatable_card.hide();
                 reportTable.clear();
             }
         }
         else{
             lock_inputs(false);
-            if(status == "finished"){
-                if(!$("#report_datatable_card").is(":visible")){
-                    $("#report_datatable_card").show();
+            if(status === "finished"){
+                if(!report_datatable_card.is(":visible")){
+                    report_datatable_card.show();
                 }
-                if(reportTable.rows().count() == 0){
-                    reportTable.ajax.reload( null, false );
+                if(reportTable.rows().count() === 0){
+                    reportTable.ajax.reload( null, false);
                 }
-                if(first_refresh_state != "" && first_refresh_state != "finished"){
-                    create_alert("success", "Strategy optimized finished simulations.", "");
+                if((first_refresh_state !== "" || has_errors) && first_refresh_state !== "finished"){
+                    create_alert(alert_type, alert_additional_text, "");
                     first_refresh_state="finished";
                 }
             }
         }
-        if(first_refresh_state == ""){
+        if(first_refresh_state === ""){
             first_refresh_state = status;
         }
     });

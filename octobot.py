@@ -306,6 +306,9 @@ class OctoBot:
     def get_symbol_evaluator_list(self):
         return self.symbol_evaluator_list
 
+    def get_symbols_list(self):
+        return self.symbol_evaluator_list.keys()
+
     def get_crypto_currency_evaluator_list(self):
         return self.crypto_currency_evaluator_list
 
