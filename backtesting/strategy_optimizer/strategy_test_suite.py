@@ -1,9 +1,14 @@
-from tools.logging.logging_util import get_logger
+import copy
 
-from backtesting.abstract_backtesting_test import AbstractBacktestingTest
-from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME
+from tools.logging.logging_util import get_logger
+from backtesting.abstract_backtesting_test import AbstractBacktestingTest, SYMBOLS, DATA_FILES, DATA_FILE_PATH
+from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
+    CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_CRYPTO_CURRENCIES
 from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
+from backtesting.backtesting_util import create_backtesting_bot, start_backtesting_bot, filter_wanted_symbols
+from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
+from services.web_service import WebService
 
 
 class StrategyTestSuite(AbstractBacktestingTest):
@@ -82,3 +87,20 @@ class StrategyTestSuite(AbstractBacktestingTest):
         self._profitability_results.append(run_results)
         trader = next(iter(bot.get_exchange_trader_simulators().values()))
         self._trades_counts.append(len(trader.get_trades_manager().get_trade_history()))
+
+    def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
+        config_to_use = copy.deepcopy(self.config)
+        config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = copy.copy(DATA_FILES)
+        config_to_use[CONFIG_CRYPTO_CURRENCIES] = copy.deepcopy(SYMBOLS)
+        if data_file_to_use is not None:
+            for index, datafile in enumerate(DATA_FILES):
+                _, file_symbol, _ = interpret_file_name(datafile)
+                if symbol == file_symbol:
+                    config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES][index] = \
+                        DATA_FILE_PATH + data_file_to_use + DATA_FILE_EXT
+
+        # do not activate web interface on standalone backtesting bot
+        WebService.enable(config_to_use, False)
+        filter_wanted_symbols(config_to_use, [symbol])
+        bot = create_backtesting_bot(config_to_use)
+        return start_backtesting_bot(bot), bot

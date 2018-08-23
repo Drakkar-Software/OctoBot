@@ -11,6 +11,7 @@ from config.config import load_config
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
 from tools.symbol_util import split_symbol
+from services.web_service import WebService
 
 
 def create_blank_config_using_loaded_one(loaded_config, other_config=None):
@@ -30,6 +31,8 @@ def get_standalone_backtesting_bot(config, data_files):
     config_to_use = create_blank_config_using_loaded_one(config)
     config_to_use[CONFIG_CRYPTO_CURRENCIES] = {}
     config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = []
+    # do not activate web interface on standalone backtesting bot
+    WebService.enable(config_to_use, False)
     ignored_files = []
     reference_market = _get_reference_market(data_files)
     if DEFAULT_REFERENCE_MARKET != reference_market:
