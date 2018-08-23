@@ -1,3 +1,4 @@
+from logging import WARNING
 from enum import Enum
 
 PROJECT_NAME = "OctoBot"
@@ -10,6 +11,7 @@ LONG_VERSION = f"{SHORT_VERSION}_{MINOR_VERSION}-{VERSION_DEV_PHASE}"
 # logs
 LOG_DATABASE = "log_db"
 LOG_NEW_ERRORS_COUNT = "log_new_errors_count"
+STORED_LOG_MIN_LEVEL = WARNING
 
 # github
 GITHUB = "github"
