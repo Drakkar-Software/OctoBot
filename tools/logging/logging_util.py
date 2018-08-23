@@ -1,5 +1,6 @@
 import logging
 
+from config.cst import STORED_LOG_MIN_LEVEL
 from tools.logging import add_log
 
 
@@ -53,7 +54,7 @@ class BotLogger:
         self._publish_log_if_necessary(message, logging.FATAL)
 
     def _publish_log_if_necessary(self, message, level):
-        if get_global_logger_level() <= level:
+        if STORED_LOG_MIN_LEVEL <= level and get_global_logger_level() <= level:
             self._web_interface_publish_log(message, level)
 
     def _web_interface_publish_log(self, message, level):
