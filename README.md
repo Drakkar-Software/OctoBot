@@ -49,7 +49,7 @@ Octobot supports many [exchanges](https://github.com/Drakkar-Software/OctoBot/wi
 To activate trading on an exchange, just configure OctoBot with your api keys as described [on the wiki](https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges).
 
 ## Roadmap
-[![Roadmap](../assets/roadmap.svg)](https://github.com/Drakkar-Software/OctoBot/tree/assets/roadmap.png)
+[![Roadmap](../assets/roadmap_open_beta.svg)](https://github.com/Drakkar-Software/OctoBot/tree/assets/roadmap_open_beta.png)
 
 ## Disclaimer
 Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
