@@ -134,18 +134,10 @@ class ExchangeSimulator(AbstractExchange):
             return True
         else:
             smallest_time_frame_sec = TimeFramesMinutes[smallest_time_frame]
-            smallest_time_frame_updated_times = self.time_frame_get_times[symbol][smallest_time_frame.value]
-            # - 1 because smallest timeframe is the 1st to be updated: always return true for it but others need not to
-            # be biased by the previous + 1 from current timeframe update wave
-            smallest_time_frame_updated_times_to_compare = smallest_time_frame_updated_times - 1 \
-                if smallest_time_frame_updated_times > 0 else 0
-            current_time_frame_sec = TimeFramesMinutes[time_frame]
-            current_time_frame_updated_times = self.time_frame_get_times[symbol][time_frame.value]
-
             try:
-
                 smallest_time_frame_timestamp = self._get_current_timestamp(smallest_time_frame, symbol, 1)
                 wanted_time_frame_timestamp = self._get_current_timestamp(time_frame, symbol)
+
                 return wanted_time_frame_timestamp <= smallest_time_frame_timestamp + (smallest_time_frame_sec / 2)
             except IndexError:
                 return False

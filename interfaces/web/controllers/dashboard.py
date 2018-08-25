@@ -26,7 +26,7 @@ def first_symbol():
                        methods=['GET', 'POST'])
 def profitability():
     has_real_trader, has_simulated_trader, \
-        real_global_profitability, simulated_global_profitability, \
+        _, _, \
         real_percent_profitability, simulated_percent_profitability, \
         market_average_profitability = get_global_profitability()
     profitability_data = {"market_average_profitability": market_average_profitability}

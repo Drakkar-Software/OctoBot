@@ -86,7 +86,6 @@ def create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesti
         simulated_trades_key: [],
     }
 
-    _, pair_tag = split_symbol(symbol)
     add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
     data = get_symbol_data_history(symbol, time_frame)
 
