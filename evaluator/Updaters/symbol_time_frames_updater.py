@@ -8,7 +8,7 @@ from config.cst import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPIN
 from tools.time_frame_manager import TimeFrameManager
 
 """
-This class (Thread) supervise evaluators data refresh : 
+This class (Thread) supervise evaluators data refresh :
 - Get updated data from exchange
 - Deliver new data in each evaluator that needs to be updated (specified by its time frame) 
 """
@@ -110,7 +110,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
             self.logger.exception(e)
             if self.watcher is not None:
                 error = e
-        
+
         finally:
             if exchange is not None and symbol is not None and not exchange.get_backtesting().get_is_finished(symbol):
                 if error is None:

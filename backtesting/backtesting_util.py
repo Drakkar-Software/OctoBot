@@ -40,7 +40,7 @@ def get_standalone_backtesting_bot(config, data_files):
     if data_files:
         for data_file_to_use in data_files:
             _, file_symbol, _ = interpret_file_name(data_file_to_use)
-            currency, market = split_symbol(file_symbol)
+            currency, _ = split_symbol(file_symbol)
             full_file_path = CONFIG_DATA_COLLECTOR_PATH + data_file_to_use
             full_file_path += full_file_path if not full_file_path.endswith(DATA_FILE_EXT) else ""
             if currency not in config_to_use[CONFIG_CRYPTO_CURRENCIES]:

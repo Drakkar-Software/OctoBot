@@ -267,7 +267,7 @@ class CandleData:
 
             # used only when a new update was preformed during the previous execution
             self.sanitize_last_candle(self.close_candles_array, self.high_candles_array, self.low_candles_array)
-    
+
     @staticmethod
     def sanitize_last_candle(close_candle_data, high_candle_data, low_candle_data):
         close_last_candle = close_candle_data[-1]
@@ -279,7 +279,7 @@ class CandleData:
     @staticmethod
     def set_last_candle_arrays(list_updated, array_to_update):
         if array_to_update is not None:
-            array_to_update[-1] = list_updated[-1]                  
+            array_to_update[-1] = list_updated[-1]
             
     @staticmethod
     def convert_list_to_array(list_to_convert):
