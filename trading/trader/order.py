@@ -312,7 +312,7 @@ class SellLimitOrder(Order):
             self.default_exchange_update_order_status()
         else:
             # ONLY FOR SIMULATION
-            if self.check_last_prices(self.origin_price, False, simulated_time):
+            if True or self.check_last_prices(self.origin_price, False, simulated_time):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
