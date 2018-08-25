@@ -76,6 +76,51 @@ def get_first_symbol_data():
     return {}
 
 
+def create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesting):
+    candles_key = "candles"
+    real_trades_key = "real_trades"
+    simulated_trades_key = "simulated_trades"
+    result_dict = {
+        candles_key: [],
+        real_trades_key: [],
+        simulated_trades_key: [],
+    }
+
+    _, pair_tag = split_symbol(symbol)
+    add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
+    data = get_symbol_data_history(symbol, time_frame)
+
+    data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value],
+                                            time_format="%y-%m-%d %H:%M:%S",
+                                            force_timezone=False)
+
+    real_trades_history, simulated_trades_history = get_trades_history(bot, symbol)
+
+    if real_trades_history:
+        result_dict[real_trades_key] = _format_trades(real_trades_history)
+
+    if real_trades_history:
+        result_dict[simulated_trades_key] = _format_trades(simulated_trades_history)
+
+    if list_arrays:
+        result_dict[candles_key] = {
+            PriceStrings.STR_PRICE_TIME.value: data_x,
+            PriceStrings.STR_PRICE_CLOSE.value: data[PriceIndexes.IND_PRICE_CLOSE.value].tolist(),
+            PriceStrings.STR_PRICE_LOW.value: data[PriceIndexes.IND_PRICE_LOW.value].tolist(),
+            PriceStrings.STR_PRICE_OPEN.value: data[PriceIndexes.IND_PRICE_OPEN.value].tolist(),
+            PriceStrings.STR_PRICE_HIGH.value: data[PriceIndexes.IND_PRICE_HIGH.value].tolist()
+        }
+    else:
+        result_dict[candles_key] = {
+            PriceStrings.STR_PRICE_TIME.value: data_x,
+            PriceStrings.STR_PRICE_CLOSE.value: data[PriceIndexes.IND_PRICE_CLOSE.value],
+            PriceStrings.STR_PRICE_LOW.value: data[PriceIndexes.IND_PRICE_LOW.value],
+            PriceStrings.STR_PRICE_OPEN.value: data[PriceIndexes.IND_PRICE_OPEN.value],
+            PriceStrings.STR_PRICE_HIGH.value: data[PriceIndexes.IND_PRICE_HIGH.value]
+        }
+    return result_dict
+
+
 def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arrays=True, backtesting=False):
     bot = get_bot()
     if backtesting and bot.get_tools() and bot.get_tools()[BOT_TOOLS_BACKTESTING]:
@@ -101,47 +146,5 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
                 data = evaluator_thread_manager.get_evaluator().get_data()
 
                 if data is not None:
-
-                    candles_key = "candles"
-                    real_trades_key = "real_trades"
-                    simulated_trades_key = "simulated_trades"
-                    result_dict = {
-                        candles_key: [],
-                        real_trades_key: [],
-                        simulated_trades_key: [],
-                    }
-
-                    _, pair_tag = split_symbol(symbol)
-                    add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
-                    data = get_symbol_data_history(symbol, time_frame)
-
-                    data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value],
-                                                            time_format="%y-%m-%d %H:%M:%S",
-                                                            force_timezone=False)
-
-                    real_trades_history, simulated_trades_history = get_trades_history(bot, symbol)
-
-                    if real_trades_history:
-                        result_dict[real_trades_key] = _format_trades(real_trades_history)
-
-                    if real_trades_history:
-                        result_dict[simulated_trades_key] = _format_trades(simulated_trades_history)
-
-                    if list_arrays:
-                        result_dict[candles_key] = {
-                            PriceStrings.STR_PRICE_TIME.value: data_x,
-                            PriceStrings.STR_PRICE_CLOSE.value: data[PriceIndexes.IND_PRICE_CLOSE.value].tolist(),
-                            PriceStrings.STR_PRICE_LOW.value: data[PriceIndexes.IND_PRICE_LOW.value].tolist(),
-                            PriceStrings.STR_PRICE_OPEN.value: data[PriceIndexes.IND_PRICE_OPEN.value].tolist(),
-                            PriceStrings.STR_PRICE_HIGH.value: data[PriceIndexes.IND_PRICE_HIGH.value].tolist()
-                        }
-                    else:
-                        result_dict[candles_key] = {
-                            PriceStrings.STR_PRICE_TIME.value: data_x,
-                            PriceStrings.STR_PRICE_CLOSE.value: data[PriceIndexes.IND_PRICE_CLOSE.value],
-                            PriceStrings.STR_PRICE_LOW.value: data[PriceIndexes.IND_PRICE_LOW.value],
-                            PriceStrings.STR_PRICE_OPEN.value: data[PriceIndexes.IND_PRICE_OPEN.value],
-                            PriceStrings.STR_PRICE_HIGH.value: data[PriceIndexes.IND_PRICE_HIGH.value]
-                        }
-                    return result_dict
+                    return create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesting)
     return None
