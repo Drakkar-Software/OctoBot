@@ -13,7 +13,7 @@ def tentacles():
                            get_tentacles=get_tentacles)
 
 
-def _handle_tentacles_pages_post(update_type):
+def _handle_package_operation(update_type):
     if update_type == "add_package":
         request_data = request.get_json()
         success = False
@@ -25,14 +25,14 @@ def _handle_tentacles_pages_post(update_type):
                 if package_description:
                     return get_rest_reply(jsonify(package_description))
                 else:
-                    return get_rest_reply('{"Impossible to find tentacles package information.": "ko"}', 500)
+                    return get_rest_reply(f'Impossible to find {path_or_url} tentacles package information.', 500)
             elif action == "register_and_install":
                 installation_result = register_and_install(path_or_url)
                 if installation_result:
                     return get_rest_reply(jsonify(installation_result))
                 else:
-                    return get_rest_reply('{"Impossible to install the given tentacles package, check the logs '
-                                          'for more information.": "ko"}', 500)
+                    return get_rest_reply('Impossible to install the given tentacles package, check the logs '
+                                          'for more information.', 500)
 
         if not success:
             return get_rest_reply('{"operation": "ko"}', 500)
@@ -50,27 +50,33 @@ def _handle_tentacles_pages_post(update_type):
             return get_rest_reply(jsonify(packages_operation_result))
         else:
             action = update_type.split("_")[0]
-            return get_rest_reply('{"Impossible to ' + action + ' packages, check the logs '
-                                                                'for more information.": "ko"}', 500)
+            return get_rest_reply(f'Impossible to {action} packages, check the logs for more information.', 500)
+
+
+def _handle_module_operation(update_type):
+    request_data = request.get_json()
+    if request_data:
+        packages_operation_result = {}
+        if update_type == "update_modules":
+            packages_operation_result = update_modules(request_data)
+        elif update_type == "uninstall_modules":
+            packages_operation_result = uninstall_modules(request_data)
+
+        if packages_operation_result is not None:
+            return get_rest_reply(jsonify(packages_operation_result))
+        else:
+            action = update_type.split("_")[0]
+            return get_rest_reply(f'Impossible to {action} module(s), check the logs for more information.', 500)
+    else:
+        return get_rest_reply('{"Need at least one element be selected": "ko"}', 500)
+
+
+def _handle_tentacles_pages_post(update_type):
+    if update_type in ["add_package", "install_packages", "update_packages", "reset_packages"]:
+        return _handle_package_operation(update_type)
 
     elif update_type in ["update_modules", "uninstall_modules"]:
-
-        request_data = request.get_json()
-        if request_data:
-            packages_operation_result = {}
-            if update_type == "update_modules":
-                packages_operation_result = update_modules(request_data)
-            elif update_type == "uninstall_modules":
-                packages_operation_result = uninstall_modules(request_data)
-
-            if packages_operation_result is not None:
-                return get_rest_reply(jsonify(packages_operation_result))
-            else:
-                action = update_type.split("_")[0]
-                return get_rest_reply('{"Impossible to ' + action + ' module(s), check the logs '
-                                                                    'for more information.": "ko"}', 500)
-        else:
-            return get_rest_reply('{"Need at least one element be selected": "ko"}', 500)
+        return _handle_module_operation(update_type)
 
 
 @server_instance.route("/tentacle_packages")
