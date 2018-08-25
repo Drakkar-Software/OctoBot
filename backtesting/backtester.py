@@ -48,4 +48,3 @@ class Backtester:
 
     def set_error(self, error):
         self.error = error
-
