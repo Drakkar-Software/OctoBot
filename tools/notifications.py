@@ -118,6 +118,31 @@ class Notification:
             self.logger.debug("Web interface notification disabled")
         return None
 
+    def send_twitter_notification_if_necessary(self, content, notification_type=None):
+        if self.twitter_notification_available(notification_type):
+            return self.twitter_notification_factory(content)
+        return None
+
+    def sent_twitter_reply_if_necessary(self, previous_notification, content, notification_type=None):
+        if self.twitter_notification_available(notification_type) \
+                and previous_notification is not None \
+                and previous_notification.get_tweet_instance() is not None:
+            tweet_instance = previous_notification.get_tweet_instance()
+
+            self.twitter_response_factory(tweet_instance, content)
+
+    def send_web_notification_if_necessary(self, level, title, message, notification_type=None):
+        if self.web_interface_notification_available(notification_type):
+            self.web_interface_notification_factory(level, title, message)
+
+    def send_telegram_notification_if_necessary(self, content, notification_type=None):
+        if self.telegram_notification_available(notification_type):
+            self.telegram_notification_factory(content)
+
+    def send_gmail_notification_if_necessary(self, subject, mail, notification_type=None):
+        if self.gmail_notification_available(notification_type):
+            self.gmail_notification_factory(subject, mail)
+
 
 class EvaluatorNotification(Notification):
     def __init__(self, config):
@@ -125,14 +150,13 @@ class EvaluatorNotification(Notification):
         self.tweet_instance = None
 
     def notify_state_changed(self, notify_content):
-        if self.twitter_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
-            self.tweet_instance = self.twitter_notification_factory(notify_content)
+        self.tweet_instance = self.send_twitter_notification_if_necessary(notify_content,
+                                                                          CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        if self.telegram_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
-            self.telegram_notification_factory(notify_content)
+        self.send_telegram_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        if self.web_interface_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
-            self.web_interface_notification_factory(InterfaceLevel.INFO, "STATE CHANGED", notify_content)
+        self.send_web_notification_if_necessary(InterfaceLevel.INFO, "STATE CHANGED", notify_content,
+                                                CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 
@@ -160,14 +184,13 @@ class EvaluatorNotification(Notification):
             result,
             final_eval)
 
-        if self.twitter_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
-            self.tweet_instance = self.twitter_notification_factory(alert_content)
+        self.tweet_instance = self.send_twitter_notification_if_necessary(alert_content,
+                                                                          CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        if self.telegram_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
-            self.telegram_notification_factory(alert_content)
+        self.send_telegram_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        if self.web_interface_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
-            self.web_interface_notification_factory(InterfaceLevel.INFO, title, alert_content)
+        self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
+                                                CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 
@@ -191,17 +214,12 @@ class OrdersNotification(Notification):
             for order in orders:
                 content += f"\n- {PrettyPrinter.open_order_pretty_printer(order)}"
 
-            if self.twitter_notification_available(CONFIG_NOTIFICATION_TRADES) \
-                    and self.evaluator_notification is not None \
-                    and self.evaluator_notification.get_tweet_instance() is not None:
-                tweet_instance = self.evaluator_notification.get_tweet_instance()
-                self.twitter_response_factory(tweet_instance, content)
+            self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
 
-            if self.telegram_notification_available(CONFIG_NOTIFICATION_TRADES):
-                self.telegram_notification_factory(content)
+            self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
-            if self.web_interface_notification_available(CONFIG_NOTIFICATION_TRADES):
-                self.web_interface_notification_factory(InterfaceLevel.INFO, title, content)
+            self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
+                                                    CONFIG_NOTIFICATION_TRADES)
 
     def notify_end(self,
                    order_filled,
@@ -225,24 +243,20 @@ class OrdersNotification(Notification):
 
         if trade_profitability is not None and profitability:
             content += f"\n\nTrade profitability : {'+' if trade_profitability >= 0 else ''}" \
-                       f"{round(trade_profitability * 100, 7)}%"
+                       f"{round(trade_profitability * 100, 4)}%"
 
         if portfolio_profitability is not None and profitability:
-            content += f"\nGlobal Portfolio profitability : {round(portfolio_profitability, 5)}% " \
-                       f"{'+' if portfolio_diff >= 0 else ''}{round(portfolio_diff, 7)}%"
+            content += f"\nPortfolio profitability : {round(portfolio_profitability, 4)}% " \
+                       f"{'+' if portfolio_diff >= 0 else ''}{round(portfolio_diff, 4)}%"
 
-        if self.twitter_notification_available(CONFIG_NOTIFICATION_TRADES) \
-                and self.evaluator_notification is not None \
-                and self.evaluator_notification.get_tweet_instance() is not None:
-            tweet_instance = self.evaluator_notification.get_tweet_instance()
+        print(content)
 
-            self.twitter_response_factory(tweet_instance, content)
+        self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
 
-        if self.telegram_notification_available(CONFIG_NOTIFICATION_TRADES):
-            self.telegram_notification_factory(content)
+        self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
-        if self.web_interface_notification_available(CONFIG_NOTIFICATION_TRADES):
-            self.web_interface_notification_factory(InterfaceLevel.INFO, title, content)
+        self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
+                                                CONFIG_NOTIFICATION_TRADES)
 
 
 class InterfaceLevel(Enum):
