@@ -1,26 +1,27 @@
 function register_and_install_package(){
     disable_packages_operations();
     $("#register_and_install_package_progess_bar").show();
-    element = $("#register_and_install_package_input")
-    var input_text = element.val()
-    var request = {}
-    request[$.trim(input_text)] = "description"
-    var full_config_root = element.parents("."+config_root_class);
-    var update_url = full_config_root.attr(update_url_attr);
+    const element = $("#register_and_install_package_input");
+    const input_text = element.val();
+    let request = {};
+    request[$.trim(input_text)] = "description";
+    let full_config_root = element.parents("."+config_root_class);
+    const update_url = full_config_root.attr(update_url_attr);
     send_and_interpret_bot_update(request, update_url, full_config_root, register_and_install_package_success_callback, register_and_install_package_error_callback)
 }
 
 function disable_packages_operations(should_lock=true){
-    $("#update_tentacles_packages").prop('disabled', should_lock);
-    $("#install_tentacles_packages").prop('disabled', should_lock);
-    $("#reset_tentacles_packages").prop('disabled', should_lock);
-    $("#register_and_install_package_input").prop('disabled', should_lock);
-    if($("#register_and_install_package_input").val() != ""){
-        $("#register_and_install_package_button").prop('disabled', should_lock);
+    const disabled_attr = 'disabled';
+    $("#update_tentacles_packages").prop(disabled_attr, should_lock);
+    $("#install_tentacles_packages").prop(disabled_attr, should_lock);
+    $("#reset_tentacles_packages").prop(disabled_attr, should_lock);
+    $("#register_and_install_package_input").prop(disabled_attr, should_lock);
+    if($("#register_and_install_package_input").val() !== ""){
+        $("#register_and_install_package_button").prop(disabled_attr, should_lock);
     }
-    var should_disable_buttons = get_selected_modules() <= 0;
-    $('#uninstall_selected_tentacles').prop('disabled', should_disable_buttons);
-    $('#update_selected_tentacles').prop('disabled', should_disable_buttons);
+    const should_disable_buttons = get_selected_modules() <= 0;
+    $('#uninstall_selected_tentacles').prop(disabled_attr, should_disable_buttons);
+    $('#update_selected_tentacles').prop(disabled_attr, should_disable_buttons);
 
 }
 
@@ -35,23 +36,26 @@ function uninstall(module){
 }
 
 function perform_modules_operation(modules, operation){
-    var dom_root_element = $("#module-table")
-    var update_url = dom_root_element.attr(operation+"-"+update_url_attr)
+    let dom_root_element = $("#module-table");
+    const update_url = dom_root_element.attr(operation+"-"+update_url_attr);
     disable_packages_operations();
     send_and_interpret_bot_update(modules, update_url, dom_root_element, modules_operation_success_callback, modules_operation_error_callback)
 }
 
 function perform_packages_operation(source){
     $("#packages_action_progess_bar").show();
-    var update_url = source.attr(update_url_attr);
+    const update_url = source.attr(update_url_attr);
     disable_packages_operations();
     send_and_interpret_bot_update({}, update_url, source, packages_operation_success_callback, packages_operation_error_callback)
 }
 
 function modules_operation_success_callback(updated_data, update_url, dom_root_element, msg, status){
     disable_packages_operations(false);
-    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
+    $("#table-span").load(location.href + " #table-span",function(){
         disable_select_action_buttons();
+        $('#tentacles_modules_table').DataTable({
+            "paging":   false,
+        });
     });
     $("#selected_tentacles_operation").hide();
     create_alert("success", "Tentacle operation success: "+msg, "");
@@ -59,8 +63,11 @@ function modules_operation_success_callback(updated_data, update_url, dom_root_e
 
 function modules_operation_error_callback(updated_data, update_url, dom_root_element, result, status, error){
     disable_packages_operations(false);
-    $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
+    $("#table-span").load(location.href + " #table-span",function(){
         disable_select_action_buttons();
+        $('#tentacles_modules_table').DataTable({
+            "paging":   false,
+        });
     });
     $("#selected_tentacles_operation").hide();
     create_alert("error", "Error when managing modules: "+result.responseText, "");
@@ -86,8 +93,8 @@ function packages_operation_error_callback(updated_data, update_url, dom_root_el
 
 function register_and_install_package_success_callback(updated_data, update_url, dom_root_element, msg, status){
     if(confirm("Install " + msg["name"] + " tentacles package ?")) {
-        var request = {}
-        for(var attribute in updated_data) {
+        let request = {};
+        for(const attribute in updated_data) {
             request[attribute] = "register_and_install";
         }
 
@@ -105,8 +112,8 @@ function register_and_install_package_error_callback(updated_data, update_url, d
 }
 
 function post_package_action_success_callback(updated_data, update_url, dom_root_element, msg, status){
-    package_path = ""
-    for(var attribute in updated_data) {
+    let package_path;
+    for(const attribute in updated_data) {
         package_path = attribute;
     }
     create_alert("success", "Tentacles packages successfully installed from: "+package_path, "");
@@ -129,7 +136,7 @@ function post_package_action_error_callback(updated_data, update_url, dom_root_e
 }
 
 function get_selected_modules(){
-    var selected_modules = []
+    let selected_modules = []
     $("#module-table").find("input[type='checkbox']:checked").each(function(){
         selected_modules.push($(this).attr("module"));
     });
@@ -149,7 +156,7 @@ function handle_tentacles_buttons(){
         }
     });
     $("#uninstall_selected_tentacles").click(function(){
-        selected_modules = get_selected_modules();
+        const selected_modules = get_selected_modules();
         if(selected_modules.length > 0){
             if(confirm("Uninstall these tentacles ? This will delete all the associated tentacle files if any.")) {
                 $("#selected_tentacles_operation").show();
@@ -159,7 +166,7 @@ function handle_tentacles_buttons(){
         }
     });
     $("#update_selected_tentacles").click(function(){
-        selected_modules = get_selected_modules();
+        const selected_modules = get_selected_modules();
         if(selected_modules.length > 0){
             $("#selected_tentacles_operation").show();
             disable_packages_operations();
@@ -173,7 +180,7 @@ function disable_select_action_buttons(){
     $('#uninstall_selected_tentacles').prop('disabled', true);
     $('.selectable_tentacle').click(function () {
         // use parent not to trigger selection on button column use
-        row = $(this).parent()
+        let row = $(this).parent();
         if (row.hasClass(selected_item_class)){
             row.removeClass(selected_item_class);
             row.find(".tentacle-module-checkbox").prop('checked', false);
@@ -188,13 +195,13 @@ function disable_select_action_buttons(){
 }
 
 $(document).ready(function() {
- handle_tentacles_buttons();
- $('#register_and_install_package_button').prop('disabled', true);
- $('#register_and_install_package_input').keyup(function() {
-    $('#register_and_install_package_button').prop('disabled', $(this).val() == '');
- });
- disable_select_action_buttons();
- var table = $('#tentacles_modules_table').DataTable({
-    "paging":   false,
- })
+    handle_tentacles_buttons();
+    $('#register_and_install_package_button').prop('disabled', true);
+    $('#register_and_install_package_input').keyup(function() {
+    $('#register_and_install_package_button').prop('disabled', $(this).val() === '');
+    });
+    disable_select_action_buttons();
+    $('#tentacles_modules_table').DataTable({
+        "paging":   false,
+    });
 });
