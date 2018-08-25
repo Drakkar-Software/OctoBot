@@ -35,13 +35,13 @@ class Notification:
         else:
             return False
 
-    def notify_with_all(self, message):
+    def notify_with_all(self, message, error_on_failure=True):
         try:
             # gmail
             self.gmail_notification_factory(message, message)
 
             # twitter
-            self.twitter_notification_factory(message)
+            self.twitter_notification_factory(message, error_on_failure)
 
             # telegram
             self.telegram_notification_factory(message)
@@ -84,10 +84,10 @@ class Notification:
                 return True
         return False
 
-    def twitter_notification_factory(self, tweet):
+    def twitter_notification_factory(self, tweet, error_on_failure=True):
         if self.twitter_notification_available():
             twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
-            result = twitter_service.post(tweet)
+            result = twitter_service.post(tweet, error_on_failure)
             if result is not None:
                 self.logger.info("Twitter sent")
             return result
@@ -95,10 +95,10 @@ class Notification:
             self.logger.debug("Twitter notification disabled")
         return None
 
-    def twitter_response_factory(self, tweet_instance, tweet):
+    def twitter_response_factory(self, tweet_instance, tweet, error_on_failure=True):
         if self.twitter_notification_available():
             twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
-            result = twitter_service.respond(tweet_instance.id, tweet)
+            result = twitter_service.respond(tweet_instance.id, tweet, error_on_failure)
             if result is not None:
                 self.logger.info("Twitter sent")
             return result
@@ -118,18 +118,19 @@ class Notification:
             self.logger.debug("Web interface notification disabled")
         return None
 
-    def send_twitter_notification_if_necessary(self, content, notification_type=None):
+    def send_twitter_notification_if_necessary(self, content, notification_type=None, error_on_failure=True):
         if self.twitter_notification_available(notification_type):
-            return self.twitter_notification_factory(content)
+            return self.twitter_notification_factory(content, error_on_failure)
         return None
 
-    def sent_twitter_reply_if_necessary(self, previous_notification, content, notification_type=None):
+    def sent_twitter_reply_if_necessary(self, previous_notification, content, notification_type=None,
+                                        error_on_failure=True):
         if self.twitter_notification_available(notification_type) \
                 and previous_notification is not None \
                 and previous_notification.get_tweet_instance() is not None:
             tweet_instance = previous_notification.get_tweet_instance()
 
-            self.twitter_response_factory(tweet_instance, content)
+            self.twitter_response_factory(tweet_instance, content, error_on_failure)
 
     def send_web_notification_if_necessary(self, level, title, message, notification_type=None):
         if self.web_interface_notification_available(notification_type):
@@ -230,8 +231,25 @@ class OrdersNotification(Notification):
                    profitability=False):
 
         title = "Order status updated"
-        content = ""
 
+        content = self._build_notification_content(order_filled, orders_canceled, trade_profitability,
+                                                   portfolio_profitability, portfolio_diff, profitability)
+
+        self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
+
+        self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
+
+        self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
+                                                CONFIG_NOTIFICATION_TRADES)
+
+    @staticmethod
+    def _build_notification_content(order_filled,
+                                    orders_canceled,
+                                    trade_profitability,
+                                    portfolio_profitability,
+                                    portfolio_diff,
+                                    profitability=False):
+        content = ""
         if order_filled is not None:
             content += f"\n{order_filled.trader.trader_type_str}Order(s) filled : " \
                        f"\n- {PrettyPrinter.open_order_pretty_printer(order_filled)}"
@@ -249,14 +267,7 @@ class OrdersNotification(Notification):
             content += f"\nPortfolio profitability : {round(portfolio_profitability, 4)}% " \
                        f"{'+' if portfolio_diff >= 0 else ''}{round(portfolio_diff, 4)}%"
 
-        print(content)
-
-        self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
-
-        self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
-
-        self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
-                                                CONFIG_NOTIFICATION_TRADES)
+        return content
 
 
 class InterfaceLevel(Enum):
