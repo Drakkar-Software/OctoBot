@@ -42,6 +42,36 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
         self.refreshed_times[time_frame] += 1
         evaluator_thread_manager_to_notify.notify(self.__class__.__name__)
 
+    def _execute_update(self, symbol, exchange, time_frames, backtesting_enabled):
+        now = time.time()
+
+        for time_frame in time_frames:
+
+            # backtesting doesn't need to wait a specific time frame to end to refresh data
+            if backtesting_enabled:
+                try:
+                    if exchange.should_update_data(time_frame, symbol):
+                        self._refresh_data(time_frame)
+                except BacktestingEndedException as e:
+                    self.logger.info(e)
+                    self.keep_running = False
+                    exchange.end_backtesting(symbol)
+                    break
+
+            # if data from this time frame needs an update
+            elif now - self.time_frame_last_update[time_frame] \
+                    >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
+                try:
+                    self._refresh_data(time_frame)
+                except Exception as e:
+                    self.logger.error(f" when refreshing data for time frame {time_frame} for {symbol}: "
+                                      f"{e}")
+                    self.logger.exception(e)
+
+                self.time_frame_last_update[time_frame] = time.time()
+
+        self._update_pause(backtesting_enabled, now)
+
     # start background refresher
     def run(self):
         exchange = None
@@ -72,34 +102,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                 self.time_frame_last_update = {key: 0 for key in time_frames}
 
                 while self.keep_running:
-                    now = time.time()
-
-                    for time_frame in time_frames:
-
-                        # backtesting doesn't need to wait a specific time frame to end to refresh data
-                        if backtesting_enabled:
-                            try:
-                                if exchange.should_update_data(time_frame, symbol):
-                                    self._refresh_data(time_frame)
-                            except BacktestingEndedException as e:
-                                self.logger.info(e)
-                                self.keep_running = False
-                                exchange.end_backtesting(symbol)
-                                break
-
-                        # if data from this time frame needs an update
-                        elif now - self.time_frame_last_update[time_frame] \
-                                >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                            try:
-                                self._refresh_data(time_frame)
-                            except Exception as e:
-                                self.logger.error(f" when refreshing data for time frame {time_frame} for {symbol}: "
-                                                  f"{e}")
-                                self.logger.exception(e)
-
-                            self.time_frame_last_update[time_frame] = time.time()
-
-                    self._update_pause(backtesting_enabled, now)
+                    self._execute_update(symbol, exchange, time_frames, backtesting_enabled)
             else:
                 self.logger.warning("no time frames to monitor, going to sleep.")
 
