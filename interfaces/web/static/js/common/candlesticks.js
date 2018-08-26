@@ -1,5 +1,5 @@
 function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, backtesting=false){
-    let backtesting_enabled = backtesting ? "backtesting" : "live";
+    const backtesting_enabled = backtesting ? "backtesting" : "live";
     const ajax_url = "/dashboard/currency_price_graph_update/"+ exchange_name +"/" + symbol + "/"
         + time_frame + "/" + backtesting_enabled;
     $.ajax({
@@ -106,7 +106,7 @@ function create_candlestick_graph(element_id, symbol_price_data, symbol, exchang
 
     const data = [price_trace, real_trader_trades, simulator_trades];
 
-    var graph_title = symbol;
+    let graph_title = symbol;
     if (exchange_name !== "ExchangeSimulator"){
         graph_title = graph_title + " (" + exchange_name + ", time frame: " + time_frame +")";
     }

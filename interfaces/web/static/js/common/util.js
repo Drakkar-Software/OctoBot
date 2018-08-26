@@ -17,7 +17,7 @@ function replace_spaces(str, replacement=""){
 }
 
 function get_selected_options(element){
-    var selected_options = []
+    const selected_options = [];
     element.find(":selected").each(function(){
         selected_options.push($(this).val())
     });
@@ -45,8 +45,8 @@ function add_event_if_not_already_added(elem, event_type, handler){
 }
 
 function check_has_event_using_handler(elem, event_type, handler){
-    var events = get_events(elem, event_type);
-    var has_events = false;
+    const events = get_events(elem, event_type);
+    let has_events = false;
     $.each(events, function () {
         if($(this)[0]["handler"] === handler){
             has_events = true;

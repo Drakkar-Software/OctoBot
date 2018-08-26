@@ -14,7 +14,7 @@ function get_update(){
 
 function manage_alert(data){
     try{
-        let errors_count = data["errors_count"];
+        const errors_count = data["errors_count"];
         if(errors_count > 0){
             $("#errors-count-badge").text(errors_count);
         }else{
@@ -69,7 +69,7 @@ function send_and_interpret_bot_update(updated_data, update_url, dom_root_elemen
                 create_alert("error", "Error when handling action: "+result.responseText+".", "");
             }
             else{
-                error_callback(updated_data, update_url, dom_root_element, result, status, error)
+                error_callback(updated_data, update_url, dom_root_element, result, status, error);
             }
         }
     })
