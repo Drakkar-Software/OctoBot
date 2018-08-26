@@ -3,9 +3,9 @@ function register_and_install_package(){
     $("#register_and_install_package_progess_bar").show();
     const element = $("#register_and_install_package_input");
     const input_text = element.val();
-    let request = {};
+    const request = {};
     request[$.trim(input_text)] = "description";
-    let full_config_root = element.parents("."+config_root_class);
+    const full_config_root = element.parents("."+config_root_class);
     const update_url = full_config_root.attr(update_url_attr);
     send_and_interpret_bot_update(request, update_url, full_config_root, register_and_install_package_success_callback, register_and_install_package_error_callback)
 }
@@ -15,8 +15,9 @@ function disable_packages_operations(should_lock=true){
     $("#update_tentacles_packages").prop(disabled_attr, should_lock);
     $("#install_tentacles_packages").prop(disabled_attr, should_lock);
     $("#reset_tentacles_packages").prop(disabled_attr, should_lock);
-    $("#register_and_install_package_input").prop(disabled_attr, should_lock);
-    if($("#register_and_install_package_input").val() !== ""){
+    const register_and_install_package_input = $("#register_and_install_package_input");
+    register_and_install_package_input.prop(disabled_attr, should_lock);
+    if(register_and_install_package_input.val() !== ""){
         $("#register_and_install_package_button").prop(disabled_attr, should_lock);
     }
     const should_disable_buttons = get_selected_modules() <= 0;
@@ -36,7 +37,7 @@ function uninstall(module){
 }
 
 function perform_modules_operation(modules, operation){
-    let dom_root_element = $("#module-table");
+    const dom_root_element = $("#module-table");
     const update_url = dom_root_element.attr(operation+"-"+update_url_attr);
     disable_packages_operations();
     send_and_interpret_bot_update(modules, update_url, dom_root_element, modules_operation_success_callback, modules_operation_error_callback)
@@ -136,7 +137,7 @@ function post_package_action_error_callback(updated_data, update_url, dom_root_e
 }
 
 function get_selected_modules(){
-    let selected_modules = []
+    const selected_modules = []
     $("#module-table").find("input[type='checkbox']:checked").each(function(){
         selected_modules.push($(this).attr("module"));
     });
@@ -180,7 +181,7 @@ function disable_select_action_buttons(){
     $('#uninstall_selected_tentacles').prop('disabled', true);
     $('.selectable_tentacle').click(function () {
         // use parent not to trigger selection on button column use
-        let row = $(this).parent();
+        const row = $(this).parent();
         if (row.hasClass(selected_item_class)){
             row.removeClass(selected_item_class);
             row.find(".tentacle-module-checkbox").prop('checked', false);
@@ -188,7 +189,7 @@ function disable_select_action_buttons(){
             row.toggleClass(selected_item_class);
             row.find(".tentacle-module-checkbox").prop('checked', true);
         }
-        var should_disable_buttons = get_selected_modules() <= 0;
+        const should_disable_buttons = get_selected_modules() <= 0;
         $('#uninstall_selected_tentacles').prop('disabled', should_disable_buttons);
         $('#update_selected_tentacles').prop('disabled', should_disable_buttons);
     });

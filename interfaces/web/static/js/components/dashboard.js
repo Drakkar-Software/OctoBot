@@ -4,7 +4,7 @@ let market_profitability = undefined;
 let profitability_chart = undefined;
 
 function get_profitability(){
-    let url = $("#profitability_graph").attr(update_url_attr);
+    const url = $("#profitability_graph").attr(update_url_attr);
     $.get(url,function(data, status){
         bot_simulated_profitability = data["bot_simulated_profitability"];
         bot_real_profitability = data["bot_real_profitability"];
@@ -47,10 +47,10 @@ function fill_profitabiliy_bar(profitability, reference_profitability, label, la
 
 function display_profitability(element_id){
     if(isDefined(market_profitability)){
-        let labels = [];
-        let backgroundColors = [];
-        let borderColor = [];
-        let profitabilities = [];
+        const labels = [];
+        const backgroundColors = [];
+        const borderColor = [];
+        const profitabilities = [];
         fill_profitabiliy_bar(bot_real_profitability, market_profitability, "OctoBot Real Trader Profitability", labels, backgroundColors, borderColor, profitabilities);
         fill_profitabiliy_bar(bot_simulated_profitability, market_profitability, "OctoBot Trader Simulator Profitability", labels, backgroundColors, borderColor, profitabilities);
         fill_profitabiliy_bar(market_profitability, 0, "Watched symbols average profitability", labels, backgroundColors, borderColor, profitabilities);
