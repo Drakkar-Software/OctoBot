@@ -77,7 +77,7 @@ function display_alert(success, message){
 function update_symbol_list(url, exchange){
     const data = {exchange: exchange};
     $.get(url, data, function(data, status){
-        let symbolSelect = $("#symbolSelect");
+        const symbolSelect = $("#symbolSelect");
         symbolSelect.empty(); // remove old options
         $.each(data, function(key,value) {
           symbolSelect.append($("<option></option>")
