@@ -269,16 +269,16 @@ class TelegramApp:
     @staticmethod
     def command_market_status(_, update):
         try:
-            message = "My cryptocurrencies evaluations are:" + TelegramApp.EOL + TelegramApp.EOL
+            message = f"My cryptocurrencies evaluations are: {TelegramApp.EOL}{TelegramApp.EOL}"
             at_least_one_currency = False
             for currency_pair, currency_info in get_currencies_with_status().items():
                 at_least_one_currency = True
-                message += "- {0}:{1}".format(currency_pair, TelegramApp.EOL)
+                message += f"- {currency_pair}:{TelegramApp.EOL}"
                 for exchange_name, evaluation in currency_info.items():
-                    message += "=> {0}: {1}{2}".format(exchange_name, evaluation, TelegramApp.EOL)
+                    message += f"=> {exchange_name}: {evaluation[0]}{TelegramApp.EOL}"
             if not at_least_one_currency:
                 message += TelegramApp.NO_CURRENCIES_MESSAGE + TelegramApp.EOL
-            message += "{0}My current risk is: {1}".format(TelegramApp.EOL, get_risk())
+            message += f"{TelegramApp.EOL}My current risk is: {get_risk()}"
             update.message.reply_text(message)
         except Exception:
             update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, " +

@@ -25,3 +25,33 @@
     </div>
     <!-- Card -->
 {%- endmacro %}
+
+{% macro pair_status_card(pair, status) -%}
+    <!-- Card -->
+    <div class="card pair_status_card mb-4 medium-size">
+
+    <!--Title-->
+    <div class="card-header">{{ pair }}</div>
+
+    <!--Card image-->
+    <div class="view overlay animated fadeIn">
+      <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/{{ pair.split('/')[0].lower() }}.png" alt="Can't find image for {{ pair.split('/')[0] }} :(">
+      <a href="#!">
+        <div class="mask rgba-white-slight waves-effect waves-light"></div>
+      </a>
+    </div>
+
+    <!--Card content-->
+    <div class="card-body">
+        <p class="card-text">
+            <ul>
+                {% for exchange, evaluation in status.items() %}
+                    <li status="{{evaluation[0]}}">{{ exchange }}: {{ evaluation[0] }} ({{ evaluation[1] }})</li>
+                {% endfor %}
+            </ul>
+        </p>
+    </div>
+
+    </div>
+    <!-- Card -->
+{%- endmacro %}

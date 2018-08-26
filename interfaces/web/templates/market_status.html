@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% import 'macros/cards.html' as m_cards %}
+{% block body %}
+<style>
+.card-deck .card{
+    max-width: 230px;
+}
+</style>
+<div class="card">
+    <div class="card-header"><h1>Market status</h1></div>
+    <div class="card-body">
+        <br>
+        <div class="card-deck">
+            {% for pair, status in pairs_with_status.items() %}
+                {{ m_cards.pair_status_card(pair, status) }}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/market_status.js') }}"></script>
+{% endblock additional_scripts %}
