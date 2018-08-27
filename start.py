@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+import os
 import traceback
 from logging.config import fileConfig
 
@@ -113,19 +114,25 @@ def start_octobot(starting_args):
 
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")
-        sys.exit(-1)
+        os._exit(-1)
 
     except ModuleNotFoundError as e:
         if 'tentacles' in str(e):
             logger.error("Impossible to start OctoBot, tentacles are missing.\nTo install tentacles, "
                          "please use the following command:\nstart.py -p install all")
-        sys.exit(-1)
+        os._exit(-1)
 
     except ConfigEvaluatorError:
-        logger.error("OctoBot can't start without" + CONFIG_EVALUATOR_FILE_PATH
+        logger.error("OctoBot can't start without a valid " + CONFIG_EVALUATOR_FILE_PATH
                      + "configuration file.\nThis file is generated on tentacle "
                        "installation using the following command:\nstart.py -p install all")
-        sys.exit(-1)
+        os._exit(-1)
+
+    except ConfigTradingError:
+        logger.error("OctoBot can't start without a valid " + CONFIG_TRADING_FILE_PATH
+                     + " configuration file.\nThis file is generated on tentacle "
+                       "installation using the following command:\nstart.py -p install all")
+        os._exit(-1)
 
 
 if __name__ == '__main__':
