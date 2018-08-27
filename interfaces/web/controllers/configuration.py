@@ -16,6 +16,7 @@ def config():
     if request.method == 'POST':
         request_data = request.get_json()
         success = True
+        response = ""
 
         if request_data:
             # update global config if required
@@ -38,7 +39,6 @@ def config():
             }
 
         if success:
-            # TODO
             return get_rest_reply(jsonify(response))
         else:
             return get_rest_reply('{"update": "ko"}', 500)

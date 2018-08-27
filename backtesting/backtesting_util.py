@@ -16,10 +16,10 @@ from services.web_service import WebService
 
 def create_blank_config_using_loaded_one(loaded_config, other_config=None):
     new_config = other_config if other_config else load_config()
-    trading_tentacles_config = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADING_TENTACLES])
+    trading_tentacles_config = deepcopy(loaded_config[CONFIG_TRADING_TENTACLES])
     risk = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADER_RISK])
     starting_portfolio = deepcopy(loaded_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO])
-    new_config[CONFIG_TRADING][CONFIG_TRADING_TENTACLES] = trading_tentacles_config
+    new_config[CONFIG_TRADING_TENTACLES] = trading_tentacles_config
     new_config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
     new_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO] = starting_portfolio
     new_config[CONFIG_EVALUATOR] = deepcopy(loaded_config[CONFIG_EVALUATOR])
