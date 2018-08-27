@@ -77,8 +77,8 @@ def start_octobot(starting_args):
                 if config[CONFIG_EVALUATOR] is None:
                     raise ConfigEvaluatorError
 
-                config[CONFIG_TRADING][CONFIG_TRADING_TENTACLES] = load_config(CONFIG_TRADING_FILE_PATH, False)
-                if config[CONFIG_TRADING][CONFIG_TRADING_TENTACLES] is None:
+                config[CONFIG_TRADING_TENTACLES] = load_config(CONFIG_TRADING_FILE_PATH, False)
+                if config[CONFIG_TRADING_TENTACLES] is None:
                     raise ConfigTradingError
 
                 if starting_args.data_collector:
