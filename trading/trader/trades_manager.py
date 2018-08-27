@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from tools.logging.logging_util import get_logger
 
 from config.cst import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
@@ -157,7 +159,7 @@ class TradesManager:
         self.origin_crypto_currencies_values = self._evaluate_config_crypto_currencies_values()
 
         with self.portfolio as pf:
-            self.origin_portfolio = pf.get_portfolio()
+            self.origin_portfolio = deepcopy(pf.get_portfolio())
 
         self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio,
                                                                       self.origin_crypto_currencies_values)
