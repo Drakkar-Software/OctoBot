@@ -57,7 +57,8 @@ class Backtesting:
 
             profitability, market_average_profitability = self.get_profitability(trader)
             reference_market = self.get_reference_market(trader)
-            portfolio = self.get_portfolio(trader)
+            end_portfolio = self.get_portfolio(trader)
+            starting_portfolio = self.get_origin_portfolio(trader)
             accuracy_info = "" if len(self.symbols_to_test) < 2 else \
                 "\nPlease note that multi symbol backtesting is slightly random due to Octbot's multithreaded " \
                 "architecture used to process all symbols as fast as possible. This randomness is kept for " \
@@ -65,7 +66,10 @@ class Backtesting:
                 "100% determinist."
 
             self.logger.info(f"End portfolio: "
-                             f"{PrettyPrinter.global_portfolio_pretty_print(portfolio,' | ')}")
+                             f"{PrettyPrinter.global_portfolio_pretty_print(end_portfolio,' | ')}")
+
+            self.logger.info(f"Starting portfolio: "
+                             f"{PrettyPrinter.global_portfolio_pretty_print(starting_portfolio,' | ')}")
 
             self.logger.info(f"Global market profitability (vs {reference_market}) : "
                              f"{market_average_profitability}% | Octobot : {profitability}%{accuracy_info}")
@@ -111,7 +115,8 @@ class Backtesting:
             "profitability": profitability,
             "market_average_profitability": market_average_profitability,
             "reference_market": self.get_reference_market(trader),
-            "end_portfolio": self.get_portfolio(trader)
+            "end_portfolio": self.get_portfolio(trader),
+            "starting_portfolio": self.get_origin_portfolio(trader)
         }
         return report
 
@@ -125,6 +130,10 @@ class Backtesting:
     @staticmethod
     def get_portfolio(trader):
         return trader.get_portfolio().get_portfolio()
+
+    @staticmethod
+    def get_origin_portfolio(trader):
+        return trader.get_trades_manager().get_origin_portfolio()
 
     @staticmethod
     def get_profitability(trader):

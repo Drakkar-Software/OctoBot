@@ -67,11 +67,16 @@ function load_report(should_alert=False){
         $("#maProf").html(data["bot_report"]["market_average_profitability"]);
         $("#refM").html(data["bot_report"]["reference_market"]);
         $("#sProf").html(all_profitability);
-        const portfolio_reports = [];
+        const end_portfolio_reports = [];
             $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
-                portfolio_reports.push(symbol+": "+holdings["total"]);
+                end_portfolio_reports.push(symbol+": "+holdings["total"]);
             });
-        $("#ePort").html(portfolio_reports.join(", "));
+        $("#ePort").html(end_portfolio_reports.join(", "));
+        const starting_portfolio_reports = [];
+            $.each( data["bot_report"]["starting_portfolio"], function( symbol, holdings ) {
+                starting_portfolio_reports.push(symbol+": "+holdings["total"]);
+            });
+        $("#sPort").html(starting_portfolio_reports.join(", "));
 
         add_graphs(data["symbols_with_time_frames_frames"]);
     });
