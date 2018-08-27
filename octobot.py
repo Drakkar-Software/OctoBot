@@ -5,10 +5,9 @@ import copy
 import ccxt
 
 from backtesting.backtesting import Backtesting
-from config.cst import CONFIG_FILE, CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
+from config.cst import CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
-    NOTIFICATION_STOPPING_MESSAGE, CONFIG_TRADING, CONFIG_TRADER_MODE, BOT_TOOLS_RECORDER, \
-    BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
+    NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
@@ -20,10 +19,9 @@ from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
 from trading.exchanges.exchange_manager import ExchangeManager
-from trading.trader import modes
-from trading.trader.modes import get_deep_class_from_string
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
+from trading.util.trading_config_util import get_activated_trading_mode
 
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
@@ -84,6 +82,7 @@ class OctoBot:
         self.symbol_threads_manager = {}
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
+        self.trading_mode = None
         self.exchange_trading_modes = {}
         self.exchanges_list = {}
         self.symbol_evaluator_list = {}
@@ -117,8 +116,8 @@ class OctoBot:
 
                 # create trading mode
                 try:
-                    trading_mode_inst = self.get_trading_mode_class(self.config)(self.config, exchange_inst)
-                    self.exchange_trading_modes[exchange_inst.get_name()] = trading_mode_inst
+                    self.trading_mode = get_activated_trading_mode(self.config)(self.config, exchange_inst)
+                    self.exchange_trading_modes[exchange_inst.get_name()] = self.trading_mode
                 except RuntimeError as e:
                     self.logger.error(e.args[0])
                     raise e
@@ -277,17 +276,6 @@ class OctoBot:
     def set_watcher(self, watcher):
         self.watcher = watcher
 
-    @staticmethod
-    def get_trading_mode_class(config):
-        if CONFIG_TRADING in config and CONFIG_TRADER_MODE in config[CONFIG_TRADING]:
-            trading_mode_class = get_deep_class_from_string(config[CONFIG_TRADING][CONFIG_TRADER_MODE],
-                                                            modes)
-
-            if trading_mode_class is not None:
-                return trading_mode_class
-
-        raise RuntimeError("Please specify a valid trading mode in your {0} file (trader -> mode)".format(CONFIG_FILE))
-
     def get_symbols_threads_manager(self):
         return self.symbol_threads_manager
 
@@ -335,3 +323,6 @@ class OctoBot:
 
     def get_tools(self):
         return self.tools
+
+    def get_trading_mode(self):
+        return self.trading_mode

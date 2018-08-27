@@ -11,10 +11,11 @@ from evaluator import TA
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
-    CONFIG_EVALUATOR, CONFIG_TRADER_MODE
+    CONFIG_EVALUATOR
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 from tools.logging.logging_util import set_global_logger_level, get_global_logger_level
+from trading.util.trading_config_util import get_activated_trading_mode
 
 CONFIG = 0
 RANK = 1
@@ -27,7 +28,7 @@ class StrategyOptimizer:
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
         self.logger = get_logger(self.get_name())
-        self.trading_mode = config[CONFIG_TRADING][CONFIG_TRADER_MODE]
+        self.trading_mode = get_activated_trading_mode(config)
         self.config = create_blank_config_using_loaded_one(config)
         self.strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                     Strategies, evaluator_parent_inspection)
@@ -77,8 +78,9 @@ class StrategyOptimizer:
                 self.risks = [0.5, 1] if risks is None else risks
 
                 self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} "
-                                 f"strategy using {self.trading_mode} trading mode, {self.all_TAs} "
-                                 f"technical evaluator(s), {self.all_time_frames} time frames and {self.risks} risk(s).")
+                                 f"strategy using {self.trading_mode.get_name()} trading mode, {self.all_TAs} "
+                                 f"technical evaluator(s), {self.all_time_frames} time frames and {self.risks} "
+                                 f"risk(s).")
 
                 self.total_nb_runs = int(len(self.risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
 

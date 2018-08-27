@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from config.cst import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, \
     CONFIG_SIMULATOR, CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, \
-    CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADER_MODE, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, \
+    CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADING_TENTACLES, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, \
     CONFIG_DATA_COLLECTOR_PATH, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_STARTING_PORTFOLIO, \
     CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO, DEFAULT_REFERENCE_MARKET
 from octobot import OctoBot
@@ -16,10 +16,10 @@ from services.web_service import WebService
 
 def create_blank_config_using_loaded_one(loaded_config, other_config=None):
     new_config = other_config if other_config else load_config()
-    trading_mode = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADER_MODE])
+    trading_tentacles_config = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADING_TENTACLES])
     risk = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADER_RISK])
     starting_portfolio = deepcopy(loaded_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO])
-    new_config[CONFIG_TRADING][CONFIG_TRADER_MODE] = trading_mode
+    new_config[CONFIG_TRADING][CONFIG_TRADING_TENTACLES] = trading_tentacles_config
     new_config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
     new_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO] = starting_portfolio
     new_config[CONFIG_EVALUATOR] = deepcopy(loaded_config[CONFIG_EVALUATOR])
