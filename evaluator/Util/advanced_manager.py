@@ -114,12 +114,17 @@ class AdvancedManager:
         return None
 
     @staticmethod
-    def create_default_evaluator_types_list(evaluator_class):
-        evaluator_default_eval_class_list = []
-        for evaluator_subclass in evaluator_class.__subclasses__():
-            for eval_class in evaluator_subclass.__subclasses__():
-                evaluator_default_eval_class_list.append(eval_class)
-        return evaluator_default_eval_class_list
+    def create_default_types_list(clazz):
+        default_class_list = []
+        for current_subclass in clazz.__subclasses__():
+            subclasses = current_subclass.__subclasses__()
+            if subclasses:
+                for current_class in subclasses:
+                    default_class_list.append(current_class)
+            else:
+                if not AdvancedManager.is_abstract(current_subclass):
+                    default_class_list.append(current_subclass)
+        return default_class_list
 
     @staticmethod
     def create_advanced_evaluator_types_list(evaluator_class, config):

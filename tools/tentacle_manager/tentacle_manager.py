@@ -128,6 +128,7 @@ class TentacleManager:
                     self.tentacle_package_manager.inc_current_step()
 
             TentaclePackageManager.update_evaluator_config_file()
+            TentaclePackageManager.update_trading_config_file()
 
             return nb_actions
 
