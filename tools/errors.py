@@ -4,3 +4,7 @@ class ConfigError(Exception):
 
 class ConfigEvaluatorError(Exception):
     pass
+
+
+class ConfigTradingError(Exception):
+    pass
