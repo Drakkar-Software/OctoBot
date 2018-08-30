@@ -91,6 +91,32 @@ body:before {
     transition: all 0.5s ease;
 }
 
+.card .card-long,
+.card .card-long .card-body,
+.card .card-long .card-text,
+.card .card-deck .card-long,
+.card .card-deck .card-long .card-body,
+ .card .card-deck .card-long .card-text{
+    background-color: seagreen !important;
+    -webkit-transition: all 0.5s ease;
+    -moz-transition: all 0.5s ease;
+    -o-transition: all 0.5s ease;
+    transition: all 0.5s ease;
+}
+
+.card .card-short,
+.card .card-short .card-body,
+.card .card-short .card-text,
+.card .card-deck .card-short,
+.card .card-deck .card-short .card-body,
+ .card .card-deck .card-short .card-text{
+    background-color: darkred !important;
+    -webkit-transition: all 0.5s ease;
+    -moz-transition: all 0.5s ease;
+    -o-transition: all 0.5s ease;
+    transition: all 0.5s ease;
+}
+
 .card a:link {
     color: #33b5e5 !important;
 }

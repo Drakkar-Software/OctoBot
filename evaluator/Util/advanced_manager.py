@@ -1,7 +1,7 @@
 from config.cst import CONFIG_ADVANCED_CLASSES, CONFIG_ADVANCED_INSTANCES
 from evaluator.Util.abstract_util import AbstractUtil
 from evaluator.abstract_evaluator import AbstractEvaluator
-import logging
+from tools.logging.logging_util import get_logger
 
 
 class AdvancedManager:
@@ -98,7 +98,7 @@ class AdvancedManager:
     def get_class(config, class_type):
         classes = AdvancedManager.get_classes(config, class_type)
         if classes and len(classes) > 1:
-            logging.getLogger(AdvancedManager.__name__).warning("More than one instance of {0} available, using {1}.".
+            get_logger(AdvancedManager.__name__).warning("More than one instance of {0} available, using {1}.".
                                                                 format(class_type, classes[0]))
         return classes[0]
 
@@ -114,12 +114,17 @@ class AdvancedManager:
         return None
 
     @staticmethod
-    def create_default_evaluator_types_list(evaluator_class):
-        evaluator_default_eval_class_list = []
-        for evaluator_subclass in evaluator_class.__subclasses__():
-            for eval_class in evaluator_subclass.__subclasses__():
-                evaluator_default_eval_class_list.append(eval_class)
-        return evaluator_default_eval_class_list
+    def create_default_types_list(clazz):
+        default_class_list = []
+        for current_subclass in clazz.__subclasses__():
+            subclasses = current_subclass.__subclasses__()
+            if subclasses:
+                for current_class in subclasses:
+                    default_class_list.append(current_class)
+            else:
+                if not AdvancedManager.is_abstract(current_subclass):
+                    default_class_list.append(current_subclass)
+        return default_class_list
 
     @staticmethod
     def create_advanced_evaluator_types_list(evaluator_class, config):

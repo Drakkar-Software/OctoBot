@@ -6,6 +6,7 @@ from tools.tentacle_manager import tentacle_util as TentacleUtil
 from config.cst import TENTACLES_PUBLIC_LIST, TENTACLES_DEFAULT_BRANCH, TENTACLE_PACKAGE_DESCRIPTION, GITHUB_RAW_CONTENT_URL, \
     GITHUB_BASE_URL, GITHUB, TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, \
     TENTACLES_INSTALL_FOLDERS, PYTHON_INIT_FILE, TENTACLE_PACKAGE_NAME, TENTACLES_PUBLIC_REPOSITORY
+from tools.logging.logging_util import get_logger
 
 
 def get_package_description_with_adaptation(url_or_path):
@@ -127,14 +128,63 @@ def check_path(path):
     return last_path_folder in TENTACLES_INSTALL_FOLDERS
 
 
-def add_evaluator_to_evaluator_config_content(evaluator_type, evaluator_config_content,
-                                              evaluator_list, activated=False):
+def update_config_file(config_file_path, default_file_path, classes_to_consider):
+
+    logger = get_logger("TentaclePackageUtil")
+
+    # initialize file content
+    config_content = {}
+    changed_something = False
+    if os.path.isfile(config_file_path):
+        with open(config_file_path, "r") as config_file_r:
+            default_config_file_content = config_file_r.read()
+            try:
+                config_content = json.loads(default_config_file_content)
+            except Exception as e:
+                logger.warning(f"impossible to load content of configuration file: "
+                               f"{config_file_path}: {e}")
+    # take default values into account using default file
+    if os.path.isfile(default_file_path):
+        with open(default_file_path, "r") as default_config_file_r:
+            default_config_file_content = default_config_file_r.read()
+            default_config_content = json.loads(default_config_file_content)
+            for key, val in default_config_content.items():
+                if key not in config_content:
+                    config_content[key] = val
+                    changed_something = True
+
+    classes_list = []
+    # add items using their base class key (vs advances classes)
+    for classes_in_config in classes_to_consider:
+        changed_something = add_class_to_config_file_content(
+            classes_in_config, config_content, classes_list) or changed_something
+
+    # remove potential unnecessary items
+    to_remove = []
+    str_classes_list = [c.get_name() for c in classes_list]
+    for key in config_content.keys():
+        if key not in str_classes_list:
+            to_remove.append(key)
+
+    for key_to_remove in to_remove:
+        config_content.pop(key_to_remove)
+        changed_something = True
+
+    if changed_something:
+        with open(config_file_path, "w+") as config_file_w:
+            config_file_w.write(json.dumps(config_content, indent=4, sort_keys=True))
+            logger.info(f"{config_file_path} has been updated")
+    else:
+        logger.info(f"Nothing to update in {config_file_path}")
+
+
+def add_class_to_config_file_content(clazz, config_file_content, classes_list, activated=False):
     from evaluator.Util.advanced_manager import AdvancedManager
     changed_something = False
-    current_evaluator_list = AdvancedManager.create_default_evaluator_types_list(evaluator_type)
-    for eval_class in current_evaluator_list:
-        if not eval_class.get_name() in evaluator_config_content:
-            evaluator_config_content[eval_class.get_name()] = activated
+    current_classes_list = AdvancedManager.create_default_types_list(clazz)
+    for current_class in current_classes_list:
+        if not current_class.get_name() in config_file_content:
+            config_file_content[current_class.get_name()] = activated
             changed_something = True
-    evaluator_list += current_evaluator_list
+    classes_list += current_classes_list
     return changed_something

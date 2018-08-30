@@ -1,6 +1,5 @@
 from binance.client import Client, BinanceAPIException
 from binance.websockets import BinanceSocketManager
-
 from config.config import decrypt
 from config.cst import *
 from tools.symbol_util import merge_symbol
@@ -47,7 +46,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
             if self.exchange_manager.need_user_stream():
                 self._init_user_socket()
         except BinanceAPIException as e:
-            self.logger.error("error when connecting to binance websockets: {0}".format(e))
+            self.logger.error(f"error when connecting to binance web sockets: {e}")
 
     def start_sockets(self):
         if self.socket_manager:
@@ -165,7 +164,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
             self.socket_manager.stop_socket(socket_key)
         self.socket_manager.close()
         self.init_web_sockets(self.ws_time_frames, self.ws_trader_pairs)
-        self.logger.info(f"{len(self.open_sockets_keys)} websocket(s) restarted")
+        self.logger.info(f"{len(self.open_sockets_keys)} web socket(s) restarted")
 
     def all_currencies_prices_callback(self, msg):
         # TODO
@@ -176,7 +175,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
             if 'e' in msg and msg['e'] == 'error':
                 # close and restart the socket
                 # self.close_sockets()
-                self.logger.error(f"error ({msg['m']}) in websocket all_currencies_prices_callback, "
+                self.logger.error(f"error ({msg['m']}) in web socket all_currencies_prices_callback, "
                                   "calling restart_sockets()")
                 self.close_and_restart_sockets()
             else:
@@ -206,7 +205,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
             elif msg["e"] == "executionReport":
                 self._update_order(msg)
             elif msg['e'] == 'error':
-                self.logger.error(f"error in websocket user_callback ({msg['m']}), calling restart_sockets()")
+                self.logger.error(f"error in web socket user_callback ({msg['m']}), calling restart_sockets()")
                 self.close_and_restart_sockets()
         except Exception as e:
             self.logger.exception(e)

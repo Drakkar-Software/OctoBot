@@ -16,9 +16,9 @@ function handle_reset_buttons(){
 function handle_remove_buttons(){
     // Card deck removing
     $(document).on("click", ".remove-btn", function() {
-        var deleted_element_key = get_card_config_key($(this));
-        var deck = get_deck_container($(this));
-        var card = get_card_container($(this));
+        const deleted_element_key = get_card_config_key($(this));
+        const deck = get_deck_container($(this));
+        const card = get_card_container($(this));
         if ($.inArray(deleted_element_key, deleted_global_config_elements) === -1 && !card.hasClass(added_class)){
             deleted_global_config_elements.push(deleted_element_key);
         }
@@ -41,16 +41,16 @@ function handle_add_buttons(){
     // Card deck adding
     $(".add-btn").click(function() {
 
-        var button_id = $(this).attr("id")
+        const button_id = $(this).attr("id");
 
-        var deck = $(this).parents("." + config_root_class).find(".card-deck");
-        var select_input = $("#" + button_id + "Select");
-        var select_value = select_input.val();
-        var target_template = $("#" + button_id + "-template-default")
+        const deck = $(this).parents("." + config_root_class).find(".card-deck");
+        const select_input = $("#" + button_id + "Select");
+        const select_value = select_input.val();
+        let target_template = $("#" + button_id + "-template-default");
 
         // currencies
-        var select_symbol = select_input.children("[data-tokens='"+select_value+"']").attr("symbol");
-        var reference_market = select_input.attr("reference_market");
+        const select_symbol = select_input.children("[data-tokens='"+select_value+"']").attr("symbol");
+        const reference_market = select_input.attr("reference_market");
 
         //services
         if (button_id === "AddService"){
@@ -59,10 +59,10 @@ function handle_add_buttons(){
 
         // check if not already added
         if(deck.find("div[name='"+select_value+"']").length === 0){
-            var template_default = target_template.html().replace(new RegExp(config_default_value,"g"), select_value);
-            template_default = template_default.replace(new RegExp("card-text symbols default","g"), "card-text symbols")
+            let template_default = target_template.html().replace(new RegExp(config_default_value,"g"), select_value);
+            template_default = template_default.replace(new RegExp("card-text symbols default","g"), "card-text symbols");
             if(isDefined(select_symbol)){
-                template_default = template_default.replace(new RegExp(config_default_symbol + ".png","g"), select_symbol.toLowerCase() + ".png")
+                template_default = template_default.replace(new RegExp(config_default_symbol + ".png","g"), select_symbol.toLowerCase() + ".png");
             }
             deck.append(template_default).hide().fadeIn();
             handle_editable();
@@ -71,7 +71,7 @@ function handle_add_buttons(){
             $('.multi-select-element').each(function () {
                 if ($(this).siblings('.select2').length === 0 && !$(this).parent().hasClass('default')){
                     $(this).children("option").each(function () {
-                        var symbols = $(this).attr("value").split("/");
+                        const symbols = $(this).attr("value").split("/");
                         if (symbols[0] === select_symbol && symbols[1] === reference_market){
                             $(this).attr("selected", "selected");
                         }
@@ -105,16 +105,16 @@ function register_edit_events(){
 }
 
 function card_edit_handler(e, params){
-    var current_elem = $(this);
-    var new_value = parse_new_value(current_elem);
+    const current_elem = $(this);
+    let new_value = parse_new_value(current_elem);
     if(isDefined(params) && isDefined(params["newValue"])){
         new_value = params["newValue"];
     }
-    var config_key = get_config_key(current_elem);
-    var card_container = get_card_container(current_elem);
+    const config_key = get_config_key(current_elem);
+    const card_container = get_card_container(current_elem);
 
-    var other_config_elements = card_container.find("."+config_element_class);
-    var something_changed = get_config_value_changed(current_elem, new_value, config_key);
+    const other_config_elements = card_container.find("."+config_element_class);
+    let something_changed = get_config_value_changed(current_elem, new_value, config_key);
 
     if(!something_changed){
         // if nothing changed on the current field, check other fields of the card
@@ -134,7 +134,7 @@ function card_edit_handler(e, params){
 
 function something_is_unsaved(){
 
-    var config_root = $("#super-container");
+    const config_root = $("#super-container");
     return (
         config_root.find("."+card_class_modified).length > 0
             || config_root.find("."+deck_container_modified_class).length > 0
@@ -143,22 +143,19 @@ function something_is_unsaved(){
 }
 
 function parse_new_value(element){
-    var raw_data = replace_spaces(replace_break_line(element.text()));
+    const raw_data = replace_spaces(replace_break_line(element.text()));
 
     // simple case
     if(element[0].hasAttribute(current_value_attr)){
-        var value = replace_spaces(replace_break_line(element.attr(current_value_attr)));
+        const value = replace_spaces(replace_break_line(element.attr(current_value_attr)));
         if(element[0].hasAttribute(config_data_type_attr)){
             switch(element.attr(config_data_type_attr)) {
                 case "bool":
                     return value === true || value === "true";
-                    break;
                 case "number":
                     return Number(value);
-                    break;
                 default:
                     return value;
-                    break;
             }
         }else{
             return value;
@@ -169,20 +166,16 @@ function parse_new_value(element){
         switch(element.attr(config_data_type_attr)) {
             case "bool":
                 return element.is(":checked");
-                break;
             case "list":
-                var new_value = [];
+                const new_value = [];
                 element.find(":selected").each(function(index, value){
                     new_value.splice(index, 0, replace_spaces(replace_break_line(value.text)));
                 });
                 return new_value;
-                break;
             case "number":
                 return Number(raw_data);
-                break;
             default:
                 return raw_data;
-                break;
         }
 
     // without information
@@ -193,21 +186,21 @@ function parse_new_value(element){
 
 function handle_save_buttons(){
     $("#save-config").click(function() {
-        var full_config = $("#super-container");
-        var updated_config = {};
-        var update_url = $("#save-config").attr(update_url_attr);
+        const full_config = $("#super-container");
+        const updated_config = {};
+        const update_url = $("#save-config").attr(update_url_attr);
 
         // take all tabs into account
         get_tabs_config().each(function(){
             $(this).find("."+config_element_class).each(function(){
-                var config_type = $(this).attr(config_type_attr);
+                const config_type = $(this).attr(config_type_attr);
 
                 if(!(config_type in updated_config)){
                     updated_config[config_type] = {};
                 }
 
-                var new_value = parse_new_value($(this));
-                var config_key = get_config_key($(this));
+                const new_value = parse_new_value($(this));
+                const config_key = get_config_key($(this));
 
                 if(get_config_value_changed($(this), new_value, config_key)){
                     updated_config[config_type][config_key] = new_value;
@@ -228,7 +221,7 @@ function get_config_key(elem){
 }
 
 function get_card_config_key(card_component, config_type="global_config"){
-    var element_with_config = card_component.parent(".card-body");
+    const element_with_config = card_component.parent(".card-body");
     return get_config_key(element_with_config);
 }
 
@@ -241,7 +234,7 @@ function get_card_container(elem) {
 }
 
 function get_config_value_changed(element, new_value, config_key) {
-    var new_value_str = new_value.toString();
+    let new_value_str = new_value.toString();
     if(new_value instanceof Array && new_value.length > 0){
         //need to format array to match python string representation of config
         var str_array = [];
@@ -250,11 +243,11 @@ function get_config_value_changed(element, new_value, config_key) {
         });
         new_value_str = "[" + str_array.join(", ") + "]";
     }
-    return get_value_changed(new_value_str, element.attr(config_value_attr), config_key)
+    return get_value_changed(new_value_str, element.attr(config_value_attr), config_key);
 }
 
 function get_value_changed(new_val, dom_conf_val, config_key){
-    var lower_case_val = new_val.toLowerCase();
+    const lower_case_val = new_val.toLowerCase();
     if(new_val.toLowerCase() !== dom_conf_val.toLowerCase()){
         return true;
     }else if (config_key in validated_updated_global_config){
@@ -273,17 +266,18 @@ function handle_save_buttons_success_callback(updated_data, update_url, dom_root
 
 function handle_evaluator_configuration_editor(){
     $(".config-element").click(function(){
-        var element = $(this);
+        const element = $(this);
 
         if (element.hasClass(config_element_class)){
 
             if (element[0].hasAttribute(config_type_attr) && element.attr(config_type_attr) === evaluator_config_type){
 
                 // build data update
-                var new_value = parse_new_value(element);
+                let new_value = parse_new_value(element);
+                let current_value;
 
                 try {
-                    var current_value = element.attr(current_value_attr).toLowerCase();
+                    current_value = element.attr(current_value_attr).toLowerCase();
                 }
                 catch(e) {
                     current_value = element.attr(current_value_attr);
@@ -312,14 +306,14 @@ function reset_configuration_element(){
 }
 
 function updated_validated_updated_global_config(updated_data){
-    for (var conf_key in updated_data) {
+    for (const conf_key in updated_data) {
         validated_updated_global_config[conf_key] = updated_data[conf_key];
     }
     deleted_global_config_elements = [];
 }
 
-var validated_updated_global_config = {};
-var deleted_global_config_elements = [];
+let validated_updated_global_config = {};
+let deleted_global_config_elements = [];
 
 $(document).ready(function() {
     setup_editable();
@@ -335,5 +329,5 @@ $(document).ready(function() {
 
     register_edit_events();
 
-    register_exit_confirm_function(something_is_unsaved)
+    register_exit_confirm_function(something_is_unsaved);
 });

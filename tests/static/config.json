@@ -77,8 +77,7 @@
     "notification-type": 1
   },
   "trading":{
-    "risk": 1,
-    "mode": "DailyTradingMode"
+    "risk": 1
   },
   "trader":{
     "enabled": false

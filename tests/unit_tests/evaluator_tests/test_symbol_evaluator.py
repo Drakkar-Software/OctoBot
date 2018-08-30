@@ -11,7 +11,7 @@ from trading.trader.portfolio import Portfolio
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
 from config.cst import TimeFrames
-from octobot import OctoBot
+from trading.util.trading_config_util import get_activated_trading_mode
 
 
 def _get_tools():
@@ -36,7 +36,7 @@ def _get_tools():
     symbol_evaluator.set_traders(exchange_traders2)
     symbol_evaluator.strategies_eval_lists[exchange_inst.get_name()] = EvaluatorCreator.create_strategies_eval_list(
         config)
-    trading_mode_inst = OctoBot.get_trading_mode_class(config)(config, exchange_inst)
+    trading_mode_inst = get_activated_trading_mode(config)(config, exchange_inst)
     evaluator_thread_manager = EvaluatorThreadsManager(config, time_frame, symbol_time_frame_updater_thread,
                                                        symbol_evaluator, exchange_inst, trading_mode_inst, [])
     trader_inst.portfolio.portfolio["USDT"] = {

@@ -36,37 +36,13 @@
         </div>
     </div>
 </div>
-<br>
-<!--<h2>Order history</h2>-->
-<!--<div class="table-responsive">-->
-  <!--<table class="table">-->
-    <!--<caption>List of order history</caption>-->
-  <!--<thead>-->
-    <!--<tr>-->
-        <!--<th scope="col">#</th>-->
-        <!--<th scope="col">Exchange</th>-->
-        <!--<th scope="col">Symbol</th>-->
-        <!--<th scope="col">Type</th>-->
-        <!--<th scope="col">Price</th>-->
-        <!--<th scope="col">Quantity</th>-->
-        <!--<th scope="col">Status</th>-->
-        <!--<th scope="col">Creation</th>-->
-    <!--</tr>-->
-  <!--</thead>-->
-  <!--<tbody>-->
-  <!--PENDING...-->
-  <!--</tbody>-->
-  <!--</table>-->
-<!--</div>-->
 
 {% endblock %}
 
 {% block additional_scripts %}
 <script>
     $(document).ready(function () {
-      $('#open_order_datatable').DataTable({
-         // "ajax": "{{ url_for('api.orders') }}"
-      })
+      $('#open_order_datatable').DataTable();
     });
 </script>
 {% endblock additional_scripts %}

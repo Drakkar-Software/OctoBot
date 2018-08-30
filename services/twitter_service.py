@@ -52,18 +52,26 @@ class TwitterService(AbstractService):
             return tweet["text"]
         return ""
 
-    def post(self, content):
+    def post(self, content, error_on_failure=True):
         try:
             return self.split_tweet_content(content=content, tweet_id=None)
         except Exception as e:
-            self.logger.error(f"Failed to send tweet : {e}")
+            error = f"Failed to send tweet : {e} tweet:{content}"
+            if error_on_failure:
+                self.logger.error(error)
+            else:
+                self.logger.info(error)
         return None
 
-    def respond(self, tweet_id, content):
+    def respond(self, tweet_id, content, error_on_failure=True):
         try:
             return self.split_tweet_content(content=content, tweet_id=tweet_id)
         except Exception as e:
-            self.logger.error(f"Failed to send tweet : {e}")
+            error = f"Failed to send response tweet : {e} tweet:{content}"
+            if error_on_failure:
+                self.logger.error(error)
+            else:
+                self.logger.info(error)
         return None
 
     def split_tweet_content(self, content, counter=None, counter_max=None, tweet_id=None):

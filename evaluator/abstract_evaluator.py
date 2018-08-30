@@ -89,9 +89,13 @@ class AbstractEvaluator:
     def get_is_updating(self):
         return self.is_updating
 
-    # Active tells if this evalautor is currently activated (an evaluator can be paused)
+    # Active tells if this evaluator is currently activated (an evaluator can be paused)
     def get_is_active(self):
         return self.is_active
+
+    # Return the evaluator symbol
+    def get_symbol(self):
+        return self.symbol
 
     # generic eval that will call the indicator eval()
     # and provide a safe execution by disabling multi-call

@@ -5,9 +5,10 @@ import time
 import flask
 import numpy
 
-from config.cst import PriceIndexes
+from config.cst import PriceIndexes, LOG_DATABASE, LOG_NEW_ERRORS_COUNT
 from interfaces.web.advanced_controllers import advanced
 from interfaces.web.api import api
+from tools.logging import logs_database, reset_errors_count
 
 server_instance = flask.Flask(__name__)
 
@@ -19,6 +20,7 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.WARNING)
 
 notifications = []
+
 
 matrix_history = []
 symbol_data_history = {}
@@ -95,3 +97,15 @@ def get_symbol_data_history(symbol, time_frame):
 
 def get_notifications():
     return notifications
+
+
+def get_logs():
+    return logs_database[LOG_DATABASE]
+
+
+def get_errors_count():
+    return logs_database[LOG_NEW_ERRORS_COUNT]
+
+
+def flush_errors_count():
+    reset_errors_count()

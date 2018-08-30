@@ -1,6 +1,5 @@
-import logging
+from tools.logging.logging_util import get_logger
 import os
-import json
 
 import tools.tentacle_manager.tentacle_package_util as TentaclePackageUtil
 import tools.tentacle_manager.tentacle_util as TentacleUtil
@@ -11,14 +10,15 @@ from config.cst import TENTACLE_PACKAGE_DESCRIPTION, EVALUATOR_DEFAULT_FOLDER, \
     TENTACLE_MODULE_SUBTYPE, TENTACLE_MODULE_VERSION, TENTACLE_MODULE_CONFIG_FILES, TENTACLE_MODULE_REQUIREMENTS, \
     TENTACLE_MODULE_REQUIREMENT_WITH_VERSION, TENTACLES_PATH, PYTHON_INIT_FILE, TENTACLE_MODULE_TESTS, \
     TentacleManagerActions, CONFIG_DEFAULT_EVALUATOR_FILE, CONFIG_EVALUATOR_FILE_PATH, TENTACLE_MODULE_DEV, \
-    TENTACLE_PACKAGE_NAME, TENTACLE_MODULE_RESOURCE_FILES, EVALUATOR_RESOURCE_FOLDER
+    TENTACLE_PACKAGE_NAME, TENTACLE_MODULE_RESOURCE_FILES, EVALUATOR_RESOURCE_FOLDER, CONFIG_TRADING_FILE_PATH, \
+    CONFIG_DEFAULT_TRADING_FILE
 
 
 class TentaclePackageManager:
     def __init__(self, config, tentacle_manager):
         self.config = config
         self.tentacle_manager = tentacle_manager
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.just_processed_modules = []
         self.installed_modules = {}
         self.max_steps = None
@@ -396,61 +396,45 @@ class TentaclePackageManager:
                     # remove package to uninstall from init
                     init_file_w.write(init_content.replace(line_in_init, ""))
 
+
+    @staticmethod
+    def _log_config_file_update_exception(logger, exception):
+        logger.exception(exception)
+        logger.error(f"Something went wrong when checking installed tentacles: {exception}.\nIf Octobot is now "
+                     "working after this, you should re-install your tentacles (start.py -p install all).\nIf this "
+                     "problem keeps appearing, try to reset all tentacles (start.py -p reset_tentacles).")
+
     @staticmethod
     def update_evaluator_config_file(evaluator_config_file=CONFIG_EVALUATOR_FILE_PATH):
 
-        logger = logging.getLogger(TentaclePackageManager.__name__)
+        logger = get_logger(TentaclePackageManager.__name__)
         try:
-            logger.info("Updating {} using new data...".format(evaluator_config_file))
+            logger.info(f"Updating {evaluator_config_file} using new data...")
 
             from evaluator.RealTime import RealTimeEvaluator
             from evaluator.Social import SocialEvaluator
             from evaluator.Strategies import StrategiesEvaluator
             from evaluator.TA import TAEvaluator
 
-            config_content = {}
-            changed_something = False
-            if os.path.isfile(evaluator_config_file):
-                with open(evaluator_config_file, "r") as evaluator_config_file_r:
-                    default_config_file_content = evaluator_config_file_r.read()
-                    try:
-                        config_content = json.loads(default_config_file_content)
-                    except Exception as e:
-                        logger.warning(f"impossible to load content of configuration file: "
-                                       f"{evaluator_config_file}: {e}")
-            if os.path.isfile(CONFIG_DEFAULT_EVALUATOR_FILE):
-                with open(CONFIG_DEFAULT_EVALUATOR_FILE, "r") as default_evaluator_config_file_r:
-                    default_config_file_content = default_evaluator_config_file_r.read()
-                    default_config_content = json.loads(default_config_file_content)
-                    for key, val in default_config_content.items():
-                        if key not in config_content:
-                            config_content[key] = val
-                            changed_something = True
-
-            evaluator_list = []
             evaluators_in_config = [TAEvaluator, SocialEvaluator, RealTimeEvaluator, StrategiesEvaluator]
-            for evaluator_in_config in evaluators_in_config:
-                changed_something = TentaclePackageUtil.add_evaluator_to_evaluator_config_content(
-                    evaluator_in_config, config_content, evaluator_list) or changed_something
 
-            to_remove = []
-            str_evaluator_list = [e.get_name() for e in evaluator_list]
-            for key in config_content.keys():
-                if key not in str_evaluator_list:
-                    to_remove.append(key)
-
-            for key_to_remove in to_remove:
-                config_content.pop(key_to_remove)
-                changed_something = True
-
-            if changed_something:
-                with open(evaluator_config_file, "w+") as evaluator_config_file_w:
-                    evaluator_config_file_w.write(json.dumps(config_content, indent=4, sort_keys=True))
-                    logger.info("{} has been updated".format(evaluator_config_file))
-            else:
-                logger.info("Nothing to update in {}".format(evaluator_config_file))
+            TentaclePackageUtil.update_config_file(evaluator_config_file, CONFIG_DEFAULT_EVALUATOR_FILE,
+                                                   evaluators_in_config)
         except Exception as e:
-            logger.exception(e)
-            logger.error("Something went wrong when checking installed tentacles: {}.\nIf Octobot is now working after "
-                         "this, you should re-install your tentacles (start.py -p install all).\nIf this problem keeps "
-                         "appearing, try to reset all tentacles (start.py -p reset_tentacles).".format(e))
+            TentaclePackageManager._log_config_file_update_exception(logger, e)
+
+    @staticmethod
+    def update_trading_config_file(trading_config_file=CONFIG_TRADING_FILE_PATH):
+
+        logger = get_logger(TentaclePackageManager.__name__)
+        try:
+            logger.info(f"Updating {trading_config_file} using new data...")
+
+            from trading.trader.modes import AbstractTradingMode
+
+            trading_modes_in_config = [AbstractTradingMode]
+
+            TentaclePackageUtil.update_config_file(trading_config_file, CONFIG_DEFAULT_TRADING_FILE,
+                                                   trading_modes_in_config)
+        except Exception as e:
+            TentaclePackageManager._log_config_file_update_exception(logger, e)

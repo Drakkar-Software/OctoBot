@@ -42,7 +42,10 @@ class AbstractDispatcher(threading.Thread):
             if self._something_to_watch():
                 self._get_data()
                 self._start_dispatcher()
-        self.logger.warning("Nothing to monitor, dispatcher is going to sleep.")
+                self.logger.warning("Nothing can be monitored even though there is something to watch"
+                                    ", dispatcher is going to sleep.")
+            else:
+                self.logger.info("Nothing to monitor, dispatcher is going to sleep.")
 
     def get_is_setup_correctly(self):
         return self.is_setup_correctly

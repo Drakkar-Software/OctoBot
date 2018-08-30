@@ -12,11 +12,16 @@ function get_update(){
   });
 }
 
-function manage_alert(raw_data){
+function manage_alert(data){
     try{
-        const data = JSON.parse(raw_data);
-        $.each(data, function(i, item) {
-            create_alert(data[i].Level, data[i].Title, data[i].Message);
+        const errors_count = data["errors_count"];
+        if(errors_count > 0){
+            $("#errors-count-badge").text(errors_count);
+        }else{
+            $("#errors-count-badge").cleanData();
+        }
+        $.each(data["notifications"], function(i, item) {
+            create_alert(item["Level"], item["Title"], item["Message"]);
         })
     }
     catch(error) {}
@@ -64,7 +69,7 @@ function send_and_interpret_bot_update(updated_data, update_url, dom_root_elemen
                 create_alert("error", "Error when handling action: "+result.responseText+".", "");
             }
             else{
-                error_callback(updated_data, update_url, dom_root_element, result, status, error)
+                error_callback(updated_data, update_url, dom_root_element, result, status, error);
             }
         }
     })

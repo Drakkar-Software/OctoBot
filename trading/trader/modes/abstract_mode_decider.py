@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 from abc import *
 from queue import Queue
 
@@ -21,7 +21,7 @@ class AbstractTradingModeDecider(AsynchronousServer):
         self.exchange = exchange
         self.symbol = symbol_evaluator.get_symbol()
         self.is_computing = False
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         self.notifier = EvaluatorNotification(self.config)
         self.queue = Queue()

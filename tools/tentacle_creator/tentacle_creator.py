@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import os
 
 from jinja2.nativetypes import NativeEnvironment
@@ -16,7 +16,7 @@ class TentacleCreator:
         self.config = config
         self.templates = {}
         self.config_templates = {}
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
     @staticmethod
     def get_template_path(name):
@@ -105,7 +105,7 @@ class CreatedTentacle:
         self.tests = []
 
         self.config_file = self.get_config_path() if self.subtype in self.tentacle_creator.get_config_templates() else[]
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
     def get_path(self):
         return "{0}/{1}/{2}/{3}/{4}.py".format(TENTACLES_PATH, self.t_type, self.subtype,

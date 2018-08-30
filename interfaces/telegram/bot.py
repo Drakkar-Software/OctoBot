@@ -1,5 +1,5 @@
 import copy
-import logging
+from tools.logging.logging_util import get_logger
 import os
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
@@ -27,7 +27,7 @@ class TelegramApp:
         self.telegram_service = telegram_service
         self.telegram_updater = telegram_updater
         self.dispatcher = self.telegram_updater.dispatcher
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         self.add_handlers()
 
@@ -120,9 +120,9 @@ class TelegramApp:
     @staticmethod
     def command_profitability(_, update):
         has_real_trader, has_simulated_trader, \
-        real_global_profitability, simulated_global_profitability, \
-        real_percent_profitability, simulated_percent_profitability, \
-        market_average_profitability = get_global_profitability()
+            real_global_profitability, simulated_global_profitability, \
+            real_percent_profitability, simulated_percent_profitability, \
+            market_average_profitability = get_global_profitability()
         profitability_string = ""
         if has_real_trader:
             profitability_string = "{0}Global profitability : {1} ({2}%), market: {3}%{4}".format(
@@ -269,16 +269,16 @@ class TelegramApp:
     @staticmethod
     def command_market_status(_, update):
         try:
-            message = "My cryptocurrencies evaluations are:" + TelegramApp.EOL + TelegramApp.EOL
+            message = f"My cryptocurrencies evaluations are: {TelegramApp.EOL}{TelegramApp.EOL}"
             at_least_one_currency = False
             for currency_pair, currency_info in get_currencies_with_status().items():
                 at_least_one_currency = True
-                message += "- {0}:{1}".format(currency_pair, TelegramApp.EOL)
+                message += f"- {currency_pair}:{TelegramApp.EOL}"
                 for exchange_name, evaluation in currency_info.items():
-                    message += "=> {0}: {1}{2}".format(exchange_name, evaluation, TelegramApp.EOL)
+                    message += f"=> {exchange_name}: {evaluation[0]}{TelegramApp.EOL}"
             if not at_least_one_currency:
                 message += TelegramApp.NO_CURRENCIES_MESSAGE + TelegramApp.EOL
-            message += "{0}My current risk is: {1}".format(TelegramApp.EOL, get_risk())
+            message += f"{TelegramApp.EOL}My current risk is: {get_risk()}"
             update.message.reply_text(message)
         except Exception:
             update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, " +

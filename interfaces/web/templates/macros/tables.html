@@ -23,3 +23,19 @@
         <td>{{ timestamp }}</td>
     </tr>
 {%- endmacro %}
+
+{% macro logs_tr(log) -%}
+    <tr
+    {% if "ERROR" in log["Level"] %}
+        class="bg-danger"
+    {% endif %}
+    {% if "WARNING" in log["Level"] %}
+        class="bg-warning"
+    {% endif %}
+    >
+        <th scope="row">{{ log["Time"] }}</th>
+        <td>{{ log["Level"] }}</td>
+        <td>{{ log["Source"] }}</td>
+        <td>{{ log["Message"] }}</td>
+    </tr>
+{%- endmacro %}
