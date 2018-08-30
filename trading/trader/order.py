@@ -2,7 +2,7 @@ import time
 import math
 from abc import *
 from threading import Lock
-import logging
+from tools.logging.logging_util import get_logger
 
 from tools.symbol_util import split_symbol
 from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK, \
@@ -108,17 +108,17 @@ class Order:
             prices = [p["price"]
                       for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]
                       if not math.isnan(p["price"]) and (p[eC.TIMESTAMP.value] >= self.creation_time or simulated_time)]
-            
+
             if prices:
                 if inferior:
                     if float(min(prices)) < price:
-                        logging.getLogger(self.get_name()).info(f"{self.symbol} last prices: {prices}, "
+                        get_logger(self.get_name()).info(f"{self.symbol} last prices: {prices}, "
                                                                 f"ask for {'inferior' if inferior else 'superior'} "
                                                                 f"to {price}")
                         return True
                 else:
                     if float(max(prices)) > price:
-                        logging.getLogger(self.get_name()).info(f"{self.symbol} last prices: {prices}, "
+                        get_logger(self.get_name()).info(f"{self.symbol} last prices: {prices}, "
                                                                 f"ask for {'inferior' if inferior else 'superior'} "
                                                                 f"to {price}")
                         return True

@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 from config.cst import EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE
 from evaluator.RealTime import RealTimeTAEvaluator
@@ -16,7 +16,7 @@ class SymbolEvaluator:
         self.config = config
         self.traders = None
         self.trader_simulators = None
-        self.logger = logging.getLogger(f"{self.symbol} {self.__class__.__name__}")
+        self.logger = get_logger(f"{self.symbol} {self.__class__.__name__}")
 
         self.evaluator_thread_managers = {}
         self.trading_mode_instances = {}

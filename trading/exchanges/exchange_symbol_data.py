@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import time
 
 import numpy as np
@@ -22,7 +22,7 @@ class SymbolData:
         self.previous_candle_time = {}
 
         self.are_recent_trades_initialized = False
-        self.logger = logging.getLogger("{0} - {1}".format(self.__class__.__name__, self.symbol))
+        self.logger = get_logger("{0} - {1}".format(self.__class__.__name__, self.symbol))
 
     '''
     Called by exchange dispatcher
@@ -267,7 +267,7 @@ class CandleData:
 
             # used only when a new update was preformed during the previous execution
             self.sanitize_last_candle(self.close_candles_array, self.high_candles_array, self.low_candles_array)
-    
+
     @staticmethod
     def sanitize_last_candle(close_candle_data, high_candle_data, low_candle_data):
         close_last_candle = close_candle_data[-1]
@@ -279,7 +279,7 @@ class CandleData:
     @staticmethod
     def set_last_candle_arrays(list_updated, array_to_update):
         if array_to_update is not None:
-            array_to_update[-1] = list_updated[-1]                  
+            array_to_update[-1] = list_updated[-1]
             
     @staticmethod
     def convert_list_to_array(list_to_convert):

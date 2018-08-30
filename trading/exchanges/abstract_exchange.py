@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 from abc import ABCMeta, abstractmethod
 
 
@@ -9,7 +9,7 @@ class AbstractExchange:
         self.config = config
         self.exchange_type = exchange_type
         self.name = self.exchange_type.__name__
-        self.logger = logging.getLogger("{0} - {1}".format(self.__class__.__name__, self.name))
+        self.logger = get_logger("{0} - {1}".format(self.__class__.__name__, self.name))
         self.trader = None
 
         self.exchange_manager = None

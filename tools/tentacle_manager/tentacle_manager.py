@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 import tools.tentacle_manager.tentacle_package_util as TentaclePackageUtil
 import tools.tentacle_manager.tentacle_util as TentacleUtil
@@ -15,7 +15,7 @@ class TentacleManager:
         self.tentacle_package_manager = TentaclePackageManager(config, self)
         self.default_package = None
         self.advanced_package_list = []
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.force_actions = False
 
     def install_tentacle_package(self, package_path_or_url, force=False):
@@ -32,7 +32,7 @@ class TentacleManager:
                                                                           package, EVALUATOR_ADVANCED_FOLDER)
 
     def parse_commands(self, commands):
-        help = "- install: Install or re-install the given tentacles modules with their requirements if any. " \
+        help_message = "- install: Install or re-install the given tentacles modules with their requirements if any. " \
                                 "Also reset tentacles configuration files if any.\n" \
                                 "- update: Update the given tentacle modules with their requirements if any. " \
                                 "Does not edit tentacles configuration files\n" \
@@ -77,10 +77,10 @@ class TentacleManager:
                     self.reset_tentacles()
 
             elif commands[0] == "help":
-                self.logger.info("Welcome in Tentacle Manager, commands are:\n{0}".format(help))
+                self.logger.info("Welcome in Tentacle Manager, commands are:\n{0}".format(help_message))
 
             else:
-                self.logger.error("Command not found: {0}, commands are:\n{1}".format(commands[0], help))
+                self.logger.error("Command not found: {0}, commands are:\n{1}".format(commands[0], help_message))
         else:
             arguments_help = "-p: activates the package manager."
             self.logger.error("Invalid arguments, arguments are: {0}".format(arguments_help))
@@ -128,6 +128,7 @@ class TentacleManager:
                     self.tentacle_package_manager.inc_current_step()
 
             TentaclePackageManager.update_evaluator_config_file()
+            TentaclePackageManager.update_trading_config_file()
 
             return nb_actions
 

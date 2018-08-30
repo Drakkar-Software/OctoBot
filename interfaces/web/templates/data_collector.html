@@ -93,7 +93,7 @@
 <script src="{{ url_for('static', filename='js/components/data_collector.js') }}"></script>
 {% if alert %}
 <script>
-    display_alert("{{alert["success"]}}", "{{alert["message"]}}")
+    display_alert("{{alert["success"]}}", "{{alert["message"]}}");
 </script>
 {% endif %}
 {% endblock additional_scripts %}

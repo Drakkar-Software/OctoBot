@@ -1,18 +1,19 @@
 import argparse
 import logging
 import sys
+import os
 import traceback
 from logging.config import fileConfig
 
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
-    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE
+    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH
 from interfaces import starting
 from interfaces.telegram.bot import TelegramApp
 from services import WebService
 from tools.commands import Commands
-from tools.errors import ConfigError, ConfigEvaluatorError
+from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 
 
 # Keep string '+' operator to ensure backward compatibility in this file
@@ -77,6 +78,10 @@ def start_octobot(starting_args):
                 if config[CONFIG_EVALUATOR] is None:
                     raise ConfigEvaluatorError
 
+                config[CONFIG_TRADING_TENTACLES] = load_config(CONFIG_TRADING_FILE_PATH, False)
+                if config[CONFIG_TRADING_TENTACLES] is None:
+                    raise ConfigTradingError
+
                 if starting_args.data_collector:
                     Commands.data_collector(config)
 
@@ -109,19 +114,25 @@ def start_octobot(starting_args):
 
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")
-        sys.exit(-1)
+        os._exit(-1)
 
     except ModuleNotFoundError as e:
         if 'tentacles' in str(e):
             logger.error("Impossible to start OctoBot, tentacles are missing.\nTo install tentacles, "
                          "please use the following command:\nstart.py -p install all")
-        sys.exit(-1)
+        os._exit(-1)
 
     except ConfigEvaluatorError:
-        logger.error("OctoBot can't start without" + CONFIG_EVALUATOR_FILE_PATH
+        logger.error("OctoBot can't start without a valid " + CONFIG_EVALUATOR_FILE_PATH
                      + "configuration file.\nThis file is generated on tentacle "
                        "installation using the following command:\nstart.py -p install all")
-        sys.exit(-1)
+        os._exit(-1)
+
+    except ConfigTradingError:
+        logger.error("OctoBot can't start without a valid " + CONFIG_TRADING_FILE_PATH
+                     + " configuration file.\nThis file is generated on tentacle "
+                       "installation using the following command:\nstart.py -p install all")
+        os._exit(-1)
 
 
 if __name__ == '__main__':

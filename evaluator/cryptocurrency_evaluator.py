@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 from backtesting.backtesting import Backtesting
 from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
@@ -35,7 +35,7 @@ class CryptocurrencyEvaluator:
             for symbol_evaluator in self.symbol_evaluator_list.values():
                 symbol_evaluator.activate_deactivate_strategies(strategies, exchange, activate)
         except Exception as e:
-            logging.getLogger(self.__class__.__name__).error(f"{self.crypto_currency} error in activate_deactivate_strategies(): {e}")
+            get_logger(self.__class__.__name__).error(f"{self.crypto_currency} error in activate_deactivate_strategies(): {e}")
 
     def deactivate_strategies(self, strategies, exchange):
         self._activate_deactivate_strategies(strategies, exchange, False)

@@ -2,7 +2,8 @@ import datetime
 
 from flask import render_template
 
-from interfaces.trading_util import get_open_orders, get_trades_history, get_global_portfolio_currencies_amounts
+from interfaces.trading_util import get_open_orders, get_trades_history, get_global_portfolio_currencies_amounts, \
+    get_currencies_with_status
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
 
@@ -21,6 +22,12 @@ def portfolio():
     return render_template('portfolio.html',
                            simulated_portfolio=filtered_simulated_portfolio,
                            real_portfolio=filtered_real_portfolio)
+
+
+@server_instance.route("/market_status")
+def market_status():
+    return render_template('market_status.html',
+                           pairs_with_status=get_currencies_with_status())
 
 
 @server_instance.route("/orders")

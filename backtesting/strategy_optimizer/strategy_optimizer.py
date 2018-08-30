@@ -1,4 +1,5 @@
 import logging
+from tools.logging.logging_util import get_logger
 import copy
 import math
 
@@ -10,10 +11,11 @@ from evaluator import TA
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
-    CONFIG_EVALUATOR, CONFIG_TRADER_MODE
+    CONFIG_EVALUATOR
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
-from tools.logging_util import set_global_logger_level, get_global_logger_level
+from tools.logging.logging_util import set_global_logger_level, get_global_logger_level
+from trading.util.trading_config_util import get_activated_trading_mode
 
 CONFIG = 0
 RANK = 1
@@ -25,8 +27,8 @@ class StrategyOptimizer:
 
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
-        self.logger = logging.getLogger(self.get_name())
-        self.trading_mode = config[CONFIG_TRADING][CONFIG_TRADER_MODE]
+        self.logger = get_logger(self.get_name())
+        self.trading_mode = get_activated_trading_mode(config)
         self.config = create_blank_config_using_loaded_one(config)
         self.strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                     Strategies, evaluator_parent_inspection)
@@ -38,6 +40,7 @@ class StrategyOptimizer:
         self.all_TAs = []
         self.risks = []
         self.current_test_suite = None
+        self.errors = set()
 
         self.is_computing = False
         self.run_id = 0
@@ -56,7 +59,11 @@ class StrategyOptimizer:
             # set is_computing to True to prevent any simultaneous start
             self.is_computing = True
 
+            self.errors = set()
             self.run_results = []
+            self.results_report = []
+            self.sorted_results_by_time_frame = {}
+            self.sorted_results_through_all_time_frame = {}
 
             previous_log_level = get_global_logger_level()
 
@@ -71,8 +78,9 @@ class StrategyOptimizer:
                 self.risks = [0.5, 1] if risks is None else risks
 
                 self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} "
-                                 f"strategy using {self.trading_mode} trading mode, {self.all_TAs} "
-                                 f"technical evaluator(s), {self.all_time_frames} time frames and {self.risks} risk(s).")
+                                 f"strategy using {self.trading_mode.get_name()} trading mode, {self.all_TAs} "
+                                 f"technical evaluator(s), {self.all_time_frames} time frames and {self.risks} "
+                                 f"risk(s).")
 
                 self.total_nb_runs = int(len(self.risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
 
@@ -136,7 +144,9 @@ class StrategyOptimizer:
     def _run_test_suite(self, config):
         self.current_test_suite = StrategyTestSuite()
         self.current_test_suite.init(self.strategy_class, copy.deepcopy(config))
-        self.current_test_suite.run_test_suite(self.current_test_suite)
+        no_error = self.current_test_suite.run_test_suite(self.current_test_suite)
+        if not no_error:
+            self.errors = self.errors.union(set(str(e) for e in self.current_test_suite.get_exceptions()))
         run_result = self.current_test_suite.get_test_suite_result()
         self.run_results.append(run_result)
 
@@ -204,6 +214,12 @@ class StrategyOptimizer:
 
     def get_is_computing(self):
         return self.is_computing
+
+    def get_errors_description(self):
+        if self.errors:
+            return f"{', '.join(self.errors)[0:350]} ..."
+        else:
+            return None
 
     @classmethod
     def get_name(cls):

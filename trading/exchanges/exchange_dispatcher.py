@@ -6,7 +6,7 @@ from trading.exchanges.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_symbol_data import SymbolData
 
 """
-This class supervise exchange call by : 
+This class supervise exchange call by :
 - Storing data through ExchangePersonalData and ExchangeSymbolData
 - Use web socket calls as much as possible (if available else use REST exchange with ccxt lib)
 """

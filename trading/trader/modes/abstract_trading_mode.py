@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import os
 from abc import *
 
@@ -98,7 +98,7 @@ class AbstractTradingMode:
                     self.strategy_instances_by_classes[symbol][required_class] = \
                         all_strategy_instances[all_strategy_classes.index(subclass)]
             if required_class not in self.strategy_instances_by_classes[symbol]:
-                logging.getLogger(self.get_name()).error(f"No instance of {required_class.__name__} "
+                get_logger(self.get_name()).error(f"No instance of {required_class.__name__} "
                                                          f"or advanced equivalent found, {self.get_name()} trading "
                                                          "mode can't work properly ! Maybe this strategy is disabled in"
                                                          " tentacles/Evaluator/evaluator_config.json.")

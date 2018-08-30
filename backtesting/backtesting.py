@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import os
 import time
 
@@ -12,7 +12,7 @@ class Backtesting:
         self.begin_time = time.time()
         self.force_exit_at_end = exit_at_end
         self.exchange_simulator = exchange_simulator
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.ended_symbols = set()
         self.symbols_to_test = set()
         self.init_symbols_to_test()
@@ -57,7 +57,8 @@ class Backtesting:
 
             profitability, market_average_profitability = self.get_profitability(trader)
             reference_market = self.get_reference_market(trader)
-            portfolio = self.get_portfolio(trader)
+            end_portfolio = self.get_portfolio(trader)
+            starting_portfolio = self.get_origin_portfolio(trader)
             accuracy_info = "" if len(self.symbols_to_test) < 2 else \
                 "\nPlease note that multi symbol backtesting is slightly random due to Octbot's multithreaded " \
                 "architecture used to process all symbols as fast as possible. This randomness is kept for " \
@@ -65,7 +66,10 @@ class Backtesting:
                 "100% determinist."
 
             self.logger.info(f"End portfolio: "
-                             f"{PrettyPrinter.global_portfolio_pretty_print(portfolio,' | ')}")
+                             f"{PrettyPrinter.global_portfolio_pretty_print(end_portfolio,' | ')}")
+
+            self.logger.info(f"Starting portfolio: "
+                             f"{PrettyPrinter.global_portfolio_pretty_print(starting_portfolio,' | ')}")
 
             self.logger.info(f"Global market profitability (vs {reference_market}) : "
                              f"{market_average_profitability}% | Octobot : {profitability}%{accuracy_info}")
@@ -73,7 +77,7 @@ class Backtesting:
             backtesting_time = time.time() - self.begin_time
             self.logger.info(f"Simulation lasted {backtesting_time} sec")
         except Exception as e:
-            logging.exception(e)
+            self.logger.exception(e)
 
     def _get_symbol_report(self, symbol, trader):
         market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
@@ -111,7 +115,8 @@ class Backtesting:
             "profitability": profitability,
             "market_average_profitability": market_average_profitability,
             "reference_market": self.get_reference_market(trader),
-            "end_portfolio": self.get_portfolio(trader)
+            "end_portfolio": self.get_portfolio(trader),
+            "starting_portfolio": self.get_origin_portfolio(trader)
         }
         return report
 
@@ -125,6 +130,10 @@ class Backtesting:
     @staticmethod
     def get_portfolio(trader):
         return trader.get_portfolio().get_portfolio()
+
+    @staticmethod
+    def get_origin_portfolio(trader):
+        return trader.get_trades_manager().get_origin_portfolio()
 
     @staticmethod
     def get_profitability(trader):

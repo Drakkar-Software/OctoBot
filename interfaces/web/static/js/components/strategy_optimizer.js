@@ -1,8 +1,7 @@
 function recompute_nb_iterations(){
-    var nb_selected = 0;
-    nb_eval_iter = Math.pow(2, $("#evaluatorsSelect").find(":selected").length)-1;
-    nb_tf_iter = Math.pow(2, $("#timeFramesSelect").find(":selected").length)-1;
-    nb_selected = $("#risksSelect").find(":selected").length*nb_eval_iter*nb_tf_iter;
+    const nb_eval_iter = Math.pow(2, $("#evaluatorsSelect").find(":selected").length)-1;
+    const nb_tf_iter = Math.pow(2, $("#timeFramesSelect").find(":selected").length)-1;
+    const nb_selected = $("#risksSelect").find(":selected").length*nb_eval_iter*nb_tf_iter;
     $("#numberOfSimulatons").text(nb_selected);
 }
 
@@ -17,10 +16,10 @@ function check_disabled(){
 
 function start_optimizer(source){
     $("#progess_bar").show();
-    $("#progess_bar_anim").css('width', '0%').attr("aria-valuenow", '0')
+    $("#progess_bar_anim").css('width', '0%').attr("aria-valuenow", '0');
     source.prop('disabled', true);
-    var update_url = source.attr(update_url_attr);
-    var data = {};
+    const update_url = source.attr(update_url_attr);
+    const data = {};
     data["strategy"]=get_selected_options($("#strategySelect"));
     data["time_frames"]=get_selected_options($("#timeFramesSelect"));
     data["evaluators"]=get_selected_options($("#evaluatorsSelect"));
@@ -29,26 +28,28 @@ function start_optimizer(source){
 }
 
 function lock_inputs(lock=true){
-    if ( $("#strategySelect").prop('disabled') != lock){
-        $("#strategySelect").prop('disabled', lock);
+    const disabled_attr = 'disabled';
+    if ( $("#strategySelect").prop(disabled_attr) !== lock){
+        $("#strategySelect").prop(disabled_attr, lock);
     }
-    if ( $("#timeFramesSelect").prop('disabled') != lock){
-        $("#timeFramesSelect").prop('disabled', lock);
+    if ( $("#timeFramesSelect").prop(disabled_attr) !== lock){
+        $("#timeFramesSelect").prop(disabled_attr, lock);
     }
-    if ( $("#evaluatorsSelect").prop('disabled') != lock){
-        $("#evaluatorsSelect").prop('disabled', lock);
+    if ( $("#evaluatorsSelect").prop(disabled_attr) !== lock){
+        $("#evaluatorsSelect").prop(disabled_attr, lock);
     }
-    if ( $("#risksSelect").prop('disabled') != lock){
-        $("#risksSelect").prop('disabled', lock);
+    if ( $("#risksSelect").prop(disabled_attr) !== lock){
+        $("#risksSelect").prop(disabled_attr, lock);
     }
     if(!($("#progess_bar").is(":visible")) && lock){
-        $("#progess_bar_anim").css('width', '0%').attr("aria-valuenow", '0')
+        $("#progess_bar_anim").css('width', '0%').attr("aria-valuenow", '0');
         $("#progess_bar").show();
     }
     else if (!lock){
-        $("#progess_bar_anim").css('width', '100%').attr("aria-valuenow", '100')
+        $("#progess_bar_anim").css('width', '100%').attr("aria-valuenow", '100');
         $("#progess_bar").hide();
     }
+    check_disabled();
 
 }
 
@@ -66,7 +67,7 @@ function start_optimizer_error_callback(data, update_url, source, result, status
 function populate_select(element, options){
     element.empty(); // remove old options
     $.each(options, function(key, value) {
-        if (key == 0){
+        if (key === 0){
             element.append($('<option selected = "selected" value="' + value + '" ></option>').attr("value", value).text(value));
         }else{
             element.append($('<option value="' + value + '" ></option>').attr("value", value).text(value));
@@ -83,9 +84,9 @@ function update_strategy_params(url, strategy){
 }
 
 function update_progress(progress, overall_progress){
-    $("#progess_bar_anim").css('width', progress+'%').attr("aria-valuenow", progress)
+    $("#progess_bar_anim").css('width', progress+'%').attr("aria-valuenow", progress);
 
-    nb_progress = Number(overall_progress)
+    const nb_progress = Number(overall_progress);
 
     if(isDefined(progressChart)){
         update_circular_progress_doughnut(progressChart, nb_progress, 100 - nb_progress);
@@ -94,41 +95,58 @@ function update_progress(progress, overall_progress){
 }
 
 function check_optimizer_state(reportTable){
-    url = $("#strategyOptimizerInputs").attr(update_url_attr);
-    $.get(url,function(data, status){
-        var status = data["status"];
-        var progress = data["progress"];
-        var overall_progress = data["overall_progress"];
-        if(status == "computing"){
+    const url = $("#strategyOptimizerInputs").attr(update_url_attr);
+    $.get(url,function(data, request_status){
+        const status = data["status"];
+        const progress = data["progress"];
+        const overall_progress = data["overall_progress"];
+        const errors = data["errors"];
+        const error_div = $("#error_info");
+        const error_text_div = $("#error_info_text");
+        const report_datatable_card = $("#report_datatable_card");
+        const has_errors = errors !== null;
+        let alert_type = "success";
+        let alert_additional_text = "Strategy optimized finished simulations.";
+        if(has_errors){
+            error_text_div.text(errors);
+            error_div.show();
+            alert_type = "error";
+            alert_additional_text = "Strategy optimized finished simulations with error(s)."
+        }else{
+            error_text_div.text("");
+            error_div.hide();
+        }
+        if(status === "computing"){
             lock_inputs();
-            update_progress(progress, overall_progress)
+            update_progress(progress, overall_progress);
             first_refresh_state = status;
-            if($("#report_datatable_card").is(":visible")){
-                $("#report_datatable_card").hide();
+            if(report_datatable_card.is(":visible")){
+                report_datatable_card.hide();
+                reportTable.clear();
             }
         }
         else{
             lock_inputs(false);
-            if(status == "finished"){
-                if(!$("#report_datatable_card").is(":visible")){
-                    $("#report_datatable_card").show();
+            if(status === "finished"){
+                if(!report_datatable_card.is(":visible")){
+                    report_datatable_card.show();
                 }
-                if(reportTable.rows().count() == 0){
-                    reportTable.ajax.reload( null, false );
+                if(reportTable.rows().count() === 0){
+                    reportTable.ajax.reload( null, false);
                 }
-                if(first_refresh_state != "" && first_refresh_state != "finished"){
-                    create_alert("success", "Strategy optimized finished simulations.", "");
+                if((first_refresh_state !== "" || has_errors) && first_refresh_state !== "finished"){
+                    create_alert(alert_type, alert_additional_text, "");
                     first_refresh_state="finished";
                 }
             }
         }
-        if(first_refresh_state == ""){
+        if(first_refresh_state === ""){
             first_refresh_state = status;
         }
     });
 }
 
-var iterationColumnsDef = [
+const iterationColumnsDef = [
     {
         "title": "#",
         "targets": 0,
@@ -185,7 +203,7 @@ var iterationColumnsDef = [
     }
 ];
 
-var reportColumnsDef = [
+const reportColumnsDef = [
     {
         "title": "#",
         "targets": 0,
@@ -232,16 +250,16 @@ var reportColumnsDef = [
         }
     }
 ];
-var first_refresh_state = ""
+let first_refresh_state = "";
 
-var progressChart = create_circular_progress_doughnut();
+const progressChart = create_circular_progress_doughnut($("#optimize_doughnutChart")[0]);
 
 $(document).ready(function() {
 
     check_disabled();
 
     $('#strategySelect').on('input', function() {
-        update_strategy_params($('#strategySelect').attr(update_url_attr), $('#strategySelect').val())
+        update_strategy_params($('#strategySelect').attr(update_url_attr), $('#strategySelect').val());
     });
 
     $(".multi-select-element").select2({
@@ -250,14 +268,14 @@ $(document).ready(function() {
         closeOnSelect: false
     });
     $(".multi-select-element").on('change', function (e) {
-        recompute_nb_iterations()
-        check_disabled()
+        recompute_nb_iterations();
+        check_disabled();
     });
     $("#startOptimizer").click(function(){
         start_optimizer($(this));
     });
 
-    var reportTable = $("#report_datatable").DataTable({
+    const reportTable = $("#report_datatable").DataTable({
         ajax: {
             "url": $("#report_datatable").attr(update_url_attr),
             "dataSrc": ""
@@ -266,9 +284,9 @@ $(document).ready(function() {
         autoWidth: true,
         autoFill: true,
         columnDefs: reportColumnsDef
-    })
+    });
 
-    var iterationTable = $("#results_datatable").DataTable({
+    const iterationTable = $("#results_datatable").DataTable({
         ajax: {
             "url": $("#results_datatable").attr(update_url_attr),
             "dataSrc": ""
@@ -277,7 +295,7 @@ $(document).ready(function() {
         autoWidth: true,
         autoFill: true,
         columnDefs: iterationColumnsDef
-    })
+    });
 
 
     setInterval(function(){refresh_message_table(iterationTable,reportTable);}, 1500);

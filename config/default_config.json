@@ -15,8 +15,7 @@
   },
   "trading":{
     "risk": 0.5,
-    "reference-market": "BTC",
-    "mode": "DailyTradingMode"
+    "reference-market": "BTC"
   },
   "trader":{
     "enabled": false

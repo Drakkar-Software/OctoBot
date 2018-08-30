@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 import ccxt
 
@@ -10,7 +10,7 @@ from trading.exchanges.exchange_manager import ExchangeManager
 class DataCollector:
     def __init__(self, config, auto_start=True):
         self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         self.exchange_data_collectors_threads = []
 

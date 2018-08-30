@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 
 
 from backtesting.collector.data_file_manager import get_all_available_data_files, get_file_description, delete_data_file
@@ -8,7 +8,7 @@ from interfaces import get_bot
 from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, CONFIG_DATA_COLLECTOR_PATH
 
 
-LOGGER = logging.getLogger("DataCollectorWebInterfaceModel")
+LOGGER = get_logger("DataCollectorWebInterfaceModel")
 
 
 def get_data_files_with_description():

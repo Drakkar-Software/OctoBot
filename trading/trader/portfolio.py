@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 from threading import Lock
 
 from config.cst import *
@@ -23,7 +23,7 @@ class Portfolio:
         self.is_enabled = trader.enable
         self.portfolio = {}
         self._load_portfolio()
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self.lock = Lock()
 
     # Disposable design pattern

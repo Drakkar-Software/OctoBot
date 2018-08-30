@@ -1,24 +1,27 @@
-import logging
+from tools.logging.logging_util import get_logger
 from copy import deepcopy
 
 from config.cst import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, \
     CONFIG_SIMULATOR, CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, \
-    CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADER_MODE, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, \
+    CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADING_TENTACLES, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, \
     CONFIG_DATA_COLLECTOR_PATH, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_STARTING_PORTFOLIO, \
     CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO, DEFAULT_REFERENCE_MARKET
 from octobot import OctoBot
-from tests.test_utils.config import load_test_config
+from config.config import load_config
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
 from tools.symbol_util import split_symbol
+from services.web_service import WebService
 
 
 def create_blank_config_using_loaded_one(loaded_config, other_config=None):
-    new_config = other_config if other_config else load_test_config()
-    trading_mode = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADER_MODE])
+    new_config = other_config if other_config else load_config()
+    trading_tentacles_config = deepcopy(loaded_config[CONFIG_TRADING_TENTACLES])
     risk = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADER_RISK])
-    new_config[CONFIG_TRADING][CONFIG_TRADER_MODE] = trading_mode
+    starting_portfolio = deepcopy(loaded_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO])
+    new_config[CONFIG_TRADING_TENTACLES] = trading_tentacles_config
     new_config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
+    new_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO] = starting_portfolio
     new_config[CONFIG_EVALUATOR] = deepcopy(loaded_config[CONFIG_EVALUATOR])
     add_config_default_backtesting_values(new_config)
     return new_config
@@ -28,14 +31,16 @@ def get_standalone_backtesting_bot(config, data_files):
     config_to_use = create_blank_config_using_loaded_one(config)
     config_to_use[CONFIG_CRYPTO_CURRENCIES] = {}
     config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = []
+    # do not activate web interface on standalone backtesting bot
+    WebService.enable(config_to_use, False)
     ignored_files = []
-    reference_market = _get_reference_market(data_files, config)
+    reference_market = _get_reference_market(data_files)
     if DEFAULT_REFERENCE_MARKET != reference_market:
         _switch_reference_market(config_to_use, reference_market)
     if data_files:
         for data_file_to_use in data_files:
             _, file_symbol, _ = interpret_file_name(data_file_to_use)
-            currency, market = split_symbol(file_symbol)
+            currency, _ = split_symbol(file_symbol)
             full_file_path = CONFIG_DATA_COLLECTOR_PATH + data_file_to_use
             full_file_path += full_file_path if not full_file_path.endswith(DATA_FILE_EXT) else ""
             if currency not in config_to_use[CONFIG_CRYPTO_CURRENCIES]:
@@ -49,9 +54,7 @@ def get_standalone_backtesting_bot(config, data_files):
     return create_backtesting_bot(config_to_use), ignored_files
 
 
-def create_backtesting_config(wanted_symbols=["BTC/USDT"], filter_symbols=True):
-    # launch a bot
-    config = load_test_config()
+def create_backtesting_config(config, wanted_symbols=["BTC/USDT"], filter_symbols=True):
 
     if filter_symbols:
         filter_wanted_symbols(config, wanted_symbols)
@@ -97,12 +100,12 @@ def start_backtesting_bot(bot, in_thread=False, watcher=None):
         try:
             exchange_inst.backtesting.force_exit_at_end = False
         except Exception:
-            logging.getLogger(f"fail to stop force exit for exchange {exchange_inst.get_name()}")
+            get_logger(f"fail to stop force exit for exchange {exchange_inst.get_name()}")
 
     bot.create_evaluation_threads()
     if not bot.get_symbols_threads_manager():
-        raise RuntimeError(f"No candles data for the current configuration. Please ensure your configuration file is "
-                           f"correct and has the required backtesting data file for the activated symbols.")
+        raise RuntimeError(f"No candles data for the current configuration. Please ensure the required data files for "
+                           f"the activated symbol(s) are available. Symbol(s): {list(bot.get_symbols_list())}")
 
     if watcher is not None:
         bot.set_watcher(watcher)
@@ -123,7 +126,7 @@ def _switch_reference_market(config_to_use, market):
         CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO
 
 
-def _get_reference_market(data_files, config):
+def _get_reference_market(data_files):
     reference_market = None
     for data_file in data_files:
         _, file_symbol, _ = interpret_file_name(data_file)

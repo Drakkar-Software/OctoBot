@@ -1,5 +1,5 @@
 import json
-import logging
+from tools.logging.logging_util import get_logger
 
 import ccxt
 import requests
@@ -64,7 +64,7 @@ def get_symbol_list(exchanges):
             inst.load_markets()
             result += inst.symbols
         except Exception as e:
-            logging.getLogger().error(f"error when loading symbol list for {exchange}: {e}")
+            get_logger("Configuration").error(f"error when loading symbol list for {exchange}: {e}")
 
     # filter symbols with a "." or no "/" because bot can't handle them for now
     symbols = [res for res in result if "/" in res]
@@ -80,7 +80,7 @@ def get_all_symbol_list():
             for currency_data in currencies_list["data"]
         }
     except Exception as e:
-        logging.getLogger().error(f"Failed to get currencies list from coinmarketcap : {e}")
+        get_logger("Configuration").error(f"Failed to get currencies list from coinmarketcap : {e}")
 
 
 def get_full_exchange_list(remove_config_exchanges=False):
