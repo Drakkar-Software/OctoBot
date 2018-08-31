@@ -8,6 +8,11 @@ from config.cst import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CO
 from interfaces import get_bot
 from services import AbstractService
 from tools.config_manager import ConfigManager
+from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
+from evaluator.abstract_evaluator import AbstractEvaluator
+from evaluator import TA
+from evaluator import Social
+from evaluator import RealTime
 
 
 def get_global_config():
@@ -27,8 +32,23 @@ def get_evaluator_config():
 
 
 def get_evaluator_detailed_config():
+    social_key = "social"
+    ta_key = "ta"
+    rt_key = "real-time"
+    detailed_config = {
+        social_key: {},
+        ta_key: {},
+        rt_key: {},
+    }
     evaluator_config = get_evaluator_config()
-    return evaluator_config
+    for key, val in evaluator_config.items():
+        if get_class_from_string(key, AbstractEvaluator, TA, evaluator_parent_inspection):
+            detailed_config[ta_key][key] = val
+        elif get_class_from_string(key, AbstractEvaluator, Social, evaluator_parent_inspection):
+            detailed_config[social_key][key] = val
+        elif get_class_from_string(key, AbstractEvaluator, RealTime, evaluator_parent_inspection):
+            detailed_config[rt_key][key] = val
+    return detailed_config
 
 
 def get_evaluator_startup_config():
