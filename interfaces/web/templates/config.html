@@ -24,11 +24,12 @@
     <nav class="navbar nav-tabs navbar-dark primary-color-dark" data-toggle="affix">
         <!-- Nav tabs -->
          <ul class="nav mr-auto md-pills nav-justified">
+
             <li class="nav-item">
-                <a class="nav-link active waves-effect" data-toggle="tab" href="#panelExchanges" role="tab">Exchanges</a>
+                <a class="nav-link active waves-effect" data-toggle="tab" href="#panelEvaluators" role="tab">Strategies</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link waves-effect" data-toggle="tab" href="#panelEvaluators" role="tab">Evaluators</a>
+                <a class="nav-link waves-effect" data-toggle="tab" href="#panelExchanges" role="tab">Exchanges</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link waves-effect" data-toggle="tab" href="#panelTrading" role="tab">Trading</a>
@@ -65,8 +66,25 @@
 <!-- Tab panels -->
 <div class="tab-content" id="super-container">
 
+    <!--Panel Evaluators-->
+    <div class="tab-pane fade in show active config-root" id="panelEvaluators" role="tabpanel"><br>
+        <div class="card">
+            <div class="card-header"><h2>Trading strategies</h2></div>
+            <div class="card-body">
+                <div class="row config-container" id="evaluator-config-root">
+                    {% for evaluator_name, activated in evaluator_config.items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer">
+                <p class="mb-0">Full evaluators customization on <a class="btn btn-outline-white btn-md waves-effect" href="{{ url_for('advanced.evaluator_config') }}">OctoBot advanced configuration interface</a></p>
+            </div>
+        </div>
+    </div>
+
     <!--Panel Exchanges-->
-    <div class="tab-pane fade in show active config-root" id="panelExchanges" role="tabpanel"><br>
+    <div class="tab-pane fade config-root" id="panelExchanges" role="tabpanel"><br>
         <div class="card">
             <div class="card-header"><h2>Exchanges</h2></div>
             <div class="card-body deck-container">
@@ -87,23 +105,6 @@
                         {{ m_config_exchange_card.config_exchange_card(config_exchanges, exchange) }}
                     {% endfor %}
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!--Panel Evaluators-->
-    <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel"><br>
-        <div class="card">
-            <div class="card-header"><h2>Evaluators</h2></div>
-            <div class="card-body">
-                <div class="row config-container" id="evaluator-config-root">
-                    {% for evaluator_name, activated in evaluator_config.items() %}
-                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="card-footer">
-                <p class="mb-0">Full Evaluator customization on <a class="btn btn-outline-white btn-md waves-effect" href="{{ url_for('advanced.evaluator_config') }}">OctoBot advanced configuration interface</a></p>
             </div>
         </div>
     </div>
