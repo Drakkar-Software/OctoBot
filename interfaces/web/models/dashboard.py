@@ -76,7 +76,7 @@ def get_first_symbol_data():
     return {}
 
 
-def create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesting):
+def create_candles_data(symbol, time_frame, new_data, bot, list_arrays, in_backtesting):
     candles_key = "candles"
     real_trades_key = "real_trades"
     simulated_trades_key = "simulated_trades"
@@ -86,8 +86,11 @@ def create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesti
         simulated_trades_key: [],
     }
 
-    add_to_symbol_data_history(symbol, data, time_frame, in_backtesting)
-    data = get_symbol_data_history(symbol, time_frame)
+    if not in_backtesting:
+        add_to_symbol_data_history(symbol, new_data, time_frame, False)
+        data = get_symbol_data_history(symbol, time_frame)
+    else:
+        data = new_data
 
     data_x = convert_timestamps_to_datetime(data[PriceIndexes.IND_PRICE_TIME.value],
                                             time_format="%y-%m-%d %H:%M:%S",
