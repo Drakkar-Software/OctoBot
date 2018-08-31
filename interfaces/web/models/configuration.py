@@ -13,14 +13,22 @@ from tools.config_manager import ConfigManager
 def get_global_config():
     return get_bot().get_config()
 
+
 def get_edited_config():
     return get_bot().get_edited_config()
+
 
 def get_global_startup_config():
     return get_bot().get_startup_config()
 
+
 def get_evaluator_config():
     return get_edited_config()[CONFIG_EVALUATOR]
+
+
+def get_evaluator_detailed_config():
+    evaluator_config = get_evaluator_config()
+    return evaluator_config
 
 
 def get_evaluator_startup_config():
