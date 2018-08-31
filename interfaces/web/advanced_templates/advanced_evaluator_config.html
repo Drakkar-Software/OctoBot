@@ -15,7 +15,7 @@
         <span class="white-text"> Any configuration change will be take into account after OctBot restarts.</span>
         <ul class="nav mx-auto">
             <li class="nav-item">
-                <a class="nav-link btn green waves-effect" id='save-config' href="#" role="tab" update-url="{{ url_for('config') }}">Save all</a>
+                <a class="nav-link btn green waves-effect" id='save-config' href="#" role="tab" update-url="{{ url_for('advanced.evaluator_config') }}">Save all</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link btn orange waves-effect" id='reset-config' href="#" role="tab">Reset all</a>
@@ -33,10 +33,32 @@
     <!--Panel Evaluators-->
     <div class="config-root" id="panelEvaluators"><br>
         <div class="card">
-            <div class="card-header"><h2>Evaluators</h2></div>
+            <div class="card-header"><h2>Technical analysis evaluators</h2></div>
             <div class="card-body">
-                <div class="row config-container" id="evaluator-config-root">
-                    {% for evaluator_name, activated in evaluator_config.items() %}
+                <div class="row config-container" id="ta-evaluator-config-root">
+                    {% for evaluator_name, activated in evaluator_config["ta"].items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <br>
+        <div class="card">
+            <div class="card-header"><h2>Social analysis evaluators</h2></div>
+            <div class="card-body">
+                <div class="row config-container" id="social-evaluator-config-root">
+                    {% for evaluator_name, activated in evaluator_config["social"].items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <br>
+        <div class="card">
+            <div class="card-header"><h2>Real time evaluators</h2></div>
+            <div class="card-body">
+                <div class="row config-container" id="rt-evaluator-config-root">
+                    {% for evaluator_name, activated in evaluator_config["real-time"].items() %}
                         {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
                     {% endfor %}
                 </div>
