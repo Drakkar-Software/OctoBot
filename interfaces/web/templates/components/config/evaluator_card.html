@@ -30,13 +30,13 @@
                   <h5>{{info['advanced_class']['name']}} is based on {{evaluator_name}}</h5>
                   {% if info['advanced_class']['requirements'] %}
                       <h5>Requirements</h5>
-                      <p>{{info['advanced_class']['requirements']}}</p>
+                      <p>{{info['advanced_class']['requirements']|join(', ')}}</p>
                   {% endif %}
               {% else %}
                   <p>{{info['description']}}</p>
                   {% if info['requirements'] %}
                       <h5>Requirements</h5>
-                      <p>{{info['requirements']}}</p>
+                      <p>{{info['requirements']|join(',')}}</p>
                   {% endif %}
               {% endif %}
           </div>

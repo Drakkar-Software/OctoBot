@@ -77,7 +77,7 @@ def _get_strategy_activation_state(startup_config=False):
             strategy_config[strategies_key][key][activation] = val
             strategy_config[strategies_key][key][description] = config_class.get_description()
             strategy_config[strategies_key][key][advanced_class_key] = \
-                _get_advanced_class_details(key, config_class, False)
+                _get_advanced_class_details(key, config_class, is_strategy=True)
             strategy_config_classes[strategies_key][key] = config_class
 
     trading_config = _get_trading_startup_config() if startup_config else _get_trading_config()
@@ -88,7 +88,7 @@ def _get_strategy_activation_state(startup_config=False):
             strategy_config[trading_mode_key][key][activation] = val
             strategy_config[trading_mode_key][key][description] = config_class.get_description()
             strategy_config[trading_mode_key][key][advanced_class_key] = \
-                _get_advanced_class_details(key, config_class, True)
+                _get_advanced_class_details(key, config_class, is_trading_mode=True)
             strategy_config_classes[trading_mode_key][key] = config_class
 
     return strategy_config, strategy_config_classes
