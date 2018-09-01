@@ -13,6 +13,19 @@ function update_list_item(list_item, new_class){
     list_item.addClass(new_class);
 }
 
+function update_element_required_marker_and_usability(element, display_marker) {
+    const marker = element.children("[role='required-flag']");
+    if(display_marker){
+        marker.removeClass(hidden_class);
+        element.removeClass(disabled_class);
+        element.removeClass(disabled_item_class);
+    }else{
+        marker.addClass(hidden_class);
+        element.addClass(disabled_class);
+        element.addClass(disabled_item_class);
+    }
+}
+
 function update_element_temporary_look(element){
     const set_to_activated = element.attr(current_value_attr).toLowerCase() === "true";
     const set_to_temporary = element.attr(current_value_attr).toLowerCase() !== element.attr(config_value_attr).toLowerCase();

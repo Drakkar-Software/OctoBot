@@ -269,6 +269,58 @@ function other_trading_mode_activated(){
     return other_activated_modes_count > 1;
 }
 
+function deactivate_other_trading_modes(element) {
+    const element_id = element.attr("id");
+    $("#trading-modes-config-root").children(".list-group-item-success").each(function () {
+        const element = $(this);
+        if(element.attr("id") !== element_id){
+            element.attr(current_value_attr, "false");
+            update_element_temporary_look(element);
+        }
+    })
+}
+
+function update_requirement_activation(element) {
+    const required_elements = element.attr("requirements").split("'");
+    $("#evaluator-config-root").children(".config-element").each(function () {
+        const element = $(this);
+        if(required_elements.indexOf(element.attr("id")) !== -1){
+            element.attr(current_value_attr, "true");
+            update_element_temporary_look(element);
+            update_element_required_marker_and_usability(element, true);
+        }else{
+            element.attr(current_value_attr, "false");
+            update_element_temporary_look(element);
+            update_element_required_marker_and_usability(element, false);
+        }
+    });
+}
+
+function check_evaluator_configuration() {
+    const activated_trading_modes = $("#trading-modes-config-root").children(".list-group-item-success");
+    if(activated_trading_modes.length > 0){
+        const activated_trading_mode = activated_trading_modes;
+        const required_elements = activated_trading_mode.attr("requirements").split("'");
+        let at_lest_one_activated_element = false;
+        $("#evaluator-config-root").children(".config-element").each(function () {
+            const element = $(this);
+            if(required_elements.indexOf(element.attr("id")) !== -1) {
+                if (element.attr(current_value_attr).toLowerCase() === "true") {
+                    at_lest_one_activated_element = true;
+                }
+            }else{
+                update_element_required_marker_and_usability(element, false);
+            }
+        });
+        if(!at_lest_one_activated_element){
+            create_alert("error", "Trading modes require at least one strategy to work properly, please activate the " +
+                "strategy(ies) you want for the selected mode.", "");
+        }
+    }else{
+        create_alert("error", "No trading mode activated, OctoBot need at least one trading mode.", "");
+    }
+}
+
 function handle_evaluator_configuration_editor(){
     $(".config-element").click(function(e){
         if (isDefined($(e.target).attr(no_activation_click_attr))){
@@ -277,7 +329,7 @@ function handle_evaluator_configuration_editor(){
         }
         const element = $(this);
 
-        if (element.hasClass(config_element_class)){
+        if (element.hasClass(config_element_class) && ! element.hasClass(disabled_class)){
 
             if (element[0].hasAttribute(config_type_attr)
                 && (element.attr(config_type_attr) === evaluator_config_type
@@ -304,6 +356,12 @@ function handle_evaluator_configuration_editor(){
                     new_value = "false";
                 }else if(current_value === "false"){
                     new_value = "true";
+                    if(is_trading_mode){
+                        deactivate_other_trading_modes(element);
+                    }
+                }
+                if(is_trading_mode){
+                    update_requirement_activation(element);
                 }
 
                 // update current value
@@ -311,10 +369,6 @@ function handle_evaluator_configuration_editor(){
 
                 //update dom
                 update_element_temporary_look(element);
-
-                if(element.attr(config_type_attr) === trading_config_type){
-                    disable_other_trading_modes()
-                }
             }
         }
     });
@@ -350,4 +404,6 @@ $(document).ready(function() {
     register_edit_events();
 
     register_exit_confirm_function(something_is_unsaved);
+
+    check_evaluator_configuration();
 });
