@@ -9,6 +9,7 @@ const config_data_type_attr = "data-type";
 const config_root_class = "config-root";
 const config_container_class = "config-container";
 const config_element_class = "config-element";
+const no_activation_click_attr = "no-activation-click";
 
 // dom display classes
 const success_badge = "badge-success";

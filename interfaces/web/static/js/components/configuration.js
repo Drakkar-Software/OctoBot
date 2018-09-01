@@ -266,8 +266,8 @@ function handle_save_buttons_success_callback(updated_data, update_url, dom_root
 
 function handle_evaluator_configuration_editor(){
     $(".config-element").click(function(e){
-        if (e.target.nodeName === "BUTTON"){
-            // do not trigger when click on buttons
+        if (isDefined($(e.target).attr(no_activation_click_attr))){
+            // do not trigger when click on items with no_activation_click_attr set
             return;
         }
         const element = $(this);
