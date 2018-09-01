@@ -11,7 +11,7 @@
             <span class="badge {{'badge-warning' if evaluator_startup_config[evaluator_name] != info['activation'] else ('badge-success' if info['activation'] else 'badge-secondary')}}">
                 {{('Activation pending restart' if info['activation'] else 'Deactivation pending restart') if evaluator_startup_config[evaluator_name] != info['activation'] else ('Activated' if info['activation'] else 'Deactivated')}}
             </span>
-            <button class="btn btn-outline-primary btn-md waves-effect"  data-toggle="modal" data-target="#{{evaluator_name}}Modal"><i class="fa fa-info-circle"></i></button>
+            <button class="btn btn-outline-primary btn-md waves-effect"  data-toggle="modal" data-target="#{{evaluator_name}}Modal" no-activation-click="true"><i class="fa fa-info-circle" no-activation-click="true"></i></button>
         </span>
     </a>
     <div class="modal fade" id="{{evaluator_name}}Modal" tabindex="-1" role="dialog" aria-labelledby="#{{evaluator_name}}ModalLabel" aria-hidden="true">
