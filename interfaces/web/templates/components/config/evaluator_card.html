@@ -3,13 +3,16 @@
        class="col-md-6 col-lg-4 list-group-item list-group-item-action waves-effect {{'list-group-item-success' if info['activation'] else 'list-group-item-light'}} config-element evaluator-config-element"
        id={{evaluator_name}}
        config-type="evaluator_config" config-key={{evaluator_name}} current-value={{info['activation']}} config-value={{info['activation']}} startup-config-value={{evaluator_startup_config[evaluator_name]}}>
+        {% if info['advanced_class'] %}
+        <span class="float-left"><i class="fa fa-graduation-cap" data-toggle="tooltip" data-placement="top" title="Advanced tentacle"></i></span>
+        {% endif %}
         {{ evaluator_name }}
-      <span class="float-right">
-          <span class="badge {{'badge-warning' if evaluator_startup_config[evaluator_name] != info['activation'] else ('badge-success' if info['activation'] else 'badge-secondary')}}">
-              {{('Activation pending restart' if info['activation'] else 'Deactivation pending restart') if evaluator_startup_config[evaluator_name] != info['activation'] else ('Activated' if info['activation'] else 'Deactivated')}}
-          </span>
-          <button class="btn btn-outline-primary btn-md waves-effect"  data-toggle="modal" data-target="#{{evaluator_name}}Modal"><i class="fa fa-info-circle"></i></button>
-      </span>
+        <span class="float-right">
+            <span class="badge {{'badge-warning' if evaluator_startup_config[evaluator_name] != info['activation'] else ('badge-success' if info['activation'] else 'badge-secondary')}}">
+                {{('Activation pending restart' if info['activation'] else 'Deactivation pending restart') if evaluator_startup_config[evaluator_name] != info['activation'] else ('Activated' if info['activation'] else 'Deactivated')}}
+            </span>
+            <button class="btn btn-outline-primary btn-md waves-effect"  data-toggle="modal" data-target="#{{evaluator_name}}Modal"><i class="fa fa-info-circle"></i></button>
+        </span>
     </a>
     <div class="modal fade" id="{{evaluator_name}}Modal" tabindex="-1" role="dialog" aria-labelledby="#{{evaluator_name}}ModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered" role="document">
@@ -21,10 +24,20 @@
             </button>
           </div>
           <div class="modal-body">
-              <p>{{info['description']}}</p>
-              {% if info['requirements'] %}
-                  <h5>Requirements</h5>
-                  <p>{{info['requirements']|pprint}}</p>
+              {% if info['advanced_class'] %}
+                  <h3>Advanced tentacle: {{info['advanced_class']['name']}}</h3>
+                  <p>"{{info['advanced_class']['description']}}"</p>
+                  <h5>{{info['advanced_class']['name']}} is based on {{evaluator_name}}</h5>
+                  {% if info['advanced_class']['requirements'] %}
+                      <h5>Requirements</h5>
+                      <p>{{info['advanced_class']['requirements']}}</p>
+                  {% endif %}
+              {% else %}
+                  <p>{{info['description']}}</p>
+                  {% if info['requirements'] %}
+                      <h5>Requirements</h5>
+                      <p>{{info['requirements']}}</p>
+                  {% endif %}
               {% endif %}
           </div>
           <div class="modal-footer">

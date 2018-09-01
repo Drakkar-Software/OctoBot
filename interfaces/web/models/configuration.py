@@ -9,7 +9,9 @@ from config.cst import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CO
 from interfaces import get_bot
 from services import AbstractService
 from tools.config_manager import ConfigManager
-from tools.class_inspector import get_class_from_string, evaluator_parent_inspection, trading_mode_parent_inspection
+from tools.class_inspector import get_class_from_string, evaluator_parent_inspection, trading_mode_parent_inspection, \
+    get_deep_class_from_string
+from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
@@ -33,6 +35,23 @@ def _get_trading_startup_config():
     return get_bot().get_startup_config()[CONFIG_TRADING_TENTACLES]
 
 
+def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_strategy=False):
+    name = "name"
+    description = "description"
+    requirements = "requirements"
+    details = {}
+    config = get_bot().get_config()
+    advanced_class = AdvancedManager.get_class(config, klass)
+    if advanced_class and advanced_class.get_name() != class_name:
+        details[name] = advanced_class.get_name()
+        details[description] = advanced_class.get_description()
+        if is_trading_mode:
+            details[requirements] = [strategy.get_name() for strategy in advanced_class.get_required_strategies(config)]
+        elif is_strategy:
+            details[requirements] = [evaluator for evaluator in advanced_class.get_required_evaluators(config)]
+    return details
+
+
 def _get_strategy_activation_state(startup_config=False):
     import trading.trader.modes as modes
     import evaluator.Strategies as strategies
@@ -40,6 +59,7 @@ def _get_strategy_activation_state(startup_config=False):
     strategies_key = "strategies"
     activation = "activation"
     description = "description"
+    advanced_class_key = "advanced_class"
     strategy_config = {
         trading_mode_key: {},
         strategies_key: {}
@@ -50,11 +70,14 @@ def _get_strategy_activation_state(startup_config=False):
     }
     evaluator_config = get_evaluator_startup_config() if startup_config else _get_evaluator_config()
     for key, val in evaluator_config.items():
-        config_class = get_class_from_string(key, strategies.StrategiesEvaluator, strategies, evaluator_parent_inspection)
+        config_class = get_class_from_string(key, strategies.StrategiesEvaluator,
+                                             strategies, evaluator_parent_inspection)
         if config_class:
             strategy_config[strategies_key][key] = {}
             strategy_config[strategies_key][key][activation] = val
             strategy_config[strategies_key][key][description] = config_class.get_description()
+            strategy_config[strategies_key][key][advanced_class_key] = \
+                _get_advanced_class_details(key, config_class, False)
             strategy_config_classes[strategies_key][key] = config_class
 
     trading_config = _get_trading_startup_config() if startup_config else _get_trading_config()
@@ -64,6 +87,8 @@ def _get_strategy_activation_state(startup_config=False):
             strategy_config[trading_mode_key][key] = {}
             strategy_config[trading_mode_key][key][activation] = val
             strategy_config[trading_mode_key][key][description] = config_class.get_description()
+            strategy_config[trading_mode_key][key][advanced_class_key] = \
+                _get_advanced_class_details(key, config_class, True)
             strategy_config_classes[trading_mode_key][key] = config_class
 
     return strategy_config, strategy_config_classes
@@ -72,10 +97,13 @@ def _get_strategy_activation_state(startup_config=False):
 def _get_strategies_requirements(strategies, strategy_config):
     strategies_key = "strategies"
     requirements_key = "requirements"
+    advanced_class_key = "advanced_class"
     config = get_bot().get_config()
     for classKey, klass in strategies.items():
-        strategy_config[strategies_key][classKey][requirements_key] = \
-            [evaluator for evaluator in klass.get_required_evaluators(config)]
+        if not strategy_config[strategies_key][classKey][advanced_class_key]:
+            # no need for requirement if advanced class: requirements are already in advanced class
+            strategy_config[strategies_key][classKey][requirements_key] = \
+                [evaluator for evaluator in klass.get_required_evaluators(config)]
 
 
 def _get_trading_modes_requirements(trading_modes, strategy_config):
@@ -101,11 +129,14 @@ def get_strategy_config():
 def _fill_evaluator_config(evaluator_name, activated, eval_type_key, evaluator_type, detailed_config):
     activation = "activation"
     description = "description"
+    advanced_class_key = "advanced_class"
     klass = get_class_from_string(evaluator_name, AbstractEvaluator, evaluator_type, evaluator_parent_inspection)
     if klass:
         detailed_config[eval_type_key][evaluator_name] = {}
         detailed_config[eval_type_key][evaluator_name][activation] = activated
         detailed_config[eval_type_key][evaluator_name][description] = klass.get_description()
+        detailed_config[eval_type_key][evaluator_name][advanced_class_key] = \
+            _get_advanced_class_details(evaluator_name, klass)
         return True
     return False
 
