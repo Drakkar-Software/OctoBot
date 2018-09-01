@@ -274,7 +274,9 @@ function handle_evaluator_configuration_editor(){
 
         if (element.hasClass(config_element_class)){
 
-            if (element[0].hasAttribute(config_type_attr) && element.attr(config_type_attr) === evaluator_config_type){
+            if (element[0].hasAttribute(config_type_attr)
+                && (element.attr(config_type_attr) === evaluator_config_type
+                    || element.attr(config_type_attr) === trading_config_type)){
 
                 // build data update
                 let new_value = parse_new_value(element);
