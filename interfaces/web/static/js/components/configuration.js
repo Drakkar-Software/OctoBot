@@ -264,6 +264,11 @@ function handle_save_buttons_success_callback(updated_data, update_url, dom_root
     create_alert("success", "Configuration successfully updated. Restart OctoBot for it to be applied", "");
 }
 
+function other_trading_mode_activated(){
+    let other_activated_modes_count = $("#trading-modes-config-root").children(".list-group-item-success").length;
+    return other_activated_modes_count > 1;
+}
+
 function handle_evaluator_configuration_editor(){
     $(".config-element").click(function(e){
         if (isDefined($(e.target).attr(no_activation_click_attr))){
@@ -278,6 +283,8 @@ function handle_evaluator_configuration_editor(){
                 && (element.attr(config_type_attr) === evaluator_config_type
                     || element.attr(config_type_attr) === trading_config_type)){
 
+                const is_trading_mode = element.attr(config_type_attr) === trading_config_type;
+
                 // build data update
                 let new_value = parse_new_value(element);
                 let current_value;
@@ -290,6 +297,10 @@ function handle_evaluator_configuration_editor(){
                 }
 
                 if (current_value === "true"){
+                    if(is_trading_mode && !other_trading_mode_activated()){
+                        create_alert("error", "Impossible to disable all trading modes.", "");
+                        return;
+                    }
                     new_value = "false";
                 }else if(current_value === "false"){
                     new_value = "true";
@@ -300,6 +311,10 @@ function handle_evaluator_configuration_editor(){
 
                 //update dom
                 update_element_temporary_look(element);
+
+                if(element.attr(config_type_attr) === trading_config_type){
+                    disable_other_trading_modes()
+                }
             }
         }
     });
