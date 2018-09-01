@@ -3,7 +3,7 @@
        class="col-md-6 col-lg-4 list-group-item list-group-item-action waves-effect {{'list-group-item-success' if info['activation'] else 'list-group-item-light'}} config-element evaluator-config-element"
        id={{evaluator_name}}
        config-type="evaluator_config" config-key={{evaluator_name}} current-value={{info['activation']}} config-value={{info['activation']}} startup-config-value={{evaluator_startup_config[evaluator_name]}}>
-        <span class="float-left d-none" id="{{evaluator_name}}RequiredFlag"><i class="fa fa-flag" data-toggle="tooltip" data-placement="top" title="Required for current optimal configuration"></i></span>
+        <span class="float-left {{'d-none' if not info['required']}}" id="{{evaluator_name}}RequiredFlag"><i class="fa fa-flag" data-toggle="tooltip" data-placement="top" title="Required for current optimal configuration"></i></span>
         {{ evaluator_name }}
         {% if info['advanced_class'] %}
         <span><i class="fa fa-graduation-cap" data-toggle="tooltip" data-placement="top" title="Advanced tentacle"></i></span>
