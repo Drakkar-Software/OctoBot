@@ -10,7 +10,6 @@ from interfaces import get_bot
 from services import AbstractService
 from tools.config_manager import ConfigManager
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection, trading_mode_parent_inspection
-from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
@@ -35,6 +34,7 @@ def get_trading_startup_config():
 
 
 def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_strategy=False):
+    from evaluator.Util.advanced_manager import AdvancedManager
     name = "name"
     description = "description"
     requirements = "requirements"
@@ -45,7 +45,7 @@ def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_str
         details[name] = advanced_class.get_name()
         details[description] = advanced_class.get_description()
         if is_trading_mode:
-            details[requirements] = [strategy.get_name() for strategy in advanced_class.get_required_strategies(config)]
+            details[requirements] = [strategy.get_name() for strategy in advanced_class.get_required_strategies()]
         elif is_strategy:
             details[requirements] = [evaluator for evaluator in advanced_class.get_required_evaluators(config)]
     return details

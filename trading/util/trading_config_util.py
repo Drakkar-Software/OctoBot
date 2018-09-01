@@ -4,6 +4,7 @@ from tools.class_inspector import get_deep_class_from_string, get_class_from_str
 from trading.trader.modes.abstract_trading_mode import AbstractTradingMode
 from tools.errors import ConfigTradingError
 from tools.logging.logging_util import get_logger
+from evaluator.Util.advanced_manager import AdvancedManager
 
 
 def get_activated_trading_mode(config):
@@ -23,7 +24,7 @@ def get_activated_trading_mode(config):
                 trading_mode_class = get_deep_class_from_string(trading_modes[0], modes)
 
                 if trading_mode_class is not None:
-                    return trading_mode_class
+                    return AdvancedManager.get_class(config, trading_mode_class)
         except ModuleNotFoundError as e:
             get_logger("get_activated_trading_mode").error(f"Error when loading a trading mode: {e} "
                                                            f"referenced in {CONFIG_TRADING_FILE_PATH} file")
