@@ -265,7 +265,11 @@ function handle_save_buttons_success_callback(updated_data, update_url, dom_root
 }
 
 function handle_evaluator_configuration_editor(){
-    $(".config-element").click(function(){
+    $(".config-element").click(function(e){
+        if (e.target.nodeName === "BUTTON"){
+            // do not trigger when click on buttons
+            return;
+        }
         const element = $(this);
 
         if (element.hasClass(config_element_class)){
@@ -283,7 +287,6 @@ function handle_evaluator_configuration_editor(){
                     current_value = element.attr(current_value_attr);
                 }
 
-                // todo
                 if (current_value === "true"){
                     new_value = "false";
                 }else if(current_value === "false"){

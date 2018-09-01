@@ -124,3 +124,6 @@ body:before {
 .card a:hover {
     color: #42a5f5 !important;
 }
+
+.modal-text {
+  color: #4B515D; }
