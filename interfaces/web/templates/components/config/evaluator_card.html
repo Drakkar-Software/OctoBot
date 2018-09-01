@@ -1,14 +1,36 @@
-{% macro config_evaluator_card(evaluator_startup_config, evaluator_name, activated) -%}
+{% macro config_evaluator_card(evaluator_startup_config, evaluator_name, info) -%}
     <a href="#" onclick="return false;"
-       class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 waves-effect {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element evaluator-config-element"
+       class="col-md-6 col-lg-4 list-group-item list-group-item-action waves-effect {{'list-group-item-success' if info['activation'] else 'list-group-item-light'}} config-element evaluator-config-element"
        id={{evaluator_name}}
-       config-type="evaluator_config" config-key={{evaluator_name}} current-value={{activated}} config-value={{activated}} startup-config-value={{evaluator_startup_config[evaluator_name]}}>
+       config-type="evaluator_config" config-key={{evaluator_name}} current-value={{info['activation']}} config-value={{info['activation']}} startup-config-value={{evaluator_startup_config[evaluator_name]}}>
         {{ evaluator_name }}
       <span class="float-right">
-        <span
-                class="badge {{'badge-warning' if evaluator_startup_config[evaluator_name] != activated else ('badge-success' if activated else 'badge-secondary')}}">
-            {{('Activation pending restart' if activated else 'Deactivation pending restart') if evaluator_startup_config[evaluator_name] != activated else ('Activated' if activated else 'Deactivated')}}
-        </span>
+          <span class="badge {{'badge-warning' if evaluator_startup_config[evaluator_name] != info['activation'] else ('badge-success' if info['activation'] else 'badge-secondary')}}">
+              {{('Activation pending restart' if info['activation'] else 'Deactivation pending restart') if evaluator_startup_config[evaluator_name] != info['activation'] else ('Activated' if info['activation'] else 'Deactivated')}}
+          </span>
+          <button class="btn btn-outline-primary btn-md waves-effect"  data-toggle="modal" data-target="#{{evaluator_name}}Modal"><i class="fa fa-info-circle"></i></button>
       </span>
     </a>
+    <div class="modal fade" id="{{evaluator_name}}Modal" tabindex="-1" role="dialog" aria-labelledby="#{{evaluator_name}}ModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content modal-text">
+          <div class="modal-header primary-text">
+            <h5 class="modal-title" id="#{{evaluator_name}}ModalLabel">{{evaluator_name}}</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+              <p>{{info['description']}}</p>
+              {% if info['requirements'] %}
+                  <h5>Requirements</h5>
+                  <p>{{info['requirements']|pprint}}</p>
+              {% endif %}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
 {%- endmacro %}

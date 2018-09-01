@@ -69,11 +69,21 @@
     <!--Panel Evaluators-->
     <div class="tab-pane fade in show active config-root" id="panelEvaluators" role="tabpanel"><br>
         <div class="card">
+            <div class="card-header"><h2>Trading mode</h2></div>
+            <div class="card-body">
+                <div class="row config-container" id="evaluator-config-root">
+                    {% for evaluator_name, info in strategy_config["trading-modes"].items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(strategy_startup_config, evaluator_name, info) }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="card">
             <div class="card-header"><h2>Trading strategies</h2></div>
             <div class="card-body">
                 <div class="row config-container" id="evaluator-config-root">
-                    {% for evaluator_name, activated in evaluator_config.items() %}
-                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
+                    {% for evaluator_name, info in strategy_config["strategies"].items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(strategy_startup_config, evaluator_name, info) }}
                     {% endfor %}
                 </div>
             </div>

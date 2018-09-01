@@ -11,6 +11,8 @@ from tools.config_manager import ConfigManager
 class AbstractEvaluator:
     __metaclass__ = ABCMeta
 
+    DESCRIPTION = "No description set."
+
     def __init__(self):
         super().__init__()
         self.logger = None
@@ -80,6 +82,11 @@ class AbstractEvaluator:
     # Pertinence of indicator will be used with the eval_note to provide a relevancy
     def get_pertinence(self):
         return self.pertinence
+
+    @classmethod
+    # Description of the evaluator, used as documentation
+    def get_description(cls):
+        return cls.DESCRIPTION
 
     # If this indicator is enabled
     def get_is_enabled(self):
