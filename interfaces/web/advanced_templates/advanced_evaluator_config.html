@@ -33,33 +33,33 @@
     <!--Panel Evaluators-->
     <div class="config-root" id="panelEvaluators"><br>
         <div class="card">
-            <div class="card-header"><h2>Technical analysis evaluators</h2></div>
+            <div class="card-header"><h2>Technical analysis</h2></div>
             <div class="card-body">
                 <div class="row config-container" id="ta-evaluator-config-root">
                     {% for evaluator_name, info in evaluator_config["ta"].items() %}
-                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info) }}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
                     {% endfor %}
                 </div>
             </div>
         </div>
         <br>
         <div class="card">
-            <div class="card-header"><h2>Social analysis evaluators</h2></div>
+            <div class="card-header"><h2>Social analysis</h2></div>
             <div class="card-body">
                 <div class="row config-container" id="social-evaluator-config-root">
                     {% for evaluator_name, info in evaluator_config["social"].items() %}
-                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info) }}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
                     {% endfor %}
                 </div>
             </div>
         </div>
         <br>
         <div class="card">
-            <div class="card-header"><h2>Real time evaluators</h2></div>
+            <div class="card-header"><h2>Real time analysis</h2></div>
             <div class="card-body">
                 <div class="row config-container" id="rt-evaluator-config-root">
                     {% for evaluator_name, info in evaluator_config["real-time"].items() %}
-                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info) }}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
                     {% endfor %}
                 </div>
             </div>

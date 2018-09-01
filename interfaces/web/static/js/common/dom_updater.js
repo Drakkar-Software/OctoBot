@@ -65,16 +65,11 @@ function change_boolean(to_update_element, new_value, new_value_string){
     }
 }
 
-function update_dom(root_element, message){
+function update_activated_deactivated_tentacles(root_element, message, element_type){
     const config_value_attr = "config-value";
 
-    // update global configuration
-    const super_container = $("#super-container");
-    confirm_all_modified_classes(super_container);
-
-    // update evaluators
-    for (const conf_key in message["evaluator_updated_config"]) {
-        const new_value = message["evaluator_updated_config"][conf_key];
+    for (const conf_key in message[element_type]) {
+        const new_value = message[element_type][conf_key];
         const new_value_type = "boolean";
         const new_value_string = new_value.toString();
         const to_update_element = root_element.find("#"+conf_key);
@@ -96,6 +91,18 @@ function update_dom(root_element, message){
         }
 
     }
+}
+
+function update_dom(root_element, message){
+    // update global configuration
+    const super_container = $("#super-container");
+    confirm_all_modified_classes(super_container);
+
+    // update evaluators config
+    update_activated_deactivated_tentacles(root_element, message, "evaluator_updated_config");
+
+    // update trading config
+    update_activated_deactivated_tentacles(root_element, message, "trading_updated_config");
 }
 
 function create_alert(a_level, a_title, a_msg, url="_blank"){

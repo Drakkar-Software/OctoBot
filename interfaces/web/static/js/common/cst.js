@@ -38,3 +38,4 @@ const config_default_value = "Bitcoin";
 const config_default_symbol = "btc";
 
 const evaluator_config_type = "evaluator_config";
+const trading_config_type = "trading_config";

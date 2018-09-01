@@ -30,7 +30,7 @@ def _get_trading_config():
     return get_edited_config()[CONFIG_TRADING_TENTACLES]
 
 
-def _get_trading_startup_config():
+def get_trading_startup_config():
     return get_bot().get_startup_config()[CONFIG_TRADING_TENTACLES]
 
 
@@ -51,7 +51,7 @@ def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_str
     return details
 
 
-def _get_strategy_activation_state(startup_config=False):
+def _get_strategy_activation_state():
     import trading.trader.modes as modes
     import evaluator.Strategies as strategies
     trading_mode_key = "trading-modes"
@@ -68,7 +68,7 @@ def _get_strategy_activation_state(startup_config=False):
         strategies_key: {}
     }
 
-    trading_config = _get_trading_startup_config() if startup_config else _get_trading_config()
+    trading_config = _get_trading_config()
     for key, val in trading_config.items():
         config_class = get_class_from_string(key, modes.AbstractTradingMode, modes, trading_mode_parent_inspection)
         if config_class:
@@ -79,7 +79,7 @@ def _get_strategy_activation_state(startup_config=False):
                 _get_advanced_class_details(key, config_class, is_trading_mode=True)
             strategy_config_classes[trading_mode_key][key] = config_class
 
-    evaluator_config = get_evaluator_startup_config() if startup_config else _get_evaluator_config()
+    evaluator_config = _get_evaluator_config()
     for key, val in evaluator_config.items():
         config_class = get_class_from_string(key, strategies.StrategiesEvaluator,
                                              strategies, evaluator_parent_inspection)
@@ -132,13 +132,8 @@ def _add_trading_modes_requirements(trading_modes, strategy_config):
             [strategy.get_name() for strategy in klass.get_required_strategies()]
 
 
-def get_strategy_startup_config():
-    strategy_config, _ = _get_strategy_activation_state(startup_config=True)
-    return strategy_config
-
-
 def get_strategy_config():
-    strategy_config, strategy_config_classes = _get_strategy_activation_state(startup_config=False)
+    strategy_config, strategy_config_classes = _get_strategy_activation_state()
     _add_trading_modes_requirements(strategy_config_classes["trading-modes"], strategy_config)
     _add_strategies_requirements(strategy_config_classes["strategies"], strategy_config)
     return strategy_config
@@ -205,6 +200,15 @@ def update_evaluator_config(new_config):
     current_config = _get_evaluator_config()
     try:
         ConfigManager.update_evaluator_config(new_config, current_config)
+        return True
+    except Exception:
+        return False
+
+
+def update_trading_config(new_config):
+    current_config = _get_trading_config()
+    try:
+        ConfigManager.update_trading_config(new_config, current_config)
         return True
     except Exception:
         return False

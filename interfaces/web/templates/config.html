@@ -73,17 +73,18 @@
             <div class="card-body">
                 <div class="row config-container" id="evaluator-config-root">
                     {% for evaluator_name, info in strategy_config["trading-modes"].items() %}
-                        {{ m_config_evaluator_card.config_evaluator_card(strategy_startup_config, evaluator_name, info) }}
+                        {{ m_config_evaluator_card.config_evaluator_card(trading_startup_config, evaluator_name, info, "trading_config") }}
                     {% endfor %}
                 </div>
             </div>
         </div>
+        <br>
         <div class="card">
             <div class="card-header"><h2>Trading strategies</h2></div>
             <div class="card-body">
-                <div class="row config-container" id="evaluator-config-root">
+                <div class="row config-container" id="trading-modes-config-root">
                     {% for evaluator_name, info in strategy_config["strategies"].items() %}
-                        {{ m_config_evaluator_card.config_evaluator_card(strategy_startup_config, evaluator_name, info) }}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
                     {% endfor %}
                 </div>
             </div>
