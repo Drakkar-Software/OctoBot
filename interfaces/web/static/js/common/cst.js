@@ -18,6 +18,9 @@ const secondary_badge = "badge-secondary";
 const primary_badge = "badge-primary";
 const modified_class = "warning-color";
 const selected_item_class = "primary-color";
+const disabled_item_class = "stylish-color";
+const hidden_class = "d-none";
+const disabled_class = "disabled-item";
 
 const card_class_modified = "card-modified";
 const deck_container_modified_class = "deck-container-modified";
