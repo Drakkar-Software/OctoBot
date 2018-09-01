@@ -100,7 +100,7 @@ class OctoBot:
                 if self.backtesting_enabled:
                     exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=True)
                 else:
-                    # True Exchange
+                    # Real Exchange
                     exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False)
 
                 exchange_inst = exchange_manager.get_exchange()
@@ -118,6 +118,7 @@ class OctoBot:
                 try:
                     self.trading_mode = get_activated_trading_mode(self.config)(self.config, exchange_inst)
                     self.exchange_trading_modes[exchange_inst.get_name()] = self.trading_mode
+                    self.logger.debug(f"Using {self.trading_mode.get_name()} trading mode")
                 except RuntimeError as e:
                     self.logger.error(e.args[0])
                     raise e
