@@ -4,3 +4,4 @@ advanced = Blueprint('advanced', __name__, url_prefix='/advanced', template_fold
 
 from . import home
 from . import configuration
+from . import strategy_optimizer

@@ -1,15 +1,17 @@
 from flask import render_template, request, jsonify
 
-from interfaces.web import server_instance
-from interfaces.web.models.strategy_optimizer import get_strategies_list, get_current_strategy, get_time_frames_list, \
-    get_evaluators_list, get_risks_list, start_optimizer, get_optimizer_results, get_optimizer_status, \
-    get_optimizer_report, get_current_run_params, get_trading_mode
+from . import advanced
 from interfaces.web.util.flask_util import get_rest_reply
 
 
-@server_instance.route("/strategy-optimizer")
-@server_instance.route('/strategy-optimizer', methods=['GET', 'POST'])
+@advanced.route("/strategy-optimizer")
+@advanced.route('/strategy-optimizer', methods=['GET', 'POST'])
 def strategy_optimizer():
+    from interfaces.web.models.strategy_optimizer import get_strategies_list, get_current_strategy, \
+        get_time_frames_list, \
+        get_evaluators_list, get_risks_list, start_optimizer, get_optimizer_results, get_optimizer_status, \
+        get_optimizer_report, get_current_run_params, get_trading_mode
+
     if request.method == 'POST':
         update_type = request.args["update_type"]
         request_data = request.get_json()
@@ -56,7 +58,7 @@ def strategy_optimizer():
 
         else:
             current_strategy = get_current_strategy()
-            return render_template('strategy_optimizer.html',
+            return render_template('advanced_strategy_optimizer.html',
                                    strategies=get_strategies_list(),
                                    current_strategy=current_strategy,
                                    time_frames=get_time_frames_list(current_strategy),

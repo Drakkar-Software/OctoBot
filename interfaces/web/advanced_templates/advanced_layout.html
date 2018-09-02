@@ -71,7 +71,7 @@
                         <a class="nav-link" href="{{ url_for('advanced.home') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('advanced.evaluator_config') }}">Evaluator configuration</a>
+                        <a class="nav-link" href="{{ url_for('advanced.strategy_optimizer') }}">Strategy optimizer</a>
                     </li>
                 </ul>
             </div>
@@ -83,6 +83,9 @@
             </div>
             <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
                 <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('advanced.evaluator_config') }}">Evaluator configuration</a>
+                    </li>
                     <li class="nav-item">
                         <a class="btn btn-sm btn-outline-default waves-effect" href="{{ url_for('home') }}"><i class="fa fa-home"></i> Back to OctoBot</a>
                     </li>
