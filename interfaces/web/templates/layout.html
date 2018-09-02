@@ -76,16 +76,8 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownBacktesting" role="button"
-                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                          Backtesting
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <a class="dropdown-item" href="{{ url_for('backtesting') }}">Backtesting</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="{{ url_for('data_collector') }}">Data collector</a>
-                        </div>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('backtesting') }}">Backtesting</a>
                     </li>
                 </ul>
             </div>
