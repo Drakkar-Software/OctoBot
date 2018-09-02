@@ -22,8 +22,17 @@
         </div>
     </div>
 </div>
+<br>
 <div class="card">
-    <div class="card-header"><h2>Open orders</h2></div>
+    <div class="card-header">
+        <h2>Open orders
+            <span class="float-right">
+                <a href="{{ url_for('trades') }}">
+                    <i class="fa fa-history" data-toggle="tooltip" data-placement="top" title="Trades history"></i>
+                </a>
+            </span>
+        </h2>
+    </div>
     <div class="card-body">
         <div class="table-responsive">
           <table id="open_order_datatable" class="table table-striped table-bordered table-hover">
@@ -47,8 +56,8 @@
           </table>
         </div>
     </div>
-    <div class="card-footer text-muted">
-        <a href="{{ url_for('trades') }}" class="btn btn-primary btn-lg btn-block">Trades history</a>
+    <div class="card-footer text-center">
+        <a href="{{ url_for('trades') }}" class="btn btn-primary btn-lg">Trades history</a>
     </div>
 </div>
 
