@@ -13,14 +13,12 @@
       </a>
     </div>
 
+
     <!--Card content-->
-    <div class="card-body">
-        <p class="card-text">
-            <h6>Quantity</h6>
-            Free : {{ total_portfolio[currency]["available"] }} {{ currency }}<br>
-            Total : {{ total_portfolio[currency]["total"] }} {{ currency }}
-        </p>
-    </div>
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item bg-transparent">Free : {{ total_portfolio[currency]["available"] }} {{ currency }}</li>
+        <li class="list-group-item bg-transparent">Total : {{ total_portfolio[currency]["total"] }} {{ currency }}</li>
+    </ul>
 
     </div>
     <!-- Card -->

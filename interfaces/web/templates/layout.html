@@ -77,17 +77,6 @@
                         <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownTentacles" role="button"
-                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                          Tentacles
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <a class="dropdown-item" href="{{ url_for('tentacles') }}">Tentacles</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="{{ url_for('tentacle_packages') }}">Packages</a>
-                        </div>
-                    </li>
-                    <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownBacktesting" role="button"
                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                           Backtesting
@@ -108,6 +97,9 @@
             </div>
             <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
                 <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('tentacles') }}">Tentacles</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('config') }}">Configuration</a>
                     </li>
