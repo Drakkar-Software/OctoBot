@@ -102,13 +102,15 @@
                         <!--<a class="nav-link" href="#">About</a>-->
                     <!--</li>-->
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logs') }}"><i class="fa fa-bell"><span id="errors-count-badge" class="badge badge-warning"></span></i></a>
+                        <a class="nav-link" href="{{ url_for('logs') }}"><i class="fa fa-bell" data-toggle="tooltip" data-placement="top" title="Event logs">
+                            <span id="errors-count-badge" class="badge badge-warning"></span>
+                        </i></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('advanced.home') }}"><i class="fa fa-cogs"></i></a>
+                        <a class="nav-link" href="{{ url_for('advanced.home') }}"><i class="fa fa-cogs" data-toggle="tooltip" data-placement="top" title="Advanced OctoBot"></i></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('commands') }}"><i id="navbar-bot-reboot" class="fa fa-sync"></i></a>
+                        <a class="nav-link" href="{{ url_for('commands') }}"><i id="navbar-bot-reboot" class="fa fa-sync" data-toggle="tooltip" data-placement="top" title="Commands"></i></a>
                     </li>
                 </ul>
             </div>
