@@ -128,8 +128,11 @@ def _add_trading_modes_requirements(trading_modes, strategy_config):
     trading_mode_key = "trading-modes"
     requirements_key = "requirements"
     for classKey, klass in trading_modes.items():
-        strategy_config[trading_mode_key][classKey][requirements_key] = \
-            [strategy.get_name() for strategy in klass.get_required_strategies()]
+        if klass.get_required_strategies():
+            strategy_config[trading_mode_key][classKey][requirements_key] = \
+                [strategy.get_name() for strategy in klass.get_required_strategies()]
+        else:
+            strategy_config[trading_mode_key][classKey][requirements_key] = []
 
 
 def get_strategy_config():
