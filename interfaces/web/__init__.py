@@ -6,11 +6,13 @@ import flask
 import numpy
 
 from config.cst import PriceIndexes, LOG_DATABASE, LOG_NEW_ERRORS_COUNT
-from interfaces.web.advanced_controllers import advanced
 from interfaces.web.api import api
 from tools.logging import logs_database, reset_errors_count
 
+
 server_instance = flask.Flask(__name__)
+
+from interfaces.web.advanced_controllers import advanced
 
 server_instance.register_blueprint(advanced)
 server_instance.register_blueprint(api)
