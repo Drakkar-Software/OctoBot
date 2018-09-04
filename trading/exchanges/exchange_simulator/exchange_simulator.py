@@ -14,6 +14,7 @@ from tools.symbol_util import split_symbol
 from tools.data_util import DataUtil
 from tools.number_util import round_into_str_with_max_digits
 from trading import AbstractExchange
+from trading.trader.order import OrderConstants
 
 
 class ExchangeSimulator(AbstractExchange):
@@ -461,7 +462,8 @@ class ExchangeSimulator(AbstractExchange):
             [ExchangeConstantsMarketStatusColumns.PRECISION_PRICE.value]
         cost = float(round_into_str_with_max_digits(quantity * rate, precision))
 
-        if order_type == TraderOrderType.SELL_LIMIT or order_type == TraderOrderType.SELL_MARKET:
+        if order_type == OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET] \
+                or order_type == OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT]:
             cost = float(round_into_str_with_max_digits(cost * price, precision))
             fee_currency = market
 
