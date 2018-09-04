@@ -229,7 +229,7 @@ class Order:
         self.is_from_this_octobot = is_from_this_octobot
 
     def get_taker_or_maker(self):
-        if self.order_type == TraderOrderType.SELL_MARKET or self.order_type == TraderOrderType.BUY_MARKET:
+        if self.order_type == SellMarketOrder or self.order_type == BuyMarketOrder:
             # always true
             return ExchangeConstantsMarketPropertyColumns.TAKER.value
         else:

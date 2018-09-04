@@ -96,13 +96,12 @@ class Portfolio:
                 new_quantity = order.get_filled_quantity() - order.get_total_fees(currency)
                 self._update_portfolio_data(currency, new_quantity, True, True)
             else:
-                new_quantity = -(order.get_filled_quantity() - order.get_total_fees(currency))
+                new_quantity = -order.get_filled_quantity()
                 self._update_portfolio_data(currency, new_quantity, True, False)
 
             # update market
             if order.get_side() == TradeOrderSide.BUY:
-                new_quantity = -(
-                        (order.get_filled_quantity() * order.get_filled_price()) - order.get_total_fees(market))
+                new_quantity = -(order.get_filled_quantity() * order.get_filled_price())
                 self._update_portfolio_data(market, new_quantity, True, False)
             else:
                 new_quantity = (order.get_filled_quantity() * order.get_filled_price()) - order.get_total_fees(market)
