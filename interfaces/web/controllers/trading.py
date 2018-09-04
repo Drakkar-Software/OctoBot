@@ -30,10 +30,10 @@ def market_status():
                            pairs_with_status=get_currencies_with_status())
 
 
-@server_instance.route("/orders")
-def orders():
+@server_instance.route("/trading")
+def trading():
     real_open_orders, simulated_open_orders = get_open_orders()
-    return render_template('orders.html',
+    return render_template('trading.html',
                            real_open_orders=real_open_orders,
                            simulated_open_orders=simulated_open_orders,
                            pairs_with_status=get_currencies_with_status())
