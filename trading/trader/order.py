@@ -166,8 +166,8 @@ class Order:
         return self.fee
 
     def get_total_fees(self, currency):
-        if self.fee and self.fee[FeePropertyColumns.CURRENCY] == currency:
-            return self.fee[FeePropertyColumns.COST]
+        if self.fee and self.fee[FeePropertyColumns.CURRENCY.value] == currency:
+            return self.fee[FeePropertyColumns.COST.value]
         else:
             return 0
 
@@ -228,7 +228,7 @@ class Order:
     def set_is_from_this_octobot(self, is_from_this_octobot):
         self.is_from_this_octobot = is_from_this_octobot
 
-    def get_take_or_maker(self):
+    def get_taker_or_maker(self):
         if self.order_type == TraderOrderType.SELL_MARKET or self.order_type == TraderOrderType.BUY_MARKET:
             # always true
             return ExchangeConstantsMarketPropertyColumns.TAKER.value
@@ -238,10 +238,10 @@ class Order:
 
     def compute_fee(self):
         computed_fee = self.exchange.get_trade_fee(self.symbol, self.order_type, self.filled_quantity,
-                                                   self.filled_price, self.get_take_or_maker())
+                                                   self.filled_price, self.get_taker_or_maker())
         return {
-            FeePropertyColumns.COST: computed_fee[FeePropertyColumns.COST],
-            FeePropertyColumns.CURRENCY: computed_fee[FeePropertyColumns.CURRENCY],
+            FeePropertyColumns.COST.value: computed_fee[FeePropertyColumns.COST.value],
+            FeePropertyColumns.CURRENCY.value: computed_fee[FeePropertyColumns.CURRENCY.value],
         }
 
     def get_profitability(self):
