@@ -1,6 +1,6 @@
 import time
 
-
+from config.cst import ExchangeConstantsMarketPropertyColumns
 from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_symbol_data import SymbolData
@@ -209,12 +209,20 @@ class ExchangeDispatcher(AbstractExchange):
     #     'rate': percentage, // the fee rate, 0.05% = 0.0005, 1% = 0.01, ...
     #     'cost': feePaid, // the fee cost (amount * fee rate)
     # }
-    def get_trade_fee(self, symbol, order_type, quantity, price):
+    # equivalent to: {
+    #     FeePropertyColumns.TYPE.value: takerOrMaker,
+    #     FeePropertyColumns.CURRENCY.value: 'BTC',
+    #     FeePropertyColumns.RATE.value: percentage,
+    #     FeePropertyColumns.COST.value: feePaid
+    # }
+    def get_trade_fee(self, symbol, order_type, quantity, price,
+                      taker_or_maker=ExchangeConstantsMarketPropertyColumns.TAKER.value):
         return self.exchange.get_trade_fee(
             symbol=symbol,
             order_type=order_type,
             quantity=quantity,
             price=price,
+            taker_or_maker=taker_or_maker
         )
 
     # returns {

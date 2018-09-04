@@ -203,12 +203,14 @@ class RESTExchange(AbstractExchange):
             self.logger.error(f"Failed to create order : {e} ({order_desc})")
         return None
 
-    def get_trade_fee(self, symbol, order_type, quantity, price):
+    def get_trade_fee(self, symbol, order_type, quantity, price,
+                      taker_or_maker=ExchangeConstantsMarketPropertyColumns.TAKER.value):
         return self.client.calculate_fee(symbol=symbol,
                                          type=order_type,
                                          side=self._get_side(order_type),
                                          amount=quantity,
-                                         price=price)
+                                         price=price,
+                                         takerOrMaker=taker_or_maker)
 
     def get_fees(self, symbol):
         try:
