@@ -264,6 +264,7 @@ class BuyMarketOrder(Order):
         else:
             # ONLY FOR SIMULATION
             self.status = OrderStatus.FILLED
+            self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
             self.executed_time = self.generate_executed_time(simulated_time)
@@ -297,6 +298,7 @@ class SellMarketOrder(Order):
         else:
             # ONLY FOR SIMULATION
             self.status = OrderStatus.FILLED
+            self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
             self.executed_time = self.generate_executed_time(simulated_time)
