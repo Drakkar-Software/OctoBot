@@ -5,7 +5,7 @@ from config.cst import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_
     CONFIG_SIMULATOR, CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, \
     CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADING_TENTACLES, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, \
     CONFIG_DATA_COLLECTOR_PATH, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_STARTING_PORTFOLIO, \
-    CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO, DEFAULT_REFERENCE_MARKET
+    CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO, DEFAULT_REFERENCE_MARKET, CONFIG_SIMULATOR_FEES
 from octobot import OctoBot
 from config.config import load_config
 from backtesting.backtesting import Backtesting
@@ -19,9 +19,11 @@ def create_blank_config_using_loaded_one(loaded_config, other_config=None):
     trading_tentacles_config = deepcopy(loaded_config[CONFIG_TRADING_TENTACLES])
     risk = deepcopy(loaded_config[CONFIG_TRADING][CONFIG_TRADER_RISK])
     starting_portfolio = deepcopy(loaded_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO])
+    fees_config = deepcopy(loaded_config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES])
     new_config[CONFIG_TRADING_TENTACLES] = trading_tentacles_config
     new_config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
     new_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO] = starting_portfolio
+    new_config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES] = fees_config
     new_config[CONFIG_EVALUATOR] = deepcopy(loaded_config[CONFIG_EVALUATOR])
     add_config_default_backtesting_values(new_config)
     return new_config
