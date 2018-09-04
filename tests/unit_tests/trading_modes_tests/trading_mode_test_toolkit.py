@@ -40,8 +40,7 @@ def check_linked_order(order, linked_order, order_type, order_price, market_stat
     assert linked_order.linked_orders[0] == order
     assert linked_order.created_last_price == order.created_last_price
     assert linked_order.currency == order.currency
-    assert linked_order.currency_total_fees == order.currency_total_fees
-    assert linked_order.market_total_fees == order.market_total_fees
+    assert linked_order.fee == order.fee
     assert linked_order.filled_price == order.filled_price
     assert linked_order.filled_quantity == order.filled_quantity
     assert linked_order.linked_to == order
@@ -69,8 +68,7 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
                 assert order.status == OrderStatus.OPEN
                 assert order.is_simulated is True
                 assert order.linked_to is None
-                assert order.currency_total_fees == 0
-                assert order.market_total_fees == 0
+                assert order.fee is None
                 assert order.filled_price == 0
                 assert order.filled_quantity == order.origin_quantity
 
