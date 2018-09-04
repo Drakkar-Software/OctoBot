@@ -93,30 +93,30 @@ class Portfolio:
 
             # update currency
             if order.get_side() == TradeOrderSide.BUY:
-                new_quantity = order.get_filled_quantity() - order.get_currency_total_fees()
+                new_quantity = order.get_filled_quantity() - order.get_total_fees(currency)
                 self._update_portfolio_data(currency, new_quantity, True, True)
             else:
-                new_quantity = -(order.get_filled_quantity() - order.get_currency_total_fees())
+                new_quantity = -(order.get_filled_quantity() - order.get_total_fees(currency))
                 self._update_portfolio_data(currency, new_quantity, True, False)
 
             # update market
             if order.get_side() == TradeOrderSide.BUY:
                 new_quantity = -(
-                        (order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees())
+                        (order.get_filled_quantity() * order.get_filled_price()) - order.get_total_fees(market))
                 self._update_portfolio_data(market, new_quantity, True, False)
             else:
-                new_quantity = (order.get_filled_quantity() * order.get_filled_price()) - order.get_market_total_fees()
+                new_quantity = (order.get_filled_quantity() * order.get_filled_price()) - order.get_total_fees(market)
                 self._update_portfolio_data(market, new_quantity, True, True)
 
             # Only for log purpose
             if order.get_side() == TradeOrderSide.BUY:
-                currency_portfolio_num = order.get_filled_quantity()
+                currency_portfolio_num = order.get_filled_quantity() - order.get_total_fees(currency)
                 market_portfolio_num = -order.get_filled_quantity() * \
-                                        order.get_filled_price() - order.get_market_total_fees()
+                                        order.get_filled_price()
             else:
                 currency_portfolio_num = -order.get_filled_quantity()
                 market_portfolio_num = order.get_filled_quantity() * \
-                                       order.get_filled_price() - order.get_market_total_fees()
+                                       order.get_filled_price() - order.get_total_fees(market)
 
             self.logger.info("Portfolio updated | {0} {1} | {2} {3} | Current Portfolio : {4}"
                              .format(currency,

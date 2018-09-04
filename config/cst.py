@@ -480,6 +480,13 @@ class ExchangeConstantsMarketPropertyColumns(Enum):
     FEE = "fee"  # withdraw
 
 
+class FeePropertyColumns(Enum):
+    TYPE = "type"  # taker of maker
+    CURRENCY = "currency"  # currency the fee is paid in
+    RATE = "rate"  # multiplier applied to compute fee
+    COST = "cost"  # fee amount
+
+
 class DeliveryPlatformsName(Enum):
     WINDOWS = "windows"
     LINUX = "linux"

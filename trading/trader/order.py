@@ -6,7 +6,7 @@ from tools.logging.logging_util import get_logger
 
 from tools.symbol_util import split_symbol
 from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK, \
-    ExchangeConstantsTickersColumns as eC
+    ExchangeConstantsTickersColumns as eC, FeePropertyColumns, ExchangeConstantsMarketPropertyColumns
 
 """ Order class will represent an open order in the specified exchange
 In simulation it will also define rules to be filled / canceled
@@ -27,9 +27,9 @@ class Order:
         self.origin_stop_price = 0
         self.origin_quantity = 0
         self.market_total_fees = 0
-        self.currency_total_fees = 0
         self.filled_quantity = 0
         self.filled_price = 0
+        self.fee = None
         self.currency, self.market = None, None
         self.order_id = None
         self.status = None
@@ -162,8 +162,14 @@ class Order:
     def get_market_total_fees(self):
         return self.market_total_fees
 
-    def get_currency_total_fees(self):
-        return self.currency_total_fees
+    def get_fee(self):
+        return self.fee
+
+    def get_total_fees(self, currency):
+        if self.fee and self.fee[FeePropertyColumns.CURRENCY] == currency:
+            return self.fee[FeePropertyColumns.COST]
+        else:
+            return 0
 
     def get_filled_quantity(self):
         return self.filled_quantity
@@ -222,6 +228,22 @@ class Order:
     def set_is_from_this_octobot(self, is_from_this_octobot):
         self.is_from_this_octobot = is_from_this_octobot
 
+    def get_take_or_maker(self):
+        if self.order_type == TraderOrderType.SELL_MARKET or self.order_type == TraderOrderType.BUY_MARKET:
+            # always true
+            return ExchangeConstantsMarketPropertyColumns.TAKER.value
+        else:
+            # true 90% of the time: impossible to know for sure the reality (should only be used for simulation anyway)
+            return ExchangeConstantsMarketPropertyColumns.MAKER.value
+
+    def compute_fee(self):
+        computed_fee = self.exchange.get_trade_fee(self.symbol, self.order_type, self.filled_quantity,
+                                                   self.filled_price, self.get_take_or_maker())
+        return {
+            FeePropertyColumns.COST: computed_fee[FeePropertyColumns.COST],
+            FeePropertyColumns.CURRENCY: computed_fee[FeePropertyColumns.CURRENCY],
+        }
+
     def get_profitability(self):
         if self.get_filled_price() is not 0 and self.get_create_last_price() is not 0:
             if self.get_filled_price() >= self.get_create_last_price():
@@ -267,6 +289,7 @@ class BuyMarketOrder(Order):
             self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
+            self.fee = self.compute_fee()
             self.executed_time = self.generate_executed_time(simulated_time)
 
 
@@ -284,6 +307,7 @@ class BuyLimitOrder(Order):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
+                self.fee = self.compute_fee()
                 self.executed_time = self.generate_executed_time(simulated_time)
 
 
@@ -301,6 +325,7 @@ class SellMarketOrder(Order):
             self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
+            self.fee = self.compute_fee()
             self.executed_time = self.generate_executed_time(simulated_time)
 
 
@@ -318,6 +343,7 @@ class SellLimitOrder(Order):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
+                self.fee = self.compute_fee()
                 self.executed_time = self.generate_executed_time(simulated_time)
 
 
