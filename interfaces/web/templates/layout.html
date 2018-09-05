@@ -71,45 +71,13 @@
                         <a class="nav-link" href="{{ url_for('home') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('config') }}">Configuration</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownTrading" role="button"
-                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                          Trading
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <a class="dropdown-item" href="{{ url_for('portfolio') }}">Portfolio</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="{{ url_for('market_status') }}">Market status</a>
-                            <a class="dropdown-item" href="{{ url_for('orders') }}">Orders</a>
-                            <a class="dropdown-item" href="{{ url_for('trades') }}">Trades</a>
-                        </div>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownTentacles" role="button"
-                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                          Tentacles
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <a class="dropdown-item" href="{{ url_for('tentacles') }}">Tentacles</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="{{ url_for('tentacle_packages') }}">Packages</a>
-                        </div>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownBacktesting" role="button"
-                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                          Backtesting
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <a class="dropdown-item" href="{{ url_for('backtesting') }}">Backtesting</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="{{ url_for('data_collector') }}">Data collector</a>
-                        </div>
+                        <a class="nav-link" href="{{ url_for('trading') }}">Trading</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('strategy_optimizer') }}">Strategy optimizer</a>
+                        <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('backtesting') }}">Backtesting</a>
                     </li>
                 </ul>
             </div>
@@ -122,19 +90,27 @@
             <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Tutorial</a>
+                        <a class="nav-link" href="{{ url_for('tentacles') }}">Tentacles</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">About</a>
+                        <a class="nav-link" href="{{ url_for('config') }}">Configuration</a>
+                    </li>
+                    <!--<li class="nav-item">-->
+                        <!--<a class="nav-link" href="#">Tutorial</a>-->
+                    <!--</li>-->
+                    <!--<li class="nav-item">-->
+                        <!--<a class="nav-link" href="#">About</a>-->
+                    <!--</li>-->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logs') }}"><i class="fa fa-bell" data-toggle="tooltip" data-placement="top" title="Event logs">
+                            <span id="errors-count-badge" class="badge badge-warning"></span>
+                        </i></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logs') }}"><i class="fa fa-bell"><span id="errors-count-badge" class="badge badge-warning"></span></i></a>
+                        <a class="nav-link" href="{{ url_for('advanced.home') }}"><i class="fa fa-cogs" data-toggle="tooltip" data-placement="top" title="Advanced OctoBot"></i></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('advanced.home') }}"><i class="fa fa-bug"></i></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('commands') }}"><i id="navbar-bot-reboot" class="fa fa-sync"></i></a>
+                        <a class="nav-link" href="{{ url_for('commands') }}"><i id="navbar-bot-reboot" class="fa fa-sync" data-toggle="tooltip" data-placement="top" title="Commands"></i></a>
                     </li>
                 </ul>
             </div>

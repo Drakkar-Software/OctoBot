@@ -23,7 +23,7 @@
                     <td>{{description.date}}</td>
                     <td>{{description.candles}}</td>
                     <td class="text-center">
-                        <a class="btn fa fa-trash-alt delete_data_file" data-file={{file}} data-toggle="tooltip" data-placement="right" title="Delete data file"></a>
+                        <a class="btn fa fa-trash-alt delete_data_file waves-effect" data-file={{file}} data-toggle="tooltip" data-placement="right" title="Delete data file"></a>
                     </td>
                 </tr>
             {% endfor %}
@@ -68,7 +68,7 @@
     <div class='progress' id='collector_operation' style='display: none;'>
       <div id='progess_bar_anim' class='progress-bar progress-bar-striped bg-danger progress-bar-animated' role='progressbar' aria-valuenow='100' aria-valuemin='0' aria-valuemax='100' style='width: 100%;'></div>
     </div>
-    <button id="collect_data" type="button" class="btn btn-primary" update-url="{{ url_for('data_collector', action_type='start_collector') }}">Collect new data</button>
+    <button id="collect_data" type="button" class="btn btn-primary waves-effect" update-url="{{ url_for('data_collector', action_type='start_collector') }}">Collect new data</button>
 </div>
 
 <br>
@@ -82,7 +82,7 @@
                 <input type="file" class="custom-file-input" id="inputFile" name="file" accept=".data">
                 <label class="custom-file-label" for="inputFile" id="inputFileLabel">Choose data file</label>
             </div>
-            <button class="btn btn-primary" type="submit" id="importFileButton">Import data file</button>
+            <button class="btn btn-primary waves-effect" type="submit" id="importFileButton">Import data file</button>
         </form>
     </div>
 </div>

@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% import 'macros/tables.html' as m_tables %}
+{% import 'macros/cards.html' as m_cards %}
 
 {% macro extract_orders(order_list, sim_or_real) -%}
     {% for orders in order_list %}
@@ -11,7 +12,27 @@
 
 {% block body %}
 <div class="card">
-    <div class="card-header"><h2>Open orders</h2></div>
+    <div class="card-header"><h1>Market status</h1></div>
+    <div class="card-body">
+        <br>
+        <div class="card-deck">
+            {% for pair, status in pairs_with_status.items() %}
+                {{ m_cards.pair_status_card(pair, status) }}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<br>
+<div class="card">
+    <div class="card-header">
+        <h2>Open orders
+            <span class="float-right">
+                <a href="{{ url_for('trades') }}">
+                    <i class="fa fa-history" data-toggle="tooltip" data-placement="top" title="Trades history"></i>
+                </a>
+            </span>
+        </h2>
+    </div>
     <div class="card-body">
         <div class="table-responsive">
           <table id="open_order_datatable" class="table table-striped table-bordered table-hover">
@@ -37,12 +58,13 @@
     </div>
 </div>
 
+<div class="card-footer text-center">
+    <a href="{{ url_for('trades') }}" class="btn btn-outline-info btn-lg waves-effect">Trades history</a>
+</div>
+
+
 {% endblock %}
 
 {% block additional_scripts %}
-<script>
-    $(document).ready(function () {
-      $('#open_order_datatable').DataTable();
-    });
-</script>
+<script src="{{ url_for('static', filename='js/components/market_status.js') }}"></script>
 {% endblock additional_scripts %}

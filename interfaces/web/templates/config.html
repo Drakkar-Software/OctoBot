@@ -24,23 +24,24 @@
     <nav class="navbar nav-tabs navbar-dark primary-color-dark" data-toggle="affix">
         <!-- Nav tabs -->
          <ul class="nav mr-auto md-pills nav-justified">
+
             <li class="nav-item">
-                <a class="nav-link active" data-toggle="tab" href="#panelExchanges" role="tab">Exchanges</a>
+                <a class="nav-link active waves-effect" data-toggle="tab" href="#panelEvaluators" role="tab">Strategies</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#panelEvaluators" role="tab">Evaluators</a>
+                <a class="nav-link waves-effect" data-toggle="tab" href="#panelExchanges" role="tab">Exchanges</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#panelTrading" role="tab">Trading</a>
+                <a class="nav-link waves-effect" data-toggle="tab" href="#panelTrading" role="tab">Trading</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#panelNotifications" role="tab">Notifications</a>
+                <a class="nav-link waves-effect" data-toggle="tab" href="#panelNotifications" role="tab">Notifications</a>
             </li>
              <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#panelServices" role="tab">Services</a>
+                <a class="nav-link waves-effect" data-toggle="tab" href="#panelServices" role="tab">Services</a>
             </li>
              <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#panelCurrency" role="tab">Currencies</a>
+                <a class="nav-link waves-effect" data-toggle="tab" href="#panelCurrency" role="tab">Currencies</a>
             </li>
         </ul>
     </nav>
@@ -49,15 +50,15 @@
         <span class="white-text"> Any configuration change will be take into account after OctBot restarts.</span>
         <ul class="nav mx-auto">
             <li class="nav-item">
-                <a class="nav-link btn green" id='save-config' href="#" role="tab" update-url="{{ url_for('config') }}">Save all</a>
+                <a class="nav-link btn green waves-effect" id='save-config' href="#" role="tab" update-url="{{ url_for('config') }}">Save all</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link btn orange" id='reset-config' href="#" role="tab">Reset all</a>
+                <a class="nav-link btn orange waves-effect" id='reset-config' href="#" role="tab">Reset all</a>
             </li>
         </ul>
         <ul class="nav ml-auto">
             <li class="nav-item">
-                <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="nav-link btn red">Restart Octobot</button>
+                <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="nav-link btn red waves-effect">Restart Octobot</button>
             </li>
         </ul>
     </nav>
@@ -65,8 +66,36 @@
 <!-- Tab panels -->
 <div class="tab-content" id="super-container">
 
+    <!--Panel Evaluators-->
+    <div class="tab-pane fade in show active config-root" id="panelEvaluators" role="tabpanel"><br>
+        <div class="card">
+            <div class="card-header"><h2>Trading modes</h2></div>
+            <div class="card-body">
+                <div class="row config-container" id="trading-modes-config-root">
+                    {% for evaluator_name, info in strategy_config["trading-modes"].items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(trading_startup_config, evaluator_name, info, "trading_config") }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <br>
+        <div class="card">
+            <div class="card-header"><h2>Evaluation strategies</h2></div>
+            <div class="card-body">
+                <div class="row config-container" id="evaluator-config-root">
+                    {% for evaluator_name, info in strategy_config["strategies"].items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer">
+                <p class="mb-0">Full evaluators customization on <a class="btn btn-outline-white btn-md waves-effect" href="{{ url_for('advanced.evaluator_config') }}">OctoBot advanced configuration interface</a></p>
+            </div>
+        </div>
+    </div>
+
     <!--Panel Exchanges-->
-    <div class="tab-pane fade in show active config-root" id="panelExchanges" role="tabpanel"><br>
+    <div class="tab-pane fade config-root" id="panelExchanges" role="tabpanel"><br>
         <div class="card">
             <div class="card-header"><h2>Exchanges</h2></div>
             <div class="card-body deck-container">
@@ -77,7 +106,7 @@
                                 <option data-tokens="{{ exchange }}">{{ exchange }}</option>
                            {% endfor %}
                         </select>
-                        <button type="button" id="AddExchange" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+                        <button type="button" id="AddExchange" class="btn btn-primary add-btn px-3 waves-effect"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
                     </div>
                 </div>
                 <br>
@@ -85,20 +114,6 @@
                 <div class="card-deck config-container">
                     {% for exchange in config_exchanges %}
                         {{ m_config_exchange_card.config_exchange_card(config_exchanges, exchange) }}
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!--Panel Evaluators-->
-    <div class="tab-pane fade config-root" id="panelEvaluators" role="tabpanel"><br>
-        <div class="card">
-            <div class="card-header"><h2>Evaluators</h2></div>
-            <div class="card-body">
-                <div class="row config-container" id="evaluator-config-root">
-                    {% for evaluator_name, activated in evaluator_config.items() %}
-                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, activated) }}
                     {% endfor %}
                 </div>
             </div>
@@ -147,7 +162,7 @@
                             <option data-tokens="{{ service }}">{{ service }}</option>
                        {% endfor %}
                     </select>
-                    <button type="button" id="AddService" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+                    <button type="button" id="AddService" class="btn btn-primary add-btn px-3 waves-effect"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
                     </div>
                 </div>
                 <br>
@@ -178,7 +193,7 @@
                                 {% endif %}
                            {% endfor %}
                         </select>
-                        <button type="button" id="AddCurrency" class="btn btn-primary add-btn px-3"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
+                        <button type="button" id="AddCurrency" class="btn btn-primary add-btn px-3 waves-effect"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
                     </div>
                 </div>
                 <br>

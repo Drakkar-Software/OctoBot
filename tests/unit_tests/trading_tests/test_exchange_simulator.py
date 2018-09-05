@@ -1,9 +1,12 @@
 import ccxt
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_SECONDS, PriceIndexes
+from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_SECONDS, PriceIndexes, \
+    TraderOrderType, ExchangeConstantsMarketPropertyColumns, FeePropertyColumns, CONFIG_SIMULATOR, \
+    CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, CONFIG_SIMULATOR_FEES_TAKER
 from tests.test_utils.config import load_test_config
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader_simulator import TraderSimulator
+from trading.trader.order import OrderConstants
 
 
 class TestExchangeSimulator:
@@ -65,6 +68,42 @@ class TestExchangeSimulator:
         self.stop(trader_inst)
 
         exchange_inst.get_all_currencies_price_ticker()
+
+    @staticmethod
+    def _assert_fee(fee, currency, price, rate, fee_type):
+        assert fee[FeePropertyColumns.CURRENCY.value] == currency
+        assert fee[FeePropertyColumns.COST.value] == price
+        assert fee[FeePropertyColumns.RATE.value] == rate
+        assert fee[FeePropertyColumns.TYPE.value] == fee_type
+
+    def test_get_trade_fee(self):
+        _, exchange_inst, _, trader_inst = self.init_default()
+
+        # force fees
+        exchange_inst.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES] = {
+            CONFIG_SIMULATOR_FEES_MAKER: 0.05,
+            CONFIG_SIMULATOR_FEES_TAKER: 0.1
+        }
+
+        buy_market_fee = exchange_inst.get_trade_fee("BTC/USD",
+                                                     OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+                                                     10, 100, ExchangeConstantsMarketPropertyColumns.TAKER.value)
+        self._assert_fee(buy_market_fee, "BTC", 0.01, 0.001, ExchangeConstantsMarketPropertyColumns.TAKER.value)
+
+        sell_market_fee = exchange_inst.get_trade_fee(
+            "BTC/USD",  OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+            10, 100, ExchangeConstantsMarketPropertyColumns.TAKER.value)
+        self._assert_fee(sell_market_fee, "USD", 1, 0.001, ExchangeConstantsMarketPropertyColumns.TAKER.value)
+
+        buy_limit_fee = exchange_inst.get_trade_fee("BTC/USD",
+                                                    OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+                                                    10, 100, ExchangeConstantsMarketPropertyColumns.MAKER.value)
+        self._assert_fee(buy_limit_fee, "BTC", 0.005, 0.0005, ExchangeConstantsMarketPropertyColumns.MAKER.value)
+
+        sell_limit_fee = exchange_inst.get_trade_fee("BTC/USD",
+                                                     OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                                                     10, 100, ExchangeConstantsMarketPropertyColumns.TAKER.value)
+        self._assert_fee(sell_limit_fee, "USD", 1, 0.001, ExchangeConstantsMarketPropertyColumns.TAKER.value)
 
     def test_should_update_data(self):
         _, exchange_inst, exchange_simulator, trader_inst = self.init_default()

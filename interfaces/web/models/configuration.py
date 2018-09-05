@@ -4,22 +4,20 @@ from tools.logging.logging_util import get_logger
 import ccxt
 import requests
 
-from config.cst import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, UPDATED_CONFIG_SEPARATOR
+from config.cst import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, \
+    UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES
 from interfaces import get_bot
 from services import AbstractService
 from tools.config_manager import ConfigManager
+from tools.class_inspector import get_class_from_string, evaluator_parent_inspection, trading_mode_parent_inspection
+from evaluator.abstract_evaluator import AbstractEvaluator
 
-
-def get_global_config():
-    return get_bot().get_config()
 
 def get_edited_config():
     return get_bot().get_edited_config()
 
-def get_global_startup_config():
-    return get_bot().get_startup_config()
 
-def get_evaluator_config():
+def _get_evaluator_config():
     return get_edited_config()[CONFIG_EVALUATOR]
 
 
@@ -27,8 +25,182 @@ def get_evaluator_startup_config():
     return get_bot().get_startup_config()[CONFIG_EVALUATOR]
 
 
+def _get_trading_config():
+    return get_edited_config()[CONFIG_TRADING_TENTACLES]
+
+
+def get_trading_startup_config():
+    return get_bot().get_startup_config()[CONFIG_TRADING_TENTACLES]
+
+
+def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_strategy=False):
+    from evaluator.Util.advanced_manager import AdvancedManager
+    name = "name"
+    description = "description"
+    requirements = "requirements"
+    details = {}
+    config = get_bot().get_config()
+    advanced_class = AdvancedManager.get_class(config, klass)
+    if advanced_class and advanced_class.get_name() != class_name:
+        details[name] = advanced_class.get_name()
+        details[description] = advanced_class.get_description()
+        if is_trading_mode:
+            details[requirements] = [strategy.get_name() for strategy in advanced_class.get_required_strategies()]
+        elif is_strategy:
+            details[requirements] = [evaluator for evaluator in advanced_class.get_required_evaluators(config)]
+    return details
+
+
+def _get_strategy_activation_state():
+    import trading.trader.modes as modes
+    import evaluator.Strategies as strategies
+    trading_mode_key = "trading-modes"
+    strategies_key = "strategies"
+    activation = "activation"
+    description = "description"
+    advanced_class_key = "advanced_class"
+    strategy_config = {
+        trading_mode_key: {},
+        strategies_key: {}
+    }
+    strategy_config_classes = {
+        trading_mode_key: {},
+        strategies_key: {}
+    }
+
+    trading_config = _get_trading_config()
+    for key, val in trading_config.items():
+        config_class = get_class_from_string(key, modes.AbstractTradingMode, modes, trading_mode_parent_inspection)
+        if config_class:
+            strategy_config[trading_mode_key][key] = {}
+            strategy_config[trading_mode_key][key][activation] = val
+            strategy_config[trading_mode_key][key][description] = config_class.get_description()
+            strategy_config[trading_mode_key][key][advanced_class_key] = \
+                _get_advanced_class_details(key, config_class, is_trading_mode=True)
+            strategy_config_classes[trading_mode_key][key] = config_class
+
+    evaluator_config = _get_evaluator_config()
+    for key, val in evaluator_config.items():
+        config_class = get_class_from_string(key, strategies.StrategiesEvaluator,
+                                             strategies, evaluator_parent_inspection)
+        if config_class:
+            strategy_config[strategies_key][key] = {}
+            strategy_config[strategies_key][key][activation] = val
+            strategy_config[strategies_key][key][description] = config_class.get_description()
+            strategy_config[strategies_key][key][advanced_class_key] = \
+                _get_advanced_class_details(key, config_class, is_strategy=True)
+            strategy_config_classes[strategies_key][key] = config_class
+
+    return strategy_config, strategy_config_classes
+
+
+def _get_required_element(elements_config):
+    activation = "activation"
+    advanced_class_key = "advanced_class"
+    requirements = "requirements"
+    required_elements = set()
+    for element_type in elements_config.values():
+        for element_name, element in element_type.items():
+            if element[activation]:
+                if element[advanced_class_key] and requirements in element[advanced_class_key]:
+                    required_elements = required_elements.union(element[advanced_class_key][requirements])
+                elif requirements in element:
+                    required_elements = required_elements.union(element[requirements])
+    return required_elements
+
+
+def _add_strategies_requirements(strategies, strategy_config):
+    strategies_key = "strategies"
+    requirements_key = "requirements"
+    advanced_class_key = "advanced_class"
+    required = "required"
+    config = get_bot().get_config()
+    required_elements = _get_required_element(strategy_config)
+    for classKey, klass in strategies.items():
+        if not strategy_config[strategies_key][classKey][advanced_class_key]:
+            # no need for requirement if advanced class: requirements are already in advanced class
+            strategy_config[strategies_key][classKey][requirements_key] = \
+                [evaluator for evaluator in klass.get_required_evaluators(config)]
+        strategy_config[strategies_key][classKey][required] = classKey in required_elements
+
+
+def _add_trading_modes_requirements(trading_modes, strategy_config):
+    trading_mode_key = "trading-modes"
+    requirements_key = "requirements"
+    for classKey, klass in trading_modes.items():
+        if klass.get_required_strategies():
+            strategy_config[trading_mode_key][classKey][requirements_key] = \
+                [strategy.get_name() for strategy in klass.get_required_strategies()]
+        else:
+            strategy_config[trading_mode_key][classKey][requirements_key] = []
+
+
+def get_strategy_config():
+    strategy_config, strategy_config_classes = _get_strategy_activation_state()
+    _add_trading_modes_requirements(strategy_config_classes["trading-modes"], strategy_config)
+    _add_strategies_requirements(strategy_config_classes["strategies"], strategy_config)
+    return strategy_config
+
+
+def _fill_evaluator_config(evaluator_name, activated, eval_type_key,
+                           evaluator_type, detailed_config, is_strategy=False):
+    activation = "activation"
+    description = "description"
+    advanced_class_key = "advanced_class"
+    klass = get_class_from_string(evaluator_name, AbstractEvaluator, evaluator_type, evaluator_parent_inspection)
+    if klass:
+        detailed_config[eval_type_key][evaluator_name] = {}
+        detailed_config[eval_type_key][evaluator_name][activation] = activated
+        detailed_config[eval_type_key][evaluator_name][description] = klass.get_description()
+        detailed_config[eval_type_key][evaluator_name][advanced_class_key] = \
+            _get_advanced_class_details(evaluator_name, klass, is_strategy=is_strategy)
+        return True, klass
+    return False, klass
+
+
+def get_evaluator_detailed_config():
+    import evaluator.TA as ta
+    import evaluator.Social as social
+    import evaluator.RealTime as rt
+    import evaluator.Strategies as strat
+    social_key = "social"
+    ta_key = "ta"
+    rt_key = "real-time"
+    strategies_key = "strategies"
+    required_key = "required"
+    detailed_config = {
+        social_key: {},
+        ta_key: {},
+        rt_key: {}
+    }
+    strategy_config = {
+        strategies_key: {}
+    }
+    strategy_class_by_name = {}
+    evaluator_config = _get_evaluator_config()
+    for evaluator_name, activated in evaluator_config.items():
+        is_TA, klass = _fill_evaluator_config(evaluator_name, activated, ta_key, ta, detailed_config)
+        if not is_TA:
+            is_social, klass = _fill_evaluator_config(evaluator_name, activated, social_key, social, detailed_config)
+            if not is_social:
+                is_real_time, klass = _fill_evaluator_config(evaluator_name, activated, rt_key, rt, detailed_config)
+                if not is_real_time:
+                    is_strategy, klass = _fill_evaluator_config(evaluator_name, activated, strategies_key,
+                                                                strat, strategy_config, is_strategy=True)
+                    if is_strategy:
+                        strategy_class_by_name[evaluator_name] = klass
+
+    _add_strategies_requirements(strategy_class_by_name, strategy_config)
+    required_elements = _get_required_element(strategy_config)
+    for eval_type in detailed_config.values():
+        for eval_name, eval_details in eval_type.items():
+            eval_details[required_key] = eval_name in required_elements
+
+    return detailed_config
+
+
 def update_evaluator_config(new_config):
-    current_config = get_evaluator_config()
+    current_config = _get_evaluator_config()
     try:
         ConfigManager.update_evaluator_config(new_config, current_config)
         return True
@@ -36,13 +208,19 @@ def update_evaluator_config(new_config):
         return False
 
 
+def update_trading_config(new_config):
+    current_config = _get_trading_config()
+    try:
+        ConfigManager.update_trading_config(new_config, current_config)
+        return True
+    except Exception:
+        return False
+
+
 def update_global_config(new_config, delete=False):
     current_edited_config = get_edited_config()
-    # try:
     ConfigManager.update_global_config(new_config, current_edited_config, update_input=True, delete=delete)
     return True
-    # except Exception:
-    #     return False
 
 
 def get_services_list():
