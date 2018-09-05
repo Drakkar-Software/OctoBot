@@ -80,7 +80,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_market_status(self, symbol, price):
+    def get_market_status(self, symbol, price=None):
         pass
 
     @abstractmethod
