@@ -59,12 +59,16 @@ class RESTExchange(AbstractExchange):
             self.logger.error("configuration issue: missing login information !")
         self.client.logger.setLevel(logging.INFO)
 
-    def get_market_status(self, symbol):
+    def get_market_status(self, symbol, price=None):
         try:
             return self.fix_market_status(self.client.find_market(symbol))
         except Exception:
             self.logger.error(f"Fail to get market status of {symbol}")
             return {}
+
+    @staticmethod
+    def get_ticker_precision():
+        pass
 
     @staticmethod
     def fix_market_status(market_status):
@@ -74,6 +78,13 @@ class RESTExchange(AbstractExchange):
             if Ecmsc.PRECISION_COST.value not in market_precision:
                 if Ecmsc.PRECISION_PRICE.value in market_precision:
                     market_precision[Ecmsc.PRECISION_COST.value] = market_precision[Ecmsc.PRECISION_PRICE.value]
+        else:
+            # TODO
+            market_status[Ecmsc.PRECISION.value] = {
+                Ecmsc.PRECISION_AMOUNT.value: 4,
+                Ecmsc.PRECISION_COST.value: 4,
+                Ecmsc.PRECISION_PRICE.value: 4,
+            }
 
         # check limits
         if Ecmsc.LIMITS.value in market_status:
@@ -81,6 +92,23 @@ class RESTExchange(AbstractExchange):
             if Ecmsc.LIMITS_COST.value not in market_limit:
                 if Ecmsc.LIMITS_PRICE.value in market_limit:
                     market_limit[Ecmsc.LIMITS_COST.value] = market_limit[Ecmsc.LIMITS_PRICE.value]
+
+        else:
+            # TODO
+            market_status[Ecmsc.LIMITS.value] = {
+                Ecmsc.LIMITS_AMOUNT.value: {
+                    Ecmsc.LIMITS_AMOUNT_MIN.value: 0.00001,
+                    Ecmsc.LIMITS_AMOUNT_MAX.value: 1000000000000,
+                },
+                Ecmsc.LIMITS_PRICE.value: {
+                    Ecmsc.LIMITS_PRICE_MIN.value: 0.00001,
+                    Ecmsc.LIMITS_PRICE_MAX.value: 1000000000000,
+                },
+                Ecmsc.LIMITS_COST.value: {
+                    Ecmsc.LIMITS_COST_MIN.value: 0.001,
+                    Ecmsc.LIMITS_COST_MAX.value: 1000000000000,
+                },
+            }
 
         return market_status
 
@@ -161,7 +189,8 @@ class RESTExchange(AbstractExchange):
 
     def get_closed_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchClosedOrders']:
-            self.get_personal_data().upsert_orders(self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit))
+            self.get_personal_data().upsert_orders(
+                self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchClosedOrders")
 
