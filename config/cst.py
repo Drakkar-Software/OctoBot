@@ -21,6 +21,8 @@ GITHUB_BASE_URL = "https://github.com"
 GITHUB_ORGANISATION = "Drakkar-Software"
 GITHUB_REPOSITORY = f"{GITHUB_ORGANISATION}/{PROJECT_NAME}"
 GITHUB_URL = f"{GITHUB_BASE_URL}/{GITHUB_REPOSITORY}"
+OCTOBOT_BACKGROUND_IMAGE = "static/img/octobot.png"
+OCTOBOT_ICON = "static/favicon.ico"
 
 # git
 GIT_ORIGIN = "origin"

@@ -11,7 +11,7 @@ from interfaces.app_util import TkApp
 from interfaces.launcher import launcher_controller
 from interfaces.launcher.launcher_controller import Launcher
 
-LAUNCHER_VERSION = "1.0.2"
+LAUNCHER_VERSION = "1.0.3"
 
 
 class LauncherApp(TkApp):
@@ -29,6 +29,8 @@ class LauncherApp(TkApp):
         self.update_launcher_button = None
         self.export_logs_button = None
 
+        Launcher.ensure_minimum_environment()
+
         self.processing = False
 
         super().__init__()
@@ -36,7 +38,7 @@ class LauncherApp(TkApp):
     def create_components(self):
         # bot update
         self.update_bot_button = Button(self.top_frame, command=self.update_bot_handler,
-                                        text="Update Octobot", style='Bot.TButton')
+                                        text="Install/Update Octobot", style='Bot.TButton')
         self.bot_version_label = Label(self.top_frame,
                                        text="",
                                        style='Bot.TLabel')
