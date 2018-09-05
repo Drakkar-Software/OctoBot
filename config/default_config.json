@@ -5,6 +5,10 @@
     }
   },
   "exchanges": {
+    "binance": {
+      "api-key": "your-api-key-here",
+      "api-secret": "your-api-secret-here"
+    }
   },
   "services": {},
   "notification":{
