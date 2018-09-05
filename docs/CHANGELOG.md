@@ -23,7 +23,7 @@ Changelog for 0.2.0-beta
 
 # New features :
     - First version of the full web interface
-    - Binary versions of OctBot are now available
+    - Binary versions of OctoBot and its launcher are now available
     - Fee simulation on simulation mode
     - Web sockets auto reconnexion on exchange maintenance
     - Improved first use default setup
