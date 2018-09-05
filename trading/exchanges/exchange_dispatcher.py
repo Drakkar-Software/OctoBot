@@ -136,8 +136,8 @@ class ExchangeDispatcher(AbstractExchange):
     def get_all_currencies_price_ticker(self):
         return self.exchange.get_all_currencies_price_ticker()
 
-    def get_market_status(self, symbol):
-        return self.exchange.get_market_status(symbol)
+    def get_market_status(self, symbol, price=None):
+        return self.exchange.get_market_status(symbol, price)
 
     # ORDERS
     def get_order(self, order_id, symbol=None):
