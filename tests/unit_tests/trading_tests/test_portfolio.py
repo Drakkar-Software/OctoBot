@@ -1,6 +1,7 @@
 import ccxt
 
-from config.cst import TraderOrderType
+from config.cst import TraderOrderType, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, \
+    CONFIG_SIMULATOR_FEES_TAKER
 from tests.test_utils.config import load_test_config
 from tests.test_utils.order_util import fill_limit_or_stop_order, fill_market_order
 from trading.exchanges.exchange_manager import ExchangeManager
@@ -135,7 +136,13 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 940
 
     def test_update_portfolio_with_filled_orders(self):
-        config, portfolio_inst, _, trader_inst = self.init_default()
+        config, portfolio_inst, exchange_inst, trader_inst = self.init_default()
+
+        # force fees => should have consequences
+        exchange_inst.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES] = {
+            CONFIG_SIMULATOR_FEES_MAKER: 0.05,
+            CONFIG_SIMULATOR_FEES_TAKER: 0.1
+        }
 
         # Test buy order
         market_sell = SellMarketOrder(trader_inst)
@@ -195,21 +202,27 @@ class TestPortfolio:
         # when filling limit buy
         portfolio_inst.update_portfolio(limit_buy)
 
-        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 9
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 8.999
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 900
-        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 12
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 11.999
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 900
 
         # when filling market sell
         portfolio_inst.update_portfolio(market_sell)
 
-        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 9
-        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1110
-        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 9
-        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1110
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 8.999
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1109.79
+        assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 8.999
+        assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1109.79
 
     def test_update_portfolio_with_cancelled_orders(self):
-        config, portfolio_inst, _, trader_inst = self.init_default()
+        config, portfolio_inst, exchange_inst, trader_inst = self.init_default()
+
+        # force fees => shouldn't do anything
+        exchange_inst.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES] = {
+            CONFIG_SIMULATOR_FEES_MAKER: 0.05,
+            CONFIG_SIMULATOR_FEES_TAKER: 0.1
+        }
 
         # Test buy order
         market_sell = SellMarketOrder(trader_inst)

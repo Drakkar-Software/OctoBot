@@ -2,7 +2,7 @@ from logging import WARNING
 from enum import Enum
 
 PROJECT_NAME = "OctoBot"
-SHORT_VERSION = "0.1.7"
+SHORT_VERSION = "0.2.0"
 MINOR_VERSION = "0"
 VERSION_DEV_PHASE = "beta"
 VERSION = f"{SHORT_VERSION}-{VERSION_DEV_PHASE}"
@@ -21,6 +21,8 @@ GITHUB_BASE_URL = "https://github.com"
 GITHUB_ORGANISATION = "Drakkar-Software"
 GITHUB_REPOSITORY = f"{GITHUB_ORGANISATION}/{PROJECT_NAME}"
 GITHUB_URL = f"{GITHUB_BASE_URL}/{GITHUB_REPOSITORY}"
+OCTOBOT_BACKGROUND_IMAGE = "static/img/octobot.png"
+OCTOBOT_ICON = "static/favicon.ico"
 
 # git
 GIT_ORIGIN = "origin"
@@ -262,6 +264,7 @@ TRADING_MODE_REQUIRED_STRATEGIES = "required_strategies"
 UPDATED_CONFIG_SEPARATOR = "_"
 GLOBAL_CONFIG_KEY = "global_config"
 EVALUATOR_CONFIG_KEY = "evaluator_config"
+TRADING_CONFIG_KEY = "trading_config"
 COIN_MARKET_CAP_CURRENCIES_LIST_URL = "https://api.coinmarketcap.com/v2/listings/"
 
 # launcher
@@ -477,6 +480,13 @@ class ExchangeConstantsMarketPropertyColumns(Enum):
     TAKER = "taker"  # trading
     MAKER = "maker"  # trading
     FEE = "fee"  # withdraw
+
+
+class FeePropertyColumns(Enum):
+    TYPE = "type"  # taker of maker
+    CURRENCY = "currency"  # currency the fee is paid in
+    RATE = "rate"  # multiplier applied to compute fee
+    COST = "cost"  # fee amount
 
 
 class DeliveryPlatformsName(Enum):

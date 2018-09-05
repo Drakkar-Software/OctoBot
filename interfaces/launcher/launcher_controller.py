@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import subprocess
+import urllib.request
 from distutils.version import LooseVersion
 from subprocess import PIPE
 from tkinter.messagebox import WARNING
@@ -10,7 +11,9 @@ from tkinter.messagebox import WARNING
 import requests
 
 from config.cst import CONFIG_FILE, PROJECT_NAME, GITHUB_API_CONTENT_URL, GITHUB_REPOSITORY, GITHUB_RAW_CONTENT_URL, \
-    VERSION_DEV_PHASE, DEFAULT_CONFIG_FILE, LOGGING_CONFIG_FILE, DeliveryPlatformsName, TENTACLES_PATH
+    VERSION_DEV_PHASE, DEFAULT_CONFIG_FILE, LOGGING_CONFIG_FILE, DeliveryPlatformsName, TENTACLES_PATH, \
+    CONFIG_DEFAULT_EVALUATOR_FILE, CONFIG_DEFAULT_TRADING_FILE, CONFIG_INTERFACES, CONFIG_INTERFACES_WEB, \
+    OCTOBOT_BACKGROUND_IMAGE, OCTOBOT_ICON
 
 FOLDERS_TO_CREATE = ["logs", "backtesting/collector/data"]
 FILES_TO_DOWNLOAD = [
@@ -25,8 +28,28 @@ FILES_TO_DOWNLOAD = [
         CONFIG_FILE
     ),
     (
+        f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{VERSION_DEV_PHASE}/{CONFIG_DEFAULT_EVALUATOR_FILE}",
+        CONFIG_DEFAULT_EVALUATOR_FILE
+    ),
+    (
+        f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{VERSION_DEV_PHASE}/{CONFIG_DEFAULT_TRADING_FILE}",
+        CONFIG_DEFAULT_TRADING_FILE
+    )
+]
+IMAGES_TO_DOWNLOAD = [
+    (
         f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{VERSION_DEV_PHASE}/{LOGGING_CONFIG_FILE}",
         LOGGING_CONFIG_FILE
+    ),
+    (
+        f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{VERSION_DEV_PHASE}/{CONFIG_INTERFACES}/{CONFIG_INTERFACES_WEB}"
+        f"{OCTOBOT_BACKGROUND_IMAGE}",
+        f"{CONFIG_INTERFACES}/{CONFIG_INTERFACES_WEB}/{OCTOBOT_BACKGROUND_IMAGE}"
+    ),
+    (
+        f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{VERSION_DEV_PHASE}/{CONFIG_INTERFACES}/{CONFIG_INTERFACES_WEB}"
+        f"/{OCTOBOT_ICON}",
+        f"{CONFIG_INTERFACES}/{CONFIG_INTERFACES_WEB}/{OCTOBOT_ICON}"
     )
 ]
 
@@ -43,6 +66,7 @@ class Launcher:
         self.launcher_app = inst_app
 
         self.create_environment()
+
         binary_path = self.update_binary()
 
         # give binary execution rights if necessary
@@ -55,30 +79,50 @@ class Launcher:
         else:
             logging.error(f"No {PROJECT_NAME} found to update tentacles.")
 
+    @staticmethod
+    def _ensure_directory(file_path):
+        directory = os.path.dirname(file_path)
+
+        if not os.path.exists(directory) and directory:
+            os.makedirs(directory)
+
+    @staticmethod
+    def ensure_minimum_environment():
+        need_to_create_environment = False
+        for file_to_dl in IMAGES_TO_DOWNLOAD:
+
+            Launcher._ensure_directory(file_to_dl[1])
+
+            file_name = file_to_dl[1]
+            if not os.path.isfile(file_name) and file_name:
+                if not need_to_create_environment:
+                    print("Creating minimum launcher environment...")
+                need_to_create_environment = True
+                urllib.request.urlretrieve(file_to_dl[0], file_name)
+
+        for folder in FOLDERS_TO_CREATE:
+            if not os.path.exists(folder) and folder:
+                os.makedirs(folder)
+
     def create_environment(self):
         self.launcher_app.inc_progress(0, to_min=True)
         logging.info(f"{PROJECT_NAME} is checking your environment...")
 
         # download files
         for file_to_dl in FILES_TO_DOWNLOAD:
-            file_content = requests.get(file_to_dl[0]).text
-            directory = os.path.dirname(file_to_dl[1])
 
-            if not os.path.exists(directory) and directory:
-                os.makedirs(directory)
+            Launcher._ensure_directory(file_to_dl[1])
 
             file_name = file_to_dl[1]
             if not os.path.isfile(file_name) and file_name:
                 with open(file_name, "wb") as new_file_from_dl:
+                    file_content = requests.get(file_to_dl[0]).text
                     new_file_from_dl.write(file_content.encode())
+
+        self.launcher_app.window.update()
 
         if self.launcher_app:
             self.launcher_app.inc_progress(LIB_FILES_DOWNLOAD_PROGRESS_SIZE)
-
-        # create folders
-        for folder in FOLDERS_TO_CREATE:
-            if not os.path.exists(folder) and folder:
-                os.makedirs(folder)
 
         if self.launcher_app:
             self.launcher_app.inc_progress(CREATE_FOLDERS_PROGRESS_SIZE)
@@ -234,12 +278,12 @@ class Launcher:
         # if install required
         if not os.path.exists(TENTACLES_PATH):
             self.execute_command_on_current_bot(binary_path, ["-p", "install", "all"])
-            logging.info(f"Tentacles : all default tentacles has been installed.")
+            logging.info(f"Tentacles : all default tentacles have been installed.")
 
         # update
         else:
             self.execute_command_on_current_bot(binary_path, ["-p", "update", "all"])
-            logging.info(f"Tentacles : all default tentacles has been updated.")
+            logging.info(f"Tentacles : all default tentacles have been updated.")
 
         if self.launcher_app:
             self.launcher_app.inc_progress(TENTACLES_UPDATE_INSTALL_PROGRESS_SIZE, to_max=True)

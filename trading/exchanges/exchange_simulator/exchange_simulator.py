@@ -7,11 +7,14 @@ from backtesting.collector.data_parser import DataCollectorParser
 from config.cst import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACKTESTING, \
     SIMULATOR_LAST_PRICES_TO_CHECK, ORDER_CREATION_LAST_TRADES_TO_USE, CONFIG_BACKTESTING_DATA_FILES, PriceIndexes, \
     TimeFramesMinutes, ExchangeConstantsTickersColumns, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, \
-    CONFIG_SIMULATOR_FEES_MAKER, CONFIG_DEFAULT_SIMULATOR_FEES, \
+    CONFIG_SIMULATOR_FEES_MAKER, CONFIG_DEFAULT_SIMULATOR_FEES, TraderOrderType, FeePropertyColumns,  \
     ExchangeConstantsMarketPropertyColumns, CONFIG_SIMULATOR_FEES_TAKER, CONFIG_SIMULATOR_FEES_WITHDRAW
 from tools.time_frame_manager import TimeFrameManager
-from trading import AbstractExchange
+from tools.symbol_util import split_symbol
 from tools.data_util import DataUtil
+from tools.number_util import round_into_str_with_max_digits
+from trading import AbstractExchange
+from trading.trader.order import OrderConstants
 
 
 class ExchangeSimulator(AbstractExchange):
@@ -350,7 +353,7 @@ class ExchangeSimulator(AbstractExchange):
             for symbol in self.symbols
         }
 
-    def get_market_status(self, symbol):
+    def get_market_status(self, symbol, price=None):
         return {
             # number of decimal digits "after the dot"
             ExchangeConstantsMarketStatusColumns.PRECISION.value: {
@@ -442,8 +445,34 @@ class ExchangeSimulator(AbstractExchange):
 
         return result_fees
 
-    def get_trade_fee(self, symbol, order_type, quantity, price):
+    # returns {
+    #     'type': takerOrMaker,
+    #     'currency': 'BTC', // the unified fee currency code
+    #     'rate': percentage, // the fee rate, 0.05% = 0.0005, 1% = 0.01, ...
+    #     'cost': feePaid, // the fee cost (amount * fee rate)
+    # }
+    def get_trade_fee(self, symbol, order_type, quantity, price,
+                      taker_or_maker=ExchangeConstantsMarketPropertyColumns.TAKER.value):
         symbol_fees = self.get_fees(symbol)
+        rate = symbol_fees[taker_or_maker] / 100  # /100 because rate in used in %
+        currency, market = split_symbol(symbol)
+        fee_currency = currency
+
+        precision = self.get_market_status(symbol)[ExchangeConstantsMarketStatusColumns.PRECISION.value] \
+            [ExchangeConstantsMarketStatusColumns.PRECISION_PRICE.value]
+        cost = float(round_into_str_with_max_digits(quantity * rate, precision))
+
+        if order_type == OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET] \
+                or order_type == OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT]:
+            cost = float(round_into_str_with_max_digits(cost * price, precision))
+            fee_currency = market
+
+        return {
+            FeePropertyColumns.TYPE.value: taker_or_maker,
+            FeePropertyColumns.CURRENCY.value: fee_currency,
+            FeePropertyColumns.RATE.value: rate,
+            FeePropertyColumns.COST.value: cost
+        }
 
 
 class NoCandleDataForThisTimeFrameException(Exception):

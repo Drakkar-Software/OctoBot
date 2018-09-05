@@ -61,6 +61,9 @@ class AdvancedManager:
     """
     @staticmethod
     def create_class_list(config):
+
+        from trading.trader.modes.abstract_trading_mode import AbstractTradingMode
+
         config[CONFIG_ADVANCED_CLASSES] = {}
         config[CONFIG_ADVANCED_INSTANCES] = {}
 
@@ -69,6 +72,9 @@ class AdvancedManager:
 
         # Util
         AdvancedManager._get_advanced(config, AbstractUtil)
+
+        # Trading modes
+        AdvancedManager._get_advanced(config, AbstractTradingMode)
 
     @staticmethod
     def _get_advanced_classes_list(config):

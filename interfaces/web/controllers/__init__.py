@@ -6,5 +6,4 @@ def load_routes():
     from . import home
     from . import dashboard
     from . import trading
-    from . import strategy_optimizer
     from . import logs

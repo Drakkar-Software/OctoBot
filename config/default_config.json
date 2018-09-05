@@ -5,6 +5,10 @@
     }
   },
   "exchanges": {
+    "binance": {
+      "api-key": "your-api-key-here",
+      "api-secret": "your-api-secret-here"
+    }
   },
   "services": {},
   "notification":{
@@ -22,6 +26,10 @@
   },
   "trader-simulator":{
     "enabled": true,
+    "fees": {
+        "maker": 0.1,
+        "taker": 0.1
+    },
     "starting-portfolio": {
       "BTC": 10,
       "USDT": 1000

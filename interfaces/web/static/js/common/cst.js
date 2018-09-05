@@ -9,6 +9,7 @@ const config_data_type_attr = "data-type";
 const config_root_class = "config-root";
 const config_container_class = "config-container";
 const config_element_class = "config-element";
+const no_activation_click_attr = "no-activation-click";
 
 // dom display classes
 const success_badge = "badge-success";
@@ -17,6 +18,9 @@ const secondary_badge = "badge-secondary";
 const primary_badge = "badge-primary";
 const modified_class = "warning-color";
 const selected_item_class = "primary-color";
+const disabled_item_class = "stylish-color";
+const hidden_class = "d-none";
+const disabled_class = "disabled-item";
 
 const card_class_modified = "card-modified";
 const deck_container_modified_class = "deck-container-modified";
@@ -37,3 +41,4 @@ const config_default_value = "Bitcoin";
 const config_default_symbol = "btc";
 
 const evaluator_config_type = "evaluator_config";
+const trading_config_type = "trading_config";

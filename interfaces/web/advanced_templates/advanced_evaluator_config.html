@@ -1,0 +1,76 @@
+{% extends "advanced_layout.html" %}
+{% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
+
+{% block additional_style %}
+<style>
+    li.nav-item {
+        padding-right: 5px;
+    }
+</style>
+{% endblock additional_style %}
+
+{% block body %}
+<div id="nav-config" class="sticky-top">
+    <nav class="navbar nav-tabs navbar-dark primary-color">
+        <span class="white-text"> Any configuration change will be take into account after OctBot restarts.</span>
+        <ul class="nav mx-auto">
+            <li class="nav-item">
+                <a class="nav-link btn green waves-effect" id='save-config' href="#" role="tab" update-url="{{ url_for('advanced.evaluator_config') }}">Save all</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link btn orange waves-effect" id='reset-config' href="#" role="tab">Reset all</a>
+            </li>
+        </ul>
+        <ul class="nav ml-auto">
+            <li class="nav-item">
+                <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="nav-link btn red waves-effect">Restart Octobot</button>
+            </li>
+        </ul>
+    </nav>
+</div>
+<!-- Tab panels -->
+<div id="super-container">
+    <!--Panel Evaluators-->
+    <div class="config-root" id="panelEvaluators"><br>
+        <div class="card">
+            <div class="card-header"><h2>Technical analysis</h2></div>
+            <div class="card-body">
+                <div class="row config-container" id="ta-evaluator-config-root">
+                    {% for evaluator_name, info in evaluator_config["ta"].items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <br>
+        <div class="card">
+            <div class="card-header"><h2>Social analysis</h2></div>
+            <div class="card-body">
+                <div class="row config-container" id="social-evaluator-config-root">
+                    {% for evaluator_name, info in evaluator_config["social"].items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <br>
+        <div class="card">
+            <div class="card-header"><h2>Real time analysis</h2></div>
+            <div class="card-body">
+                <div class="row config-container" id="rt-evaluator-config-root">
+                    {% for evaluator_name, info in evaluator_config["real-time"].items() %}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer">
+                <p class="mb-0">Back to <a class="btn btn-outline-white btn-md waves-effect" href="{{ url_for('config') }}">OctoBot standard configuration</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/evaluator_configuration.js') }}"></script>
+{% endblock additional_scripts %}

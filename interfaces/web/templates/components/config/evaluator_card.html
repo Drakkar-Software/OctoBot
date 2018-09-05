@@ -1,14 +1,51 @@
-{% macro config_evaluator_card(evaluator_startup_config, evaluator_name, activated) -%}
+{% macro config_evaluator_card(startup_config, evaluator_name, info, config_type) -%}
     <a href="#" onclick="return false;"
-       class="list-group-item list-group-item-action col-sm-6 col-md-4 col-lg-3 {{'list-group-item-success' if activated else 'list-group-item-light'}} config-element evaluator-config-element"
+       class="col-md-6 col-lg-4 list-group-item list-group-item-action waves-effect {{'list-group-item-success' if info['activation'] else 'list-group-item-light'}} config-element evaluator-config-element"
        id={{evaluator_name}}
-       config-type="evaluator_config" config-key={{evaluator_name}} current-value={{activated}} config-value={{activated}} startup-config-value={{evaluator_startup_config[evaluator_name]}}>
+       config-type={{config_type}} config-key={{evaluator_name}} current-value={{info['activation']}} config-value={{info['activation']}} startup-config-value={{startup_config[evaluator_name]}}
+       requirements="{{info['advanced_class']['requirements'] if info['advanced_class']['requirements'] else info['requirements']}}">
+        <span class="float-left {{'d-none' if not info['required']}}" role="required-flag"><i class="fa fa-flag" data-toggle="tooltip" data-placement="top" title="Can be used by the current configuration"></i></span>
         {{ evaluator_name }}
-      <span class="float-right">
-        <span
-                class="badge {{'badge-warning' if evaluator_startup_config[evaluator_name] != activated else ('badge-success' if activated else 'badge-secondary')}}">
-            {{('Activation pending restart' if activated else 'Deactivation pending restart') if evaluator_startup_config[evaluator_name] != activated else ('Activated' if activated else 'Deactivated')}}
+        {% if info['advanced_class'] %}
+        <span><i class="fa fa-graduation-cap" data-toggle="tooltip" data-placement="top" title="Advanced tentacle"></i></span>
+        {% endif %}
+        <span class="float-right">
+            <span class="badge {{'badge-warning' if startup_config[evaluator_name] != info['activation'] else ('badge-success' if info['activation'] else 'badge-secondary')}}">
+                {{('Activation pending restart' if info['activation'] else 'Deactivation pending restart') if startup_config[evaluator_name] != info['activation'] else ('Activated' if info['activation'] else 'Deactivated')}}
+            </span>
+            <button class="btn btn-outline-primary btn-md waves-effect"  data-toggle="modal" data-target="#{{evaluator_name}}Modal" no-activation-click="true"><i class="fa fa-info-circle" no-activation-click="true"></i></button>
         </span>
-      </span>
     </a>
+    <div class="modal fade" id="{{evaluator_name}}Modal" tabindex="-1" role="dialog" aria-labelledby="#{{evaluator_name}}ModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content modal-text">
+          <div class="modal-header primary-text">
+            <h5 class="modal-title" id="#{{evaluator_name}}ModalLabel">{{evaluator_name}}</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+              {% if info['advanced_class'] %}
+                  <h4>Advanced tentacle: {{info['advanced_class']['name']}}</h4>
+                  <p>"{{info['advanced_class']['description']}}"</p>
+                  <h5>{{info['advanced_class']['name']}} is based on {{evaluator_name}}</h5>
+                  {% if info['advanced_class']['requirements'] %}
+                      <h5>Compatible evaluators:</h5>
+                      <p>{{info['advanced_class']['requirements']|join(', ')}}</p>
+                  {% endif %}
+              {% else %}
+                  <p>{{info['description']}}</p>
+                  {% if info['requirements'] %}
+                      <h5>Compatible evaluators:</h5>
+                      <p>{{info['requirements']|join(',')}}</p>
+                  {% endif %}
+              {% endif %}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
 {%- endmacro %}

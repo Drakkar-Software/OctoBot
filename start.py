@@ -10,8 +10,6 @@ from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH
 from interfaces import starting
-from interfaces.telegram.bot import TelegramApp
-from services import WebService
 from tools.commands import Commands
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 
@@ -92,6 +90,8 @@ def start_octobot(starting_args):
 
                     # In those cases load OctoBot
                     from octobot import OctoBot
+                    from interfaces.telegram.bot import TelegramApp
+                    from services import WebService
 
                     TelegramApp.enable(config, starting_args.telegram)
 

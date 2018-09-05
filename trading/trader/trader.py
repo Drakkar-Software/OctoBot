@@ -305,6 +305,7 @@ class Trader:
         order.status = Trader.parse_status(exchange_order)
         order.filled_quantity = exchange_order["filled"]
         order.filled_price = exchange_order["price"]
+        order.fee = exchange_order["fee"]
         order.executed_time = order.trader.exchange.get_uniform_timestamp(exchange_order["timestamp"])  # to confirm
 
     def parse_exchange_order_to_trade_instance(self, exchange_order, order):

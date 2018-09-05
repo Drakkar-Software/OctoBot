@@ -136,6 +136,10 @@ class BinanceWebSocketClient(AbstractWebSocket):
         filled = self.safe_float(order, "z", 0.0)
         cost = None
         remaining = None
+        fee = {
+            FeePropertyColumns.COST: self.safe_float(order, "n"),
+            FeePropertyColumns.CURRENCY: self.safe_string(order, "N", "?"),
+        }
         if filled is not None:
             if amount is not None:
                 remaining = max(amount - filled, 0.0)
@@ -156,7 +160,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
             'filled': filled,
             'remaining': remaining,
             'status': status,
-            'fee': self.safe_float(order, "n", None),
+            'fee': fee,
         }
 
     def close_and_restart_sockets(self):

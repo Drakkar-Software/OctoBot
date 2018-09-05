@@ -12,6 +12,7 @@ from tools.class_inspector import get_deep_class_from_string
 
 class AbstractTradingMode:
     __metaclass__ = ABCMeta
+    DESCRIPTION = "No description set."
 
     def __init__(self, config, exchange):
         self.config = config
@@ -65,6 +66,11 @@ class AbstractTradingMode:
     @abstractmethod
     def create_creators(self, symbol, symbol_evaluator) -> None:
         raise NotImplementedError("create_creators not implemented")
+
+    @classmethod
+    # Description of the trading mode, used as documentation
+    def get_description(cls):
+        return cls.DESCRIPTION
 
     def add_symbol_evaluator(self, symbol_evaluator):
         new_symbol = symbol_evaluator.get_symbol()
@@ -149,6 +155,16 @@ class AbstractTradingMode:
 
         self.creators[symbol][creator_key] = creator
         return creator_key
+
+    @classmethod
+    def get_parent_trading_mode_classes(cls, higher_parent_class_limit=None):
+        limit_class = higher_parent_class_limit if higher_parent_class_limit else AbstractTradingMode
+
+        return [
+            class_type
+            for class_type in cls.mro()
+            if limit_class in class_type.mro()
+        ]
 
     def get_creator(self, symbol, creator_key):
         return self.creators[symbol][creator_key]

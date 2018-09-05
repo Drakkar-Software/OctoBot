@@ -1,5 +1,36 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.2.0-beta
+====================
+*Released date : September 5 2018*
+
+**Major version: OctoBot Open beta**
+
+
+# Concerned issues :
+    #288 [Binance Websocket] Handle exchange maintenance and websocket reconnection
+    #291 [RestExchange] fill return data with default values if missing values and items
+    #344 [Notifications] handle market orders price
+    #353 [Exchange Simulator] Add fees 
+    #359 [Web Interface][Configuration] Improve user interface
+    #376 [Tentacles] Trading_config.json
+    #377 [Web interface] Advanced evaluator config (TA, RT, Social)
+    #378 [Web interface] Display errors and warning (icons topmenu)
+    #379 [Web interface] Trading mode and strategy config page
+    #385 [Web Interface] add bot profitabily
+    #389 [Web Interface] add market status page
+    #393 [Web Interface] add info on trading modes and evaluators
+
+# New features :
+    - First version of the full web interface
+    - Binary versions of OctoBot and its launcher are now available
+    - Fee simulation on simulation mode
+    - Web sockets auto reconnexion on exchange maintenance
+    - Improved first use default setup
+
+# Bug fixes :
+    - Market order without price notification
+
 Changelog for 0.1.7-beta
 ====================
 *Released date : August 15 2018*

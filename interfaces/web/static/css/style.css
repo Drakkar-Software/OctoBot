@@ -40,6 +40,12 @@ body:before {
   max-width: 18rem;
   min-width: 12rem;
 }
+.small-size {
+  max-width: 18rem;
+  min-width: 12rem;
+  max-height: 18rem;
+  min-height: 14rem;
+}
 
 /* elegant-color white-text */
 
@@ -124,3 +130,6 @@ body:before {
 .card a:hover {
     color: #42a5f5 !important;
 }
+
+.modal-text {
+  color: #4B515D; }

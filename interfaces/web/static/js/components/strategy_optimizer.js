@@ -5,8 +5,11 @@ function recompute_nb_iterations(){
     $("#numberOfSimulatons").text(nb_selected);
 }
 
-function check_disabled(){
-    if($("#strategySelect").find(":selected").length > 0 && $("#risksSelect").find(":selected").length  > 0 &&
+function check_disabled(lock=false){
+    if(lock){
+        $("#startOptimizer").prop('disabled', true);
+    }
+    else if($("#strategySelect").find(":selected").length > 0 && $("#risksSelect").find(":selected").length  > 0 &&
         $("#timeFramesSelect").find(":selected").length > 0 && $("#evaluatorsSelect").find(":selected").length  > 0){
         $("#startOptimizer").prop('disabled', false);
     }else{
@@ -49,7 +52,7 @@ function lock_inputs(lock=true){
         $("#progess_bar_anim").css('width', '100%').attr("aria-valuenow", '100');
         $("#progess_bar").hide();
     }
-    check_disabled();
+    check_disabled(lock);
 
 }
 

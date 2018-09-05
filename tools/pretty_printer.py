@@ -1,6 +1,7 @@
 from trading.trader.order import OrderConstants
 from trading.trader.portfolio import Portfolio
 from tools.timestamp_util import convert_timestamp_to_datetime
+from tools.number_util import round_into_str_with_max_digits
 
 
 class PrettyPrinter:
@@ -78,7 +79,7 @@ class PrettyPrinter:
             return "0"
         else:
             if number % 1 != 0:
-                number_str = "{:.{}f}".format(round(number, max_digits), max_digits)
+                number_str = round_into_str_with_max_digits(number, max_digits)
                 if "." in number_str:
                     number_str = number_str.rstrip("0.")
                 return number_str

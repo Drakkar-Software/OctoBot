@@ -21,7 +21,7 @@ function get_profitability(){
 }
 
 function should_display_profitability(profitability){
-    return isDefined(profitability) && (isDefined(profitability_chart) || Math.abs(profitability) >= 0.05);
+    return isDefined(profitability) && (isDefined(profitability_chart) || Math.abs(profitability) >= 0.2);
 }
 
 function is_worth_displaying_profitability(){

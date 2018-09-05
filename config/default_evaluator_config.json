@@ -9,8 +9,8 @@
   "InstantFluctuationsEvaluator": false,
 
 
-  "TwitterNewsEvaluator": true,
-  "RedditForumEvaluator": true,
+  "TwitterNewsEvaluator": false,
+  "RedditForumEvaluator": false,
   "GoogleTrendStatsEvaluator": false,
 
 

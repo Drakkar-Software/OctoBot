@@ -1,6 +1,6 @@
 function update_pairs_colors(){
     $(".pair_status_card").each(function () {
-        const first_eval = $(this).find("li");
+        const first_eval = $(this).find(".status");
         const status = first_eval.attr("status");
         if(status === "LONG"){
             $(this).addClass("card-long");
@@ -12,4 +12,5 @@ function update_pairs_colors(){
 
 $(document).ready(function() {
     update_pairs_colors();
+    $('#open_order_datatable').DataTable();
 });

@@ -9,7 +9,7 @@ from config.config import load_config, decrypt, encrypt
 from config.cst import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
     TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_ADVANCED_CLASSES, \
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
-    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY
+    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_FILE
 
 
 def get_logger():
@@ -95,19 +95,13 @@ class ConfigManager:
 
     @staticmethod
     def update_evaluator_config(to_update_data, current_config):
-        something_changed = False
-        for evaluator_name, activated in to_update_data.items():
-            if evaluator_name in current_config:
-                active = activated if isinstance(activated, bool) else activated.lower() == "true"
-                current_activation = current_config[evaluator_name]
-                if current_activation != active:
-                    get_logger().info(f"evaluator_config.json updated: {evaluator_name} "
-                                      f"{'activated' if active else 'deactivated'}")
-                    current_config[evaluator_name] = active
-                    something_changed = True
-        if something_changed:
-            with open(CONFIG_EVALUATOR_FILE_PATH, "w+") as evaluator_config_file_w:
-                evaluator_config_file_w.write(json.dumps(current_config, indent=4, sort_keys=True))
+        ConfigManager._update_activation_config(to_update_data, current_config,
+                                                CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR_FILE)
+
+    @staticmethod
+    def update_trading_config(to_update_data, current_config):
+        ConfigManager._update_activation_config(to_update_data, current_config,
+                                                CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_FILE)
 
     @staticmethod
     def update_global_config(to_update_data, current_config, update_input=False, delete=False):
@@ -212,3 +206,19 @@ class ConfigManager:
                     get_logger().error(f"Conflict when deleting dict element with key : {key}")
 
         return dict_dest
+
+    @staticmethod
+    def _update_activation_config(to_update_data, current_config, config_file_path, config_file):
+        something_changed = False
+        for element_name, activated in to_update_data.items():
+            if element_name in current_config:
+                active = activated if isinstance(activated, bool) else activated.lower() == "true"
+                current_activation = current_config[element_name]
+                if current_activation != active:
+                    get_logger().info(f"{config_file} updated: {element_name} "
+                                      f"{'activated' if active else 'deactivated'}")
+                    current_config[element_name] = active
+                    something_changed = True
+        if something_changed:
+            with open(config_file_path, "w+") as config_file_w:
+                config_file_w.write(json.dumps(current_config, indent=4, sort_keys=True))

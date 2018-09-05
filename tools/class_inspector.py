@@ -9,6 +9,10 @@ def evaluator_parent_inspection(element, parent):
     return element.get_parent_evaluator_classes(parent)
 
 
+def trading_mode_parent_inspection(element, parent):
+    return element.get_parent_trading_mode_classes(parent)
+
+
 def get_class_from_string(class_string, parent, module, parent_inspection=_default_parent_inspection,
                           error_when_not_found=False):
     if any(m[0] == class_string and

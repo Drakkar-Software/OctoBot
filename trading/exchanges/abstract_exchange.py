@@ -1,5 +1,6 @@
 from tools.logging.logging_util import get_logger
 from abc import ABCMeta, abstractmethod
+from config.cst import ExchangeConstantsMarketPropertyColumns
 
 
 class AbstractExchange:
@@ -79,7 +80,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_market_status(self, symbol):
+    def get_market_status(self, symbol, price=None):
         pass
 
     @abstractmethod
@@ -91,5 +92,6 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def get_trade_fee(self, symbol, order_type, quantity, price):
+    def get_trade_fee(self, symbol, order_type, quantity, price,
+                      taker_or_maker=ExchangeConstantsMarketPropertyColumns.TAKER.value):
         pass
