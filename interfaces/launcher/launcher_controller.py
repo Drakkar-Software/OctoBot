@@ -89,20 +89,24 @@ class Launcher:
     @staticmethod
     def ensure_minimum_environment():
         need_to_create_environment = False
-        for file_to_dl in IMAGES_TO_DOWNLOAD:
+        try:
+            for file_to_dl in IMAGES_TO_DOWNLOAD:
 
-            Launcher._ensure_directory(file_to_dl[1])
+                Launcher._ensure_directory(file_to_dl[1])
 
-            file_name = file_to_dl[1]
-            if not os.path.isfile(file_name) and file_name:
-                if not need_to_create_environment:
-                    print("Creating minimum launcher environment...")
-                need_to_create_environment = True
-                urllib.request.urlretrieve(file_to_dl[0], file_name)
+                file_name = file_to_dl[1]
+                if not os.path.isfile(file_name) and file_name:
+                    if not need_to_create_environment:
+                        print("Creating minimum launcher environment...")
+                    need_to_create_environment = True
+                    urllib.request.urlretrieve(file_to_dl[0], file_name)
 
-        for folder in FOLDERS_TO_CREATE:
-            if not os.path.exists(folder) and folder:
-                os.makedirs(folder)
+            for folder in FOLDERS_TO_CREATE:
+                if not os.path.exists(folder) and folder:
+                    os.makedirs(folder)
+        except Exception as e:
+            print(f"Error when creating minimum launcher environment: {e} this should not prevent launcher "
+                  f"from working.")
 
     def create_environment(self):
         self.launcher_app.inc_progress(0, to_min=True)
