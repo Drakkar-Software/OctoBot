@@ -353,7 +353,7 @@ class ExchangeSimulator(AbstractExchange):
             for symbol in self.symbols
         }
 
-    def get_market_status(self, symbol):
+    def get_market_status(self, symbol, price=None):
         return {
             # number of decimal digits "after the dot"
             ExchangeConstantsMarketStatusColumns.PRECISION.value: {
