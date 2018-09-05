@@ -61,6 +61,7 @@ class TentacleManager:
                     commands.pop(0)
                     self.update_parser(commands, False)
                 TentaclePackageManager.update_evaluator_config_file()
+                TentaclePackageManager.update_trading_config_file()
 
             elif commands[0] == "uninstall":
                 if self._confirm_action("Uninstall tentacle(s) and remove uninstalled tentacle(s) configuration ?"):
@@ -70,6 +71,7 @@ class TentacleManager:
                         commands.pop(0)
                         self.uninstall_parser(commands, False)
                     TentaclePackageManager.update_evaluator_config_file()
+                    TentaclePackageManager.update_trading_config_file()
 
             elif commands[0] == "reset_tentacles":
                 if self._confirm_action("Reset ALL tentacles ? "
