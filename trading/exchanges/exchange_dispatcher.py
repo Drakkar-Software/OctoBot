@@ -25,7 +25,7 @@ class ExchangeDispatcher(AbstractExchange):
         self.reset_symbols_data()
         self.exchange_personal_data = ExchangePersonalData()
 
-        self.logger.info(f"online with REST api {' and web socket api' if self.exchange_web_socket else ''}")
+        self.logger.info(f"online with REST api{' and web socket api' if self.exchange_web_socket else ''}")
 
     def reset_symbols_data(self):
         self.symbols_data = {}
