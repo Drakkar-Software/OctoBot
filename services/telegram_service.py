@@ -11,7 +11,7 @@ from tools.logging.logging_util import set_logging_level
 class TelegramService(AbstractService):
     REQUIRED_CONFIG = {"chat-id": "", "token": ""}
 
-    LOGGERS = ["telegram.bot", "telegram.vendor.ptb_urllib3.urllib3.connectionpool"]
+    LOGGERS = ["telegram.bot", "telegram.ext.updater", "telegram.vendor.ptb_urllib3.urllib3.connectionpool"]
 
     def __init__(self):
         super().__init__()
