@@ -19,6 +19,11 @@ def get_logger(logger_name="Anonymous"):
     return BotLogger(logger_name)
 
 
+def set_logging_level(logger_names, level):
+    for name in logger_names:
+        logging.getLogger(name).setLevel(level)
+
+
 class BotLogger:
 
     def __init__(self, logger_name):

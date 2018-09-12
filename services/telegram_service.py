@@ -1,13 +1,17 @@
 import telegram
 from telegram.ext import Updater  # , Dispatcher
+import logging
 
 from config.cst import *
 from interfaces.telegram.bot import TelegramApp
 from services.abstract_service import *
+from tools.logging.logging_util import set_logging_level
 
 
 class TelegramService(AbstractService):
     REQUIRED_CONFIG = {"chat-id": "", "token": ""}
+
+    LOGGERS = ["telegram.bot", "telegram.ext.updater", "telegram.vendor.ptb_urllib3.urllib3.connectionpool"]
 
     def __init__(self):
         super().__init__()
@@ -34,6 +38,8 @@ class TelegramService(AbstractService):
 
             if TelegramApp.is_enabled(self.config):
                 self.telegram_app = TelegramApp(self.config, self, self.telegram_updater)
+
+        set_logging_level(self.LOGGERS, logging.WARNING)
 
     def get_type(self):
         return CONFIG_TELEGRAM
