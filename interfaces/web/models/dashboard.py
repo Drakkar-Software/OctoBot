@@ -144,8 +144,12 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
                 exchange_list[exchange])
 
             if time_frame in evaluator_thread_managers:
-                evaluator_thread_manager = evaluator_thread_managers[time_frame]
-                data = evaluator_thread_manager.get_evaluator().get_data()
+                if backtesting:
+                    exchange_simulator = exchange_list[exchange].get_exchange()
+                    data = exchange_simulator.get_full_candles_data(symbol, time_frame)
+                else:
+                    evaluator_thread_manager = evaluator_thread_managers[time_frame]
+                    data = evaluator_thread_manager.get_evaluator().get_data()
 
                 if data is not None:
                     return create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesting)

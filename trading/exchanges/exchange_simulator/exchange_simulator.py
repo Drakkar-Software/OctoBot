@@ -15,6 +15,7 @@ from tools.data_util import DataUtil
 from tools.number_util import round_into_str_with_max_digits
 from trading import AbstractExchange
 from trading.trader.order import OrderConstants
+from trading.exchanges.exchange_symbol_data import SymbolData
 
 
 class ExchangeSimulator(AbstractExchange):
@@ -240,6 +241,12 @@ class ExchangeSimulator(AbstractExchange):
             if self.time_frame_get_times[symbol][time_frame.value] > 1:
                 candles = candles[-1]
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles)
+
+    def get_full_candles_data(self, symbol, time_frame):
+        full_data = self.data[symbol][time_frame.value]
+        temp_symbol_data = SymbolData(symbol)
+        temp_symbol_data.update_symbol_candles(time_frame, full_data, True)
+        return temp_symbol_data.get_symbol_prices(time_frame)
 
     def _get_used_time_frames(self, symbol):
         if symbol in self.time_frames_offset:
