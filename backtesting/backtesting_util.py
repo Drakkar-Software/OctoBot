@@ -68,6 +68,8 @@ def create_backtesting_config(config, wanted_symbols=["BTC/USDT"], filter_symbol
 
 
 def add_config_default_backtesting_values(config):
+    if CONFIG_BACKTESTING not in config:
+        config[CONFIG_BACKTESTING] = {}
     config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
     config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
     config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False

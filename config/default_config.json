@@ -1,4 +1,8 @@
 {
+  "backtesting": {
+      "enabled": false,
+      "files": []
+  },
   "crypto-currencies":{
     "Bitcoin": {
       "pairs" : ["BTC/USDT"]
