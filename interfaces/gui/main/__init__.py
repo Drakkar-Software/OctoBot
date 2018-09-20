@@ -1,15 +1,15 @@
 import logging
 
 try:
-    from interfaces.starting.tk_app import StartingApp
+    from interfaces.gui.main.main_app import MainApp
 except ModuleNotFoundError as e:
     logging.error(f"Can't find {e}, impossible to load GUI")
 except ImportError as e:
     logging.error(f"Can't find {e}, impossible to load GUI")
 
-tk_app = None
+main_app = None
 
 
 def __init__(config):
-    global tk_app
-    tk_app = StartingApp(config)
+    global main_app
+    main_app = MainApp(config)
