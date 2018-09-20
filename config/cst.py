@@ -268,7 +268,7 @@ TRADING_CONFIG_KEY = "trading_config"
 COIN_MARKET_CAP_CURRENCIES_LIST_URL = "https://api.coinmarketcap.com/v2/listings/"
 
 # launcher
-LAUNCHER_PATH = "interfaces/launcher"
+LAUNCHER_PATH = "interfaces/gui/launcher"
 
 
 class TentacleManagerActions(Enum):

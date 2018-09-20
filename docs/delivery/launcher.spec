@@ -12,7 +12,7 @@ a = Analysis(['../../launcher.py'],
              "distutils", "distutils.version", "config.cst", "logging"],
              hookspath=[],
              runtime_hooks=[],
-             excludes=["interfaces.launcher"],
+             excludes=["interfaces.gui.launcher"],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
