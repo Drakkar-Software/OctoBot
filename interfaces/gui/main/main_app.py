@@ -5,11 +5,11 @@ from tkinter.ttk import Button
 
 from config.cst import PROJECT_NAME, CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT
 from interfaces import get_bot
-from interfaces.app_util import TkApp
+from interfaces.gui.util.app_util import AbstractTkApp
 from tools.commands import Commands
 
 
-class StartingApp(TkApp):
+class MainApp(AbstractTkApp):
     def __init__(self, config):
         self.config = config
 

@@ -3,7 +3,8 @@ import datetime
 from flask import render_template
 
 from interfaces.trading_util import get_open_orders, get_trades_history, get_global_portfolio_currencies_amounts, \
-    get_currencies_with_status
+    get_currencies_with_status, get_portfolio_current_value
+from interfaces import get_reference_market
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
 
@@ -19,9 +20,16 @@ def portfolio():
                                     for currency, amounts in simulated_portfolio.items()
                                     if amounts[Portfolio.TOTAL] > 0}
 
+    _, _, portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
+    reference_market = get_reference_market()
+
     return render_template('portfolio.html',
                            simulated_portfolio=filtered_simulated_portfolio,
-                           real_portfolio=filtered_real_portfolio)
+                           real_portfolio=filtered_real_portfolio,
+                           simulated_total_value=round(portfolio_simulated_current_value, 8),
+                           real_total_value=round(portfolio_real_current_value, 8),
+                           reference_unit=reference_market
+                           )
 
 
 @server_instance.route("/market_status")

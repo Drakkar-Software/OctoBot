@@ -11,7 +11,7 @@ from config.cst import GITHUB_RAW_CONTENT_URL, GITHUB_REPOSITORY, LAUNCHER_PATH
 # should have VERSION_DEV_PHASE
 LAUNCHER_URL = f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/dev/{LAUNCHER_PATH}"
 
-LAUNCHER_FILES = ["__init__.py", "launcher_app.py", "launcher_controller.py", "../app_util.py"]
+LAUNCHER_FILES = ["__init__.py", "launcher_app.py", "launcher_controller.py", "../util/app_util.py"]
 
 sys.path.append(os.path.dirname(sys.executable))
 
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     update_launcher()
 
     try:
-        from interfaces.launcher.launcher_app import *
+        from interfaces.gui.launcher.launcher_app import *
     except ImportError:
         importlib.import_module("interfaces.launcher.launcher_app")
 

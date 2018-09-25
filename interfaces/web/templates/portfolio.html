@@ -8,7 +8,7 @@
 </style>
 <div class="card">
     {% if real_portfolio %}
-    <div class="card-header"><h1>Real portfolio</h1></div>
+    <div class="card-header"><h1>Real portfolio: {{real_total_value}} {{reference_unit}}</h1></div>
     <div class="card-body">
         <br>
         <div class="card-deck">
@@ -19,7 +19,7 @@
     </div>
     {% endif %}
     {% if simulated_portfolio %}
-    <div class="card-header"><h1>Simulated portfolio</h1></div>
+    <div class="card-header"><h1>Simulated portfolio: {{simulated_total_value}} {{reference_unit}}</h1></div>
     <div class="card-body">
         <br>
         <div class="card-deck">
