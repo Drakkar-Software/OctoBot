@@ -2,7 +2,7 @@ from logging import WARNING
 from enum import Enum
 
 PROJECT_NAME = "OctoBot"
-SHORT_VERSION = "0.2.0"
+SHORT_VERSION = "0.2.1"
 MINOR_VERSION = "0"
 VERSION_DEV_PHASE = "beta"
 VERSION = f"{SHORT_VERSION}-{VERSION_DEV_PHASE}"
@@ -268,7 +268,7 @@ TRADING_CONFIG_KEY = "trading_config"
 COIN_MARKET_CAP_CURRENCIES_LIST_URL = "https://api.coinmarketcap.com/v2/listings/"
 
 # launcher
-LAUNCHER_PATH = "interfaces/launcher"
+LAUNCHER_PATH = "interfaces/gui/launcher"
 
 
 class TentacleManagerActions(Enum):
