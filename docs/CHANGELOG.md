@@ -1,5 +1,20 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.2.1-beta
+====================
+*Released date : September 25 2018*
+
+# Concerned issues :
+    #359 [Web Interface][Configuration] Improve user interface
+    #399 Error when starting backtesting: 'backtesting'
+    #401  [GUI] refactor local gui interface packages
+    
+# New features :
+    - Launcher improvements
+    
+# Bug fixes :
+    - Fix default config backtesting
+
 Changelog for 0.2.0-beta
 ====================
 *Released date : September 5 2018*
