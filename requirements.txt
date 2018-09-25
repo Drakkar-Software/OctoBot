@@ -1,6 +1,6 @@
 # Cryptocurrency trading
 python-binance
-twisted==18.4.0
+twisted >= 18.4.0
 ccxt
 tulipy
 

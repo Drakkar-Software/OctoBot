@@ -7,14 +7,14 @@ from tkinter.dialog import Dialog, DIALOG_ICON
 from tkinter.ttk import Progressbar, Label, Button
 
 from config.cst import PROJECT_NAME
-from interfaces.app_util import TkApp
-from interfaces.launcher import launcher_controller
-from interfaces.launcher.launcher_controller import Launcher
+from interfaces.gui.util.app_util import AbstractTkApp
+from interfaces.gui.launcher import launcher_controller
+from interfaces.gui.launcher.launcher_controller import Launcher
 
-LAUNCHER_VERSION = "1.0.3"
+LAUNCHER_VERSION = "1.0.4"
 
 
-class LauncherApp(TkApp):
+class LauncherApp(AbstractTkApp):
     PROGRESS_MIN = 0
     PROGRESS_MAX = 100
 
