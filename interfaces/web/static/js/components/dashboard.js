@@ -70,12 +70,16 @@ function display_profitability(element_id){
     }
 }
 
+function get_in_backtesting_mode() {
+    return $("#first_symbol_graph").attr("backtesting_mode") === "True";
+}
+
 function update_dashboard(){
     get_profitability();
 }
 
 $(document).ready(function() {
     get_profitability();
-    get_first_symbol_price_graph("graph-symbol-price");
+    get_first_symbol_price_graph("graph-symbol-price", get_in_backtesting_mode());
     setInterval(function(){ update_dashboard(); }, 15000);
 });

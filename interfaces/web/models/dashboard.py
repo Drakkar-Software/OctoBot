@@ -53,6 +53,10 @@ def _format_trades(trade_history):
     return trades
 
 
+def remove_invalid_chars(string):
+    return string.split("[")[0]
+
+
 def get_first_symbol_data():
     bot = get_bot()
     exchanges = bot.get_exchanges_list()
@@ -67,7 +71,7 @@ def get_first_symbol_data():
                 if etms:
                     time_frame = next(iter(etms))
                     return {
-                        "exchange": exchange.get_name(),
+                        "exchange": remove_invalid_chars(exchange.get_name()),
                         "symbol": symbol_evaluator.get_symbol(),
                         "time_frame": time_frame.value
                     }
