@@ -9,7 +9,7 @@ from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH
-from interfaces import starting
+from interfaces.gui import main
 from tools.commands import Commands
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 
@@ -105,7 +105,7 @@ def start_octobot(starting_args):
 
                     interfaces.__init__(bot, config)
                     try:
-                        starting.__init__(config)
+                        main.__init__(config)
                     except NameError as e:
                         logging.error("{0}, impossible to display GUI".format(e))
 
