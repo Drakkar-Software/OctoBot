@@ -8,7 +8,8 @@ from logging.config import fileConfig
 from config.config import load_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
-    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH
+    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
+    CONFIG_ANALYSIS_ENABLED_OPTION
 from interfaces.gui import main
 from tools.commands import Commands
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
@@ -25,6 +26,8 @@ def _log_uncaught_exceptions(ex_cls, ex, tb):
 def update_config_with_args(starting_args, config):
     if starting_args.backtesting:
         config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
+        config[CONFIG_BACKTESTING][CONFIG_ANALYSIS_ENABLED_OPTION] = starting_args.backtesting_analysis
+
         config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
 
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
@@ -148,6 +151,9 @@ if __name__ == '__main__':
                         help='start the data collector process to create data for backtesting',
                         action='store_true')
     parser.add_argument('-b', '--backtesting', help='enable the backtesting option and use the backtesting config',
+                        action='store_true')
+    parser.add_argument('-ba', '--backtesting_analysis',
+                        help='do not stop the bot at the end of the backtesting (useful to analyse results)',
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
     parser.add_argument('-nw', '--no_web', help="Don't start web server",
