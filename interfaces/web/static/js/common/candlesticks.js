@@ -45,7 +45,43 @@ function create_candlesticks(candles){
       type: 'candlestick',
       name: 'Prices',
       xaxis: 'x',
-      yaxis: 'y'
+      yaxis: 'y2'
+    };
+}
+
+function create_volume(candles){
+
+    const data_time = candles["time"];
+    const data_close = candles["close"];
+    const data_volume = candles["vol"];
+    const sell_color = "#ff0000";
+    const buy_color = "#009900";
+    
+    const colors = [];
+    $.each(data_close, function (i, value) {
+        if(i !== 0) {
+            if (value > data_close[i - 1]) {
+                colors.push(buy_color);
+            }else{
+                colors.push(sell_color);
+            }
+        }
+        else{
+            colors.push(sell_color);
+        }
+
+    });
+
+    return {
+          x: data_time,
+          y: data_volume,
+          marker: {
+              color: colors
+          },
+          type: 'bar',
+          name: 'Volume',
+          xaxis: 'x',
+          yaxis: 'y1'
     };
 }
 
@@ -87,7 +123,9 @@ function create_trades(trades, trader){
                 line: {
                     width: line_with
                 }
-            }
+            },
+            xaxis: 'x',
+            yaxis: 'y2'
         }
     }else{
         return {}
@@ -101,10 +139,12 @@ function create_candlestick_graph(element_id, symbol_price_data, symbol, exchang
 
     const price_trace = create_candlesticks(candles);
 
+    const volume_trace = create_volume(candles);
+
     const real_trader_trades = create_trades(real_trades, "Real trader");
     const simulator_trades = create_trades(simulated_trades, "Simulator");
 
-    const data = [price_trace, real_trader_trades, simulator_trades];
+    const data = [volume_trace, price_trace, real_trader_trades, simulator_trades];
 
     let graph_title = symbol;
     if (exchange_name !== "ExchangeSimulator"){
@@ -127,10 +167,16 @@ function create_candlestick_graph(element_id, symbol_price_data, symbol, exchang
         title: 'Date',
         type: 'date'
       },
-      yaxis: {
+      yaxis1: {
+        domain: [0, 0.2],
+        title: 'Volume',
         autorange: true,
-        domain: [0, 1],
-        type: 'linear',
+        showgrid:false,
+        showticklabels: false
+      },
+      yaxis2: {
+        domain: [0.2, 1],
+        autorange: true,
         title: 'Price'
       },
       paper_bgcolor: 'rgba(0,0,0,0)',
