@@ -122,3 +122,5 @@ config\.json
 *.ods
 temp_config\.json
 log
+
+windows_delivery\.ps1
