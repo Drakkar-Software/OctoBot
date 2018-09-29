@@ -43,7 +43,7 @@ class Backtesting:
 
             if self.force_exit_at_end:
                 if self.analysis_enabled(self.config):
-                    self.logger.info(" *** OctoBot will now keep working for analysis purposes because pf the '-ba' "
+                    self.logger.info(" *** OctoBot will now keep working for analysis purposes because of the '-ba' "
                                      "(--backtesting_analysis) argument. To stop it, close the OctoBot window, "
                                      "or stop the process. ***")
                 else:
