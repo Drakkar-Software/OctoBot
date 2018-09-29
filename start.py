@@ -101,10 +101,10 @@ def start_octobot(starting_args):
 
                     bot = OctoBot(config)
 
-                    if not starting_args.no_gui:
-                        import interfaces
+                    import interfaces
+                    interfaces.__init__(bot, config)
 
-                        interfaces.__init__(bot, config)
+                    if not starting_args.no_gui:
                         try:
                             main.__init__(config)
                         except NameError as e:
