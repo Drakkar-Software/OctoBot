@@ -101,13 +101,14 @@ def start_octobot(starting_args):
 
                     bot = OctoBot(config)
 
-                    import interfaces
+                    if not starting_args.no_gui:
+                        import interfaces
 
-                    interfaces.__init__(bot, config)
-                    try:
-                        main.__init__(config)
-                    except NameError as e:
-                        logging.error("{0}, impossible to display GUI".format(e))
+                        interfaces.__init__(bot, config)
+                        try:
+                            main.__init__(config)
+                        except NameError as e:
+                            logging.error("{0}, impossible to display GUI".format(e))
 
                     if starting_args.start:
                         Commands.start_bot(bot, logger)
@@ -150,6 +151,8 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
     parser.add_argument('-nw', '--no_web', help="Don't start web server",
+                        action='store_true')
+    parser.add_argument('-ng', '--no_gui', help="Don't open gui interface",
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
                         action='store_true')
