@@ -19,7 +19,7 @@ WINDOW_SIZE_WIDTH = 700
 WINDOW_SIZE_HEIGHT = 700
 
 
-class TkApp(threading.Thread):
+class AbstractTkApp(threading.Thread):
     __metaclass__ = ABCMeta
 
     def __init__(self):
