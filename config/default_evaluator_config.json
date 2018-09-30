@@ -7,7 +7,7 @@
   "KlingerOscillatorMomentumEvaluator": true,
 
 
-  "InstantFluctuationsEvaluator": true,
+  "InstantFluctuationsEvaluator": false,
 
 
   "TwitterNewsEvaluator": false,
