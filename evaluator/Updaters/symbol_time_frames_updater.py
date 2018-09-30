@@ -42,6 +42,22 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
         self.refreshed_times[time_frame] += 1
         evaluator_thread_manager_to_notify.notify(self.__class__.__name__)
 
+    def _refresh_time_frame_data(self, time_frame):
+        try:
+            self._refresh_data(time_frame)
+        except Exception as e:
+            self.logger.error(f" when refreshing data for time frame {time_frame} for {symbol}: "
+                              f"{e}")
+            self.logger.exception(e)
+
+    def force_refresh_data(self):
+        evaluator_thread_manager = next(iter(self.evaluator_threads_manager_by_time_frame.values()))
+        backtesting_enabled = Backtesting.enabled(evaluator_thread_manager.get_evaluator().get_config())
+        if not backtesting_enabled:
+            time_frames = self.evaluator_threads_manager_by_time_frame.keys()
+            for time_frame in time_frames:
+                self._refresh_time_frame_data(time_frame)
+
     def _execute_update(self, symbol, exchange, time_frames, backtesting_enabled):
         now = time.time()
 
@@ -61,12 +77,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
             # if data from this time frame needs an update
             elif now - self.time_frame_last_update[time_frame] \
                     >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                try:
-                    self._refresh_data(time_frame)
-                except Exception as e:
-                    self.logger.error(f" when refreshing data for time frame {time_frame} for {symbol}: "
-                                      f"{e}")
-                    self.logger.exception(e)
+                self._refresh_time_frame_data(time_frame)
 
                 self.time_frame_last_update[time_frame] = time.time()
 
