@@ -62,9 +62,11 @@ class EvaluatorThreadsManager:
         self.symbol_time_frame_updater_thread.register_evaluator_thread_manager(self.time_frame, self)
 
     # handle notifications from evaluators, when notified refresh symbol evaluation matrix
-    def notify(self, notifier_name):
+    def notify(self, notifier_name, force_TA_refresh=False):
         if self.get_refreshed_times() > 0:
             self.logger.debug(f"** Notified by {notifier_name} **")
+            if force_TA_refresh:
+                self.symbol_time_frame_updater_thread.force_refresh_data()
             self._refresh_eval(notifier_name)
         else:
             self.logger.debug(f"Notification by {notifier_name} ignored")
