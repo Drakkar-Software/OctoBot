@@ -5,6 +5,7 @@
   "MACDMomentumEvaluator": true,
   "CandlePatternMomentumEvaluator": false,
   "ADXMomentumEvaluator": true,
+  "KlingerOscillatorMomentumEvaluator": false,
 
 
   "InstantFluctuationsEvaluator": false,
@@ -16,5 +17,6 @@
 
   
   "FullMixedStrategiesEvaluator": true,
+  "MoveSignalsStrategyEvaluator": false,
   "InstantSocialReactionMixedStrategiesEvaluator": false
 }
