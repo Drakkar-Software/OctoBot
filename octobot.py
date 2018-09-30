@@ -52,7 +52,7 @@ class OctoBot:
         self.logger = logging.getLogger(self.__class__.__name__)
 
         # Advanced
-        AdvancedManager.create_class_list(self.config)
+        AdvancedManager.init_advanced_classes_if_necessary(self.config)
 
         # Debug tools
         self.performance_analyser = None
