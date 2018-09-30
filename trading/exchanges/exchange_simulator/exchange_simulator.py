@@ -217,7 +217,7 @@ class ExchangeSimulator(AbstractExchange):
 
     def _extract_data_with_limit(self, symbol, time_frame):
         to_use_time_frame = time_frame.value if time_frame is not None \
-            else TimeFrameManager.find_min_time_frame(self.data[symbol].keys())
+            else TimeFrameManager.find_min_time_frame(self.time_frames_offset[symbol].keys()).value
         return self._extract_from_indexes(self.data[symbol][to_use_time_frame],
                                           self._get_candle_index(to_use_time_frame, symbol),
                                           symbol)
@@ -240,7 +240,7 @@ class ExchangeSimulator(AbstractExchange):
             # if it's at least the second iteration: only use the last candle, otherwise use all
             if self.time_frame_get_times[symbol][time_frame.value] > 1:
                 candles = candles[-1]
-        self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles)
+            self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles)
 
     def get_full_candles_data(self, symbol, time_frame):
         full_data = self.data[symbol][time_frame.value]
