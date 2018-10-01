@@ -32,7 +32,8 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
     def load_config(self):
         config_file = self.get_config_file_name()
         if os.path.isfile(config_file):
-            self.specific_config = load_config(config_file)
+            self.set_default_config()
+            self.specific_config = {**self.specific_config, **load_config(config_file)}
         else:
             self.set_default_config()
 
