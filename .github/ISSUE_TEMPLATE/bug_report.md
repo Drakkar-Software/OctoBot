@@ -12,8 +12,9 @@ If it hasn't been reported, please create a new issue.
 ## Step 2: Describe your environment
   * OS : [Windows, Ubuntu, Debian, Raspbian...] 
   * Python Version: _____ (`python -V`)
-  * Branch: Master | Dev
-  * Last Commit ID: _____ (`git log --format="%H" -n 1`)
+  * In case you are not using a binary version:
+    * Branch: Master | Dev
+    * Last Commit ID: _____ (`git log --format="%H" -n 1`)
  
 ## Step 3: Describe the problem:
 **Describe the bug**
