@@ -218,7 +218,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
 
     def _init_price_sockets(self, time_frames, trader_pairs):
         # add klines
-        prices = ["{}{}_{}".format(merge_symbol(symbol).lower(), self._KLINE_KEY, time_frame.value)
+        prices = [f"{self.exchange_manager.get_exchange_symbol_id(symbol).lower()}{self._KLINE_KEY}_{time_frame.value}"
                   for time_frame in time_frames
                   for symbol in trader_pairs]
         # add tickers
