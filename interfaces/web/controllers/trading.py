@@ -1,12 +1,13 @@
 import datetime
 
-from flask import render_template
+from flask import render_template,request
 
 from interfaces.trading_util import get_open_orders, get_trades_history, get_global_portfolio_currencies_amounts, \
     get_currencies_with_status, get_portfolio_current_value
 from interfaces import get_reference_market
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
+from interfaces.web.models.trading import get_symbol_time_frames, get_evaluation
 
 
 @server_instance.route("/portfolio")
@@ -32,10 +33,18 @@ def portfolio():
                            )
 
 
-@server_instance.route("/market_status")
-def market_status():
-    return render_template('market_status.html',
-                           pairs_with_status=get_currencies_with_status())
+@server_instance.route("/symbol_market_status")
+@server_instance.route('/symbol_market_status', methods=['GET', 'POST'])
+def symbol_market_status():
+    exchange = request.args["exchange"]
+    symbol = request.args["symbol"]
+    symbol_time_frames, exchange = get_symbol_time_frames(symbol, exchange)
+    symbol_evaluation = get_evaluation(symbol, exchange)
+    return render_template('symbol_market_status.html',
+                           symbol=symbol,
+                           exchange=exchange,
+                           symbol_evaluation=symbol_evaluation,
+                           time_frames=symbol_time_frames)
 
 
 @server_instance.route("/trading")
