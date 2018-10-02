@@ -17,10 +17,10 @@
     </div>
     <div class="card-body">
         <div class="input-group">
-           <div class="input-group-prepend mb-4">
+           <div class="input-group-prepend">
                 <label class="input-group-text" for="time-frame-select">Time frame</label>
            </div>
-            <select class="custom-select mb-2" id="time-frame-select">
+            <select class="custom-select" id="time-frame-select">
                 {% for time_frame in time_frames %}
                 <option value={{time_frame.value}}>
                 {{time_frame.value}}
