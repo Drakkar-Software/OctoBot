@@ -198,6 +198,9 @@ class ExchangeManager:
     def get_symbol_data(self, symbol):
         return self.get_exchange().get_symbol_data(symbol)
 
+    def get_symbol_available_time_frames(self, symbol):
+        return self.get_exchange().get_symbol_data(symbol).get_available_time_frames()
+
     def get_personal_data(self):
         return self.get_exchange().get_exchange_personal_data()
 

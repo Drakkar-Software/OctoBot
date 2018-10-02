@@ -1,4 +1,4 @@
-function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, backtesting=false){
+function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, backtesting=false, replace=false){
     const backtesting_enabled = backtesting ? "backtesting" : "live";
     const ajax_url = "/dashboard/currency_price_graph_update/"+ exchange_name +"/" + symbol + "/"
         + time_frame + "/" + backtesting_enabled;
@@ -8,7 +8,7 @@ function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, b
         dataType: "json",
         contentType: 'application/json',
         success: function(msg, status){
-            create_candlestick_graph(element_id, msg, symbol, exchange_name, time_frame);
+            create_candlestick_graph(element_id, msg, symbol, exchange_name, time_frame, replace=replace);
         },
         error: function(result, status, error){
             window.console&&console.error(error);
@@ -132,7 +132,7 @@ function create_trades(trades, trader){
     }
 }
 
-function create_candlestick_graph(element_id, symbol_price_data, symbol, exchange_name, time_frame){
+function create_candlestick_graph(element_id, symbol_price_data, symbol, exchange_name, time_frame, replace=false){
     const candles = symbol_price_data["candles"];
     const real_trades = symbol_price_data["real_trades"];
     const simulated_trades = symbol_price_data["simulated_trades"];
@@ -185,6 +185,9 @@ function create_candlestick_graph(element_id, symbol_price_data, symbol, exchang
         color: "white"
       }
     };
-
-    Plotly.plot(element_id, data, layout);
+    if(replace){
+        Plotly.newPlot(element_id, data, layout);
+    }else{
+        Plotly.plot(element_id, data, layout);
+    }
 }
