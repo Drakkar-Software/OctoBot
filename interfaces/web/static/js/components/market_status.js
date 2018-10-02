@@ -2,6 +2,8 @@ function update_graph(time_frame, symbol, exchange){
     if(isDefined(time_frame) && isDefined(symbol) && isDefined(exchange)){
         const formated_symbol = symbol.replace(new RegExp("/","g"), "|");
         get_symbol_price_graph("graph-symbol-price", exchange, formated_symbol, time_frame, backtesting=false, replace=true);
+    }else{
+        $("#graph-symbol-price").text("Impossible to display price graph.")
     }
 }
 
