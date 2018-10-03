@@ -1,6 +1,6 @@
 import datetime
 
-from flask import render_template,request
+from flask import render_template, request
 
 from interfaces.trading_util import get_open_orders, get_trades_history, get_global_portfolio_currencies_amounts, \
     get_currencies_with_status, get_portfolio_current_value
@@ -8,6 +8,7 @@ from interfaces import get_reference_market
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
 from interfaces.web.models.trading import get_symbol_time_frames, get_evaluation
+from interfaces.web.models.interface_settings import get_watched_symbols
 
 
 @server_instance.route("/portfolio")
@@ -53,6 +54,7 @@ def trading():
     return render_template('trading.html',
                            real_open_orders=real_open_orders,
                            simulated_open_orders=simulated_open_orders,
+                           watched_symbols=get_watched_symbols(),
                            pairs_with_status=get_currencies_with_status())
 
 
