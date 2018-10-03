@@ -205,7 +205,8 @@ class OctoBot:
                     required_class = get_class_from_string(required_eval, TAEvaluator, TA, evaluator_parent_inspection)
                     if required_class and not self._class_is_in_list(ta_list, required_class):
                         self.logger.error(f"Missing technical analysis evaluator {required_class.get_name()} for "
-                                          f"current strategy. Activate it to allow the strategy to work properly.")
+                                          f"current strategy. Activate it in OctoBot advanced configuration interface "
+                                          f"to allow activated strategy(ies) to work properly.")
 
     def start_threads(self):
         if self.performance_analyser:
