@@ -17,7 +17,7 @@
         <br>
         <div class="card-deck">
             {% for pair, status in pairs_with_status.items() %}
-                {{ m_cards.pair_status_card(pair, status) }}
+                {{ m_cards.pair_status_card(pair, status, watched_symbols) }}
             {% endfor %}
         </div>
     </div>
@@ -66,5 +66,5 @@
 {% endblock %}
 
 {% block additional_scripts %}
-<script src="{{ url_for('static', filename='js/components/market_status.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/interface_settings.js') }}"></script>
 {% endblock additional_scripts %}

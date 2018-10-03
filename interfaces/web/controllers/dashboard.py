@@ -2,7 +2,7 @@ from flask import jsonify
 
 from interfaces.web import server_instance
 from interfaces.web.models.dashboard import get_currency_price_graph_update, get_value_from_dict_or_string, \
-    get_first_symbol_data
+    get_first_symbol_data, get_watched_symbol_data
 from interfaces.trading_util import get_global_profitability
 
 
@@ -20,6 +20,12 @@ def currency_price_graph_update(exchange_name, symbol, time_frame, mode="live"):
                        methods=['GET', 'POST'])
 def first_symbol():
     return jsonify(get_first_symbol_data())
+
+
+@server_instance.route('/dashboard/watched_symbol/<symbol>',
+                       methods=['GET', 'POST'])
+def watched_symbol(symbol):
+    return jsonify(get_watched_symbol_data(symbol))
 
 
 @server_instance.route('/dashboard/profitability',

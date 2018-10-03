@@ -24,12 +24,17 @@
     <!-- Card -->
 {%- endmacro %}
 
-{% macro pair_status_card(pair, status) -%}
+{% macro pair_status_card(pair, status, watched_symbols) -%}
     <!-- Card -->
     <div class="card pair_status_card mb-4 small-size">
 
     <!--Title-->
-    <div class="card-header">{{ pair }}</div>
+    <div class="card-header">{{ pair }}
+        <a class="float-right" href="#">
+            <i class="{{'fas' if pair in watched_symbols else 'far'}} fa-star watched_element" symbol="{{ pair }}" update_url="{{ url_for('watched_symbols') }}"
+               data-toggle="tooltip" data-placement="top" title="Add to / Remove from watched markets"></i>
+        </a>
+    </div>
 
     <!--Card image-->
     <div class="view overlay animated fadeIn img-fluid mx-auto">

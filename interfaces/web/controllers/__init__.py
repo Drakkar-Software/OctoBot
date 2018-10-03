@@ -7,3 +7,4 @@ def load_routes():
     from . import dashboard
     from . import trading
     from . import logs
+    from . import interface_settings

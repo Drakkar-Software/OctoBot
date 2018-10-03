@@ -1,5 +1,5 @@
 from backtesting.backtesting import Backtesting
-from config.cst import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING
+from config.cst import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING, WATCHED_SYMBOLS_TIME_FRAME
 from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
     get_symbol_data_history
@@ -57,6 +57,37 @@ def remove_invalid_chars(string):
     return string.split("[")[0]
 
 
+def _get_candles_reply(exchange, symbol_evaluator, time_frame):
+    return {
+        "exchange": remove_invalid_chars(exchange.get_name()),
+        "symbol": symbol_evaluator.get_symbol(),
+        "time_frame": time_frame.value
+    }
+
+
+def get_watched_symbol_data(symbol):
+    bot = get_bot()
+    exchanges = bot.get_exchanges_list()
+    symbol = parse_get_symbol(symbol)
+
+    try:
+        if exchanges:
+            exchange = next(iter(exchanges.values()))
+            evaluators = bot.get_symbol_evaluator_list()
+            if evaluators and symbol in evaluators:
+                symbol_evaluator = evaluators[symbol]
+                etms = symbol_evaluator.get_evaluator_thread_managers(exchange)
+                if etms:
+                    if WATCHED_SYMBOLS_TIME_FRAME in etms:
+                        time_frame = WATCHED_SYMBOLS_TIME_FRAME
+                    else:
+                        time_frame = next(iter(etms))
+                    return _get_candles_reply(exchange, symbol_evaluator, time_frame)
+    except KeyError:
+        return {}
+    return {}
+
+
 def get_first_symbol_data():
     bot = get_bot()
     exchanges = bot.get_exchanges_list()
@@ -70,11 +101,7 @@ def get_first_symbol_data():
                 etms = symbol_evaluator.get_evaluator_thread_managers(exchange)
                 if etms:
                     time_frame = next(iter(etms))
-                    return {
-                        "exchange": remove_invalid_chars(exchange.get_name()),
-                        "symbol": symbol_evaluator.get_symbol(),
-                        "time_frame": time_frame.value
-                    }
+                    return _get_candles_reply(exchange, symbol_evaluator, time_frame)
     except KeyError:
         return {}
     return {}

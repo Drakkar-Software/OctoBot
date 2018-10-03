@@ -496,4 +496,8 @@ class DeliveryPlatformsName(Enum):
     MAC = "mac"
 
 
+# web user settings
+WATCHED_SYMBOLS_TIME_FRAME = TimeFrames.ONE_HOUR
+CONFIG_WATCHED_SYMBOLS = "watched_symbols"
+
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='

@@ -80,6 +80,13 @@ function update_dashboard(){
 
 $(document).ready(function() {
     get_profitability();
-    get_first_symbol_price_graph("graph-symbol-price", get_in_backtesting_mode());
+    let useDefaultGraph = true;
+    $(".watched-symbol-graph").each(function () {
+        useDefaultGraph = false;
+        get_watched_symbol_price_graph($(this));
+    });
+    if(useDefaultGraph){
+        get_first_symbol_price_graph("graph-symbol-price", get_in_backtesting_mode());
+    }
     setInterval(function(){ update_dashboard(); }, 15000);
 });

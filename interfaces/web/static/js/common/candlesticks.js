@@ -26,6 +26,18 @@ function get_first_symbol_price_graph(element_id, in_backtesting_mode=false) {
     });
 }
 
+function get_watched_symbol_price_graph(element) {
+    const symbol = element.attr("symbol");
+    let formatted_symbol = symbol.replace(new RegExp("/","g"), "|");
+    const ajax_url = "/dashboard/watched_symbol/"+ formatted_symbol;
+    $.get(ajax_url,function(data) {
+        if("time_frame" in data){
+            let formatted_symbol = data["symbol"].replace(new RegExp("/","g"), "|");
+            get_symbol_price_graph(element.attr("id"), data["exchange"], formatted_symbol, data["time_frame"], false);
+        }
+    });
+}
+
 function create_candlesticks(candles){
     const data_time = candles["time"];
     const data_close = candles["close"];
