@@ -11,6 +11,7 @@ from services import AbstractService
 from tools.config_manager import ConfigManager
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection, trading_mode_parent_inspection
 from evaluator.abstract_evaluator import AbstractEvaluator
+from backtesting.backtesting import Backtesting
 
 
 def get_edited_config():
@@ -140,6 +141,10 @@ def get_strategy_config():
     _add_trading_modes_requirements(strategy_config_classes["trading-modes"], strategy_config)
     _add_strategies_requirements(strategy_config_classes["strategies"], strategy_config)
     return strategy_config
+
+
+def get_in_backtesting_mode():
+    return Backtesting.enabled(get_bot().get_config())
 
 
 def _fill_evaluator_config(evaluator_name, activated, eval_type_key,

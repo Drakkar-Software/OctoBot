@@ -145,7 +145,7 @@ class TentaclePackageManager:
         else:
             self.logger.warning("{0} is currently on development, "
                                 "it will not be installed (to install it anyway, "
-                                "add \"DEV_MODE\": true in your config.json)".format(module_name))
+                                "add \"DEV-MODE\": true in your config.json)".format(module_name))
 
     def _should_do_something(self, action, module_name, module_version, need_this_exact_version=False, requiring=None):
         if action == TentacleManagerActions.UPDATE:

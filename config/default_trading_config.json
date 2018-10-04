@@ -1,3 +1,4 @@
 {
-  "DailyTradingMode": true
+  "DailyTradingMode": true,
+  "SignalTradingMode": false
 }

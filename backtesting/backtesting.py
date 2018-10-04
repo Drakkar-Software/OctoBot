@@ -2,7 +2,8 @@ from tools.logging.logging_util import get_logger
 import os
 import time
 
-from config.cst import *
+from config.cst import CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_BACKTESTING , CONFIG_ENABLED_OPTION, PriceIndexes, \
+    CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
 from tools.pretty_printer import PrettyPrinter
 
 
@@ -41,7 +42,12 @@ class Backtesting:
                 self.logger.info(" *** Backtesting ended ****")
 
             if self.force_exit_at_end:
-                os._exit(0)
+                if self.analysis_enabled(self.config):
+                    self.logger.info(" *** OctoBot will now keep working for analysis purposes because of the '-ba' "
+                                     "(--backtesting_analysis) argument. To stop it, close the OctoBot window, "
+                                     "or stop the process. ***")
+                else:
+                    os._exit(0)
 
     def print_trades_history(self):
         trader = self.get_trader()
@@ -163,6 +169,10 @@ class Backtesting:
     @staticmethod
     def enabled(config):
         return CONFIG_BACKTESTING in config and config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION]
+
+    @staticmethod
+    def analysis_enabled(config):
+        return CONFIG_BACKTESTING in config and config[CONFIG_BACKTESTING][CONFIG_ANALYSIS_ENABLED_OPTION]
 
 
 class BacktestingEndedException(Exception):

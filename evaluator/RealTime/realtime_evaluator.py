@@ -32,16 +32,17 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
     def load_config(self):
         config_file = self.get_config_file_name()
         if os.path.isfile(config_file):
-            self.specific_config = load_config(config_file)
+            self.set_default_config()
+            self.specific_config = {**self.specific_config, **load_config(config_file)}
         else:
             self.set_default_config()
 
     def add_evaluator_thread_manager(self, evaluator_thread):
         self.evaluator_thread_managers.append(evaluator_thread)
 
-    def notify_evaluator_thread_managers(self, notifier_name):
+    def notify_evaluator_thread_managers(self, notifier_name, force_TA_refresh=False):
         for thread in self.evaluator_thread_managers:
-            thread.notify(notifier_name)
+            thread.notify(notifier_name, force_TA_refresh=force_TA_refresh)
 
     # to implement in subclasses if config necessary
     def set_default_config(self):

@@ -82,6 +82,9 @@ class SymbolData:
             return self.symbol_candles[next(iter(self.symbol_candles))]
         return None
 
+    def get_available_time_frames(self):
+        return self.symbol_candles.keys()
+
     # ticker functions
     def get_symbol_ticker(self):
         return self.symbol_ticker

@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block body %}
+<style>
+.card-deck .card{
+    max-width: 230px;
+}
+</style>
+<div class="card">
+    <div class="card-header d-flex">
+        <div class="animated fadeIn img-fluid very-small-size">
+            <img class="card-img-top" src="https://raw.githubusercontent.com/hyperdexapp/cryptocurrency-icons/master/128/icon/{{ symbol.split('/')[0].lower() }}.png" alt="Can't find image for {{ symbol.split('/')[0] }} :(">
+            <div class="mask rgba-white-slight waves-effect waves-light"></div>
+        </div>
+        <div>
+            <h1>&nbsp{{symbol}} on {{exchange}}: <strong>{{symbol_evaluation}}</strong></h1>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="input-group">
+           <div class="input-group-prepend">
+                <label class="input-group-text" for="time-frame-select">Time frame</label>
+           </div>
+            <select class="custom-select" id="time-frame-select">
+                {% for time_frame in time_frames %}
+                <option value={{time_frame.value}}>
+                {{time_frame.value}}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <br>
+        <div class="card-body" id="symbol_graph" symbol={{symbol}} exchange={{exchange}}>
+            <div id="graph-symbol-price"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/candlesticks.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/market_status.js') }}"></script>
+{% endblock additional_scripts %}

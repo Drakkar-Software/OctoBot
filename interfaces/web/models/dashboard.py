@@ -1,11 +1,11 @@
 from backtesting.backtesting import Backtesting
-from config.cst import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING
+from config.cst import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING, WATCHED_SYMBOLS_TIME_FRAME
 from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
     get_symbol_data_history
-from tools.symbol_util import split_symbol
 from tools.timestamp_util import convert_timestamps_to_datetime, convert_timestamp_to_datetime
 from interfaces.trading_util import get_trades_history
+from interfaces.web.models.trading import get_symbol_time_frames
 
 GET_SYMBOL_SEPARATOR = "|"
 
@@ -53,6 +53,41 @@ def _format_trades(trade_history):
     return trades
 
 
+def remove_invalid_chars(string):
+    return string.split("[")[0]
+
+
+def _get_candles_reply(exchange, symbol_evaluator, time_frame):
+    return {
+        "exchange": remove_invalid_chars(exchange.get_name()),
+        "symbol": symbol_evaluator.get_symbol(),
+        "time_frame": time_frame.value
+    }
+
+
+def get_watched_symbol_data(symbol):
+    bot = get_bot()
+    exchanges = bot.get_exchanges_list()
+    symbol = parse_get_symbol(symbol)
+
+    try:
+        if exchanges:
+            exchange = next(iter(exchanges.values()))
+            evaluators = bot.get_symbol_evaluator_list()
+            if evaluators and symbol in evaluators:
+                symbol_evaluator = evaluators[symbol]
+                etms = symbol_evaluator.get_evaluator_thread_managers(exchange)
+                if etms:
+                    if WATCHED_SYMBOLS_TIME_FRAME in etms:
+                        time_frame = WATCHED_SYMBOLS_TIME_FRAME
+                    else:
+                        time_frame = next(iter(etms))
+                    return _get_candles_reply(exchange, symbol_evaluator, time_frame)
+    except KeyError:
+        return {}
+    return {}
+
+
 def get_first_symbol_data():
     bot = get_bot()
     exchanges = bot.get_exchanges_list()
@@ -66,11 +101,7 @@ def get_first_symbol_data():
                 etms = symbol_evaluator.get_evaluator_thread_managers(exchange)
                 if etms:
                     time_frame = next(iter(etms))
-                    return {
-                        "exchange": exchange.get_name(),
-                        "symbol": symbol_evaluator.get_symbol(),
-                        "time_frame": time_frame.value
-                    }
+                    return _get_candles_reply(exchange, symbol_evaluator, time_frame)
     except KeyError:
         return {}
     return {}
@@ -110,7 +141,8 @@ def create_candles_data(symbol, time_frame, new_data, bot, list_arrays, in_backt
             PriceStrings.STR_PRICE_CLOSE.value: data[PriceIndexes.IND_PRICE_CLOSE.value].tolist(),
             PriceStrings.STR_PRICE_LOW.value: data[PriceIndexes.IND_PRICE_LOW.value].tolist(),
             PriceStrings.STR_PRICE_OPEN.value: data[PriceIndexes.IND_PRICE_OPEN.value].tolist(),
-            PriceStrings.STR_PRICE_HIGH.value: data[PriceIndexes.IND_PRICE_HIGH.value].tolist()
+            PriceStrings.STR_PRICE_HIGH.value: data[PriceIndexes.IND_PRICE_HIGH.value].tolist(),
+            PriceStrings.STR_PRICE_VOL.value: data[PriceIndexes.IND_PRICE_VOL.value].tolist()
         }
     else:
         result_dict[candles_key] = {
@@ -143,6 +175,8 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
             evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_thread_managers(
                 exchange_list[exchange])
 
+            data = None
+
             if time_frame in evaluator_thread_managers:
                 if backtesting:
                     exchange_simulator = exchange_list[exchange].get_exchange()
@@ -150,7 +184,10 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
                 else:
                     evaluator_thread_manager = evaluator_thread_managers[time_frame]
                     data = evaluator_thread_manager.get_evaluator().get_data()
+            elif not backtesting and time_frame in get_symbol_time_frames(symbol, exchange_name)[0]:
+                # might be the real-time evaluator time frame => check in symbol data
+                data = exchange_list[exchange].get_symbol_prices(symbol, time_frame, return_list=False)
 
-                if data is not None:
-                    return create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesting)
+            if data is not None:
+                return create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesting)
     return None

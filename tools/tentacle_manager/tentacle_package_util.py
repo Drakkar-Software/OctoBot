@@ -103,7 +103,7 @@ def get_package_file_content_from_url(url, as_bytes=False):
     package_file = result.text
 
     if package_file.find("404: Not Found") != -1:
-        raise Exception(package_file)
+        raise Exception(f"{package_file}: {url}")
 
     if as_bytes:
         return result.content
