@@ -9,7 +9,8 @@ from config.config import load_config, decrypt, encrypt
 from config.cst import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
     TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_ADVANCED_CLASSES, \
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
-    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_FILE
+    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_FILE, \
+    CONFIG_TRADING_TENTACLES
 
 
 def get_logger():
@@ -104,21 +105,26 @@ class ConfigManager:
                                                 CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_FILE)
 
     @staticmethod
+    def remove_loaded_only_element(config):
+
+        # remove service instances
+        for service in config[CONFIG_CATEGORY_SERVICES]:
+            config[CONFIG_CATEGORY_SERVICES][service].pop(CONFIG_SERVICE_INSTANCE, None)
+
+        # remove non config keys
+        config.pop(CONFIG_EVALUATOR, None)
+        config.pop(CONFIG_TRADING_TENTACLES, None)
+        config.pop(CONFIG_INTERFACES, None)
+        config.pop(CONFIG_ADVANCED_CLASSES, None)
+        config.pop(CONFIG_TIME_FRAME, None)
+        config.pop(CONFIG_NOTIFICATION_INSTANCE, None)
+        config.pop(CONFIG_ADVANCED_INSTANCES, None)
+
+    @staticmethod
     def update_global_config(to_update_data, current_config, update_input=False, delete=False):
         new_current_config = copy(current_config)
 
-        # remove service instances
-        for service in new_current_config[CONFIG_CATEGORY_SERVICES]:
-            new_current_config[CONFIG_CATEGORY_SERVICES][service].pop(CONFIG_SERVICE_INSTANCE, None)
-
-        # remove non config keys
-        # TODO
-        new_current_config.pop(CONFIG_EVALUATOR, None)
-        new_current_config.pop(CONFIG_INTERFACES, None)
-        new_current_config.pop(CONFIG_ADVANCED_CLASSES, None)
-        new_current_config.pop(CONFIG_TIME_FRAME, None)
-        new_current_config.pop(CONFIG_NOTIFICATION_INSTANCE, None)
-        new_current_config.pop(CONFIG_ADVANCED_INSTANCES, None)
+        ConfigManager.remove_loaded_only_element(new_current_config)
 
         # now can make a deep copy
         new_current_config = deepcopy(new_current_config)

@@ -16,6 +16,7 @@ def _symbol_in_currencies_config(config, symbol):
             return True
     return False
 
+
 def get_watched_symbols():
     config = _get_config()
     if CONFIG_WATCHED_SYMBOLS not in config:
@@ -41,5 +42,7 @@ def remove_watched_symbol(symbol):
 
 
 def _save_edition():
-    ConfigManager.save_config(CONFIG_FILE, _get_config(), TEMP_RESTORE_CONFIG_FILE)
+    to_save_config = copy.copy(_get_config())
+    ConfigManager.remove_loaded_only_element(to_save_config)
+    ConfigManager.save_config(CONFIG_FILE, to_save_config, TEMP_RESTORE_CONFIG_FILE)
     return True
