@@ -1,5 +1,24 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.2.2-beta
+====================
+*Released date : October 04 2018*
+
+# Concerned issues :
+    #359 [Web Interface][Configuration] Improve user interface
+    #406 [backtesting] add a startup argument to pause the bot at the end of backtesting in order to analyse results
+    #408 [New Trading strategy] implement a new trading strategy using real time evaluators and TA
+    #410 [Websocket] error when opening a websocket with translated symbols
+    #413 [Web interface] add price visualisation for each symbol 
+    #414 [Web interface] Dashboard customization
+    #417 [Evaluator configuration] inform user when missing required evaluators
+    
+# New features :
+    - Dashboard customization
+    
+# Bug fixes :
+    - Fix error when opening a websocket with translated symbols
+
 Changelog for 0.2.1-beta
 ====================
 *Released date : September 25 2018*
