@@ -27,7 +27,7 @@ function get_selected_options(element){
 
 // utility functions
 function isDefined(thing){
-    return (typeof thing !== typeof undefined && thing !== false)
+    return (typeof thing !== typeof undefined && thing !== false && thing !==null)
 }
 
 function log(text){

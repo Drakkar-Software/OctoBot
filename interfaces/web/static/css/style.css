@@ -46,6 +46,12 @@ body:before {
   max-height: 18rem;
   min-height: 14rem;
 }
+.very-small-size{
+  max-width: 3rem;
+  min-width: 2rem;
+  max-height: 3rem;
+  min-height: 2rem;
+}
 
 /* elegant-color white-text */
 

@@ -1,4 +1,4 @@
-import logging
+from tools.logging.logging_util import get_logger
 import time
 import copy
 
@@ -7,7 +7,8 @@ import ccxt
 from backtesting.backtesting import Backtesting
 from config.cst import CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
-    NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
+    NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, \
+    CONFIG_EVALUATORS_WILDCARD
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
@@ -22,6 +23,9 @@ from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 from trading.util.trading_config_util import get_activated_trading_mode
+from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
+from evaluator import TA
+from evaluator.TA import TAEvaluator
 
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
@@ -49,10 +53,10 @@ class OctoBot:
         }
 
         # Logger
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         # Advanced
-        AdvancedManager.create_class_list(self.config)
+        AdvancedManager.init_advanced_classes_if_necessary(self.config)
 
         # Debug tools
         self.performance_analyser = None
@@ -163,6 +167,8 @@ class OctoBot:
                             if not self.backtesting_enabled:
                                 self.logger.warning(f"{exchange.get_name()} doesn't support {symbol}")
 
+        self._check_required_evaluators()
+
     def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
 
         if Backtesting.enabled(self.config):
@@ -189,6 +195,18 @@ class OctoBot:
                 self.logger.warning(f"{exchange.get_name()} exchange is not supporting the required time frame: "
                                     f"'{time_frame.value}' for {symbol_evaluator.get_symbol()}.")
         self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
+
+    def _check_required_evaluators(self):
+        if self.symbol_threads_manager:
+            etm = next(iter(self.symbol_threads_manager.values()))
+            ta_list = etm.get_evaluator().get_ta_eval_list()
+            if self.relevant_evaluators != CONFIG_EVALUATORS_WILDCARD:
+                for required_eval in self.relevant_evaluators:
+                    required_class = get_class_from_string(required_eval, TAEvaluator, TA, evaluator_parent_inspection)
+                    if required_class and not self._class_is_in_list(ta_list, required_class):
+                        self.logger.error(f"Missing technical analysis evaluator {required_class.get_name()} for "
+                                          f"current strategy. Activate it in OctoBot advanced configuration interface "
+                                          f"to allow activated strategy(ies) to work properly.")
 
     def start_threads(self):
         if self.performance_analyser:
@@ -273,6 +291,13 @@ class OctoBot:
             exchange.stop()
 
         self.logger.info("Threads stopped.")
+
+    @staticmethod
+    def _class_is_in_list(class_list, required_klass):
+        for klass in class_list:
+            if required_klass in klass.get_parent_evaluator_classes():
+                return True
+        return False
 
     def set_watcher(self, watcher):
         self.watcher = watcher

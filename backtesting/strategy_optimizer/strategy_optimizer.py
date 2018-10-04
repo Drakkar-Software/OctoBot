@@ -11,11 +11,12 @@ from evaluator import TA
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
-    CONFIG_EVALUATOR
+    CONFIG_EVALUATOR,CONFIG_ADVANCED_CLASSES
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 from tools.logging.logging_util import set_global_logger_level, get_global_logger_level
 from trading.util.trading_config_util import get_activated_trading_mode
+from evaluator.Util.advanced_manager import AdvancedManager
 
 CONFIG = 0
 RANK = 1
@@ -28,6 +29,7 @@ class StrategyOptimizer:
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
         self.logger = get_logger(self.get_name())
+        AdvancedManager.init_advanced_classes_if_necessary(config)
         self.trading_mode = get_activated_trading_mode(config)
         self.config = create_blank_config_using_loaded_one(config)
         self.strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
@@ -75,7 +77,7 @@ class StrategyOptimizer:
                     if time_frames is None else time_frames
                 nb_TFs = len(self.all_time_frames)
 
-                self.risks = [0.5, 1] if risks is None else risks
+                self.risks = [1] if risks is None else risks
 
                 self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} "
                                  f"strategy using {self.trading_mode.get_name()} trading mode, {self.all_TAs} "
@@ -185,7 +187,7 @@ class StrategyOptimizer:
             self.logger.info(f"{rank}: {result[CONFIG].get_result_string()} (time frame rank sum: {result[RANK]}) "
                              f"average trades count: {result[TRADES_IN_RESULT]:f}")
         self.logger.info(f" *** Overall best configuration for {self.strategy_class.get_name()} using "
-                         f"{self.trading_mode} trading mode *** ")
+                         f"{self.trading_mode.get_name()} trading mode *** ")
         self.logger.info(f"{self.sorted_results_through_all_time_frame[0][CONFIG].get_result_string()} average "
                          f"trades count: {result[TRADES_IN_RESULT]:f}")
 

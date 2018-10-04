@@ -77,6 +77,11 @@ class AdvancedManager:
         AdvancedManager._get_advanced(config, AbstractTradingMode)
 
     @staticmethod
+    def init_advanced_classes_if_necessary(config):
+        if CONFIG_ADVANCED_CLASSES not in config:
+            AdvancedManager.create_class_list(config)
+
+    @staticmethod
     def _get_advanced_classes_list(config):
         return config[CONFIG_ADVANCED_CLASSES]
 

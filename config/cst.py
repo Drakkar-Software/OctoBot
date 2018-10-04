@@ -2,7 +2,7 @@ from logging import WARNING
 from enum import Enum
 
 PROJECT_NAME = "OctoBot"
-SHORT_VERSION = "0.2.1"
+SHORT_VERSION = "0.2.2"
 MINOR_VERSION = "0"
 VERSION_DEV_PHASE = "beta"
 VERSION = f"{SHORT_VERSION}-{VERSION_DEV_PHASE}"
@@ -54,6 +54,7 @@ CONFIG_ADVANCED_INSTANCES = "advanced_instances"
 
 # Backtesting
 CONFIG_BACKTESTING = "backtesting"
+CONFIG_ANALYSIS_ENABLED_OPTION = "post_analysis_enabled"
 CONFIG_BACKTESTING_DATA_FILES = "files"
 CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO = 10000
 
@@ -494,5 +495,9 @@ class DeliveryPlatformsName(Enum):
     LINUX = "linux"
     MAC = "mac"
 
+
+# web user settings
+WATCHED_SYMBOLS_TIME_FRAME = TimeFrames.ONE_HOUR
+CONFIG_WATCHED_SYMBOLS = "watched_symbols"
 
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='
