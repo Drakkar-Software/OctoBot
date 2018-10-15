@@ -1,4 +1,0 @@
-pandas==0.20.3
-numpy
-Cython
-lxml
