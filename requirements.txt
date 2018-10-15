@@ -1,6 +1,10 @@
 #Required for bot to work
 Cython
 numpy
+pandas==0.20.3
+numpy
+Cython
+lxml
 
 # Cryptocurrency trading
 python-binance
