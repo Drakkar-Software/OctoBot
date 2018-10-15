@@ -1,3 +1,7 @@
+#Required for bot to work
+Cython
+numpy
+
 # Cryptocurrency trading
 python-binance
 twisted >= 18.4.0
