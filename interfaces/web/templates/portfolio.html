@@ -11,7 +11,7 @@
     <div class="card-header"><h1>Real portfolio: {{real_total_value}} {{reference_unit}}</h1></div>
     <div class="card-body">
         <div>
-            <canvas id="real_portfolio_doughnutChart" height="90%" ></canvas>
+            <canvas id="real_portfolio_doughnutChart" height="70%" ></canvas>
         </div>
         <div class="card-deck">
             {% for currency in real_portfolio %}
@@ -24,7 +24,7 @@
     <div class="card-header"><h1>Simulated portfolio: {{simulated_total_value}} {{reference_unit}}</h1></div>
     <div class="card-body">
         <div>
-            <canvas id="simulated_portfolio_doughnutChart" height="90%"></canvas>
+            <canvas id="simulated_portfolio_doughnutChart" height="70%"></canvas>
         </div>
         <div class="card-deck">
             {% for currency in simulated_portfolio %}
