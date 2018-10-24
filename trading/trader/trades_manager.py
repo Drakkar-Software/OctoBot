@@ -28,8 +28,8 @@ class TradesManager:
 
         self.currencies_last_prices = {}
         self.origin_crypto_currencies_values = {}
+        self.current_crypto_currencies_values = {}
         self.origin_portfolio = None
-        self.last_portfolio = None
 
         self.portfolio_origin_value = 0
         self.portfolio_current_value = 0
@@ -96,7 +96,7 @@ class TradesManager:
         market_profitability_percent = None
 
         try:
-            current_crypto_currencies_values = self._update_portfolio_and_currencies_current_value()
+            self._update_portfolio_and_currencies_current_value()
 
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
 
@@ -109,7 +109,7 @@ class TradesManager:
             self.profitability_diff = self.profitability_percent - self.profitability_diff
 
             if with_market:
-                market_profitability_percent = self.get_average_market_profitability(current_crypto_currencies_values)
+                market_profitability_percent = self.get_average_market_profitability()
 
         except Exception as e:
             self.logger.error(str(e))
@@ -120,15 +120,28 @@ class TradesManager:
     """ Returns the % move average of all the watched cryptocurrencies between bot's start time and now
     """
 
-    def get_average_market_profitability(self, current_crypto_currencies_values=None):
-        if current_crypto_currencies_values is None:
-            current_crypto_currencies_values = self._update_portfolio_and_currencies_current_value()
+    def get_average_market_profitability(self):
+        self.get_current_crypto_currencies_values()
 
         origin_values = [value / self.origin_crypto_currencies_values[currency]
-                         for currency, value in current_crypto_currencies_values.items()
+                         for currency, value in self.current_crypto_currencies_values.items()
                          if self.origin_crypto_currencies_values[currency] > 0]
 
         return sum(origin_values) / len(origin_values) * 100 - 100 if origin_values else 0
+
+    def get_current_crypto_currencies_values(self):
+        if not self.current_crypto_currencies_values:
+            self._update_portfolio_and_currencies_current_value()
+        return self.current_crypto_currencies_values
+
+    def get_current_holdings_values(self):
+        holdings = self.get_current_crypto_currencies_values()
+        holdings_values = {}
+        with self.portfolio as pf:
+            current_portfolio = deepcopy(pf.get_portfolio())
+        for currency in holdings.keys():
+            holdings_values[currency] = self._get_currency_value(current_portfolio, currency, holdings)
+        return holdings_values
 
     def get_profitability_without_update(self):
         return self.profitability, self.profitability_percent, self.profitability_diff
@@ -146,14 +159,13 @@ class TradesManager:
         return self.trades_value
 
     def _update_portfolio_and_currencies_current_value(self):
-        current_crypto_currencies_values = self._evaluate_config_crypto_currencies_values()
+        self.current_crypto_currencies_values = self._evaluate_config_crypto_currencies_values()
 
         with self.portfolio as pf:
-            self.last_portfolio = pf.get_portfolio()
+            current_portfolio = deepcopy(pf.get_portfolio())
 
-        self.portfolio_current_value = self._evaluate_portfolio_value(self.last_portfolio,
-                                                                      current_crypto_currencies_values)
-        return current_crypto_currencies_values
+        self.portfolio_current_value = self._evaluate_portfolio_value(current_portfolio,
+                                                                      self.current_crypto_currencies_values)
 
     def _init_origin_portfolio_and_currencies_value(self):
         self.origin_crypto_currencies_values = self._evaluate_config_crypto_currencies_values()
@@ -209,7 +221,7 @@ class TradesManager:
         ])
 
     def _get_currency_value(self, portfolio, currency, currencies_values=None):
-        if portfolio[currency][Portfolio.TOTAL] != 0:
+        if currency in portfolio and portfolio[currency][Portfolio.TOTAL] != 0:
             if currencies_values and currency in currencies_values:
                 return currencies_values[currency] * portfolio[currency][Portfolio.TOTAL]
             else:

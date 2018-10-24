@@ -6,11 +6,13 @@
     max-width: 230px;
 }
 </style>
-<div class="card">
+<div class="card" id="portfoliosCard" update-url="{{ url_for('portfolio_holdings') }}" reference_market="{{reference_unit}}">
     {% if real_portfolio %}
     <div class="card-header"><h1>Real portfolio: {{real_total_value}} {{reference_unit}}</h1></div>
     <div class="card-body">
-        <br>
+        <div>
+            <canvas id="real_portfolio_doughnutChart" height="90%" ></canvas>
+        </div>
         <div class="card-deck">
             {% for currency in real_portfolio %}
                 {{ m_cards.currency_card(currency, real_portfolio) }}
@@ -21,7 +23,9 @@
     {% if simulated_portfolio %}
     <div class="card-header"><h1>Simulated portfolio: {{simulated_total_value}} {{reference_unit}}</h1></div>
     <div class="card-body">
-        <br>
+        <div>
+            <canvas id="simulated_portfolio_doughnutChart" height="90%"></canvas>
+        </div>
         <div class="card-deck">
             {% for currency in simulated_portfolio %}
                 {{ m_cards.currency_card(currency, simulated_portfolio) }}
@@ -31,3 +35,8 @@
     {% endif %}
 </div>
 {% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/custom_elements.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/portfolio.js') }}"></script>
+{% endblock additional_scripts %}

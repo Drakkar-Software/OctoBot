@@ -1,9 +1,9 @@
 import datetime
 
-from flask import render_template, request
+from flask import render_template, request, jsonify
 
 from interfaces.trading_util import get_open_orders, get_trades_history, get_global_portfolio_currencies_amounts, \
-    get_currencies_with_status, get_portfolio_current_value
+    get_currencies_with_status, get_portfolio_current_value, get_portfolio_holdings
 from interfaces import get_reference_market
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
@@ -32,6 +32,15 @@ def portfolio():
                            real_total_value=round(portfolio_real_current_value, 8),
                            reference_unit=reference_market
                            )
+
+
+@server_instance.route("/portfolio_holdings")
+def portfolio_holdings():
+    result = {}
+    real_portfolio_holdings, simulated_portfolio_holdings = get_portfolio_holdings()
+    result["real_portfolio_holdings"] = real_portfolio_holdings
+    result["simulated_portfolio_holdings"] = simulated_portfolio_holdings
+    return jsonify(result)
 
 
 @server_instance.route("/symbol_market_status")

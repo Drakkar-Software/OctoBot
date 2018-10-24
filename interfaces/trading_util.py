@@ -11,6 +11,34 @@ def get_traders(bot=None):
            [trader for trader in bot.get_exchange_trader_simulators().values()]
 
 
+def _merge_portfolio_in_first(portfolio1, portfolio2):
+    for key, value in portfolio2.items():
+        if key in portfolio1:
+            portfolio1[key] += portfolio2[key]
+        else:
+            portfolio1[key] = portfolio2[key]
+    return portfolio1
+
+
+def get_portfolio_holdings():
+    traders = get_traders()
+    real_currency_portfolio = {}
+    simulated_currency_portfolio = {}
+
+    for trader in traders:
+        if trader.enabled(trader.config):
+            trade_manager = trader.get_trades_manager()
+
+            trader_currencies_values = trade_manager.get_current_holdings_values()
+
+            if trader.get_simulate():
+                _merge_portfolio_in_first(simulated_currency_portfolio, trader_currencies_values)
+            else:
+                _merge_portfolio_in_first(real_currency_portfolio, trader_currencies_values)
+
+    return real_currency_portfolio, simulated_currency_portfolio
+
+
 def get_portfolio_current_value():
     simulated_value = 0
     real_value = 0
