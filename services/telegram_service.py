@@ -64,7 +64,11 @@ class TelegramService(AbstractService):
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
                and CONFIG_TELEGRAM in self.config[CONFIG_CATEGORY_SERVICES]  \
-               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM])
+               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]) \
+               and CONFIG_INTERFACES in self.config \
+               and CONFIG_INTERFACES_TELEGRAM in self.config[CONFIG_INTERFACES] \
+               and CONFIG_ENABLED_OPTION in self.config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM] \
+               and self.config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION]
 
     def send_message(self, content):
         try:
