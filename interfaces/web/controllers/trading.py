@@ -40,12 +40,14 @@ def symbol_market_status():
     exchange = request.args["exchange"]
     symbol = request.args["symbol"]
     symbol_time_frames, exchange = get_symbol_time_frames(symbol, exchange)
+    time_frames = list(symbol_time_frames)
+    time_frames.reverse()
     symbol_evaluation = get_evaluation(symbol, exchange)
     return render_template('symbol_market_status.html',
                            symbol=symbol,
                            exchange=exchange,
                            symbol_evaluation=symbol_evaluation,
-                           time_frames=symbol_time_frames)
+                           time_frames=time_frames)
 
 
 @server_instance.route("/trading")
