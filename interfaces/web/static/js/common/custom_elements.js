@@ -19,14 +19,14 @@ function create_circular_progress_doughnut(element, label1="% Done", label2="% R
 }
 
 function create_pie_chart(element, data, title, fontColor='white'){
-    const currencies = [];
+    const labels = [];
     const values = [];
     const backgroundColors = [];
     const hoverBackgroundColors = [];
     $.each(data, function (key, value) {
         if(value > 0){
             values.push(value);
-            currencies.push(key);
+            labels.push(key);
             const color = get_random_darkable_color(value*10**8, backgroundColors);
             backgroundColors.push(color);
             hoverBackgroundColors.push("dark"+color);
@@ -35,7 +35,7 @@ function create_pie_chart(element, data, title, fontColor='white'){
     return new Chart(element.getContext('2d'), {
         type: 'pie',
         data: {
-            labels: currencies,
+            labels: labels,
             datasets: [
                 {
                     data: values,
