@@ -203,11 +203,17 @@ class TradesManager:
 
     def _evaluate_config_crypto_currencies_values(self):
         values_dict = {}
+        evaluated_currencies = set()
         for crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].values():
             pairs = crypto_currency_data[CONFIG_CRYPTO_PAIRS]
             if pairs:
-                currency, _ = split_symbol(pairs[0])
-                values_dict[currency] = self._evaluate_value(currency, 1)
+                currency, market = split_symbol(pairs[0])
+                if currency not in evaluated_currencies:
+                    values_dict[currency] = self._evaluate_value(currency, 1)
+                    evaluated_currencies.add(currency)
+                if market not in evaluated_currencies:
+                    values_dict[market] = self._evaluate_value(market, 1)
+                    evaluated_currencies.add(market)
         return values_dict
 
     """ evaluate_portfolio_value performs evaluate_value with a portfolio configuration
