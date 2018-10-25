@@ -66,7 +66,7 @@ def add_to_symbol_data_history(symbol, data, time_frame, force_data_reset=False)
                 break
         if new_data_index > 0:
             data_list = [None] * len(PriceIndexes)
-            for i in range(len(data)):
+            for i, _ in enumerate(data):
                 data_list[i] = data[i][-new_data_index:]
             new_data = numpy.array(data_list)
             symbol_data_history[symbol][time_frame] = numpy.concatenate((symbol_data_history[symbol][time_frame],

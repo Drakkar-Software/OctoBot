@@ -56,8 +56,9 @@ def get_standalone_backtesting_bot(config, data_files):
     return create_backtesting_bot(config_to_use), ignored_files
 
 
-def create_backtesting_config(config, wanted_symbols=["BTC/USDT"], filter_symbols=True):
-
+def create_backtesting_config(config, wanted_symbols=None, filter_symbols=True):
+    if wanted_symbols is None:
+        wanted_symbols = ["BTC/USDT"]
     if filter_symbols:
         filter_wanted_symbols(config, wanted_symbols)
 
