@@ -1,0 +1,27 @@
+.dockerignore
+
+# Remove Git
+.git/
+
+# Ignore log files
+# logs/
+
+# Ignore test files
+tests/
+
+.coveragerc
+.coveralls.yml
+.gitattributes
+.gitignore
+.travis.yml
+appveyor.yml
+renovate.json
+setup.cfg
+tox.ini
+wercker.yml
+
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+LICENSE
+
+.idea/
