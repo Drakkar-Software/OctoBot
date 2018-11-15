@@ -1,9 +1,11 @@
 FROM python:3.6.6
 
-ARG octobot_branch="beta"
-ARG octobot_install_dir="Octobot"
+MAINTAINER Drakkar-Software Team
 
 LABEL octobot_version="0.2.2-beta"
+
+ARG octobot_branch="beta"
+ARG octobot_install_dir="Octobot"
 
 # Update Software repository
 RUN apt-get update
@@ -19,7 +21,7 @@ WORKDIR /bot/$octobot_install_dir
 RUN git checkout $octobot_branch
 
 # install dependencies
-RUN bash ./docs/install/linux_installer.sh
+RUN bash ./docs/install/linux_dependencies.sh
 
 # clean apt
 RUN rm -rf /var/lib/apt/lists/*
