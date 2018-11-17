@@ -13,6 +13,7 @@
         <div>
             <canvas id="real_portfolio_doughnutChart" height="70%" ></canvas>
         </div>
+        <div class="card-subtitle  text-muted"><h2>Full portfolio</h2></div>
         <div class="card-deck">
             {% for currency in real_portfolio %}
                 {{ m_cards.currency_card(currency, real_portfolio) }}
@@ -26,6 +27,7 @@
         <div>
             <canvas id="simulated_portfolio_doughnutChart" height="70%"></canvas>
         </div>
+        <div class="card-subtitle  text-muted"><h2>Full portfolio</h2></div>
         <div class="card-deck">
             {% for currency in simulated_portfolio %}
                 {{ m_cards.currency_card(currency, simulated_portfolio) }}
