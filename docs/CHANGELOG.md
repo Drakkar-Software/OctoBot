@@ -1,5 +1,21 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.2.3-beta
+====================
+*Released date : November 17 2018*
+
+# Concerned issues :
+    #359 [Web Interface][User experience] Improved time frame selectors ordering
+    #421 [Web Interface] Added graphic representation of portfolio holdings
+    
+# New features :
+    - Graphic portfolio holdings
+    
+# Bug fixes :
+    - Fixed errors in profitability computation
+    - Fixed dockerfile
+    - Do not display interfaces logs when disabled (ex: telegram)
+    
 Changelog for 0.2.2-beta
 ====================
 *Released date : October 04 2018*

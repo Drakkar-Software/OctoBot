@@ -4,7 +4,9 @@ from backtesting.backtesting_util import start_backtesting_bot, get_standalone_b
 
 class Backtester:
 
-    def __init__(self, config, files=[]):
+    def __init__(self, config, files=None):
+        if files is None:
+            files = []
         self.octobot, self.ignored_files = get_standalone_backtesting_bot(config, files)
         self.error = None
 

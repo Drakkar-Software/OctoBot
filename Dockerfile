@@ -1,9 +1,11 @@
 FROM python:3.6.6
 
+MAINTAINER Drakkar-Software Team
+
+LABEL octobot_version="0.2.2-beta"
+
 ARG octobot_branch="beta"
 ARG octobot_install_dir="Octobot"
-
-LABEL octobot_version="0.1.5_3-beta"
 
 # Update Software repository
 RUN apt-get update
@@ -19,7 +21,7 @@ WORKDIR /bot/$octobot_install_dir
 RUN git checkout $octobot_branch
 
 # install dependencies
-RUN bash ./docs/install/linux_installer.sh
+RUN bash ./docs/install/linux_dependencies.sh
 
 # clean apt
 RUN rm -rf /var/lib/apt/lists/*
@@ -38,8 +40,5 @@ RUN pip3 install -r dev_requirements.txt
 RUN rm -rf ./tentacles
 RUN python start.py -p install all
 
-# entry point
-ENTRYPOINT ["python"]
-
 # entry point's default argument
-CMD ["start.py"]
+CMD ["python", "start.py"]

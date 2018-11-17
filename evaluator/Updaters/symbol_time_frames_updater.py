@@ -46,8 +46,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
         try:
             self._refresh_data(time_frame)
         except Exception as e:
-            self.logger.error(f" when refreshing data for time frame {time_frame} for {symbol}: "
-                              f"{e}")
+            self.logger.error(f" when refreshing data for time frame {time_frame}: {e}")
             self.logger.exception(e)
 
     def force_refresh_data(self):

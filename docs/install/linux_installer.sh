@@ -2,7 +2,6 @@
 config_path="config"
 
 echo **Installing dependencies...**
-apt install -y wget python3 python3-dev python3-pip python3-tk -y
 bash ./docs/install/linux_dependencies.sh
 
 echo **Installing requirements...**
