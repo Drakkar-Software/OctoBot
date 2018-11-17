@@ -15,13 +15,14 @@
 #  License along with this library.
 
 import copy
-from tools.logging.logging_util import get_logger
 import os
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
 from config import *
 from interfaces import get_reference_market, get_bot
+from interfaces.bots import EOL, NO_TRADER_MESSAGE, NO_CURRENCIES_MESSAGE
+from interfaces.bots.interface_bot import InterfaceBot
 from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_trades_history, \
     get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status, \
     cancel_all_open_orders, set_enable_trading, has_real_and_or_simulated_traders, force_real_traders_refresh
@@ -29,21 +30,12 @@ from tools.pretty_printer import PrettyPrinter
 from tools.timestamp_util import convert_timestamp_to_datetime
 
 
-class TelegramApp:
-    EOL = "\n"
-    NO_TRADER_MESSAGE = "No trader is activated in my config/config.json file.\n" \
-                        "See https://github.com/Drakkar-Software/OctoBot/wiki if you need help with my configuration."
-    NO_CURRENCIES_MESSAGE = "No cryptocurrencies are in my config/config.json file.\n" \
-                            "See https://github.com/Drakkar-Software/OctoBot/wiki/Configuration#cryptocurrencies " \
-                            "if you need help with my cryptocurrencies configuration."
-
+class TelegramApp(InterfaceBot):
     def __init__(self, config, telegram_service, telegram_updater):
-        self.config = config
-        self.paused = False
+        super().__init__(config)
         self.telegram_service = telegram_service
         self.telegram_updater = telegram_updater
         self.dispatcher = self.telegram_updater.dispatcher
-        self.logger = get_logger(self.__class__.__name__)
 
         self.add_handlers()
 
@@ -78,22 +70,22 @@ class TelegramApp:
 
     @staticmethod
     def command_help(_, update):
-        message = "My OctoBot skills:" + TelegramApp.EOL + TelegramApp.EOL
-        message += "/start: Displays my startup message." + TelegramApp.EOL
-        message += "/ping: Shows for how long I'm working." + TelegramApp.EOL
-        message += "/portfolio or /pf: Displays my current portfolio." + TelegramApp.EOL
-        message += "/open_orders or /oo: Displays my current open orders." + TelegramApp.EOL
-        message += "/trades_history or /th: Displays my trades history since I started." + TelegramApp.EOL
-        message += "/profitability or /pb: Displays the profitability I made since I started." + TelegramApp.EOL
+        message = "My OctoBot skills:" + EOL + EOL
+        message += "/start: Displays my startup message." + EOL
+        message += "/ping: Shows for how long I'm working." + EOL
+        message += "/portfolio or /pf: Displays my current portfolio." + EOL
+        message += "/open_orders or /oo: Displays my current open orders." + EOL
+        message += "/trades_history or /th: Displays my trades history since I started." + EOL
+        message += "/profitability or /pb: Displays the profitability I made since I started." + EOL
         message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." \
-                   + TelegramApp.EOL
+                   + EOL
         message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading mode." \
-                   + TelegramApp.EOL
+                   + EOL
         message += "/refresh_real_trader or /rrt: Force OctoBot's real trader data refresh using exchange data. " \
-                   "Should normally not be necessary." + TelegramApp.EOL
-        message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
-        message += "/pause or /resume: Pause or resume me." + TelegramApp.EOL
-        message += "/stop: Stops me." + TelegramApp.EOL
+                   "Should normally not be necessary." + EOL
+        message += "/set_risk: Changes my current risk setting into your command's parameter." + EOL
+        message += "/pause or /resume: Pause or resume me." + EOL
+        message += "/stop: Stops me." + EOL
         message += "/help: Displays this help."
         update.message.reply_text(message)
 
@@ -115,11 +107,11 @@ class TelegramApp:
     def command_pause_resume(self, _, update):
         if self.paused:
             update.message.reply_text("Resuming...{0}I will restart trading when i see opportunities !"
-                                      .format(TelegramApp.EOL))
+                                      .format(EOL))
             set_enable_trading(True)
             self.paused = False
         else:
-            update.message.reply_text("Pausing...{}I'm cancelling my orders.".format(TelegramApp.EOL))
+            update.message.reply_text("Pausing...{}I'm cancelling my orders.".format(EOL))
             cancel_all_open_orders()
             set_enable_trading(False)
             self.paused = True
@@ -153,7 +145,7 @@ class TelegramApp:
                                                                    get_reference_market()),
                 PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2),
                 PrettyPrinter.get_min_string_from_number(market_average_profitability, 2),
-                TelegramApp.EOL)
+                EOL)
         if has_simulated_trader:
             profitability_string += "{0}Global profitability : {1} ({2}%), market: {3}%".format(
                 SIMULATOR_TRADER_STR,
@@ -163,7 +155,7 @@ class TelegramApp:
                 PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2),
                 PrettyPrinter.get_min_string_from_number(market_average_profitability, 2))
         if not profitability_string:
-            profitability_string = TelegramApp.NO_TRADER_MESSAGE
+            profitability_string = NO_TRADER_MESSAGE
         update.message.reply_text(profitability_string)
 
     @staticmethod
@@ -179,25 +171,25 @@ class TelegramApp:
                 REAL_TRADER_STR,
                 PrettyPrinter.get_min_string_from_number(portfolio_real_current_value),
                 reference_market,
-                TelegramApp.EOL)
+                EOL)
             portfolios_string += "{0}Portfolio : {2}{1}{2}{2}".format(
                 REAL_TRADER_STR,
                 PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
-                TelegramApp.EOL)
+                EOL)
 
         if has_simulated_trader:
             portfolios_string += "{0}Portfolio value : {1} {2}{3}".format(
                 SIMULATOR_TRADER_STR,
                 PrettyPrinter.get_min_string_from_number(portfolio_simulated_current_value),
                 reference_market,
-                TelegramApp.EOL)
+                EOL)
             portfolios_string += "{0}Portfolio : {2}{1}".format(
                 SIMULATOR_TRADER_STR,
                 PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
-                TelegramApp.EOL)
+                EOL)
 
         if not portfolios_string:
-            portfolios_string = TelegramApp.NO_TRADER_MESSAGE
+            portfolios_string = NO_TRADER_MESSAGE
         update.message.reply_text(portfolios_string)
 
     @staticmethod
@@ -207,20 +199,20 @@ class TelegramApp:
 
         orders_string = ""
         if has_real_trader:
-            orders_string += "{0}Open orders :{1}".format(REAL_TRADER_STR, TelegramApp.EOL)
+            orders_string += "{0}Open orders :{1}".format(REAL_TRADER_STR, EOL)
             for orders in portfolio_real_open_orders:
                 for order in orders:
-                    orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
+                    orders_string += PrettyPrinter.open_order_pretty_printer(order) + EOL
 
         if has_simulated_trader:
-            orders_string += TelegramApp.EOL + "{0}Open orders :{1}".format(SIMULATOR_TRADER_STR,
-                                                                            TelegramApp.EOL)
+            orders_string += EOL + "{0}Open orders :{1}".format(SIMULATOR_TRADER_STR,
+                                                                            EOL)
             for orders in portfolio_simulated_open_orders:
                 for order in orders:
-                    orders_string += PrettyPrinter.open_order_pretty_printer(order) + TelegramApp.EOL
+                    orders_string += PrettyPrinter.open_order_pretty_printer(order) + EOL
 
         if not orders_string:
-            orders_string = TelegramApp.NO_TRADER_MESSAGE
+            orders_string = NO_TRADER_MESSAGE
 
         update.message.reply_text(orders_string)
 
@@ -231,20 +223,20 @@ class TelegramApp:
 
         trades_history_string = ""
         if has_real_trader:
-            trades_history_string += "{0}Trades :{1}".format(REAL_TRADER_STR, TelegramApp.EOL)
+            trades_history_string += "{0}Trades :{1}".format(REAL_TRADER_STR, EOL)
             for trades in real_trades_history:
                 for trade in trades:
-                    trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
+                    trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + EOL
 
         if has_simulated_trader:
             for trades in simulated_trades_history:
-                trades_history_string += TelegramApp.EOL + "{0}Trades :{1}".format(SIMULATOR_TRADER_STR,
-                                                                                   TelegramApp.EOL)
+                trades_history_string += EOL + "{0}Trades :{1}".format(SIMULATOR_TRADER_STR,
+                                                                                   EOL)
                 for trade in trades:
-                    trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + TelegramApp.EOL
+                    trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + EOL
 
         if not trades_history_string:
-            trades_history_string = TelegramApp.NO_TRADER_MESSAGE
+            trades_history_string = NO_TRADER_MESSAGE
 
         update.message.reply_text(trades_history_string)
 
@@ -262,36 +254,36 @@ class TelegramApp:
     @staticmethod
     def command_configuration(_, update):
         try:
-            message = "My configuration:{0}{0}".format(TelegramApp.EOL)
+            message = "My configuration:{0}{0}".format(EOL)
 
-            message += "Traders: " + TelegramApp.EOL
+            message += "Traders: " + EOL
             has_real_trader, has_simulated_trader = has_real_and_or_simulated_traders()
             if has_real_trader:
-                message += "- Real trader" + TelegramApp.EOL
+                message += "- Real trader" + EOL
             if has_simulated_trader:
-                message += "- Simulated trader" + TelegramApp.EOL
+                message += "- Simulated trader" + EOL
 
-            message += "{0}Exchanges:{0}".format(TelegramApp.EOL)
+            message += "{0}Exchanges:{0}".format(EOL)
             for exchange in get_bot().get_exchanges_list().values():
-                message += "- {0}{1}".format(exchange.get_name(), TelegramApp.EOL)
+                message += "- {0}{1}".format(exchange.get_name(), EOL)
 
-            message += "{0}Evaluators:{0}".format(TelegramApp.EOL)
+            message += "{0}Evaluators:{0}".format(EOL)
             first_evaluator = next(iter(get_bot().get_symbols_threads_manager().values())).get_evaluator()
             evaluators = copy.copy(first_evaluator.get_social_eval_list())
             evaluators += first_evaluator.get_ta_eval_list()
             evaluators += first_evaluator.get_real_time_eval_list()
             for evaluator in evaluators:
-                message += "- {0}{1}".format(evaluator.get_name(), TelegramApp.EOL)
+                message += "- {0}{1}".format(evaluator.get_name(), EOL)
 
             first_symbol_evaluator = next(iter(get_bot().get_symbol_evaluator_list().values()))
             first_exchange = next(iter(get_bot().get_exchanges_list().values()))
-            message += "{0}Strategies:{0}".format(TelegramApp.EOL)
+            message += "{0}Strategies:{0}".format(EOL)
             for strategy in first_symbol_evaluator.get_strategies_eval_list(first_exchange):
-                message += "- {0}{1}".format(strategy.get_name(), TelegramApp.EOL)
+                message += "- {0}{1}".format(strategy.get_name(), EOL)
 
-            message += "{0}Trading mode:{0}".format(TelegramApp.EOL)
+            message += "{0}Trading mode:{0}".format(EOL)
             message += "- {0}{1}".format(next(iter(get_bot().get_exchange_trading_modes().values())).get_name(),
-                                         TelegramApp.EOL)
+                                         EOL)
             update.message.reply_text(message)
         except Exception:
             update.message.reply_text("I'm unfortunately currently unable to show you my configuration. "
@@ -300,16 +292,16 @@ class TelegramApp:
     @staticmethod
     def command_market_status(_, update):
         try:
-            message = f"My cryptocurrencies evaluations are: {TelegramApp.EOL}{TelegramApp.EOL}"
+            message = f"My cryptocurrencies evaluations are: {EOL}{EOL}"
             at_least_one_currency = False
             for currency_pair, currency_info in get_currencies_with_status().items():
                 at_least_one_currency = True
-                message += f"- {currency_pair}:{TelegramApp.EOL}"
+                message += f"- {currency_pair}:{EOL}"
                 for exchange_name, evaluation in currency_info.items():
-                    message += f"=> {exchange_name}: {evaluation[0]}{TelegramApp.EOL}"
+                    message += f"=> {exchange_name}: {evaluation[0]}{EOL}"
             if not at_least_one_currency:
-                message += TelegramApp.NO_CURRENCIES_MESSAGE + TelegramApp.EOL
-            message += f"{TelegramApp.EOL}My current risk is: {get_risk()}"
+                message += NO_CURRENCIES_MESSAGE + EOL
+            message += f"{EOL}My current risk is: {get_risk()}"
             update.message.reply_text(message)
         except Exception:
             update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, " +
@@ -328,16 +320,9 @@ class TelegramApp:
         update.message.reply_text(update.message.text)
 
     @staticmethod
-    def enable(config, is_enabled):
-        if CONFIG_INTERFACES not in config:
-            config[CONFIG_INTERFACES] = {}
-        if CONFIG_INTERFACES_TELEGRAM not in config[CONFIG_INTERFACES]:
-            config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM] = {}
-        config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION] = is_enabled
+    def enable(config, is_enabled, associated_config=CONFIG_INTERFACES_TELEGRAM):
+        super().enable(config, is_enabled, associated_config=associated_config)
 
     @staticmethod
-    def is_enabled(config):
-        return CONFIG_INTERFACES in config \
-               and CONFIG_INTERFACES_TELEGRAM in config[CONFIG_INTERFACES] \
-               and CONFIG_ENABLED_OPTION in config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM] \
-               and config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION]
+    def is_enabled(config, associated_config=CONFIG_INTERFACES_TELEGRAM):
+        return super().is_enabled(config, associated_config=associated_config)

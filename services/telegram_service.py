@@ -19,7 +19,7 @@ from telegram.ext import Updater  # , Dispatcher
 import logging
 
 from config import *
-from interfaces.telegram.bot import TelegramApp
+from interfaces.bots.telegram.bot import TelegramApp
 from services.abstract_service import *
 from tools.logging.logging_util import set_logging_level
 

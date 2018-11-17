@@ -13,11 +13,18 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from config import CONFIG_INTERFACES_DISCORD
+from interfaces.bots.interface_bot import InterfaceBot
 
-from .service_creator import *
-from .discord_service import *
-from .gmail_service import *
-from .reddit_service import *
-from .telegram_service import *
-from .twitter_service import *
-from .web_service import *
+
+class DiscordApp(InterfaceBot):
+    def __init__(self, config):
+        super().__init__(config)
+
+    @staticmethod
+    def enable(config, is_enabled, associated_config=CONFIG_INTERFACES_DISCORD):
+        super().enable(config, is_enabled, associated_config=associated_config)
+
+    @staticmethod
+    def is_enabled(config, associated_config=CONFIG_INTERFACES_DISCORD):
+        return super().is_enabled(config, associated_config=associated_config)

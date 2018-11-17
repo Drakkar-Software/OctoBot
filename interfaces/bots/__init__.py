@@ -14,10 +14,10 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from .service_creator import *
-from .discord_service import *
-from .gmail_service import *
-from .reddit_service import *
-from .telegram_service import *
-from .twitter_service import *
-from .web_service import *
+
+EOL = "\n"
+NO_TRADER_MESSAGE = "No trader is activated in my config/config.json file.\n" \
+                    "See https://github.com/Drakkar-Software/OctoBot/wiki if you need help with my configuration."
+NO_CURRENCIES_MESSAGE = "No cryptocurrencies are in my config/config.json file.\n" \
+                        "See https://github.com/Drakkar-Software/OctoBot/wiki/Configuration#cryptocurrencies " \
+                        "if you need help with my cryptocurrencies configuration."
