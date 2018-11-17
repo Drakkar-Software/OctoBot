@@ -7,7 +7,9 @@ from config.cst import CONFIG_EVALUATORS_WILDCARD
 
 
 class CryptocurrencyEvaluator:
-    def __init__(self, config, crypto_currency, dispatchers_list, relevant_evaluators=CONFIG_EVALUATORS_WILDCARD):
+    def __init__(self, config, crypto_currency, dispatchers_list, relevant_evaluators=None):
+        if relevant_evaluators is None:
+            relevant_evaluators = CONFIG_EVALUATORS_WILDCARD
         self.config = config
         self.crypto_currency = crypto_currency
         self.dispatchers_list = dispatchers_list

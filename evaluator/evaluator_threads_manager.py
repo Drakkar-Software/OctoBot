@@ -20,8 +20,10 @@ class EvaluatorThreadsManager:
                  exchange,
                  trading_mode,
                  real_time_ta_eval_list,
-                 relevant_evaluators=CONFIG_EVALUATORS_WILDCARD):
+                 relevant_evaluators=None):
 
+        if relevant_evaluators is None:
+            relevant_evaluators = CONFIG_EVALUATORS_WILDCARD
         self.config = config
         self.exchange = exchange
         self.trading_mode = trading_mode

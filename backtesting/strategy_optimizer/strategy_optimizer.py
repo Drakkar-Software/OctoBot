@@ -115,7 +115,7 @@ class StrategyOptimizer:
                                         # test with 1-n time frames at a time
                                         for nb_time_frames in range(1, nb_TFs+1):
                                             # test different configurations
-                                            for j in range(nb_TFs):
+                                            for _ in range(nb_TFs):
                                                 activated_time_frames = \
                                                     self.get_activated_element(self.all_time_frames,
                                                                                current_forced_time_frame,

@@ -148,7 +148,7 @@ class TelegramApp:
     @staticmethod
     def command_portfolio(_, update):
         has_real_trader, has_simulated_trader, \
-        portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
+            portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
         reference_market = get_reference_market()
         real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amounts()
 

@@ -18,6 +18,52 @@ function create_circular_progress_doughnut(element, label1="% Done", label2="% R
     });
 }
 
+function create_pie_chart(element, data, title, fontColor='white'){
+    const labels = [];
+    const values = [];
+    const backgroundColors = [];
+    const hoverBackgroundColors = [];
+    $.each(data, function (key, value) {
+        if(value > 0){
+            values.push(value);
+            labels.push(key);
+            const color = get_random_darkable_color(value*10**8, backgroundColors);
+            backgroundColors.push(color);
+            hoverBackgroundColors.push("dark"+color);
+        }
+    });
+    return new Chart(element.getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    data: values,
+                    backgroundColor: backgroundColors,
+                    hoverBackgroundColor: hoverBackgroundColors,
+                    borderColor: backgroundColors
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            title: {
+                text: title,
+                fontColor: fontColor,
+                fontSize: 16,
+                fontStyle: '',
+                display: true
+            },
+            legend: {
+                position: 'bottom',
+                labels:{
+                    fontColor: fontColor
+                }
+            }
+        }
+    });
+}
+
 function update_circular_progress_doughnut(chart, done, remaining){
     chart.data.datasets[0].data[0] = done;
     chart.data.datasets[0].data[1] = remaining;
