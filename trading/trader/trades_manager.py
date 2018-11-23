@@ -211,7 +211,8 @@ class TradesManager:
                 if currency not in evaluated_currencies:
                     values_dict[currency] = self._evaluate_value(currency, 1)
                     evaluated_currencies.add(currency)
-                if market not in evaluated_currencies:
+                # add market only if not versus reference market in symbol
+                if market not in evaluated_currencies and not currency == self.reference_market:
                     values_dict[market] = self._evaluate_value(market, 1)
                     evaluated_currencies.add(market)
         return values_dict
