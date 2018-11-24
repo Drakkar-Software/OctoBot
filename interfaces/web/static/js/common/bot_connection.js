@@ -75,7 +75,7 @@ function send_and_interpret_bot_update(updated_data, update_url, dom_root_elemen
     })
 }
 
-const update_rate_millis = 2000;
+const update_rate_millis = 1000;
 
 $(document).ready(function () {
     handle_route_button();
