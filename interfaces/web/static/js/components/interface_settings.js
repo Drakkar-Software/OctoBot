@@ -27,8 +27,20 @@ function watched_symbols_error_callback(updated_data, update_url, dom_root_eleme
     create_alert("error", result.responseText, "");
 }
 
+function update_pairs_colors(){
+    $(".pair_status_card").each(function () {
+        const first_eval = $(this).find(".status");
+        const status = first_eval.attr("status");
+        if(status === "LONG"){
+            $(this).addClass("card-long");
+        }else if(status === "SHORT"){
+            $(this).addClass("card-short");
+        }
+    })
+}
 
 $(document).ready(function() {
+    update_pairs_colors();
     $(".watched_element").each(function () {
         $(this).click(addOrRemoveWatchedSymbol);
     })
