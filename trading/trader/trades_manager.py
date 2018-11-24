@@ -31,6 +31,10 @@ class TradesManager:
         self.current_crypto_currencies_values = {}
         self.origin_portfolio = None
 
+        # buffer of currencies excluding market only used currencies ex: conf = btc/usd, eth/btc, ltc/btc, here usd
+        # is market only => not used to compute market average profitability
+        self.traded_currencies_without_market_specific = set()
+
         self.portfolio_origin_value = 0
         self.portfolio_current_value = 0
         self.trades_value = 0
@@ -124,7 +128,8 @@ class TradesManager:
         self.get_current_crypto_currencies_values()
 
         origin_values = [value / self.origin_crypto_currencies_values[currency]
-                         for currency, value in self.current_crypto_currencies_values.items()
+                         for currency, value
+                         in self.only_symbol_currency_filter(self.current_crypto_currencies_values).items()
                          if self.origin_crypto_currencies_values[currency] > 0]
 
         return sum(origin_values) / len(origin_values) * 100 - 100 if origin_values else 0
@@ -157,6 +162,19 @@ class TradesManager:
         self.trades_value = sum([self._evaluate_value(trade.get_currency(), trade.get_quantity())
                                  for trade in self.trade_history])
         return self.trades_value
+
+    def only_symbol_currency_filter(self, currency_dict):
+        if not self.traded_currencies_without_market_specific:
+            self.init_traded_currencies_without_market_specific()
+        return {currency: v for currency, v in currency_dict.items()
+                if currency in self.traded_currencies_without_market_specific}
+
+    def init_traded_currencies_without_market_specific(self):
+        for crypto_currency in self.config[CONFIG_CRYPTO_CURRENCIES].values():
+            for pair in crypto_currency[CONFIG_CRYPTO_PAIRS]:
+                symbol, _ = split_symbol(pair)
+                if symbol not in self.traded_currencies_without_market_specific:
+                    self.traded_currencies_without_market_specific.add(symbol)
 
     def _update_portfolio_and_currencies_current_value(self):
         self.current_crypto_currencies_values = self._evaluate_config_crypto_currencies_values()
@@ -211,8 +229,7 @@ class TradesManager:
                 if currency not in evaluated_currencies:
                     values_dict[currency] = self._evaluate_value(currency, 1)
                     evaluated_currencies.add(currency)
-                # add market only if not versus reference market in symbol
-                if market not in evaluated_currencies and not currency == self.reference_market:
+                if market not in evaluated_currencies:
                     values_dict[market] = self._evaluate_value(market, 1)
                     evaluated_currencies.add(market)
         return values_dict

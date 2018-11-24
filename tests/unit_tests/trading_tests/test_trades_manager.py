@@ -46,7 +46,8 @@ class TestTradesManager:
 
         # set all market values to 1 if unset
         nb_currencies = 0
-        for currency in trades_manager_inst.origin_crypto_currencies_values:
+        for currency in \
+                trades_manager_inst.only_symbol_currency_filter(trades_manager_inst.origin_crypto_currencies_values):
             if trades_manager_inst.origin_crypto_currencies_values[currency] != 0:
                 nb_currencies += 1
 
