@@ -1,6 +1,6 @@
 # Cryptocurrency trading
 python-binance
-twisted >= 18.4.0
+twisted==18.9.0
 ccxt
 tulipy
 
@@ -31,5 +31,5 @@ tensorflow-tensorboard
 ## Others
 psutil
 colorlog
-cryptography >= 2.2.1
+cryptography==2.4.2
 requests
