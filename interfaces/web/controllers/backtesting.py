@@ -1,5 +1,5 @@
 from flask import render_template, request, jsonify
-from werkzeug import secure_filename
+from werkzeug.utils import secure_filename
 
 from interfaces.web import server_instance
 from interfaces.web.models.backtesting import get_data_files_with_description, start_backtesting_using_specific_files, \

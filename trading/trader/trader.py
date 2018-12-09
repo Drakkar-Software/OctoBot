@@ -4,7 +4,7 @@ from tools.logging.logging_util import get_logger
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR
 from tools.pretty_printer import PrettyPrinter
-from trading.trader.order import OrderConstants
+from trading.trader.order import OrderConstants, Order
 from trading.trader.order_notifier import OrderNotifier
 from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
@@ -271,7 +271,7 @@ class Trader:
     def update_close_orders(self):
         for symbol in self.exchange.get_exchange_manager().get_traded_pairs():
             for close_order in self.exchange.get_closed_orders(symbol):
-                self.parse_exchange_order_to_trade_instance(close_order)
+                self.parse_exchange_order_to_trade_instance(close_order, Order(self))
 
     def update_open_orders(self, symbol=None):
         if symbol:

@@ -4,6 +4,7 @@ pytest-cov
 coverage
 coveralls
 
+python-git
 tox
 tox-travis
 

@@ -1,4 +1,4 @@
-from abc import ABCMeta
+from abc import ABCMeta, ABC
 import copy
 
 from backtesting.backtesting_util import create_backtesting_config, create_backtesting_bot, \
@@ -21,10 +21,11 @@ DEFAULT_SYMBOL = "ICX/BTC"
 DATA_FILE_PATH = "tests/static/"
 
 
-class AbstractStrategyTest(AbstractBacktestingTest):
+class AbstractStrategyTest(AbstractBacktestingTest, ABC):
     __metaclass__ = ABCMeta
 
-    def init(self, strategy_evaluator_class, trading_mode_class=DailyTradingMode, config=None):
+    def __init__(self, strategy_evaluator_class, trading_mode_class=DailyTradingMode, config=None):
+        super().__init__(strategy_evaluator_class, config)
         if config is None:
             self.config = create_backtesting_config(load_test_config(), filter_symbols=False)
         else:

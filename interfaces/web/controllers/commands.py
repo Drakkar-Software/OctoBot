@@ -13,11 +13,7 @@ logger = get_logger("ServerInstance Controller")
 @server_instance.route("/commands")
 @server_instance.route('/commands/<cmd>', methods=['GET', 'POST'])
 def commands(cmd=None):
-    if cmd == "update":
-        Commands.update(logger, catch=True)
-        return jsonify("Success")
-
-    elif cmd == "restart":
+    if cmd == "restart":
         Commands.restart_bot()
         return jsonify("Success")
 

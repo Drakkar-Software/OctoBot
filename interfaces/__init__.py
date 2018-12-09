@@ -20,10 +20,6 @@ def get_global_config():
     return global_config
 
 
-def get_tk_app():
-    return tk_app
-
-
 def set_default_time_frame(time_frame):
     global default_time_frame
     default_time_frame = time_frame
