@@ -264,7 +264,7 @@ class Launcher:
                 if replace and os.path.isfile(path):
                     try:
                         os.remove(path)
-                    except OSError:
+                    except OSError as e:
                         logging.error(f"Can't remove old version binary : {e}")
 
                 with open(path, 'wb') as f:

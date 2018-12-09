@@ -5,6 +5,9 @@ from tools.asynchronous_server import AsynchronousServer
 
 
 # ****** Unique dispatcher side ******
+from tools.logging.logging_util import get_logger
+
+
 class AbstractDispatcher(threading.Thread):
     __metaclass__ = ABCMeta
 
@@ -16,6 +19,7 @@ class AbstractDispatcher(threading.Thread):
         self.config = config
         self.keep_running = True
         self.is_setup_correctly = False
+        self.logger = get_logger(self.__class__.__name__)
 
     def notify_registered_clients_if_interested(self, notification_description, notification):
         for client in self.registered_list:
