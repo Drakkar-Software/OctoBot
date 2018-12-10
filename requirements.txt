@@ -1,6 +1,6 @@
 # Cryptocurrency trading
 python-binance
-twisted >= 18.4.0
+twisted==18.9.0
 ccxt
 tulipy
 
@@ -24,12 +24,8 @@ newspaper3k
 pytrends
 vaderSentiment
 
-# ML tools
-tensorflow
-tensorflow-tensorboard
-
 ## Others
 psutil
 colorlog
-cryptography >= 2.2.1
+cryptography
 requests
