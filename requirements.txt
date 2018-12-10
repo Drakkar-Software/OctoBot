@@ -24,12 +24,8 @@ newspaper3k
 pytrends
 vaderSentiment
 
-# ML tools
-tensorflow
-tensorflow-tensorboard
-
 ## Others
 psutil
 colorlog
-cryptography==2.4.2
+cryptography
 requests
