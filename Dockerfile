@@ -41,4 +41,4 @@ RUN rm -rf ./tentacles
 RUN python start.py -p install all
 
 # entry point's default argument
-CMD ["python", "start.py"]
+CMD ["python", "start.py", "-ng"]
