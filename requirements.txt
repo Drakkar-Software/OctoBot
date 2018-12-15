@@ -24,10 +24,6 @@ newspaper3k
 pytrends
 vaderSentiment
 
-# ML tools
-tensorflow
-tensorflow-tensorboard
-
 ## Others
 psutil
 colorlog
