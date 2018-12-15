@@ -1,26 +1,31 @@
+notifications:
+  email: false
+
 sudo: enabled
+
 os:
   - linux
+
 language: python
 python:
-  - 3.6
+  - "3.6"
+#  - "3.7"
+  - "nightly"
 
-notifications:
-  slack: "cryptobotgroupe:vYDDCLRne52jPGVtN6cMiUkb"
-  email: false
-install:
+before_install:
   - sudo bash ./docs/install/linux_dependencies.sh
   - pip3 install -r pre_requirements.txt
-  - pip3 install -r requirements.txt
+
+install:
+  - pip3 install -r requirements.txt -r dev_requirements.txt
   - cp ./config/default_config.json ./config.json
   - python3 start.py -p install all
+
 script:
-  - pip3 install -r dev_requirements.txt
   - pytest --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests
-# if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "beta" ];
-#  - bash ./docs/delivery/travis_delivery.sh
+
+after_success:
+  - if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "dev" ]; then bash coveralls; fi'
+
 after_failure:
   - dmesg | grep -i kill
-  - sleep 4 # to prevent sudden log truncation
-after_success:
-  - coveralls

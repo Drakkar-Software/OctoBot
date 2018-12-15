@@ -1,4 +1,5 @@
-pandas==0.20.3
+# use pandas==0.20.3 for delivery
+pandas
 numpy
 Cython
 lxml
