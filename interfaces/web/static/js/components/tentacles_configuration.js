@@ -137,7 +137,7 @@ function post_package_action_error_callback(updated_data, update_url, dom_root_e
 }
 
 function get_selected_modules(){
-    const selected_modules = []
+    const selected_modules = [];
     $("#module-table").find("input[type='checkbox']:checked").each(function(){
         selected_modules.push($(this).attr("module"));
     });
