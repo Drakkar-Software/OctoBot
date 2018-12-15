@@ -2,8 +2,8 @@
 $scripts_dir = 'pyinstaller.exe'
 
 # specs path
-$binary_path = """docs\delivery\start.spec"""
-$launcher_path = """docs\delivery\launcher.spec"""
+$binary_path = """start.spec"""
+$launcher_path = """launcher.spec"""
 
 function DeliverOctobotForWindows($name, $python_dir)
 {
