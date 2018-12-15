@@ -2,7 +2,7 @@ import copy
 from tools.logging.logging_util import get_logger
 
 from config.cst import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
-    CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR
+    CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.order import OrderConstants, Order
 from trading.trader.order_notifier import OrderNotifier
@@ -318,16 +318,16 @@ class Trader:
     @staticmethod
     def parse_order_type(order):
         side = TradeOrderSide(order["side"])
-        order_type = order["type"]
+        order_type = TradeOrderType(order["type"])
         if side == TradeOrderSide.BUY:
-            if order_type == "limit":
+            if order_type == TradeOrderType.LIMIT:
                 return TraderOrderType.BUY_LIMIT
-            elif order_type == "market":
+            elif order_type == TradeOrderType.MARKET:
                 return TraderOrderType.BUY_MARKET
         elif side == TradeOrderSide.SELL:
-            if order_type == "limit":
+            if order_type == TradeOrderType.LIMIT:
                 return TraderOrderType.SELL_LIMIT
-            elif order_type == "market":
+            elif order_type == TradeOrderType.MARKET:
                 return TraderOrderType.SELL_MARKET
 
     def get_order_manager(self):
