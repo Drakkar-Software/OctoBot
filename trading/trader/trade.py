@@ -39,9 +39,6 @@ class Trade:
     def get_market(self):
         return self.market
 
-    def get_market_fees(self):
-        return self.market_fees
-
     def get_fee(self):
         return self.fee
 

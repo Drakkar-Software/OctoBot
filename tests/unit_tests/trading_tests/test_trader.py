@@ -360,3 +360,86 @@ class TestTrader:
         assert limit_sell not in trader_inst.get_open_orders()
 
         self.stop(trader_inst)
+
+    def test_parse_order_type(self):
+        config, _, trader_inst = self.init_default()
+
+        ccxt_order_buy_market = {
+            "side": TradeOrderSide.BUY,
+            "type": TradeOrderType.MARKET
+        }
+        assert trader_inst.parse_order_type(ccxt_order_buy_market) == TraderOrderType.BUY_MARKET
+
+        ccxt_order_buy_limit = {
+            "side": TradeOrderSide.BUY,
+            "type": TradeOrderType.LIMIT
+        }
+        assert trader_inst.parse_order_type(ccxt_order_buy_limit) == TraderOrderType.BUY_LIMIT
+
+        ccxt_order_sell_market = {
+            "side": TradeOrderSide.SELL,
+            "type": TradeOrderType.MARKET
+        }
+        assert trader_inst.parse_order_type(ccxt_order_sell_market) == TraderOrderType.SELL_MARKET
+
+        ccxt_order_sell_limit = {
+            "side": TradeOrderSide.SELL,
+            "type": TradeOrderType.LIMIT
+        }
+        assert trader_inst.parse_order_type(ccxt_order_sell_limit) == TraderOrderType.SELL_LIMIT
+
+        self.stop(trader_inst)
+
+    def test_parse_exchange_order_to_trade_instance(self):
+        config, exchange_inst, trader_inst = self.init_default()
+
+        order_to_test = Order(trader_inst)
+        timestamp = time.time()
+
+        exchange_order = {
+            "status": OrderStatus.PARTIALLY_FILLED,
+            "fee": 0.001,
+            "price": 10.1444215411,
+            "filled": 1.568415145687741563132,
+            "timestamp": timestamp
+        }
+
+        trader_inst.parse_exchange_order_to_trade_instance(exchange_order, order_to_test)
+
+        assert order_to_test.status == OrderStatus.PARTIALLY_FILLED
+        assert order_to_test.filled_quantity == 1.568415145687741563132
+        assert order_to_test.filled_price == 10.1444215411
+        assert order_to_test.fee == 0.001
+        assert order_to_test.executed_time == exchange_inst.get_uniform_timestamp(timestamp)
+
+        self.stop(trader_inst)
+
+    def test_parse_exchange_order_to_order_instance(self):
+        config, exchange_inst, trader_inst = self.init_default()
+
+        timestamp = time.time()
+
+        exchange_order = {
+            "side": TradeOrderSide.SELL,
+            "type": TradeOrderType.LIMIT,
+            "symbol": self.DEFAULT_SYMBOL,
+            "amount": 1564.721672163722,
+            "filled": 15.15467,
+            "id": 1546541123,
+            "status": OrderStatus.OPEN,
+            "price": 10254.4515,
+            "timestamp": timestamp
+        }
+
+        order_to_test = trader_inst.parse_exchange_order_to_order_instance(exchange_order)
+
+        assert order_to_test.order_type == TraderOrderType.SELL_LIMIT
+        assert order_to_test.status == OrderStatus.OPEN
+        assert order_to_test.linked_to is None
+        assert order_to_test.origin_stop_price is None
+        assert order_to_test.origin_quantity == 1564.721672163722
+        assert order_to_test.origin_price == 10254.4515
+        assert order_to_test.filled_quantity == 1564.721672163722
+        assert order_to_test.creation_time == exchange_inst.get_uniform_timestamp(timestamp)
+
+        self.stop(trader_inst)

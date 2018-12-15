@@ -1,0 +1,17 @@
+{
+  "crypto-currencies": {
+    "Bitcoin": {
+      "pairs": [
+        "BTC/USDT"
+      ]
+    },
+    "Neo": {
+      "pairs": [
+        "NEO/BTC"
+      ]
+    },
+    "Ethereum": {
+      "pairs": [
+        "ETH/USDT"
+  }
+}

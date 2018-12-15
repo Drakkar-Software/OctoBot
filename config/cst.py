@@ -381,6 +381,11 @@ class TradeOrderSide(Enum):
     SELL = "sell"
 
 
+class TradeOrderType(Enum):
+    LIMIT = "limit"
+    MARKET = "market"
+
+
 class OrderStatus(Enum):
     FILLED = "closed"
     OPEN = "open"
