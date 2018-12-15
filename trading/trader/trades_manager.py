@@ -157,12 +157,6 @@ class TradesManager:
     def get_portfolio_origin_value(self):
         return self.portfolio_origin_value
 
-    # Currently unused method
-    def get_trades_value(self):
-        self.trades_value = sum([self._evaluate_value(trade.get_currency(), trade.get_quantity())
-                                 for trade in self.trade_history])
-        return self.trades_value
-
     def only_symbol_currency_filter(self, currency_dict):
         if not self.traded_currencies_without_market_specific:
             self.init_traded_currencies_without_market_specific()
