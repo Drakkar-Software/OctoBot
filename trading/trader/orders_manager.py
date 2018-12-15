@@ -66,7 +66,6 @@ class OrdersManager(threading.Thread):
 
     # Ask to update a specific symbol with exchange data
     def _update_last_symbol_prices(self, symbol, uniformize_timestamps=False):
-        last_symbol_price = None
         exchange = self.trader.get_exchange()
 
         if Backtesting.enabled(self.config):
@@ -82,7 +81,7 @@ class OrdersManager(threading.Thread):
                         order[eC.TIMESTAMP.value] = exchange.get_uniform_timestamp(order[eC.TIMESTAMP.value])
 
         # Check if exchange request failed
-        if last_symbol_price is not None:
+        if last_symbol_price:
             self.last_symbol_prices[symbol] = last_symbol_price
 
     def get_open_orders(self):
