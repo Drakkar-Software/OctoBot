@@ -1,6 +1,5 @@
 # Cryptocurrency trading
 python-binance
-twisted==18.9.0
 ccxt
 tulipy
 
@@ -15,7 +14,6 @@ python-telegram-bot
 Python-Twitter
 
 # Web
-jinja2
 flask
 
 ## Tools
