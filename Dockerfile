@@ -33,4 +33,7 @@ RUN pip3 install -r requirements.txt -r dev_requirements.txt
 RUN rm -rf ./tentacles
 RUN python start.py -p install all
 
+# tests
+RUN pytest tests/unit_tests tests/functional_tests
+
 ENTRYPOINT ["python", "./start.py", "-ng"]

@@ -1,18 +1,18 @@
 .dockerignore
 
+.idea/
+
 # Remove Git
 .git/
+.gitattributes
+.gitignore
 
 # Ignore log files
 # logs/
 
-# Ignore test files
-tests/
-
+# CI files
 .coveragerc
 .coveralls.yml
-.gitattributes
-.gitignore
 .travis.yml
 appveyor.yml
 renovate.json
@@ -20,8 +20,9 @@ setup.cfg
 tox.ini
 wercker.yml
 
+# python files
+launcher.py
+
+# others
 CODE_OF_CONDUCT.md
 CONTRIBUTING.md
-LICENSE
-
-.idea/
