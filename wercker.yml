@@ -3,9 +3,14 @@ build:
   steps:
     - internal/docker-build:
         dockerfile: Dockerfile
-        image-name: octobot-docker-image
+        image-name: octobot
         build-args: "octobot_branch=dev"
     - internal/docker-run:
-        image: octobot-docker-image
-        name: octobotTestContainer
-        cmd: -m pytest
+        image: octobot
+        name: octobot
+    - internal/docker-push:
+        image-name: octobot
+        username: $USERNAME
+        password: $PASSWORD
+        tag: latest
+        repository: herklos/octobot
