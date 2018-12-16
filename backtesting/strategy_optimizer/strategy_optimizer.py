@@ -1,22 +1,22 @@
-import logging
-from tools.logging.logging_util import get_logger
 import copy
+import logging
 import math
 
-from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
 from backtesting.backtesting_util import create_blank_config_using_loaded_one
-from tools.data_util import DataUtil
-from evaluator.TA.TA_evaluator import TAEvaluator
-from evaluator import TA
-from evaluator import Strategies
-from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
-from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
-    CONFIG_EVALUATOR,CONFIG_ADVANCED_CLASSES
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
+from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
+    CONFIG_EVALUATOR
+from evaluator import Strategies
+from evaluator import TA
+from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
+from evaluator.TA.TA_evaluator import TAEvaluator
+from evaluator.Util.advanced_manager import AdvancedManager
+from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
+from tools.data_util import DataUtil
+from tools.logging.logging_util import get_logger
 from tools.logging.logging_util import set_global_logger_level, get_global_logger_level
 from trading.util.trading_config_util import get_activated_trading_mode
-from evaluator.Util.advanced_manager import AdvancedManager
 
 CONFIG = 0
 RANK = 1
@@ -25,7 +25,9 @@ TRADES_IN_RESULT = 2
 
 
 class StrategyOptimizer:
-
+    """
+    StrategyOptimizer is a tool that performs backtesting with different configurations
+    """
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
         self.logger = get_logger(self.get_name())

@@ -36,11 +36,8 @@ class ExchangeDispatcher(AbstractExchange):
     def _web_socket_available(self):
         return self.exchange_web_socket
 
-    def is_web_socket_available(self):
-        if self._web_socket_available():
-            return True
-        else:
-            return False
+    def is_web_socket_available(self) -> bool:
+        return self._web_socket_available()
 
     def get_name(self):
         return self.exchange.get_name()

@@ -92,8 +92,7 @@ def filter_wanted_symbols(config, wanted_symbols):
 
 
 def create_backtesting_bot(config):
-    bot = OctoBot(config)
-    return bot
+    return OctoBot(config)
 
 
 def start_backtesting_bot(bot, in_thread=False, watcher=None):

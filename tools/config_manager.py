@@ -90,9 +90,7 @@ class ConfigManager:
 
     @staticmethod
     def is_in_dev_mode(config):
-        if CONFIG_DEBUG_OPTION in config and config[CONFIG_DEBUG_OPTION]:
-            return True
-        return False
+        return CONFIG_DEBUG_OPTION in config and config[CONFIG_DEBUG_OPTION]
 
     @staticmethod
     def update_evaluator_config(to_update_data, current_config):

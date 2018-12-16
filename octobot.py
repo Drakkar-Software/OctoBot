@@ -294,10 +294,7 @@ class OctoBot:
 
     @staticmethod
     def _class_is_in_list(class_list, required_klass):
-        for klass in class_list:
-            if required_klass in klass.get_parent_evaluator_classes():
-                return True
-        return False
+        return any(required_klass in klass.get_parent_evaluator_classes() for klass in class_list)
 
     def set_watcher(self, watcher):
         self.watcher = watcher

@@ -145,10 +145,7 @@ class AbstractEvaluator:
         if DispatcherAbstractClient in cls.__bases__:
             return True
         else:
-            for base in cls.__bases__:
-                if DispatcherAbstractClient in base.__bases__:
-                    return True
-        return False
+            return any(DispatcherAbstractClient in base.__bases__ for base in cls.__bases__)
 
     @classmethod
     def get_parent_evaluator_classes(cls, higher_parent_class_limit=None):
