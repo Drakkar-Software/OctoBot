@@ -11,10 +11,8 @@ def _get_config():
 
 
 def _symbol_in_currencies_config(config, symbol):
-    for crypto_currency_data in config[CONFIG_CRYPTO_CURRENCIES].values():
-        if symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
-            return True
-    return False
+    return any(symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]
+               for crypto_currency_data in config[CONFIG_CRYPTO_CURRENCIES].values())
 
 
 def get_watched_symbols():
