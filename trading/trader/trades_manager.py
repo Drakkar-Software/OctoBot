@@ -52,10 +52,7 @@ class TradesManager:
             return DEFAULT_REFERENCE_MARKET
 
     def is_in_history(self, order):
-        for trade in self.trade_history:
-            if order.get_id() == trade.get_order_id():
-                return True
-        return False
+        return any([order.get_id() == trade.get_order_id() for trade in self.trade_history])
 
     def get_origin_portfolio(self):
         return self.origin_portfolio
@@ -67,14 +64,8 @@ class TradesManager:
         return self.trade_history
 
     def select_trade_history(self, symbol=None):
-        if symbol is not None:
-            filtered_trades = []
-            for trade in self.trade_history:
-                if trade.get_symbol() == symbol:
-                    filtered_trades.append(trade)
-            return filtered_trades
-        else:
-            return self.trade_history
+        return [trade for trade in self.trade_history if trade.get_symbol() == symbol] \
+            if symbol is not None else self.trade_history
 
     def add_new_trade_in_history(self, trade):
         if trade not in self.trade_history:
@@ -141,12 +132,11 @@ class TradesManager:
 
     def get_current_holdings_values(self):
         holdings = self.get_current_crypto_currencies_values()
-        holdings_values = {}
         with self.portfolio as pf:
             current_portfolio = deepcopy(pf.get_portfolio())
-        for currency in holdings.keys():
-            holdings_values[currency] = self._get_currency_value(current_portfolio, currency, holdings)
-        return holdings_values
+
+        return {currency: self._get_currency_value(current_portfolio, currency, holdings)
+                for currency in holdings.keys()}
 
     def get_profitability_without_update(self):
         return self.profitability, self.profitability_percent, self.profitability_diff
