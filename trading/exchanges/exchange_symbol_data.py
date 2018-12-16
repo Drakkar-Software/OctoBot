@@ -115,10 +115,8 @@ class SymbolData:
             return True
         return False
 
-    def price_ticker_is_initialized(self):
-        if self.symbol_ticker is not None:
-            return True
-        return False
+    def price_ticker_is_initialized(self) -> bool:
+        return True if self.symbol_ticker is not None else False
 
     def get_symbol_prices(self, time_frame, limit=None, return_list=False):
         return self.get_candle_data(time_frame).get_symbol_prices(limit, return_list)
