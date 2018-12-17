@@ -77,7 +77,7 @@ class AbstractService:
         raise NotImplementedError("get_successful_startup_message not implemented")
 
     def check_required_config(self, config):
-        return all(key not in config for key in self.REQUIRED_CONFIG)
+        return all(key in config for key in self.REQUIRED_CONFIG)
 
     def say_hello(self):
         self.logger.info(self.get_successful_startup_message())
