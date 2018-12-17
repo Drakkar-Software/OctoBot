@@ -18,6 +18,9 @@ class Trader:
         self.config = config
         self.risk = None
         self.set_risk(self.config[CONFIG_TRADING][CONFIG_TRADER_RISK])
+
+        # logging
+        self.trader_type_str = REAL_TRADER_STR
         self.logger = get_logger(self.__class__.__name__)
 
         if not hasattr(self, 'simulate'):
@@ -30,8 +33,6 @@ class Trader:
         self.trades_manager = TradesManager(config, self)
 
         self.order_manager = OrdersManager(config, self)
-
-        self.trader_type_str = REAL_TRADER_STR
 
         self.exchange.get_exchange_manager().register_trader(self)
 
@@ -79,10 +80,7 @@ class Trader:
         return self.portfolio
 
     def get_order_portfolio(self, order):
-        if order.get_linked_portfolio() is not None:
-            return order.get_linked_portfolio()
-        else:
-            return self.portfolio
+        return order.get_linked_portfolio() if order.get_linked_portfolio() is not None else self.portfolio
 
     def create_order_instance(self, order_type, symbol, current_price, quantity,
                               price=None,
@@ -133,24 +131,7 @@ class Trader:
             linked_to = new_order.linked_to
 
         if not loaded:
-            if not self.simulate and not self.check_if_self_managed(new_order.get_order_type()):
-                created_order = self.exchange.create_order(new_order.get_order_type(),
-                                                           new_order.get_order_symbol(),
-                                                           new_order.get_origin_quantity(),
-                                                           new_order.get_origin_price(),
-                                                           new_order.origin_stop_price)
-
-                # get real order from exchange
-                new_order = self.parse_exchange_order_to_order_instance(created_order)
-
-                # rebind order notifier and linked portfolio to new order instance
-                new_order.order_notifier = order.get_order_notifier()
-                new_order.get_order_notifier().set_order(new_order)
-                new_order.linked_portfolio = portfolio
-
-            # update the availability of the currency in the portfolio
-            portfolio.update_portfolio_available(new_order, is_new_order=True)
-
+            new_order = self._create_not_loaded_order(order, new_order, portfolio)
             title = "Order creation"
         else:
             new_order.set_is_from_this_octobot(False)
@@ -177,6 +158,27 @@ class Trader:
         # if this order is linked to another
         if linked_to is not None:
             new_order.add_linked_order(linked_to)
+
+        return new_order
+
+    def _create_not_loaded_order(self, order, new_order, portfolio) -> Order:
+        if not self.simulate and not self.check_if_self_managed(new_order.get_order_type()):
+            created_order = self.exchange.create_order(new_order.get_order_type(),
+                                                       new_order.get_order_symbol(),
+                                                       new_order.get_origin_quantity(),
+                                                       new_order.get_origin_price(),
+                                                       new_order.origin_stop_price)
+
+            # get real order from exchange
+            new_order = self.parse_exchange_order_to_order_instance(created_order)
+
+            # rebind order notifier and linked portfolio to new order instance
+            new_order.order_notifier = order.get_order_notifier()
+            new_order.get_order_notifier().set_order(new_order)
+            new_order.linked_portfolio = portfolio
+
+        # update the availability of the currency in the portfolio
+        portfolio.update_portfolio_available(new_order, is_new_order=True)
 
         return new_order
 

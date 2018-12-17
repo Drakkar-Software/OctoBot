@@ -238,10 +238,8 @@ def is_first_version_superior(first_version, second_version):
 
 def is_module_in_list(module_name, module_version, module_list):
     if not module_version:
-        for module in module_list:
-            if module.split(TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR)[0] == module_name:
-                return True
-        return False
+        return any(module.split(TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR)[0] == module_name
+                   for module in module_list)
     else:
         return get_full_module_identifier(module_name, module_version) \
                in module_list

@@ -49,10 +49,9 @@ class Notification:
             self.logger.error(f"Failed to notify all : {e}")
 
     def gmail_notification_available(self, key=None):
-        if self.enabled(key) and GmailService.get_name() in self.notification_type:
-            if GmailService.is_setup_correctly(self.config):
-                return True
-        return False
+        return self.enabled(key) and \
+               GmailService.get_name() in self.notification_type and \
+               GmailService.is_setup_correctly(self.config)
 
     def gmail_notification_factory(self, subject, mail):
         if self.gmail_notification_available():
@@ -64,10 +63,9 @@ class Notification:
             self.logger.debug("Mail disabled")
 
     def telegram_notification_available(self, key=None):
-        if self.enabled(key) and TelegramService.get_name() in self.notification_type:
-            if TelegramService.is_setup_correctly(self.config):
-                return True
-        return False
+        return self.enabled(key) and \
+               TelegramService.get_name() in self.notification_type and \
+               TelegramService.is_setup_correctly(self.config)
 
     def telegram_notification_factory(self, message):
         if self.telegram_notification_available():
@@ -79,10 +77,9 @@ class Notification:
             self.logger.debug("Telegram disabled")
 
     def twitter_notification_available(self, key=None):
-        if self.enabled(key) and TwitterService.get_name() in self.notification_type:
-            if TwitterService.is_setup_correctly(self.config):
-                return True
-        return False
+        return self.enabled(key) and \
+               TwitterService.get_name() in self.notification_type and \
+               TwitterService.is_setup_correctly(self.config)
 
     def twitter_notification_factory(self, tweet, error_on_failure=True):
         if self.twitter_notification_available():
