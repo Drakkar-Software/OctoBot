@@ -34,10 +34,7 @@ class OrdersManager(threading.Thread):
             self.order_list.append(order)
 
     def has_order_id_in_list(self, order_id):
-        for order in self.order_list:
-            if order.get_id() == order_id:
-                return True
-        return False
+        return any([order.get_id() == order_id for order in self.order_list])
 
     # Remove the specified order of the current open_order list (when the order is filled or canceled)
     def remove_order_from_list(self, order):
@@ -130,11 +127,9 @@ class OrdersManager(threading.Thread):
         if Backtesting.enabled(self.config):
             self.keep_running = False
         while self.keep_running:
-
             try:
                 # call update status
                 self._update_orders_status()
-
             except Exception as e:
                 self.logger.error("Error when updating orders")
                 self.logger.exception(e)
