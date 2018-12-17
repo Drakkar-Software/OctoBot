@@ -289,6 +289,26 @@ class Trader:
                 with self.portfolio as pf:
                     self.create_order(order, pf, True)
 
+    def force_refresh_portfolio(self):
+        with self.portfolio as pf:
+            pf.update_portfolio_balance()
+
+    def force_refresh_orders(self):
+        # useless in simulation mode
+        if not self.simulate:
+            symbols = self.exchange.get_exchange_manager().get_traded_pairs()
+
+            # get orders from exchange for the specified symbols
+            for symbol_traded in symbols:
+
+                orders = self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
+                for open_order in orders:
+                    # do something only if order not already in list
+                    if not self.order_manager.has_order_id_in_list(open_order["id"]):
+                        order = self.parse_exchange_order_to_order_instance(open_order)
+                        with self.portfolio as pf:
+                            self.create_order(order, pf, True)
+
     def parse_exchange_order_to_order_instance(self, order):
         return self.create_order_instance(order_type=self.parse_order_type(order),
                                           symbol=order["symbol"],

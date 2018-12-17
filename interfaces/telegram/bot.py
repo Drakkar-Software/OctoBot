@@ -8,7 +8,7 @@ from config.cst import *
 from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_trades_history, \
     get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status, \
-    cancel_all_open_orders, set_enable_trading, has_real_and_or_simulated_traders
+    cancel_all_open_orders, set_enable_trading, has_real_and_or_simulated_traders, force_real_traders_refresh
 from tools.pretty_printer import PrettyPrinter
 from tools.timestamp_util import convert_timestamp_to_datetime
 
@@ -44,6 +44,7 @@ class TelegramApp:
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
         self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
         self.dispatcher.add_handler(CommandHandler(["configuration", "cf"], self.command_configuration))
+        self.dispatcher.add_handler(CommandHandler(["refresh_real_trader", "rrt"], self.command_real_traders_refresh))
         self.dispatcher.add_handler(CommandHandler("stop", self.command_stop))
         self.dispatcher.add_handler(CommandHandler("help", self.command_help))
         self.dispatcher.add_handler(CommandHandler(["pause", "resume"], self.command_pause_resume))
@@ -68,8 +69,12 @@ class TelegramApp:
         message += "/open_orders or /oo: Displays my current open orders." + TelegramApp.EOL
         message += "/trades_history or /th: Displays my trades history since I started." + TelegramApp.EOL
         message += "/profitability or /pb: Displays the profitability I made since I started." + TelegramApp.EOL
-        message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + TelegramApp.EOL
-        message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading mode." + TelegramApp.EOL
+        message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." \
+                   + TelegramApp.EOL
+        message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading mode." \
+                   + TelegramApp.EOL
+        message += "/refresh_real_trader or /rrt: Force OctoBot's real trader data refresh using exchange data. " \
+                   "Should normally not be necessary" + TelegramApp.EOL
         message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
         message += "/pause or /resume: Pause or resume me." + TelegramApp.EOL
         message += "/stop: Stops me." + TelegramApp.EOL
@@ -226,6 +231,16 @@ class TelegramApp:
             trades_history_string = TelegramApp.NO_TRADER_MESSAGE
 
         update.message.reply_text(trades_history_string)
+
+    # flushed current order lists and portfolios and reload tham from exchanges
+    @staticmethod
+    def command_real_traders_refresh(_, update):
+        result = "Refresh"
+        try:
+            force_real_traders_refresh()
+            update.message.reply_text(result + " successful")
+        except Exception as e:
+            update.message.reply_text(f"{result} failure: {e}")
 
     # Displays my trades, exchanges, evaluators, strategies and trading
     @staticmethod
