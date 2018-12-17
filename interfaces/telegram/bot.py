@@ -74,7 +74,7 @@ class TelegramApp:
         message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading mode." \
                    + TelegramApp.EOL
         message += "/refresh_real_trader or /rrt: Force OctoBot's real trader data refresh using exchange data. " \
-                   "Should normally not be necessary" + TelegramApp.EOL
+                   "Should normally not be necessary." + TelegramApp.EOL
         message += "/set_risk: Changes my current risk setting into your command's parameter." + TelegramApp.EOL
         message += "/pause or /resume: Pause or resume me." + TelegramApp.EOL
         message += "/stop: Stops me." + TelegramApp.EOL
@@ -232,7 +232,7 @@ class TelegramApp:
 
         update.message.reply_text(trades_history_string)
 
-    # flushed current order lists and portfolios and reload tham from exchanges
+    # refresh current order lists and portfolios and reload tham from exchanges
     @staticmethod
     def command_real_traders_refresh(_, update):
         result = "Refresh"
