@@ -15,8 +15,12 @@ from config.cst import EVALUATOR_DEFAULT_FOLDER, TENTACLE_TYPES, EVALUATOR_CONFI
 from tools.config_manager import ConfigManager
 
 
+def tentacles_arch_exists():
+    return os.path.exists(TENTACLES_PATH)
+
+
 def delete_tentacles_arch():
-    if os.path.exists(TENTACLES_PATH):
+    if tentacles_arch_exists():
         shutil.rmtree(TENTACLES_PATH)
 
 
