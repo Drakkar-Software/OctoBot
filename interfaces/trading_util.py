@@ -79,6 +79,18 @@ def has_real_and_or_simulated_traders():
     return has_real_trader, has_simulated_trader
 
 
+def force_real_traders_refresh():
+    at_least_one = False
+    for trader in get_bot().get_exchange_traders().values():
+        if trader.is_enabled():
+            at_least_one = True
+            trader.force_refresh_portfolio()
+            trader.force_refresh_orders()
+
+    if not at_least_one:
+        raise RuntimeError("no real trader to update.")
+
+
 def get_open_orders():
     simulated_open_orders = []
     real_open_orders = []
