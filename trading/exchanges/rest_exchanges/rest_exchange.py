@@ -1,6 +1,6 @@
 import logging
 
-from ccxt import OrderNotFound, BaseError
+from ccxt import OrderNotFound, BaseError, InsufficientFunds
 
 from config.config import decrypt
 from config.cst import *
@@ -226,11 +226,17 @@ class RESTExchange(AbstractExchange):
                 return None
             elif order_type == TraderOrderType.TAKE_PROFIT_LIMIT:
                 return None
+        except InsufficientFunds as e:
+            self._log_error(e, order_type, symbol, quantity, price, stop_price)
+            raise e
         except Exception as e:
-            order_desc = f"order_type: {order_type}, symbol: {symbol}, quantity: {quantity}, price: {price}," \
-                         f" stop_price: {stop_price}"
-            self.logger.error(f"Failed to create order : {e} ({order_desc})")
+            self._log_error(e, order_type, symbol, quantity, price, stop_price)
         return None
+
+    def _log_error(self, error, order_type, symbol, quantity, price, stop_price):
+        order_desc = f"order_type: {order_type}, symbol: {symbol}, quantity: {quantity}, price: {price}," \
+            f" stop_price: {stop_price}"
+        self.logger.error(f"Failed to create order : {error} ({order_desc})")
 
     def get_trade_fee(self, symbol, order_type, quantity, price,
                       taker_or_maker=ExchangeConstantsMarketPropertyColumns.TAKER.value):
