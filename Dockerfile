@@ -30,10 +30,13 @@ RUN pip3 install -r pre_requirements.txt
 RUN pip3 install -r requirements.txt -r dev_requirements.txt
 
 # install evaluators
-RUN rm -rf ./tentacles
 RUN python start.py -p install all
 
 # tests
 RUN pytest tests/unit_tests tests/functional_tests
 
-ENTRYPOINT ["python", "./start.py", "-ng"]
+# clean up image
+RUN rm -rf ./tentacles
+RUN rm config.json
+
+ENTRYPOINT ["python", "./start.py", "--docker", "-ng"]

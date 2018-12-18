@@ -1,9 +1,10 @@
 import json
 import logging
+from shutil import copyfile
 
 from cryptography.fernet import Fernet, InvalidToken
 
-from config.cst import CONFIG_FILE, OCTOBOT_KEY
+from config.cst import CONFIG_FILE, OCTOBOT_KEY, DEFAULT_CONFIG_FILE
 
 
 def load_config(config_file=CONFIG_FILE, error=True):
@@ -33,6 +34,13 @@ def load_config(config_file=CONFIG_FILE, error=True):
         else:
             logger.error(error_str)
     return None
+
+
+def init_config(config_file=CONFIG_FILE, from_config_file=DEFAULT_CONFIG_FILE):
+    try:
+        copyfile(from_config_file, config_file)
+    except Exception as e:
+        raise Exception("Can't init config file {0}".format(e))
 
 
 def encrypt(data):
