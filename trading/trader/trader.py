@@ -289,13 +289,19 @@ class Trader:
                 with self.portfolio as pf:
                     self.create_order(order, pf, True)
 
-    def force_refresh_portfolio(self):
-        with self.portfolio as pf:
-            pf.update_portfolio_balance()
+    def force_refresh_portfolio(self, portfolio=None):
+        if not self.simulate:
+            self.logger.info(f"Triggered forced {self.exchange.get_name()} trader portfolio refresh")
+            if portfolio:
+                portfolio.update_portfolio_balance()
+            else:
+                with self.portfolio as pf:
+                    pf.update_portfolio_balance()
 
-    def force_refresh_orders(self):
+    def force_refresh_orders(self, portfolio=None):
         # useless in simulation mode
         if not self.simulate:
+            self.logger.info(f"Triggered forced {self.exchange.get_name()} trader orders refresh")
             symbols = self.exchange.get_exchange_manager().get_traded_pairs()
 
             # get orders from exchange for the specified symbols
@@ -306,8 +312,11 @@ class Trader:
                     # do something only if order not already in list
                     if not self.order_manager.has_order_id_in_list(open_order["id"]):
                         order = self.parse_exchange_order_to_order_instance(open_order)
-                        with self.portfolio as pf:
-                            self.create_order(order, pf, True)
+                        if portfolio:
+                            self.create_order(order, portfolio, True)
+                        else:
+                            with self.portfolio as pf:
+                                self.create_order(order, pf, True)
 
     def parse_exchange_order_to_order_instance(self, order):
         return self.create_order_instance(order_type=self.parse_order_type(order),
