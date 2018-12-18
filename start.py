@@ -5,7 +5,7 @@ import os
 import traceback
 from logging.config import fileConfig
 
-from config.config import load_config
+from config.config import load_config, init_config
 from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
@@ -13,7 +13,7 @@ from config.cst import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR
 from interfaces.gui import main
 from tools.commands import Commands
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
-
+from tools.tentacle_manager.tentacle_util import tentacles_arch_exists
 
 # Keep string '+' operator to ensure backward compatibility in this file
 
@@ -59,7 +59,15 @@ def start_octobot(starting_args):
             logger.info("Version : {0}".format(LONG_VERSION))
 
             logger.info("Loading config files...")
+
+            # configuration loading
             config = load_config(error=False)
+
+            if starting_args.docker and config is None:
+                logger.info("No configuration found creating default...")
+                init_config()
+                config = load_config(error=False)
+
             if config is None:
                 raise ConfigError
 
@@ -74,6 +82,9 @@ def start_octobot(starting_args):
                 Commands.exchange_keys_encrypter()
 
             else:
+                if starting_args.docker and not tentacles_arch_exists():
+                    logger.info("No tentacles found installing default...")
+                    Commands.package_manager(config, ["install", "all"])
 
                 config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
                 if config[CONFIG_EVALUATOR] is None:
@@ -186,6 +197,7 @@ if __name__ == '__main__':
                                                            'test. Example: -o FullMixedStrategiesEvaluator'
                                                            ' Warning: this process may take a long time.',
                         nargs='+')
+    parser.add_argument('--docker', help='Start in docker mode', action='store_true')
 
     args = parser.parse_args()
 
