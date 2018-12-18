@@ -1,6 +1,7 @@
 from tools.logging.logging_util import get_logger
 from abc import *
 from queue import Queue
+from ccxt import InsufficientFunds
 
 from config.cst import INIT_EVAL_NOTE
 from tools.asynchronous_server import AsynchronousServer
@@ -102,13 +103,31 @@ class AbstractTradingModeDecider(AsynchronousServer):
             with trader.get_portfolio() as pf:
                 order_creator = self.trading_mode.get_creator(self.symbol, creator_key)
                 if order_creator.can_create_order(self.symbol, self.exchange, self.state, pf):
-                    new_orders = order_creator.create_new_order(
-                        self.final_eval,
-                        self.symbol,
-                        self.exchange,
-                        trader,
-                        pf,
-                        self.state)
+                    new_orders = None
+                    try:
+                        new_orders = order_creator.create_new_order(
+                            self.final_eval,
+                            self.symbol,
+                            self.exchange,
+                            trader,
+                            pf,
+                            self.state)
+                    except InsufficientFunds:
+                        if not trader.get_simulate():
+                            try:
+                                # second chance: force portfolio update and retry
+                                trader.force_refresh_portfolio(pf)
+                                trader.force_refresh_orders(pf)
+                                new_orders = order_creator.create_new_order(
+                                    self.final_eval,
+                                    self.symbol,
+                                    self.exchange,
+                                    trader,
+                                    pf,
+                                    self.state)
+                            except InsufficientFunds as e:
+                                self.logger.error(f"Failed to create order on second attempt : {e})")
+
                     self._push_order_notification_if_possible(new_orders, evaluator_notification)
 
     @staticmethod
