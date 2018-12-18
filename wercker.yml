@@ -8,6 +8,9 @@ build:
     - internal/docker-run:
         image: octobot
         name: octobot
+
+deploy-latest:
+  steps:
     - internal/docker-push:
         image-name: octobot
         username: $USERNAME
