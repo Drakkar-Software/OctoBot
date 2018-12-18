@@ -16,11 +16,9 @@
         </div>
     </div>
     <div class="card-body">
-        <div class="input-group">
-           <div class="input-group-prepend">
-                <label class="input-group-text" for="time-frame-select">Time frame</label>
-           </div>
-            <select class="custom-select" id="time-frame-select">
+        <div class="text-center">
+            Time frame
+            <select class="selectpicker" data-live-search="true" data-width="auto" data-window-padding="25" id="time-frame-select">
                 {% for time_frame in time_frames %}
                 <option value={{time_frame.value}}>
                 {{time_frame.value}}
