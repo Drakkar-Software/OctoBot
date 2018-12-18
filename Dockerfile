@@ -39,4 +39,4 @@ RUN pytest tests/unit_tests tests/functional_tests
 RUN rm -rf ./tentacles
 RUN rm config.json
 
-ENTRYPOINT ["python", "./start.py", "--docker", "-ng"]
+ENTRYPOINT ["python", "./start.py", "-ng"]
