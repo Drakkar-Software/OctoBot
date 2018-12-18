@@ -4,7 +4,7 @@ build:
     - internal/docker-build:
         dockerfile: Dockerfile
         image-name: octobot
-        build-args: "octobot_branch=dev"
+        build-args: "OCTOBOT_BRANCH=$WERCKER_GIT_BRANCH OCTOBOT_REPOSITORY=https://$WERCKER_GIT_DOMAIN/$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY"
     - internal/docker-run:
         image: octobot
         name: octobot
@@ -12,7 +12,6 @@ build:
 deploy-latest:
   steps:
     - internal/docker-push:
-        image-name: octobot
         username: $USERNAME
         password: $PASSWORD
         tag: latest
