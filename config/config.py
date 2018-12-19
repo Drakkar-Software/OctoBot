@@ -4,7 +4,7 @@ from shutil import copyfile
 
 from cryptography.fernet import Fernet, InvalidToken
 
-from config.cst import CONFIG_FILE, OCTOBOT_KEY, DEFAULT_CONFIG_FILE
+from config import CONFIG_FILE, OCTOBOT_KEY, DEFAULT_CONFIG_FILE
 
 
 def load_config(config_file=CONFIG_FILE, error=True):

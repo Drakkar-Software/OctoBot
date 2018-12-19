@@ -2,7 +2,7 @@ import math
 
 from evaluator.evaluator_matrix import EvaluatorMatrix
 from tests.test_utils.config import load_test_config
-from config.cst import EvaluatorMatrixTypes, TimeFrames
+from config import EvaluatorMatrixTypes, TimeFrames
 
 
 def _get_tools():

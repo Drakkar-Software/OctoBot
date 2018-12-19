@@ -3,7 +3,7 @@ from abc import *
 
 from ccxt.base.exchange import Exchange as ccxtExchange
 
-from config.cst import TimeFrames
+from config import TimeFrames
 
 
 class AbstractWebSocket:

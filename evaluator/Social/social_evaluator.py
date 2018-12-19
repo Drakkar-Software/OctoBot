@@ -3,7 +3,7 @@ import threading
 from abc import *
 
 from config.config import load_config
-from config.cst import *
+from config import *
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 

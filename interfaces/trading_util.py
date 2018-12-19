@@ -1,7 +1,7 @@
 from interfaces import get_bot
 from trading.trader.portfolio import Portfolio
 from tools.timestamp_util import convert_timestamps_to_datetime
-from config.cst import INIT_EVAL_NOTE
+from config import INIT_EVAL_NOTE
 
 
 def get_traders(bot=None):

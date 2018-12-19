@@ -4,7 +4,7 @@ import time
 import ccxt
 
 from trading.exchanges.exchange_manager import ExchangeManager
-from config.cst import TradeOrderSide, SIMULATOR_LAST_PRICES_TO_CHECK, TraderOrderType, OrderStatus
+from config import TradeOrderSide, SIMULATOR_LAST_PRICES_TO_CHECK, TraderOrderType, OrderStatus
 from tests.test_utils.config import load_test_config
 from trading.trader.order import Order, OrderConstants
 from trading.trader.trader_simulator import TraderSimulator

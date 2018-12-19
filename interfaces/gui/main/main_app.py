@@ -3,7 +3,7 @@ import webbrowser
 from time import sleep
 from tkinter.ttk import Button
 
-from config.cst import PROJECT_NAME, CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT
+from config import PROJECT_NAME, CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT
 from interfaces import get_bot
 from interfaces.gui.util.app_util import AbstractTkApp
 from tools.commands import Commands

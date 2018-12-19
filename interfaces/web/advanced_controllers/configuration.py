@@ -1,6 +1,6 @@
 from flask import render_template, request, jsonify
 
-from config.cst import EVALUATOR_CONFIG_KEY
+from config import EVALUATOR_CONFIG_KEY
 from . import advanced
 from interfaces.web.models.configuration import get_evaluator_detailed_config, update_evaluator_config, \
     get_evaluator_startup_config

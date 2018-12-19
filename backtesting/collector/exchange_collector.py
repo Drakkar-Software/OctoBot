@@ -2,7 +2,7 @@ from tools.logging.logging_util import get_logger
 import threading
 import time
 
-from config.cst import *
+from config import *
 from backtesting.collector.data_file_manager import build_file_name, write_data_file
 
 

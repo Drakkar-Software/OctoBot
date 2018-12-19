@@ -1,6 +1,6 @@
 from tools.logging.logging_util import get_logger
 
-from config.cst import EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE
+from config import EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE
 from evaluator.RealTime import RealTimeTAEvaluator
 from evaluator.Social import SocialEvaluator
 from evaluator.TA import TAEvaluator
