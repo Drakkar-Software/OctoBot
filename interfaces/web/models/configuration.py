@@ -4,7 +4,7 @@ from tools.logging.logging_util import get_logger
 import ccxt
 import requests
 
-from config.cst import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, \
+from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, \
     UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES
 from interfaces import get_bot
 from services import AbstractService

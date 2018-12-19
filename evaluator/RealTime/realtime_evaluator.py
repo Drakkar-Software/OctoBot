@@ -5,7 +5,7 @@ from abc import *
 
 from backtesting.backtesting import Backtesting
 from config.config import load_config
-from config.cst import *
+from config import *
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.time_frame_manager import TimeFrameManager
 

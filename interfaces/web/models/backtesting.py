@@ -5,7 +5,7 @@ from backtesting.collector.data_file_manager import get_all_available_data_files
 from backtesting.backtester import Backtester
 from backtesting.collector.data_collector import DataCollector
 from interfaces import get_bot
-from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, CONFIG_DATA_COLLECTOR_PATH
+from config import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, CONFIG_DATA_COLLECTOR_PATH
 
 
 LOGGER = get_logger("DataCollectorWebInterfaceModel")

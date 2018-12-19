@@ -1,6 +1,6 @@
 import logging
 
-from config.cst import STORED_LOG_MIN_LEVEL
+from config import STORED_LOG_MIN_LEVEL
 from tools.logging import add_log
 
 

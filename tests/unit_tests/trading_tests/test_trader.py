@@ -2,7 +2,7 @@ import ccxt
 import copy
 
 from trading.exchanges.exchange_manager import ExchangeManager
-from config.cst import *
+from config import *
 from tests.test_utils.config import load_test_config
 from trading.trader.order import *
 from trading.trader.order_notifier import OrderNotifier

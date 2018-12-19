@@ -1,6 +1,6 @@
 from logging import ERROR, getLevelName
 
-from config.cst import LOG_DATABASE, LOG_NEW_ERRORS_COUNT
+from config import LOG_DATABASE, LOG_NEW_ERRORS_COUNT
 from tools.timestamp_util import get_now_time
 
 

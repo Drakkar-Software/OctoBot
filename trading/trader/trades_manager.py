@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from tools.logging.logging_util import get_logger
 
-from config.cst import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
+from config import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
     CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 from tools.symbol_util import merge_currencies, split_symbol

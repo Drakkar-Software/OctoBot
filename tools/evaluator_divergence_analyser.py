@@ -1,6 +1,6 @@
 from tools.logging.logging_util import get_logger
 
-from config.cst import START_PENDING_EVAL_NOTE
+from config import START_PENDING_EVAL_NOTE
 from tools.evaluators_util import check_valid_eval_note
 
 """

@@ -2,7 +2,7 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.Strategies import StrategiesEvaluator
 from tests.test_utils.config import load_test_config
 from evaluator.Util.advanced_manager import AdvancedManager
-from config.cst import TimeFrames, CONFIG_EVALUATORS_WILDCARD
+from config import TimeFrames, CONFIG_EVALUATORS_WILDCARD
 from evaluator.evaluator import Evaluator
 from evaluator.TA import TAEvaluator
 from evaluator.Social import SocialEvaluator
