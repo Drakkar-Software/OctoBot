@@ -4,7 +4,7 @@ import time
 from backtesting.backtesting import Backtesting, BacktestingEndedException
 from backtesting.collector.data_file_manager import interpret_file_name
 from backtesting.collector.data_parser import DataCollectorParser
-from config.cst import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACKTESTING, \
+from config import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACKTESTING, \
     SIMULATOR_LAST_PRICES_TO_CHECK, ORDER_CREATION_LAST_TRADES_TO_USE, CONFIG_BACKTESTING_DATA_FILES, PriceIndexes, \
     TimeFramesMinutes, ExchangeConstantsTickersColumns, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, \
     CONFIG_SIMULATOR_FEES_MAKER, CONFIG_DEFAULT_SIMULATOR_FEES, TraderOrderType, FeePropertyColumns,  \

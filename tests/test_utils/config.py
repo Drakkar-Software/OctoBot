@@ -1,5 +1,5 @@
 from config.config import load_config
-from config.cst import CONFIG_EVALUATOR, CONFIG_TRADING_TENTACLES, TimeFrames, CONFIG_TIME_FRAME
+from config import CONFIG_EVALUATOR, CONFIG_TRADING_TENTACLES, TimeFrames, CONFIG_TIME_FRAME
 
 
 def init_config_time_frame_for_tests(config):

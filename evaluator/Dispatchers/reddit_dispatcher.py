@@ -2,7 +2,7 @@ from tools.logging.logging_util import get_logger
 import time
 from prawcore.exceptions import RequestException, ResponseException, OAuthException, InvalidToken, ServerError
 
-from config.cst import *
+from config import *
 from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
 from services import RedditService
 

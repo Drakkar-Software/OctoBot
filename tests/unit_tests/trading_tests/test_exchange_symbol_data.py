@@ -1,6 +1,6 @@
 from random import randint
 
-from config.cst import TimeFrames, PriceIndexes
+from config import TimeFrames, PriceIndexes
 from trading.exchanges.exchange_symbol_data import SymbolData
 
 

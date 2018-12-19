@@ -3,7 +3,7 @@ from tools.logging.logging_util import get_logger
 import ccxt
 
 from backtesting.collector.exchange_collector import ExchangeDataCollector
-from config.cst import CONFIG_TIME_FRAME, CONFIG_EXCHANGES
+from config import CONFIG_TIME_FRAME, CONFIG_EXCHANGES
 from trading.exchanges.exchange_manager import ExchangeManager
 
 

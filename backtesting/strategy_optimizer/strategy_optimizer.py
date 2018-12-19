@@ -5,7 +5,7 @@ import math
 from backtesting.backtesting_util import create_blank_config_using_loaded_one
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
-from config.cst import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
+from config import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
     CONFIG_EVALUATOR
 from evaluator import Strategies
 from evaluator import TA

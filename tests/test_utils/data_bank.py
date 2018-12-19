@@ -1,7 +1,7 @@
 import ccxt
 import numpy as np
 
-from config.cst import TimeFrames, PriceIndexes
+from config import TimeFrames, PriceIndexes
 from trading.exchanges.exchange_manager import ExchangeManager
 
 """

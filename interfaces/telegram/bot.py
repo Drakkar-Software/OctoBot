@@ -4,7 +4,7 @@ import os
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
-from config.cst import *
+from config import *
 from interfaces import get_reference_market, get_bot
 from interfaces.trading_util import get_portfolio_current_value, get_open_orders, get_trades_history, \
     get_global_portfolio_currencies_amounts, set_risk, get_risk, get_global_profitability, get_currencies_with_status, \
