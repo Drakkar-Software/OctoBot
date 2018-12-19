@@ -63,7 +63,7 @@ def start_octobot(starting_args):
             # configuration loading
             config = load_config(error=False)
 
-            if starting_args.docker and config is None:
+            if config is None:
                 logger.info("No configuration found creating default...")
                 init_config()
                 config = load_config(error=False)
@@ -82,7 +82,7 @@ def start_octobot(starting_args):
                 Commands.exchange_keys_encrypter()
 
             else:
-                if starting_args.docker and not tentacles_arch_exists():
+                if not tentacles_arch_exists():
                     logger.info("No tentacles found installing default...")
                     Commands.package_manager(config, ["install", "all"])
 
@@ -197,7 +197,6 @@ if __name__ == '__main__':
                                                            'test. Example: -o FullMixedStrategiesEvaluator'
                                                            ' Warning: this process may take a long time.',
                         nargs='+')
-    parser.add_argument('--docker', help='Start in docker mode', action='store_true')
 
     args = parser.parse_args()
 

@@ -1,7 +1,8 @@
 FROM python:3.6.6
 
-ARG octobot_branch="dev"
-ARG octobot_install_dir="Octobot"
+ARG OCTOBOT_REPOSITORY="https://github.com/Drakkar-Software/OctoBot"
+ARG OCTOBOT_BRANCH="dev"
+ARG OCTOBOT_INSTALL_DIR="Octobot"
 
 # Update Software repository
 RUN apt update
@@ -12,9 +13,8 @@ ADD . /bot
 WORKDIR /bot
 
 # Set up octobot's environment
-RUN git clone https://github.com/Drakkar-Software/OctoBot /bot/$octobot_install_dir
-WORKDIR /bot/$octobot_install_dir
-RUN git checkout $octobot_branch
+RUN git clone $OCTOBOT_REPOSITORY /bot/$OCTOBOT_INSTALL_DIR -b $OCTOBOT_BRANCH
+WORKDIR /bot/$OCTOBOT_INSTALL_DIR
 
 # install dependencies
 RUN bash ./docs/install/linux_dependencies.sh
@@ -39,4 +39,4 @@ RUN pytest tests/unit_tests tests/functional_tests
 RUN rm -rf ./tentacles
 RUN rm config.json
 
-ENTRYPOINT ["python", "./start.py", "--docker", "-ng"]
+ENTRYPOINT ["python", "./start.py", "-ng"]
