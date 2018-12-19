@@ -138,4 +138,11 @@ body:before {
 }
 
 .modal-text {
-  color: #4B515D; }
+  color: #4B515D;
+}
+
+.editable-submit,
+.editable-cancel {
+    position: relative;
+    z-index: 2;
+}
