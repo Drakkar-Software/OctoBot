@@ -5,7 +5,8 @@ ARG OCTOBOT_BRANCH="dev"
 ARG OCTOBOT_INSTALL_DIR="octobot"
 
 ENV TENTACLE_DIR="tentacles" \
-    CONFIG_FILE="config.json"
+    CONFIG_FILE="config.json" \
+    LOGS_DIR="logs"
 
 # Update Software repository
 RUN apt update
@@ -36,10 +37,12 @@ RUN python start.py -p install all
 RUN pytest tests/unit_tests tests/functional_tests
 
 # clean up image
-RUN rm -rf ./tentacles
-RUN rm config.json
+RUN rm -rf ./$TENTACLE_DIR
+RUN rm -rf ./$LOGS_DIR
+RUN rm $CONFIG_FILE
 
 VOLUME /bot/$OCTOBOT_INSTALL_DIR/$CONFIG_FILE
 VOLUME /bot/$OCTOBOT_INSTALL_DIR/$TENTACLE_DIR
+VOLUME /bot/$OCTOBOT_INSTALL_DIR/$LOGS_DIR
 
 ENTRYPOINT ["python", "./start.py", "-ng"]

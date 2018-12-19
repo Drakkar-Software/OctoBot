@@ -84,7 +84,7 @@ def start_octobot(starting_args):
             else:
                 if not tentacles_arch_exists():
                     logger.info("No tentacles found installing default...")
-                    Commands.package_manager(config, ["install", "all"])
+                    Commands.package_manager(config, ["install", "all"], force=True)
 
                 config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
                 if config[CONFIG_EVALUATOR] is None:

@@ -21,10 +21,10 @@ class Commands:
                 raise e
 
     @staticmethod
-    def package_manager(config, commands, catch=False):
+    def package_manager(config, commands, catch=False, force=False):
         try:
             package_manager_inst = TentacleManager(config)
-            package_manager_inst.parse_commands(commands)
+            package_manager_inst.parse_commands(commands, force=force)
         except Exception as e:
             if not catch:
                 raise e
