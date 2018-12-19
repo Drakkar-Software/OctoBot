@@ -1,6 +1,6 @@
 import time
 
-from config.cst import ExchangeConstantsMarketPropertyColumns
+from config import ExchangeConstantsMarketPropertyColumns
 from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_symbol_data import SymbolData

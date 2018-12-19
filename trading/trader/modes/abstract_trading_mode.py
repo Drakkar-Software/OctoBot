@@ -3,7 +3,7 @@ import os
 from abc import *
 
 from config.config import load_config
-from config.cst import CONFIG_FILE_EXT, EVALUATOR_CONFIG_FOLDER, \
+from config import CONFIG_FILE_EXT, EVALUATOR_CONFIG_FOLDER, \
     TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH
 from evaluator import Strategies
 from evaluator.Util.advanced_manager import AdvancedManager

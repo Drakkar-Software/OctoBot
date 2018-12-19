@@ -1,6 +1,6 @@
 import ccxt
 
-from config.cst import TraderOrderType, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, \
+from config import TraderOrderType, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, \
     CONFIG_SIMULATOR_FEES_TAKER
 from tests.test_utils.config import load_test_config
 from tests.test_utils.order_util import fill_limit_or_stop_order, fill_market_order

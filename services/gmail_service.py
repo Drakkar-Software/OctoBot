@@ -1,7 +1,7 @@
 import smtplib
 import email.message
 
-from config.cst import *
+from config import *
 from services import AbstractService
 
 

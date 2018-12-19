@@ -3,7 +3,7 @@ import time
 
 from config.config import load_config
 
-from config.cst import *
+from config import *
 from evaluator.Dispatchers.abstract_dispatcher import *
 from tools.config_manager import ConfigManager
 

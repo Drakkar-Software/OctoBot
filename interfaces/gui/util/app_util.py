@@ -7,7 +7,7 @@ from abc import *
 from tkinter import PhotoImage, CENTER, Tk
 from tkinter.ttk import Style, Frame
 
-from config.cst import PROJECT_NAME
+from config import PROJECT_NAME
 
 BACKGROUND_COLOR = "#464646"
 FOREGROUND_COLOR = "#a6a6a6"

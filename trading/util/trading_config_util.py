@@ -1,4 +1,4 @@
-from config.cst import CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH
+from config import CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH
 from trading.trader import modes
 from tools.class_inspector import get_deep_class_from_string, get_class_from_string
 from trading.trader.modes.abstract_trading_mode import AbstractTradingMode

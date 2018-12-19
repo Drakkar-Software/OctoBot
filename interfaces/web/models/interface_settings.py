@@ -1,7 +1,7 @@
 import copy
 
 from interfaces import get_bot
-from config.cst import CONFIG_WATCHED_SYMBOLS, CONFIG_FILE, TEMP_RESTORE_CONFIG_FILE, CONFIG_CRYPTO_CURRENCIES, \
+from config import CONFIG_WATCHED_SYMBOLS, CONFIG_FILE, TEMP_RESTORE_CONFIG_FILE, CONFIG_CRYPTO_CURRENCIES, \
     CONFIG_CRYPTO_PAIRS
 from tools.config_manager import ConfigManager
 

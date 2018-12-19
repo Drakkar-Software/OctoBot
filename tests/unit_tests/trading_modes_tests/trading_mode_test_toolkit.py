@@ -1,5 +1,5 @@
-from config.cst import ExchangeConstantsMarketStatusColumns as Ecmsc
-from config.cst import EvaluatorStates
+from config import ExchangeConstantsMarketStatusColumns as Ecmsc
+from config import EvaluatorStates
 from trading.trader.order import *
 from trading.trader.portfolio import Portfolio
 

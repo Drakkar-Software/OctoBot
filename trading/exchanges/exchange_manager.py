@@ -1,7 +1,7 @@
 from tools.logging.logging_util import get_logger
 import time
 
-from config.cst import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
+from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
     PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET
 from tools.time_frame_manager import TimeFrameManager

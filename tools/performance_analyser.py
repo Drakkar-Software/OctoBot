@@ -5,7 +5,7 @@ import time
 
 import psutil
 
-from config.cst import MINUTE_TO_SECONDS, CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN
+from config import MINUTE_TO_SECONDS, CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN
 
 
 class PerformanceAnalyser(threading.Thread):

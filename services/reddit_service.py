@@ -1,6 +1,6 @@
 import praw
 
-from config.cst import *
+from config import *
 from services.abstract_service import *
 
 
