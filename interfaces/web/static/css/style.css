@@ -141,6 +141,7 @@ body:before {
   color: #4B515D;
 }
 
+.editable-input,
 .editable-submit,
 .editable-cancel {
     position: relative;
