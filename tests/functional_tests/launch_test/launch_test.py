@@ -1,6 +1,6 @@
 import time
 
-from config.cst import *
+from config import *
 from octobot import OctoBot
 from tests.test_utils.config import load_test_config
 

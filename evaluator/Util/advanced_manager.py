@@ -1,4 +1,4 @@
-from config.cst import CONFIG_ADVANCED_CLASSES, CONFIG_ADVANCED_INSTANCES
+from config import CONFIG_ADVANCED_CLASSES, CONFIG_ADVANCED_INSTANCES
 from evaluator.Util.abstract_util import AbstractUtil
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.logging.logging_util import get_logger

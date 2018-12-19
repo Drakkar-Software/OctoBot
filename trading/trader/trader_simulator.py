@@ -1,4 +1,4 @@
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR, SIMULATOR_TRADER_STR
+from config import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR, SIMULATOR_TRADER_STR
 from trading.trader.trader import Trader
 
 """ TraderSimulator has a role of exchange response simulator

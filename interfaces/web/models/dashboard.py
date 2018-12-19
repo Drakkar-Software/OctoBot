@@ -1,5 +1,5 @@
 from backtesting.backtesting import Backtesting
-from config.cst import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING, WATCHED_SYMBOLS_TIME_FRAME
+from config import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING, WATCHED_SYMBOLS_TIME_FRAME
 from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
     get_symbol_data_history

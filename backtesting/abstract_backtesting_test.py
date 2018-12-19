@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from config.cst import CONFIG_EVALUATOR
+from config import CONFIG_EVALUATOR
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection

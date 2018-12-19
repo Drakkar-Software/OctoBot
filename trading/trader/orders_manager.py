@@ -4,7 +4,7 @@ from time import sleep
 import copy
 
 from backtesting.backtesting import Backtesting
-from config.cst import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
+from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
 from trading.trader.order import Order
 
 """ OrdersManager class will perform the supervision of each open order of the exchange trader

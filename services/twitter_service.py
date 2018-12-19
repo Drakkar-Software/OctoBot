@@ -2,7 +2,7 @@ import twitter
 from twitter.api import CHARACTER_LIMIT
 from twitter.twitter_utils import calc_expected_status_length
 
-from config.cst import *
+from config import *
 from services.abstract_service import *
 
 

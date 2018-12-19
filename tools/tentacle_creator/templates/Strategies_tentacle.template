@@ -1,4 +1,4 @@
-from config.cst import TimeFrames, EvaluatorMatrixTypes
+from config import TimeFrames, EvaluatorMatrixTypes
 from evaluator.Strategies import MixedStrategiesEvaluator
 
 

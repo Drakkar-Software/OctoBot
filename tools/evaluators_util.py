@@ -1,6 +1,6 @@
 import math
 
-from config.cst import START_PENDING_EVAL_NOTE
+from config import START_PENDING_EVAL_NOTE
 
 
 def check_valid_eval_note(eval_note):

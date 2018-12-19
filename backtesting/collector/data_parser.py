@@ -1,6 +1,6 @@
 import os
 
-from config.cst import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes
+from config import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes
 from backtesting.collector.data_file_manager import read_data_file
 
 

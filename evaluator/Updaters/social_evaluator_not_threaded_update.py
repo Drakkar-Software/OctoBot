@@ -2,7 +2,7 @@ from tools.logging.logging_util import get_logger
 import threading
 import time
 
-from config.cst import *
+from config import *
 
 
 class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):

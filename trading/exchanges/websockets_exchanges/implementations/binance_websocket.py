@@ -1,7 +1,7 @@
 from binance.client import Client, BinanceAPIException
 from binance.websockets import BinanceSocketManager
 from config.config import decrypt
-from config.cst import *
+from config import *
 from tools.symbol_util import merge_symbol
 from trading.exchanges.websockets_exchanges.abstract_websocket import AbstractWebSocket
 

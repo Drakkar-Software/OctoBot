@@ -1,6 +1,6 @@
 from tools.logging.logging_util import get_logger
 
-from config.cst import CONFIG_EVALUATORS_WILDCARD, EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE, \
+from config import CONFIG_EVALUATORS_WILDCARD, EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE, \
     CONFIG_SAVE_EVALUATION
 from evaluator.evaluator import Evaluator
 from tools.exporter import MatrixExporter

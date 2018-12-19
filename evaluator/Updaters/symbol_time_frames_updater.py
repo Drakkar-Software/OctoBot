@@ -4,7 +4,7 @@ from tools.logging.logging_util import get_logger
 import copy
 
 from backtesting.backtesting import Backtesting, BacktestingEndedException
-from config.cst import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPING_TIME
+from config import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPING_TIME
 from tools.time_frame_manager import TimeFrameManager
 
 """

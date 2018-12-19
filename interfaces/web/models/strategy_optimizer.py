@@ -8,7 +8,7 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator import Strategies
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
 from tools.time_frame_manager import TimeFrameManager
-from config.cst import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
+from config import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
 from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer
 
 

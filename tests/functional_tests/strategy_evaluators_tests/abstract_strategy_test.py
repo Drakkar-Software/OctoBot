@@ -4,7 +4,7 @@ import copy
 from backtesting.backtesting_util import create_backtesting_config, create_backtesting_bot, \
     start_backtesting_bot, filter_wanted_symbols
 from backtesting.abstract_backtesting_test import AbstractBacktestingTest
-from config.cst import CONFIG_EVALUATOR, CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADING_TENTACLES, \
+from config import CONFIG_EVALUATOR, CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADING_TENTACLES, \
     CONFIG_EVALUATORS_WILDCARD
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator

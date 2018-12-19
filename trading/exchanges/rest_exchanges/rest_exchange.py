@@ -3,8 +3,8 @@ import logging
 from ccxt import OrderNotFound, BaseError, InsufficientFunds
 
 from config.config import decrypt
-from config.cst import *
-from config.cst import ExchangeConstantsMarketStatusColumns as Ecmsc
+from config import *
+from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 from trading.exchanges.abstract_exchange import AbstractExchange
 
 

@@ -3,7 +3,7 @@ from abc import *
 from queue import Queue
 from ccxt import InsufficientFunds
 
-from config.cst import INIT_EVAL_NOTE
+from config import INIT_EVAL_NOTE
 from tools.asynchronous_server import AsynchronousServer
 from tools.notifications import EvaluatorNotification
 

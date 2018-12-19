@@ -5,7 +5,7 @@ import time
 import flask
 import numpy
 
-from config.cst import PriceIndexes, LOG_DATABASE, LOG_NEW_ERRORS_COUNT
+from config import PriceIndexes, LOG_DATABASE, LOG_NEW_ERRORS_COUNT
 from interfaces.web.api import api
 from tools.logging import logs_database, reset_errors_count
 

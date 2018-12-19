@@ -1,6 +1,6 @@
 import time
 
-from config.cst import CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_USED, CONFIG_PORTFOLIO_TOTAL, OrderStatus
+from config import CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_USED, CONFIG_PORTFOLIO_TOTAL, OrderStatus
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
 
 

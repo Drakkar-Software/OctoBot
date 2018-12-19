@@ -1,6 +1,6 @@
 from tools.logging.logging_util import get_logger
 
-from config.cst import TimeFramesMinutes, TimeFrames, CONFIG_TIME_FRAME
+from config import TimeFramesMinutes, TimeFrames, CONFIG_TIME_FRAME
 
 
 def _sort_time_frames(time_frames):

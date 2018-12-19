@@ -6,7 +6,7 @@ from os import listdir, remove
 
 from tools.symbol_util import merge_currencies
 from tools.time_frame_manager import TimeFrameManager
-from config.cst import CONFIG_DATA_COLLECTOR_PATH, TimeFrames
+from config import CONFIG_DATA_COLLECTOR_PATH, TimeFrames
 
 
 DATA_FILE_EXT = ".data"

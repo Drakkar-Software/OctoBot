@@ -1,6 +1,6 @@
 from setuptools import setup
 
-from config.cst import VERSION
+from config import VERSION
 
 NAME = "OctoBot"
 DESCRIPTION = open('README.md').read() + '\n\n' + open('docs/CHANGELOG.md').read()

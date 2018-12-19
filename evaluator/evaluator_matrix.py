@@ -1,4 +1,4 @@
-from config.cst import EvaluatorMatrixTypes
+from config import EvaluatorMatrixTypes
 from tools.evaluators_util import check_valid_eval_note
 
 

@@ -1,6 +1,6 @@
 from tools.logging.logging_util import get_logger
 from services.abstract_service import *
-from config.cst import *
+from config import *
 
 
 class ServiceCreator:

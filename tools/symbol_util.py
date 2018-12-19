@@ -1,4 +1,4 @@
-from config.cst import MARKET_SEPARATOR
+from config import MARKET_SEPARATOR
 
 
 # Return currency, market

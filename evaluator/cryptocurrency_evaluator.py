@@ -3,7 +3,7 @@ from tools.logging.logging_util import get_logger
 from backtesting.backtesting import Backtesting
 from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
 from evaluator.evaluator_creator import EvaluatorCreator
-from config.cst import CONFIG_EVALUATORS_WILDCARD
+from config import CONFIG_EVALUATORS_WILDCARD
 
 
 class CryptocurrencyEvaluator:

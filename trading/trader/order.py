@@ -5,7 +5,7 @@ from threading import Lock
 from tools.logging.logging_util import get_logger
 
 from tools.symbol_util import split_symbol
-from config.cst import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK, \
+from config import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK, \
     ExchangeConstantsTickersColumns as eC, FeePropertyColumns, ExchangeConstantsMarketPropertyColumns
 
 """ Order class will represent an open order in the specified exchange

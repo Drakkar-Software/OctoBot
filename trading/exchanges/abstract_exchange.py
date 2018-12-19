@@ -1,6 +1,6 @@
 from tools.logging.logging_util import get_logger
 from abc import ABCMeta, abstractmethod
-from config.cst import ExchangeConstantsMarketPropertyColumns
+from config import ExchangeConstantsMarketPropertyColumns
 
 
 class AbstractExchange:

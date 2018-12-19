@@ -2,13 +2,13 @@ import math
 
 import ccxt
 
-from config.cst import EvaluatorStates
+from config import EvaluatorStates
 from tests.test_utils.config import load_test_config
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.modes import AbstractTradingModeCreator
 from trading.trader.portfolio import Portfolio
 from trading.trader.trader_simulator import TraderSimulator
-from config.cst import ExchangeConstantsMarketStatusColumns as Ecmsc
+from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 
 
 class TestAbstractTradingModeCreator:

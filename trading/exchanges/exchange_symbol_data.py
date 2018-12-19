@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from config.cst import PriceIndexes, TimeFramesMinutes, MINUTE_TO_SECONDS
+from config import PriceIndexes, TimeFramesMinutes, MINUTE_TO_SECONDS
 
 
 class SymbolData:

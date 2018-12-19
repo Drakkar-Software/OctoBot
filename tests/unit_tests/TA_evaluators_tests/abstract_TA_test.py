@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 import math
 from timeit import default_timer as timer
 
-from config.cst import START_PENDING_EVAL_NOTE
+from config import START_PENDING_EVAL_NOTE
 from tests.test_utils.config import load_test_config
 from tests.test_utils.data_bank import DataBank
 

@@ -1,6 +1,6 @@
 import ccxt
 
-from config.cst import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_SECONDS, PriceIndexes, \
+from config import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_SECONDS, PriceIndexes, \
     TraderOrderType, ExchangeConstantsMarketPropertyColumns, FeePropertyColumns, CONFIG_SIMULATOR, \
     CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, CONFIG_SIMULATOR_FEES_TAKER
 from tests.test_utils.config import load_test_config

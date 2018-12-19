@@ -6,7 +6,7 @@ from time import sleep
 from tkinter.dialog import Dialog, DIALOG_ICON
 from tkinter.ttk import Progressbar, Label, Button
 
-from config.cst import PROJECT_NAME
+from config import PROJECT_NAME
 from interfaces.gui.util.app_util import AbstractTkApp
 from interfaces.gui.launcher import launcher_controller
 from interfaces.gui.launcher.launcher_controller import Launcher
