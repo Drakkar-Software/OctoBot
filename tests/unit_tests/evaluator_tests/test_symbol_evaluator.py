@@ -10,7 +10,7 @@ from evaluator.Util.advanced_manager import AdvancedManager
 from trading.trader.portfolio import Portfolio
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
 from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
-from config.cst import TimeFrames
+from config import TimeFrames
 from trading.util.trading_config_util import get_activated_trading_mode
 
 

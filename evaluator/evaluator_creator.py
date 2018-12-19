@@ -6,7 +6,7 @@ from evaluator.Strategies import StrategiesEvaluator
 from evaluator.TA import TAEvaluator
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
-from config.cst import CONFIG_TIME_FRAME, CONFIG_EVALUATORS_WILDCARD
+from config import CONFIG_TIME_FRAME, CONFIG_EVALUATORS_WILDCARD
 from tools.time_frame_manager import TimeFrameManager
 
 

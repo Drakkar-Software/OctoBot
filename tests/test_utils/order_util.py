@@ -1,7 +1,7 @@
 import random
 import time
 
-from config.cst import SIMULATOR_LAST_PRICES_TO_CHECK
+from config import SIMULATOR_LAST_PRICES_TO_CHECK
 
 
 def fill_limit_or_stop_order(limit_or_stop_order, min_price, max_price):

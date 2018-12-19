@@ -3,7 +3,7 @@ import os
 
 from git import Repo
 
-from config.cst import ORIGIN_URL, GIT_ORIGIN
+from config import ORIGIN_URL, GIT_ORIGIN
 
 short_version = input("Enter the new short version (R.D.MA_MI) : ")
 dev_phase = input("Enter the development phase : ")
@@ -40,7 +40,7 @@ with open("docs/CHANGELOG.md", "w") as file:
         file.write(line)
 
 # TODO
-# - modify cst.py
+# - modify __init__.py
 # - modify README
 
 repo = Repo(os.getcwd())

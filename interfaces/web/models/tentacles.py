@@ -1,7 +1,7 @@
 from tools.logging.logging_util import get_logger
 
 
-from config.cst import CONFIG_TENTACLES_KEY, TENTACLE_PACKAGE_DESCRIPTION
+from config import CONFIG_TENTACLES_KEY, TENTACLE_PACKAGE_DESCRIPTION
 from interfaces import get_bot
 from tools.tentacle_manager.tentacle_package_manager import TentaclePackageManager
 from tools.tentacle_manager.tentacle_package_util import get_is_url, get_package_name, \

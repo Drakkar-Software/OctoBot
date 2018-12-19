@@ -1,4 +1,4 @@
-from config.cst import *
+from config import *
 
 
 class ExchangePersonalData:
