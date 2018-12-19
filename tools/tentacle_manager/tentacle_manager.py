@@ -31,7 +31,7 @@ class TentacleManager:
             self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL,
                                                                           package, EVALUATOR_ADVANCED_FOLDER)
 
-    def parse_commands(self, commands):
+    def parse_commands(self, commands, force=False):
         help_message = "- install: Install or re-install the given tentacles modules with their requirements if any. " \
                                 "Also reset tentacles configuration files if any.\n" \
                                 "- update: Update the given tentacle modules with their requirements if any. " \
@@ -49,10 +49,10 @@ class TentacleManager:
         if commands:
             if commands[0] == "install":
                 if commands[1] == "all":
-                    self.install_parser(commands, True)
+                    self.install_parser(commands, True, force=force)
                 else:
                     commands.pop(0)
-                    self.install_parser(commands, False)
+                    self.install_parser(commands, False, force=force)
 
             elif commands[0] == "update":
                 if commands[1] == "all":
@@ -87,11 +87,11 @@ class TentacleManager:
             arguments_help = "-p: activates the package manager."
             self.logger.error("Invalid arguments, arguments are: {0}".format(arguments_help))
 
-    def install_parser(self, commands, command_all=False):
+    def install_parser(self, commands, command_all=False, force=False):
         should_install = True
         nb_actions = 0
         # first ensure the current tentacles architecture is setup correctly
-        if TentacleUtil.create_missing_tentacles_arch():
+        if TentacleUtil.create_missing_tentacles_arch() and not force:
             should_install = self._confirm_action("Tentacles installation found on this OctoBot, this action will "
                                                   "replace every local tentacle file and their configuration by their "
                                                   "remote equivalent for the command's tentacles, continue ?")
