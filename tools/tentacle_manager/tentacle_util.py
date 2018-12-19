@@ -15,8 +15,12 @@ from config import EVALUATOR_DEFAULT_FOLDER, TENTACLE_TYPES, EVALUATOR_CONFIG_FO
 from tools.config_manager import ConfigManager
 
 
-def tentacles_arch_exists():
-    return os.path.exists(TENTACLES_PATH)
+def tentacles_arch_exists() -> bool:
+    try:
+        import tentacles
+        return os.path.exists(TENTACLES_PATH) and os.path.exists("{0}/{1}".format(TENTACLES_PATH, TENTACLES_TEST_PATH))
+    except ImportError:
+        return False
 
 
 def delete_tentacles_arch():
