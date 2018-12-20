@@ -1,3 +1,19 @@
+#  Drakkar-Software OctoBot
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
 from backtesting.backtesting import Backtesting
 from config import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING, WATCHED_SYMBOLS_TIME_FRAME
 from interfaces import get_bot, get_default_time_frame, get_global_config
