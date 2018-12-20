@@ -41,6 +41,7 @@ class ServiceCreator:
                         service_instance.say_hello()
                     except Exception as e:
                         logger.error(f"{service_class.get_name()} preparation produced the following error: {e}")
+                        logger.exception(e)
                 else:
                     if service_instance.get_should_warn():
                         logger.warning(f"{service_class.get_name()} can't be initialized: configuration is missing, "
