@@ -67,9 +67,9 @@ class RESTExchange(AbstractExchange):
                     'verbose': False,
                     'enableRateLimit': True
                 })
-            except Exception:
+            except Exception as e:
                 self.client = self.exchange_type({'verbose': False})
-                self.logger.error("Exchange configuration tokens are invalid : please check your configuration !")
+                self.logger.error(f"Exchange configuration tokens are invalid : please check your configuration ! ({e})")
         else:
             self.client = self.exchange_type({'verbose': False})
             self.logger.error("configuration issue: missing login information !")
@@ -78,8 +78,8 @@ class RESTExchange(AbstractExchange):
     def get_market_status(self, symbol, price=None):
         try:
             return self.fix_market_status(self.client.find_market(symbol))
-        except Exception:
-            self.logger.error(f"Fail to get market status of {symbol}")
+        except Exception as e:
+            self.logger.error(f"Fail to get market status of {symbol}: {e}")
             return {}
 
     @staticmethod
@@ -247,6 +247,7 @@ class RESTExchange(AbstractExchange):
             raise e
         except Exception as e:
             self._log_error(e, order_type, symbol, quantity, price, stop_price)
+            self.logger.exception(e)
         return None
 
     def _log_error(self, error, order_type, symbol, quantity, price, stop_price):
