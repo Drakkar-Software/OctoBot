@@ -64,6 +64,7 @@ class OrdersManager(threading.Thread):
 
         except Exception as e:
             self.logger.error(str(e))
+            self.logger.exception(e)
 
     def stop(self):
         self.keep_running = False

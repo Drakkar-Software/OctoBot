@@ -124,6 +124,7 @@ class TradesManager:
 
         except Exception as e:
             self.logger.error(str(e))
+            self.logger.exception(e)
 
         profitability = self.get_profitability_without_update()
         return profitability + (market_profitability_percent,)
