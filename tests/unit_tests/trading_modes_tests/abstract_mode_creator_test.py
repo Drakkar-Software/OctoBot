@@ -233,7 +233,7 @@ class TestAbstractTradingModeCreator:
                                                                                         current_symbol_holding) == exp
 
     def test_check_and_adapt_order_details_if_necessary(self):
-        atmc = AbstractTradingModeCreator
+        atmc = AbstractTradingModeCreator(None)
 
         symbol_market = {
             Ecmsc.LIMITS.value: {
