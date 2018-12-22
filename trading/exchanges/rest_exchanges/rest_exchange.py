@@ -18,13 +18,18 @@ import logging
 
 from ccxt import OrderNotFound, BaseError, InsufficientFunds
 
+from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 from config.config import decrypt
 from config import *
-from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 from trading.exchanges.abstract_exchange import AbstractExchange
+from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
 
 
 class RESTExchange(AbstractExchange):
+    """
+    CCXT library wrapper
+    """
+
     def __init__(self, config, exchange_type, exchange_manager):
         super().__init__(config, exchange_type)
         self.exchange_manager = exchange_manager
@@ -69,64 +74,22 @@ class RESTExchange(AbstractExchange):
                 })
             except Exception as e:
                 self.client = self.exchange_type({'verbose': False})
-                self.logger.error(f"Exchange configuration tokens are invalid : please check your configuration ! ({e})")
+                self.logger.error(
+                    f"Exchange configuration tokens are invalid : please check your configuration ! ({e})")
         else:
             self.client = self.exchange_type({'verbose': False})
             self.logger.error("configuration issue: missing login information !")
         self.client.logger.setLevel(logging.INFO)
 
-    def get_market_status(self, symbol, price=None):
+    def get_market_status(self, symbol, price_example=None, with_fixer=True):
         try:
-            return self.fix_market_status(self.client.find_market(symbol))
+            if with_fixer:
+                return ExchangeMarketStatusFixer(self.client.find_market(symbol), price_example).get_market_status()
+            else:
+                return self.client.find_market(symbol)
         except Exception as e:
             self.logger.error(f"Fail to get market status of {symbol}: {e}")
             return {}
-
-    @staticmethod
-    def get_ticker_precision():
-        pass
-
-    @staticmethod
-    def fix_market_status(market_status):
-        # check precision
-        if Ecmsc.PRECISION.value in market_status:
-            market_precision = market_status[Ecmsc.PRECISION.value]
-            if Ecmsc.PRECISION_COST.value not in market_precision:
-                if Ecmsc.PRECISION_PRICE.value in market_precision:
-                    market_precision[Ecmsc.PRECISION_COST.value] = market_precision[Ecmsc.PRECISION_PRICE.value]
-        else:
-            # TODO
-            market_status[Ecmsc.PRECISION.value] = {
-                Ecmsc.PRECISION_AMOUNT.value: 4,
-                Ecmsc.PRECISION_COST.value: 4,
-                Ecmsc.PRECISION_PRICE.value: 4,
-            }
-
-        # check limits
-        if Ecmsc.LIMITS.value in market_status:
-            market_limit = market_status[Ecmsc.LIMITS.value]
-            if Ecmsc.LIMITS_COST.value not in market_limit:
-                if Ecmsc.LIMITS_PRICE.value in market_limit:
-                    market_limit[Ecmsc.LIMITS_COST.value] = market_limit[Ecmsc.LIMITS_PRICE.value]
-
-        else:
-            # TODO
-            market_status[Ecmsc.LIMITS.value] = {
-                Ecmsc.LIMITS_AMOUNT.value: {
-                    Ecmsc.LIMITS_AMOUNT_MIN.value: 0.00001,
-                    Ecmsc.LIMITS_AMOUNT_MAX.value: 1000000000000,
-                },
-                Ecmsc.LIMITS_PRICE.value: {
-                    Ecmsc.LIMITS_PRICE_MIN.value: 0.00001,
-                    Ecmsc.LIMITS_PRICE_MAX.value: 1000000000000,
-                },
-                Ecmsc.LIMITS_COST.value: {
-                    Ecmsc.LIMITS_COST_MIN.value: 0.001,
-                    Ecmsc.LIMITS_COST_MAX.value: 1000000000000,
-                },
-            }
-
-        return market_status
 
     def get_client(self):
         return self.client

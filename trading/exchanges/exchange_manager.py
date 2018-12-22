@@ -154,8 +154,8 @@ class ExchangeManager:
             self.logger.warning("Exchange {0} is currently disabled".format(self.exchange.get_name()))
             return False
 
-    def get_exchange_symbol_id(self, symbol):
-        return self.exchange.get_market_status(symbol)["id"]
+    def get_exchange_symbol_id(self, symbol, with_fixer=False):
+        return self.exchange.get_market_status(symbol, with_fixer=with_fixer)["id"]
 
     def _set_config_time_frame(self):
         for time_frame in TimeFrameManager.get_config_time_frame(self.config):

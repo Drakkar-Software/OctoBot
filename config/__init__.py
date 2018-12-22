@@ -491,6 +491,19 @@ class ExchangeConstantsMarketStatusColumns(Enum):
     INFO = "info"
 
 
+class ExchangeConstantsMarketStatusInfoColumns(Enum):
+    # binance specific
+    FILTERS = "filters"
+    FILTER_TYPE = "filterType"
+    PRICE_FILTER = "PRICE_FILTER"
+    LOT_SIZE = "LOT_SIZE"
+    MIN_PRICE = "minPrice"
+    MAX_PRICE = "maxPrice"
+    TICK_SIZE = "tickSize"
+    MIN_QTY = "minQty"
+    MAX_QTY = "maxQty"
+
+
 class ExchangeConstantsFeesColumns(Enum):
     TYPE = "type"
     CURRENCY = "currency"
