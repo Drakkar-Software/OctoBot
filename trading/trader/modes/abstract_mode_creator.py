@@ -19,6 +19,7 @@ from abc import *
 
 from config import *
 from config import ExchangeConstantsMarketStatusColumns as Ecmsc
+from tools.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
 from trading.trader.sub_portfolio import SubPortfolio
 
@@ -28,6 +29,8 @@ class AbstractTradingModeCreator:
 
     def __init__(self, trading_mode):
         self.trading_mode = trading_mode
+
+        self.logger = get_logger(self.__class__.__name__)
 
     @staticmethod
     def check_factor(min_val, max_val, factor):
@@ -70,8 +73,7 @@ class AbstractTradingModeCreator:
     => returns the quantity and price list of possible order(s)
     """
 
-    @staticmethod
-    def check_and_adapt_order_details_if_necessary(quantity, price, symbol_market):
+    def check_and_adapt_order_details_if_necessary(self, quantity, price, symbol_market):
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
 
         limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
@@ -93,6 +95,13 @@ class AbstractTradingModeCreator:
 
         # check total_order_price not < min_cost and valid_quantity not < min_quantity and max_price > price > min_price
         if total_order_price < min_cost or valid_quantity < min_quantity or not (max_price >= valid_price >= min_price):
+            # when invalid data
+            if max_price is None or min_price is None or max_price == min_price:
+                self.logger.error("Invalid max_price or/and min_price from exchange")
+
+            if min_cost is None or min_quantity is None:
+                self.logger.error("Invalid min_cost or min_quantity from exchange")
+
             # invalid order
             return []
 
@@ -151,7 +160,7 @@ class AbstractTradingModeCreator:
         market_quantity = current_market_quantity / reference
 
         price = reference
-        symbol_market = exchange.get_market_status(symbol)
+        symbol_market = exchange.get_market_status(symbol, price_example=price)
 
         return current_symbol_holding, current_market_quantity, market_quantity, price, symbol_market
 
@@ -224,11 +233,8 @@ class AbstractTradingModeCreatorWithBot(AbstractTradingModeCreator):
         super().__init__(trading_mode)
         self.trader = trader
         self.parent_portfolio = self.trader.get_portfolio()
-        self.sub_portfolio = SubPortfolio(self.trading_mode.config,
-                                          self.trader,
-                                          self.parent_portfolio,
-                                          sub_portfolio_percent,
-                                          is_relative=True)
+        self.sub_portfolio = SubPortfolio(self.trading_mode.config, self.trader, self.parent_portfolio,
+                                          sub_portfolio_percent)
 
     @abstractmethod
     def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
