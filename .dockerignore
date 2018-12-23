@@ -4,11 +4,12 @@
 
 # Remove Git
 .git/
+.github/
 .gitattributes
 .gitignore
 
 # Ignore log files
-# logs/
+logs/
 
 # CI files
 .coveragerc
@@ -18,11 +19,10 @@ appveyor.yml
 renovate.json
 setup.cfg
 tox.ini
-wercker.yml
 
-# python files
-launcher.py
+# octobot
+tentacles/
+config.json
 
 # others
-CODE_OF_CONDUCT.md
-CONTRIBUTING.md
+*.md
