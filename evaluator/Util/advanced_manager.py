@@ -117,7 +117,7 @@ class AdvancedManager:
         classes = []
         if class_type.get_name() in AdvancedManager._get_advanced_classes_list(config):
             classes = AdvancedManager._get_advanced_classes_list(config)[class_type.get_name()]
-        if not classes or get_all_classes:
+        if not classes or (get_all_classes and class_type not in classes):
             classes.append(class_type)
         return classes
 
