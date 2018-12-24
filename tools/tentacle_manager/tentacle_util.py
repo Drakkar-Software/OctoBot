@@ -1,3 +1,19 @@
+#  Drakkar-Software OctoBot
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
 import os
 import shutil
 import copy
@@ -15,8 +31,12 @@ from config import EVALUATOR_DEFAULT_FOLDER, TENTACLE_TYPES, EVALUATOR_CONFIG_FO
 from tools.config_manager import ConfigManager
 
 
-def tentacles_arch_exists():
-    return os.path.exists(TENTACLES_PATH)
+def tentacles_arch_exists() -> bool:
+    try:
+        import tentacles
+        return os.path.exists(TENTACLES_PATH) and os.path.exists("{0}/{1}".format(TENTACLES_PATH, TENTACLES_TEST_PATH))
+    except ImportError:
+        return False
 
 
 def delete_tentacles_arch():

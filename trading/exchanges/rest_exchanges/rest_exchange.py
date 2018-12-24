@@ -1,3 +1,19 @@
+#  Drakkar-Software OctoBot
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
 import logging
 
 from ccxt import OrderNotFound, BaseError, InsufficientFunds
@@ -51,9 +67,9 @@ class RESTExchange(AbstractExchange):
                     'verbose': False,
                     'enableRateLimit': True
                 })
-            except Exception:
+            except Exception as e:
                 self.client = self.exchange_type({'verbose': False})
-                self.logger.error("Exchange configuration tokens are invalid : please check your configuration !")
+                self.logger.error(f"Exchange configuration tokens are invalid : please check your configuration ! ({e})")
         else:
             self.client = self.exchange_type({'verbose': False})
             self.logger.error("configuration issue: missing login information !")
@@ -62,8 +78,8 @@ class RESTExchange(AbstractExchange):
     def get_market_status(self, symbol, price=None):
         try:
             return self.fix_market_status(self.client.find_market(symbol))
-        except Exception:
-            self.logger.error(f"Fail to get market status of {symbol}")
+        except Exception as e:
+            self.logger.error(f"Fail to get market status of {symbol}: {e}")
             return {}
 
     @staticmethod
@@ -231,6 +247,7 @@ class RESTExchange(AbstractExchange):
             raise e
         except Exception as e:
             self._log_error(e, order_type, symbol, quantity, price, stop_price)
+            self.logger.exception(e)
         return None
 
     def _log_error(self, error, order_type, symbol, quantity, price, stop_price):

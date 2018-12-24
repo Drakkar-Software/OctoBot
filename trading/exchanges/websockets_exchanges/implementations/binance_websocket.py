@@ -1,3 +1,19 @@
+#  Drakkar-Software OctoBot
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
 from binance.client import Client, BinanceAPIException
 from binance.websockets import BinanceSocketManager
 from config.config import decrypt
@@ -23,9 +39,9 @@ class BinanceWebSocketClient(AbstractWebSocket):
         try:
             self.client = Client(decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
                                  decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]))
-        except Exception:
+        except Exception as e:
             self.client = Client("", "")
-            self.logger.error("Exchange configuration tokens are invalid : please check your configuration !")
+            self.logger.error(f"Exchange configuration tokens are invalid : please check your configuration ! ({e})")
 
         self.socket_manager = None
         self.open_sockets_keys = {}

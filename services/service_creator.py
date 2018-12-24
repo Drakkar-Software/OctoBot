@@ -1,3 +1,19 @@
+#  Drakkar-Software OctoBot
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
 from tools.logging.logging_util import get_logger
 from services.abstract_service import *
 from config import *
@@ -25,6 +41,7 @@ class ServiceCreator:
                         service_instance.say_hello()
                     except Exception as e:
                         logger.error(f"{service_class.get_name()} preparation produced the following error: {e}")
+                        logger.exception(e)
                 else:
                     if service_instance.get_should_warn():
                         logger.warning(f"{service_class.get_name()} can't be initialized: configuration is missing, "

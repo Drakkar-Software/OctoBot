@@ -1,3 +1,19 @@
+#  Drakkar-Software OctoBot
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
 from flask import render_template, request, jsonify
 
 from . import advanced
@@ -27,7 +43,7 @@ def strategy_optimizer():
                     risks = request_data["risks"]
                     success, reply = start_optimizer(strategy, time_frames, evaluators, risks)
                 except Exception as e:
-                    return get_rest_reply('{"start_optimizer": "ko: ' + e + '"}', 500)
+                    return get_rest_reply('{"start_optimizer": "ko: ' + str(e) + '"}', 500)
 
         if success:
             return get_rest_reply(jsonify(reply))

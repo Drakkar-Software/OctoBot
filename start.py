@@ -1,3 +1,19 @@
+#  Drakkar-Software OctoBot
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
 import argparse
 import logging
 import sys
@@ -84,7 +100,7 @@ def start_octobot(starting_args):
             else:
                 if not tentacles_arch_exists():
                     logger.info("No tentacles found installing default...")
-                    Commands.package_manager(config, ["install", "all"])
+                    Commands.package_manager(config, ["install", "all"], force=True)
 
                 config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
                 if config[CONFIG_EVALUATOR] is None:
