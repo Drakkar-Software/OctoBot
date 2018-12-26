@@ -1,4 +1,4 @@
-FROM python:3.6.6
+FROM python:3.7.2
 
 ARG OCTOBOT_INSTALL_DIR="octobot"
 
