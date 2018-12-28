@@ -44,25 +44,25 @@ class PrettyPrinter:
 
     @staticmethod
     def trade_pretty_printer(trade):
-        currency = trade.get_currency()
-        market = trade.get_market()
+        currency = trade.currency
+        market = trade.market
 
         try:
-            order_type_name = trade.get_order_type().name
+            order_type_name = trade.order_type.name
         except AttributeError:
             try:
-                order_type_name = OrderConstants.TraderOrderTypeClasses[trade.get_order_type()].__name__
+                order_type_name = OrderConstants.TraderOrderTypeClasses[trade.order_type].__name__
             except KeyError:
-                order_type_name = trade.get_order_type().__class__.__name__
+                order_type_name = trade.order_type.__class__.__name__
 
         return "{0}: {1} {2} at {3} {4} on {5}: {6} ".format(
             order_type_name,
-            PrettyPrinter.get_min_string_from_number(trade.get_quantity()),
+            PrettyPrinter.get_min_string_from_number(trade.quantity),
             currency,
-            PrettyPrinter.get_min_string_from_number(trade.get_price()),
+            PrettyPrinter.get_min_string_from_number(trade.price),
             market,
-            trade.get_exchange_name(),
-            convert_timestamp_to_datetime(trade.get_filled_time()))
+            trade.exchange.get_name(),
+            convert_timestamp_to_datetime(trade.filled_time))
 
     @staticmethod
     def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):
