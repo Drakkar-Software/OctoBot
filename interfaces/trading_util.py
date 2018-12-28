@@ -273,14 +273,14 @@ def get_trades_by_times_and_prices(symbol, side, force_timezone=False):
 
     for trader in traders:
         for trade in trader.get_trades_manager().get_trade_history():
-            if trade.get_symbol() == symbol:
-                if trade.get_side() == side:
+            if trade.symbol == symbol:
+                if trade.side == side:
                     if trader.get_simulate():
-                        simulated_trades_times.append(trade.get_filled_time())
-                        simulated_trades_prices.append(trade.get_price())
+                        simulated_trades_times.append(trade.filled_time)
+                        simulated_trades_prices.append(trade.price)
                     else:
-                        real_trades_times.append(trade.get_filled_time())
-                        real_trades_prices.append(trade.get_price())
+                        real_trades_times.append(trade.filled_time)
+                        real_trades_prices.append(trade.price)
 
         real_times = convert_timestamps_to_datetime(real_trades_times, force_timezone=force_timezone)
         simulated_times = convert_timestamps_to_datetime(simulated_trades_times, force_timezone=force_timezone)
