@@ -2,13 +2,11 @@ notifications:
   email: false
 
 sudo: enabled
-
-os:
-  - linux
-
+os: linux
 language: python
+cache: pip
+
 python:
-  - "3.6"
 #  - "3.7"
   - "nightly"
 
@@ -21,11 +19,14 @@ install:
   - cp ./config/default_config.json ./config.json
   - python3 start.py -p install all
 
-script:
-  - pytest --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests
+jobs:
+  include:
+    - stage: test
+      script: pytest --cov=. --cov-config=.coveragerc tests/unit_tests
+    -
+      script: pytest --cov=. --cov-config=.coveragerc tests/functional_tests
+    -
+      script: pytest --cov=. --cov-config=.coveragerc tests/endurance_tests
 
 after_success:
   - if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "dev" ]; then bash coveralls; fi'
-
-after_failure:
-  - dmesg | grep -i kill
