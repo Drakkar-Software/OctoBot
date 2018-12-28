@@ -14,67 +14,47 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from dataclasses import dataclass, field
+
+from config import OrderStatus, TradeOrderSide
+from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
+from trading.trader.order import Order
+
+
+@dataclass
 class Trade:
-    def __init__(self, exchange, order):
-        self.currency, self.market = order.get_currency_and_market()
-        self.quantity = order.get_filled_quantity()
-        self.price = order.get_filled_price()
-        self.order_type = order.get_order_type()
-        self.final_status = order.get_status()
-        self.fee = order.get_fee()
-        self.order_id = order.get_id()
-        self.side = order.get_side()
+    """
+    Dataclass to store trade informations
+    """
 
-        self.creation_time = order.get_creation_time()
-        self.canceled_time = order.get_canceled_time()
-        self.filled_time = order.get_executed_time()
-        self.symbol = order.get_order_symbol()
+    canceled_time: int = field(init=False, repr=False)
+    currency: str = field(init=False, repr=False)
+    creation_time: int = field(init=False, repr=False)
+    exchange: ExchangeDispatcher
+    fee: float = field(init=False, repr=False)
+    filled_time: int = field(init=False, repr=False)
+    final_status: OrderStatus = field(init=False, repr=False)
+    market: str = field(init=False, repr=False)
+    order: Order
+    order_id: str = field(init=False, repr=False)
+    order_type: Order = field(init=False, repr=False)
+    price: float = field(init=False, repr=False)
+    quantity: float = field(init=False, repr=False)
+    side: TradeOrderSide = field(init=False, repr=False)
+    simulated: bool = field(init=False, repr=False)
+    symbol: str = field(init=False, repr=False)
 
-        self.simulated = order.trader.simulate
-
-        self.exchange = exchange
-
-    def get_price(self):
-        return self.price
-
-    def get_symbol(self):
-        return self.symbol
-
-    def get_order_id(self):
-        return self.order_id
-
-    def get_exchange_name(self):
-        return self.exchange.get_name()
-
-    def get_quantity(self):
-        return self.quantity
-
-    def get_currency(self):
-        return self.currency
-
-    def get_market(self):
-        return self.market
-
-    def get_fee(self):
-        return self.fee
-
-    def get_final_status(self):
-        return self.final_status
-
-    def get_canceled_time(self):
-        return self.canceled_time
-
-    def get_filled_time(self):
-        return self.filled_time
-
-    def get_creation_time(self):
-        return self.creation_time
-
-    def get_order_type(self):
-        return self.order_type
-
-    def get_simulated(self):
-        return self.simulated
-
-    def get_side(self):
-        return self.side
+    def __post_init__(self):
+        self.currency, self.market = self.order.get_currency_and_market()
+        self.quantity = self.order.get_filled_quantity()
+        self.price = self.order.get_filled_price()
+        self.order_type = self.order.get_order_type()
+        self.final_status = self.order.get_status()
+        self.fee = self.order.get_fee()
+        self.order_id = self.order.get_id()
+        self.side = self.order.get_side()
+        self.creation_time = self.order.get_creation_time()
+        self.canceled_time = self.order.get_canceled_time()
+        self.filled_time = self.order.get_executed_time()
+        self.symbol = self.order.get_order_symbol()
+        self.simulated = self.order.trader.simulate

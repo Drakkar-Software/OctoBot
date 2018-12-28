@@ -49,6 +49,7 @@ class Order:
         self.currency, self.market = None, None
         self.order_id = None
         self.status = None
+        self.status = None
         self.order_type = None
         self.creation_time = 0
         self.canceled_time = 0

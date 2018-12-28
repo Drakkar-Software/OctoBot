@@ -13,12 +13,12 @@
 
 {% macro trades_tr(trade, type='', timestamp='', sim_or_real='Simulated') -%}
     <tr>
-        <th scope="row">{{ trade.get_order_id() }}</th>
-        <td>{{ trade.get_exchange_name() }}</td>
-        <td>{{ trade.get_symbol() }}</td>
+        <th scope="row">{{ trade.order_id }}</th>
+        <td>{{ trade.exchange.get_name() }}</td>
+        <td>{{ trade.symbol }}</td>
         <td>{{ type }}</td>
-        <td>{{ trade.get_price() }}</td>
-        <td>{{ trade.get_quantity() }}</td>
+        <td>{{ trade.price }}</td>
+        <td>{{ trade.quantity }}</td>
         <td>{{ sim_or_real }}</td>
         <td>{{ timestamp }}</td>
     </tr>
