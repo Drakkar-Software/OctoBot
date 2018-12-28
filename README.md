@@ -3,7 +3,6 @@
 [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/overview/dev) 
 [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/OctoBot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) 
 [![Build Status](https://api.travis-ci.org/Drakkar-Software/OctoBot.svg?branch=dev)](https://travis-ci.org/Drakkar-Software/OctoBot) 
-[![Build Status](https://semaphoreci.com/api/v1/herklos/octobot/branches/dev/shields_badge.svg)](https://semaphoreci.com/herklos/octobot) 
 [![Build status](https://ci.appveyor.com/api/projects/status/jr9o8sghywnued9x?svg=true)](https://ci.appveyor.com/project/Herklos/octobot)
 <p align="center">
 <img src="../assets/octopus.svg" alt="Octobot Logo" height="400" width="400">
