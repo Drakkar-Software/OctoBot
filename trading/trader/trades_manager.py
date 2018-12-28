@@ -68,7 +68,7 @@ class TradesManager:
             return DEFAULT_REFERENCE_MARKET
 
     def is_in_history(self, order):
-        return any([order.get_id() == trade.get_order_id() for trade in self.trade_history])
+        return any([order.get_id() == trade.order_id for trade in self.trade_history])
 
     def get_origin_portfolio(self):
         return self.origin_portfolio
@@ -80,7 +80,7 @@ class TradesManager:
         return self.trade_history
 
     def select_trade_history(self, symbol=None):
-        return [trade for trade in self.trade_history if trade.get_symbol() == symbol] \
+        return [trade for trade in self.trade_history if trade.symbol == symbol] \
             if symbol is not None else self.trade_history
 
     def add_new_trade_in_history(self, trade):
