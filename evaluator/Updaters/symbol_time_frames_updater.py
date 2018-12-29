@@ -13,9 +13,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-import threading
+import asyncio
 import time
+
 from tools.logging.logging_util import get_logger
 import copy
 
@@ -23,16 +23,15 @@ from backtesting.backtesting import Backtesting, BacktestingEndedException
 from config import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPING_TIME
 from tools.time_frame_manager import TimeFrameManager
 
-"""
-This class (Thread) supervise evaluators data refresh :
-- Get updated data from exchange
-- Deliver new data in each evaluator that needs to be updated (specified by its time frame) 
-"""
 
+class SymbolTimeFramesDataUpdaterThread:
+    """
+    This class supervise evaluators data refresh :
+    - Get updated data from exchange
+    - Deliver new data in each evaluator that needs to be updated (specified by its time frame)
+    """
 
-class SymbolTimeFramesDataUpdaterThread(threading.Thread):
     def __init__(self):
-        super().__init__()
         self.evaluator_threads_manager_by_time_frame = {}
         self.refreshed_times = {}
         self.time_frame_last_update = {}
@@ -73,7 +72,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
             for time_frame in time_frames:
                 self._refresh_time_frame_data(time_frame)
 
-    def _execute_update(self, symbol, exchange, time_frames, backtesting_enabled):
+    async def _execute_update(self, symbol, exchange, time_frames, backtesting_enabled):
         now = time.time()
 
         for time_frame in time_frames:
@@ -96,10 +95,10 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
 
                 self.time_frame_last_update[time_frame] = time.time()
 
-        self._update_pause(backtesting_enabled, now)
+        await self._update_pause(backtesting_enabled, now)
 
     # start background refresher
-    def run(self):
+    async def start(self):
         exchange = None
         symbol = None
         error = None
@@ -128,7 +127,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                 self.time_frame_last_update = {key: 0 for key in time_frames}
 
                 while self.keep_running:
-                    self._execute_update(symbol, exchange, time_frames, backtesting_enabled)
+                    await self._execute_update(symbol, exchange, time_frames, backtesting_enabled)
             else:
                 self.logger.warning("no time frames to monitor, going to sleep.")
 
@@ -144,14 +143,14 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                 self.watcher.set_error(error)
 
     # calculate thread sleep between each refresh
-    def _update_pause(self, backtesting_enabled, now):
+    async def _update_pause(self, backtesting_enabled, now):
         if not backtesting_enabled:
             sleeping_time = UPDATER_MAX_SLEEPING_TIME - (time.time() - now)
             if sleeping_time > 0:
-                time.sleep(sleeping_time)
+                await asyncio.sleep(sleeping_time)
         else:
             while not self.ensure_finished_other_threads_tasks():
-                time.sleep(0.001)
+                await asyncio.sleep(0.001)
 
     # currently used only during backtesting, will force refresh of each supervised thread
     def ensure_finished_other_threads_tasks(self):

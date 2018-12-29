@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
 
 from tools.logging.logging_util import get_logger
 import time
@@ -234,10 +235,10 @@ class OctoBot:
         for manager in self.symbol_threads_manager.values():
             manager.start_threads()
 
-        for thread in self.symbol_time_frame_updater_threads:
+        for task in self.symbol_time_frame_updater_threads:
             if self.watcher is not None:
-                thread.set_watcher(self.watcher)
-            thread.start()
+                task.set_watcher(self.watcher)
+            asyncio.create_task(task.start())
 
         for thread in self.dispatchers_list:
             thread.start()
@@ -248,9 +249,6 @@ class OctoBot:
     def join_threads(self):
         for manager in self.symbol_threads_manager:
             self.symbol_threads_manager[manager].join_threads()
-
-        for thread in self.symbol_time_frame_updater_threads:
-            thread.join()
 
         for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
             crypto_currency_evaluator.join_threads()
@@ -268,8 +266,8 @@ class OctoBot:
 
         self.logger.info("Stopping threads ...")
 
-        for thread in self.symbol_time_frame_updater_threads:
-            thread.stop()
+        for task in self.symbol_time_frame_updater_threads:
+            task.stop()
 
         for manager in self.symbol_threads_manager.values():
             manager.stop_threads()
