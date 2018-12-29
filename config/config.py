@@ -16,6 +16,7 @@
 
 import json
 import logging
+import os
 from shutil import copyfile
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -36,7 +37,6 @@ def load_config(config_file=CONFIG_FILE, error=True):
             raise Exception(error_str)
         else:
             logger.error(error_str)
-
     except IOError as e:
         error_str = "{0} : file opening failed ({1})".format(basic_error, e)
         if error:
@@ -57,6 +57,10 @@ def init_config(config_file=CONFIG_FILE, from_config_file=DEFAULT_CONFIG_FILE):
         copyfile(from_config_file, config_file)
     except Exception as e:
         raise Exception("Can't init config file {0}".format(e))
+
+
+def is_config_empty(config_file=CONFIG_FILE):
+    return os.stat(config_file).st_size == 0
 
 
 def encrypt(data):
