@@ -255,12 +255,6 @@ class OctoBot:
         for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
             crypto_currency_evaluator.join_threads()
 
-        for trader in self.exchange_traders.values():
-            trader.join_order_manager()
-
-        for trader_simulator in self.exchange_trader_simulators.values():
-            trader_simulator.join_order_manager()
-
         for thread in self.dispatchers_list:
             thread.join()
 

@@ -79,7 +79,7 @@ class Commands:
             optimizer.print_report()
 
     @staticmethod
-    def start_bot(bot, logger, catch=False):
+    async def start_bot(bot, logger, catch=False):
         try:
             # try to init
             bot.create_exchange_traders()
