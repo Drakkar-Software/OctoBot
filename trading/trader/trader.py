@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
+import asyncio
 import copy
 from tools.logging.logging_util import get_logger
 
@@ -49,6 +49,7 @@ class Trader:
         self.trades_manager = TradesManager(config, self)
 
         self.order_manager = OrdersManager(config, self)
+        self.order_manager_task = None
 
         self.exchange.get_exchange_manager().register_trader(self)
 
@@ -63,7 +64,7 @@ class Trader:
                 # can current orders received: start using websocket for orders if available
                 self.exchange.get_exchange_personal_data().init_orders()
 
-            self.order_manager.start()
+            self.start_order_manager()
             self.logger.debug(f"Enabled on {self.exchange.get_name()}")
         else:
             self.logger.debug(f"Disabled on {self.exchange.get_name()}")
@@ -386,9 +387,8 @@ class Trader:
     def stop_order_manager(self):
         self.order_manager.stop()
 
-    def join_order_manager(self):
-        if self.order_manager.isAlive():
-            self.order_manager.join()
+    async def start_order_manager(self):
+        self.order_manager_task = asyncio.create_task(self.order_manager.start())
 
     def get_simulate(self):
         return self.simulate

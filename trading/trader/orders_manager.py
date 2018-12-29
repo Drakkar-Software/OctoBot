@@ -13,26 +13,23 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-from tools.logging.logging_util import get_logger
-import threading
-from time import sleep
+import asyncio
 import copy
 
 from backtesting.backtesting import Backtesting
 from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
+from tools.logging.logging_util import get_logger
 from trading.trader.order import Order
 
-""" OrdersManager class will perform the supervision of each open order of the exchange trader
-Data updating process is generic but a specific implementation is called for each type of order (TraderOrderTypeClasses)
-The thread will perform this data update and the open orders status check each ORDER_REFRESHER_TIME seconds
-This class is particularly needed when exchanges doesn't offer stop loss orders
-This class has an essential role for the trader simulator """
 
+class OrdersManager:
+    """ OrdersManager class will perform the supervision of each open order of the exchange trader
+    Data updating process is generic but a specific implementation is called for each type of order (TraderOrderTypeClasses)
+    The thread will perform this data update and the open orders status check each ORDER_REFRESHER_TIME seconds
+    This class is particularly needed when exchanges doesn't offer stop loss orders
+    This class has an essential role for the trader simulator """
 
-class OrdersManager(threading.Thread):
     def __init__(self, config, trader):
-        super().__init__()
         self.config = config
         self.keep_running = True
         self.trader = trader
@@ -52,8 +49,10 @@ class OrdersManager(threading.Thread):
     def has_order_id_in_list(self, order_id):
         return any([order.get_id() == order_id for order in self.order_list])
 
-    # Remove the specified order of the current open_order list (when the order is filled or canceled)
     def remove_order_from_list(self, order):
+        """
+        Remove the specified order of the current open_order list (when the order is filled or canceled)
+        """
         try:
             if order in self.order_list:
                 self.order_list.remove(order)
@@ -69,8 +68,10 @@ class OrdersManager(threading.Thread):
     def stop(self):
         self.keep_running = False
 
-    # Update each open order symbol with exchange data
     def _update_last_symbol_list(self, uniformize_timestamps=False):
+        """
+        Update each open order symbol with exchange data
+        """
         updated = []
         for order in self.order_list:
             if isinstance(order, Order) and order.get_order_symbol() not in updated:
@@ -78,8 +79,11 @@ class OrdersManager(threading.Thread):
 
                 updated.append(order.get_order_symbol())
 
-    # Ask to update a specific symbol with exchange data
     def _update_last_symbol_prices(self, symbol, uniformize_timestamps=False):
+        """
+        Ask to update a specific symbol with exchange data
+        """
+
         exchange = self.trader.get_exchange()
 
         if Backtesting.enabled(self.config):
@@ -113,12 +117,13 @@ class OrdersManager(threading.Thread):
         else:
             raise NotImplementedError("force_update_order_status(blocking=False) not implemented")
 
-    """ prepare order status updating by getting price data
-    then ask orders to check their status
-    Finally ask cancellation and filling process if it is required
-    """
-
     def _update_orders_status(self, simulated_time=False):
+        """
+        Prepare order status updating by getting price data
+        then ask orders to check their status
+        Finally ask cancellation and filling process if it is required
+        """
+
         # update all prices
         self._update_last_symbol_list(True)
 
@@ -139,8 +144,11 @@ class OrdersManager(threading.Thread):
                                          f"at {odr.get_filled_price()}")
                         odr.close_order()
 
-    # Threading method that will periodically update orders status with update_orders_status
-    def run(self):
+    async def start(self):
+        """
+        Async method that will periodically update orders status with update_orders_status
+        """
+
         if Backtesting.enabled(self.config):
             self.keep_running = False
         while self.keep_running:
@@ -150,6 +158,6 @@ class OrdersManager(threading.Thread):
             except Exception as e:
                 self.logger.error("Error when updating orders")
                 self.logger.exception(e)
-                sleep(self.order_refresh_time)
+                await asyncio.sleep(self.order_refresh_time)
 
-            sleep(self.order_refresh_time)
+            await asyncio.sleep(self.order_refresh_time)

@@ -15,6 +15,7 @@
 #  License along with this library.
 
 import argparse
+import asyncio
 import logging
 import sys
 import os
@@ -141,7 +142,13 @@ def start_octobot(starting_args):
                             logging.error("{0}, impossible to display GUI".format(e))
 
                     if starting_args.start:
-                        Commands.start_bot(bot, logger)
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            loop.run_until_complete(Commands.start_bot(bot, logger))
+                        finally:
+                            loop.run_until_complete(loop.shutdown_asyncgens())
+                            loop.close()
 
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")
