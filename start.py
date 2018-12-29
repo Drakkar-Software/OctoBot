@@ -21,7 +21,7 @@ import os
 import traceback
 from logging.config import fileConfig
 
-from config.config import load_config, init_config
+from config.config import load_config, init_config, is_config_empty
 from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
@@ -79,7 +79,7 @@ def start_octobot(starting_args):
             # configuration loading
             config = load_config(error=False)
 
-            if config is None:
+            if config is None and is_config_empty():
                 logger.info("No configuration found creating default...")
                 init_config()
                 config = load_config(error=False)
