@@ -1,5 +1,35 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.2.4-beta
+====================
+*Released date : December 30 2018*
+
+# Concerned issues :
+    #433 [Style] Fix code errors 
+    #446 added real trader resync on InsufficientFunds 
+    #448 added refresh_real_trader telegram command  
+    #450 fixed services startup config check 
+    #456 Implement docker configuration persistence 
+    #457 improved data collector and market view select UX
+    #461 fixed generic card bug with space containing names 
+    #474 Implement exchange market status fixer 
+    #475 removed trailing new line 
+    #477 added stack trace print on all relevant exceptions
+    #483 fixed multiple addition in classes list
+    #486 Refactor Trade class 
+    
+# New features :
+    - Docker image ready
+    - Forced refresh telegram command
+    - Exchange market status fixer
+    - Update python version to python 3.7.2
+    
+# Bug fixes :
+    - Fixed trading marge colors 
+    - Fixed binance api new version
+    - Fixed config load erasing bug
+    - Web minor fixes
+
 Changelog for 0.2.3-beta
 ====================
 *Released date : November 17 2018*

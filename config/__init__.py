@@ -18,7 +18,7 @@ from logging import WARNING
 from enum import Enum
 
 PROJECT_NAME = "OctoBot"
-SHORT_VERSION = "0.2.3"
+SHORT_VERSION = "0.2.4"
 MINOR_VERSION = "0"
 VERSION_DEV_PHASE = "beta"
 VERSION = f"{SHORT_VERSION}-{VERSION_DEV_PHASE}"
