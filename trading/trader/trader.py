@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import copy
+import asyncio
 from tools.logging.logging_util import get_logger
 
 from backtesting.backtesting import Backtesting
@@ -388,7 +389,8 @@ class Trader:
 
     def start_order_manager(self):
         if not Backtesting.enabled(self.config):
-            self.order_manager.poll_update()
+            loop = asyncio.get_event_loop()
+            self.order_manager.poll_update(loop)
 
     def get_simulate(self):
         return self.simulate
