@@ -15,6 +15,7 @@
 #  License along with this library.
 import asyncio
 import copy
+from functools import partial
 
 from backtesting.backtesting import Backtesting
 from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
@@ -144,7 +145,7 @@ class OrdersManager:
                                          f"at {odr.get_filled_price()}")
                         odr.close_order()
 
-    def poll_update(self):
+    def poll_update(self, loop):
         """
         Async method that will periodically update orders status with update_orders_status
         Should never be called in backtesting
@@ -156,5 +157,4 @@ class OrdersManager:
             self.logger.error("Error when updating orders")
             self.logger.exception(e)
 
-        loop = asyncio.get_event_loop()
-        loop.call_later(self.order_refresh_time, self.poll_update)
+        loop.call_later(self.order_refresh_time, partial(self.poll_update, loop))
