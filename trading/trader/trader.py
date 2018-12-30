@@ -13,10 +13,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import asyncio
 import copy
 from tools.logging.logging_util import get_logger
 
+from backtesting.backtesting import Backtesting
 from config import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType
 from tools.pretty_printer import PrettyPrinter
@@ -49,7 +49,6 @@ class Trader:
         self.trades_manager = TradesManager(config, self)
 
         self.order_manager = OrdersManager(config, self)
-        self.order_manager_task = None
 
         self.exchange.get_exchange_manager().register_trader(self)
 
@@ -387,8 +386,9 @@ class Trader:
     def stop_order_manager(self):
         self.order_manager.stop()
 
-    async def start_order_manager(self):
-        self.order_manager_task = asyncio.create_task(self.order_manager.start())
+    def start_order_manager(self):
+        if not Backtesting.enabled(self.config):
+            self.order_manager.poll_update()
 
     def get_simulate(self):
         return self.simulate

@@ -144,20 +144,17 @@ class OrdersManager:
                                          f"at {odr.get_filled_price()}")
                         odr.close_order()
 
-    async def start(self):
+    def poll_update(self):
         """
         Async method that will periodically update orders status with update_orders_status
+        Should never be called in backtesting
         """
+        try:
+            # call update status
+            self._update_orders_status()
+        except Exception as e:
+            self.logger.error("Error when updating orders")
+            self.logger.exception(e)
 
-        if Backtesting.enabled(self.config):
-            self.keep_running = False
-        while self.keep_running:
-            try:
-                # call update status
-                self._update_orders_status()
-            except Exception as e:
-                self.logger.error("Error when updating orders")
-                self.logger.exception(e)
-                await asyncio.sleep(self.order_refresh_time)
-
-            await asyncio.sleep(self.order_refresh_time)
+        loop = asyncio.get_event_loop()
+        loop.call_later(self.order_refresh_time, self.poll_update)

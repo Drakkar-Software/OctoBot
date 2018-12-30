@@ -17,6 +17,7 @@
 from tools.logging.logging_util import get_logger
 import os
 import sys
+import asyncio
 
 from backtesting.collector.data_collector import DataCollector
 from config.config import encrypt
@@ -87,7 +88,12 @@ class Commands:
 
             # try to start
             bot.start_threads()
-            bot.join_threads()
+
+            # join threads in a not loop blocking executor
+            #TODO remove this when no thread anymore
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, bot.join_threads)
+
         except Exception as e:
             logger.exception(f"OctoBot Exception : {e}")
             if not catch:
