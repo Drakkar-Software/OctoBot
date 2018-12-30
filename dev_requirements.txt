@@ -5,7 +5,4 @@ pytest-cov
 coverage
 coveralls
 
-tox
-tox-travis
-
 pyinstaller
