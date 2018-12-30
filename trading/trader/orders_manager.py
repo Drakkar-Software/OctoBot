@@ -157,4 +157,5 @@ class OrdersManager:
             self.logger.error("Error when updating orders")
             self.logger.exception(e)
 
-        loop.call_later(self.order_refresh_time, partial(self.poll_update, loop))
+        if self.keep_running:
+            loop.call_later(self.order_refresh_time, partial(self.poll_update, loop))
