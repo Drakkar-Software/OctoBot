@@ -15,7 +15,7 @@
 #  License along with this library.
 
 from tools.logging.logging_util import get_logger
-from threading import Lock
+from asyncio import Lock
 
 from config import *
 from trading.trader.order import OrderConstants
@@ -38,33 +38,32 @@ class Portfolio:
         self.is_simulated = trader.simulate
         self.is_enabled = trader.enable
         self.portfolio = {}
-        self._load_portfolio()
         self.logger = get_logger(self.__class__.__name__)
         self.lock = Lock()
 
-    # Disposable design pattern
-    def __enter__(self):
-        self.lock.acquire()
-        return self
+    async def initialize(self):
+        await self._load_portfolio()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.lock.release()
+    # syntax: "async with xxx.get_lock():"
+    # TODO find better way to handle async lock: reuse disposable design pattern ?
+    def get_lock(self):
+        return self.lock
 
     # Load exchange portfolio / simulated portfolio from config
-    def _load_portfolio(self):
+    async def _load_portfolio(self):
         if self.is_enabled:
             if self.is_simulated:
                 self.set_starting_simulated_portfolio()
             else:
-                self.update_portfolio_balance()
+                await self.update_portfolio_balance()
 
     def set_starting_simulated_portfolio(self):
         self.portfolio = {currency: {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
                           for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items()}
 
-    def update_portfolio_balance(self):
+    async def update_portfolio_balance(self):
         if not self.is_simulated and self.is_enabled:
-            balance = self.trader.get_exchange().get_balance()
+            balance = await self.trader.get_exchange().get_balance()
 
             self.portfolio = {currency: {Portfolio.AVAILABLE: balance[currency][CONFIG_PORTFOLIO_FREE],
                                          Portfolio.TOTAL: balance[currency][CONFIG_PORTFOLIO_TOTAL]}
@@ -99,7 +98,7 @@ class Portfolio:
     Returns get_profitability() return
     """
 
-    def update_portfolio(self, order):
+    async def update_portfolio(self, order):
         if self.is_simulated:
             # stop losses and take profits aren't using available portfolio
             if not self._check_available_should_update(order):
@@ -140,7 +139,7 @@ class Portfolio:
                                      market_portfolio_num,
                                      self.portfolio))
         else:
-            self.update_portfolio_balance()
+            await self.update_portfolio_balance()
             self.logger.info("Portfolio updated | Current Portfolio : {0}".format(self.portfolio))
 
     """ update_portfolio_available performs the availability update of the concerned currency in the current portfolio

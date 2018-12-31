@@ -131,15 +131,16 @@ class OrdersManager:
         await self._update_last_symbol_list(True)
 
         for order in copy.copy(self.order_list):
-            # symbol prices from exchange
-            if order.get_order_symbol() in self.last_symbol_prices:
-                with order as odr:
-                    odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
 
             # ask orders to update their status
-            with order as odr:
+            async with order.get_lock():
+                odr = order
+                # update symbol prices from exchange
+                if odr.get_order_symbol() in self.last_symbol_prices:
+                    odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
+
                 if odr in self.order_list:
-                    odr.update_order_status(simulated_time=simulated_time)
+                    await odr.update_order_status(simulated_time=simulated_time)
 
                     if odr.get_status() == OrderStatus.FILLED:
                         self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} (ID : {odr.get_id()})"
