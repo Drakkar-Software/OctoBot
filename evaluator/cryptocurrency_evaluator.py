@@ -17,7 +17,7 @@
 from tools.logging.logging_util import get_logger
 
 from backtesting.backtesting import Backtesting
-from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateThread
+from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateTask
 from evaluator.evaluator_creator import EvaluatorCreator
 from config import CONFIG_EVALUATORS_WILDCARD
 
@@ -43,7 +43,7 @@ class CryptocurrencyEvaluator:
 
             self.social_not_threaded_list = EvaluatorCreator.create_social_not_threaded_list(self.social_eval_list)
 
-        self.social_evaluator_refresh = SocialEvaluatorNotThreadedUpdateThread(self.social_not_threaded_list)
+        self.social_evaluator_refresh_task = SocialEvaluatorNotThreadedUpdateTask(self.social_not_threaded_list)
 
     def add_symbol_evaluator(self, symbol, symbol_evaluator):
         self.symbol_evaluator_list[symbol] = symbol_evaluator
@@ -62,24 +62,14 @@ class CryptocurrencyEvaluator:
     def activate_strategies(self, strategies, exchange):
         self._activate_deactivate_strategies(strategies, exchange, True)
 
-    def start_threads(self):
-        self.social_evaluator_refresh.start()
-
-    def stop_threads(self):
-        for thread in self.social_eval_list:
-            thread.stop()
-
-        self.social_evaluator_refresh.stop()
-
-    def join_threads(self):
-        for thread in self.social_eval_list:
-            if thread.is_alive():
-                thread.join()
-
-        self.social_evaluator_refresh.join()
+    def get_social_evaluator_refresh_task(self):
+        return self.social_evaluator_refresh_task.start_loop()
 
     def get_social_eval_list(self):
         return self.social_eval_list
+
+    def get_social_tasked_eval_list(self):
+        return [s for s in self.social_eval_list if s.get_is_to_be_started_as_task()]
 
     def get_dispatchers_list(self):
         return self.dispatchers_list

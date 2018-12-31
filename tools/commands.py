@@ -82,16 +82,16 @@ class Commands:
     @staticmethod
     async def start_bot(bot, logger, catch=False):
         try:
+            loop = asyncio.get_event_loop()
             # try to init
-            bot.create_exchange_traders()
+            await bot.create_exchange_traders()
             bot.create_evaluation_threads()
 
             # try to start
-            bot.start_threads()
+            await bot.start_tasks()
 
             # join threads in a not loop blocking executor
             #TODO remove this when no thread anymore
-            loop = asyncio.get_event_loop()
             await loop.run_in_executor(None, bot.join_threads)
 
         except Exception as e:

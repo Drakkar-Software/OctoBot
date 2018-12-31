@@ -47,10 +47,10 @@ class EvaluatorCreator:
         return ta_eval_instance_list
 
     @staticmethod
-    def create_dispatchers(config):
+    def create_dispatchers(config, main_async_loop):
         dispatchers_list = []
         for dispatcher_class in AbstractDispatcher.__subclasses__():
-            dispatcher_instance = dispatcher_class(config)
+            dispatcher_instance = dispatcher_class(config, main_async_loop)
             if dispatcher_instance.get_is_setup_correctly():
                 dispatchers_list.append(dispatcher_instance)
         return dispatchers_list
@@ -79,8 +79,8 @@ class EvaluatorCreator:
                                 .format(social_eval_class_instance.get_name(), symbol))
 
                 # start refreshing thread if the thread is not manage by dispatcher
-                elif is_evaluator_to_be_used and social_eval_class_instance.get_is_threaded():
-                    social_eval_class_instance.start()
+                elif is_evaluator_to_be_used and social_eval_class_instance.get_is_to_be_independently_tasked():
+                    social_eval_class_instance.set_is_to_be_started_as_task(True)
 
                 if is_evaluator_to_be_used:
                     social_eval_list.append(social_eval_class_instance)
@@ -106,7 +106,7 @@ class EvaluatorCreator:
                 real_time_eval_class_instance.set_logger(get_logger(real_time_eval_class.get_name()))
 
                 # start refreshing thread
-                real_time_eval_class_instance.start()
+                real_time_eval_class_instance.set_is_to_be_started_as_task(True)
 
                 real_time_ta_eval_list.append(real_time_eval_class_instance)
 
@@ -118,7 +118,7 @@ class EvaluatorCreator:
         return [
             social_eval
             for social_eval in social_eval_list
-            if not social_eval.get_is_threaded()
+            if not social_eval.get_is_to_be_started_as_task()
         ]
 
     @staticmethod
