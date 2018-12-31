@@ -34,7 +34,6 @@ class AbstractEvaluator:
         self.logger = None
         self.config = None
         self.enabled = True
-        self.is_updating = False
         self.symbol = None
         self.history_time = None
 
@@ -45,6 +44,8 @@ class AbstractEvaluator:
         self.eval_note_changed_time = None
 
         self.is_active = True
+
+        self.is_to_be_started_as_task = False
 
     @classmethod
     def get_name(cls):
@@ -95,6 +96,10 @@ class AbstractEvaluator:
     def get_eval_note(self):
         return self.eval_note
 
+    # set to true if start_task has to be called to start evaluator
+    def set_is_to_be_started_as_task(self, value):
+        self.is_to_be_started_as_task = value
+
     # Pertinence of indicator will be used with the eval_note to provide a relevancy
     def get_pertinence(self):
         return self.pertinence
@@ -108,10 +113,6 @@ class AbstractEvaluator:
     def get_is_enabled(self):
         return self.enabled
 
-    # If the eval method is running
-    def get_is_updating(self):
-        return self.is_updating
-
     # Active tells if this evaluator is currently activated (an evaluator can be paused)
     def get_is_active(self):
         return self.is_active
@@ -120,13 +121,14 @@ class AbstractEvaluator:
     def get_symbol(self):
         return self.symbol
 
-    # generic eval that will call the indicator eval()
-    # and provide a safe execution by disabling multi-call
-    def eval(self) -> None:
-        self.is_updating = True
+    def get_is_to_be_started_as_task(self):
+        return self.is_to_be_started_as_task
+
+    # generic eval that will call the indicator eval_impl()
+    async def eval(self) -> None:
         try:
             self.ensure_eval_note_is_not_expired()
-            self.eval_impl()
+            await self.eval_impl()
         except Exception as e:
             if ConfigManager.is_in_dev_mode(self.config):
                 raise e
@@ -136,7 +138,6 @@ class AbstractEvaluator:
             if self.eval_note == "nan":
                 self.eval_note = START_PENDING_EVAL_NOTE
                 self.logger.warning(str(self.symbol) + " evaluator returned 'nan' as eval_note, ignoring this value.")
-            self.is_updating = False
 
     # eval new data
     # Notify if new data is relevant
@@ -148,7 +149,7 @@ class AbstractEvaluator:
     #           self.need_to_notify = True
     #       self.eval_note += note
     @abstractmethod
-    def eval_impl(self) -> None:
+    async def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
 
     # reset temporary parameters to enable fresh start
@@ -215,3 +216,16 @@ class AbstractEvaluator:
                 self.eval_note = START_PENDING_EVAL_NOTE
                 self.eval_note_time_to_live = None
                 self.eval_note_changed_time = None
+
+    # async task that can be use get_data to provide real time data
+    # will ONLY be called if self.is_to_be_started_as_task is set to True
+    # example :
+    # def start_task(self):
+    #     while True:
+    #         self.get_data()                           --> pull the new data
+    #         self.eval()                               --> create a notification if necessary
+    #         await asyncio.sleep(own_time * MINUTE_TO_SECONDS)  --> use its own refresh time
+
+    @abstractmethod
+    async def start_task(self) -> None:
+        raise NotImplementedError("start_task not implemented")

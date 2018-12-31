@@ -15,6 +15,7 @@
 #  License along with this library.
 
 from copy import deepcopy
+import asyncio
 
 from tools.logging.logging_util import get_logger
 
@@ -57,7 +58,8 @@ class TradesManager:
 
         self.reference_market = TradesManager.get_reference_market(self.config)
 
-        self._init_origin_portfolio_and_currencies_value()
+    async def initialize(self):
+        await self._init_origin_portfolio_and_currencies_value()
 
     @staticmethod
     def get_reference_market(config):
@@ -91,23 +93,23 @@ class TradesManager:
     and set currencies_prices attribute
     """
 
-    def _update_currencies_prices(self, symbol):
-        self.currencies_last_prices[symbol] = \
-            self.exchange.get_price_ticker(symbol)[ExchangeConstantsTickersColumns.LAST.value]
+    async def _update_currencies_prices(self, symbol):
+        ticker = await self.exchange.get_price_ticker(symbol)
+        self.currencies_last_prices[symbol] = ticker[ExchangeConstantsTickersColumns.LAST.value]
 
     """ Get profitability calls get_currencies_prices to update required data
     Then calls get_portfolio_current_value to set the current value of portfolio_current_value attribute
     Returns the profitability, the profitability percentage and the difference with the last portfolio profitability
     """
 
-    def get_profitability(self, with_market=False):
+    async def get_profitability(self, with_market=False):
         self.profitability_diff = self.profitability_percent
         self.profitability = 0
         self.profitability_percent = 0
         market_profitability_percent = None
 
         try:
-            self._update_portfolio_and_currencies_current_value()
+            await self._update_portfolio_and_currencies_current_value()
 
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
 
@@ -120,7 +122,7 @@ class TradesManager:
             self.profitability_diff = self.profitability_percent - self.profitability_diff
 
             if with_market:
-                market_profitability_percent = self.get_average_market_profitability()
+                market_profitability_percent = await self.get_average_market_profitability()
 
         except Exception as e:
             self.logger.error(str(e))
@@ -132,8 +134,8 @@ class TradesManager:
     """ Returns the % move average of all the watched cryptocurrencies between bot's start time and now
     """
 
-    def get_average_market_profitability(self):
-        self.get_current_crypto_currencies_values()
+    async def get_average_market_profitability(self):
+        await self.get_current_crypto_currencies_values()
 
         origin_values = [value / self.origin_crypto_currencies_values[currency]
                          for currency, value
@@ -142,17 +144,16 @@ class TradesManager:
 
         return sum(origin_values) / len(origin_values) * 100 - 100 if origin_values else 0
 
-    def get_current_crypto_currencies_values(self):
+    async def get_current_crypto_currencies_values(self):
         if not self.current_crypto_currencies_values:
-            self._update_portfolio_and_currencies_current_value()
+            await self._update_portfolio_and_currencies_current_value()
         return self.current_crypto_currencies_values
 
-    def get_current_holdings_values(self):
-        holdings = self.get_current_crypto_currencies_values()
-        with self.portfolio as pf:
-            current_portfolio = deepcopy(pf.get_portfolio())
+    async def get_current_holdings_values(self):
+        holdings = await self.get_current_crypto_currencies_values()
+        current_portfolio = deepcopy(self.portfolio.get_portfolio())
 
-        return {currency: self._get_currency_value(current_portfolio, currency, holdings)
+        return {currency: await self._get_currency_value(current_portfolio, currency, holdings)
                 for currency in holdings.keys()}
 
     def get_profitability_without_update(self):
@@ -177,39 +178,38 @@ class TradesManager:
                 if symbol not in self.traded_currencies_without_market_specific:
                     self.traded_currencies_without_market_specific.add(symbol)
 
-    def _update_portfolio_and_currencies_current_value(self):
-        self.current_crypto_currencies_values = self._evaluate_config_crypto_currencies_values()
+    async def _update_portfolio_and_currencies_current_value(self):
+        self.current_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
 
-        with self.portfolio as pf:
-            current_portfolio = deepcopy(pf.get_portfolio())
+        current_portfolio = deepcopy(self.portfolio.get_portfolio())
 
-        self.portfolio_current_value = self._evaluate_portfolio_value(current_portfolio,
-                                                                      self.current_crypto_currencies_values)
+        self.portfolio_current_value = await self._evaluate_portfolio_value(current_portfolio,
+                                                                            self.current_crypto_currencies_values)
 
-    def _init_origin_portfolio_and_currencies_value(self):
-        self.origin_crypto_currencies_values = self._evaluate_config_crypto_currencies_values()
+    async def _init_origin_portfolio_and_currencies_value(self):
+        self.origin_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
 
         with self.portfolio as pf:
             self.origin_portfolio = deepcopy(pf.get_portfolio())
 
-        self.portfolio_origin_value += self._evaluate_portfolio_value(self.origin_portfolio,
-                                                                      self.origin_crypto_currencies_values)
+        self.portfolio_origin_value += await self._evaluate_portfolio_value(self.origin_portfolio,
+                                                                            self.origin_crypto_currencies_values)
 
     """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reference currency
     It will try to create the symbol that fit with the exchange logic
     Returns the value found of this currency quantity, if not found returns 0     
     """
 
-    def _try_get_value_of_currency(self, currency, quantity):
+    async def _try_get_value_of_currency(self, currency, quantity):
         symbol = merge_currencies(currency, self.reference_market)
         symbol_inverted = merge_currencies(self.reference_market, currency)
 
         if self.exchange.get_exchange_manager().symbol_exists(symbol):
-            self._update_currencies_prices(symbol)
+            await self._update_currencies_prices(symbol)
             return self.currencies_last_prices[symbol] * quantity
 
         elif self.exchange.get_exchange_manager().symbol_exists(symbol_inverted):
-            self._update_currencies_prices(symbol_inverted)
+            await self._update_currencies_prices(symbol_inverted)
             return quantity / self.currencies_last_prices[symbol_inverted]
 
         else:
@@ -220,7 +220,7 @@ class TradesManager:
                 self.logger.info(f"Can't find matching symbol for {currency} and {self.reference_market}")
             return 0
 
-    def _evaluate_config_crypto_currencies_values(self):
+    async def _evaluate_config_crypto_currencies_values(self):
         values_dict = {}
         evaluated_currencies = set()
         for crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].values():
@@ -228,10 +228,10 @@ class TradesManager:
             if pairs:
                 currency, market = split_symbol(pairs[0])
                 if currency not in evaluated_currencies:
-                    values_dict[currency] = self._evaluate_value(currency, 1)
+                    values_dict[currency] = await self._evaluate_value(currency, 1)
                     evaluated_currencies.add(currency)
                 if market not in evaluated_currencies:
-                    values_dict[market] = self._evaluate_value(market, 1)
+                    values_dict[market] = await self._evaluate_value(market, 1)
                     evaluated_currencies.add(market)
         return values_dict
 
@@ -239,24 +239,24 @@ class TradesManager:
     Returns the calculated quantity value in reference (attribute) currency
     """
 
-    def _evaluate_portfolio_value(self, portfolio, currencies_values=None):
+    async def _evaluate_portfolio_value(self, portfolio, currencies_values=None):
         return sum([
-            self._get_currency_value(portfolio, currency, currencies_values)
+            await self._get_currency_value(portfolio, currency, currencies_values)
             for currency in portfolio
         ])
 
-    def _get_currency_value(self, portfolio, currency, currencies_values=None):
+    async def _get_currency_value(self, portfolio, currency, currencies_values=None):
         if currency in portfolio and portfolio[currency][Portfolio.TOTAL] != 0:
             if currencies_values and currency in currencies_values:
                 return currencies_values[currency] * portfolio[currency][Portfolio.TOTAL]
             else:
-                return self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
+                return await self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
         return 0
 
     # Evaluate value returns the currency quantity value in the reference (attribute) currency
-    def _evaluate_value(self, currency, quantity):
+    async def _evaluate_value(self, currency, quantity):
         # easy case --> the current currency is the reference currency
         if currency == self.reference_market:
             return quantity
         else:
-            return self._try_get_value_of_currency(currency, quantity)
+            return await self._try_get_value_of_currency(currency, quantity)

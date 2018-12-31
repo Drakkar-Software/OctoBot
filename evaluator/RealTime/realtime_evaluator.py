@@ -15,7 +15,7 @@
 #  License along with this library.
 
 import os
-import threading
+import asyncio
 import time
 from abc import *
 
@@ -26,7 +26,7 @@ from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.time_frame_manager import TimeFrameManager
 
 
-class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
+class RealTimeEvaluator(AbstractEvaluator):
     __metaclass__ = AbstractEvaluator
 
     def __init__(self):
@@ -34,7 +34,7 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
         self.specific_config = None
         self.refresh_time = 0
         self.data = None
-        self.evaluator_thread_managers = []
+        self.evaluator_task_managers = []
         self.keep_running = True
         self.load_config()
 
@@ -54,11 +54,12 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
             self.set_default_config()
 
     def add_evaluator_thread_manager(self, evaluator_thread):
-        self.evaluator_thread_managers.append(evaluator_thread)
+        self.evaluator_task_managers.append(evaluator_thread)
 
-    def notify_evaluator_thread_managers(self, notifier_name, force_TA_refresh=False):
-        for thread in self.evaluator_thread_managers:
-            thread.notify(notifier_name, force_TA_refresh=force_TA_refresh)
+    async def notify_evaluator_thread_managers(self, notifier_name, force_TA_refresh=False):
+        for task_manager in self.evaluator_task_managers:
+            await task_manager.notify(notifier_name, force_TA_refresh=force_TA_refresh,
+                                      finalize=True, interruption=True)
 
     # to implement in subclasses if config necessary
     def set_default_config(self):
@@ -77,25 +78,26 @@ class RealTimeEvaluator(AbstractEvaluator, threading.Thread):
         raise NotImplementedError("_define_refresh_time not implemented")
 
     @abstractmethod
-    def eval_impl(self) -> None:
+    async def eval_impl(self) -> None:
         raise NotImplementedError("eval_impl not implemented")
 
-    def run(self):
+    async def start_task(self):
         while self.keep_running:
             now = time.time()
             if self.is_active:
                 try:
-                    self._refresh_data()
+                    await self._refresh_data()
                 except Exception as e:
-                    self.logger.error("error when refreshing data for {0}: {1}".format(self.symbol, e))
+                    self.logger.error(f"error when refreshing data for {self.symbol}: {e}")
 
                 if self._should_eval():
-                    self.eval()
+                    await self.eval()
 
             if not Backtesting.enabled(self.config):
                 sleeping_time = self.specific_config[CONFIG_REFRESH_RATE] - (time.time() - now)
+                sleeping_time = 5
                 if sleeping_time > 0:
-                    time.sleep(sleeping_time)
+                    await asyncio.sleep(sleeping_time)
 
 
 class RealTimeTAEvaluator(RealTimeEvaluator):
@@ -112,7 +114,7 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
         raise NotImplementedError("_refresh_data not implemented")
 
     @abstractmethod
-    def eval_impl(self):
+    async def eval_impl(self):
         raise NotImplementedError("eval_impl not implemented")
 
     def valid_refresh_time(self, config_refresh_time):
@@ -125,9 +127,9 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
     def _define_refresh_time(self):
         self.refresh_time = self.valid_refresh_time(self.specific_config[CONFIG_REFRESH_RATE])
 
-    def _get_data_from_exchange(self, time_frame, limit=None, return_list=False):
-        return self.exchange.get_symbol_prices(self.symbol, time_frame,
-                                               limit=limit, return_list=return_list)
+    async def _get_data_from_exchange(self, time_frame, limit=None, return_list=False):
+        return await self.exchange.get_symbol_prices(self.symbol, time_frame,
+                                                     limit=limit, return_list=return_list)
 
     @staticmethod
     def _compare_data(new_data, old_data):

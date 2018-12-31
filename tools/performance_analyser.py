@@ -14,17 +14,16 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
+import asyncio
 import os
-import threading
-import time
-
 import psutil
+
+from tools.logging.logging_util import get_logger
 
 from config import MINUTE_TO_SECONDS, CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN
 
 
-class PerformanceAnalyser(threading.Thread):
+class PerformanceAnalyser:
     def __init__(self):
         super().__init__()
         self.keep_running = True
@@ -33,10 +32,10 @@ class PerformanceAnalyser(threading.Thread):
         self.pid = os.getpid()
         self.py = psutil.Process(self.pid)
 
-    def run(self):
+    async def start_monitoring(self):
         while self.keep_running:
             self.logger.info("CPU : {0}% RAM : {1} Go".format(self._get_cpu(), self._get_ram_go()))
-            time.sleep(self.interval)
+            await asyncio.sleep(self.interval)
 
     def stop(self):
         self.keep_running = False
