@@ -57,12 +57,13 @@ class Trader:
             self.order_manager.set_order_refresh_time(order_refresh_time)
 
     async def initialize(self):
+        await self.portfolio.initialize()
         await self.trades_manager.initialize()
 
     async def launch(self):
         if self.enable:
             if not self.simulate:
-                self.update_open_orders()
+                await self.update_open_orders()
                 # self.update_close_orders()
 
                 # can current orders received: start using websocket for orders if available
@@ -139,7 +140,7 @@ class Trader:
 
         return order
 
-    def create_order(self, order, portfolio, loaded=False):
+    async def create_order(self, order, portfolio, loaded=False):
         linked_to = None
 
         new_order = order
@@ -182,6 +183,16 @@ class Trader:
 
         return new_order
 
+    async def create_artificial_order(self, order_type, symbol, current_price, quantity, price, linked_portfolio):
+        market_sell = self.create_order_instance(order_type=order_type,
+                                                 symbol=symbol,
+                                                 current_price=current_price,
+                                                 quantity=quantity,
+                                                 price=price,
+                                                 linked_portfolio=linked_portfolio)
+        async with self.get_portfolio().get_lock():
+            await self.create_order(market_sell, self.get_portfolio())
+
     def _create_not_loaded_order(self, order, new_order, portfolio) -> Order:
         if not self.simulate and not self.check_if_self_managed(new_order.get_order_type()):
             created_order = self.exchange.create_order(new_order.get_order_type(),
@@ -203,13 +214,15 @@ class Trader:
 
         return new_order
 
-    def cancel_order(self, order):
+    async def cancel_order(self, order):
         if not order.is_cancelled() and not order.is_filled():
-            order.cancel_order()
-            self.logger.info(f"{order.get_order_symbol()} {order.get_name()} at {order.get_origin_price()}"
-                             f" (ID : {order.get_id()}) cancelled on {self.get_exchange().get_name()}")
+            async with order.get_lock():
+                odr = order
+                odr.cancel_order()
+                self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} at {odr.get_origin_price()}"
+                                 f" (ID : {odr.get_id()}) cancelled on {self.get_exchange().get_name()}")
 
-            self.order_manager.remove_order_from_list(order)
+                self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
     async def cancel_open_orders(self, symbol, cancel_loaded_orders=True):
@@ -225,21 +238,22 @@ class Trader:
             if order.get_status() is not OrderStatus.CANCELED:
                 await self.notify_order_close(order, True)
 
-    def notify_order_cancel(self, order):
+    async def notify_order_cancel(self, order):
         # update portfolio with ended order
-        self.get_order_portfolio(order).update_portfolio_available(order, is_new_order=False)
+        async with self.get_order_portfolio(order).get_lock():
+            self.get_order_portfolio(order).update_portfolio_available(order, is_new_order=False)
 
     async def notify_order_close(self, order, cancel=False, cancel_linked_only=False):
         # Cancel linked orders
         for linked_order in order.get_linked_orders():
-            self.cancel_order(linked_order)
+            await self.cancel_order(linked_order)
 
         # If need to cancel the order call the method and no need to update the portfolio (only availability)
         if cancel:
             order_closed = None
             orders_canceled = order.get_linked_orders() + [order]
 
-            self.cancel_order(order)
+            await self.cancel_order(order)
             _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
 
         elif cancel_linked_only:
@@ -253,7 +267,8 @@ class Trader:
             orders_canceled = order.get_linked_orders()
 
             # update portfolio with ended order
-            self.get_order_portfolio(order).update_portfolio(order)
+            async with self.get_order_portfolio(order).get_lock():
+                await self.get_order_portfolio(order).update_portfolio(order)
 
             profitability, profitability_percent, profitability_diff, _ = \
                 await self.get_trades_manager().get_profitability()
@@ -276,7 +291,7 @@ class Trader:
 
         # update current order list with exchange
         if not self.simulate:
-            self.update_open_orders(order.get_order_symbol())
+            await self.update_open_orders(order.get_order_symbol())
 
         # notification
         order.get_order_notifier().end(order_closed,
@@ -294,7 +309,7 @@ class Trader:
             for close_order in self.exchange.get_closed_orders(symbol):
                 self.parse_exchange_order_to_trade_instance(close_order, Order(self))
 
-    def update_open_orders(self, symbol=None):
+    async def update_open_orders(self, symbol=None):
         if symbol:
             symbols = [symbol]
         else:
@@ -302,20 +317,21 @@ class Trader:
 
         # get orders from exchange for the specified symbols
         for symbol_traded in symbols:
-            orders = self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
+            orders = await self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)
-                self.create_order(order, self.portfolio, True)
+                async with self.portfolio.get_lock():
+                    await self.create_order(order, self.portfolio, True)
 
-    def force_refresh_portfolio(self, portfolio=None):
+    async def force_refresh_portfolio(self, portfolio=None):
         if not self.simulate:
             self.logger.info(f"Triggered forced {self.exchange.get_name()} trader portfolio refresh")
             if portfolio:
-                portfolio.update_portfolio_balance()
+                await portfolio.update_portfolio_balance()
             else:
-                self.portfolio.update_portfolio_balance()
+                await self.portfolio.update_portfolio_balance()
 
-    def force_refresh_orders(self, portfolio=None):
+    async def force_refresh_orders(self, portfolio=None):
         # useless in simulation mode
         if not self.simulate:
             self.logger.info(f"Triggered forced {self.exchange.get_name()} trader orders refresh")
@@ -324,15 +340,15 @@ class Trader:
             # get orders from exchange for the specified symbols
             for symbol_traded in symbols:
 
-                orders = self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
+                orders = await self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
                 for open_order in orders:
                     # do something only if order not already in list
                     if not self.order_manager.has_order_id_in_list(open_order["id"]):
                         order = self.parse_exchange_order_to_order_instance(open_order)
                         if portfolio:
-                            self.create_order(order, portfolio, True)
+                            await self.create_order(order, portfolio, True)
                         else:
-                            self.create_order(order, self.portfolio, True)
+                            await self.create_order(order, self.portfolio, True)
 
     def parse_exchange_order_to_order_instance(self, order):
         return self.create_order_instance(order_type=self.parse_order_type(order),

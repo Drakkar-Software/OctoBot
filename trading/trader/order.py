@@ -17,7 +17,7 @@
 import time
 import math
 from abc import *
-from threading import Lock
+from asyncio import Lock
 from tools.logging.logging_util import get_logger
 
 from tools.symbol_util import split_symbol
@@ -66,13 +66,10 @@ class Order:
         self.linked_orders = []
         self.lock = Lock()
 
-    # Disposable design pattern
-    def __enter__(self):
-        self.lock.acquire()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.lock.release()
+    # syntax: "async with xxx.get_lock():"
+    # TODO find better way to handle async lock: reuse disposable design pattern ?
+    def get_lock(self):
+        return self.lock
 
     # create the order by setting all the required values
     def new(self, order_type, symbol, current_price, quantity,
@@ -116,7 +113,7 @@ class Order:
 
     # update_order_status will define the rules for a simulated order to be filled / canceled
     @abstractmethod
-    def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, simulated_time=False):
         raise NotImplementedError("Update_order_status not implemented")
 
     # check_last_prices is used to collect data to perform the order update_order_status process
@@ -151,11 +148,11 @@ class Order:
 
         self.trader.notify_order_cancel(self)
 
-    def cancel_from_exchange(self):
+    async def cancel_from_exchange(self):
         self.status = OrderStatus.CANCELED
         self.canceled_time = time.time()
-        self.trader.notify_order_cancel(self)
-        self.trader.notify_order_close(self, cancel_linked_only=True)
+        await self.trader.notify_order_cancel(self)
+        await self.trader.notify_order_close(self, cancel_linked_only=True)
         self.trader.get_order_manager().remove_order_from_list(self)
 
     async def close_order(self):
@@ -277,13 +274,13 @@ class Order:
     def get_name(cls):
         return cls.__name__
 
-    def default_exchange_update_order_status(self):
-        result = self.exchange.get_order(self.order_id, self.symbol)
+    async def default_exchange_update_order_status(self):
+        result = await self.exchange.get_order(self.order_id, self.symbol)
         new_status = self.trader.parse_status(result)
         if new_status == OrderStatus.FILLED:
             self.trader.parse_exchange_order_to_trade_instance(result, self)
         elif new_status == OrderStatus.CANCELED:
-            self.cancel_from_exchange()
+            await self.cancel_from_exchange()
 
     def generate_executed_time(self, simulated_time=False):
         if not simulated_time or not self.last_prices:
@@ -297,9 +294,9 @@ class BuyMarketOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.BUY
 
-    def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, simulated_time=False):
         if not self.trader.simulate:
-            self.default_exchange_update_order_status()
+            await self.default_exchange_update_order_status()
         else:
             # ONLY FOR SIMULATION
             self.status = OrderStatus.FILLED
@@ -315,9 +312,9 @@ class BuyLimitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.BUY
 
-    def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, simulated_time=False):
         if not self.trader.simulate:
-            self.default_exchange_update_order_status()
+            await self.default_exchange_update_order_status()
         else:
             # ONLY FOR SIMULATION
             if self.check_last_prices(self.origin_price, True, simulated_time):
@@ -333,9 +330,9 @@ class SellMarketOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, simulated_time=False):
         if not self.trader.simulate:
-            self.default_exchange_update_order_status()
+            await self.default_exchange_update_order_status()
         else:
             # ONLY FOR SIMULATION
             self.status = OrderStatus.FILLED
@@ -351,9 +348,9 @@ class SellLimitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, simulated_time=False):
         if not self.trader.simulate:
-            self.default_exchange_update_order_status()
+            await self.default_exchange_update_order_status()
         else:
             # ONLY FOR SIMULATION
             if self.check_last_prices(self.origin_price, False, simulated_time):
@@ -369,21 +366,15 @@ class StopLossOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, simulated_time=False):
         if self.check_last_prices(self.origin_price, True, simulated_time):
             self.status = OrderStatus.FILLED
             self.filled_price = self.origin_price
             self.filled_quantity = self.origin_quantity
             self.executed_time = self.generate_executed_time(simulated_time)
             if not self.trader.simulate:
-                market_sell = self.trader.create_order_instance(order_type=TraderOrderType.SELL_MARKET,
-                                                                symbol=self.symbol,
-                                                                current_price=self.origin_price,
-                                                                quantity=self.origin_quantity,
-                                                                price=self.origin_price,
-                                                                linked_portfolio=self.linked_portfolio)
-                with self.trader.get_portfolio() as pf:
-                    self.trader.create_order(market_sell, pf)
+                self.trader.create_artificial_order(TraderOrderType.SELL_MARKET, self.symbol, self.origin_price,
+                                                    self.origin_quantity, self.origin_price, self.linked_portfolio)
 
 
 # TODO
@@ -392,7 +383,7 @@ class StopLossLimitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, simulated_time=False):
         pass
 
 
@@ -402,7 +393,7 @@ class TakeProfitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, simulated_time=False):
         pass
 
 
@@ -412,7 +403,7 @@ class TakeProfitLimitOrder(Order):
         super().__init__(exchange)
         self.side = TradeOrderSide.SELL
 
-    def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, simulated_time=False):
         pass
 
 
