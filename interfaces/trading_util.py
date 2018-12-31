@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
+
 
 from interfaces import get_bot
 from trading.trader.portfolio import Portfolio
@@ -45,7 +47,7 @@ def get_portfolio_holdings():
         if trader.enabled(trader.config):
             trade_manager = trader.get_trades_manager()
 
-            trader_currencies_values = trade_manager.get_current_holdings_values()
+            trader_currencies_values = get_bot().run_in_main_asyncio_loop(trade_manager.get_current_holdings_values())
 
             if trader.get_simulate():
                 _merge_portfolio_in_first(simulated_currency_portfolio, trader_currencies_values)
@@ -172,7 +174,8 @@ def get_global_profitability():
             trade_manager = trader.get_trades_manager()
 
             # TODO : use other return values
-            current_value, _, _, market_average_profitability = trade_manager.get_profitability(True)
+            current_value, _, _, market_average_profitability = \
+                get_bot().run_in_main_asyncio_loop(trade_manager.get_profitability(True))
 
             if trader.get_simulate():
                 simulated_full_origin_value += trade_manager.get_portfolio_origin_value()

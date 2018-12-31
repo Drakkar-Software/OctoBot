@@ -17,15 +17,16 @@
 from tools.logging.logging_util import get_logger
 import time
 import copy
+import asyncio
 
-import ccxt
+import ccxt.async_support as ccxt
 
 from backtesting.backtesting import Backtesting
 from config import CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
     NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, \
-    CONFIG_EVALUATORS_WILDCARD
-from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
+    CONFIG_EVALUATORS_WILDCARD, DEFAULT_FUTURE_TIMEOUT
+from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
@@ -35,6 +36,7 @@ from services import ServiceCreator
 from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
+from tools.asyncio_tools import run_coroutine_in_asyncio_loop
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
@@ -108,9 +110,15 @@ class OctoBot:
         self.symbol_evaluator_list = {}
         self.crypto_currency_evaluator_list = {}
         self.dispatchers_list = []
-        self.symbol_time_frame_updater_threads = []
+        self.global_updaters_by_exchange = {}
+        self.async_loop = None
+        self.social_eval_tasks = []
+        self.real_time_eval_tasks = []
 
-    def create_exchange_traders(self):
+        self.main_task_group = None
+
+    async def create_exchange_traders(self):
+        self.async_loop = asyncio.get_running_loop()
         available_exchanges = ccxt.exchanges
         for exchange_class_string in self.config[CONFIG_EXCHANGES]:
             if exchange_class_string in available_exchanges:
@@ -122,16 +130,20 @@ class OctoBot:
                 else:
                     # Real Exchange
                     exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False)
+                await exchange_manager.initialize()
 
                 exchange_inst = exchange_manager.get_exchange()
                 self.exchanges_list[exchange_inst.get_name()] = exchange_inst
+                self.global_updaters_by_exchange[exchange_inst.get_name()] = GlobalPriceUpdater(exchange_inst)
 
                 # create trader instance for this exchange
                 exchange_trader = Trader(self.config, exchange_inst)
+                await exchange_trader.initialize()
                 self.exchange_traders[exchange_inst.get_name()] = exchange_trader
 
                 # create trader simulator instance for this exchange
                 exchange_trader_simulator = TraderSimulator(self.config, exchange_inst)
+                await exchange_trader_simulator.initialize()
                 self.exchange_trader_simulators[exchange_inst.get_name()] = exchange_trader_simulator
 
                 # create trading mode
@@ -149,7 +161,7 @@ class OctoBot:
         self.logger.info("Evaluation threads creation...")
 
         # create dispatchers
-        self.dispatchers_list = EvaluatorCreator.create_dispatchers(self.config)
+        self.dispatchers_list = EvaluatorCreator.create_dispatchers(self.config, self.async_loop)
 
         # create Social and TA evaluators
         for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
@@ -158,6 +170,7 @@ class OctoBot:
             crypto_currency_evaluator = CryptocurrencyEvaluator(self.config, crypto_currency,
                                                                 self.dispatchers_list, self.relevant_evaluators)
             self.crypto_currency_evaluator_list[crypto_currency] = crypto_currency_evaluator
+            self.social_eval_tasks = self.social_eval_tasks + crypto_currency_evaluator.get_social_tasked_eval_list()
 
             # create TA evaluators
             for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
@@ -171,12 +184,14 @@ class OctoBot:
                 self.symbol_evaluator_list[symbol] = symbol_evaluator
 
                 for exchange in self.exchanges_list.values():
+                    global_price_updater = self.global_updaters_by_exchange[exchange.get_name()]
                     if exchange.get_exchange_manager().enabled():
 
                         # Verify that symbol exists on this exchange
                         if symbol in exchange.get_exchange_manager().get_traded_pairs():
                             self._create_symbol_threads_managers(exchange,
-                                                                 symbol_evaluator)
+                                                                 symbol_evaluator,
+                                                                 global_price_updater)
 
                         # notify that exchange doesn't support this symbol
                         else:
@@ -185,7 +200,7 @@ class OctoBot:
 
         self._check_required_evaluators()
 
-    def _create_symbol_threads_managers(self, exchange, symbol_evaluator):
+    def _create_symbol_threads_managers(self, exchange, symbol_evaluator, global_price_updater):
 
         if Backtesting.enabled(self.config):
             real_time_ta_eval_list = []
@@ -195,22 +210,23 @@ class OctoBot:
                                                                                 exchange,
                                                                                 symbol_evaluator.get_symbol(),
                                                                                 self.relevant_evaluators)
-        symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
+            self.real_time_eval_tasks = self.real_time_eval_tasks + real_time_ta_eval_list
+
         for time_frame in self.time_frames:
             if exchange.get_exchange_manager().time_frame_exists(time_frame.value, symbol_evaluator.get_symbol()):
                 self.symbol_threads_manager[time_frame] = EvaluatorThreadsManager(self.config,
                                                                                   time_frame,
-                                                                                  symbol_time_frame_updater_thread,
+                                                                                  global_price_updater,
                                                                                   symbol_evaluator,
                                                                                   exchange,
                                                                                   self.exchange_trading_modes
                                                                                   [exchange.get_name()],
                                                                                   real_time_ta_eval_list,
+                                                                                  self.async_loop,
                                                                                   self.relevant_evaluators)
             else:
                 self.logger.warning(f"{exchange.get_name()} exchange is not supporting the required time frame: "
                                     f"'{time_frame.value}' for {symbol_evaluator.get_symbol()}.")
-        self.symbol_time_frame_updater_threads.append(symbol_time_frame_updater_thread)
 
     def _check_required_evaluators(self):
         if self.symbol_threads_manager:
@@ -224,42 +240,43 @@ class OctoBot:
                                           f"current strategy. Activate it in OctoBot advanced configuration interface "
                                           f"to allow activated strategy(ies) to work properly.")
 
-    def start_threads(self):
+    async def start_tasks(self):
+        task_list = []
         if self.performance_analyser:
-            self.performance_analyser.start()
+            task_list.append(self.performance_analyser.start_monitoring())
 
         for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
-            crypto_currency_evaluator.start_threads()
+            task_list.append(crypto_currency_evaluator.get_social_evaluator_refresh_task())
 
-        for manager in self.symbol_threads_manager.values():
-            manager.start_threads()
+        for trader in self.exchange_traders.values():
+            task_list.append(trader.launch())
 
-        for thread in self.symbol_time_frame_updater_threads:
+        for trader_simulator in self.exchange_trader_simulators.values():
+            task_list.append(trader_simulator.launch())
+
+        for updater in self.global_updaters_by_exchange.values():
             if self.watcher is not None:
-                thread.set_watcher(self.watcher)
-            thread.start()
+                updater.set_watcher(self.watcher)
+            task_list.append(updater.start_update_loop())
+
+        for real_time_eval in self.real_time_eval_tasks:
+            task_list.append(real_time_eval .start_task())
+
+        for social_eval in self.social_eval_tasks:
+            task_list.append(social_eval.start_task())
 
         for thread in self.dispatchers_list:
             thread.start()
 
+        self.logger.info("Evaluation tasks started...")
         self.ready = True
-        self.logger.info("Evaluation threads started...")
+        self.main_task_group = asyncio.gather(*task_list)
+        await self.main_task_group
 
     def join_threads(self):
-        for manager in self.symbol_threads_manager:
-            self.symbol_threads_manager[manager].join_threads()
-
-        for thread in self.symbol_time_frame_updater_threads:
-            thread.join()
-
-        for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
-            crypto_currency_evaluator.join_threads()
 
         for thread in self.dispatchers_list:
             thread.join()
-
-        if self.performance_analyser:
-            self.performance_analyser.join()
 
     def stop_threads(self):
         # Notify stopping
@@ -268,26 +285,10 @@ class OctoBot:
 
         self.logger.info("Stopping threads ...")
 
-        for thread in self.symbol_time_frame_updater_threads:
-            thread.stop()
-
-        for manager in self.symbol_threads_manager.values():
-            manager.stop_threads()
-
-        for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
-            crypto_currency_evaluator.stop_threads()
-
-        for trader in self.exchange_traders.values():
-            trader.stop_order_manager()
-
-        for trader_simulator in self.exchange_trader_simulators.values():
-            trader_simulator.stop_order_manager()
+        self.main_task_group.cancel()
 
         for thread in self.dispatchers_list:
             thread.stop()
-
-        if self.performance_analyser:
-            self.performance_analyser.stop()
 
         # stop services
         for service_instance in ServiceCreator.get_service_instances(self.config):
@@ -305,6 +306,9 @@ class OctoBot:
     @staticmethod
     def _class_is_in_list(class_list, required_klass):
         return any(required_klass in klass.get_parent_evaluator_classes() for klass in class_list)
+
+    def run_in_main_asyncio_loop(self, coroutine):
+        return run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
 
     def set_watcher(self, watcher):
         self.watcher = watcher
@@ -336,8 +340,8 @@ class OctoBot:
     def get_dispatchers_list(self):
         return self.dispatchers_list
 
-    def get_symbol_time_frame_updater_threads(self):
-        return self.symbol_time_frame_updater_threads
+    def get_global_updaters_by_exchange(self):
+        return self.global_updaters_by_exchange
 
     def get_start_time(self):
         return self.start_time
@@ -359,3 +363,6 @@ class OctoBot:
 
     def get_trading_mode(self):
         return self.trading_mode
+
+    def get_async_loop(self):
+        return self.async_loop

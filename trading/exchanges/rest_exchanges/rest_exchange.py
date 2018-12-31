@@ -16,7 +16,7 @@
 
 import logging
 
-from ccxt import OrderNotFound, BaseError, InsufficientFunds
+from ccxt.async_support import OrderNotFound, BaseError, InsufficientFunds
 
 from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 from config.config import decrypt
@@ -45,9 +45,11 @@ class RESTExchange(AbstractExchange):
 
         # We will need to create the rest client and fetch exchange config
         self.create_client()
-        self.client.load_markets()
 
         self.all_currencies_price_ticker = None
+
+    async def initialize(self):
+        await self.client.load_markets()
 
     def get_symbol_data(self, symbol):
         return self.exchange_manager.get_symbol_data(symbol)
@@ -95,8 +97,8 @@ class RESTExchange(AbstractExchange):
         return self.client
 
     # total (free + used), by currency
-    def get_balance(self):
-        balance = self.client.fetchBalance()
+    async def get_balance(self):
+        balance = await self.client.fetchBalance()
 
         # store portfolio global info
         self.info_list = balance[CONFIG_PORTFOLIO_INFO]
@@ -112,30 +114,31 @@ class RESTExchange(AbstractExchange):
 
         self.get_personal_data().set_portfolio(balance)
 
-    def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
+    async def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         if limit:
-            candles = self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
+            candles = await self.client.fetch_ohlcv(symbol, time_frame.value, limit=limit)
         else:
-            candles = self.client.fetch_ohlcv(symbol, time_frame.value)
+            candles = await self.client.fetch_ohlcv(symbol, time_frame.value)
 
         self.exchange_manager.uniformize_candles_if_necessary(candles)
 
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
 
     # return up to ten bidasks on each side of the order book stack
-    def get_order_book(self, symbol, limit=30):
-        self.get_symbol_data(symbol).update_order_book(self.client.fetchOrderBook(symbol, limit))
+    async def get_order_book(self, symbol, limit=30):
+        self.get_symbol_data(symbol).update_order_book(await self.client.fetchOrderBook(symbol, limit))
 
-    def get_recent_trades(self, symbol, limit=50):
+    async def get_recent_trades(self, symbol, limit=50):
         try:
-            self.get_symbol_data(symbol).update_recent_trades(self.client.fetch_trades(symbol, limit=limit))
+            trades = await self.client.fetch_trades(symbol, limit=limit)
+            self.get_symbol_data(symbol).update_recent_trades(trades)
         except BaseError as e:
             self.logger.error(f"Failed to get recent trade {e}")
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
-    def get_price_ticker(self, symbol):
+    async def get_price_ticker(self, symbol):
         try:
-            self.get_symbol_data(symbol).update_symbol_ticker(self.client.fetch_ticker(symbol))
+            self.get_symbol_data(symbol).update_symbol_ticker(await self.client.fetch_ticker(symbol))
         except BaseError as e:
             self.logger.error(f"Failed to get_price_ticker {e}")
 
@@ -148,37 +151,39 @@ class RESTExchange(AbstractExchange):
             return None
 
     # ORDERS
-    def get_order(self, order_id, symbol=None):
+    async def get_order(self, order_id, symbol=None):
         if self.client.has['fetchOrder']:
-            self.get_personal_data().upsert_order(order_id, self.client.fetch_order(order_id, symbol))
+            self.get_personal_data().upsert_order(order_id, await self.client.fetch_order(order_id, symbol))
         else:
             raise Exception("This exchange doesn't support fetchOrder")
 
-    def get_all_orders(self, symbol=None, since=None, limit=None):
+    async def get_all_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchOrders']:
-            self.get_personal_data().upsert_orders(self.client.fetchOrders(symbol=symbol, since=since, limit=limit))
+            self.get_personal_data().upsert_orders(
+                await self.client.fetchOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchOrders")
 
-    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
+    async def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         if self.client.has['fetchOpenOrders']:
-            self.get_personal_data().upsert_orders(self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit))
+            self.get_personal_data().upsert_orders(
+                await self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchOpenOrders")
 
-    def get_closed_orders(self, symbol=None, since=None, limit=None):
+    async def get_closed_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchClosedOrders']:
             self.get_personal_data().upsert_orders(
-                self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit))
+                await self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchClosedOrders")
 
-    def get_my_recent_trades(self, symbol=None, since=None, limit=None):
-        return self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit)
+    async def get_my_recent_trades(self, symbol=None, since=None, limit=None):
+        return await self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit)
 
-    def cancel_order(self, order_id, symbol=None):
+    async def cancel_order(self, order_id, symbol=None):
         try:
-            self.client.cancel_order(order_id, symbol=symbol)
+            await self.client.cancel_order(order_id, symbol=symbol)
             return True
         except OrderNotFound:
             self.logger.error(f"Order {order_id} was not found")
