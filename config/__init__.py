@@ -64,6 +64,9 @@ BOT_TOOLS_BACKTESTING = "backtesting"
 BOT_TOOLS_STRATEGY_OPTIMIZER = "strategy_optimizer"
 BOT_TOOLS_RECORDER = "recorder"
 
+# Async settings
+DEFAULT_FUTURE_TIMEOUT = 10
+
 # Advanced
 CONFIG_ADVANCED_CLASSES = "advanced_classes"
 CONFIG_ADVANCED_INSTANCES = "advanced_instances"

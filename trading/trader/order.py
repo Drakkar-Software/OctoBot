@@ -158,8 +158,8 @@ class Order:
         self.trader.notify_order_close(self, cancel_linked_only=True)
         self.trader.get_order_manager().remove_order_from_list(self)
 
-    def close_order(self):
-        self.trader.notify_order_close(self)
+    async def close_order(self):
+        await self.trader.notify_order_close(self)
 
     def add_linked_order(self, order):
         self.linked_orders.append(order)

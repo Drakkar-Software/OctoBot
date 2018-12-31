@@ -15,6 +15,7 @@
 #  License along with this library.
 
 from tools.logging.logging_util import get_logger
+from tools.data_util import DataUtil
 
 from config import EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE
 from evaluator.RealTime import RealTimeTAEvaluator
@@ -87,12 +88,12 @@ class SymbolEvaluator:
                     if evaluator_type in evaluator_parents:
                         self.evaluator_instances_by_strategies[exchange_name][strategy][evaluator_type].add(evaluator)
 
-    def update_strategies_eval(self, new_matrix, exchange, ignored_evaluator=None):
+    async def update_strategies_eval(self, new_matrix, exchange, ignored_evaluator=None):
         for strategies_evaluator in self.get_strategies_eval_list(exchange):
             if strategies_evaluator.get_is_active():
                 strategies_evaluator.set_matrix(new_matrix)
                 if not strategies_evaluator.get_name() == ignored_evaluator and strategies_evaluator.get_is_evaluable():
-                    strategies_evaluator.eval()
+                    await strategies_evaluator.eval()
 
                 new_matrix.set_eval(EvaluatorMatrixTypes.STRATEGIES, strategies_evaluator.get_name(),
                                     strategies_evaluator.get_eval_note())
@@ -117,7 +118,7 @@ class SymbolEvaluator:
                     evaluator.reset()
                 evaluator.set_is_active(activate)
 
-    def activate_deactivate_strategies(self, strategies, exchange, activate=True):
+    async def activate_deactivate_strategies(self, strategies, exchange, activate=True):
         to_change_ta = set()
         to_change_rt = set()
         to_change_social = set()
@@ -147,17 +148,17 @@ class SymbolEvaluator:
             evaluator_thread_manager.refresh_matrix()
 
         # finally, refresh strategies
-        self.update_strategies_eval(next(iter(thread_managers.values())).matrix, exchange, None)
+        await self.update_strategies_eval(next(iter(thread_managers.values())).matrix, exchange, None)
 
         self.logger.info("{} activated: {}".format([s.get_name() for s in strategies], activate))
 
-    def finalize(self, exchange):
+    async def finalize(self, exchange):
         if not self.finalize_enabled_list[exchange.get_name()]:
             self._check_finalize(exchange)
 
         if self.are_all_timeframes_initialized(exchange):
             for decider in self.trading_mode_instances[exchange.get_name()].get_deciders(self.symbol):
-                decider.add_to_queue()
+                await decider.finalize()
 
     def get_deciders_are_busy(self):
         return any(decider.has_something_to_do()
@@ -201,6 +202,9 @@ class SymbolEvaluator:
             return [strategy
                     for strategy in self.strategies_eval_lists[exchange.get_name()]
                     if strategy.get_is_active()]
+
+    def get_average_strategy_eval(self, exchange, active_only=False):
+        return DataUtil.mean([s.get_eval_note() for s in self.get_strategies_eval_list(exchange, active_only)])
 
     def get_symbol(self):
         return self.symbol

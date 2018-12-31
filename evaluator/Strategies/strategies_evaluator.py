@@ -35,7 +35,7 @@ class StrategiesEvaluator(AbstractEvaluator):
         self.matrix = matrix.get_matrix()
 
     def get_is_evaluable(self):
-        return not (self.get_is_updating() or self.matrix is None)
+        return self.matrix is not None
 
     def create_divergence_analyser(self):
         self.divergence_evaluator_analyser = EvaluatorDivergenceAnalyser()
@@ -44,7 +44,7 @@ class StrategiesEvaluator(AbstractEvaluator):
         return self.divergence_evaluator_analyser.update(self.matrix)
 
     @abstractmethod
-    def eval_impl(self) -> None:
+    async def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
 
     @classmethod
@@ -78,5 +78,5 @@ class MixedStrategiesEvaluator(StrategiesEvaluator):
     __metaclass__ = StrategiesEvaluator
 
     @abstractmethod
-    def eval_impl(self) -> None:
+    async def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")

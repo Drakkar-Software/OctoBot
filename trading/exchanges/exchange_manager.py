@@ -55,7 +55,8 @@ class ExchangeManager:
         self.traded_pairs = []
         self.time_frames = []
 
-        self.create_exchanges()
+    async def initialize(self):
+        await self.create_exchanges()
 
     def register_trader(self, trader):
         self.trader = trader
@@ -74,10 +75,11 @@ class ExchangeManager:
     def need_user_stream(self):
         return self.config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]
 
-    def create_exchanges(self):
+    async def create_exchanges(self):
         if not self.is_simulated:
             # create REST based on ccxt exchange
             self.exchange = RESTExchange(self.config, self.exchange_type, self)
+            await self.exchange.initialize()
 
             self._load_constants()
 

@@ -124,7 +124,7 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     # Can be overwritten
-    def can_create_order(symbol, exchange, state, portfolio):
+    async def can_create_order(symbol, exchange, state, portfolio):
         currency, market = split_symbol(symbol)
 
         # get symbol min amount when creating order
@@ -144,8 +144,8 @@ class AbstractTradingModeCreator:
         return False
 
     @staticmethod
-    def get_pre_order_data(exchange, symbol, portfolio):
-        last_prices = exchange.get_recent_trades(symbol)
+    async def get_pre_order_data(exchange, symbol, portfolio):
+        last_prices = await exchange.get_recent_trades(symbol)
 
         reference_sum = sum([float(last_price["price"])
                              for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]])
@@ -250,8 +250,8 @@ class AbstractTradingModeCreatorWithBot(AbstractTradingModeCreator):
         return self.sub_portfolio
 
     # Can be overwritten
-    def can_create_order(self, symbol, exchange, state, portfolio):
-        return super().can_create_order(symbol, exchange, state, self.get_portfolio())
+    async def can_create_order(self, symbol, exchange, state, portfolio):
+        return await super().can_create_order(symbol, exchange, state, self.get_portfolio())
 
     # force portfolio update
     def get_portfolio(self, force_update=False):

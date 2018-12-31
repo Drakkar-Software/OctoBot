@@ -28,7 +28,7 @@ def test_run_bot():
     bot.time_frames = [TimeFrames.ONE_MINUTE]
     bot.create_exchange_traders()
     bot.create_evaluation_threads()
-    bot.start_threads()
+    bot.start_tasks()
 
     # let it start
     time.sleep(5)

@@ -15,7 +15,6 @@
 #  License along with this library.
 
 import os
-import threading
 from abc import *
 
 from config.config import load_config
@@ -23,17 +22,16 @@ from config import *
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
-class SocialEvaluator(AbstractEvaluator, threading.Thread):
+class SocialEvaluator(AbstractEvaluator):
     __metaclass__ = AbstractEvaluator
 
     def __init__(self):
         super().__init__()
-        threading.Thread.__init__(self)
         self.social_config = {}
         self.need_to_notify = False
-        self.is_threaded = False
         self.is_self_refreshing = False
         self.keep_running = True
+        self.is_to_be_independently_tasked = False
         self.evaluator_thread_managers = []
         self.load_config()
 
@@ -47,9 +45,9 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
     def add_evaluator_thread_manager(self, evaluator_thread):
         self.evaluator_thread_managers.append(evaluator_thread)
 
-    def notify_evaluator_thread_managers(self, notifier_name):
-        for thread in self.evaluator_thread_managers:
-            thread.notify(notifier_name)
+    async def notify_evaluator_thread_managers(self, notifier_name):
+        for task_manager in self.evaluator_thread_managers:
+            await task_manager.notify(notifier_name, finalize=True, interruption=True)
 
     def load_config(self):
         config_file = self.get_config_file_name()
@@ -67,8 +65,8 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
         if not self.social_config:
             self.set_default_config()
 
-    def get_is_threaded(self):
-        return self.is_threaded
+    def get_is_to_be_independently_tasked(self):
+        return self.is_to_be_independently_tasked
 
     def get_is_self_refreshing(self):
         return self.is_self_refreshing
@@ -86,7 +84,7 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
         pass
 
     @abstractmethod
-    def eval_impl(self) -> None:
+    async def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
 
     # get data needed to perform the eval
@@ -98,23 +96,12 @@ class SocialEvaluator(AbstractEvaluator, threading.Thread):
     def get_data(self):
         raise NotImplementedError("Get Data not implemented")
 
-    # thread that will use get_data to provide real time data
-    # example :
-    # def run(self):
-    #     while True:
-    #         self.get_data()                           --> pull the new data
-    #         self.eval()                               --> create a notification if necessary
-    #         time.sleep(own_time * MINUTE_TO_SECONDS)  --> use its own refresh time (near real time)
-    @abstractmethod
-    def run(self):
-        raise NotImplementedError("Run not implemented")
-
 
 class StatsSocialEvaluator(SocialEvaluator):
     __metaclass__ = SocialEvaluator
 
     @abstractmethod
-    def eval_impl(self):
+    async def eval_impl(self):
         raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
@@ -130,7 +117,7 @@ class ForumSocialEvaluator(SocialEvaluator):
     __metaclass__ = SocialEvaluator
 
     @abstractmethod
-    def eval_impl(self):
+    async def eval_impl(self):
         raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod
@@ -146,7 +133,7 @@ class NewsSocialEvaluator(SocialEvaluator):
     __metaclass__ = SocialEvaluator
 
     @abstractmethod
-    def eval_impl(self):
+    async def eval_impl(self):
         raise NotImplementedError("Eval_impl not implemented")
 
     @abstractmethod

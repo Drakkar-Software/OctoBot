@@ -14,10 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
+import asyncio
 import time
 from prawcore.exceptions import RequestException, ResponseException, OAuthException, InvalidToken, ServerError
 
+from tools.logging.logging_util import get_logger
 from config import *
 from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
 from services import RedditService
@@ -27,8 +28,8 @@ class RedditDispatcher(AbstractDispatcher):
 
     MAX_CONNECTION_ATTEMPTS = 10
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, main_async_loop):
+        super().__init__(config, main_async_loop)
         self.logger = get_logger(self.__class__.__name__)
         self.subreddits = None
         self.counter = 0
@@ -101,7 +102,8 @@ class RedditDispatcher(AbstractDispatcher):
             subreddit_name = entry.subreddit.display_name.lower()
             self.notify_registered_clients_if_interested(subreddit_name,
                                                          {CONFIG_REDDIT_ENTRY: entry,
-                                                          CONFIG_REDDIT_ENTRY_WEIGHT: entry_weight})
+                                                          CONFIG_REDDIT_ENTRY_WEIGHT: entry_weight}
+                                                         )
 
     def _start_dispatcher(self):
         while self.keep_running and self.connect_attempts < self.MAX_CONNECTION_ATTEMPTS:

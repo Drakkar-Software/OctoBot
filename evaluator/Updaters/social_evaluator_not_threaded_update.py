@@ -14,14 +14,15 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
+import asyncio
 import threading
 import time
 
+from tools.logging.logging_util import get_logger
 from config import *
 
 
-class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
+class SocialEvaluatorNotThreadedUpdateTask:
 
     LAST_REFRESH_KEY = "last_refresh"
     LAST_REFRESH_TIME_KEY = "last_refresh_time"
@@ -29,7 +30,6 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
     EVALUATOR_INSTANCE_KEY = "social_evaluator_class_inst"
 
     def __init__(self, social_evaluator_list):
-        super().__init__()
         self.social_evaluator_list = social_evaluator_list
         self.social_evaluator_list_timers = []
         self.logger = get_logger(self.__class__.__name__)
@@ -56,7 +56,7 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
                     self.logger.warning(f"Social evaluator {social_eval.get_name()} doesn't have a valid social config "
                                         "refresh rate.")
 
-    def run(self):
+    async def start_loop(self):
         if self.social_evaluator_list_timers:
             while self.keep_running:
                 for social_eval in self.social_evaluator_list_timers:
@@ -68,10 +68,10 @@ class SocialEvaluatorNotThreadedUpdateThread(threading.Thread):
 
                         try:
                             social_eval[self.EVALUATOR_INSTANCE_KEY].get_data()
-                            social_eval[self.EVALUATOR_INSTANCE_KEY].eval()
+                            await social_eval[self.EVALUATOR_INSTANCE_KEY].eval()
                         except Exception as e:
                             self.logger.error(f"Error during Social not threaded update eval() or get_data() on "
                                               f"{social_eval[self.EVALUATOR_INSTANCE_KEY].get_name()} for "
                                               f"{social_eval[self.EVALUATOR_INSTANCE_KEY].get_symbol()} : {e}")
 
-                time.sleep(SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE)
+                await asyncio.sleep(SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE)

@@ -56,6 +56,10 @@ class Trader:
         if order_refresh_time is not None:
             self.order_manager.set_order_refresh_time(order_refresh_time)
 
+    async def initialize(self):
+        await self.trades_manager.initialize()
+
+    async def launch(self):
         if self.enable:
             if not self.simulate:
                 self.update_open_orders()
@@ -64,7 +68,7 @@ class Trader:
                 # can current orders received: start using websocket for orders if available
                 self.exchange.get_exchange_personal_data().init_orders()
 
-            self.start_order_manager()
+            await self.start_order_manager()
             self.logger.debug(f"Enabled on {self.exchange.get_name()}")
         else:
             self.logger.debug(f"Disabled on {self.exchange.get_name()}")
@@ -201,33 +205,31 @@ class Trader:
 
     def cancel_order(self, order):
         if not order.is_cancelled() and not order.is_filled():
-            with order as odr:
-                odr.cancel_order()
-                self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} at {odr.get_origin_price()}"
-                                 f" (ID : {odr.get_id()}) cancelled on {self.get_exchange().get_name()}")
+            order.cancel_order()
+            self.logger.info(f"{order.get_order_symbol()} {order.get_name()} at {order.get_origin_price()}"
+                             f" (ID : {order.get_id()}) cancelled on {self.get_exchange().get_name()}")
 
-                self.order_manager.remove_order_from_list(order)
+            self.order_manager.remove_order_from_list(order)
 
     # Should be called only if we want to cancel all symbol open orders (no filled)
-    def cancel_open_orders(self, symbol, cancel_loaded_orders=True):
+    async def cancel_open_orders(self, symbol, cancel_loaded_orders=True):
         # use a copy of the list (not the reference)
         for order in copy.copy(self.get_open_orders()):
             if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
                 if cancel_loaded_orders or order.get_is_from_this_octobot():
-                    self.notify_order_close(order, True)
+                    await self.notify_order_close(order, True)
 
-    def cancel_all_open_orders(self):
+    async def cancel_all_open_orders(self):
         # use a copy of the list (not the reference)
         for order in copy.copy(self.get_open_orders()):
             if order.get_status() is not OrderStatus.CANCELED:
-                self.notify_order_close(order, True)
+                await self.notify_order_close(order, True)
 
     def notify_order_cancel(self, order):
         # update portfolio with ended order
-        with self.get_order_portfolio(order) as pf:
-            pf.update_portfolio_available(order, is_new_order=False)
+        self.get_order_portfolio(order).update_portfolio_available(order, is_new_order=False)
 
-    def notify_order_close(self, order, cancel=False, cancel_linked_only=False):
+    async def notify_order_close(self, order, cancel=False, cancel_linked_only=False):
         # Cancel linked orders
         for linked_order in order.get_linked_orders():
             self.cancel_order(linked_order)
@@ -251,10 +253,10 @@ class Trader:
             orders_canceled = order.get_linked_orders()
 
             # update portfolio with ended order
-            with self.get_order_portfolio(order) as pf:
-                pf.update_portfolio(order)
+            self.get_order_portfolio(order).update_portfolio(order)
 
-            profitability, profitability_percent, profitability_diff, _ = self.get_trades_manager().get_profitability()
+            profitability, profitability_percent, profitability_diff, _ = \
+                await self.get_trades_manager().get_profitability()
 
             # debug purpose
             profitability_str = PrettyPrinter.portfolio_profitability_pretty_print(profitability,
@@ -303,8 +305,7 @@ class Trader:
             orders = self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)
-                with self.portfolio as pf:
-                    self.create_order(order, pf, True)
+                self.create_order(order, self.portfolio, True)
 
     def force_refresh_portfolio(self, portfolio=None):
         if not self.simulate:
@@ -312,8 +313,7 @@ class Trader:
             if portfolio:
                 portfolio.update_portfolio_balance()
             else:
-                with self.portfolio as pf:
-                    pf.update_portfolio_balance()
+                self.portfolio.update_portfolio_balance()
 
     def force_refresh_orders(self, portfolio=None):
         # useless in simulation mode
@@ -332,8 +332,7 @@ class Trader:
                         if portfolio:
                             self.create_order(order, portfolio, True)
                         else:
-                            with self.portfolio as pf:
-                                self.create_order(order, pf, True)
+                            self.create_order(order, self.portfolio, True)
 
     def parse_exchange_order_to_order_instance(self, order):
         return self.create_order_instance(order_type=self.parse_order_type(order),
@@ -387,10 +386,9 @@ class Trader:
     def stop_order_manager(self):
         self.order_manager.stop()
 
-    def start_order_manager(self):
+    async def start_order_manager(self):
         if not Backtesting.enabled(self.config):
-            loop = asyncio.get_event_loop()
-            self.order_manager.poll_update(loop)
+            await self.order_manager.poll_update()
 
     def get_simulate(self):
         return self.simulate

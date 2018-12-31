@@ -36,13 +36,14 @@ class DataCollector:
             self.logger.info("Create data collectors...")
             self.create_exchange_data_collectors()
 
-    def create_exchange_data_collectors(self):
+    async def create_exchange_data_collectors(self):
         available_exchanges = ccxt.exchanges
         for exchange_class_string in self.config[CONFIG_EXCHANGES]:
             if exchange_class_string in available_exchanges:
                 exchange_type = getattr(ccxt, exchange_class_string)
 
                 exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False, rest_only=True)
+                await exchange_manager.initialize()
                 exchange_inst = exchange_manager.get_exchange()
 
                 exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst)
@@ -56,11 +57,12 @@ class DataCollector:
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
 
-    def execute_with_specific_target(self, exchange, symbol):
+    async def execute_with_specific_target(self, exchange, symbol):
         try:
             exchange_type = getattr(ccxt, exchange)
             exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False, rest_only=True,
                                                ignore_config=True)
+            await exchange_manager.initialize()
             exchange_inst = exchange_manager.get_exchange()
             exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst, symbol)
             files = exchange_data_collector.load_available_data()

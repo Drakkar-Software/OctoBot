@@ -69,18 +69,20 @@ class OrdersManager:
     def stop(self):
         self.keep_running = False
 
-    def _update_last_symbol_list(self, uniformize_timestamps=False):
+    async def _update_last_symbol_list(self, uniformize_timestamps=False):
         """
         Update each open order symbol with exchange data
         """
         updated = []
+        task_list = []
         for order in self.order_list:
             if isinstance(order, Order) and order.get_order_symbol() not in updated:
-                self._update_last_symbol_prices(order.get_order_symbol(), uniformize_timestamps)
+                task_list.append(self._update_last_symbol_prices(order.get_order_symbol(), uniformize_timestamps))
 
                 updated.append(order.get_order_symbol())
+        await asyncio.gather(*task_list)
 
-    def _update_last_symbol_prices(self, symbol, uniformize_timestamps=False):
+    async def _update_last_symbol_prices(self, symbol, uniformize_timestamps=False):
         """
         Ask to update a specific symbol with exchange data
         """
@@ -88,11 +90,11 @@ class OrdersManager:
         exchange = self.trader.get_exchange()
 
         if Backtesting.enabled(self.config):
-            last_symbol_price = self.trader.get_exchange().get_recent_trades(symbol)
+            last_symbol_price = await self.trader.get_exchange().get_recent_trades(symbol)
 
         # Exchange call when not backtesting
         else:
-            last_symbol_price = exchange.get_recent_trades(symbol)
+            last_symbol_price = await exchange.get_recent_trades(symbol)
             if uniformize_timestamps and last_symbol_price:
                 timestamp_sample = last_symbol_price[0][eC.TIMESTAMP.value]
                 if exchange.get_exchange_manager().need_to_uniformize_timestamp(timestamp_sample):
@@ -118,7 +120,7 @@ class OrdersManager:
         else:
             raise NotImplementedError("force_update_order_status(blocking=False) not implemented")
 
-    def _update_orders_status(self, simulated_time=False):
+    async def _update_orders_status(self, simulated_time=False):
         """
         Prepare order status updating by getting price data
         then ask orders to check their status
@@ -126,7 +128,7 @@ class OrdersManager:
         """
 
         # update all prices
-        self._update_last_symbol_list(True)
+        await self._update_last_symbol_list(True)
 
         for order in copy.copy(self.order_list):
             # symbol prices from exchange
@@ -143,19 +145,19 @@ class OrdersManager:
                         self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} (ID : {odr.get_id()})"
                                          f" filled on {self.trader.get_exchange().get_name()} "
                                          f"at {odr.get_filled_price()}")
-                        odr.close_order()
+                        await odr.close_order()
 
-    def poll_update(self, loop):
+    async def poll_update(self):
         """
         Async method that will periodically update orders status with update_orders_status
         Should never be called in backtesting
         """
-        try:
-            # call update status
-            self._update_orders_status()
-        except Exception as e:
-            self.logger.error("Error when updating orders")
-            self.logger.exception(e)
+        while self.keep_running:
+            try:
+                # call update status
+                await self._update_orders_status()
+            except Exception as e:
+                self.logger.error("Error when updating orders")
+                self.logger.exception(e)
 
-        if self.keep_running:
-            loop.call_later(self.order_refresh_time, partial(self.poll_update, loop))
+            await asyncio.sleep(self.order_refresh_time)

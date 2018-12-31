@@ -78,13 +78,13 @@ class Evaluator:
             evaluator_thread.get_symbol_evaluator()\
                 .add_evaluator_instance_to_strategy_instances_list(real_time_eval, evaluator_thread.get_exchange())
 
-    def update_ta_eval(self, ignored_evaluator=None):
+    async def update_ta_eval(self, ignored_evaluator=None):
         # update only with new data
         if self.data_changed:
             for ta_evaluator in self.get_ta_eval_list():
                 ta_evaluator.set_data(self.data)
                 if not ta_evaluator.get_name() == ignored_evaluator and ta_evaluator.get_is_evaluable():
-                    ta_evaluator.eval()
+                    await ta_evaluator.eval()
 
             # reset data changed after update
             self.data_changed = False

@@ -140,31 +140,34 @@ class TelegramApp:
 
     @staticmethod
     def command_profitability(_, update):
-        has_real_trader, has_simulated_trader, \
-            real_global_profitability, simulated_global_profitability, \
-            real_percent_profitability, simulated_percent_profitability, \
-            market_average_profitability = get_global_profitability()
-        profitability_string = ""
-        if has_real_trader:
-            profitability_string = "{0}Global profitability : {1} ({2}%), market: {3}%{4}".format(
-                REAL_TRADER_STR,
-                PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
-                                                                   None,
-                                                                   get_reference_market()),
-                PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2),
-                PrettyPrinter.get_min_string_from_number(market_average_profitability, 2),
-                TelegramApp.EOL)
-        if has_simulated_trader:
-            profitability_string += "{0}Global profitability : {1} ({2}%), market: {3}%".format(
-                SIMULATOR_TRADER_STR,
-                PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
-                                                                   None,
-                                                                   get_reference_market()),
-                PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2),
-                PrettyPrinter.get_min_string_from_number(market_average_profitability, 2))
-        if not profitability_string:
-            profitability_string = TelegramApp.NO_TRADER_MESSAGE
-        update.message.reply_text(profitability_string)
+        try:
+            has_real_trader, has_simulated_trader, \
+                real_global_profitability, simulated_global_profitability, \
+                real_percent_profitability, simulated_percent_profitability, \
+                market_average_profitability = get_global_profitability()
+            profitability_string = ""
+            if has_real_trader:
+                profitability_string = "{0}Global profitability : {1} ({2}%), market: {3}%{4}".format(
+                    REAL_TRADER_STR,
+                    PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
+                                                                       None,
+                                                                       get_reference_market()),
+                    PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2),
+                    PrettyPrinter.get_min_string_from_number(market_average_profitability, 2),
+                    TelegramApp.EOL)
+            if has_simulated_trader:
+                profitability_string += "{0}Global profitability : {1} ({2}%), market: {3}%".format(
+                    SIMULATOR_TRADER_STR,
+                    PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
+                                                                       None,
+                                                                       get_reference_market()),
+                    PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2),
+                    PrettyPrinter.get_min_string_from_number(market_average_profitability, 2))
+            if not profitability_string:
+                profitability_string = TelegramApp.NO_TRADER_MESSAGE
+            update.message.reply_text(profitability_string)
+        except Exception as e:
+            get_logger("telegram").exception(e)
 
     @staticmethod
     def command_portfolio(_, update):

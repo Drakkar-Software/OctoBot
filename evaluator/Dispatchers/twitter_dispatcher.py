@@ -25,8 +25,8 @@ from services import TwitterService
 
 class TwitterDispatcher(AbstractDispatcher):
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, main_async_loop):
+        super().__init__(config, main_async_loop)
         self.logger = get_logger(self.__class__.__name__)
         self.user_ids = []
         self.hashtags = []
@@ -96,17 +96,18 @@ class TwitterDispatcher(AbstractDispatcher):
                 self.notify_registered_clients_if_interested(tweet_desc,
                                                              {CONFIG_TWEET: tweet,
                                                               CONFIG_TWEET_DESCRIPTION: string_tweet.lower()
-                                                              })
+                                                              }
+                                                             )
 
     def _start_dispatcher(self):
         while self.keep_running:
             try:
                 self._start_listener()
             except twitter.error.TwitterError as e:
-                self.logger.error("Error when receiving Twitter feed: {0} ({1})".format(e.message, e))
+                self.logger.error(f"Error when receiving Twitter feed: {e.message} ({e})")
                 self.logger.exception(e)
                 self.keep_running = False
             except Exception as e:
-                self.logger.error("Error when receiving Twitter feed: {0} ({1})".format(e.message, e))
+                self.logger.error(f"Error when receiving Twitter feed ({e}) ")
                 self.logger.exception(e)
                 self.keep_running = False
