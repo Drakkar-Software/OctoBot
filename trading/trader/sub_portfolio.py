@@ -63,9 +63,9 @@ class SubPortfolio(Portfolio):
     def set_is_relative(self, is_relative):
         self.is_relative = is_relative
 
-    def update_portfolio(self, order):
-        super().update_portfolio(order)
-        self.parent_portfolio.update_portfolio(order)
+    async def update_portfolio(self, order):
+        await super().update_portfolio(order)
+        await self.parent_portfolio.update_portfolio(order)
 
     def update_portfolio_available(self, order, is_new_order=False):
         super().update_portfolio_available(order, is_new_order=is_new_order)
