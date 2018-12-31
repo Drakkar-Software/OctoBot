@@ -130,7 +130,7 @@ def start_backtesting_bot(bot, in_thread=False, watcher=None):
     if watcher is not None:
         bot.set_watcher(watcher)
 
-    bot.start_threads()
+    bot.start_tasks()
 
     if not in_thread:
         bot.join_threads()

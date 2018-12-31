@@ -142,7 +142,8 @@ def start_octobot(starting_args):
                             logging.error("{0}, impossible to display GUI".format(e))
 
                     if starting_args.start:
-                        asyncio.run(Commands.start_bot(bot, logger))
+                        debug_mode = True   # set true to activate asyncio debug mode
+                        asyncio.run(Commands.start_bot(bot, logger), debug=debug_mode)
 
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")

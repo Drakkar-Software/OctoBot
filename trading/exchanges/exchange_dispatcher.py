@@ -73,20 +73,20 @@ class ExchangeDispatcher(AbstractExchange):
         return self.symbols_data[symbol]
 
     # total (free + used), by currency
-    def get_balance(self):
+    async def get_balance(self):
         if not self._web_socket_available() or not self.exchange_personal_data.get_portfolio_is_initialized():
             if not self.exchange_personal_data.get_portfolio_is_initialized():
                 self.exchange_personal_data.init_portfolio()
 
-            self.exchange.get_balance()
+            await self.exchange.get_balance()
 
         return self.exchange_personal_data.get_portfolio()
 
-    def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
+    async def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         symbol_data = self.get_symbol_data(symbol)
         from_web_socket = False
         if not self._web_socket_available() or not symbol_data.candles_are_initialized(time_frame):
-            self.exchange.get_symbol_prices(symbol=symbol, time_frame=time_frame, limit=limit)
+            await self.exchange.get_symbol_prices(symbol=symbol, time_frame=time_frame, limit=limit)
         else:
             from_web_socket = True
 
@@ -120,87 +120,87 @@ class ExchangeDispatcher(AbstractExchange):
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
-    def get_order_book(self, symbol, limit=50):
+    async def get_order_book(self, symbol, limit=50):
         if not self._web_socket_available():
-            self.exchange.get_order_book(symbol, limit)
+            await self.exchange.get_order_book(symbol, limit)
 
         return self.get_symbol_data(symbol).get_symbol_order_book(limit)
 
-    def get_recent_trades(self, symbol, limit=50):
+    async def get_recent_trades(self, symbol, limit=50):
         symbol_data = self.get_symbol_data(symbol)
 
         if not self._web_socket_available() or not symbol_data.recent_trades_are_initialized():
             if not self._web_socket_available() or \
                     (self._web_socket_available() and self.exchange_web_socket.handles_recent_trades()):
                 symbol_data.init_recent_trades()
-            self.exchange.get_recent_trades(symbol=symbol, limit=limit)
+            await self.exchange.get_recent_trades(symbol=symbol, limit=limit)
 
         return symbol_data.get_symbol_recent_trades(limit)
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
-    def get_price_ticker(self, symbol):
+    async def get_price_ticker(self, symbol):
         symbol_data = self.get_symbol_data(symbol)
 
         if not self._web_socket_available() or not symbol_data.price_ticker_is_initialized():
-            self.exchange.get_price_ticker(symbol=symbol)
+            await self.exchange.get_price_ticker(symbol=symbol)
 
         return symbol_data.get_symbol_ticker()
 
-    def get_all_currencies_price_ticker(self):
-        return self.exchange.get_all_currencies_price_ticker()
+    async def get_all_currencies_price_ticker(self):
+        return await self.exchange.get_all_currencies_price_ticker()
 
     def get_market_status(self, symbol, price_example=None, with_fixer=True):
         return self.exchange.get_market_status(symbol, price_example, with_fixer)
 
     # ORDERS
-    def get_order(self, order_id, symbol=None):
+    async def get_order(self, order_id, symbol=None):
         if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
-            self.exchange.get_order(order_id, symbol=symbol)
+            await self.exchange.get_order(order_id, symbol=symbol)
 
         return self.exchange_personal_data.get_order(order_id)
 
-    def get_all_orders(self, symbol=None, since=None, limit=None):
+    async def get_all_orders(self, symbol=None, since=None, limit=None):
         if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
             if not self.exchange_personal_data.get_orders_are_initialized():
                 self.exchange_personal_data.init_orders()
 
-            self.exchange.get_all_orders(symbol=symbol,
-                                         since=since,
-                                         limit=limit)
+            await self.exchange.get_all_orders(symbol=symbol,
+                                               since=since,
+                                               limit=limit)
 
         return self.exchange_personal_data.get_all_orders(symbol, since, limit)
 
-    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
+    async def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         if not self._web_socket_available() \
                 or not self.exchange_personal_data.get_orders_are_initialized() \
                 or force_rest:
-            self.exchange.get_open_orders(symbol=symbol,
-                                          since=since,
-                                          limit=limit)
+            await self.exchange.get_open_orders(symbol=symbol,
+                                                since=since,
+                                                limit=limit)
 
         return self.exchange_personal_data.get_open_orders(symbol, since, limit)
 
-    def get_closed_orders(self, symbol=None, since=None, limit=None):
+    async def get_closed_orders(self, symbol=None, since=None, limit=None):
         if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
-            self.exchange.get_closed_orders(symbol=symbol,
-                                            since=since,
-                                            limit=limit)
+            await self.exchange.get_closed_orders(symbol=symbol,
+                                                  since=since,
+                                                  limit=limit)
 
         return self.exchange_personal_data.get_closed_orders(symbol, since, limit)
 
-    def get_my_recent_trades(self, symbol=None, since=None, limit=None):
+    async def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         if not self._web_socket_available():
-            self.exchange.get_my_recent_trades(symbol=symbol,
-                                               since=since,
-                                               limit=limit)
+            await self.exchange.get_my_recent_trades(symbol=symbol,
+                                                     since=since,
+                                                     limit=limit)
 
         return self.exchange_personal_data.get_my_recent_trades(symbol=symbol,
                                                                 since=since,
                                                                 limit=limit)
 
-    def cancel_order(self, order_id, symbol=None):
-        return self.exchange.cancel_order(symbol=symbol,
-                                          order_id=order_id)
+    async def cancel_order(self, order_id, symbol=None):
+        return await self.exchange.cancel_order(symbol=symbol,
+                                                order_id=order_id)
 
     def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         return self.exchange.create_order(symbol=symbol,

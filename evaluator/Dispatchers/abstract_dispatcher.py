@@ -14,33 +14,34 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import threading
 from abc import *
+import threading
 
-from tools.asynchronous_server import AsynchronousServer
+
+from tools.logging.logging_util import get_logger
+from tools.asyncio_tools import run_coroutine_in_asyncio_loop
 
 
 # ****** Unique dispatcher side ******
-from tools.logging.logging_util import get_logger
-
-
 class AbstractDispatcher(threading.Thread):
     __metaclass__ = ABCMeta
 
     _SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC = 10
+    DELAY_BETWEEN_STREAMS_QUERIES = 5
 
-    def __init__(self, config):
+    def __init__(self, config, main_async_loop):
         super().__init__()
         self.registered_list = []
         self.config = config
         self.keep_running = True
         self.is_setup_correctly = False
+        self.main_async_loop = main_async_loop
         self.logger = get_logger(self.__class__.__name__)
 
     def notify_registered_clients_if_interested(self, notification_description, notification):
         for client in self.registered_list:
             if client.is_interested_by_this_notification(notification_description):
-                client.add_to_queue(notification)
+                run_coroutine_in_asyncio_loop(client.receive_notification_data(notification), self.main_async_loop)
 
     def register_client(self, client):
         self.registered_list.append(client)
@@ -75,15 +76,14 @@ class AbstractDispatcher(threading.Thread):
 
 
 # ****** Implementation side ******
-class DispatcherAbstractClient(AsynchronousServer):
+class DispatcherAbstractClient:
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        super().__init__(self.receive_notification_data)
         self.dispatcher = None
 
     @abstractmethod
-    def receive_notification_data(self, data) -> None:
+    async def receive_notification_data(self, data) -> None:
         raise NotImplementedError("receive_notification_data not implemented")
 
     @staticmethod
