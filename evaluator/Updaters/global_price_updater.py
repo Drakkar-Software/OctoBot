@@ -133,7 +133,7 @@ class GlobalPriceUpdater:
         if not self.in_backtesting:
             sleeping_time = UPDATER_MAX_SLEEPING_TIME - (time.time() - now)
         if sleeping_time > 0:
-            await asyncio.sleep(1)
+            await asyncio.sleep(sleeping_time)
 
     async def _refresh_backtesting_time_frame_data(self, time_frame, symbol):
         try:

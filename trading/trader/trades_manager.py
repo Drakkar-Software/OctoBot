@@ -151,7 +151,9 @@ class TradesManager:
 
     async def get_current_holdings_values(self):
         holdings = await self.get_current_crypto_currencies_values()
-        current_portfolio = deepcopy(self.portfolio.get_portfolio())
+
+        async with self.portfolio.get_lock():
+            current_portfolio = deepcopy(self.portfolio.get_portfolio())
 
         return {currency: await self._get_currency_value(current_portfolio, currency, holdings)
                 for currency in holdings.keys()}
@@ -181,7 +183,8 @@ class TradesManager:
     async def _update_portfolio_and_currencies_current_value(self):
         self.current_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
 
-        current_portfolio = deepcopy(self.portfolio.get_portfolio())
+        async with self.portfolio.get_lock():
+            current_portfolio = deepcopy(self.portfolio.get_portfolio())
 
         self.portfolio_current_value = await self._evaluate_portfolio_value(current_portfolio,
                                                                             self.current_crypto_currencies_values)
@@ -189,8 +192,8 @@ class TradesManager:
     async def _init_origin_portfolio_and_currencies_value(self):
         self.origin_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
 
-        with self.portfolio as pf:
-            self.origin_portfolio = deepcopy(pf.get_portfolio())
+        async with self.portfolio.get_lock():
+            self.origin_portfolio = deepcopy(self.portfolio.get_portfolio())
 
         self.portfolio_origin_value += await self._evaluate_portfolio_value(self.origin_portfolio,
                                                                             self.origin_crypto_currencies_values)
