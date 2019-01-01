@@ -70,7 +70,7 @@ class EvaluatorTaskManager:
         self.evaluator.set_exchange(self.exchange)
         self.evaluator.set_symbol_evaluator(self.symbol_evaluator)
 
-        # Add threaded evaluators that can notify the current thread
+        # Add tasked evaluators that can notify the current task
         self.evaluator.set_social_eval(self.symbol_evaluator.get_crypto_currency_evaluator().get_social_eval_list(),
                                        self)
         self.evaluator.set_real_time_eval(real_time_ta_eval_list, self)
@@ -79,7 +79,7 @@ class EvaluatorTaskManager:
         self.evaluator.set_ta_eval_list(self.evaluator.get_creator().create_ta_eval_list(self.evaluator,
                                                                                          relevant_evaluators), self)
 
-        # Register in refreshing threads
+        # Register in refreshing task
         self.global_price_updater.register_evaluator_task_manager(self.time_frame, self)
 
     # handle notifications from evaluators, when notified refresh symbol evaluation matrix
