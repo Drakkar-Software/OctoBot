@@ -23,15 +23,17 @@ from config.config import decrypt
 from config import *
 from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
+from tools.initializable import Initializable
 
 
-class RESTExchange(AbstractExchange):
+class RESTExchange(AbstractExchange, Initializable):
     """
     CCXT library wrapper
     """
 
     def __init__(self, config, exchange_type, exchange_manager):
-        super().__init__(config, exchange_type)
+        AbstractExchange.__init__(self, config, exchange_type)
+        Initializable.__init__(self)
         self.exchange_manager = exchange_manager
 
         # ccxt client
@@ -48,7 +50,7 @@ class RESTExchange(AbstractExchange):
 
         self.all_currencies_price_ticker = None
 
-    async def initialize(self):
+    async def initialize_impl(self):
         await self.client.load_markets()
 
     def get_symbol_data(self, symbol):
@@ -98,7 +100,7 @@ class RESTExchange(AbstractExchange):
 
     # total (free + used), by currency
     async def get_balance(self):
-        balance = await self.client.fetchBalance()
+        balance = await self.client.fetch_balance()
 
         # store portfolio global info
         self.info_list = balance[CONFIG_PORTFOLIO_INFO]
@@ -126,7 +128,7 @@ class RESTExchange(AbstractExchange):
 
     # return up to ten bidasks on each side of the order book stack
     async def get_order_book(self, symbol, limit=30):
-        self.get_symbol_data(symbol).update_order_book(await self.client.fetchOrderBook(symbol, limit))
+        self.get_symbol_data(symbol).update_order_book(await self.client.fetch_order_book(symbol, limit))
 
     async def get_recent_trades(self, symbol, limit=50):
         try:
@@ -142,9 +144,9 @@ class RESTExchange(AbstractExchange):
         except BaseError as e:
             self.logger.error(f"Failed to get_price_ticker {e}")
 
-    def get_all_currencies_price_ticker(self):
+    async def get_all_currencies_price_ticker(self):
         try:
-            self.all_currencies_price_ticker = self.client.fetch_tickers()
+            self.all_currencies_price_ticker = await self.client.fetch_tickers()
             return self.all_currencies_price_ticker
         except BaseError as e:
             self.logger.error(f"Failed to get_all_currencies_price_ticker {e}")
@@ -160,26 +162,26 @@ class RESTExchange(AbstractExchange):
     async def get_all_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchOrders']:
             self.get_personal_data().upsert_orders(
-                await self.client.fetchOrders(symbol=symbol, since=since, limit=limit))
+                await self.client.fetch_orders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchOrders")
 
     async def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         if self.client.has['fetchOpenOrders']:
             self.get_personal_data().upsert_orders(
-                await self.client.fetchOpenOrders(symbol=symbol, since=since, limit=limit))
+                await self.client.fetch_open_orders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchOpenOrders")
 
     async def get_closed_orders(self, symbol=None, since=None, limit=None):
         if self.client.has['fetchClosedOrders']:
             self.get_personal_data().upsert_orders(
-                await self.client.fetchClosedOrders(symbol=symbol, since=since, limit=limit))
+                await self.client.fetch_closed_orders(symbol=symbol, since=since, limit=limit))
         else:
             raise Exception("This exchange doesn't support fetchClosedOrders")
 
     async def get_my_recent_trades(self, symbol=None, since=None, limit=None):
-        return await self.client.fetchMyTrades(symbol=symbol, since=since, limit=limit)
+        return await self.client.fetch_my_trades(symbol=symbol, since=since, limit=limit)
 
     async def cancel_order(self, order_id, symbol=None):
         try:

@@ -16,11 +16,12 @@
 
 import copy
 import time
+from abc import *
 
 from config.config import load_config
 
 from config import *
-from evaluator.Dispatchers.abstract_dispatcher import *
+from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 from tools.config_manager import ConfigManager
 
 

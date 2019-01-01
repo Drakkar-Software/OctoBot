@@ -26,7 +26,7 @@ from trading.trader.order import Order
 class OrdersManager:
     """ OrdersManager class will perform the supervision of each open order of the exchange trader
     Data updating process is generic but a specific implementation is called for each type of order (TraderOrderTypeClasses)
-    The thread will perform this data update and the open orders status check each ORDER_REFRESHER_TIME seconds
+    The task will perform this data update and the open orders status check each ORDER_REFRESHER_TIME seconds
     This class is particularly needed when exchanges doesn't offer stop loss orders
     This class has an essential role for the trader simulator """
 
