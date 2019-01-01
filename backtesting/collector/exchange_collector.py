@@ -61,16 +61,16 @@ class ExchangeDataCollector(threading.Thread):
             for time_frame in self.time_frames:
                 self.file_contents[symbol][time_frame.value] = None
 
-    def load_available_data(self):
+    async def load_available_data(self):
         self.logger.info("{0} load_available_data...".format(self.exchange.get_name()))
         self._prepare_files_content()
         for symbol in self.symbols:
             for time_frame in self.time_frames:
                 # write all available data for this time frame
-                self.file_contents[symbol][time_frame.value] = self.exchange.get_symbol_prices(symbol,
-                                                                                               time_frame,
-                                                                                               limit=None,
-                                                                                               return_list=True)
+                self.file_contents[symbol][time_frame.value] = await self.exchange.get_symbol_prices(symbol,
+                                                                                                     time_frame,
+                                                                                                     limit=None,
+                                                                                                     return_list=True)
                 self.time_frame_update[symbol][time_frame] = time.time()
             self._update_file(symbol)
 

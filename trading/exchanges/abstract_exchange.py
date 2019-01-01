@@ -44,51 +44,51 @@ class AbstractExchange:
         return self.exchange_manager
 
     @abstractmethod
-    def get_balance(self):
+    async def get_balance(self):
         pass
 
     @abstractmethod
-    def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
+    async def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         pass
 
     @abstractmethod
-    def get_order_book(self, symbol, limit=50):
+    async def get_order_book(self, symbol, limit=50):
         pass
 
     @abstractmethod
-    def get_recent_trades(self, symbol, limit=50):
+    async def get_recent_trades(self, symbol, limit=50):
         pass
 
     @abstractmethod
-    def get_price_ticker(self, symbol):
+    async def get_price_ticker(self, symbol):
         pass
 
     @abstractmethod
-    def get_all_currencies_price_ticker(self):
+    async def get_all_currencies_price_ticker(self):
         pass
 
     @abstractmethod
-    def get_order(self, order_id, symbol=None):
+    async def get_order(self, order_id, symbol=None):
         pass
 
     @abstractmethod
-    def get_all_orders(self, symbol=None, since=None, limit=None):
+    async def get_all_orders(self, symbol=None, since=None, limit=None):
         pass
 
     @abstractmethod
-    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
+    async def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         pass
 
     @abstractmethod
-    def get_closed_orders(self, symbol=None, since=None, limit=None):
+    async def get_closed_orders(self, symbol=None, since=None, limit=None):
         pass
 
     @abstractmethod
-    def get_my_recent_trades(self, symbol=None, since=None, limit=None):
+    async def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         pass
 
     @abstractmethod
-    def cancel_order(self, order_id, symbol=None):
+    async def cancel_order(self, order_id, symbol=None):
         pass
 
     @abstractmethod
