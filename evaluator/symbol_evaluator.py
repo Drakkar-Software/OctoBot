@@ -16,6 +16,7 @@
 
 from tools.logging.logging_util import get_logger
 from tools.data_util import DataUtil
+from copy import copy
 
 from config import EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE
 from evaluator.RealTime import RealTimeTAEvaluator
@@ -204,7 +205,10 @@ class SymbolEvaluator:
                     if strategy.get_is_active()]
 
     def get_average_strategy_eval(self, exchange, active_only=False):
-        return DataUtil.mean([s.get_eval_note() for s in self.get_strategies_eval_list(exchange, active_only)])
+        eval_list = [s.get_eval_note()
+                     for s in self.get_strategies_eval_list(exchange, active_only)
+                     if isinstance(s.get_eval_note(), (int, float))]
+        return DataUtil.mean(eval_list)
 
     def get_symbol(self):
         return self.symbol

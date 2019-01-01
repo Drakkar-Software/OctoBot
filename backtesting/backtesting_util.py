@@ -111,8 +111,8 @@ def create_backtesting_bot(config):
     return OctoBot(config)
 
 
-def start_backtesting_bot(bot, in_thread=False, watcher=None):
-    bot.create_exchange_traders()
+async def start_backtesting_bot(bot, in_thread=False, watcher=None):
+    await bot.create_exchange_traders()
 
     # fix backtesting exit
     for exchange in bot.exchanges_list:
@@ -130,14 +130,13 @@ def start_backtesting_bot(bot, in_thread=False, watcher=None):
     if watcher is not None:
         bot.set_watcher(watcher)
 
-    bot.start_tasks()
-
-    if not in_thread:
-        bot.join_threads()
-        trader = next(iter(bot.get_exchange_trader_simulators().values()))
-        return Backtesting.get_profitability(trader)
-    else:
+    if in_thread:
+        await bot.start_tasks(True)
         return True
+    else:
+        await bot.start_tasks()
+        trader = next(iter(bot.get_exchange_trader_simulators().values()))
+        return await Backtesting.get_profitability(trader)
 
 
 def _switch_reference_market(config_to_use, market):

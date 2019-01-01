@@ -14,12 +14,13 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import asyncio
 import copy
 
 from tools.logging.logging_util import get_logger
 from backtesting.abstract_backtesting_test import AbstractBacktestingTest, SYMBOLS, DATA_FILES, DATA_FILE_PATH
 from config import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
-    CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_CRYPTO_CURRENCIES
+    CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_CRYPTO_CURRENCIES, ASYNCIO_DEBUG_OPTION
 from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 from backtesting.backtesting_util import create_backtesting_bot, start_backtesting_bot, filter_wanted_symbols
@@ -126,4 +127,4 @@ class StrategyTestSuite(AbstractBacktestingTest):
         WebService.enable(config_to_use, False)
         filter_wanted_symbols(config_to_use, [symbol])
         bot = create_backtesting_bot(config_to_use)
-        return start_backtesting_bot(bot), bot
+        return asyncio.run(start_backtesting_bot(bot), debug=ASYNCIO_DEBUG_OPTION), bot

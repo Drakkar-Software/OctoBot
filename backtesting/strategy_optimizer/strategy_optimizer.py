@@ -163,7 +163,7 @@ class StrategyOptimizer:
 
     def _run_test_suite(self, config):
         self.current_test_suite = StrategyTestSuite()
-        self.current_test_suite.init(self.strategy_class, copy.deepcopy(config))
+        self.current_test_suite.initialize(self.strategy_class, copy.deepcopy(config))
         no_error = self.current_test_suite.run_test_suite(self.current_test_suite)
         if not no_error:
             self.errors = self.errors.union(set(str(e) for e in self.current_test_suite.get_exceptions()))

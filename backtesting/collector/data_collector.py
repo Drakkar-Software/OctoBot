@@ -16,7 +16,7 @@
 
 from tools.logging.logging_util import get_logger
 
-import ccxt
+import ccxt.async_support as ccxt
 
 from backtesting.collector.exchange_collector import ExchangeDataCollector
 from config import CONFIG_TIME_FRAME, CONFIG_EXCHANGES
@@ -65,7 +65,7 @@ class DataCollector:
             await exchange_manager.initialize()
             exchange_inst = exchange_manager.get_exchange()
             exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst, symbol)
-            files = exchange_data_collector.load_available_data()
+            files = await exchange_data_collector.load_available_data()
             return files[0]
         except Exception as e:
             self.logger.exception(e)

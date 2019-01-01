@@ -174,11 +174,11 @@ class EvaluatorNotification(Notification):
 
         return self
 
-    def notify_alert(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
+    async def notify_alert(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
         title = f"OCTOBOT ALERT : {crypto_currency_evaluator.crypto_currency} / {result}"
 
         if self.gmail_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
-            profitability, profitability_percent, _, _ = trader.get_trades_manager().get_profitability()
+            profitability, profitability_percent, _, _ = await trader.get_trades_manager().get_profitability()
 
             self.gmail_notification_factory(
                 title,
