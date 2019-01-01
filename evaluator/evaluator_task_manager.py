@@ -29,7 +29,7 @@ This class represent the last level of evaluator management by :
 """
 
 
-class EvaluatorThreadsManager:
+class EvaluatorTaskManager:
     def __init__(self, config,
                  time_frame,
                  global_price_updater,
@@ -54,13 +54,13 @@ class EvaluatorThreadsManager:
         self.should_save_evaluations = CONFIG_SAVE_EVALUATION in self.config and self.config[CONFIG_SAVE_EVALUATION]
 
         # notify symbol evaluator
-        self.symbol_evaluator.add_evaluator_thread_manager(self.exchange, self.time_frame, self.trading_mode, self)
+        self.symbol_evaluator.add_evaluator_task_manager(self.exchange, self.time_frame, self.trading_mode, self)
 
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
         self.matrix_exporter = MatrixExporter(self.matrix, self.symbol)
 
-        self.thread_name = f"TA THREAD MANAGER - {self.symbol} - {self.exchange.get_name()} - {self.time_frame}"
-        self.logger = get_logger(self.thread_name)
+        self.task_name = f"TA TASK MANAGER - {self.symbol} - {self.exchange.get_name()} - {self.time_frame}"
+        self.logger = get_logger(self.task_name)
 
         # Create Evaluator
         self.evaluator = Evaluator()
@@ -80,7 +80,7 @@ class EvaluatorThreadsManager:
                                                                                          relevant_evaluators), self)
 
         # Register in refreshing threads
-        self.global_price_updater.register_evaluator_thread_manager(self.time_frame, self)
+        self.global_price_updater.register_evaluator_task_manager(self.time_frame, self)
 
     # handle notifications from evaluators, when notified refresh symbol evaluation matrix
     async def notify(self, notifier_name, force_TA_refresh=False, finalize=False, interruption=False):
@@ -91,7 +91,6 @@ class EvaluatorThreadsManager:
             await self._refresh_eval(notifier_name, finalize=finalize)
 
     def _should_consider_notification(self, notifier_name, interruption=False):
-        return_val = True
         if self.get_refreshed_times() > 0:
             if interruption:
                 # if notification from interruption (real_time or social evaluator,
@@ -157,17 +156,6 @@ class EvaluatorThreadsManager:
     def _save_evaluations_if_necessary(self):
         if self.should_save_evaluations and self.symbol_evaluator.are_all_timeframes_initialized(self.exchange):
             self.matrix_exporter.save()
-
-    def start_threads(self):
-        pass
-
-    def stop_threads(self):
-        for thread in self.evaluator.get_real_time_eval_list():
-            thread.stop()
-
-    def join_threads(self):
-        for thread in self.evaluator.get_real_time_eval_list():
-            thread.join()
 
     def get_refreshed_times(self):
         return self.global_price_updater.get_refreshed_times(self.time_frame, self.symbol)

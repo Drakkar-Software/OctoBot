@@ -78,7 +78,7 @@ class EvaluatorCreator:
                             "No dispatcher found for evaluator: {0} for symbol: {1}, evaluator has been disabled."
                                 .format(social_eval_class_instance.get_name(), symbol))
 
-                # start refreshing thread if the thread is not manage by dispatcher
+                # register refreshing task if the evaluator is not manage by dispatcher
                 elif is_evaluator_to_be_used and social_eval_class_instance.get_is_to_be_independently_tasked():
                     social_eval_class_instance.set_is_to_be_started_as_task(True)
 
@@ -105,7 +105,7 @@ class EvaluatorCreator:
             if EvaluatorCreator.is_relevant_evaluator(real_time_eval_class_instance, relevant_evaluators):
                 real_time_eval_class_instance.set_logger(get_logger(real_time_eval_class.get_name()))
 
-                # start refreshing thread
+                # register refreshing task
                 real_time_eval_class_instance.set_is_to_be_started_as_task(True)
 
                 real_time_ta_eval_list.append(real_time_eval_class_instance)
@@ -113,8 +113,7 @@ class EvaluatorCreator:
         return real_time_ta_eval_list
 
     @staticmethod
-    def create_social_not_threaded_list(social_eval_list):
-        # if not threaded --> ask him to refresh with generic thread
+    def create_social_not_tasked_list(social_eval_list):
         return [
             social_eval
             for social_eval in social_eval_list

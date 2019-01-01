@@ -17,7 +17,7 @@
 from tools.logging.logging_util import get_logger
 
 from backtesting.backtesting import Backtesting
-from evaluator.Updaters.social_evaluator_not_threaded_update import SocialEvaluatorNotThreadedUpdateTask
+from evaluator.Updaters.social_evaluator_not_tasked_update_task import SocialEvaluatorNotTaskedUpdateTask
 from evaluator.evaluator_creator import EvaluatorCreator
 from config import CONFIG_EVALUATORS_WILDCARD
 
@@ -34,16 +34,16 @@ class CryptocurrencyEvaluator:
 
         if Backtesting.enabled(self.config):
             self.social_eval_list = []
-            self.social_not_threaded_list = []
+            self.social_not_tasked_list = []
         else:
             self.social_eval_list = EvaluatorCreator.create_social_eval(self.config,
                                                                         self.crypto_currency,
                                                                         self.dispatchers_list,
                                                                         relevant_evaluators)
 
-            self.social_not_threaded_list = EvaluatorCreator.create_social_not_threaded_list(self.social_eval_list)
+            self.social_not_tasked_list = EvaluatorCreator.create_social_not_tasked_list(self.social_eval_list)
 
-        self.social_evaluator_refresh_task = SocialEvaluatorNotThreadedUpdateTask(self.social_not_threaded_list)
+        self.social_evaluator_refresh_task = SocialEvaluatorNotTaskedUpdateTask(self.social_not_tasked_list)
 
     def add_symbol_evaluator(self, symbol, symbol_evaluator):
         self.symbol_evaluator_list[symbol] = symbol_evaluator
@@ -74,8 +74,8 @@ class CryptocurrencyEvaluator:
     def get_dispatchers_list(self):
         return self.dispatchers_list
 
-    def get_social_not_threaded_list(self):
-        return self.social_not_threaded_list
+    def get_social_not_tasked_list(self):
+        return self.social_not_tasked_list
 
     def get_symbol_pairs(self):
         return self.config["crypto_currencies"][self.crypto_currency]["pairs"]
