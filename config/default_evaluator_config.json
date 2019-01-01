@@ -1,21 +1,37 @@
 {
-  "RSIMomentumEvaluator": true,
-  "DoubleMovingAverageTrendEvaluator": true,
-  "BBMomentumEvaluator": true,
-  "MACDMomentumEvaluator": true,
-  "ADXMomentumEvaluator": true,
-  "KlingerOscillatorMomentumEvaluator": true,
-
-
-  "InstantFluctuationsEvaluator": false,
-
-
-  "TwitterNewsEvaluator": false,
-  "RedditForumEvaluator": false,
-  "GoogleTrendStatsEvaluator": false,
-
-
-  "FullMixedStrategiesEvaluator": true,
-  "MoveSignalsStrategyEvaluator": false,
-  "InstantSocialReactionMixedStrategiesEvaluator": false
+    "ADXMomentumEvaluator": false,
+    "ATRVolatilityEvaluator": false,
+    "BBMomentumEvaluator": false,
+    "BBTrendEvaluator": false,
+    "BTCTalkForumEvaluator": false,
+    "CandleAnalysisTrendEvaluator": false,
+    "ChaikinOscillatorMomentumEvaluator": false,
+    "ChaikinVolatilityEvaluator": false,
+    "DMITrendEvaluator": false,
+    "DoubleMovingAverageTrendEvaluator": true,
+    "EOMTrendEvaluator": false,
+    "FullMixedStrategiesEvaluator": true,
+    "GoogleTrendStatsEvaluator": false,
+    "HighFrequencyStrategiesEvaluator": false,
+    "InstantFluctuationsEvaluator": false,
+    "InstantMAEvaluator": false,
+    "InstantRegulatedMarketEvaluator": false,
+    "InstantSocialReactionMixedStrategiesEvaluator": false,
+    "InstantVolatilityEvaluator": false,
+    "KlingerOscillatorMomentumEvaluator": false,
+    "MACDMomentumEvaluator": false,
+    "MarketStabilityStrategiesEvaluator": false,
+    "MassIndexVolatilityEvaluator": false,
+    "MediumNewsEvaluator": false,
+    "MoveSignalsStrategyEvaluator": false,
+    "OBVMomentumEvaluator": false,
+    "RSIMomentumEvaluator": true,
+    "RedditForumEvaluator": false,
+    "SimpleMixedStrategiesEvaluator": false,
+    "StochasticRSIVolatilityEvaluator": false,
+    "StochasticVolatilityEvaluator": false,
+    "TRIXMomentumEvaluator": false,
+    "TwitterNewsEvaluator": false,
+    "WhalesOrderBookEvaluator": false,
+    "WilliamsRMomentumEvaluator": false
 }
