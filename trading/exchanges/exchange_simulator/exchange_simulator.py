@@ -248,7 +248,7 @@ class ExchangeSimulator(AbstractExchange):
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
         return self.get_symbol_data(symbol).get_symbol_prices(time_frame, None, return_list)
 
-    def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
+    async def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         self._ensure_available_data(symbol)
         candles = self._extract_data_with_limit(symbol, time_frame)
         if time_frame is not None:
@@ -270,7 +270,7 @@ class ExchangeSimulator(AbstractExchange):
         else:
             return [self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR]
 
-    def get_recent_trades(self, symbol, limit=50):
+    async def get_recent_trades(self, symbol, limit=50):
         self._ensure_available_data(symbol)
         time_frame_to_use = TimeFrameManager.find_min_time_frame(self._get_used_time_frames(symbol))
         index = 0
@@ -354,7 +354,7 @@ class ExchangeSimulator(AbstractExchange):
     def get_data(self):
         return self.data
 
-    def get_price_ticker(self, symbol):
+    async def get_price_ticker(self, symbol):
         self._ensure_available_data(symbol)
         result = {
             "symbol": symbol,
@@ -364,10 +364,11 @@ class ExchangeSimulator(AbstractExchange):
         }
         self.get_symbol_data(symbol).update_symbol_ticker(result)
 
-    def get_last_price_ticker(self, symbol):
-        return self.get_price_ticker(symbol)[ExchangeConstantsTickersColumns.LAST.value]
+    async def get_last_price_ticker(self, symbol):
+        ticker = await self.get_price_ticker(symbol)
+        return ticker[ExchangeConstantsTickersColumns.LAST.value]
 
-    def get_all_currencies_price_ticker(self):
+    async def get_all_currencies_price_ticker(self):
         return {
             symbol: {
                 "symbol": symbol,
@@ -400,41 +401,38 @@ class ExchangeSimulator(AbstractExchange):
             },
         }
 
-    def end_backtesting(self, symbol):
-        self.backtesting.end(symbol)
+    async def end_backtesting(self, symbol):
+        await self.backtesting.end(symbol)
 
     def set_recent_trades_multiplier_factor(self, factor):
         self.recent_trades_multiplier_factor = factor
 
     # Unimplemented methods from AbstractExchange
-    def cancel_order(self, order_id, symbol=None):
+    async def cancel_order(self, order_id, symbol=None):
         return True
 
-    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
+    async def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         pass
 
-    def get_all_orders(self, symbol=None, since=None, limit=None):
+    async def get_all_orders(self, symbol=None, since=None, limit=None):
         return []
 
-    def get_balance(self):
+    async def get_balance(self):
         return None
 
-    def get_closed_orders(self, symbol=None, since=None, limit=None):
+    async def get_closed_orders(self, symbol=None, since=None, limit=None):
         return []
 
-    def get_market_price(self, symbol):
-        raise NotImplementedError("get_market_price not implemented")
-
-    def get_my_recent_trades(self, symbol=None, since=None, limit=None):
+    async def get_my_recent_trades(self, symbol=None, since=None, limit=None):
         return []
 
-    def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
+    async def get_open_orders(self, symbol=None, since=None, limit=None, force_rest=False):
         return []
 
-    def get_order(self, order_id, symbol=None):
+    async def get_order(self, order_id, symbol=None):
         raise NotImplementedError("get_order not implemented")
 
-    def get_order_book(self, symbol, limit=30):
+    async def get_order_book(self, symbol, limit=30):
         raise NotImplementedError("get_order_book not implemented")
 
     def get_uniform_timestamp(self, timestamp):
