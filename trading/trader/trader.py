@@ -156,7 +156,7 @@ class Trader(Initializable):
             linked_to = new_order.linked_to
 
         if not loaded:
-            new_order = self._create_not_loaded_order(order, new_order, portfolio)
+            new_order = await self._create_not_loaded_order(order, new_order, portfolio)
             title = "Order creation"
         else:
             new_order.set_is_from_this_octobot(False)
@@ -196,13 +196,13 @@ class Trader(Initializable):
         async with self.get_portfolio().get_lock():
             await self.create_order(market_sell, self.get_portfolio())
 
-    def _create_not_loaded_order(self, order, new_order, portfolio) -> Order:
+    async def _create_not_loaded_order(self, order, new_order, portfolio) -> Order:
         if not self.simulate and not self.check_if_self_managed(new_order.get_order_type()):
-            created_order = self.exchange.create_order(new_order.get_order_type(),
-                                                       new_order.get_order_symbol(),
-                                                       new_order.get_origin_quantity(),
-                                                       new_order.get_origin_price(),
-                                                       new_order.origin_stop_price)
+            created_order = await self.exchange.create_order(new_order.get_order_type(),
+                                                             new_order.get_order_symbol(),
+                                                             new_order.get_origin_quantity(),
+                                                             new_order.get_origin_price(),
+                                                             new_order.origin_stop_price)
 
             # get real order from exchange
             new_order = self.parse_exchange_order_to_order_instance(created_order)
@@ -221,7 +221,7 @@ class Trader(Initializable):
         if not order.is_cancelled() and not order.is_filled():
             async with order.get_lock():
                 odr = order
-                odr.cancel_order()
+                await odr.cancel_order()
                 self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} at {odr.get_origin_price()}"
                                  f" (ID : {odr.get_id()}) cancelled on {self.get_exchange().get_name()}")
 
