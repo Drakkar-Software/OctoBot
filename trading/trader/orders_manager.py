@@ -114,9 +114,9 @@ class OrdersManager:
     # Currently called by backtesting
     # Will be called by Websocket to perform order status update if new data available
     # TODO : currently blocking, may implement queue if needed
-    def force_update_order_status(self, blocking=True, simulated_time=False):
+    async def force_update_order_status(self, blocking=True, simulated_time=False):
         if blocking:
-            self._update_orders_status(simulated_time=simulated_time)
+            await self._update_orders_status(simulated_time=simulated_time)
         else:
             raise NotImplementedError("force_update_order_status(blocking=False) not implemented")
 

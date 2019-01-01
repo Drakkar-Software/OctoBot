@@ -34,13 +34,13 @@ class Backtesting:
         self.symbols_to_test = set()
         self.init_symbols_to_test()
 
-    def get_is_finished(self, symbol=None):
-        if symbol is None:
+    def get_is_finished(self, symbols=None):
+        if symbols is None:
             return len(self.ended_symbols) == len(self.symbols_to_test)
         else:
-            return symbol in self.ended_symbols
+            return all(symbol in self.ended_symbols for symbol in symbols)
 
-    def end(self, symbol):
+    async def end(self, symbol):
         self.ended_symbols.add(symbol)
         if self.get_is_finished():
             try:
@@ -50,10 +50,10 @@ class Backtesting:
 
                 self.logger.info(" ========= Symbols price evolution =========")
                 for symbol_to_test in self.symbols_to_test:
-                    self.print_symbol_report(symbol_to_test)
+                    await self.print_symbol_report(symbol_to_test)
 
                 self.logger.info(" ========= Octobot end state =========")
-                self.print_global_report()
+                await self.print_global_report()
             except AttributeError:
                 self.logger.info(" *** Backtesting ended ****")
 
@@ -73,11 +73,11 @@ class Backtesting:
             trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + "\n"
         self.logger.info(trades_history_string.strip())
 
-    def print_global_report(self):
+    async def print_global_report(self):
         try:
             trader = self.get_trader()
 
-            profitability, market_average_profitability = self.get_profitability(trader)
+            profitability, market_average_profitability = await self.get_profitability(trader)
             reference_market = self.get_reference_market(trader)
             end_portfolio = self.get_portfolio(trader)
             starting_portfolio = self.get_origin_portfolio(trader)
@@ -101,21 +101,22 @@ class Backtesting:
         except Exception as e:
             self.logger.exception(e)
 
-    def _get_symbol_report(self, symbol, trader):
+    async def _get_symbol_report(self, symbol, trader):
         market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
 
         # profitability
         total_profitability = 0
-        _, profitability, _, _ = trader.get_trades_manager().get_profitability()
+        _, profitability, _, _ = await trader.get_trades_manager().get_profitability()
         total_profitability += profitability
 
         # vs market
         return self.get_market_delta(market_data)
 
-    def print_symbol_report(self, symbol):
-        self.logger.info(f"{symbol} Profitability : Market {self._get_symbol_report(symbol, self.get_trader()) * 100}%")
+    async def print_symbol_report(self, symbol):
+        symbol_report = await self._get_symbol_report(symbol, self.get_trader())
+        self.logger.info(f"{symbol} Profitability : Market {symbol_report * 100}%")
 
-    def get_dict_formatted_report(self):
+    async def get_dict_formatted_report(self):
         SYMBOL_REPORT = "symbol_report"
         BOT_REPORT = "bot_report"
         SYMBOLS_WITH_TF = "symbols_with_time_frames_frames"
@@ -127,10 +128,11 @@ class Backtesting:
 
         trader = self.get_trader()
 
-        profitability, market_average_profitability = self.get_profitability(trader)
+        profitability, market_average_profitability = await self.get_profitability(trader)
 
         for symbol in self.symbols_to_test:
-            report[SYMBOL_REPORT].append({symbol: self._get_symbol_report(symbol, trader) * 100})
+            symbol_report = await self._get_symbol_report(symbol, trader)
+            report[SYMBOL_REPORT].append({symbol: symbol_report * 100})
             report[SYMBOLS_WITH_TF][symbol] = self.exchange_simulator.get_min_time_frame(symbol)
 
         report[BOT_REPORT] = {
@@ -158,9 +160,9 @@ class Backtesting:
         return trader.get_trades_manager().get_origin_portfolio()
 
     @staticmethod
-    def get_profitability(trader):
+    async def get_profitability(trader):
         trade_manager = trader.get_trades_manager()
-        _, profitability, _, market_average_profitability = trade_manager.get_profitability(True)
+        _, profitability, _, market_average_profitability = await trade_manager.get_profitability(True)
         return profitability, market_average_profitability
 
     def init_symbols_to_test(self):

@@ -43,10 +43,10 @@ class Backtester:
             return simulator.get_progress()
         return 0
 
-    def get_report(self):
+    async def get_report(self):
         simulator = self._get_exchange_simulator()
         if simulator:
-            report = simulator.get_backtesting().get_dict_formatted_report()
+            report = await simulator.get_backtesting().get_dict_formatted_report()
             if self.error is not None:
                 report["error"] = str(self.error)
             return report
@@ -57,9 +57,9 @@ class Backtester:
             if isinstance(exchange.get_exchange(), ExchangeSimulator):
                 return exchange.get_exchange()
 
-    def start_backtesting(self, in_thread=False):
+    async def start_backtesting(self, in_thread=False):
         self.error = None
-        return start_backtesting_bot(self.octobot, in_thread=in_thread, watcher=self)
+        return await start_backtesting_bot(self.octobot, in_thread=in_thread, watcher=self)
 
     def get_bot(self):
         return self.octobot

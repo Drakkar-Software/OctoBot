@@ -18,6 +18,7 @@ from tools.logging.logging_util import get_logger
 import time
 import copy
 import asyncio
+import threading
 
 import ccxt.async_support as ccxt
 
@@ -25,7 +26,7 @@ from backtesting.backtesting import Backtesting
 from config import CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
     NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, \
-    CONFIG_EVALUATORS_WILDCARD, DEFAULT_FUTURE_TIMEOUT
+    CONFIG_EVALUATORS_WILDCARD, ASYNCIO_DEBUG_OPTION
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
@@ -62,6 +63,7 @@ class OctoBot:
         self.edited_config = copy.deepcopy(config)
         self.ready = False
         self.watcher = None
+        self.current_loop_thread = None
 
         # tools: used for alternative operations on a bot on the fly (ex: backtesting started from web interface)
         self.tools = {
@@ -240,7 +242,7 @@ class OctoBot:
                                           f"current strategy. Activate it in OctoBot advanced configuration interface "
                                           f"to allow activated strategy(ies) to work properly.")
 
-    async def start_tasks(self):
+    async def start_tasks(self, run_in_new_thread=False):
         task_list = []
         if self.performance_analyser:
             task_list.append(self.performance_analyser.start_monitoring())
@@ -271,7 +273,11 @@ class OctoBot:
         self.logger.info("Evaluation tasks started...")
         self.ready = True
         self.main_task_group = asyncio.gather(*task_list)
-        await self.main_task_group
+        if run_in_new_thread:
+            self._create_new_asyncio_main_loop(replace_current_main_loop=True, coroutine=self.main_task_group)
+        else:
+            self.current_loop_thread = threading.current_thread()
+            await self.main_task_group
 
     def join_threads(self):
 
@@ -308,7 +314,22 @@ class OctoBot:
         return any(required_klass in klass.get_parent_evaluator_classes() for klass in class_list)
 
     def run_in_main_asyncio_loop(self, coroutine):
+        # restart a new loop if necessary (for backtesting analysis)
+        if Backtesting.enabled(self.config) and self.async_loop.is_closed():
+            self.logger.debug("Main loop is closed, starting a new main loop.")
+            self._create_new_asyncio_main_loop(replace_current_main_loop=True)
+
         return run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
+
+    def _create_new_asyncio_main_loop(self, replace_current_main_loop=False, coroutine=None):
+        self.async_loop = asyncio.new_event_loop()
+        self.async_loop.set_debug(ASYNCIO_DEBUG_OPTION)
+        asyncio.set_event_loop(self.async_loop)
+        if replace_current_main_loop:
+            self.current_loop_thread = threading.Thread(target=self.async_loop.run_forever)
+        else:
+            self.current_loop_thread = threading.Thread(target=self.async_loop.run_until_complete, args=coroutine)
+        self.current_loop_thread.start()
 
     def set_watcher(self, watcher):
         self.watcher = watcher

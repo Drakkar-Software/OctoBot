@@ -45,7 +45,7 @@ def start_backtesting_using_specific_files(files):
         else:
             backtester = Backtester(get_bot().get_config(), files)
             tools[BOT_TOOLS_BACKTESTING] = backtester
-            if backtester.start_backtesting(in_thread=True):
+            if get_bot().run_in_main_asyncio_loop(backtester.start_backtesting(in_thread=True)):
                 ignored_files = backtester.get_ignored_files()
                 ignored_files_info = "" if not ignored_files else f" ignored files: {ignored_files}"
                 return True, f"Backtesting started{ignored_files_info}"
@@ -71,7 +71,7 @@ def get_backtesting_report():
     tools = get_bot().get_tools()
     if tools[BOT_TOOLS_BACKTESTING]:
         backtester = tools[BOT_TOOLS_BACKTESTING]
-        return backtester.get_report()
+        return get_bot().run_in_main_asyncio_loop(backtester.get_report())
     return {}
 
 
@@ -88,7 +88,7 @@ def collect_data_file(exchange, symbol):
     data_collector = DataCollector(get_bot().get_config(), False)
 
     try:
-        result = data_collector.execute_with_specific_target(exchange, symbol)
+        result = get_bot().run_in_main_asyncio_loop(data_collector.execute_with_specific_target(exchange, symbol))
         success = True
     except Exception as e:
         data_collector.stop()
