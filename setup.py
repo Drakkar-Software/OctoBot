@@ -16,34 +16,41 @@
 
 from setuptools import setup
 
-from config import VERSION
+from config import VERSION, PROJECT_LAUNCHER
 
-NAME = "OctoBot"
 DESCRIPTION = open('README.md').read() + '\n\n' + open('docs/CHANGELOG.md').read()
 
-REQUIRED = open('requirements.txt').read()
+REQUIRED = open('pre_requirements.txt').read() + open('requirements.txt').read()
 REQUIRED_DEV = open('dev_requirements.txt').read()
 
 setup(
-    name=NAME,
+    name=PROJECT_LAUNCHER,
     version=VERSION,
     url='https://github.com/Drakkar-Software/OctoBot',
-    license='Apache-2.0',
-    author='Trading-Bot team',
+    license='LGPL-3.0',
+    author='Drakkar-Software',
+    author_email='drakkar.software@protonmail.com',
     description='Cryptocurrencies alert / trading bot',
+    py_modules=['launcher'],
+    packages=['interfaces.gui.launcher', 'interfaces.gui.util', 'config'],
     long_description=DESCRIPTION,
     install_requires=REQUIRED,
     tests_require=REQUIRED_DEV,
     test_suite="tests",
+    zip_safe=False,
+    python_requires='>=3.7',
+    entry_points={
+        'console_scripts': [
+            PROJECT_LAUNCHER + ' = launcher:main'
+        ]
+    },
     classifiers=[
         'Development Status :: 4 - Beta',
-        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
 )
