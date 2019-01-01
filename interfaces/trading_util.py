@@ -13,13 +13,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import asyncio
-
 
 from interfaces import get_bot
 from trading.trader.portfolio import Portfolio
 from tools.timestamp_util import convert_timestamps_to_datetime
-from config import INIT_EVAL_NOTE
 
 
 def get_traders(bot=None):
@@ -218,17 +215,20 @@ def get_currencies_with_status():
                 exchange.get_name():
                     [
                         ",".join([
-                            dec.get_state().name if dec.get_state() is not None else "N/A"
+                            dec.get_state().name
+                            if dec.get_state() is not None else "N/A"
                             for dec in symbol_evaluator.get_deciders(exchange)
                         ]),
                         ",".join([
-                            str(round(dec.get_final_eval(), 4)) if dec.get_final_eval() != INIT_EVAL_NOTE else "N/A"
+                            str(round(dec.get_final_eval(), 4))
+                            if isinstance(dec.get_final_eval(), (int, float)) else "N/A"
                             for dec in symbol_evaluator.get_deciders(exchange)
                         ]),
                     ]
                     for exchange in get_bot().get_exchanges_list().values()
                     if symbol_evaluator.has_exchange(exchange)
             }
+
     return symbol_with_evaluation
 
 
