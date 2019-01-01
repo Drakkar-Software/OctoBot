@@ -92,7 +92,7 @@ def get_watched_symbol_data(symbol):
             evaluators = bot.get_symbol_evaluator_list()
             if evaluators and symbol in evaluators:
                 symbol_evaluator = evaluators[symbol]
-                etms = symbol_evaluator.get_evaluator_thread_managers(exchange)
+                etms = symbol_evaluator.get_evaluator_task_managers(exchange)
                 if etms:
                     if WATCHED_SYMBOLS_TIME_FRAME in etms:
                         time_frame = WATCHED_SYMBOLS_TIME_FRAME
@@ -114,7 +114,7 @@ def get_first_symbol_data():
             evaluators = bot.get_symbol_evaluator_list()
             if evaluators:
                 symbol_evaluator = next(iter(evaluators.values()))
-                etms = symbol_evaluator.get_evaluator_thread_managers(exchange)
+                etms = symbol_evaluator.get_evaluator_task_managers(exchange)
                 if etms:
                     time_frame = next(iter(etms))
                     return _get_candles_reply(exchange, symbol_evaluator, time_frame)
@@ -188,7 +188,7 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
 
     if time_frame is not None:
         if symbol_evaluator_list:
-            evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_thread_managers(
+            evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_task_managers(
                 exchange_list[exchange])
 
             data = None

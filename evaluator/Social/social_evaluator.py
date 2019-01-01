@@ -32,7 +32,7 @@ class SocialEvaluator(AbstractEvaluator):
         self.is_self_refreshing = False
         self.keep_running = True
         self.is_to_be_independently_tasked = False
-        self.evaluator_thread_managers = []
+        self.evaluator_task_managers = []
         self.load_config()
 
     @classmethod
@@ -42,11 +42,11 @@ class SocialEvaluator(AbstractEvaluator):
     def stop(self):
         self.keep_running = False
 
-    def add_evaluator_thread_manager(self, evaluator_thread):
-        self.evaluator_thread_managers.append(evaluator_thread)
+    def add_evaluator_task_manager(self, evaluator_task):
+        self.evaluator_task_managers.append(evaluator_task)
 
-    async def notify_evaluator_thread_managers(self, notifier_name):
-        for task_manager in self.evaluator_thread_managers:
+    async def notify_evaluator_task_managers(self, notifier_name):
+        for task_manager in self.evaluator_task_managers:
             await task_manager.notify(notifier_name, finalize=True, interruption=True)
 
     def load_config(self):
@@ -72,7 +72,7 @@ class SocialEvaluator(AbstractEvaluator):
         return self.is_self_refreshing
 
     # to implement in subclasses if config necessary
-    # required if is_threaded = False --> provide evaluator refreshing time
+    # required if is_to_be_independently_tasked = False --> provide evaluator refreshing time
     def set_default_config(self):
         pass
 

@@ -53,10 +53,10 @@ class RealTimeEvaluator(AbstractEvaluator):
         else:
             self.set_default_config()
 
-    def add_evaluator_thread_manager(self, evaluator_thread):
-        self.evaluator_task_managers.append(evaluator_thread)
+    def add_evaluator_task_manager(self, evaluator_task):
+        self.evaluator_task_managers.append(evaluator_task)
 
-    async def notify_evaluator_thread_managers(self, notifier_name, force_TA_refresh=False):
+    async def notify_evaluator_task_managers(self, notifier_name, force_TA_refresh=False):
         for task_manager in self.evaluator_task_managers:
             await task_manager.notify(notifier_name, force_TA_refresh=force_TA_refresh,
                                       finalize=True, interruption=True)

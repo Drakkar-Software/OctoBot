@@ -122,8 +122,8 @@ def start_backtesting_bot(bot, in_thread=False, watcher=None):
         except Exception:
             get_logger(f"fail to stop force exit for exchange {exchange_inst.get_name()}")
 
-    bot.create_evaluation_threads()
-    if not bot.get_symbols_threads_manager():
+    bot.create_evaluation_tasks()
+    if not bot.get_symbols_tasks_manager():
         raise RuntimeError(f"No candles data for the current configuration. Please ensure the required data files for "
                            f"the activated symbol(s) are available. Symbol(s): {list(bot.get_symbols_list())}")
 

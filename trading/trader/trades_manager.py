@@ -24,14 +24,17 @@ from config import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFER
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 from tools.symbol_util import merge_currencies, split_symbol
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
+from tools.initializable import Initializable
 
 """ TradesManager will store all trades performed by the exchange trader
 Another feature of TradesManager is the profitability calculation
 by subtracting portfolio_current_value and portfolio_origin_value """
 
 
-class TradesManager:
+class TradesManager(Initializable):
+
     def __init__(self, config, trader):
+        super().__init__()
         self.config = config
         self.trader = trader
         self.portfolio = trader.get_portfolio()
@@ -58,7 +61,7 @@ class TradesManager:
 
         self.reference_market = TradesManager.get_reference_market(self.config)
 
-    async def initialize(self):
+    async def initialize_impl(self):
         await self._init_origin_portfolio_and_currencies_value()
 
     @staticmethod

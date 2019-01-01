@@ -26,7 +26,7 @@ from tests.test_utils.config import load_test_config
 from evaluator.Util.advanced_manager import AdvancedManager
 from trading.trader.portfolio import Portfolio
 from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
-from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
+from evaluator.evaluator_task_manager import EvaluatorTaskManager
 from config import TimeFrames
 from trading.util.trading_config_util import get_activated_trading_mode
 
@@ -54,8 +54,8 @@ def _get_tools():
     symbol_evaluator.strategies_eval_lists[exchange_inst.get_name()] = \
         EvaluatorCreator.create_strategies_eval_list(config)
     trading_mode_inst = get_activated_trading_mode(config)(config, exchange_inst)
-    evaluator_thread_manager = EvaluatorThreadsManager(config, time_frame, symbol_time_frame_updater_thread,
-                                                       symbol_evaluator, exchange_inst, trading_mode_inst, [])
+    evaluator_thread_manager = EvaluatorTaskManager(config, time_frame, symbol_time_frame_updater_thread,
+                                                    symbol_evaluator, exchange_inst, trading_mode_inst, [])
     trader_inst.portfolio.portfolio["USDT"] = {
         Portfolio.TOTAL: 2000,
         Portfolio.AVAILABLE: 2000
@@ -65,7 +65,7 @@ def _get_tools():
 
 def test_default_values():
     evaluator_thread_manager, time_frame, symbol_time_frame_updater_thread, symbol_evaluator = _get_tools()
-    assert symbol_evaluator.evaluator_thread_managers[evaluator_thread_manager.exchange.get_name()][time_frame] \
+    assert symbol_evaluator.evaluator_task_managers[evaluator_thread_manager.exchange.get_name()][time_frame] \
         == evaluator_thread_manager
     assert symbol_time_frame_updater_thread.evaluator_threads_manager_by_time_frame[time_frame] \
         == evaluator_thread_manager

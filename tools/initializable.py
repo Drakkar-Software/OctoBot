@@ -14,24 +14,25 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import time
-
-from config import *
-from octobot import OctoBot
-from tests.test_utils.config import load_test_config
+from abc import *
 
 
-def test_run_bot():
-    # launch a bot
-    config = load_test_config()
-    bot = OctoBot(config)
-    bot.time_frames = [TimeFrames.ONE_MINUTE]
-    bot.create_exchange_traders()
-    bot.create_evaluation_tasks()
-    bot.start_tasks()
+class Initializable:
 
-    # let it start
-    time.sleep(5)
+    def __init__(self):
+        self.is_initialized = False
 
-    # stop the bot
-    bot.stop_threads()
+    # calls initialize_impl if not initialized
+    async def initialize(self, force=False):
+        if not self.is_initialized or force:
+            await self.initialize_impl()
+            self.is_initialized = True
+            return True
+        return False
+
+    @abstractmethod
+    async def initialize_impl(self):
+        raise NotImplementedError("initialize_impl not implemented")
+
+    def is_initialized(self):
+        return self.is_initialized

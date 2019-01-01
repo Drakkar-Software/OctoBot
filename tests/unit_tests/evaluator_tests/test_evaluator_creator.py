@@ -62,12 +62,12 @@ def test_create_social_eval_list():
     _assert_created_instances(so_list, SocialEvaluator, config)
 
 
-def test_create_social_not_threaded_list():
+def test_create_social_not_tasked_list():
     evaluator, config = _get_tools()
     so_list = EvaluatorCreator.create_social_eval(config, evaluator.symbol, [], CONFIG_EVALUATORS_WILDCARD)
-    not_thread_so_list = EvaluatorCreator.create_social_not_threaded_list(so_list)
-    for evalator in not_thread_so_list:
-        assert not evalator.is_threaded
+    not_tasked_so_list = EvaluatorCreator.create_social_not_tasked_list(so_list)
+    for evalator in not_tasked_so_list:
+        assert not evalator.is_to_be_independently_tasked
 
 
 def test_create_strategies_eval_list():
