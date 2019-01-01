@@ -19,6 +19,7 @@ from asyncio import Lock
 
 from config import *
 from trading.trader.order import OrderConstants
+from tools.initializable import Initializable
 
 """ The Portfolio class manage an exchange portfolio
 This will begin by loading current exchange portfolio (by pulling user data)
@@ -28,11 +29,12 @@ This class also manage the availability of each currency in the portfolio:
 - When an order is filled or canceled restore the availability with the real quantity """
 
 
-class Portfolio:
+class Portfolio(Initializable):
     AVAILABLE = "available"
     TOTAL = "total"
 
     def __init__(self, config, trader):
+        super().__init__()
         self.config = config
         self.trader = trader
         self.is_simulated = trader.simulate
@@ -41,7 +43,7 @@ class Portfolio:
         self.logger = get_logger(self.__class__.__name__)
         self.lock = Lock()
 
-    async def initialize(self):
+    async def initialize_impl(self):
         await self._load_portfolio()
 
     # syntax: "async with xxx.get_lock():"

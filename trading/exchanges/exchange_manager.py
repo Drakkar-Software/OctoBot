@@ -26,13 +26,15 @@ from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
 from trading.exchanges.websockets_exchanges import AbstractWebSocket
+from tools.initializable import Initializable
 
 
-class ExchangeManager:
+class ExchangeManager(Initializable):
 
     WEB_SOCKET_RESET_MIN_INTERVAL = 15
 
     def __init__(self, config, exchange_type, is_simulated=False, rest_only=False, ignore_config=False):
+        super().__init__()
         self.config = config
         self.exchange_type = exchange_type
         self.rest_only = rest_only
@@ -55,7 +57,7 @@ class ExchangeManager:
         self.traded_pairs = []
         self.time_frames = []
 
-    async def initialize(self):
+    async def initialize_impl(self):
         await self.create_exchanges()
 
     def register_trader(self, trader):

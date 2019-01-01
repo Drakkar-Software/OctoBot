@@ -22,7 +22,7 @@ from tools.logging.logging_util import get_logger
 from config import *
 
 
-class SocialEvaluatorNotThreadedUpdateTask:
+class SocialEvaluatorNotTaskedUpdateTask:
 
     LAST_REFRESH_KEY = "last_refresh"
     LAST_REFRESH_TIME_KEY = "last_refresh_time"
@@ -70,7 +70,7 @@ class SocialEvaluatorNotThreadedUpdateTask:
                             social_eval[self.EVALUATOR_INSTANCE_KEY].get_data()
                             await social_eval[self.EVALUATOR_INSTANCE_KEY].eval()
                         except Exception as e:
-                            self.logger.error(f"Error during Social not threaded update eval() or get_data() on "
+                            self.logger.error(f"Error during Social not tasked update eval() or get_data() on "
                                               f"{social_eval[self.EVALUATOR_INSTANCE_KEY].get_name()} for "
                                               f"{social_eval[self.EVALUATOR_INSTANCE_KEY].get_symbol()} : {e}")
 
