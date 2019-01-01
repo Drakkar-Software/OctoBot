@@ -138,15 +138,15 @@ class Order:
                         return True
         return False
 
-    def cancel_order(self):
+    async def cancel_order(self):
         self.status = OrderStatus.CANCELED
         self.canceled_time = time.time()
 
         # if real order
         if not self.is_simulated and not self.trader.check_if_self_managed(self.get_order_type()):
-            self.exchange.cancel_order(self.order_id, self.symbol)
+            await self.exchange.cancel_order(self.order_id, self.symbol)
 
-        self.trader.notify_order_cancel(self)
+        await self.trader.notify_order_cancel(self)
 
     async def cancel_from_exchange(self):
         self.status = OrderStatus.CANCELED
