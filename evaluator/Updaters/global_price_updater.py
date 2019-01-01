@@ -76,7 +76,11 @@ class GlobalPriceUpdater:
                 self.time_frame_last_update = {key: {symbol: 0 for symbol in self.symbols} for key in time_frames}
 
                 while self.keep_running:
-                    await self._trigger_update(time_frames)
+                    try:
+                        await self._trigger_update(time_frames)
+                    except Exception as e:
+                        self.logger.error(f"exception when triggering update: {e}")
+                        self.logger.exception(e)
             else:
                 self.logger.warning("no time frames to monitor, going to sleep.")
 
@@ -88,10 +92,12 @@ class GlobalPriceUpdater:
         finally:
             if self.in_backtesting \
                     and self.symbols is not None \
-                    and not self.exchange.get_backtesting().get_is_finished(self.symbols):
+                    and not self.exchange.get_exchange().get_backtesting().get_is_finished(self.symbols):
                 if error is None:
                     error = "backtesting did not finish properly."
-                self.watcher.set_error(error)
+                if self.watcher is not None:
+                    self.watcher.set_error(error)
+                self.logger.error(error)
 
     async def _trigger_update(self, time_frames):
         now = time.time()
@@ -112,6 +118,9 @@ class GlobalPriceUpdater:
 
         if update_tasks:
             await self.trigger_symbols_finalize()
+
+        if self.in_backtesting:
+            await self.update_backtesting_order_status()
 
         if self.keep_running:
             await self._update_pause(now)
@@ -137,12 +146,17 @@ class GlobalPriceUpdater:
 
     async def _refresh_backtesting_time_frame_data(self, time_frame, symbol):
         try:
-            if self.exchange.should_update_data(time_frame, symbol):
+            if self.exchange.get_exchange().should_update_data(time_frame, symbol):
                 await self._refresh_data(time_frame, symbol)
         except BacktestingEndedException as e:
             self.logger.info(e)
             self.keep_running = False
-            self.exchange.end_backtesting(symbol)
+            await self.exchange.get_exchange().end_backtesting(symbol)
+
+    # currently used only during backtesting, will force refresh of each supervised task
+    async def update_backtesting_order_status(self):
+        order_manager = self.exchange.get_exchange_manager().get_trader().get_order_manager()
+        await order_manager.force_update_order_status(simulated_time=True)
 
     async def _refresh_time_frame_data(self, time_frame, symbol, notify=True):
         try:
@@ -177,7 +191,7 @@ class GlobalPriceUpdater:
         backtesting_enabled = Backtesting.enabled(evaluator_task_manager.get_evaluator().get_config())
         if backtesting_enabled:
             for symbol in self.symbols:
-                self.exchange.init_candles_offset(time_frames, symbol)
+                self.exchange.get_exchange().init_candles_offset(time_frames, symbol)
 
         return backtesting_enabled
 

@@ -92,7 +92,7 @@ DATA_FILES = [
 class AbstractBacktestingTest:
     __metaclass__ = ABCMeta
 
-    def __init__(self, strategy_evaluator_class, config):
+    def initialize(self, strategy_evaluator_class, config):
         self.config = config
         self.strategy_evaluator_class = strategy_evaluator_class
         self._register_only_strategy(strategy_evaluator_class)
