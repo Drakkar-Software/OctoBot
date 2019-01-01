@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import time
+import asyncio
 
 from config import ExchangeConstantsMarketPropertyColumns
 from trading import AbstractExchange
@@ -95,17 +95,17 @@ class ExchangeDispatcher(AbstractExchange):
         if from_web_socket:
             # web socket: ensure data are the most recent one otherwise restart web socket
             if not symbol_data.ensure_data_validity(time_frame):
-                self._handle_web_socket_reset()
+                await self._handle_web_socket_reset()
                 return self.get_symbol_prices(symbol, time_frame, limit, return_list)
 
         return symbol_prices
 
-    def _handle_web_socket_reset(self):
+    async def _handle_web_socket_reset(self):
         # first check if reset is not already running
         if self.resetting_web_socket:
-            # if true: a reset is being processed in another thread, wait for it to be over and recall method
+            # if true: a reset is being processed in another task, wait for it to be over and recall method
             while self.resetting_web_socket:
-                time.sleep(0.01)
+                await asyncio.sleep(0.01)
         else:
             self.resetting_web_socket = True
             # otherwise: reset web socket and recall method

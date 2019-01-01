@@ -26,7 +26,7 @@ from config.config import load_config, init_config, is_config_empty
 from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
-    CONFIG_ANALYSIS_ENABLED_OPTION
+    CONFIG_ANALYSIS_ENABLED_OPTION, ASYNCIO_DEBUG_OPTION
 from interfaces.gui import main
 from tools.commands import Commands
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
@@ -142,9 +142,8 @@ def start_octobot(starting_args):
                             logging.error("{0}, impossible to display GUI".format(e))
 
                     if starting_args.start:
-                        debug_mode = True   # set true to activate asyncio debug mode
+                        debug_mode = ASYNCIO_DEBUG_OPTION    # set true to activate asyncio debug mode
                         asyncio.run(Commands.start_bot(bot, logger), debug=debug_mode)
-
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")
         os._exit(-1)

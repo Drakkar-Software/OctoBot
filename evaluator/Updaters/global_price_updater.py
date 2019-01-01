@@ -30,7 +30,7 @@ class GlobalPriceUpdater:
         self.logger = get_logger(self.__class__.__name__)
         self.exchange = exchange
         self.keep_running = True
-        self.evaluator_threads_manager_by_time_frame_by_symbol = {}
+        self.evaluator_task_manager_by_time_frame_by_symbol = {}
         self.refreshed_times = {}
         self.time_frame_last_update = {}
         self.symbols = None
@@ -38,21 +38,21 @@ class GlobalPriceUpdater:
         self.watcher = None
         self.in_backtesting = False
 
-    # add a time frame to watch and its related evaluator thread manager
-    def register_evaluator_thread_manager(self, time_frame, evaluator_thread_manager):
-        if time_frame not in self.evaluator_threads_manager_by_time_frame_by_symbol:
-            self.evaluator_threads_manager_by_time_frame_by_symbol[time_frame] = {}
+    # add a time frame to watch and its related evaluator task manager
+    def register_evaluator_task_manager(self, time_frame, evaluator_task_manager):
+        if time_frame not in self.evaluator_task_manager_by_time_frame_by_symbol:
+            self.evaluator_task_manager_by_time_frame_by_symbol[time_frame] = {}
 
-        # one evaluator_thread_manager per time frame per symbol
-        symbol = evaluator_thread_manager.get_symbol()
-        self.evaluator_threads_manager_by_time_frame_by_symbol[time_frame][symbol] = evaluator_thread_manager
+        # one evaluator_task_manager per time frame per symbol
+        symbol = evaluator_task_manager.get_symbol()
+        self.evaluator_task_manager_by_time_frame_by_symbol[time_frame][symbol] = evaluator_task_manager
 
         if self.symbols is None:
             self.symbols = []
         if symbol not in self.symbols:
             self.symbols.append(symbol)
 
-        symbol_evaluator = evaluator_thread_manager.get_symbol_evaluator()
+        symbol_evaluator = evaluator_task_manager.get_symbol_evaluator()
         if symbol_evaluator not in self.symbol_evaluators:
             self.symbol_evaluators.append(symbol_evaluator)
 
@@ -60,7 +60,7 @@ class GlobalPriceUpdater:
 
         error = None
         try:
-            time_frames = self.evaluator_threads_manager_by_time_frame_by_symbol.keys()
+            time_frames = self.evaluator_task_manager_by_time_frame_by_symbol.keys()
 
             # sort time frames to update them in order of accuracy
             time_frames = TimeFrameManager.sort_time_frames(time_frames)
@@ -127,7 +127,7 @@ class GlobalPriceUpdater:
         if not self.in_backtesting:
             await self._refresh_time_frame_data(time_frame, symbol, notify=False)
 
-    # calculate thread sleep between each refresh
+    # calculate task sleep time between each refresh
     async def _update_pause(self, now):
         sleeping_time = 0
         if not self.in_backtesting:
@@ -152,29 +152,29 @@ class GlobalPriceUpdater:
             self.logger.error(f" when refreshing data for time frame {time_frame}: {e}")
             self.logger.exception(e)
 
-    # notify the time frame's evaluator thread manager to refresh its data
+    # notify the time frame's evaluator task manager to refresh its data
     async def _refresh_data(self, time_frame, symbol, limit=None, notify=True):
-        evaluator_thread_manager_to_notify = self.evaluator_threads_manager_by_time_frame_by_symbol[time_frame][symbol]
+        evaluator_task_manager_to_notify = self.evaluator_task_manager_by_time_frame_by_symbol[time_frame][symbol]
 
-        numpy_candle_data = copy.deepcopy(await evaluator_thread_manager_to_notify.exchange.get_symbol_prices(
-            evaluator_thread_manager_to_notify.symbol,
-            evaluator_thread_manager_to_notify.time_frame,
+        numpy_candle_data = copy.deepcopy(await evaluator_task_manager_to_notify.exchange.get_symbol_prices(
+            evaluator_task_manager_to_notify.symbol,
+            evaluator_task_manager_to_notify.time_frame,
             limit=limit,
             return_list=False))
 
-        evaluator_thread_manager_to_notify.evaluator.set_data(numpy_candle_data)
+        evaluator_task_manager_to_notify.evaluator.set_data(numpy_candle_data)
         self.refreshed_times[time_frame][symbol] += 1
         if notify:
-            await evaluator_thread_manager_to_notify.notify(self.__class__.__name__)
+            await evaluator_task_manager_to_notify.notify(self.__class__.__name__)
 
     def _init_backtesting_if_necessary(self, time_frames):
 
         # figure out from an evaluator if back testing is running for this symbol
-        evaluator_thread_manager = \
-            self.evaluator_threads_manager_by_time_frame_by_symbol[time_frames[0]][self.symbols[0]]
+        evaluator_task_manager = \
+            self.evaluator_task_manager_by_time_frame_by_symbol[time_frames[0]][self.symbols[0]]
 
         # test if we need to initialize backtesting features
-        backtesting_enabled = Backtesting.enabled(evaluator_thread_manager.get_evaluator().get_config())
+        backtesting_enabled = Backtesting.enabled(evaluator_task_manager.get_evaluator().get_config())
         if backtesting_enabled:
             for symbol in self.symbols:
                 self.exchange.init_candles_offset(time_frames, symbol)

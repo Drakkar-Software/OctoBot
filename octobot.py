@@ -30,7 +30,7 @@ from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
-from evaluator.evaluator_threads_manager import EvaluatorThreadsManager
+from evaluator.evaluator_task_manager import EvaluatorTaskManager
 from evaluator.symbol_evaluator import SymbolEvaluator
 from services import ServiceCreator
 from tools.notifications import Notification
@@ -101,7 +101,7 @@ class OctoBot:
         if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
             self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE, False)
 
-        self.symbol_threads_manager = {}
+        self.symbol_tasks_manager = {}
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.trading_mode = None
@@ -157,7 +157,7 @@ class OctoBot:
             else:
                 self.logger.error(f"{exchange_class_string} exchange not found")
 
-    def create_evaluation_threads(self):
+    def create_evaluation_tasks(self):
         self.logger.info("Evaluation threads creation...")
 
         # create dispatchers
@@ -214,23 +214,23 @@ class OctoBot:
 
         for time_frame in self.time_frames:
             if exchange.get_exchange_manager().time_frame_exists(time_frame.value, symbol_evaluator.get_symbol()):
-                self.symbol_threads_manager[time_frame] = EvaluatorThreadsManager(self.config,
-                                                                                  time_frame,
-                                                                                  global_price_updater,
-                                                                                  symbol_evaluator,
-                                                                                  exchange,
-                                                                                  self.exchange_trading_modes
+                self.symbol_tasks_manager[time_frame] = EvaluatorTaskManager(self.config,
+                                                                             time_frame,
+                                                                             global_price_updater,
+                                                                             symbol_evaluator,
+                                                                             exchange,
+                                                                             self.exchange_trading_modes
                                                                                   [exchange.get_name()],
-                                                                                  real_time_ta_eval_list,
-                                                                                  self.async_loop,
-                                                                                  self.relevant_evaluators)
+                                                                             real_time_ta_eval_list,
+                                                                             self.async_loop,
+                                                                             self.relevant_evaluators)
             else:
                 self.logger.warning(f"{exchange.get_name()} exchange is not supporting the required time frame: "
                                     f"'{time_frame.value}' for {symbol_evaluator.get_symbol()}.")
 
     def _check_required_evaluators(self):
-        if self.symbol_threads_manager:
-            etm = next(iter(self.symbol_threads_manager.values()))
+        if self.symbol_tasks_manager:
+            etm = next(iter(self.symbol_tasks_manager.values()))
             ta_list = etm.get_evaluator().get_ta_eval_list()
             if self.relevant_evaluators != CONFIG_EVALUATORS_WILDCARD:
                 for required_eval in self.relevant_evaluators:
@@ -313,8 +313,8 @@ class OctoBot:
     def set_watcher(self, watcher):
         self.watcher = watcher
 
-    def get_symbols_threads_manager(self):
-        return self.symbol_threads_manager
+    def get_symbols_tasks_manager(self):
+        return self.symbol_tasks_manager
 
     def get_exchange_traders(self):
         return self.exchange_traders

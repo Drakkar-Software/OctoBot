@@ -27,10 +27,13 @@ from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
 from trading.trader.trades_manager import TradesManager
+from tools.initializable import Initializable
 
 
-class Trader:
+class Trader(Initializable):
+
     def __init__(self, config, exchange, order_refresh_time=None):
+        super().__init__()
         self.exchange = exchange
         self.config = config
         self.risk = None
@@ -56,7 +59,7 @@ class Trader:
         if order_refresh_time is not None:
             self.order_manager.set_order_refresh_time(order_refresh_time)
 
-    async def initialize(self):
+    async def initialize_impl(self):
         await self.portfolio.initialize()
         await self.trades_manager.initialize()
 

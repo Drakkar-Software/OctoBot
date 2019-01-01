@@ -40,11 +40,11 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
         self.logger = get_logger(self.__class__.__name__)
         self.watcher = None
 
-    # add a time frame to watch and its related evaluator thread manager
+    # add a time frame to watch and its related evaluator task manager
     def register_evaluator_thread_manager(self, time_frame, evaluator_thread_manager):
         self.evaluator_threads_manager_by_time_frame[time_frame] = evaluator_thread_manager
 
-    # notify the time frame's evaluator thread manager to refresh its data
+    # notify the time frame's evaluator task manager to refresh its data
     def _refresh_data(self, time_frame, limit=None):
         evaluator_thread_manager_to_notify = self.evaluator_threads_manager_by_time_frame[time_frame]
 
@@ -143,7 +143,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
                     error = "backtesting did not finish properly."
                 self.watcher.set_error(error)
 
-    # calculate thread sleep between each refresh
+    # calculate task sleep between each refresh
     def _update_pause(self, backtesting_enabled, now):
         if not backtesting_enabled:
             sleeping_time = UPDATER_MAX_SLEEPING_TIME - (time.time() - now)
@@ -153,7 +153,7 @@ class SymbolTimeFramesDataUpdaterThread(threading.Thread):
             while not self.ensure_finished_other_threads_tasks():
                 time.sleep(0.001)
 
-    # currently used only during backtesting, will force refresh of each supervised thread
+    # currently used only during backtesting, will force refresh of each supervised task
     def ensure_finished_other_threads_tasks(self):
         for evaluator_thread_manager in self.evaluator_threads_manager_by_time_frame.values():
             symbol_evaluator = evaluator_thread_manager.symbol_evaluator

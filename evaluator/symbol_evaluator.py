@@ -35,7 +35,7 @@ class SymbolEvaluator:
         self.trader_simulators = None
         self.logger = get_logger(f"{self.symbol} {self.__class__.__name__}")
 
-        self.evaluator_thread_managers = {}
+        self.evaluator_task_managers = {}
         self.trading_mode_instances = {}
         self.matrices = {}
         self.strategies_eval_lists = {}
@@ -51,11 +51,11 @@ class SymbolEvaluator:
     def set_trader_simulators(self, simulator):
         self.trader_simulators = simulator
 
-    def add_evaluator_thread_manager(self, exchange, time_frame, trading_mode, evaluator_thread):
-        if exchange.get_name() in self.evaluator_thread_managers:
-            self.evaluator_thread_managers[exchange.get_name()][time_frame] = evaluator_thread
+    def add_evaluator_task_manager(self, exchange, time_frame, trading_mode, evaluator_task_manager):
+        if exchange.get_name() in self.evaluator_task_managers:
+            self.evaluator_task_managers[exchange.get_name()][time_frame] = evaluator_task_manager
         else:
-            self.evaluator_thread_managers[exchange.get_name()] = {time_frame: evaluator_thread}
+            self.evaluator_task_managers[exchange.get_name()] = {time_frame: evaluator_task_manager}
 
             self.matrices[exchange.get_name()] = EvaluatorMatrix(self.config)
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
@@ -139,16 +139,16 @@ class SymbolEvaluator:
         self._filter_and_activate_or_deactivate_evaluator(to_change_rt, to_keep_rt, activate)
         self._filter_and_activate_or_deactivate_evaluator(to_change_ta, to_keep_ta, activate)
 
-        thread_managers = self.evaluator_thread_managers[exchange.get_name()]
-        for evaluator_thread_manager in thread_managers.values():
+        task_managers = self.evaluator_task_managers[exchange.get_name()]
+        for evaluator_task_manager in task_managers.values():
             # force refresh TA eval
             if activate:
-                evaluator_thread_manager.get_evaluator().data_changed = True
-                evaluator_thread_manager.get_evaluator().update_ta_eval()
-            evaluator_thread_manager.refresh_matrix()
+                evaluator_task_manager.get_evaluator().data_changed = True
+                evaluator_task_manager.get_evaluator().update_ta_eval()
+            evaluator_task_manager.refresh_matrix()
 
         # finally, refresh strategies
-        await self.update_strategies_eval(next(iter(thread_managers.values())).matrix, exchange, None)
+        await self.update_strategies_eval(next(iter(task_managers.values())).matrix, exchange, None)
 
         self.logger.info("{} activated: {}".format([s.get_name() for s in strategies], activate))
 
@@ -170,8 +170,8 @@ class SymbolEvaluator:
 
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
-        for evaluator_thread in self.evaluator_thread_managers[exchange.get_name()].values():
-            if evaluator_thread.get_refreshed_times() == 0:
+        for evaluator_task in self.evaluator_task_managers[exchange.get_name()].values():
+            if evaluator_task.get_refreshed_times() == 0:
                 self.finalize_enabled_list[exchange.get_name()] = False
 
     def get_trader(self, exchange):
@@ -189,8 +189,8 @@ class SymbolEvaluator:
     def get_matrix(self, exchange):
         return self.matrices[exchange.get_name()]
 
-    def get_evaluator_thread_managers(self, exchange):
-        return self.evaluator_thread_managers[exchange.get_name()]
+    def get_evaluator_task_managers(self, exchange):
+        return self.evaluator_task_managers[exchange.get_name()]
 
     def get_config(self):
         return self.config

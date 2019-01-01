@@ -34,11 +34,11 @@ def test_run_bot():
     bot = OctoBot(config)
     bot.time_frames = [TimeFrames.ONE_MINUTE]
     bot.create_exchange_traders()
-    bot.create_evaluation_threads()
+    bot.create_evaluation_tasks()
     bot.start_tasks()
 
     # let it run 2 minutes: test will fail if an exception is raised
-    # 1.9 to stop threads before the next time frame
+    # 1.9 to stop task before the next time frame
     time.sleep(1.9 * 60)
 
     # stop the bot
