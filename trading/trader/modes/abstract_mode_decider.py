@@ -132,7 +132,7 @@ class AbstractTradingModeDecider:
                             try:
                                 # second chance: force portfolio update and retry
                                 await trader.force_refresh_portfolio(pf)
-                                trader.force_refresh_orders(pf)
+                                await trader.force_refresh_orders(pf)
                                 new_orders = await order_creator.create_new_order(
                                     self.final_eval,
                                     self.symbol,
