@@ -29,7 +29,7 @@ Octobot's main feature is **evolution** : you can [install](https://github.com/D
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** !
 
-- Open the OctoBot [release page](https://github.com/Drakkar-Software/OctoBot/releases)
+- Open the OctoBot-Launcher [release page](https://github.com/Drakkar-Software/OctoBot-Launcher/releases)
 - Download launcher (*laucher_windows.exe* or *launcher_linux*)
 - Start the launcher
 - Click on "Update OctoBot"
