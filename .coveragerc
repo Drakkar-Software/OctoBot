@@ -10,4 +10,3 @@ omit =
     tentacles/*
     setup.py
     start.py
-    launcher.py
