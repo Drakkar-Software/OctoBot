@@ -5,4 +5,5 @@ pytest-cov
 coverage
 coveralls
 
-pyinstaller
+nltk
+pyinstaller==3.3.1
