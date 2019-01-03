@@ -152,6 +152,8 @@ def start_octobot(starting_args):
         if 'tentacles' in str(e):
             logger.error("Impossible to start OctoBot, tentacles are missing.\nTo install tentacles, "
                          "please use the following command:\nstart.py -p install all")
+        else:
+            logger.exception(e)
         os._exit(-1)
 
     except ConfigEvaluatorError:
