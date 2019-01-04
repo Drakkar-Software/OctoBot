@@ -15,6 +15,7 @@
 #  License along with this library.
 
 from copy import deepcopy
+import pytest
 
 import ccxt
 
@@ -23,11 +24,16 @@ from trading.exchanges.exchange_manager import ExchangeManager
 from trading.exchanges.websockets_exchanges import BinanceWebSocketClient
 
 
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
+
 class TestBinanceWebSocketClient:
     @staticmethod
-    def init_default():
+    async def init_default():
         config = load_test_config()
         exchange_manager = ExchangeManager(config, ccxt.binance, True)
+        await exchange_manager.initialize()
         binance_web_socket = BinanceWebSocketClient(config, exchange_manager)
         return config, binance_web_socket
 
@@ -151,8 +157,8 @@ class TestBinanceWebSocketClient:
 
         return msg
 
-    def test_update_portfolio(self):
-        _, binance_web_socket = self.init_default()
+    async def test_update_portfolio(self):
+        _, binance_web_socket = await self.init_default()
 
         binance_web_socket.get_personal_data().init_portfolio()
 
@@ -220,8 +226,8 @@ class TestBinanceWebSocketClient:
         assert new_pf["LTC"]["used"] == 14875.1445
         assert new_pf["BCH"]["total"] == 0.00015 + 0.1055456
 
-    def test_set_ticker(self):
-        _, binance_web_socket = self.init_default()
+    async def test_set_ticker(self):
+        _, binance_web_socket = await self.init_default()
 
         symbol = "BTCUSDT"
 
