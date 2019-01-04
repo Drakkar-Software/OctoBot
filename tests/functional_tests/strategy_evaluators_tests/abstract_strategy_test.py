@@ -40,8 +40,7 @@ DATA_FILE_PATH = "tests/static/"
 class AbstractStrategyTest(AbstractBacktestingTest, ABC):
     __metaclass__ = ABCMeta
 
-    def __init__(self, strategy_evaluator_class, trading_mode_class=DailyTradingMode, config=None):
-        super().__init__(strategy_evaluator_class, config)
+    def initialize(self, strategy_evaluator_class, trading_mode_class=DailyTradingMode, config=None):
         if config is None:
             self.config = create_backtesting_config(load_test_config(), filter_symbols=False)
         else:

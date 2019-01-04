@@ -160,59 +160,65 @@ class AbstractBacktestingTest:
         raise NotImplementedError("_assert_results not implemented")
 
     @abstractmethod
-    def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
+    async def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
         raise NotImplementedError("_run_backtesting_with_current_config not implemented")
 
-    def run_test_default_run(self, profitability):
-        run_results, bot = self._run_backtesting_with_current_config(DEFAULT_SYMBOL)
+    async def run_test_default_run(self, profitability):
+        run_results, bot = await self._run_backtesting_with_current_config(DEFAULT_SYMBOL)
         self._assert_results(run_results, profitability, bot)
 
-    def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3, profitability_4,
+    async def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3, profitability_4,
                                 skip_bittrex=False):
-        run_results, bot = self._run_backtesting_with_current_config("ICX/BTC")
+        run_results, bot = await self._run_backtesting_with_current_config("ICX/BTC")
         self._assert_results(run_results, profitability_1, bot)
-        run_results, bot = self._run_backtesting_with_current_config("ONT/BTC")
+        run_results, bot = await self._run_backtesting_with_current_config("ONT/BTC")
         self._assert_results(run_results, profitability_2, bot)
         if not skip_bittrex:
-            run_results, bot = self._run_backtesting_with_current_config("NEO/BTC", "bittrex_NEO_BTC_20180722_195942")
+            run_results, bot = \
+                await self._run_backtesting_with_current_config("NEO/BTC", "bittrex_NEO_BTC_20180722_195942")
             self._assert_results(run_results, profitability_3, bot)
-            run_results, bot = self._run_backtesting_with_current_config("XVG/BTC", "bittrex_XVG_BTC_20180726_211225")
+            run_results, bot = \
+                await self._run_backtesting_with_current_config("XVG/BTC", "bittrex_XVG_BTC_20180726_211225")
             self._assert_results(run_results, profitability_4, bot)
 
-    def run_test_sharp_downtrend(self, profitability_1, profitability_2, skip_bittrex=False):
-        run_results, bot = self._run_backtesting_with_current_config("VEN/BTC")
+    async def run_test_sharp_downtrend(self, profitability_1, profitability_2, skip_bittrex=False):
+        run_results, bot = await self._run_backtesting_with_current_config("VEN/BTC")
         self._assert_results(run_results, profitability_1, bot)
         if not skip_bittrex:
-            run_results, bot = self._run_backtesting_with_current_config("XRP/BTC", "bittrex_XRP_BTC_20180726_210927")
+            run_results, bot = \
+                await self._run_backtesting_with_current_config("XRP/BTC", "bittrex_XRP_BTC_20180726_210927")
             self._assert_results(run_results, profitability_2, bot)
 
-    def run_test_flat_markets(self, profitability_1, profitability_2, profitability_3, profitability_4,
+    async def run_test_flat_markets(self, profitability_1, profitability_2, profitability_3, profitability_4,
                               skip_bittrex=False):
-        run_results, bot = self._run_backtesting_with_current_config("NEO/BTC")
+        run_results, bot = await self._run_backtesting_with_current_config("NEO/BTC")
         self._assert_results(run_results, profitability_1, bot)
-        run_results, bot = self._run_backtesting_with_current_config("XRB/BTC")
+        run_results, bot = await self._run_backtesting_with_current_config("XRB/BTC")
         self._assert_results(run_results, profitability_2, bot)
         if not skip_bittrex:
-            run_results, bot = self._run_backtesting_with_current_config("ADA/BTC", "bittrex_ADA_BTC_20180722_223357")
+            run_results, bot = \
+                await self._run_backtesting_with_current_config("ADA/BTC", "bittrex_ADA_BTC_20180722_223357")
             self._assert_results(run_results, profitability_3, bot)
-            run_results, bot = self._run_backtesting_with_current_config("WAX/BTC", "bittrex_WAX_BTC_20180726_205032")
+            run_results, bot = \
+                await self._run_backtesting_with_current_config("WAX/BTC", "bittrex_WAX_BTC_20180726_205032")
             self._assert_results(run_results, profitability_4, bot)
 
-    def run_test_slow_uptrend(self, profitability_1, profitability_2):
-        run_results, bot = self._run_backtesting_with_current_config("BTC/USDT")
+    async def run_test_slow_uptrend(self, profitability_1, profitability_2):
+        run_results, bot = await self._run_backtesting_with_current_config("BTC/USDT")
         self._assert_results(run_results, profitability_1, bot)
-        run_results, bot = self._run_backtesting_with_current_config("ADA/BTC")
+        run_results, bot = await self._run_backtesting_with_current_config("ADA/BTC")
         self._assert_results(run_results, profitability_2, bot)
 
-    def run_test_sharp_uptrend(self, profitability_1, profitability_2):
-        run_results, bot = self._run_backtesting_with_current_config("XLM/BTC")
+    async def run_test_sharp_uptrend(self, profitability_1, profitability_2):
+        run_results, bot = await self._run_backtesting_with_current_config("XLM/BTC")
         self._assert_results(run_results, profitability_1, bot)
-        run_results, bot = self._run_backtesting_with_current_config("POWR/BTC")
+        run_results, bot = await self._run_backtesting_with_current_config("POWR/BTC")
         self._assert_results(run_results, profitability_2, bot)
 
-    def run_test_up_then_down(self, profitability_1, skip_bittrex=False):
+    async def run_test_up_then_down(self, profitability_1, skip_bittrex=False):
         if not skip_bittrex:
-            run_results, bot = self._run_backtesting_with_current_config("ETC/BTC", "bittrex_ETC_BTC_20180726_210341")
+            run_results, bot = \
+                await self._run_backtesting_with_current_config("ETC/BTC", "bittrex_ETC_BTC_20180726_210341")
             self._assert_results(run_results, profitability_1, bot)
 
     def _register_only_strategy(self, strategy_evaluator_class):

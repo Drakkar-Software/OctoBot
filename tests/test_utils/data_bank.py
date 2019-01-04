@@ -19,6 +19,7 @@ import numpy as np
 
 from config import TimeFrames, PriceIndexes
 from trading.exchanges.exchange_manager import ExchangeManager
+from tools.initializable import Initializable
 
 """
 Class containing data with known moves
@@ -34,17 +35,22 @@ TimeFrames.ONE_DAY: 2017-08-17 00:00:00 -> 2017-11-12 00:00:00
 """
 
 
-class DataBank:
+class DataBank(Initializable):
 
     def __init__(self, config, data_file=None, symbols=None):
+        super().__init__()
         self.config = config
         self.data_file = data_file if data_file else "tests/static/binance_BTC_USDT_20180428_121156.data"
         self.symbols = symbols if symbols else ["BTC"]
 
-        exchange_manager = ExchangeManager(self.config, ccxt.binance, is_simulated=True)
-        self.exchange_simulator_inst = exchange_manager.get_exchange().get_exchange()
+        self.exchange_manager = ExchangeManager(self.config, ccxt.binance, is_simulated=True)
+        self.exchange_simulator_inst = None
 
         self.data_by_symbol_by_data_frame = None
+
+    async def initialize_impl(self):
+        await self.exchange_manager.initialize()
+        self.exchange_simulator_inst = self.exchange_manager.get_exchange().get_exchange()
         self._init_data()
 
     def get_all_data_for_all_available_time_frames_for_symbol(self, symbol):

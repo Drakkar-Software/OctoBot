@@ -138,12 +138,12 @@ def check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False)
                                == "{:f}".format(portfolio.portfolio[market][Portfolio.AVAILABLE])
 
 
-def fill_orders(orders, trader):
+async def fill_orders(orders, trader):
     if orders:
         assert trader.get_order_manager().order_list
         for order in orders:
             order.filled_price = order.origin_price
             order.filled_quantity = order.origin_quantity
-            trader.notify_order_close(order)
+            await trader.notify_order_close(order)
             check_portfolio(trader.portfolio, None, orders, True)
         assert len(trader.get_order_manager().order_list) == 0
