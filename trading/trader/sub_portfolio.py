@@ -27,14 +27,14 @@ class SubPortfolio(Portfolio):
         self.set_percent(percent)
         super().__init__(config, trader)
 
-    # is called in parent __init__
-    def _load_portfolio(self):
-        self.update_portfolio_balance()
+    # is called in parent initialize
+    async def _load_portfolio(self):
+        await self.update_portfolio_balance()
 
     # overwrite parent update_portfolio_balance
-    def update_portfolio_balance(self):
+    async def update_portfolio_balance(self):
         if self.is_enabled:
-            self.parent_portfolio.update_portfolio_balance()
+            await self.parent_portfolio.update_portfolio_balance()
             self.update_from_parent()
 
     def update_from_parent(self):
