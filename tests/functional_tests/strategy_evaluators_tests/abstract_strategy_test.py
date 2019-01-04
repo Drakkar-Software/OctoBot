@@ -57,7 +57,7 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
         # print(f"results: {run_results} expected: {profitability}")  # convenient for building tests
         assert run_results[0] >= profitability
 
-    def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
+    async def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
         config_to_use = copy.deepcopy(self.config)
         if data_file_to_use is not None:
             for index, datafile in enumerate(config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES]):
@@ -70,7 +70,7 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
         WebService.enable(config_to_use, False)
         filter_wanted_symbols(config_to_use, [symbol])
         bot = create_backtesting_bot(config_to_use)
-        return start_backtesting_bot(bot), bot
+        return await start_backtesting_bot(bot), bot
 
     def _register_only_strategy(self, strategy_evaluator_class):
         for evaluator_name in self.config[CONFIG_EVALUATOR]:
