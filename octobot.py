@@ -242,7 +242,7 @@ class OctoBot:
                                           f"current strategy. Activate it in OctoBot advanced configuration interface "
                                           f"to allow activated strategy(ies) to work properly.")
 
-    async def start_tasks(self, run_in_new_thread=False):
+    async def start_tasks(self, run_in_new_thread=False, run_forever=True):
         task_list = []
         if self.performance_analyser:
             task_list.append(self.performance_analyser.start_monitoring())
@@ -274,7 +274,9 @@ class OctoBot:
         self.ready = True
         self.main_task_group = asyncio.gather(*task_list)
         if run_in_new_thread:
-            self._create_new_asyncio_main_loop(replace_current_main_loop=True, coroutine=self.main_task_group)
+            self._create_new_asyncio_main_loop(replace_current_main_loop=True,
+                                               coroutine=self.main_task_group,
+                                               run_forever=run_forever)
         else:
             self.current_loop_thread = threading.current_thread()
             await self.main_task_group
@@ -291,7 +293,8 @@ class OctoBot:
 
         self.logger.info("Stopping threads ...")
 
-        self.main_task_group.cancel()
+        if self.main_task_group:
+            self.main_task_group.cancel()
 
         for thread in self.dispatchers_list:
             thread.stop()
@@ -321,12 +324,15 @@ class OctoBot:
 
         return run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
 
-    def _create_new_asyncio_main_loop(self, replace_current_main_loop=False, coroutine=None):
+    def _create_new_asyncio_main_loop(self, replace_current_main_loop=False, coroutine=None, run_forever=True):
         self.async_loop = asyncio.new_event_loop()
         self.async_loop.set_debug(ASYNCIO_DEBUG_OPTION)
         asyncio.set_event_loop(self.async_loop)
         if replace_current_main_loop:
-            self.current_loop_thread = threading.Thread(target=self.async_loop.run_forever)
+            if run_forever:
+                self.current_loop_thread = threading.Thread(target=self.async_loop.run_forever)
+            else:
+                self.current_loop_thread = threading.Thread(target=self.async_loop.run_until_complete, args=coroutine)
         else:
             self.current_loop_thread = threading.Thread(target=self.async_loop.run_until_complete, args=coroutine)
         self.current_loop_thread.start()

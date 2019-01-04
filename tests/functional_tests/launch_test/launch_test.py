@@ -14,24 +14,29 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import time
+import asyncio
+import pytest
 
 from config import *
 from octobot import OctoBot
 from tests.test_utils.config import load_test_config
 
 
-def test_run_bot():
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
+
+async def test_run_bot():
     # launch a bot
     config = load_test_config()
     bot = OctoBot(config)
     bot.time_frames = [TimeFrames.ONE_MINUTE]
-    bot.create_exchange_traders()
+    await bot.create_exchange_traders()
     bot.create_evaluation_tasks()
-    bot.start_tasks()
+    await bot.start_tasks(run_in_new_thread=True, run_forever=False)
 
     # let it start
-    time.sleep(5)
+    await asyncio.sleep(5)
 
     # stop the bot
     bot.stop_threads()
