@@ -15,6 +15,7 @@
 #  License along with this library.
 
 import ccxt
+import pytest
 
 from trading.exchanges.exchange_manager import ExchangeManager
 from config import *
@@ -25,22 +26,29 @@ from trading.trader.order import SellLimitOrder, OrderConstants
 from trading.trader.trades_manager import TradesManager
 
 
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
+
 class TestTradesManager:
     @staticmethod
-    def init_default():
+    async def init_default():
         config = load_test_config()
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        await exchange_manager.initialize()
         exchange_inst = exchange_manager.get_exchange()
         trader_inst = TraderSimulator(config, exchange_inst, 1)
+        await trader_inst.portfolio.initialize()
         trades_manager_inst = trader_inst.get_trades_manager()
+        await trades_manager_inst.initialize()
         return config, exchange_inst, trader_inst, trades_manager_inst
 
     @staticmethod
     def stop(trader):
         trader.stop_order_manager()
 
-    def test_get_reference_market(self):
-        config, _, trader_inst, _ = self.init_default()
+    async def test_get_reference_market(self):
+        config, _, trader_inst, _ = await self.init_default()
         assert TradesManager.get_reference_market(config) == DEFAULT_REFERENCE_MARKET
 
         config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET] = "ETH"
@@ -48,12 +56,12 @@ class TestTradesManager:
 
         self.stop(trader_inst)
 
-    def test_get_profitability(self):
-        config, _, trader_inst, trades_manager_inst = self.init_default()
+    async def test_get_profitability(self):
+        config, _, trader_inst, trades_manager_inst = await self.init_default()
         self.stop(trader_inst)
 
         profitability, profitability_percent, profitability_diff, market_profitability = \
-            trades_manager_inst.get_profitability()
+            await trades_manager_inst.get_profitability()
         assert market_profitability is None
         assert profitability == profitability_percent == profitability_diff == 0
 
@@ -73,14 +81,14 @@ class TestTradesManager:
         trades_manager_inst.origin_crypto_currencies_values["BTC"] = 0.5
 
         profitability, profitability_percent, profitability_diff, market_profitability = \
-            trades_manager_inst.get_profitability(True)
+            await trades_manager_inst.get_profitability(True)
         assert profitability == -10
         assert profitability_percent == -50
         assert profitability_diff == -150
         assert market_profitability == expected_market_profitability
 
-    def test_get_current_holdings_values(self):
-        config, _, trader_inst, trades_manager_inst = self.init_default()
+    async def test_get_current_holdings_values(self):
+        config, _, trader_inst, trades_manager_inst = await self.init_default()
         self.stop(trader_inst)
         btc_currency = "BTC"
         usd_currency = "USD"
@@ -92,7 +100,7 @@ class TestTradesManager:
             usd_currency: usd_price_in_btc,
             ada_currency: 10
         }
-        holdings = trades_manager_inst.get_current_holdings_values()
+        holdings = await trades_manager_inst.get_current_holdings_values()
         btc_holding = trader_inst.portfolio.portfolio[btc_currency][CONFIG_PORTFOLIO_TOTAL]
         usd_holding = trader_inst.portfolio.portfolio[usd_currency][CONFIG_PORTFOLIO_TOTAL]
         ada_holding = 0
@@ -105,8 +113,8 @@ class TestTradesManager:
         assert holdings[usd_currency] == usd_price_in_btc * usd_holding
         assert holdings[ada_currency] == 0
 
-    def test_add_select_trade_in_history(self):
-        _, exchange_inst, trader_inst, trades_manager_inst = self.init_default()
+    async def test_add_select_trade_in_history(self):
+        _, exchange_inst, trader_inst, trades_manager_inst = await self.init_default()
         self.stop(trader_inst)
         assert len(trades_manager_inst.get_trade_history()) == 0
         symbol = "BTC/USD"
