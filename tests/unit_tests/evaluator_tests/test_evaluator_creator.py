@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.Strategies import StrategiesEvaluator
 from tests.test_utils.config import load_test_config
@@ -44,9 +45,9 @@ def _assert_created_instances(instances_list, super_class, config):
             assert eval_class in class_list
 
 
-def test_create_dispatchers():
+def test_create_dispatchers(event_loop):
     _, config = _get_tools()
-    dispatchers = EvaluatorCreator.create_dispatchers(config)
+    dispatchers = EvaluatorCreator.create_dispatchers(config, event_loop)
     assert len(dispatchers) == 0  # no dispatcher created because no config for associated services
 
 

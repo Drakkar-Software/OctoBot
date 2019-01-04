@@ -15,6 +15,7 @@
 #  License along with this library.
 
 import ccxt
+import pytest
 
 from config import TraderOrderType
 from tests.test_utils.config import load_test_config
@@ -26,22 +27,29 @@ from trading.trader.sub_portfolio import SubPortfolio
 from trading.trader.trader_simulator import TraderSimulator
 
 
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
+
 class TestSubPortfolio:
     DEFAULT_PERCENT = 0.4
 
     @staticmethod
-    def init_default():
+    async def init_default():
         config = load_test_config()
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        await exchange_manager.initialize()
         exchange_inst = exchange_manager.get_exchange()
         trader_inst = TraderSimulator(config, exchange_inst, 1)
         portfolio_inst = Portfolio(config, trader_inst)
+        await portfolio_inst.initialize()
         trader_inst.stop_order_manager()
         sub_portfolio_inst = SubPortfolio(config, trader_inst, portfolio_inst, TestSubPortfolio.DEFAULT_PERCENT)
+        await sub_portfolio_inst.initialize()
         return config, portfolio_inst, exchange_inst, trader_inst, sub_portfolio_inst
 
-    def test_load_portfolio(self):
-        _, _, _, _, sub_portfolio_inst = self.init_default()
+    async def test_load_portfolio(self):
+        _, _, _, _, sub_portfolio_inst = await self.init_default()
         sub_portfolio_inst._load_portfolio()
         assert sub_portfolio_inst.portfolio == {'BTC': {'available': 10 * self.DEFAULT_PERCENT,
                                                         'total': 10 * self.DEFAULT_PERCENT},
@@ -49,18 +57,21 @@ class TestSubPortfolio:
                                                         'total': 1000 * self.DEFAULT_PERCENT}
                                                 }
 
-    def test_get_currency_portfolio(self):
-        _, _, _, _, sub_portfolio_inst = self.init_default()
+    async def test_get_currency_portfolio(self):
+        _, _, _, _, sub_portfolio_inst = await self.init_default()
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10 * self.DEFAULT_PERCENT
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10 * self.DEFAULT_PERCENT
         assert sub_portfolio_inst.get_currency_portfolio("NANO", Portfolio.TOTAL) == 0
 
-    def test_get_currency_multiple_sub_portfolio(self):
-        config, portfolio_inst, exchange_inst, trader_inst, sub_portfolio_inst = self.init_default()
+    async def test_get_currency_multiple_sub_portfolio(self):
+        config, portfolio_inst, exchange_inst, trader_inst, sub_portfolio_inst = await self.init_default()
 
         sub_portfolio_inst_2 = SubPortfolio(config, trader_inst, portfolio_inst, 0.2)
+        await sub_portfolio_inst_2.initialize()
         sub_portfolio_inst_3 = SubPortfolio(config, trader_inst, portfolio_inst, 0.1)
+        await sub_portfolio_inst_3.initialize()
         sub_portfolio_inst_4 = SubPortfolio(config, trader_inst, portfolio_inst, 0.7)
+        await sub_portfolio_inst_4.initialize()
 
         assert sub_portfolio_inst_2.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10 * 0.2
         assert sub_portfolio_inst_2.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10 * 0.2
@@ -74,8 +85,8 @@ class TestSubPortfolio:
         assert sub_portfolio_inst_4.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10 * 0.7
         assert sub_portfolio_inst_4.get_currency_portfolio("NANO", Portfolio.TOTAL) == 0
 
-    def test_update_portfolio_available(self):
-        _, portfolio_inst, _, trader_inst, sub_portfolio_inst = self.init_default()
+    async def test_update_portfolio_available(self):
+        _, portfolio_inst, _, trader_inst, sub_portfolio_inst = await self.init_default()
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
@@ -145,8 +156,8 @@ class TestSubPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
 
-    def test_update_portfolio(self):
-        _, portfolio_inst, _, trader_inst, sub_portfolio_inst = self.init_default()
+    async def test_update_portfolio(self):
+        _, portfolio_inst, _, trader_inst, sub_portfolio_inst = await self.init_default()
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
@@ -165,9 +176,9 @@ class TestSubPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 300
 
-        fill_limit_or_stop_order(limit_buy, 69, 71)
+        await fill_limit_or_stop_order(limit_buy, 69, 71)
 
-        sub_portfolio_inst.update_portfolio(limit_buy)
+        await sub_portfolio_inst.update_portfolio(limit_buy)
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == (10 * self.DEFAULT_PERCENT)+10
         assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000*self.DEFAULT_PERCENT-700
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == (10 * self.DEFAULT_PERCENT) + 10
@@ -196,10 +207,10 @@ class TestSubPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 12
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 300
 
-        fill_market_order(market_sell, 80)
+        await fill_market_order(market_sell, 80)
 
         # when filling market sell
-        sub_portfolio_inst.update_portfolio(market_sell)
+        await sub_portfolio_inst.update_portfolio(market_sell)
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10*self.DEFAULT_PERCENT + 2
         assert sub_portfolio_inst.get_currency_portfolio("USD", Portfolio.AVAILABLE) == 1000*self.DEFAULT_PERCENT-60
         assert sub_portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10*self.DEFAULT_PERCENT + 2
@@ -211,8 +222,8 @@ class TestSubPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 12
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 940
 
-    def test_reset_portfolio_available(self):
-        _, portfolio_inst, _, trader_inst, sub_portfolio_inst = self.init_default()
+    async def test_reset_portfolio_available(self):
+        _, portfolio_inst, _, trader_inst, sub_portfolio_inst = await self.init_default()
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)

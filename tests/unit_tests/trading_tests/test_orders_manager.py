@@ -15,17 +15,23 @@
 #  License along with this library.
 
 import ccxt
+import pytest
 
 from trading.exchanges.exchange_manager import ExchangeManager
 from tests.test_utils.config import load_test_config
 from trading.trader.trader import Trader
 
 
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
+
 class TestOrdersManagers:
     @staticmethod
-    def init_default():
+    async def init_default():
         config = load_test_config()
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        await exchange_manager.initialize()
         exchange_inst = exchange_manager.get_exchange()
         trader_inst = Trader(config, exchange_inst, 1)
         order_manager_inst = trader_inst.get_order_manager()
@@ -35,17 +41,17 @@ class TestOrdersManagers:
     def stop(trader):
         trader.stop_order_manager()
 
-    def test_add_order_to_list(self):
+    async def test_add_order_to_list(self):
         pass
 
-    def test_remove_order_from_list(self):
+    async def test_remove_order_from_list(self):
         pass
 
-    def test_update_last_symbol_list(self):
+    async def test_update_last_symbol_list(self):
         pass
 
-    def test_update_last_symbol_prices(self):
+    async def test_update_last_symbol_prices(self):
         pass
 
-    def test_in_run(self):
-        pass
+    async def test_in_run(self):
+        await self.init_default()

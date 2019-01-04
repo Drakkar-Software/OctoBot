@@ -127,4 +127,5 @@ class StrategyTestSuite(AbstractBacktestingTest):
         WebService.enable(config_to_use, False)
         filter_wanted_symbols(config_to_use, [symbol])
         bot = create_backtesting_bot(config_to_use)
-        return asyncio.run(start_backtesting_bot(bot), debug=ASYNCIO_DEBUG_OPTION), bot
+        # debug set to False to improve performances
+        return asyncio.run(start_backtesting_bot(bot), debug=False), bot

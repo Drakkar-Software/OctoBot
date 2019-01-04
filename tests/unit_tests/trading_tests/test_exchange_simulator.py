@@ -15,6 +15,7 @@
 #  License along with this library.
 
 import ccxt
+import pytest
 
 from config import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_SECONDS, PriceIndexes, \
     TraderOrderType, ExchangeConstantsMarketPropertyColumns, FeePropertyColumns, CONFIG_SIMULATOR, \
@@ -25,15 +26,20 @@ from trading.trader.trader_simulator import TraderSimulator
 from trading.trader.order import OrderConstants
 
 
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
+
 class TestExchangeSimulator:
     DEFAULT_SYMBOL = "BTC/USDT"
     DEFAULT_TF = TimeFrames.ONE_HOUR
 
     @staticmethod
-    def init_default():
+    async def init_default():
         config = load_test_config()
         config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        await exchange_manager.initialize()
         exchange_inst = exchange_manager.get_exchange()
         exchange_simulator = exchange_inst.get_exchange()
         exchange_simulator.init_candles_offset([TimeFrames.ONE_HOUR, TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY],
@@ -46,16 +52,16 @@ class TestExchangeSimulator:
     def stop(trader):
         trader.stop_order_manager()
 
-    def test_multiple_get_symbol_prices(self):
-        _, exchange_inst, _, trader_inst = self.init_default()
+    async def test_multiple_get_symbol_prices(self):
+        _, exchange_inst, _, trader_inst = await self.init_default()
         self.stop(trader_inst)
 
-        first_data = exchange_inst.get_symbol_prices(
+        first_data = await exchange_inst.get_symbol_prices(
             self.DEFAULT_SYMBOL,
             self.DEFAULT_TF,
             return_list=False)
 
-        second_data = exchange_inst.get_symbol_prices(
+        second_data = await exchange_inst.get_symbol_prices(
             self.DEFAULT_SYMBOL,
             self.DEFAULT_TF,
             return_list=False)
@@ -73,17 +79,17 @@ class TestExchangeSimulator:
         assert first_data[PriceIndexes.IND_PRICE_TIME.value][-1] + HOURS_TO_SECONDS == second_data[
             PriceIndexes.IND_PRICE_TIME.value][-1]
 
-    def test_get_recent_trades(self):
-        _, exchange_inst, _, trader_inst = self.init_default()
+    async def test_get_recent_trades(self):
+        _, exchange_inst, _, trader_inst = await self.init_default()
         self.stop(trader_inst)
 
-        exchange_inst.get_recent_trades(self.DEFAULT_SYMBOL)
+        await exchange_inst.get_recent_trades(self.DEFAULT_SYMBOL)
 
-    def test_get_all_currencies_price_ticker(self):
-        _, exchange_inst, _, trader_inst = self.init_default()
+    async def test_get_all_currencies_price_ticker(self):
+        _, exchange_inst, _, trader_inst = await self.init_default()
         self.stop(trader_inst)
 
-        exchange_inst.get_all_currencies_price_ticker()
+        await exchange_inst.get_all_currencies_price_ticker()
 
     @staticmethod
     def _assert_fee(fee, currency, price, rate, fee_type):
@@ -92,8 +98,8 @@ class TestExchangeSimulator:
         assert fee[FeePropertyColumns.RATE.value] == rate
         assert fee[FeePropertyColumns.TYPE.value] == fee_type
 
-    def test_get_trade_fee(self):
-        _, exchange_inst, _, trader_inst = self.init_default()
+    async def test_get_trade_fee(self):
+        _, exchange_inst, _, trader_inst = await self.init_default()
 
         # force fees
         exchange_inst.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES] = {
@@ -121,8 +127,8 @@ class TestExchangeSimulator:
                                                      10, 100, ExchangeConstantsMarketPropertyColumns.TAKER.value)
         self._assert_fee(sell_limit_fee, "USD", 1, 0.001, ExchangeConstantsMarketPropertyColumns.TAKER.value)
 
-    def test_should_update_data(self):
-        _, exchange_inst, exchange_simulator, trader_inst = self.init_default()
+    async def test_should_update_data(self):
+        _, exchange_inst, exchange_simulator, trader_inst = await self.init_default()
 
         # first call
         assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR, self.DEFAULT_SYMBOL)
@@ -130,15 +136,15 @@ class TestExchangeSimulator:
         assert exchange_simulator.should_update_data(TimeFrames.ONE_DAY, self.DEFAULT_SYMBOL)
 
         # call get prices
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
+        await exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        await exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.FOUR_HOURS)
+        await exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_DAY)
 
         # call with trader without order
         assert exchange_simulator.should_update_data(TimeFrames.ONE_HOUR, self.DEFAULT_SYMBOL)
         assert not exchange_simulator.should_update_data(TimeFrames.FOUR_HOURS, self.DEFAULT_SYMBOL)
         assert not exchange_simulator.should_update_data(TimeFrames.ONE_DAY, self.DEFAULT_SYMBOL)
-        exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
+        await exchange_inst.get_symbol_prices(self.DEFAULT_SYMBOL, TimeFrames.ONE_HOUR)
 
         self.stop(trader_inst)
 
@@ -146,8 +152,8 @@ class TestExchangeSimulator:
     def _get_start_index_for_timeframe(nb_candles, min_limit, timeframe_multiplier):
         return int(nb_candles - (nb_candles-min_limit) / timeframe_multiplier) - 1
 
-    def test_init_candles_offset(self):
-        _, exchange_inst, exchange_simulator, trader_inst = self.init_default()
+    async def test_init_candles_offset(self):
+        _, exchange_inst, exchange_simulator, trader_inst = await self.init_default()
 
         timeframes = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.TWO_HOURS,
                       TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]

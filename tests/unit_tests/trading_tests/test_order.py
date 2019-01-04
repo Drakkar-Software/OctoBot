@@ -16,6 +16,7 @@
 
 import random
 import time
+import pytest
 
 import ccxt
 
@@ -26,11 +27,16 @@ from trading.trader.order import Order, OrderConstants
 from trading.trader.trader_simulator import TraderSimulator
 
 
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
+
 class TestOrder:
     @staticmethod
-    def init_default():
+    async def init_default():
         config = load_test_config()
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        await exchange_manager.initialize()
         exchange_inst = exchange_manager.get_exchange()
         trader_inst = TraderSimulator(config, exchange_inst, 2)
         order_inst = Order(trader_inst)
@@ -40,8 +46,8 @@ class TestOrder:
     def stop(trader):
         trader.stop_order_manager()
 
-    def test_get_profitability(self):
-        _, order_inst, trader_inst, _ = self.init_default()
+    async def test_get_profitability(self):
+        _, order_inst, trader_inst, _ = await self.init_default()
 
         # Test filled_price > create_last_price
         # test side SELL
@@ -90,8 +96,8 @@ class TestOrder:
 
         self.stop(trader_inst)
 
-    def test_check_last_prices(self):
-        _, order_inst, trader_inst, _ = self.init_default()
+    async def test_check_last_prices(self):
+        _, order_inst, trader_inst, _ = await self.init_default()
 
         # test price in last trades
         # test inferior TRUE
@@ -141,8 +147,8 @@ class TestOrder:
 
         self.stop(trader_inst)
 
-    def test_new(self):
-        config, order_inst, trader_inst, exchange_inst = self.init_default()
+    async def test_new(self):
+        config, order_inst, trader_inst, exchange_inst = await self.init_default()
 
         # with real trader
         order_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],

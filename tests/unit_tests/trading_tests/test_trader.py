@@ -16,6 +16,7 @@
 
 import ccxt
 import copy
+import pytest
 
 from trading.exchanges.exchange_manager import ExchangeManager
 from config import *
@@ -27,23 +28,29 @@ from trading.trader.trader_simulator import TraderSimulator
 from trading.trader.portfolio import Portfolio
 
 
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
+
 class TestTrader:
     DEFAULT_SYMBOL = "BTC/USDT"
 
     @staticmethod
-    def init_default():
+    async def init_default():
         config = load_test_config()
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+        await exchange_manager.initialize()
         exchange_inst = exchange_manager.get_exchange()
         trader_inst = TraderSimulator(config, exchange_inst, 2)
+        await trader_inst.portfolio.initialize()
         return config, exchange_inst, trader_inst
 
     @staticmethod
     def stop(trader):
         trader.stop_order_manager()
 
-    def test_enabled(self):
-        config, _, trader_inst = self.init_default()
+    async def test_enabled(self):
+        config, _, trader_inst = await self.init_default()
         self.stop(trader_inst)
 
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = True
@@ -52,8 +59,8 @@ class TestTrader:
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
         assert not Trader.enabled(config)
 
-    def test_get_risk(self):
-        config, exchange_inst, trader_inst = self.init_default()
+    async def test_get_risk(self):
+        config, exchange_inst, trader_inst = await self.init_default()
         self.stop(trader_inst)
 
         config[CONFIG_TRADING][CONFIG_TRADER_RISK] = 0
@@ -71,8 +78,8 @@ class TestTrader:
         assert trader_2.get_risk() == 0.5
         self.stop(trader_2)
 
-    def test_cancel_order(self):
-        _, _, trader_inst = self.init_default()
+    async def test_cancel_order(self):
+        _, _, trader_inst = await self.init_default()
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
@@ -88,14 +95,14 @@ class TestTrader:
 
         assert market_buy in trader_inst.get_open_orders()
 
-        trader_inst.cancel_order(market_buy)
+        await trader_inst.cancel_order(market_buy)
 
         assert market_buy not in trader_inst.get_open_orders()
 
         self.stop(trader_inst)
 
-    def test_cancel_open_orders_default_symbol(self):
-        config, _, trader_inst = self.init_default()
+    async def test_cancel_open_orders_default_symbol(self):
+        config, _, trader_inst = await self.init_default()
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
@@ -134,7 +141,7 @@ class TestTrader:
         assert market_sell in trader_inst.get_open_orders()
         assert limit_buy in trader_inst.get_open_orders()
 
-        trader_inst.cancel_open_orders(self.DEFAULT_SYMBOL)
+        await trader_inst.cancel_open_orders(self.DEFAULT_SYMBOL)
 
         assert market_buy not in trader_inst.get_open_orders()
         assert market_sell not in trader_inst.get_open_orders()
@@ -142,8 +149,8 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    def test_cancel_open_orders_multi_symbol(self):
-        config, _, trader_inst = self.init_default()
+    async def test_cancel_open_orders_multi_symbol(self):
+        config, _, trader_inst = await self.init_default()
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
@@ -193,7 +200,7 @@ class TestTrader:
         assert limit_buy in trader_inst.get_open_orders()
         assert limit_sell in trader_inst.get_open_orders()
 
-        trader_inst.cancel_open_orders(self.DEFAULT_SYMBOL)
+        await trader_inst.cancel_open_orders(self.DEFAULT_SYMBOL)
 
         assert market_buy in trader_inst.get_open_orders()
         assert market_sell not in trader_inst.get_open_orders()
@@ -202,8 +209,8 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    def test_notify_order_close(self):
-        config, _, trader_inst = self.init_default()
+    async def test_notify_order_close(self):
+        config, _, trader_inst = await self.init_default()
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
@@ -238,8 +245,8 @@ class TestTrader:
         trader_inst.get_order_manager().add_order_to_list(stop_loss)
         trader_inst.get_order_manager().add_order_to_list(limit_sell)
 
-        trader_inst.notify_order_close(limit_sell, True)
-        trader_inst.notify_order_close(market_buy, True)
+        await trader_inst.notify_order_close(limit_sell, True)
+        await trader_inst.notify_order_close(market_buy, True)
 
         assert market_buy not in trader_inst.get_open_orders()
         assert limit_sell not in trader_inst.get_open_orders()
@@ -247,8 +254,8 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    def test_notify_sell_limit_order_cancel(self):
-        config, _, trader_inst = self.init_default()
+    async def test_notify_sell_limit_order_cancel(self):
+        config, _, trader_inst = await self.init_default()
         initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
 
         # Test buy order
@@ -258,9 +265,9 @@ class TestTrader:
                                                       quantity=2,
                                                       price=4)
 
-        trader_inst.create_order(limit_buy, trader_inst.portfolio)
+        await trader_inst.create_order(limit_buy, trader_inst.portfolio)
 
-        trader_inst.notify_order_close(limit_buy, True)
+        await trader_inst.notify_order_close(limit_buy, True)
 
         assert limit_buy not in trader_inst.get_open_orders()
 
@@ -268,8 +275,8 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    def test_notify_sell_limit_order_cancel_one_in_two(self):
-        config, _, trader_inst = self.init_default()
+    async def test_notify_sell_limit_order_cancel_one_in_two(self):
+        config, _, trader_inst = await self.init_default()
         initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
 
         # Test buy order
@@ -279,7 +286,7 @@ class TestTrader:
                                                       quantity=2,
                                                       price=4)
 
-        trader_inst.create_order(limit_buy, trader_inst.portfolio)
+        await trader_inst.create_order(limit_buy, trader_inst.portfolio)
 
         # Test second buy order
         second_limit_buy = trader_inst.create_order_instance(order_type=TraderOrderType.BUY_LIMIT,
@@ -288,10 +295,10 @@ class TestTrader:
                                                              quantity=1.5,
                                                              price=1)
 
-        trader_inst.create_order(second_limit_buy, trader_inst.portfolio)
+        await trader_inst.create_order(second_limit_buy, trader_inst.portfolio)
 
         # Cancel only 1st one
-        trader_inst.notify_order_close(limit_buy, True)
+        await trader_inst.notify_order_close(limit_buy, True)
 
         assert limit_buy not in trader_inst.get_open_orders()
         assert second_limit_buy in trader_inst.get_open_orders()
@@ -302,8 +309,8 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    def test_notify_sell_limit_order_fill(self):
-        config, _, trader_inst = self.init_default()
+    async def test_notify_sell_limit_order_fill(self):
+        config, _, trader_inst = await self.init_default()
         initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
 
         # Test buy order
@@ -313,12 +320,12 @@ class TestTrader:
                                                       quantity=10,
                                                       price=0.1)
 
-        trader_inst.create_order(limit_buy, trader_inst.portfolio)
+        await trader_inst.create_order(limit_buy, trader_inst.portfolio)
 
         limit_buy.filled_price = limit_buy.origin_price
         limit_buy.filled_quantity = limit_buy.origin_quantity
 
-        trader_inst.notify_order_close(limit_buy)
+        await trader_inst.notify_order_close(limit_buy)
 
         assert limit_buy not in trader_inst.get_open_orders()
 
@@ -330,8 +337,8 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    def test_notify_order_close_with_linked_orders(self):
-        config, _, trader_inst = self.init_default()
+    async def test_notify_order_close_with_linked_orders(self):
+        config, _, trader_inst = await self.init_default()
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
@@ -369,7 +376,7 @@ class TestTrader:
         trader_inst.get_order_manager().add_order_to_list(stop_loss)
         trader_inst.get_order_manager().add_order_to_list(limit_sell)
 
-        trader_inst.notify_order_close(limit_sell)
+        await trader_inst.notify_order_close(limit_sell)
 
         assert market_buy in trader_inst.get_open_orders()
         assert stop_loss not in trader_inst.get_open_orders()
@@ -377,8 +384,8 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    def test_parse_order_type(self):
-        config, _, trader_inst = self.init_default()
+    async def test_parse_order_type(self):
+        config, _, trader_inst = await self.init_default()
 
         ccxt_order_buy_market = {
             "side": TradeOrderSide.BUY,
@@ -406,8 +413,8 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    def test_parse_exchange_order_to_trade_instance(self):
-        config, exchange_inst, trader_inst = self.init_default()
+    async def test_parse_exchange_order_to_trade_instance(self):
+        config, exchange_inst, trader_inst = await self.init_default()
 
         order_to_test = Order(trader_inst)
         timestamp = time.time()
@@ -430,8 +437,8 @@ class TestTrader:
 
         self.stop(trader_inst)
 
-    def test_parse_exchange_order_to_order_instance(self):
-        config, exchange_inst, trader_inst = self.init_default()
+    async def test_parse_exchange_order_to_order_instance(self):
+        config, exchange_inst, trader_inst = await self.init_default()
 
         timestamp = time.time()
 

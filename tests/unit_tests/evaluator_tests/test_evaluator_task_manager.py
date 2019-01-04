@@ -15,6 +15,7 @@
 #  License along with this library.
 
 import ccxt
+import pytest
 
 from trading.exchanges.exchange_manager import ExchangeManager
 from evaluator.symbol_evaluator import SymbolEvaluator
@@ -25,22 +26,27 @@ from evaluator.evaluator import Evaluator
 from tests.test_utils.config import load_test_config
 from evaluator.Util.advanced_manager import AdvancedManager
 from trading.trader.portfolio import Portfolio
-from evaluator.Updaters.symbol_time_frames_updater import SymbolTimeFramesDataUpdaterThread
+from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from evaluator.evaluator_task_manager import EvaluatorTaskManager
 from config import TimeFrames
 from trading.util.trading_config_util import get_activated_trading_mode
 
 
-def _get_tools():
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
+
+
+async def _get_tools(event_loop):
     symbol = "BTC/USDT"
     exchange_traders = {}
     exchange_traders2 = {}
     config = load_test_config()
     time_frame = TimeFrames.ONE_HOUR
     AdvancedManager.create_class_list(config)
-    symbol_time_frame_updater_thread = SymbolTimeFramesDataUpdaterThread()
     exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
+    await exchange_manager.initialize()
     exchange_inst = exchange_manager.get_exchange()
+    global_price_updater = GlobalPriceUpdater(exchange_inst)
     trader_inst = TraderSimulator(config, exchange_inst, 0.3)
     trader_inst.stop_order_manager()
     trader_inst2 = TraderSimulator(config, exchange_inst, 0.3)
@@ -54,31 +60,34 @@ def _get_tools():
     symbol_evaluator.strategies_eval_lists[exchange_inst.get_name()] = \
         EvaluatorCreator.create_strategies_eval_list(config)
     trading_mode_inst = get_activated_trading_mode(config)(config, exchange_inst)
-    evaluator_thread_manager = EvaluatorTaskManager(config, time_frame, symbol_time_frame_updater_thread,
-                                                    symbol_evaluator, exchange_inst, trading_mode_inst, [])
+    evaluator_task_manager = EvaluatorTaskManager(config, time_frame, global_price_updater,
+                                                  symbol_evaluator, exchange_inst, trading_mode_inst, [],
+                                                  event_loop)
     trader_inst.portfolio.portfolio["USDT"] = {
         Portfolio.TOTAL: 2000,
         Portfolio.AVAILABLE: 2000
     }
-    return evaluator_thread_manager, time_frame, symbol_time_frame_updater_thread, symbol_evaluator
+    return evaluator_task_manager, time_frame, global_price_updater, symbol_evaluator, symbol
 
 
-def test_default_values():
-    evaluator_thread_manager, time_frame, symbol_time_frame_updater_thread, symbol_evaluator = _get_tools()
-    assert symbol_evaluator.evaluator_task_managers[evaluator_thread_manager.exchange.get_name()][time_frame] \
-        == evaluator_thread_manager
-    assert symbol_time_frame_updater_thread.evaluator_threads_manager_by_time_frame[time_frame] \
-        == evaluator_thread_manager
-    assert isinstance(evaluator_thread_manager.evaluator, Evaluator)
-    assert evaluator_thread_manager.evaluator.get_config() == evaluator_thread_manager.config
-    assert evaluator_thread_manager.evaluator.get_symbol() == evaluator_thread_manager.symbol
-    assert evaluator_thread_manager.evaluator.get_time_frame() == evaluator_thread_manager.time_frame
-    assert evaluator_thread_manager.evaluator.get_exchange() == evaluator_thread_manager.exchange
-    assert evaluator_thread_manager.evaluator.get_symbol_evaluator() == evaluator_thread_manager.symbol_evaluator
+async def test_default_values(event_loop):
+    evaluator_task_manager, time_frame, global_updater_thread, symbol_evaluator, symbol = \
+        await _get_tools(event_loop)
+    assert symbol_evaluator.evaluator_task_managers[evaluator_task_manager.exchange.get_name()][time_frame] \
+        == evaluator_task_manager
+    assert global_updater_thread.evaluator_task_manager_by_time_frame_by_symbol[time_frame][symbol] \
+        == evaluator_task_manager
+    assert isinstance(evaluator_task_manager.evaluator, Evaluator)
+    assert evaluator_task_manager.evaluator.get_config() == evaluator_task_manager.config
+    assert evaluator_task_manager.evaluator.get_symbol() == evaluator_task_manager.symbol
+    assert evaluator_task_manager.evaluator.get_time_frame() == evaluator_task_manager.time_frame
+    assert evaluator_task_manager.evaluator.get_exchange() == evaluator_task_manager.exchange
+    assert evaluator_task_manager.evaluator.get_symbol_evaluator() == evaluator_task_manager.symbol_evaluator
 
 
-def test_refresh_matrix():
-    evaluator_thread_manager, time_frame, symbol_time_frame_updater_thread, symbol_evaluator = _get_tools()
-    evaluator_thread_manager.matrix = None
-    evaluator_thread_manager.refresh_matrix()
-    assert evaluator_thread_manager.matrix is not None
+async def test_refresh_matrix(event_loop):
+    evaluator_task_manager, time_frame, symbol_time_frame_updater_thread, symbol_evaluator, symbol = \
+        await _get_tools(event_loop)
+    evaluator_task_manager.matrix = None
+    evaluator_task_manager.refresh_matrix()
+    assert evaluator_task_manager.matrix is not None
