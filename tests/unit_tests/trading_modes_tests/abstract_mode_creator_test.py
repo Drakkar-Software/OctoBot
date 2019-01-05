@@ -143,7 +143,7 @@ class TestAbstractTradingModeCreator:
                                                                            EvaluatorStates.NEUTRAL, portfolio)
 
     async def test_valid_create_new_order(self):
-        config, exchange, trader, symbol = await self._get_tools()
+        _, exchange, trader, symbol = await self._get_tools()
         portfolio = trader.get_portfolio()
         order_creator = AbstractTradingModeCreator(None)
 

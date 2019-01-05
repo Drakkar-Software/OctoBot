@@ -86,7 +86,7 @@ async def test_default_values(event_loop):
 
 
 async def test_refresh_matrix(event_loop):
-    evaluator_task_manager, time_frame, symbol_time_frame_updater_thread, symbol_evaluator, symbol = \
+    evaluator_task_manager, _, _, _, _ = \
         await _get_tools(event_loop)
     evaluator_task_manager.matrix = None
     evaluator_task_manager.refresh_matrix()

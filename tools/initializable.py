@@ -34,5 +34,5 @@ class Initializable:
     async def initialize_impl(self):
         raise NotImplementedError("initialize_impl not implemented")
 
-    def is_initialized(self):
+    def get_is_initialized(self):
         return self.is_initialized

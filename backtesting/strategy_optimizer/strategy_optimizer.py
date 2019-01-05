@@ -164,7 +164,7 @@ class StrategyOptimizer:
 
     def _run_test_suite(self, config):
         self.current_test_suite = StrategyTestSuite()
-        self.current_test_suite.initialize(self.strategy_class, copy.deepcopy(config))
+        self.current_test_suite.initialize_with_strategy(self.strategy_class, copy.deepcopy(config))
         no_error = asyncio.run(self.current_test_suite.run_test_suite(self.current_test_suite),
                                debug=FORCE_ASYNCIO_DEBUG_OPTION)
         if not no_error:

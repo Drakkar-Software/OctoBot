@@ -47,7 +47,7 @@ class TestOrder:
         trader.stop_order_manager()
 
     async def test_get_profitability(self):
-        _, order_inst, trader_inst, _ = await self.init_default()
+        _, _, trader_inst, _ = await self.init_default()
 
         # Test filled_price > create_last_price
         # test side SELL

@@ -88,7 +88,7 @@ class TestTradesManager:
         assert market_profitability == expected_market_profitability
 
     async def test_get_current_holdings_values(self):
-        config, _, trader_inst, trades_manager_inst = await self.init_default()
+        _, _, trader_inst, trades_manager_inst = await self.init_default()
         self.stop(trader_inst)
         btc_currency = "BTC"
         usd_currency = "USD"

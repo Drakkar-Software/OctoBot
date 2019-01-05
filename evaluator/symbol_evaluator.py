@@ -16,7 +16,6 @@
 
 from tools.logging.logging_util import get_logger
 from tools.data_util import DataUtil
-from copy import copy
 
 from config import EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE
 from evaluator.RealTime import RealTimeTAEvaluator

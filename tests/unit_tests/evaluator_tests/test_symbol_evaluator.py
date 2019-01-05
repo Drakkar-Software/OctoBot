@@ -69,7 +69,7 @@ async def _get_tools(event_loop):
 
 
 async def test_init(event_loop):
-    symbol_evaluator, exchange_inst, time_frame, evaluator_task_manager, symbol = await _get_tools(event_loop)
+    symbol_evaluator, exchange_inst, time_frame, evaluator_task_manager, _ = await _get_tools(event_loop)
     assert symbol_evaluator.trading_mode_instances[exchange_inst.get_name()]
     assert symbol_evaluator.evaluator_task_managers[exchange_inst.get_name()][time_frame] == \
         evaluator_task_manager

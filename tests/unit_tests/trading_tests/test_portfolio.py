@@ -59,7 +59,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("NANO", Portfolio.TOTAL) == 0
 
     async def test_update_portfolio_data(self):
-        _, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, _ = await self.init_default()
         portfolio_inst._update_portfolio_data("BTC", -5)
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 5
         portfolio_inst._update_portfolio_data("BTC", -6, total=False, available=True)
@@ -239,7 +239,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1109.79
 
     async def test_update_portfolio_with_cancelled_orders(self):
-        config, portfolio_inst, exchange_inst, trader_inst = await self.init_default()
+        _, portfolio_inst, exchange_inst, trader_inst = await self.init_default()
 
         # force fees => shouldn't do anything
         exchange_inst.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES] = {
@@ -696,7 +696,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 8.647780000000001
 
     async def test_reset_portfolio_available(self):
-        config, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, trader_inst = await self.init_default()
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
