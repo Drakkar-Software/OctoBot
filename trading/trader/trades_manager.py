@@ -15,7 +15,6 @@
 #  License along with this library.
 
 from copy import deepcopy
-import asyncio
 
 from tools.logging.logging_util import get_logger
 
