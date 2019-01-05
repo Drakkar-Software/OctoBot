@@ -255,7 +255,7 @@ class TestTrader:
         self.stop(trader_inst)
 
     async def test_notify_sell_limit_order_cancel(self):
-        config, _, trader_inst = await self.init_default()
+        _, _, trader_inst = await self.init_default()
         initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
 
         # Test buy order
@@ -276,7 +276,7 @@ class TestTrader:
         self.stop(trader_inst)
 
     async def test_notify_sell_limit_order_cancel_one_in_two(self):
-        config, _, trader_inst = await self.init_default()
+        _, _, trader_inst = await self.init_default()
         initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
 
         # Test buy order
