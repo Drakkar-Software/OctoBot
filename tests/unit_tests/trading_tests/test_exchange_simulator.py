@@ -99,7 +99,7 @@ class TestExchangeSimulator:
         assert fee[FeePropertyColumns.TYPE.value] == fee_type
 
     async def test_get_trade_fee(self):
-        _, exchange_inst, _, trader_inst = await self.init_default()
+        _, exchange_inst, _, _ = await self.init_default()
 
         # force fees
         exchange_inst.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES] = {
@@ -153,7 +153,7 @@ class TestExchangeSimulator:
         return int(nb_candles - (nb_candles-min_limit) / timeframe_multiplier) - 1
 
     async def test_init_candles_offset(self):
-        _, exchange_inst, exchange_simulator, trader_inst = await self.init_default()
+        _, _, exchange_simulator, _ = await self.init_default()
 
         timeframes = [TimeFrames.THIRTY_MINUTES, TimeFrames.ONE_HOUR, TimeFrames.TWO_HOURS,
                       TimeFrames.FOUR_HOURS, TimeFrames.ONE_DAY]

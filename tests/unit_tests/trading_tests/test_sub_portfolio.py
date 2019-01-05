@@ -64,7 +64,7 @@ class TestSubPortfolio:
         assert sub_portfolio_inst.get_currency_portfolio("NANO", Portfolio.TOTAL) == 0
 
     async def test_get_currency_multiple_sub_portfolio(self):
-        config, portfolio_inst, exchange_inst, trader_inst, sub_portfolio_inst = await self.init_default()
+        config, portfolio_inst, _, trader_inst, _ = await self.init_default()
 
         sub_portfolio_inst_2 = SubPortfolio(config, trader_inst, portfolio_inst, 0.2)
         await sub_portfolio_inst_2.initialize()
