@@ -65,7 +65,7 @@ BOT_TOOLS_STRATEGY_OPTIMIZER = "strategy_optimizer"
 BOT_TOOLS_RECORDER = "recorder"
 
 # Async settings
-DEFAULT_FUTURE_TIMEOUT = 10
+DEFAULT_FUTURE_TIMEOUT = 30
 
 # Advanced
 CONFIG_ADVANCED_CLASSES = "advanced_classes"
