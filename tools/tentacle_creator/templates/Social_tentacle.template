@@ -3,6 +3,8 @@ from evaluator.Social.social_evaluator import NewsSocialEvaluator
 
 
 class {{ big_name }}NewsEvaluator(NewsSocialEvaluator):
+    DESCRIPTION = ""
+
     def __init__(self):
         super().__init__()
         self.is_threaded = False
@@ -10,10 +12,10 @@ class {{ big_name }}NewsEvaluator(NewsSocialEvaluator):
     def get_data(self):
         pass
 
-    def eval_impl(self):
+    async def eval_impl(self):
         self.notify_evaluator_thread_managers(self.__class__.__name__)
 
-    def run(self):
+    async def start_task(self):
         pass
 
     def set_default_config(self):

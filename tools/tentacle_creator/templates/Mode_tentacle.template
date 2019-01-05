@@ -4,6 +4,8 @@ from trading.trader.modes.abstract_trading_mode import AbstractTradingMode
 
 
 class {{ big_name }}Mode(AbstractTradingMode):
+    DESCRIPTION = ""
+
     def __init__(self, config, symbol_evaluator, exchange):
         super().__init__(config, symbol_evaluator, exchange)
 
