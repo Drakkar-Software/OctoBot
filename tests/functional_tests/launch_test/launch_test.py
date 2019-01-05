@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import asyncio
+from asyncio import CancelledError
 import pytest
 
 from config import *
@@ -26,17 +26,22 @@ from tests.test_utils.config import load_test_config
 pytestmark = pytest.mark.asyncio
 
 
-async def test_run_bot():
+async def test_run_bot(event_loop):
     # launch a bot
     config = load_test_config()
+    config[CONFIG_CRYPTO_CURRENCIES] = {
+        "Bitcoin":
+            {
+                "pairs": ["BTC/USDT"]
+            }
+    }
     bot = OctoBot(config)
     bot.time_frames = [TimeFrames.ONE_MINUTE]
-    await bot.create_exchange_traders()
+    await bot.create_exchange_traders(ignore_config=True)
     bot.create_evaluation_tasks()
-    await bot.start_tasks(run_in_new_thread=True, run_forever=False)
-
-    # let it start
-    await asyncio.sleep(5)
-
-    # stop the bot
-    bot.stop_threads()
+    try:
+        event_loop.call_later(5, bot.stop_threads)
+        await bot.start_tasks()
+    except CancelledError:
+        # catch CancelledError since bot main loop gather got cancelled
+        pass

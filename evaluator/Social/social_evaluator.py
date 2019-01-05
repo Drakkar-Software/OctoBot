@@ -108,10 +108,6 @@ class StatsSocialEvaluator(SocialEvaluator):
     def get_data(self):
         raise NotImplementedError("Get Data not implemented")
 
-    @abstractmethod
-    def run(self):
-        raise NotImplementedError("Run not implemented")
-
 
 class ForumSocialEvaluator(SocialEvaluator):
     __metaclass__ = SocialEvaluator
@@ -124,10 +120,6 @@ class ForumSocialEvaluator(SocialEvaluator):
     def get_data(self):
         raise NotImplementedError("Get Data not implemented")
 
-    @abstractmethod
-    def run(self):
-        raise NotImplementedError("Run not implemented")
-
 
 class NewsSocialEvaluator(SocialEvaluator):
     __metaclass__ = SocialEvaluator
@@ -139,7 +131,3 @@ class NewsSocialEvaluator(SocialEvaluator):
     @abstractmethod
     def get_data(self):
         raise NotImplementedError("Get Data not implemented")
-
-    @abstractmethod
-    def run(self):
-        raise NotImplementedError("Run not implemented")
