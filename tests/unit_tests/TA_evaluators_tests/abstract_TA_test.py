@@ -319,10 +319,10 @@ class AbstractTATest:
         if expected_eval_note != -2:
             if check_inferior:
                 assert self.evaluator.eval_note == expected_eval_note \
-                       or self.evaluator.eval_note <= expected_eval_note
+                    or self.evaluator.eval_note <= expected_eval_note
             else:
                 assert self.evaluator.eval_note == expected_eval_note \
-                       or self.evaluator.eval_note >= expected_eval_note
+                    or self.evaluator.eval_note >= expected_eval_note
 
     def _assert_init(self):
         assert self.evaluator
