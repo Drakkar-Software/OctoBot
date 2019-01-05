@@ -53,7 +53,7 @@ class TestPortfolio:
                                             }
 
     async def test_get_currency_portfolio(self):
-        _, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, _ = await self.init_default()
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 10
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10
         assert portfolio_inst.get_currency_portfolio("NANO", Portfolio.TOTAL) == 0
@@ -159,7 +159,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 940
 
     async def test_update_portfolio_with_filled_orders(self):
-        config, portfolio_inst, exchange_inst, trader_inst = await self.init_default()
+        _, portfolio_inst, exchange_inst, trader_inst = await self.init_default()
 
         # force fees => should have consequences
         exchange_inst.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES] = {
@@ -625,7 +625,7 @@ class TestPortfolio:
         assert round(portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL), 7) == 691.4295063
 
     async def test_update_portfolio_with_multiple_symbols_orders(self):
-        config, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, trader_inst = await self.init_default()
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)

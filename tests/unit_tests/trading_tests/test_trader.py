@@ -310,7 +310,7 @@ class TestTrader:
         self.stop(trader_inst)
 
     async def test_notify_sell_limit_order_fill(self):
-        config, _, trader_inst = await self.init_default()
+        _, _, trader_inst = await self.init_default()
         initial_portfolio = copy.deepcopy(trader_inst.portfolio.portfolio)
 
         # Test buy order
@@ -414,7 +414,7 @@ class TestTrader:
         self.stop(trader_inst)
 
     async def test_parse_exchange_order_to_trade_instance(self):
-        config, exchange_inst, trader_inst = await self.init_default()
+        _, exchange_inst, trader_inst = await self.init_default()
 
         order_to_test = Order(trader_inst)
         timestamp = time.time()
