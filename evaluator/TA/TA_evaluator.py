@@ -52,6 +52,10 @@ class TAEvaluator(AbstractEvaluator):
             self.logger.warning("for {0} took longer than expected: {1} seconds.".format(self.symbol,
                                                                                          execution_time))
 
+    # TA are not standalone tasks
+    async def start_task(self):
+        pass
+
 
 class MomentumEvaluator(TAEvaluator):
     __metaclass__ = TAEvaluator

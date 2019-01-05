@@ -74,7 +74,7 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
             assert orders is None
         elif math.isnan(evaluation):
             assert orders is None
-        elif state not in EvaluatorStates:
+        elif state is None or isinstance(state, (int, float, dict)) or state not in EvaluatorStates:
             assert orders is None
         else:
             assert (not orders and nb_orders == 0) or (len(orders) == nb_orders) \

@@ -26,7 +26,7 @@ from backtesting.backtesting import Backtesting
 from config import CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
     NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, \
-    CONFIG_EVALUATORS_WILDCARD, ASYNCIO_DEBUG_OPTION
+    CONFIG_EVALUATORS_WILDCARD, FORCE_ASYNCIO_DEBUG_OPTION
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
@@ -119,7 +119,7 @@ class OctoBot:
 
         self.main_task_group = None
 
-    async def create_exchange_traders(self):
+    async def create_exchange_traders(self, ignore_config=False):
         self.async_loop = asyncio.get_running_loop()
         available_exchanges = ccxt.exchanges
         for exchange_class_string in self.config[CONFIG_EXCHANGES]:
@@ -131,7 +131,8 @@ class OctoBot:
                     exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=True)
                 else:
                     # Real Exchange
-                    exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False)
+                    exchange_manager = ExchangeManager(self.config, exchange_type, is_simulated=False,
+                                                       ignore_config=ignore_config)
                 await exchange_manager.initialize()
 
                 exchange_inst = exchange_manager.get_exchange()
@@ -242,7 +243,7 @@ class OctoBot:
                                           f"current strategy. Activate it in OctoBot advanced configuration interface "
                                           f"to allow activated strategy(ies) to work properly.")
 
-    async def start_tasks(self, run_in_new_thread=False, run_forever=True):
+    async def start_tasks(self, run_in_new_thread=False):
         task_list = []
         if self.performance_analyser:
             task_list.append(self.performance_analyser.start_monitoring())
@@ -273,10 +274,9 @@ class OctoBot:
         self.logger.info("Evaluation tasks started...")
         self.ready = True
         self.main_task_group = asyncio.gather(*task_list)
+
         if run_in_new_thread:
-            self._create_new_asyncio_main_loop(replace_current_main_loop=True,
-                                               coroutine=self.main_task_group,
-                                               run_forever=run_forever)
+            self._create_new_asyncio_main_loop()
         else:
             self.current_loop_thread = threading.current_thread()
             await self.main_task_group
@@ -320,21 +320,15 @@ class OctoBot:
         # restart a new loop if necessary (for backtesting analysis)
         if Backtesting.enabled(self.config) and self.async_loop.is_closed():
             self.logger.debug("Main loop is closed, starting a new main loop.")
-            self._create_new_asyncio_main_loop(replace_current_main_loop=True)
+            self._create_new_asyncio_main_loop()
 
         return run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
 
-    def _create_new_asyncio_main_loop(self, replace_current_main_loop=False, coroutine=None, run_forever=True):
+    def _create_new_asyncio_main_loop(self):
         self.async_loop = asyncio.new_event_loop()
-        self.async_loop.set_debug(ASYNCIO_DEBUG_OPTION)
+        self.async_loop.set_debug(FORCE_ASYNCIO_DEBUG_OPTION)
         asyncio.set_event_loop(self.async_loop)
-        if replace_current_main_loop:
-            if run_forever:
-                self.current_loop_thread = threading.Thread(target=self.async_loop.run_forever)
-            else:
-                self.current_loop_thread = threading.Thread(target=self.async_loop.run_until_complete, args=coroutine)
-        else:
-            self.current_loop_thread = threading.Thread(target=self.async_loop.run_until_complete, args=coroutine)
+        self.current_loop_thread = threading.Thread(target=self.async_loop.run_forever)
         self.current_loop_thread.start()
 
     def set_watcher(self, watcher):
