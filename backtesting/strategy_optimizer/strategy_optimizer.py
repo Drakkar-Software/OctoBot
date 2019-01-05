@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import asyncio
 import copy
 import logging
 import math
@@ -22,7 +23,7 @@ from backtesting.backtesting_util import create_blank_config_using_loaded_one
 from backtesting.strategy_optimizer.strategy_test_suite import StrategyTestSuite
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 from config import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
-    CONFIG_EVALUATOR
+    CONFIG_EVALUATOR, FORCE_ASYNCIO_DEBUG_OPTION
 from evaluator import Strategies
 from evaluator import TA
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
@@ -164,7 +165,8 @@ class StrategyOptimizer:
     def _run_test_suite(self, config):
         self.current_test_suite = StrategyTestSuite()
         self.current_test_suite.initialize(self.strategy_class, copy.deepcopy(config))
-        no_error = self.current_test_suite.run_test_suite(self.current_test_suite)
+        no_error = asyncio.run(self.current_test_suite.run_test_suite(self.current_test_suite),
+                               debug=FORCE_ASYNCIO_DEBUG_OPTION)
         if not no_error:
             self.errors = self.errors.union(set(str(e) for e in self.current_test_suite.get_exceptions()))
         run_result = self.current_test_suite.get_test_suite_result()
@@ -189,6 +191,7 @@ class StrategyOptimizer:
         self.sorted_results_through_all_time_frame = sorted(result_list, key=lambda res: res[RANK])
 
     def print_report(self):
+        result = {TRADES_IN_RESULT: 0}
         self.logger.info("Full execution sorted results: Minimum time frames are defining the range of the run "
                          "since it finishes at the end of the first data, aka minimum time frame. Therefore all "
                          "different time frames are different price actions and can't be compared independently.")
