@@ -73,6 +73,10 @@ class StrategiesEvaluator(AbstractEvaluator):
             raise Exception("'{0}' is missing in {1}".format(STRATEGIES_REQUIRED_EVALUATORS,
                                                              cls.get_config_file_name()))
 
+    # Strategies are not standalone tasks
+    async def start_task(self):
+        pass
+
 
 class MixedStrategiesEvaluator(StrategiesEvaluator):
     __metaclass__ = StrategiesEvaluator
