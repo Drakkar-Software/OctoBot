@@ -95,7 +95,6 @@ class RealTimeEvaluator(AbstractEvaluator):
 
             if not Backtesting.enabled(self.config):
                 sleeping_time = self.specific_config[CONFIG_REFRESH_RATE] - (time.time() - now)
-                sleeping_time = 5
                 if sleeping_time > 0:
                     await asyncio.sleep(sleeping_time)
 

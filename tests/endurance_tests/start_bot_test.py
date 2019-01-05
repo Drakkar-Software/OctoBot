@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import asyncio
+from asyncio import CancelledError
 import pytest
 
 from config import *
@@ -33,18 +33,24 @@ async def test_create_bot():
     bot.stop_threads()
 
 
-async def test_run_bot():
+async def test_run_bot(event_loop):
     # launch a bot
     config = load_test_config()
+    config[CONFIG_CRYPTO_CURRENCIES] = {
+        "Bitcoin":
+            {
+                "pairs": ["BTC/USDT"]
+            }
+    }
     bot = OctoBot(config)
     bot.time_frames = [TimeFrames.ONE_MINUTE]
-    await bot.create_exchange_traders()
+    await bot.create_exchange_traders(ignore_config=True)
     bot.create_evaluation_tasks()
-    await bot.start_tasks(run_in_new_thread=True, run_forever=False)
-
-    # let it run 2 minutes: test will fail if an exception is raised
-    # 1.9 to stop task before the next time frame
-    await asyncio.sleep(1.9*60)
-
-    # stop the bot
-    bot.stop_threads()
+    try:
+        # let it run 2 minutes: test will fail if an exception is raised
+        # 1.9 to stop task before the next time frame
+        event_loop.call_later(1.9*60, bot.stop_threads)
+        await bot.start_tasks()
+    except CancelledError:
+        # catch CancelledError since bot main loop gather got cancelled
+        pass
