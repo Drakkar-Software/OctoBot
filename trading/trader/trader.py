@@ -331,7 +331,8 @@ class Trader(Initializable):
             if portfolio:
                 await portfolio.update_portfolio_balance()
             else:
-                await self.portfolio.update_portfolio_balance()
+                async with self.portfolio.get_lock():
+                    await self.portfolio.update_portfolio_balance()
 
     async def force_refresh_orders(self, portfolio=None):
         # useless in simulation mode
@@ -350,7 +351,8 @@ class Trader(Initializable):
                         if portfolio:
                             await self.create_order(order, portfolio, True)
                         else:
-                            await self.create_order(order, self.portfolio, True)
+                            async with self.portfolio.get_lock():
+                                await self.create_order(order, self.portfolio, True)
 
     def parse_exchange_order_to_order_instance(self, order):
         return self.create_order_instance(order_type=self.parse_order_type(order),
