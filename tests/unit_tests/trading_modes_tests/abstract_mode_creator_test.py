@@ -59,7 +59,7 @@ class TestAbstractTradingModeCreator:
         return config, exchange_inst, trader_inst, symbol
 
     async def test_can_create_order(self):
-        config, exchange, trader, symbol = await self._get_tools()
+        _, exchange, trader, symbol = await self._get_tools()
         portfolio = trader.get_portfolio()
         # portfolio: "BTC": 10 "USD": 1000
         not_owned_symbol = "ETH/BTC"
@@ -108,7 +108,7 @@ class TestAbstractTradingModeCreator:
                                                                  EvaluatorStates.VERY_LONG, portfolio)
 
     async def test_can_create_order_unknown_symbols(self):
-        _, exchange, trader, symbol = await self._get_tools()
+        _, exchange, trader, _ = await self._get_tools()
         portfolio = trader.get_portfolio()
         unknown_symbol = "VI?/BTC"
         unknown_market = "BTC/*s?"
