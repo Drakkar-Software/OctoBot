@@ -15,7 +15,6 @@
 #  License along with this library.
 
 import asyncio
-import threading
 import time
 
 from tools.logging.logging_util import get_logger
