@@ -46,7 +46,7 @@ class TestPortfolio:
         return config, portfolio_inst, exchange_inst, trader_inst
 
     async def test_load_portfolio(self):
-        _, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, _ = await self.init_default()
         await portfolio_inst._load_portfolio()
         assert portfolio_inst.portfolio == {'BTC': {'available': 10, 'total': 10},
                                             'USD': {'available': 1000, 'total': 1000}
@@ -68,7 +68,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("XRP", Portfolio.AVAILABLE) == 4.5
 
     async def test_update_portfolio_available(self):
-        config, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, trader_inst = await self.init_default()
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
@@ -113,7 +113,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
 
     async def test_update_portfolio(self):
-        config, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, trader_inst = await self.init_default()
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
@@ -302,7 +302,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1000
 
     async def test_update_portfolio_with_stop_loss_orders(self):
-        config, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, trader_inst = await self.init_default()
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
@@ -353,7 +353,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1240
 
     async def test_update_portfolio_with_some_filled_orders(self):
-        config, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, trader_inst = await self.init_default()
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
@@ -446,7 +446,7 @@ class TestPortfolio:
         assert portfolio_inst.get_currency_portfolio("USD", Portfolio.TOTAL) == 1200
 
     async def test_update_portfolio_with_multiple_filled_orders(self):
-        config, portfolio_inst, _, trader_inst = await self.init_default()
+        _, portfolio_inst, _, trader_inst = await self.init_default()
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
