@@ -57,7 +57,7 @@ class TestTradesManager:
         self.stop(trader_inst)
 
     async def test_get_profitability(self):
-        config, _, trader_inst, trades_manager_inst = await self.init_default()
+        _, _, trader_inst, trades_manager_inst = await self.init_default()
         self.stop(trader_inst)
 
         profitability, profitability_percent, profitability_diff, market_profitability = \
