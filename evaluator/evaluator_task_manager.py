@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.asyncio_tools import run_coroutine_in_asyncio_loop
 from tools.logging.logging_util import get_logger
 
 from config import CONFIG_EVALUATORS_WILDCARD, EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE, \
