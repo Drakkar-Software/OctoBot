@@ -385,7 +385,7 @@ class TestTrader:
         self.stop(trader_inst)
 
     async def test_parse_order_type(self):
-        config, _, trader_inst = await self.init_default()
+        _, _, trader_inst = await self.init_default()
 
         ccxt_order_buy_market = {
             "side": TradeOrderSide.BUY,
@@ -438,7 +438,7 @@ class TestTrader:
         self.stop(trader_inst)
 
     async def test_parse_exchange_order_to_order_instance(self):
-        config, exchange_inst, trader_inst = await self.init_default()
+        _, exchange_inst, trader_inst = await self.init_default()
 
         timestamp = time.time()
 
