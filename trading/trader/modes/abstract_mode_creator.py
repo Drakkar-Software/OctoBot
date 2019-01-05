@@ -21,6 +21,7 @@ from config import *
 from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 from tools.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
+from tools.initializable import Initializable
 from trading.trader.sub_portfolio import SubPortfolio
 
 
@@ -226,15 +227,19 @@ class AbstractTradingModeCreator:
         return orders
 
 
-class AbstractTradingModeCreatorWithBot(AbstractTradingModeCreator):
+class AbstractTradingModeCreatorWithBot(AbstractTradingModeCreator, Initializable):
     __metaclass__ = ABCMeta
 
     def __init__(self, trading_mode, trader, sub_portfolio_percent):
-        super().__init__(trading_mode)
+        AbstractTradingModeCreator.__init__(self, trading_mode)
+        Initializable.__init__(self)
         self.trader = trader
         self.parent_portfolio = self.trader.get_portfolio()
         self.sub_portfolio = SubPortfolio(self.trading_mode.config, self.trader, self.parent_portfolio,
                                           sub_portfolio_percent)
+
+    async def initialize_impl(self):
+        await self.sub_portfolio.initialize()
 
     @abstractmethod
     def create_new_order(self, eval_note, symbol, exchange, trader, portfolio, state):
