@@ -13,3 +13,19 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+
+from typing import Dict, Union, NewType
+
+from config import EvaluatorMatrixTypes
+
+MatrixValueType = NewType('MatrixValueType', Union[str, int, float])
+MatrixType = NewType('MatrixType', Dict[str, Dict[str, Union[MatrixValueType, Dict[str, MatrixValueType]]]])
+
+
+def default_matrix_value():
+    return {
+        EvaluatorMatrixTypes.TA: {},
+        EvaluatorMatrixTypes.SOCIAL: {},
+        EvaluatorMatrixTypes.REAL_TIME: {},
+        EvaluatorMatrixTypes.STRATEGIES: {}
+    }
