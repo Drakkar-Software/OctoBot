@@ -3,10 +3,12 @@ from evaluator.Strategies import MixedStrategiesEvaluator
 
 
 class {{ big_name }}StrategiesEvaluator(MixedStrategiesEvaluator):
+    DESCRIPTION = ""
+
     def __init__(self):
         super().__init__()
 
-    def eval_impl(self) -> None:
+    async def eval_impl(self) -> None:
         pass
 
     @classmethod
