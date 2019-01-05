@@ -14,22 +14,27 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from config import EvaluatorMatrixTypes
+from dataclasses import dataclass, field
+
+from config import CONFIG_DICT_TYPE, EvaluatorMatrixTypes, TimeFrames
+from evaluator import default_matrix_value, MatrixType, MatrixValueType
 from tools.evaluators_util import check_valid_eval_note
 
 
+@dataclass
 class EvaluatorMatrix:
-    def __init__(self, config):
-        self.config = config
-        self.matrix = {
-            EvaluatorMatrixTypes.TA: {},
-            EvaluatorMatrixTypes.SOCIAL: {},
-            EvaluatorMatrixTypes.REAL_TIME: {},
-            EvaluatorMatrixTypes.STRATEGIES: {}
-        }
+    """
+    EvaluatorMatrix dataclass store evaluation data in a matrix represented by a dictionnary
+    """
+    config: CONFIG_DICT_TYPE
+    matrix: MatrixType = field(init=False, repr=False, default_factory=default_matrix_value)
 
-    # ---- getters and setters----
-    def set_eval(self, matrix_type, evaluator_name, value, time_frame=None):
+    # setters
+    def set_eval(self,
+                 matrix_type: EvaluatorMatrixTypes,
+                 evaluator_name: str,
+                 value: MatrixValueType,
+                 time_frame: TimeFrames=None) -> None:
         if evaluator_name not in self.matrix[matrix_type]:
             self.matrix[matrix_type][evaluator_name] = {}
 
@@ -38,11 +43,16 @@ class EvaluatorMatrix:
         else:
             self.matrix[matrix_type][evaluator_name] = value
 
-    def get_type_evals(self, matrix_type):
+    # getters
+    def get_type_evals(self,
+                       matrix_type: EvaluatorMatrixTypes):
         return self.matrix[matrix_type]
 
     @staticmethod
-    def get_eval_note(matrix, matrix_type, evaluator_name, time_frame=None):
+    def get_eval_note(matrix: MatrixType,
+                      matrix_type: EvaluatorMatrixTypes,
+                      evaluator_name: str,
+                      time_frame: TimeFrames=None) -> MatrixValueType:
         if matrix_type in matrix and evaluator_name in matrix[matrix_type]:
             if time_frame is not None:
                 if isinstance(matrix[matrix_type][evaluator_name], dict) \
@@ -56,5 +66,5 @@ class EvaluatorMatrix:
                     return eval_note
         return None
 
-    def get_matrix(self):
+    def get_matrix(self) -> MatrixType:
         return self.matrix
