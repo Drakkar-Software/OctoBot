@@ -14,13 +14,12 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import asyncio
 import copy
 
 from tools.logging.logging_util import get_logger
 from backtesting.abstract_backtesting_test import AbstractBacktestingTest, SYMBOLS, DATA_FILES, DATA_FILE_PATH
 from config import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
-    CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_CRYPTO_CURRENCIES, ASYNCIO_DEBUG_OPTION
+    CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_CRYPTO_CURRENCIES
 from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 from backtesting.backtesting_util import create_backtesting_bot, start_backtesting_bot, filter_wanted_symbols
@@ -55,7 +54,7 @@ class StrategyTestSuite(AbstractBacktestingTest):
     def get_exceptions(self):
         return self.exceptions
 
-    def run_test_suite(self, strategy_tester):
+    async def run_test_suite(self, strategy_tester):
         self.exceptions = []
         tests = [self.test_slow_downtrend, self.test_sharp_downtrend, self.test_flat_markets,
                  self.test_slow_uptrend, self.test_sharp_uptrend, self.test_up_then_down]
@@ -63,7 +62,7 @@ class StrategyTestSuite(AbstractBacktestingTest):
         nb_tests = len(tests)
         for i, test in enumerate(tests):
             try:
-                test(strategy_tester)
+                await test(strategy_tester)
                 self.current_progress = int((i+1)/nb_tests*100)
             except NoCandleDataForThisTimeFrameException:
                 pass
@@ -76,43 +75,39 @@ class StrategyTestSuite(AbstractBacktestingTest):
         return not self.exceptions
 
     @staticmethod
-    def test_default_run(strategy_tester):
-        strategy_tester.run_test_default_run(None)
+    async def test_default_run(strategy_tester):
+        await strategy_tester.run_test_default_run(None)
 
     @staticmethod
-    def test_slow_downtrend(strategy_tester):
-        strategy_tester.run_test_slow_downtrend(None, None, None, None,
-                                                StrategyTestSuite.SKIP_LONG_STEPS)
+    async def test_slow_downtrend(strategy_tester):
+        await strategy_tester.run_test_slow_downtrend(None, None, None, None, StrategyTestSuite.SKIP_LONG_STEPS)
 
     @staticmethod
-    def test_sharp_downtrend(strategy_tester):
-        strategy_tester.run_test_sharp_downtrend(None, None,
-                                                 StrategyTestSuite.SKIP_LONG_STEPS)
+    async def test_sharp_downtrend(strategy_tester):
+        await strategy_tester.run_test_sharp_downtrend(None, None, StrategyTestSuite.SKIP_LONG_STEPS)
 
     @staticmethod
-    def test_flat_markets(strategy_tester):
-        strategy_tester.run_test_flat_markets(None, None, None, None,
-                                              StrategyTestSuite.SKIP_LONG_STEPS)
+    async def test_flat_markets(strategy_tester):
+        await strategy_tester.run_test_flat_markets(None, None, None, None, StrategyTestSuite.SKIP_LONG_STEPS)
 
     @staticmethod
-    def test_slow_uptrend(strategy_tester):
-        strategy_tester.run_test_slow_uptrend(None, None)
+    async def test_slow_uptrend(strategy_tester):
+        await strategy_tester.run_test_slow_uptrend(None, None)
 
     @staticmethod
-    def test_sharp_uptrend(strategy_tester):
-        strategy_tester.run_test_sharp_uptrend(None, None)
+    async def test_sharp_uptrend(strategy_tester):
+        await strategy_tester.run_test_sharp_uptrend(None, None)
 
     @staticmethod
-    def test_up_then_down(strategy_tester):
-        strategy_tester.run_test_up_then_down(None,
-                                              StrategyTestSuite.SKIP_LONG_STEPS)
+    async def test_up_then_down(strategy_tester):
+        await strategy_tester.run_test_up_then_down(None, StrategyTestSuite.SKIP_LONG_STEPS)
 
     def _assert_results(self, run_results, profitability, bot):
         self._profitability_results.append(run_results)
         trader = next(iter(bot.get_exchange_trader_simulators().values()))
         self._trades_counts.append(len(trader.get_trades_manager().get_trade_history()))
 
-    def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
+    async def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
         config_to_use = copy.deepcopy(self.config)
         config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = copy.copy(DATA_FILES)
         config_to_use[CONFIG_CRYPTO_CURRENCIES] = copy.deepcopy(SYMBOLS)
@@ -128,4 +123,4 @@ class StrategyTestSuite(AbstractBacktestingTest):
         filter_wanted_symbols(config_to_use, [symbol])
         bot = create_backtesting_bot(config_to_use)
         # debug set to False to improve performances
-        return asyncio.run(start_backtesting_bot(bot), debug=False), bot
+        return await start_backtesting_bot(bot), bot

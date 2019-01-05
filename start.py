@@ -26,9 +26,10 @@ from config.config import load_config, init_config, is_config_empty
 from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
-    CONFIG_ANALYSIS_ENABLED_OPTION, ASYNCIO_DEBUG_OPTION
+    CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION
 from interfaces.gui import main
 from tools.commands import Commands
+from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 from tools.tentacle_manager.tentacle_util import tentacles_arch_exists
 
@@ -142,7 +143,8 @@ def start_octobot(starting_args):
                             logging.error("{0}, impossible to display GUI".format(e))
 
                     if starting_args.start:
-                        debug_mode = ASYNCIO_DEBUG_OPTION    # set true to activate asyncio debug mode
+                        # set debug_mode = True to activate asyncio debug mode
+                        debug_mode = ConfigManager.is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
                         asyncio.run(Commands.start_bot(bot, logger), debug=debug_mode)
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")

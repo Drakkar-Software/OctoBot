@@ -106,6 +106,7 @@ class ConfigManager:
 
     @staticmethod
     def is_in_dev_mode(config):
+        # return True if "DEV-MODE": true in config.json
         return CONFIG_DEBUG_OPTION in config and config[CONFIG_DEBUG_OPTION]
 
     @staticmethod
