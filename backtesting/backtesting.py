@@ -101,7 +101,7 @@ class Backtesting:
 
         # profitability
         total_profitability = 0
-        _, profitability, _, _ = await trader.get_trades_manager().get_profitability()
+        _, profitability, _, _, _ = await trader.get_trades_manager().get_profitability()
         total_profitability += profitability
 
         # vs market
@@ -157,7 +157,7 @@ class Backtesting:
     @staticmethod
     async def get_profitability(trader):
         trade_manager = trader.get_trades_manager()
-        _, profitability, _, market_average_profitability = await trade_manager.get_profitability(True)
+        _, profitability, _, market_average_profitability, _ = await trade_manager.get_profitability(True)
         return profitability, market_average_profitability
 
     def init_symbols_to_test(self):

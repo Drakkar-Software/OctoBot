@@ -20,6 +20,7 @@ from interfaces.web import server_instance
 from interfaces.web.models.dashboard import get_currency_price_graph_update, get_value_from_dict_or_string, \
     get_first_symbol_data, get_watched_symbol_data
 from interfaces.trading_util import get_global_profitability
+from tools.pretty_printer import PrettyPrinter
 
 
 @server_instance.route('/dashboard/currency_price_graph_update/<exchange_name>/<symbol>/<time_frame>/<mode>',
@@ -47,13 +48,23 @@ def watched_symbol(symbol):
 @server_instance.route('/dashboard/profitability',
                        methods=['GET', 'POST'])
 def profitability():
+    profitability_digits = 4
     has_real_trader, has_simulated_trader, \
         _, _, \
         real_percent_profitability, simulated_percent_profitability, \
+        real_no_trade_profitability, simulated_no_trade_profitability, \
         market_average_profitability = get_global_profitability()
-    profitability_data = {"market_average_profitability": market_average_profitability}
+    profitability_data = \
+        {"market_average_profitability":
+            PrettyPrinter.round_with_decimal_count(market_average_profitability, profitability_digits)}
     if has_real_trader:
-        profitability_data["bot_real_profitability"] = real_percent_profitability
+        profitability_data["bot_real_profitability"] = \
+            PrettyPrinter.round_with_decimal_count(real_percent_profitability, profitability_digits)
+        profitability_data["real_no_trade_profitability"] = \
+            PrettyPrinter.round_with_decimal_count(-real_no_trade_profitability, profitability_digits)
     if has_simulated_trader:
-        profitability_data["bot_simulated_profitability"] = simulated_percent_profitability
+        profitability_data["bot_simulated_profitability"] = \
+            PrettyPrinter.round_with_decimal_count(simulated_percent_profitability, profitability_digits)
+        profitability_data["simulated_no_trade_profitability"] = \
+            PrettyPrinter.round_with_decimal_count(simulated_no_trade_profitability, profitability_digits)
     return jsonify(profitability_data)
