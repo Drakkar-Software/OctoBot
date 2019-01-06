@@ -90,6 +90,10 @@ class PrettyPrinter:
                                     reference, difference)
 
     @staticmethod
+    def round_with_decimal_count(number, max_digits=8):
+        return float(PrettyPrinter.get_min_string_from_number(number, max_digits))
+
+    @staticmethod
     def get_min_string_from_number(number, max_digits=8):
         if round(number, max_digits) == 0.0:
             return "0"

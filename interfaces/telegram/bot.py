@@ -143,25 +143,30 @@ class TelegramApp:
         has_real_trader, has_simulated_trader, \
             real_global_profitability, simulated_global_profitability, \
             real_percent_profitability, simulated_percent_profitability, \
+            real_no_trade_profitability, simulated_no_trade_profitability, \
             market_average_profitability = get_global_profitability()
         profitability_string = ""
         if has_real_trader:
-            profitability_string = "{0}Global profitability : {1} ({2}%), market: {3}%{4}".format(
-                REAL_TRADER_STR,
-                PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
-                                                                   None,
-                                                                   get_reference_market()),
-                PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2),
-                PrettyPrinter.get_min_string_from_number(market_average_profitability, 2),
-                TelegramApp.EOL)
+            profitability_string = "{0}Global profitability : {1} ({2}%), market: {3}%, initial portfolio: {4}%{5}"\
+                .format(
+                    REAL_TRADER_STR,
+                    PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
+                                                                       None,
+                                                                       get_reference_market()),
+                    PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2),
+                    PrettyPrinter.get_min_string_from_number(market_average_profitability, 2),
+                    PrettyPrinter.get_min_string_from_number(real_no_trade_profitability, 2),
+                    TelegramApp.EOL)
         if has_simulated_trader:
-            profitability_string += "{0}Global profitability : {1} ({2}%), market: {3}%".format(
-                SIMULATOR_TRADER_STR,
-                PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
-                                                                   None,
-                                                                   get_reference_market()),
-                PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2),
-                PrettyPrinter.get_min_string_from_number(market_average_profitability, 2))
+            profitability_string += "{0}Global profitability : {1} ({2}%), market: {3}%, initial portfolio: {4}%"\
+                .format(
+                    SIMULATOR_TRADER_STR,
+                    PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
+                                                                       None,
+                                                                       get_reference_market()),
+                    PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2),
+                    PrettyPrinter.get_min_string_from_number(market_average_profitability, 2),
+                    PrettyPrinter.get_min_string_from_number(simulated_no_trade_profitability, 2))
         if not profitability_string:
             profitability_string = TelegramApp.NO_TRADER_MESSAGE
         update.message.reply_text(profitability_string)
