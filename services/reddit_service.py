@@ -54,4 +54,4 @@ class RedditService(AbstractService):
 
     def get_successful_startup_message(self):
         return f"Successfully initialized using {self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]['username']}" \
-               f" account."
+               f" account.", True

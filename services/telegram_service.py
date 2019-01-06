@@ -101,4 +101,8 @@ class TelegramService(AbstractService):
         return f"https://web.telegram.org/#/im?p={self.telegram_api.get_me().name}"
 
     def get_successful_startup_message(self):
-        return f"Successfully initialized and accessible at: {self._get_bot_url()}."
+        try:
+            return f"Successfully initialized and accessible at: {self._get_bot_url()}.", True
+        except telegram.error.NetworkError as e:
+            self.log_connection_error_message(e)
+            return "", False
