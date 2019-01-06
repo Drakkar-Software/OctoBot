@@ -202,7 +202,9 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
                     data = evaluator_thread_manager.get_evaluator().get_data()
             elif not backtesting and time_frame in get_symbol_time_frames(symbol, exchange_name)[0]:
                 # might be the real-time evaluator time frame => check in symbol data
-                data = exchange_list[exchange].get_symbol_prices(symbol, time_frame, return_list=False)
+                data = get_bot().run_in_main_asyncio_loop(
+                    exchange_list[exchange].get_symbol_prices(symbol, time_frame, return_list=False)
+                )
 
             if data is not None:
                 return create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesting)
