@@ -191,7 +191,6 @@ class StrategyOptimizer:
         self.sorted_results_through_all_time_frame = sorted(result_list, key=lambda res: res[RANK])
 
     def print_report(self):
-        result = {TRADES_IN_RESULT: 0}
         self.logger.info("Full execution sorted results: Minimum time frames are defining the range of the run "
                          "since it finishes at the end of the first data, aka minimum time frame. Therefore all "
                          "different time frames are different price actions and can't be compared independently.")
@@ -209,8 +208,9 @@ class StrategyOptimizer:
                              f"average trades count: {result[TRADES_IN_RESULT]:f}")
         self.logger.info(f" *** Overall best configuration for {self.strategy_class.get_name()} using "
                          f"{self.trading_mode.get_name()} trading mode *** ")
-        self.logger.info(f"{self.sorted_results_through_all_time_frame[0][CONFIG].get_result_string()} average "
-                         f"trades count: {result[TRADES_IN_RESULT]:f}")
+        best_result = self.sorted_results_through_all_time_frame[0]
+        self.logger.info(f"{best_result[CONFIG].get_result_string()} "
+                         f"average trades count: {best_result[TRADES_IN_RESULT]:f}")
 
     def get_overall_progress(self):
         return int((self.run_id-1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
