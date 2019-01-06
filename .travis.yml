@@ -23,7 +23,7 @@ after_success:
 - if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "dev" ]; then bash
   coveralls; fi'
 before_deploy:
-  - python3 -m nltk.downloader -d $NLTK_DATA all
+  - python3 -m nltk.downloader -d $NLTK_DATA words
   - pyinstaller docs/delivery/start.spec
   - mv dist/OctoBot dist/OctoBot_linux
 deploy:
