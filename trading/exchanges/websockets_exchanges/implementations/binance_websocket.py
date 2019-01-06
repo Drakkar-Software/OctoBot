@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from requests.exceptions import ConnectionError
+
 from binance.client import Client, BinanceAPIException
 from binance.websockets import BinanceSocketManager
 from config.config import decrypt
@@ -39,9 +41,12 @@ class BinanceWebSocketClient(AbstractWebSocket):
         try:
             self.client = Client(decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
                                  decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]))
+        except ConnectionError as e:
+            self.logger.error(f"Impossible to initialize websocket: {e}")
         except Exception as e:
             self.client = Client("", "")
-            self.logger.error(f"Exchange configuration tokens are invalid : please check your configuration ! ({e})")
+            self.logger.error(f"Exchange configuration tokens are invalid : "
+                              f"please check your configuration ! ({e})")
 
         self.socket_manager = None
         self.open_sockets_keys = {}
