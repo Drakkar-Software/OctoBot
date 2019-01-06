@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from requests.exceptions import ConnectionError
+import requests
 
 import twitter
 from twitter.api import CHARACTER_LIMIT
@@ -142,6 +142,6 @@ class TwitterService(AbstractService):
     def get_successful_startup_message(self):
         try:
             return f"Successfully initialized and accessible at: {self._get_twitter_url()}.", True
-        except ConnectionError as e:
+        except requests.exceptions.ConnectionError as e:
             self.log_connection_error_message(e)
             return "", False
