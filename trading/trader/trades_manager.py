@@ -109,14 +109,18 @@ class TradesManager(Initializable):
         self.profitability = 0
         self.profitability_percent = 0
         market_profitability_percent = None
+        initial_portfolio_current_profitability = 0
 
         try:
             await self._update_portfolio_and_currencies_current_value()
+            initial_portfolio_current_value = await self._get_origin_portfolio_current_value()
 
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
 
             if self.portfolio_origin_value > 0:
                 self.profitability_percent = (100 * self.portfolio_current_value / self.portfolio_origin_value) - 100
+                initial_portfolio_current_profitability = \
+                    (100 * initial_portfolio_current_value / self.portfolio_origin_value) - 100
             else:
                 self.profitability_percent = 0
 
@@ -131,7 +135,7 @@ class TradesManager(Initializable):
             self.logger.exception(e)
 
         profitability = self.get_profitability_without_update()
-        return profitability + (market_profitability_percent,)
+        return profitability + (market_profitability_percent, initial_portfolio_current_profitability)
 
     """ Returns the % move average of all the watched cryptocurrencies between bot's start time and now
     """
@@ -183,22 +187,32 @@ class TradesManager(Initializable):
                     self.traded_currencies_without_market_specific.add(symbol)
 
     async def _update_portfolio_and_currencies_current_value(self):
-        self.current_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
-
         async with self.portfolio.get_lock():
             current_portfolio = deepcopy(self.portfolio.get_portfolio())
 
-        self.portfolio_current_value = await self._evaluate_portfolio_value(current_portfolio,
-                                                                            self.current_crypto_currencies_values)
+        self.portfolio_current_value = await self._update_portfolio_current_value(current_portfolio)
 
     async def _init_origin_portfolio_and_currencies_value(self):
         self.origin_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
-
         async with self.portfolio.get_lock():
             self.origin_portfolio = deepcopy(self.portfolio.get_portfolio())
 
-        self.portfolio_origin_value += await self._evaluate_portfolio_value(self.origin_portfolio,
-                                                                            self.origin_crypto_currencies_values)
+        self.portfolio_origin_value = \
+            await self._update_portfolio_current_value(self.origin_portfolio,
+                                                       currencies_values=self.origin_crypto_currencies_values)
+
+    async def _get_origin_portfolio_current_value(self, refresh_values=False):
+        if refresh_values:
+            self.current_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
+        return await self._update_portfolio_current_value(self.origin_portfolio,
+                                                          currencies_values=self.current_crypto_currencies_values)
+
+    async def _update_portfolio_current_value(self, portfolio, currencies_values=None):
+        values = currencies_values
+        if values is None:
+            self.current_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
+            values = self.current_crypto_currencies_values
+        return await self._evaluate_portfolio_value(portfolio, values)
 
     """ try_get_value_of_currency will try to obtain the current value of the currency quantity in the reference currency
     It will try to create the symbol that fit with the exchange logic

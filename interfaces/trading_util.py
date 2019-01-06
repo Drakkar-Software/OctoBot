@@ -159,6 +159,8 @@ def get_risk():
 def get_global_profitability():
     simulated_global_profitability = 0
     real_global_profitability = 0
+    simulated_no_trade_profitability = 0
+    real_no_trade_profitability = 0
     traders = get_traders()
     simulated_full_origin_value = 0
     real_full_origin_value = 0
@@ -171,16 +173,18 @@ def get_global_profitability():
             trade_manager = trader.get_trades_manager()
 
             # TODO : use other return values
-            current_value, _, _, market_average_profitability = \
-                get_bot().run_in_main_asyncio_loop(trade_manager.get_profitability(True))
+            current_value, _, _, market_average_profitability, initial_portfolio_current_profitability = \
+                get_bot().run_in_main_asyncio_loop(trade_manager.get_profitability(with_market=True))
 
             if trader.get_simulate():
                 simulated_full_origin_value += trade_manager.get_portfolio_origin_value()
                 simulated_global_profitability += current_value
+                simulated_no_trade_profitability += initial_portfolio_current_profitability
                 has_simulated_trader = True
             else:
                 real_full_origin_value += trade_manager.get_portfolio_origin_value()
                 real_global_profitability += current_value
+                real_no_trade_profitability += initial_portfolio_current_profitability
                 has_real_trader = True
 
     simulated_percent_profitability = simulated_global_profitability * 100 / simulated_full_origin_value \
@@ -189,8 +193,10 @@ def get_global_profitability():
         if real_full_origin_value > 0 else 0
 
     return has_real_trader, has_simulated_trader, \
-           real_global_profitability, simulated_global_profitability, \
-           real_percent_profitability, simulated_percent_profitability, market_average_profitability
+        real_global_profitability, simulated_global_profitability, \
+        real_percent_profitability, simulated_percent_profitability, \
+        real_no_trade_profitability, simulated_no_trade_profitability, \
+        market_average_profitability
 
 
 def get_portfolios():

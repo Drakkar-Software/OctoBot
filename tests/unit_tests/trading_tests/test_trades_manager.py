@@ -60,10 +60,11 @@ class TestTradesManager:
         _, _, trader_inst, trades_manager_inst = await self.init_default()
         self.stop(trader_inst)
 
-        profitability, profitability_percent, profitability_diff, market_profitability = \
-            await trades_manager_inst.get_profitability()
+        profitability, profitability_percent, profitability_diff, market_profitability, \
+            initial_portfolio_current_profitability = await trades_manager_inst.get_profitability()
         assert market_profitability is None
-        assert profitability == profitability_percent == profitability_diff == 0
+        assert profitability == profitability_percent == profitability_diff == \
+            initial_portfolio_current_profitability == 0
 
         trades_manager_inst.portfolio_origin_value = 20
         trades_manager_inst.profitability_percent = 100
@@ -80,12 +81,13 @@ class TestTradesManager:
         expected_market_profitability = ((nb_currencies + 1) / nb_currencies * 100) - 100
         trades_manager_inst.origin_crypto_currencies_values["BTC"] = 0.5
 
-        profitability, profitability_percent, profitability_diff, market_profitability = \
-            await trades_manager_inst.get_profitability(True)
+        profitability, profitability_percent, profitability_diff, market_profitability, \
+            initial_portfolio_current_profitability = await trades_manager_inst.get_profitability(True)
         assert profitability == -10
         assert profitability_percent == -50
         assert profitability_diff == -150
         assert market_profitability == expected_market_profitability
+        assert initial_portfolio_current_profitability == -50
 
     async def test_get_current_holdings_values(self):
         _, _, trader_inst, trades_manager_inst = await self.init_default()
