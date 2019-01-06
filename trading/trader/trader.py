@@ -272,7 +272,7 @@ class Trader(Initializable):
             async with self.get_order_portfolio(order).get_lock():
                 await self.get_order_portfolio(order).update_portfolio(order)
 
-            profitability, profitability_percent, profitability_diff, _ = \
+            profitability, profitability_percent, profitability_diff, _, _ = \
                 await self.get_trades_manager().get_profitability()
 
             # debug purpose
