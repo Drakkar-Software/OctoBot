@@ -1,4 +1,4 @@
-pytest
+pytest==4.0.2
 pytest-pep8
 pytest-cov
 pytest-asyncio
