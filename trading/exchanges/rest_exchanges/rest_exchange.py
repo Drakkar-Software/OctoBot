@@ -17,6 +17,7 @@
 import logging
 
 from ccxt.async_support import OrderNotFound, BaseError, InsufficientFunds
+from ccxt.base.errors import ExchangeNotAvailable
 
 from config.config import decrypt
 from config import *
@@ -50,7 +51,10 @@ class RESTExchange(AbstractExchange, Initializable):
         self.all_currencies_price_ticker = None
 
     async def initialize_impl(self):
-        await self.client.load_markets()
+        try:
+            await self.client.load_markets()
+        except ExchangeNotAvailable as e:
+            self.logger.error(f"initialization impossible: {e}")
 
     def get_symbol_data(self, symbol):
         return self.exchange_manager.get_symbol_data(symbol)

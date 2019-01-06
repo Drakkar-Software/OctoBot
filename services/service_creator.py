@@ -38,7 +38,8 @@ class ServiceCreator:
                         service_instance.prepare()
                         config[CONFIG_CATEGORY_SERVICES][service_instance.get_type()][CONFIG_SERVICE_INSTANCE] = \
                             service_instance
-                        service_instance.say_hello()
+                        if not service_instance.say_hello():
+                            logger.warning(f"{service_class.get_name()} initial checkup failed.")
                     except Exception as e:
                         logger.error(f"{service_class.get_name()} preparation produced the following error: {e}")
                         logger.exception(e)

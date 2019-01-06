@@ -280,6 +280,7 @@ def get_all_symbol_list():
         }
     except Exception as e:
         get_logger("Configuration").error(f"Failed to get currencies list from coinmarketcap : {e}")
+        return dict()
 
 
 def get_full_exchange_list(remove_config_exchanges=False):
