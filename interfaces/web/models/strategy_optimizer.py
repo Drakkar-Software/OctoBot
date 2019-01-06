@@ -72,8 +72,7 @@ def get_current_strategy():
 
 def start_optimizer(strategy, time_frames, evaluators, risks):
     tools = get_bot().get_tools()
-    if not tools[BOT_TOOLS_STRATEGY_OPTIMIZER]:
-        tools[BOT_TOOLS_STRATEGY_OPTIMIZER] = StrategyOptimizer(get_bot().get_config(), strategy)
+    tools[BOT_TOOLS_STRATEGY_OPTIMIZER] = StrategyOptimizer(get_bot().get_config(), strategy)
     optimizer = tools[BOT_TOOLS_STRATEGY_OPTIMIZER]
     backtester = tools[BOT_TOOLS_BACKTESTING]
     if optimizer.get_is_computing():
