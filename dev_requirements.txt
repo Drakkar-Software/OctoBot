@@ -1,4 +1,4 @@
-pytest
+pytest==4.0.2
 pytest-pep8
 pytest-cov
 
@@ -6,4 +6,4 @@ coverage
 coveralls
 
 nltk
-pyinstaller==3.3.1
+git+git://github.com/Drakkar-Software/pyinstaller@develop
