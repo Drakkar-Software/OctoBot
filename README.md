@@ -10,6 +10,7 @@
 [![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg)](https://t.me/joinchat/F9cyfxV97ZOaXQ47H5dRWw)
 [![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord)](https://discord.gg/vHkcb8W)
 [![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg)](https://t.me/OctoBot_Project)
+[![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=Follow&style=social)](https://twitter.com/DrakkarsOctobot)
 <p align="center">
 <img src="../assets/octopus.svg" alt="Octobot Logo" height="400" width="400">
 </p>
@@ -35,7 +36,7 @@ Octobot's main feature is **evolution** : you can [install](https://github.com/D
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** !
 
-#### With Launcher
+#### With Launcher (only for 64 bits)
 - Open the OctoBot-Launcher [release page](https://github.com/Drakkar-Software/OctoBot-Launcher/releases)
 - Download launcher (*laucher_windows.exe* or *launcher_linux*)
 - Start the launcher
