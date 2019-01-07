@@ -23,5 +23,5 @@ deploy:
     prerelease: false
     artifact: OctoBot_windows.exe
     on:
-#      branch: beta
+      branch: beta
       APPVEYOR_REPO_TAG: true
