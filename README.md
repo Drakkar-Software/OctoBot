@@ -2,7 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/OctoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Drakkar-Software/OctoBot&amp;utm_campaign=Badge_Grade) 
 [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/overview/dev) 
 [![Release](https://img.shields.io/github/downloads/Drakkar-Software/OctoBot/total.svg)](https://github.com/Drakkar-Software/OctoBot/releases)
-[![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/OctoBot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) 
+[![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
+[![Coverage Status](https://img.shields.io/coveralls/github/Drakkar-Software/OctoBot.svg)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) 
 [![Build Status](https://api.travis-ci.org/Drakkar-Software/OctoBot.svg?branch=dev)](https://travis-ci.org/Drakkar-Software/OctoBot) 
 [![Build status](https://ci.appveyor.com/api/projects/status/jr9o8sghywnued9x?svg=true)](https://ci.appveyor.com/project/Herklos/octobot)
 
@@ -42,7 +43,7 @@ OctoBot's installation is **very simple**... because **very documented** !
 - Start the launcher
 - Click on "Update OctoBot"
 
-#### With Docker
+#### [With Docker](https://github.com/Drakkar-Software/OctoBot/wiki/With-Docker)
 `touch config.json && docker run -v $(pwd)/config.json:/bot/octobot/config.json -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot`
 
 More details in [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation) and it's done !
