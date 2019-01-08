@@ -1,4 +1,4 @@
-FROM python:3.7.2
+FROM python:3.7.2-slim-stretch
 
 ARG OCTOBOT_INSTALL_DIR="octobot"
 
