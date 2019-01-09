@@ -2,6 +2,7 @@ pytest==4.1.1
 pytest-pep8
 pytest-cov
 pytest-asyncio
+pytest-xdist
 
 coverage
 coveralls
