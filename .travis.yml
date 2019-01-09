@@ -4,28 +4,44 @@ sudo: enabled
 os: linux
 language: python
 cache: pip
-python:
-- nightly
-before_install:
-- sudo bash ./docs/install/linux_dependencies.sh
-- pip3 install -r pre_requirements.txt
+python: 3.7-dev
+
 install:
-- pip3 install -r requirements.txt -r dev_requirements.txt
-- cp ./config/default_config.json ./config.json
-- python3 start.py -p install all
-jobs:
+  - python3 -m pip install -r pre_requirements.txt
+  - python3 -m pip install -r requirements.txt -r dev_requirements.txt
+  - cp ./config/default_config.json ./config.json
+  - python3 start.py -p install all
+
+matrix:
   include:
-  - stage: test
-    script: pytest --cov=. --cov-config=.coveragerc tests/unit_tests
-  - script: pytest --cov=. --cov-config=.coveragerc tests/functional_tests
-  - script: pytest --cov=. --cov-config=.coveragerc tests/endurance_tests
-after_success:
-- if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "dev" ]; then bash
-  coveralls; fi'
+    - os: osx
+      osx_image: xcode8.3
+      language: generic
+      before_install:
+        - brew update || travis_terminate 1;
+        - brew upgrade python || brew install python || travis_terminate 1;
+        - python3 -m venv venv || travis_terminate 1;
+        - source venv/bin/activate;
+      script:
+        - pytest -n 3 --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests
+    - os: linux
+      python: nightly
+      language: python
+      before_install:
+        - sudo bash ./docs/install/linux_dependencies.sh
+      script:
+        - pytest -n 5 --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests tests/endurance_tests
+      after_success:
+        - >
+          if [ "$TRAVIS_PULL_REQUEST" = "false" ];
+            bash coveralls;
+          fi
+
 before_deploy:
   - python3 -m nltk.downloader -d $NLTK_DATA words
   - pyinstaller docs/delivery/start.spec
   - mv dist/OctoBot dist/OctoBot_linux
+
 deploy:
   provider: releases
   api_key:
