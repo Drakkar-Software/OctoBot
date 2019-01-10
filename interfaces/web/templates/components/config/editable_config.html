@@ -1,10 +1,10 @@
-{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="", no_select=False, number_step=0.01) -%}
+{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="", no_select=False, number_step=0.01, force_title=False) -%}
         {% if config[key] is string %}
             {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] | is_dict %}
-            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step) }}
+            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title) }}
         {% elif config[key] | is_list %}
-            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) }}
+            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, force_title) }}
         {% elif config[key] | is_bool %}
             {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] is number %}
@@ -27,7 +27,7 @@
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step) -%}
+{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title) -%}
     {{ key }} : <br>
     {% for new_key in config[key] %}
         &emsp;{{  editable_key( config[key],
@@ -38,7 +38,8 @@
                             startup_config_value[new_key],
                             suggestions,
                             no_select,
-                            number_step)
+                            number_step,
+                            force_title)
         }}
     {% endfor %}
 {%- endmacro %}
@@ -68,7 +69,10 @@
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select) -%}
+{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, force_title) -%}
+    {% if force_title %}
+        {{ key }} :
+    {% endif %}
     <select config-key="{{ config_key }}"
             config-type="global_config"
             config-value="{{config[key]}}"
