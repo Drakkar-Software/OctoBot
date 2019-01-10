@@ -202,6 +202,7 @@ TOOLS_PATH = "tools"
 CONFIG_INTERFACES = "interfaces"
 CONFIG_INTERFACES_WEB = "web"
 CONFIG_INTERFACES_TELEGRAM = "telegram"
+CONFIG_USERNAMES_WHITELIST = "usernames-whitelist"
 
 # Tentacles (packages)
 PYTHON_INIT_FILE = "__init__.py"

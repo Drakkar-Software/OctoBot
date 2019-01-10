@@ -1,5 +1,5 @@
 {% import 'components/config/editable_config.html' as m_editable_config %}
-{% macro config_service_card(config, service_name, service, add_class='', default_values=False) -%}
+{% macro config_service_card(config, service_name, service, add_class='', no_select=False, default_values=False) -%}
     {% set service_requirements = service.REQUIRED_CONFIG %}
 
     <!-- Card -->
@@ -23,7 +23,10 @@
                                                         "global_config",
                                                         service_requirements[req] if default_values else config[service_name][req],
                                                         service_requirements[req] if default_values else config[service_name][req],
-                                                        number_step=1)
+                                                        suggestions=service_requirements[req] if default_values else config[service_name][req],
+                                                        no_select=no_select,
+                                                        number_step=1,
+                                                        force_title=True)
                     }}
                 {% endfor %}
             </p>
