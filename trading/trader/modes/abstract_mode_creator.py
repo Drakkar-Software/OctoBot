@@ -23,6 +23,7 @@ from tools.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
 from tools.initializable import Initializable
 from trading.trader.sub_portfolio import SubPortfolio
+from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
 
 
 class AbstractTradingModeCreator:
@@ -43,6 +44,10 @@ class AbstractTradingModeCreator:
             return factor
 
     @staticmethod
+    def _is_valid(element, key):
+        return key in element and ExchangeMarketStatusFixer.is_ms_valid(element[key])
+
+    @staticmethod
     def get_additional_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
         remaining_portfolio_amount = float("{1:.{0}f}".format(CURRENCY_DEFAULT_MAX_PRICE_DIGITS,
                                                               current_symbol_holding - quantity))
@@ -52,6 +57,12 @@ class AbstractTradingModeCreator:
 
         limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
         limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
+
+        if not (AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) and
+                AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value)):
+            fixed_market_status = ExchangeMarketStatusFixer(symbol_market, price).get_market_status()
+            limit_amount = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_AMOUNT.value]
+            limit_cost = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_COST.value]
 
         min_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
         min_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
@@ -74,54 +85,91 @@ class AbstractTradingModeCreator:
     => returns the quantity and price list of possible order(s)
     """
 
-    def check_and_adapt_order_details_if_necessary(self, quantity, price, symbol_market):
+    def check_and_adapt_order_details_if_necessary(self, quantity, price, symbol_market, fixed_symbol_data=False):
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
 
         limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
         limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
         limit_price = symbol_market_limits[Ecmsc.LIMITS_PRICE.value]
 
-        min_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
-        max_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value)
-        min_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
-        max_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value)
-        min_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value)
-        max_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value)
+        # case 1: try with data directly from exchange
+        if self._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) \
+                and self._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value):
+            min_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
+            max_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value)
 
-        # adapt digits if necessary
-        valid_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, quantity)
-        valid_price = AbstractTradingModeCreator.adapt_price(symbol_market, price)
+            # adapt digits if necessary
+            valid_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, quantity)
+            valid_price = AbstractTradingModeCreator.adapt_price(symbol_market, price)
 
-        total_order_price = valid_quantity * valid_price
+            total_order_price = valid_quantity * valid_price
 
-        # check total_order_price not < min_cost and valid_quantity not < min_quantity and max_price > price > min_price
-        if total_order_price < min_cost or valid_quantity < min_quantity or not (max_price >= valid_price >= min_price):
-            # when invalid data
-            if max_price is None or min_price is None or max_price == min_price:
-                self.logger.error("Invalid max_price or/and min_price from exchange")
+            if valid_quantity < min_quantity:
+                    # invalid order
+                    return []
 
-            if min_cost is None or min_quantity is None:
-                self.logger.error("Invalid min_cost or min_quantity from exchange")
+            # case 1.1: use only quantity and cost
+            if self._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value) \
+                    and self._is_valid(limit_cost, Ecmsc.LIMITS_COST_MAX.value):
 
-            # invalid order
-            return []
+                min_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
+                max_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value)
 
-        # check total_order_price not > max_cost and valid_quantity not > max_quantity
-        elif total_order_price > max_cost or valid_quantity > max_quantity:
-            # split quantity into smaller orders
-            nb_orders_according_to_cost = total_order_price / max_cost
-            nb_orders_according_to_quantity = valid_quantity / max_quantity
-            if nb_orders_according_to_cost > nb_orders_according_to_quantity:
-                return AbstractTradingModeCreator._adapt_order_quantity_because_price(total_order_price, max_cost,
-                                                                                      price,
-                                                                                      symbol_market)
-            else:
-                return AbstractTradingModeCreator._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
-                                                                                         quantity, price, symbol_market)
+                # check total_order_price not < min_cost
+                if total_order_price < min_cost:
+                    if min_cost is None or min_quantity is None:
+                        self.logger.error("Invalid min_cost or min_quantity from exchange")
 
+                    # invalid order
+                    return []
+
+                # check total_order_price not > max_cost and valid_quantity not > max_quantity
+                elif total_order_price > max_cost or valid_quantity > max_quantity:
+                    # split quantity into smaller orders
+                    nb_orders_according_to_cost = total_order_price / max_cost
+                    nb_orders_according_to_quantity = valid_quantity / max_quantity
+                    if nb_orders_according_to_cost > nb_orders_according_to_quantity:
+                        return AbstractTradingModeCreator._adapt_order_quantity_because_price(total_order_price,
+                                                                                              max_cost, price,
+                                                                                              symbol_market)
+                    else:
+                        return AbstractTradingModeCreator\
+                            ._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
+                                                                    quantity, price, symbol_market)
+
+                else:
+                    # valid order that can be handled wy the exchange
+                    return [(valid_quantity, valid_price)]
+
+            # case 1.2: use only quantity and price
+            elif self._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MIN.value) \
+                    and self._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MAX.value):
+
+                min_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value)
+                max_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value)
+
+                if not (max_price >= valid_price >= min_price):
+                    # invalid order
+                    return []
+
+                # check total_order_price not > max_cost and valid_quantity not > max_quantity
+                elif valid_quantity > max_quantity:
+                    # split quantity into smaller orders
+                    return AbstractTradingModeCreator \
+                        ._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
+                                                                quantity, price, symbol_market)
+                else:
+                    # valid order that can be handled wy the exchange
+                    return [(valid_quantity, valid_price)]
+
+        if not fixed_symbol_data:
+            # case 2: try fixing data from exchanges
+            fixed_symbol_data = ExchangeMarketStatusFixer(symbol_market, price).get_market_status()
+            return self.check_and_adapt_order_details_if_necessary(quantity, price,
+                                                                   fixed_symbol_data, fixed_symbol_data=True)
         else:
-            # valid order that can be handled wy the exchange
-            return [(valid_quantity, valid_price)]
+            # impossible to check if order is valid: refuse it
+            return []
 
     @staticmethod
     # Can be overwritten
@@ -161,7 +209,7 @@ class AbstractTradingModeCreator:
         market_quantity = current_market_quantity / reference
 
         price = reference
-        symbol_market = exchange.get_market_status(symbol, price_example=price)
+        symbol_market = exchange.get_market_status(symbol, with_fixer=False)
 
         return current_symbol_holding, current_market_quantity, market_quantity, price, symbol_market
 

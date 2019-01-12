@@ -84,10 +84,10 @@ class TestAbstractTradingModeCreator:
                                                                            EvaluatorStates.VERY_SHORT, portfolio)
 
         # sell order using a currency with > min available
-        assert AbstractTradingModeCreator(None).can_create_order(not_owned_market, exchange,
-                                                                 EvaluatorStates.SHORT, portfolio)
-        assert AbstractTradingModeCreator(None).can_create_order(not_owned_market, exchange,
-                                                                 EvaluatorStates.VERY_SHORT, portfolio)
+        assert await AbstractTradingModeCreator(None).can_create_order(not_owned_market, exchange,
+                                                                       EvaluatorStates.SHORT, portfolio)
+        assert await AbstractTradingModeCreator(None).can_create_order(not_owned_market, exchange,
+                                                                       EvaluatorStates.VERY_SHORT, portfolio)
 
         # buy order using a market with 0 available
         assert not await AbstractTradingModeCreator(None).can_create_order(not_owned_market, exchange,
@@ -102,10 +102,10 @@ class TestAbstractTradingModeCreator:
                                                                            EvaluatorStates.VERY_LONG, portfolio)
 
         # buy order using a market with > min available
-        assert AbstractTradingModeCreator(None).can_create_order(not_owned_symbol, exchange,
-                                                                 EvaluatorStates.LONG, portfolio)
-        assert AbstractTradingModeCreator(None).can_create_order(not_owned_symbol, exchange,
-                                                                 EvaluatorStates.VERY_LONG, portfolio)
+        assert await AbstractTradingModeCreator(None).can_create_order(not_owned_symbol, exchange,
+                                                                       EvaluatorStates.LONG, portfolio)
+        assert await AbstractTradingModeCreator(None).can_create_order(not_owned_symbol, exchange,
+                                                                       EvaluatorStates.VERY_LONG, portfolio)
 
     async def test_can_create_order_unknown_symbols(self):
         _, exchange, trader, _ = await self._get_tools()
@@ -119,10 +119,10 @@ class TestAbstractTradingModeCreator:
                                                                            EvaluatorStates.LONG, portfolio)
         assert not await AbstractTradingModeCreator(None).can_create_order(unknown_market, exchange,
                                                                            EvaluatorStates.VERY_LONG, portfolio)
-        assert AbstractTradingModeCreator(None).can_create_order(unknown_market, exchange,
-                                                                 EvaluatorStates.SHORT, portfolio)
-        assert AbstractTradingModeCreator(None).can_create_order(unknown_market, exchange,
-                                                                 EvaluatorStates.VERY_SHORT, portfolio)
+        assert await AbstractTradingModeCreator(None).can_create_order(unknown_market, exchange,
+                                                                       EvaluatorStates.SHORT, portfolio)
+        assert await AbstractTradingModeCreator(None).can_create_order(unknown_market, exchange,
+                                                                       EvaluatorStates.VERY_SHORT, portfolio)
 
         # sell order with unknown symbol
         assert not await AbstractTradingModeCreator(None).can_create_order(unknown_symbol, exchange,
@@ -263,6 +263,27 @@ class TestAbstractTradingModeCreator:
             }
         }
 
+        invalid_cost_symbol_market = {
+            Ecmsc.LIMITS.value: {
+                Ecmsc.LIMITS_AMOUNT.value: {
+                    Ecmsc.LIMITS_AMOUNT_MIN.value: 0.5,
+                    Ecmsc.LIMITS_AMOUNT_MAX.value: 100,
+                },
+                Ecmsc.LIMITS_COST.value: {
+                    Ecmsc.LIMITS_COST_MIN.value: None,
+                    Ecmsc.LIMITS_COST_MAX.value: None
+                },
+                Ecmsc.LIMITS_PRICE.value: {
+                    Ecmsc.LIMITS_PRICE_MIN.value: 0.5,
+                    Ecmsc.LIMITS_PRICE_MAX.value: 50
+                },
+            },
+            Ecmsc.PRECISION.value: {
+                Ecmsc.PRECISION_PRICE.value: 8,
+                Ecmsc.PRECISION_AMOUNT.value: 8
+            }
+        }
+
         # correct min
         quantity = 0.5
         price = 2
@@ -283,15 +304,25 @@ class TestAbstractTradingModeCreator:
         price = 49.9
         assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(quantity, price)]
 
-        # invalid price >
+        # invalid price > but valid cost
         quantity = 1
         price = 100
-        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(quantity, price)]
 
-        # invalid price <
+        # invalid price < but valid cost
+        quantity = 10
+        price = 0.1
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(quantity, price)]
+
+        # invalid price > and invalid cost from exchange => use price => invalid
+        quantity = 1
+        price = 100
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, invalid_cost_symbol_market) == []
+
+        # invalid price < and invalid cost from exchange => use price => invalid
         quantity = 1
         price = 0.1
-        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, invalid_cost_symbol_market) == []
 
         # invalid cost <
         quantity = 0.5
@@ -311,10 +342,10 @@ class TestAbstractTradingModeCreator:
         assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(2, 50), (4, 50),
                                                                                                    (4, 50)]
 
-        # invalid cost with invalid price >
+        # invalid cost with invalid price > and invalid cost from exchange => use price => invalid
         quantity = 10
         price = 51
-        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == []
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, invalid_cost_symbol_market) == []
 
         # invalid amount >
         quantity = 200
