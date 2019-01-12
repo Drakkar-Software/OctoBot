@@ -1,7 +1,13 @@
 {% extends "advanced_layout.html" %}
 {% block body %}
 <div class="card" id="strategyOptimizerInputs" update-url="{{ url_for('advanced.strategy_optimizer', update_type='optimizer_status') }}">
-    <div class="card-header"><h1>Strategy optimizer</h1></div>
+    <div class="card-header">
+        <h1>Strategy optimizer
+            <a class="float-right" target="_blank" rel="noopener noreferrer" href="https://github.com/Drakkar-Software/OctoBot/wiki/Backtesting-and-strategy-optimization#strategy-optimizer">
+                <i class="fa fa-question"></i>
+            </a>
+        </h1>
+    </div>
     <div class="card-body" id="paramSettings" update-url="{{ url_for('advanced.strategy_optimizer', update_type='run_params') }}">
         <div class="input-group">
           <div class="input-group-prepend mb-3">
