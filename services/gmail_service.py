@@ -22,7 +22,24 @@ from services import AbstractService
 
 
 class GmailService(AbstractService):
-    REQUIRED_CONFIG = {"gmail-user": "", "gmail-password": "", "mail-dest": ""}
+    GMAIL_USER = "gmail-user"
+    GMAIL_PASSWORD = "gmail-password"
+    MAIL_DEST = "mail-dest"
+
+    REQUIRED_CONFIG = [GMAIL_USER, GMAIL_PASSWORD, MAIL_DEST]
+
+    # Used in configuration interfaces
+    CONFIG_FIELDS_DESCRIPTION = {
+        GMAIL_USER: "Your gmail username (to send emails from this account).",
+        GMAIL_PASSWORD: "Your gmail password (to send emails from this account).",
+        MAIL_DEST: "The destination email address (to send emails to this account)."
+    }
+    CONFIG_DEFAULT_VALUE = {
+        GMAIL_USER: "",
+        GMAIL_PASSWORD: "",
+        MAIL_DEST: ""
+    }
+    HELP_PAGE = "https://github.com/Drakkar-Software/OctoBot/wiki/Gmail-interface#gmail-interface"
 
     def __init__(self):
         super().__init__()
@@ -51,8 +68,8 @@ class GmailService(AbstractService):
             self.gmail_con.ehlo()
             self.gmail_con.starttls()
             self.gmail_con.ehlo()
-            self.gmail_con.login(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail-user"],
-                                 self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail-password"])
+            self.gmail_con.login(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL][self.GMAIL_USER],
+                                 self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL][self.GMAIL_PASSWORD])
         except Exception as e:
             self.logger.error("Failed to connect to gmail service : {0}".format(e))
 
@@ -61,10 +78,10 @@ class GmailService(AbstractService):
             self.prepare()
             msg = email.message.Message()
             msg.add_header('Content-Type', 'text/plain')
-            msg['From'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["gmail-user"] + "@gmail.com"
+            msg['From'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL][self.GMAIL_USER] + "@gmail.com"
             msg.set_payload(content)
             msg['Subject'] = subject
-            msg['To'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]["mail-dest"]
+            msg['To'] = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL][self.MAIL_DEST]
             self.gmail_con.sendmail(msg['From'], msg['To'], msg.as_string())
             self.gmail_con.close()
             return True
@@ -74,4 +91,4 @@ class GmailService(AbstractService):
 
     def get_successful_startup_message(self):
         return f"Successfully initialized to notify " \
-                   f"{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL]['mail-dest']}.", True
+                   f"{self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL][self.MAIL_DEST]}.", True
