@@ -266,7 +266,7 @@ class Order:
         }
 
     def get_profitability(self):
-        if self.get_filled_price() == 0 and self.get_create_last_price() == 0:
+        if self.get_filled_price() != 0 and self.get_create_last_price() != 0:
             if self.get_filled_price() >= self.get_create_last_price():
                 self.order_profitability = 1 - self.get_filled_price() / self.get_create_last_price()
                 if self.side == TradeOrderSide.SELL:
