@@ -242,6 +242,13 @@ class Order:
     def set_is_from_this_octobot(self, is_from_this_octobot):
         self.is_from_this_octobot = is_from_this_octobot
 
+    def get_string_info(self):
+        return (f"{self.get_order_symbol()} | "
+                f"{self.get_order_type()} | "
+                f"Price : {self.get_origin_price()} | "
+                f"Quantity : {self.get_origin_quantity()} | "
+                f"Status : {self.get_status()}")
+
     def get_taker_or_maker(self):
         if self.order_type == SellMarketOrder or self.order_type == BuyMarketOrder:
             # always true
