@@ -1,32 +1,40 @@
 {% import 'components/config/editable_config.html' as m_editable_config %}
 {% macro config_service_card(config, service_name, service, add_class='', no_select=False, default_values=False) -%}
-    {% set service_requirements = service.REQUIRED_CONFIG %}
+    {% set service_config_fields = service.CONFIG_DEFAULT_VALUE %}
 
     <!-- Card -->
     <div class="card mb-4 {{add_class}} config-card">
 
-        <div class="card-header"><h4>{{service_name}}</h4></div>
+        <div class="card-header">
+            <h4>
+                {{service_name}}
+                <a class="float-right" target="_blank" rel="noopener noreferrer" href="{{service.HELP_PAGE}}">
+                    <i class="fa fa-question"></i>
+                </a>
+            </h4>
+        </div>
 
         <!--Card image-->
         <div class="view overlay">
-          <!--{{ service_name }}-->
+            <!--{{ service_name }}-->
         </div>
 
         <!--Card content-->
         <div class="card-body" name="{{service_name}}" config-key="services_{{service_name}}">
 
             <p class="card-text api">
-                {% for req in service_requirements %}
-                    {{ m_editable_config.editable_key(  service_requirements if default_values else config[service_name],
+                {% for req in service_config_fields %}
+                    {{ m_editable_config.editable_key(  service_config_fields if (default_values or req not in config[service_name]) else config[service_name],
                                                         req,
                                                         "services_" + service_name + "_" + req,
                                                         "global_config",
-                                                        service_requirements[req] if default_values else config[service_name][req],
-                                                        service_requirements[req] if default_values else config[service_name][req],
-                                                        suggestions=service_requirements[req] if default_values else config[service_name][req],
+                                                        service_config_fields[req] if default_values else config[service_name][req],
+                                                        service_config_fields[req] if default_values else config[service_name][req],
+                                                        suggestions=service_config_fields[req] if default_values else config[service_name][req],
                                                         no_select=no_select,
                                                         number_step=1,
-                                                        force_title=True)
+                                                        force_title=True,
+                                                        tooltip=service.CONFIG_FIELDS_DESCRIPTION[req])
                     }}
                 {% endfor %}
             </p>
