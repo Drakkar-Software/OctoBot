@@ -166,11 +166,7 @@ class Trader(Initializable):
                      new_order.get_status() != OrderStatus.PARTIALLY_FILLED):
                 is_to_keep = False
 
-        self.logger.info(f"{title} : {new_order.get_order_symbol()} | "
-                         f"{new_order.get_order_type()} | "
-                         f"Price : {new_order.get_origin_price()} | "
-                         f"Quantity : {new_order.get_origin_quantity()} | "
-                         f"Status : {new_order.get_status()} "
+        self.logger.info(f"{title} : {new_order.get_string_info()} "
                          f"{'' if is_to_keep else ': will be archived in trades history if not already'}")
 
         if is_to_keep:
