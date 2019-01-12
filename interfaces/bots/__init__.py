@@ -13,10 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from tools.logging.logging_util import get_logger
 
-from .service_creator import *
-from .gmail_service import *
-from .reddit_service import *
-from .telegram_service import *
-from .twitter_service import *
-from .web_service import *
+LOGGER = get_logger(__name__)
+EOL = "\n"
+NO_TRADER_MESSAGE = "No trader is activated in my config/config.json file.\n" \
+                    "See https://github.com/Drakkar-Software/OctoBot/wiki if you need help with my configuration."
+NO_CURRENCIES_MESSAGE = "No cryptocurrencies are in my config/config.json file.\n" \
+                        "See https://github.com/Drakkar-Software/OctoBot/wiki/Configuration#cryptocurrencies " \
+                        "if you need help with my cryptocurrencies configuration."
+UNAUTHORIZED_USER_MESSAGE = "Hello, I dont talk to strangers."
