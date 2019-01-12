@@ -39,7 +39,7 @@ class TelegramService(AbstractService):
     CONFIG_DEFAULT_VALUE = {
         CHAT_ID: "",
         CONFIG_TOKEN: "",
-        CONFIG_USERNAMES_WHITELIST: [""],
+        CONFIG_USERNAMES_WHITELIST: [],
     }
     HELP_PAGE = "https://github.com/Drakkar-Software/OctoBot/wiki/Telegram-interface#telegram-interface"
 
