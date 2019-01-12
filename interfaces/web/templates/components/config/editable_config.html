@@ -36,7 +36,7 @@
 {% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title, tooltip) -%}
     {{ key }} : <br>
     {% for new_key in config[key] %}
-        {{  editable_key( config[key],
+        &emsp;{{  editable_key( config[key],
                             new_key,
                             config_key + "_" + new_key,
                             config_type,
