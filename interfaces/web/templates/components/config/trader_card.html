@@ -1,9 +1,16 @@
 {% import 'components/config/editable_config.html' as m_editable_config %}
-{% macro config_trader_card(config, config_name, trader, add_class='') -%}
+{% macro config_trader_card(config, config_name, trader, add_class='', link='') -%}
     <!-- Card -->
     <div class="card mb-4 {{add_class}} config-card">
 
-        <div class="card-header"><h4>{{ trader }}</h4></div>
+        <div class="card-header">
+            <h4>
+                {{trader}}
+                <a class="float-right" target="_blank" rel="noopener noreferrer" href="{{link}}">
+                    <i class="fa fa-question"></i>
+                </a>
+            </h4>
+        </div>
 
         <!--Card content-->
         <div class="card-body">

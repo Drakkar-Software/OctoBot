@@ -69,7 +69,13 @@
     <!--Panel Evaluators-->
     <div class="tab-pane fade in show active config-root" id="panelEvaluators" role="tabpanel"><br>
         <div class="card">
-            <div class="card-header"><h2>Trading modes</h2></div>
+            <div class="card-header">
+                <h2>Trading modes
+                    <a class="float-right" target="_blank" rel="noopener noreferrer" href="https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot">
+                        <i class="fa fa-question"></i>
+                    </a>
+                </h2>
+            </div>
             <div class="card-body">
                 <div class="row config-container" id="trading-modes-config-root">
                     {% for evaluator_name, info in strategy_config["trading-modes"].items() %}
@@ -97,7 +103,13 @@
     <!--Panel Exchanges-->
     <div class="tab-pane fade config-root" id="panelExchanges" role="tabpanel"><br>
         <div class="card">
-            <div class="card-header"><h2>Exchanges</h2></div>
+            <div class="card-header">
+                <h2>Exchanges
+                    <a class="float-right" target="_blank" rel="noopener noreferrer" href="https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges#exchanges">
+                        <i class="fa fa-question"></i>
+                    </a>
+                </h2>
+            </div>
             <div class="card-body deck-container">
                 <div class="card">
                     <div class="card-body">Add a new exchange :
@@ -128,10 +140,10 @@
                  <!-- Card deck -->
                 <div class="card-deck config-container">
                     <span class="col-lg-12">
-                        {{ m_config_trader_card.config_trader_card(config_trading, "trading", "Trading settings") }}
+                        {{ m_config_trader_card.config_trader_card(config_trading, "trading", "Trading settings", link="https://github.com/Drakkar-Software/OctoBot/wiki/Trader#trading-settings") }}
                     </span>
-                    {{ m_config_trader_card.config_trader_card(config_trader, "trader", "Trader") }}
-                    {{ m_config_trader_card.config_trader_card(config_trader_simulator, "trader-simulator", "Trader simulator") }}
+                    {{ m_config_trader_card.config_trader_card(config_trader, "trader", "Trader", link="https://github.com/Drakkar-Software/OctoBot/wiki/Trader#trader") }}
+                    {{ m_config_trader_card.config_trader_card(config_trader_simulator, "trader-simulator", "Trader simulator", link="https://github.com/Drakkar-Software/OctoBot/wiki/Simulator#simulator") }}
                 </div>
             </div>
         </div>
@@ -140,7 +152,14 @@
     <!--Panel Notifications-->
     <div class="tab-pane fade config-root" id="panelNotifications" role="tabpanel"><br>
         <div class="card">
-            <div class="card-header"><h2>Notifications</h2></div>
+            <div class="card-header">
+                <h2>
+                    Notifications
+                    <a class="float-right" target="_blank" rel="noopener noreferrer" href="https://github.com/Drakkar-Software/OctoBot/wiki/Notifications#notifications">
+                        <i class="fa fa-question"></i>
+                    </a>
+                </h2>
+            </div>
             <div class="card-body deck-container">
                 <!-- Card deck -->
                 <div class="card-deck config-container">
