@@ -21,9 +21,9 @@ from enum import Enum
 
 from config import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
-    CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE
+    CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE, CONFIG_DISCORD
 from interfaces.web import add_notification
-from services import TwitterService, TelegramService, WebService
+from services import TwitterService, TelegramService, WebService, DiscordService
 from services.gmail_service import GmailService
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.trades_manager import TradesManager
@@ -61,6 +61,9 @@ class Notification:
 
             # telegram
             self.telegram_notification_factory(message)
+
+            # discord
+            self.discord_notification_factory(message)
         except Exception as e:
             self.logger.error(f"Failed to notify all : {e}")
 
@@ -91,6 +94,21 @@ class Notification:
                 self.logger.info("Telegram message sent")
         else:
             self.logger.debug("Telegram disabled")
+
+    def discord_notification_available(self, key=None):
+        if self.enabled(key) and DiscordService.get_name() in self.notification_type:
+            if DiscordService.is_setup_correctly(self.config):
+                return True
+        return False
+
+    def discord_notification_factory(self, message):
+        if self.discord_notification_available():
+            discord_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD][CONFIG_SERVICE_INSTANCE]
+            result = discord_service.send_message(message)
+            if result:
+                self.logger.info("Discord message sent")
+        else:
+            self.logger.debug("Discord disabled")
 
     def twitter_notification_available(self, key=None):
         return self.enabled(key) and \
@@ -153,6 +171,10 @@ class Notification:
         if self.telegram_notification_available(notification_type):
             self.telegram_notification_factory(content)
 
+    def send_discord_notification_if_necessary(self, content, notification_type=None):
+        if self.discord_notification_available(notification_type):
+            self.discord_notification_factory(content)
+
     def send_gmail_notification_if_necessary(self, subject, mail, notification_type=None):
         if self.gmail_notification_available(notification_type):
             self.gmail_notification_factory(subject, mail)
@@ -171,6 +193,8 @@ class EvaluatorNotification(Notification):
 
         self.send_web_notification_if_necessary(InterfaceLevel.INFO, "STATE CHANGED", notify_content,
                                                 CONFIG_NOTIFICATION_PRICE_ALERTS)
+
+        self.send_discord_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 

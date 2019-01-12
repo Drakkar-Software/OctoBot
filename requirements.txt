@@ -13,6 +13,9 @@ python-telegram-bot
 # Twitter
 Python-Twitter
 
+# Discord
+discord.py
+
 # Web
 flask
 
