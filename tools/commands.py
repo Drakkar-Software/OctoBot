@@ -84,6 +84,7 @@ class Commands:
         try:
             loop = asyncio.get_event_loop()
             # try to init
+            await bot.create_services()
             await bot.create_exchange_traders()
             bot.create_evaluation_tasks()
 
