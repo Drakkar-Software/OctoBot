@@ -75,14 +75,18 @@ class AbstractTradingModeCreator:
     """
     Checks and adapts the quantity and price of the order to ensure it's exchange compliant:
     - are the quantity and price of the order compliant with the exchange's number of digits requirement
-        => otherwise quantity and price will be truncated accordingly
-    - is the price of the currency compliant with the exchange's price interval for this currency
-        => otherwise order is impossible => returns empty list
+        => otherwise quantity will be truncated accordingly
+    - is the quantity valid
     - are the order total price and quantity superior or equal to the exchange's minimum order requirement
+        => otherwise order is impossible => returns empty list
+    - if total cost data are unavailable: 
+    - is the price of the currency compliant with the exchange's price interval for this currency
         => otherwise order is impossible => returns empty list
     - are the order total price and quantity inferior or equal to the exchange's maximum order requirement
         => otherwise order is impossible as is => split order into smaller ones and returns the list
     => returns the quantity and price list of possible order(s)
+    - if exchange symbol data are not enough
+        => try fixing exchange data using ExchangeMarketStatusFixer are start again (once only)
     """
 
     def check_and_adapt_order_details_if_necessary(self, quantity, price, symbol_market, fixed_symbol_data=False):
