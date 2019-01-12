@@ -61,7 +61,7 @@ def profitability():
         profitability_data["bot_real_profitability"] = \
             PrettyPrinter.round_with_decimal_count(real_percent_profitability, profitability_digits)
         profitability_data["real_no_trade_profitability"] = \
-            PrettyPrinter.round_with_decimal_count(-real_no_trade_profitability, profitability_digits)
+            PrettyPrinter.round_with_decimal_count(real_no_trade_profitability, profitability_digits)
     if has_simulated_trader:
         profitability_data["bot_simulated_profitability"] = \
             PrettyPrinter.round_with_decimal_count(simulated_percent_profitability, profitability_digits)
