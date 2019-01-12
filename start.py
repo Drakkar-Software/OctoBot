@@ -123,9 +123,11 @@ def start_octobot(starting_args):
                     # In those cases load OctoBot
                     from octobot import OctoBot
                     from interfaces.bots.telegram.bot import TelegramApp
+                    from interfaces.bots.discord.bot import DiscordApp
                     from services import WebService
 
                     TelegramApp.enable(config, starting_args.telegram)
+                    DiscordApp.enable(config, starting_args.discord)
                     WebService.enable(config, not starting_args.no_web)
 
                     update_config_with_args(starting_args, config)
@@ -192,6 +194,8 @@ if __name__ == '__main__':
     parser.add_argument('-ng', '--no_gui', help="Don't open gui interface",
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start telegram command handler',
+                        action='store_true')
+    parser.add_argument('-dd', '--discord', help='Start discord command handler',
                         action='store_true')
     parser.add_argument('--encrypter', help='Start the exchange api keys encrypter',
                         action='store_true')

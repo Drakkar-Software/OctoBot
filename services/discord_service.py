@@ -13,13 +13,18 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
 
 import discord
-import asyncio
 
 from config import CONFIG_DISCORD, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES
 from interfaces.bots.discord import DISCORD_API
 from services.abstract_service import *
+
+try:
+    create_task = asyncio.ensure_future
+except AttributeError:
+    create_task = getattr(asyncio, "async")  # asyncio.async
 
 
 class DiscordService(AbstractService):
@@ -36,7 +41,11 @@ class DiscordService(AbstractService):
                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD]
 
     async def prepare(self):
-        self.discord_client = DISCORD_API.run(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD]["token"])
+        # loop.run_until_complete(DISCORD_API.login(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD]["token"]))
+        # await asyncio.create_task(DISCORD_API.login(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD]["token"]))
+        # self.discord_client = DISCORD_API.start(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD]["token"])
+        # await asyncio.create_task(DISCORD_API.connect())
+        await DISCORD_API.start(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD]["token"])
         self.discord_channel = discord.Object(id=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD]["channel_id"])
         await DISCORD_API.wait_until_ready()
 
