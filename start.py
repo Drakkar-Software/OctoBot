@@ -122,11 +122,10 @@ def start_octobot(starting_args):
 
                     # In those cases load OctoBot
                     from octobot import OctoBot
-                    from interfaces.telegram.bot import TelegramApp
+                    from interfaces.bots.telegram.bot import TelegramApp
                     from services import WebService
 
                     TelegramApp.enable(config, starting_args.telegram)
-
                     WebService.enable(config, not starting_args.no_web)
 
                     update_config_with_args(starting_args, config)
