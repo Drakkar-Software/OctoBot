@@ -372,7 +372,7 @@ class ExchangeSimulator(AbstractExchange):
         return {
             symbol: {
                 "symbol": symbol,
-                ExchangeConstantsTickersColumns.LAST.value: self.get_price_ticker(symbol)
+                ExchangeConstantsTickersColumns.LAST.value: await self.get_price_ticker(symbol)
             }
             for symbol in self.symbols
         }
