@@ -25,7 +25,23 @@ from tools.logging.logging_util import set_logging_level
 
 
 class TelegramService(AbstractService):
-    REQUIRED_CONFIG = {"chat-id": "", "token": "", CONFIG_USERNAMES_WHITELIST: []}
+    CHAT_ID = "chat-id"
+
+    REQUIRED_CONFIG = [CHAT_ID, CONFIG_TOKEN]
+
+    # Used in configuration interfaces
+    CONFIG_FIELDS_DESCRIPTION = {
+        CHAT_ID: "ID of your chat.",
+        CONFIG_TOKEN: "Token given by 'botfather'.",
+        CONFIG_USERNAMES_WHITELIST: "List of telegram usernames allowed to talk to your OctoBot. "
+                                    "No access restriction if left empty."
+    }
+    CONFIG_DEFAULT_VALUE = {
+        CHAT_ID: "",
+        CONFIG_TOKEN: "",
+        CONFIG_USERNAMES_WHITELIST: [""],
+    }
+    HELP_PAGE = "https://github.com/Drakkar-Software/OctoBot/wiki/Telegram-interface#telegram-interface"
 
     LOGGERS = ["telegram.bot", "telegram.ext.updater", "telegram.vendor.ptb_urllib3.urllib3.connectionpool"]
 
@@ -43,7 +59,7 @@ class TelegramService(AbstractService):
 
     async def prepare(self):
         if not self.telegram_api:
-            self.chat_id = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]["chat-id"]
+            self.chat_id = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][self.CHAT_ID]
             self.telegram_api = telegram.Bot(
                 token=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_TOKEN])
 

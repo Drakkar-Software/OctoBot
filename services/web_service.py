@@ -23,7 +23,16 @@ from services import AbstractService
 
 
 class WebService(AbstractService):
-    REQUIRED_CONFIG = {"port": 5000}
+    REQUIRED_CONFIG = [CONFIG_WEB_PORT]
+
+    # Used in configuration interfaces
+    CONFIG_FIELDS_DESCRIPTION = {
+        CONFIG_WEB_PORT: "Port to access your OctoBot web interface from."
+    }
+    CONFIG_DEFAULT_VALUE = {
+        CONFIG_WEB_PORT: 5000
+    }
+    HELP_PAGE = "https://github.com/Drakkar-Software/OctoBot/wiki/Web-interface#web-interface"
 
     BACKTESTING_ENABLED = True
 
