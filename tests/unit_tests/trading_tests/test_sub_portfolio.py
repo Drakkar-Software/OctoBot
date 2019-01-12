@@ -50,7 +50,7 @@ class TestSubPortfolio:
 
     async def test_load_portfolio(self):
         _, _, _, _, sub_portfolio_inst = await self.init_default()
-        sub_portfolio_inst._load_portfolio()
+        await sub_portfolio_inst._load_portfolio()
         assert sub_portfolio_inst.portfolio == {'BTC': {'available': 10 * self.DEFAULT_PERCENT,
                                                         'total': 10 * self.DEFAULT_PERCENT},
                                                 'USD': {'available': 1000 * self.DEFAULT_PERCENT,
