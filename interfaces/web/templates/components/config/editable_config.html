@@ -1,8 +1,13 @@
-{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="", no_select=False, number_step=0.01, force_title=False) -%}
+{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="", no_select=False, number_step=0.01, force_title=False, tooltip=None) -%}
+    <span
+        {% if tooltip is not none %}
+            data-toggle="tooltip" title="{{tooltip}}"
+        {% endif %}
+    >
         {% if config[key] is string %}
             {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] | is_dict %}
-            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title) }}
+            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title, tooltip) }}
         {% elif config[key] | is_list %}
             {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, force_title) }}
         {% elif config[key] | is_bool %}
@@ -12,6 +17,7 @@
         {% else %}
             {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% endif %}
+    </span>
 {%- endmacro %}
 
 {% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
@@ -27,10 +33,10 @@
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title) -%}
+{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title, tooltip) -%}
     {{ key }} : <br>
     {% for new_key in config[key] %}
-        &emsp;{{  editable_key( config[key],
+        {{  editable_key( config[key],
                             new_key,
                             config_key + "_" + new_key,
                             config_type,
@@ -39,7 +45,8 @@
                             suggestions,
                             no_select,
                             number_step,
-                            force_title)
+                            force_title,
+                            tooltip)
         }}
     {% endfor %}
 {%- endmacro %}
