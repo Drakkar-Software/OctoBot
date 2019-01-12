@@ -26,7 +26,7 @@ class ServiceCreator:
         return cls.__name__
 
     @staticmethod
-    def create_services(config, backtesting_enabled):
+    async def create_services(config, backtesting_enabled):
         logger = get_logger(ServiceCreator.get_name())
         for service_class in AbstractService.__subclasses__():
             service_instance = service_class()
@@ -35,10 +35,10 @@ class ServiceCreator:
                 service_instance.set_config(config)
                 if service_instance.has_required_configuration():
                     try:
-                        service_instance.prepare()
+                        await service_instance.prepare()
                         config[CONFIG_CATEGORY_SERVICES][service_instance.get_type()][CONFIG_SERVICE_INSTANCE] = \
                             service_instance
-                        if not service_instance.say_hello():
+                        if not await service_instance.say_hello():
                             logger.warning(f"{service_class.get_name()} initial checkup failed.")
                     except Exception as e:
                         logger.error(f"{service_class.get_name()} preparation produced the following error: {e}")

@@ -41,7 +41,7 @@ class TelegramService(AbstractService):
         return CONFIG_TELEGRAM in config[CONFIG_CATEGORY_SERVICES] \
                 and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]
 
-    def prepare(self):
+    async def prepare(self):
         if not self.telegram_api:
             self.chat_id = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]["chat-id"]
             self.telegram_api = telegram.Bot(

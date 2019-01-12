@@ -43,7 +43,7 @@ class TwitterService(AbstractService):
     def get_history(self, user_id):
         return self.twitter_api.GetUserTimeline(user_id=user_id)
 
-    def prepare(self):
+    async def prepare(self):
         if not self.twitter_api:
             self.twitter_api = twitter.Api(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-key"],
                                            self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-secret"],

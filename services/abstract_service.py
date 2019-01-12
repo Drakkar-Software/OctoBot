@@ -84,7 +84,7 @@ class AbstractService:
 
     # Called after service setup
     @abstractmethod
-    def prepare(self) -> None:
+    async def prepare(self) -> None:
         raise NotImplementedError("prepare not implemented")
 
     # Called by say_hello after service is prepared, return relevant service information and a boolean for
@@ -99,7 +99,7 @@ class AbstractService:
     def log_connection_error_message(self, e):
         self.logger.error(f"{self.get_name()} is failing to connect, please check your internet connection: {e}")
 
-    def say_hello(self):
+    async def say_hello(self):
         message, success = self.get_successful_startup_message()
         if success:
             self.logger.info(message)

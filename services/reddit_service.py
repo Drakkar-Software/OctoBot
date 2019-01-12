@@ -32,7 +32,7 @@ class RedditService(AbstractService):
         return CONFIG_REDDIT in config[CONFIG_CATEGORY_SERVICES] \
                 and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]
 
-    def prepare(self):
+    async def prepare(self):
         if not self.reddit_api:
             self.reddit_api = \
                 praw.Reddit(client_id=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]["client-id"],

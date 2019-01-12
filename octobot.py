@@ -93,15 +93,8 @@ class OctoBot:
         # Backtesting
         self.backtesting_enabled = Backtesting.enabled(self.config)
 
-        # Add services to self.config[CONFIG_CATEGORY_SERVICES]
-        ServiceCreator.create_services(self.config, self.backtesting_enabled)
-
         # Notifier
         self.config[CONFIG_NOTIFICATION_INSTANCE] = Notification(self.config)
-
-        # Notify starting
-        if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
-            self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE, False)
 
         self.symbol_tasks_manager = {}
         self.exchange_traders = {}
@@ -118,6 +111,14 @@ class OctoBot:
         self.real_time_eval_tasks = []
 
         self.main_task_group = None
+
+    async def create_services(self):
+        # Add services to self.config[CONFIG_CATEGORY_SERVICES]
+        await ServiceCreator.create_services(self.config, self.backtesting_enabled)
+
+        # Notify starting
+        if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
+            self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE, False)
 
     async def create_exchange_traders(self, ignore_config=False):
         self.async_loop = asyncio.get_running_loop()
