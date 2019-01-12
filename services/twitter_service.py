@@ -25,7 +25,27 @@ from services.abstract_service import *
 
 
 class TwitterService(AbstractService):
-    REQUIRED_CONFIG = {"api-key": "", "api-secret": "", "access-token": "", "access-token-secret": ""}
+    API_KEY = "api-key"
+    API_SECRET = "api-secret"
+    ACCESS_TOKEN = "access-token"
+    ACCESS_TOKEN_SECRET = "access-token-secret"
+
+    REQUIRED_CONFIG = [API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET]
+
+    # Used in configuration interfaces
+    CONFIG_FIELDS_DESCRIPTION = {
+        API_KEY: "Your Twitter API key.",
+        API_SECRET: "Your Twitter API-secret key.",
+        ACCESS_TOKEN: "Your Twitter access token key.",
+        ACCESS_TOKEN_SECRET: "Your Twitter access token secret key."
+    }
+    CONFIG_DEFAULT_VALUE = {
+        API_KEY: "",
+        API_SECRET: "",
+        ACCESS_TOKEN: "",
+        ACCESS_TOKEN_SECRET: ""
+    }
+    HELP_PAGE = "https://github.com/Drakkar-Software/OctoBot/wiki/Twitter-interface#twitter-interface"
 
     def __init__(self):
         super().__init__()
@@ -45,11 +65,13 @@ class TwitterService(AbstractService):
 
     async def prepare(self):
         if not self.twitter_api:
-            self.twitter_api = twitter.Api(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-key"],
-                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["api-secret"],
-                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["access-token"],
-                                           self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]["access-token-secret"],
-                                           sleep_on_rate_limit=True)
+            self.twitter_api = twitter.Api(
+                self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][self.API_KEY],
+                self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][self.API_SECRET],
+                self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][self.ACCESS_TOKEN],
+                self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][self.ACCESS_TOKEN_SECRET],
+                sleep_on_rate_limit=True
+            )
 
     def get_type(self):
         return CONFIG_TWITTER

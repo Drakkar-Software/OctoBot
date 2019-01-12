@@ -25,6 +25,10 @@ class AbstractService:
     BACKTESTING_ENABLED = False
     REQUIRED_CONFIG = {}
 
+    # Used in configuration interfaces
+    CONFIG_FIELDS_DESCRIPTION = {}
+    CONFIG_DEFAULT_VALUE = {}
+
     def __init__(self):
         super().__init__()
         self.logger = None
