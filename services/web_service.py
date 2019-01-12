@@ -52,7 +52,7 @@ class WebService(AbstractService):
     def get_type(self) -> None:
         return CONFIG_WEB
 
-    def prepare(self) -> None:
+    async def prepare(self) -> None:
         self.web_app = WebApp(self.config)
         self.web_app.start()
 
