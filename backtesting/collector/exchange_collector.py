@@ -14,18 +14,18 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
-import threading
+import asyncio
 import time
 
-from config import *
+from config import TimeFrames, CONFIG_DATA_COLLECTOR_PATH, DATA_COLLECTOR_REFRESHER_TIME, TimeFramesMinutes, \
+    MINUTE_TO_SECONDS
+from tools.logging.logging_util import get_logger
 from backtesting.collector.data_file_manager import build_file_name, write_data_file
 
 
-class ExchangeDataCollector(threading.Thread):
+class ExchangeDataCollector:
 
     def __init__(self, config, exchange, symbol=None):
-        super().__init__()
         self.config = config
         self.exchange = exchange
         self.symbols = self.exchange.get_exchange_manager().get_traded_pairs() if symbol is None else [symbol]
@@ -81,17 +81,17 @@ class ExchangeDataCollector(threading.Thread):
         write_data_file(file_name, self.file_contents[symbol])
         self.logger.info(f"{symbol} candles data saved in: {file_name}")
 
-    def _collect_symbols_data(self, now_time=None):
+    async def _collect_symbols_data(self, now_time=None):
         if now_time is None:
             now_time = time.time()
         for symbol in self.symbols:
             for time_frame in self.time_frames:
                 if now_time - self.time_frame_update[symbol][time_frame] \
                         >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                    result_df = self.exchange.get_symbol_prices(symbol,
-                                                                time_frame,
-                                                                limit=1,
-                                                                return_list=True)[0]
+                    result_df = (await self.exchange.get_symbol_prices(symbol,
+                                                                       time_frame,
+                                                                       limit=1,
+                                                                       return_list=True))[0]
 
                     self.file_contents[symbol][time_frame.value].append(result_df)
                     self._data_updated = True
@@ -103,14 +103,14 @@ class ExchangeDataCollector(threading.Thread):
                 self._data_updated = False
         return [file_name for file_name in self.file_names.values()]
 
-    def run(self):
-        self.load_available_data()
+    async def start(self):
+        await self.load_available_data()
         self.logger.info(f"Data Collector will now update this file from {self.exchange.get_name()} "
                          f"for each new time frame update...")
         while self.keep_running:
             now = time.time()
 
-            self._collect_symbols_data(now)
+            await self._collect_symbols_data(now)
 
             final_sleep = DATA_COLLECTOR_REFRESHER_TIME - (time.time() - now)
-            time.sleep(final_sleep if final_sleep >= 0 else 0)
+            await asyncio.sleep(final_sleep if final_sleep >= 0 else 0)
