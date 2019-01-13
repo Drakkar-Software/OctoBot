@@ -37,13 +37,14 @@ matrix:
 before_deploy:
   - python3 -m nltk.downloader -d $NLTK_DATA words
   - pyinstaller docs/delivery/start.spec
-  - mv dist/OctoBot dist/OctoBot_linux
+  - mv dist/launcher dist/launcher_$TRAVIS_OS_NAME
+  - shasum dist/launcher_$TRAVIS_OS_NAME
 
 deploy:
   provider: releases
   api_key:
     secure: BleYWO52UlS4M+jjx6YpXghthDH6xwP+WWiVOGTEWY0XmwL01Fo931hLIEmIuQ3Ipi9h/DWFgnmG+JcOztMkYc/uvz4O+96xd28fAByw/acJly7LJclOpDO9AJuzZdx+L/yPMtsp3IUG1LbP/RH69RJDaDIJAAz8pJh6D5b+LccL679d2duBSmSQ27W5qU9iRPhOcPGVRF7P/1143OjVZSo9WEHKh7RGC3KVY32HihlPxYaq8YAgXZ5a0OCQN1RZKmL8csvOXKLtkzphm+3OotKTLziX7OgE7CT0M4sVPzdskodgfxB1AmEJ1t6Bar5ouCx5ogdP5EEH+suj5OQRnMQXlao/HM2/9nC51Bqnib0oeEylyM0B+3++6wfUB7DwIns+znK8IhncZKTYdT7QZqLhasP64nV573KGpLBDfsvx3rpIxRypoZ4OTHmFEgC5nwszzF7yVeUwNt7CSPESwS4GA8l2PBe86VSUSeBaAj+awdHnNgjHpzYALBi0vemd+gmzOdT/gKsSfCI5CripgnoQT0kQG08Q2sU3GjKViQwvn3nqdKU9ttnVbJALcQXEr6J14I1AoV//Isd4Ubi0cdTFJsL3bvewQkGtdJkvkuerQhfnSc5jRZMkK2V6i8Lo0NOMKmd2QI3rgTae00hvu4CBBJ100mOmcLiq2wv8BVA=
-  file: dist/OctoBot_linux
+  file: dist/launcher_$TRAVIS_OS_NAME
   skip_cleanup: true
   name: Release - $TRAVIS_TAG
   on:
