@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
+import os
 from logging import WARNING
 from enum import Enum
 from typing import NewType, Any, Dict
@@ -527,9 +527,9 @@ class FeePropertyColumns(Enum):
     COST = "cost"  # fee amount
 
 
-class DeliveryPlatformsName(Enum):
-    WINDOWS = "windows"
-    LINUX = "linux"
+class PlatformsName(Enum):
+    WINDOWS = "nt"
+    LINUX = "posix"
     MAC = "mac"
 
 
@@ -538,3 +538,7 @@ WATCHED_SYMBOLS_TIME_FRAME = TimeFrames.ONE_HOUR
 CONFIG_WATCHED_SYMBOLS = "watched_symbols"
 
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='
+
+
+def get_os():
+    return PlatformsName(os.name)

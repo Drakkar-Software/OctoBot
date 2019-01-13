@@ -18,6 +18,8 @@ import logging
 import os
 import sys
 
+from config import PlatformsName, get_os
+
 MIN_PYTHON_VERSION = (3, 6)
 
 # check python version
@@ -33,3 +35,8 @@ if not current_version >= MIN_PYTHON_VERSION:
 sys.path.append(os.path.dirname(sys.executable))
 
 # if compatible version, can proceed with imports
+
+# check sudo rights
+if get_os() is not PlatformsName.WINDOWS and os.getuid() == 0:
+    logging.warning("OctoBot is started with admin / sudo rights that are not required, "
+                    "please check you starting command ")
