@@ -27,14 +27,14 @@ from tools.tentacle_manager.tentacle_manager import TentacleManager
 
 class Commands:
     @staticmethod
-    def data_collector(config, catch=False):
+    def data_collector(config, catch=True):
         data_collector_inst = None
         try:
             data_collector_inst = DataCollector(config)
-            data_collector_inst.join()
+            asyncio.run(data_collector_inst.start())
         except Exception as e:
             data_collector_inst.stop()
-            if not catch:
+            if catch:
                 raise e
 
     @staticmethod
