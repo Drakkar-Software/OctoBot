@@ -89,6 +89,26 @@ class AbstractTradingModeCreator:
         => try fixing exchange data using ExchangeMarketStatusFixer are start again (once only)
     """
 
+    def _check_cost(self, total_order_price, min_cost):
+        if total_order_price < min_cost:
+            if min_cost is None:
+                self.logger.error("Invalid min_cost from exchange")
+            return False
+        return True
+
+    @staticmethod
+    def _split_orders(total_order_price, max_cost, valid_quantity, max_quantity, price, quantity, symbol_market):
+        nb_orders_according_to_cost = total_order_price / max_cost
+        nb_orders_according_to_quantity = valid_quantity / max_quantity
+        if nb_orders_according_to_cost > nb_orders_according_to_quantity:
+            return AbstractTradingModeCreator._adapt_order_quantity_because_price(total_order_price,
+                                                                                  max_cost, price,
+                                                                                  symbol_market)
+        else:
+            return AbstractTradingModeCreator\
+                ._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
+                                                        quantity, price, symbol_market)
+
     def check_and_adapt_order_details_if_necessary(self, quantity, price, symbol_market, fixed_symbol_data=False):
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
 
@@ -120,26 +140,14 @@ class AbstractTradingModeCreator:
                 max_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value)
 
                 # check total_order_price not < min_cost
-                if total_order_price < min_cost:
-                    if min_cost is None or min_quantity is None:
-                        self.logger.error("Invalid min_cost or min_quantity from exchange")
-
-                    # invalid order
+                if not self._check_cost(total_order_price, min_cost):
                     return []
 
                 # check total_order_price not > max_cost and valid_quantity not > max_quantity
                 elif total_order_price > max_cost or valid_quantity > max_quantity:
                     # split quantity into smaller orders
-                    nb_orders_according_to_cost = total_order_price / max_cost
-                    nb_orders_according_to_quantity = valid_quantity / max_quantity
-                    if nb_orders_according_to_cost > nb_orders_according_to_quantity:
-                        return AbstractTradingModeCreator._adapt_order_quantity_because_price(total_order_price,
-                                                                                              max_cost, price,
-                                                                                              symbol_market)
-                    else:
-                        return AbstractTradingModeCreator\
-                            ._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
-                                                                    quantity, price, symbol_market)
+                    return AbstractTradingModeCreator._split_orders(total_order_price, max_cost, valid_quantity,
+                                                                    max_quantity, price, quantity, symbol_market)
 
                 else:
                     # valid order that can be handled wy the exchange
