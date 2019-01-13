@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
 
 from tools.logging.logging_util import get_logger
 
@@ -28,13 +29,11 @@ class DataCollector:
         self.config = config
         self.logger = get_logger(self.__class__.__name__)
 
-        self.exchange_data_collectors_threads = []
-
+        self.exchange_data_collectors = []
+        self.exchange_data_collectors_tasks = []
         self.config[CONFIG_TIME_FRAME] = []
 
-        if auto_start:
-            self.logger.info("Create data collectors...")
-            self.create_exchange_data_collectors()
+        self.auto_start = auto_start
 
     async def create_exchange_data_collectors(self):
         available_exchanges = ccxt.exchanges
@@ -52,8 +51,8 @@ class DataCollector:
                     self.logger.warning("{0} exchange not started (not enough symbols or timeframes)"
                                         .format(exchange_class_string))
                 else:
-                    exchange_data_collector.start()
-                    self.exchange_data_collectors_threads.append(exchange_data_collector)
+                    self.exchange_data_collectors.append(exchange_data_collector)
+                    self.exchange_data_collectors_tasks.append(exchange_data_collector.start())
             else:
                 self.logger.error("{0} exchange not found".format(exchange_class_string))
 
@@ -72,9 +71,12 @@ class DataCollector:
             raise e
 
     def stop(self):
-        for data_collector in self.exchange_data_collectors_threads:
+        for data_collector in self.exchange_data_collectors:
             data_collector.stop()
 
-    def join(self):
-        for data_collector in self.exchange_data_collectors_threads:
-            data_collector.join()
+    async def start(self):
+        if self.auto_start:
+            self.logger.info("Create data collectors...")
+            await self.create_exchange_data_collectors()
+
+        await asyncio.gather(*self.exchange_data_collectors_tasks)
