@@ -30,26 +30,35 @@ class TwitterService(AbstractService):
     ACCESS_TOKEN = "access-token"
     ACCESS_TOKEN_SECRET = "access-token-secret"
 
-    REQUIRED_CONFIG = [API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET]
-
-    # Used in configuration interfaces
-    CONFIG_FIELDS_DESCRIPTION = {
-        API_KEY: "Your Twitter API key.",
-        API_SECRET: "Your Twitter API-secret key.",
-        ACCESS_TOKEN: "Your Twitter access token key.",
-        ACCESS_TOKEN_SECRET: "Your Twitter access token secret key."
-    }
-    CONFIG_DEFAULT_VALUE = {
-        API_KEY: "",
-        API_SECRET: "",
-        ACCESS_TOKEN: "",
-        ACCESS_TOKEN_SECRET: ""
-    }
-    HELP_PAGE = "https://github.com/Drakkar-Software/OctoBot/wiki/Twitter-interface#twitter-interface"
-
     def __init__(self):
         super().__init__()
         self.twitter_api = None
+
+    @classmethod
+    def get_fields_description(cls):
+        return {
+            cls.API_KEY: "Your Twitter API key.",
+            cls.API_SECRET: "Your Twitter API-secret key.",
+            cls.ACCESS_TOKEN: "Your Twitter access token key.",
+            cls.ACCESS_TOKEN_SECRET: "Your Twitter access token secret key."
+        }
+
+    @classmethod
+    def get_default_value(cls):
+        return {
+            cls.API_KEY: "",
+            cls.API_SECRET: "",
+            cls.ACCESS_TOKEN: "",
+            cls.ACCESS_TOKEN_SECRET: ""
+        }
+
+    @classmethod
+    def get_required_config(cls):
+        return [cls.API_KEY, cls.API_SECRET, cls.ACCESS_TOKEN, cls.ACCESS_TOKEN_SECRET]
+
+    @classmethod
+    def get_help_page(cls) -> str:
+        return "https://github.com/Drakkar-Software/OctoBot/wiki/Twitter-interface#twitter-interface"
 
     @staticmethod
     def is_setup_correctly(config):

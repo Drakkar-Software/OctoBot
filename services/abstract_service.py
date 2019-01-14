@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from abc import *
+from abc import ABCMeta, abstractmethod
 
 from backtesting.backtesting import Backtesting
 
@@ -23,11 +23,6 @@ class AbstractService:
     __metaclass__ = ABCMeta
 
     BACKTESTING_ENABLED = False
-    REQUIRED_CONFIG = {}
-
-    # Used in configuration interfaces
-    CONFIG_FIELDS_DESCRIPTION = {}
-    CONFIG_DEFAULT_VALUE = {}
 
     def __init__(self):
         super().__init__()
@@ -38,6 +33,22 @@ class AbstractService:
     @classmethod
     def get_name(cls):
         return cls.__name__
+
+    @classmethod
+    def get_fields_description(cls):
+        return {}
+
+    @classmethod
+    def get_default_value(cls):
+        return {}
+
+    @classmethod
+    def get_required_config(cls):
+        return {}
+
+    @classmethod
+    def get_help_page(cls) -> str:
+        return ""
 
     # Returns true if all the service has an instance in config
     @staticmethod
@@ -98,7 +109,7 @@ class AbstractService:
         raise NotImplementedError("get_successful_startup_message not implemented")
 
     def check_required_config(self, config):
-        return all(key in config for key in self.REQUIRED_CONFIG)
+        return all(key in config for key in self.get_required_config())
 
     def log_connection_error_message(self, e):
         self.logger.error(f"{self.get_name()} is failing to connect, please check your internet connection: {e}")

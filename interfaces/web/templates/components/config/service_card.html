@@ -1,6 +1,6 @@
 {% import 'components/config/editable_config.html' as m_editable_config %}
 {% macro config_service_card(config, service_name, service, add_class='', no_select=False, default_values=False) -%}
-    {% set service_config_fields = service.CONFIG_DEFAULT_VALUE %}
+    {% set service_config_fields = service.get_default_value() %}
 
     <!-- Card -->
     <div class="card mb-4 {{add_class}} config-card">
@@ -8,7 +8,7 @@
         <div class="card-header">
             <h4>
                 {{service_name}}
-                <a class="float-right" target="_blank" rel="noopener noreferrer" href="{{service.HELP_PAGE}}">
+                <a class="float-right" target="_blank" rel="noopener noreferrer" href="{{service.get_help_page()}}">
                     <i class="fa fa-question"></i>
                 </a>
             </h4>
@@ -34,7 +34,7 @@
                                                         no_select=no_select,
                                                         number_step=1,
                                                         force_title=True,
-                                                        tooltip=service.CONFIG_FIELDS_DESCRIPTION[req])
+                                                        tooltip=service.get_fields_description()[req])
                     }}
                 {% endfor %}
             </p>

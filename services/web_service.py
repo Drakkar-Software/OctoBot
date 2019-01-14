@@ -23,22 +23,31 @@ from services import AbstractService
 
 
 class WebService(AbstractService):
-    REQUIRED_CONFIG = [CONFIG_WEB_PORT]
-
-    # Used in configuration interfaces
-    CONFIG_FIELDS_DESCRIPTION = {
-        CONFIG_WEB_PORT: "Port to access your OctoBot web interface from."
-    }
-    CONFIG_DEFAULT_VALUE = {
-        CONFIG_WEB_PORT: 5000
-    }
-    HELP_PAGE = "https://github.com/Drakkar-Software/OctoBot/wiki/Web-interface#web-interface"
-
     BACKTESTING_ENABLED = True
 
     def __init__(self):
         super().__init__()
         self.web_app = None
+
+    @classmethod
+    def get_fields_description(cls):
+        return {
+            CONFIG_WEB_PORT: "Port to access your OctoBot web interface from."
+        }
+
+    @classmethod
+    def get_default_value(cls):
+        return {
+            CONFIG_WEB_PORT: 5000
+        }
+
+    @classmethod
+    def get_required_config(cls):
+        return [CONFIG_WEB_PORT]
+
+    @classmethod
+    def get_help_page(cls) -> str:
+        return "https://github.com/Drakkar-Software/OctoBot/wiki/Web-interface#web-interface"
 
     @staticmethod
     def is_setup_correctly(config):
