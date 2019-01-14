@@ -14,8 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
-import pprint
 from abc import ABCMeta
 from enum import Enum
 
@@ -23,9 +21,9 @@ from config import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
     CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE
 from interfaces.web import add_notification
-from services import TwitterService, TelegramService, WebService
+from services import TwitterService, TelegramService, WebService, NotifierServiceFactory
+from tools.logging.logging_util import get_logger
 from tools.pretty_printer import PrettyPrinter
-from trading.trader.trades_manager import TradesManager
 
 
 class Notification:
@@ -52,6 +50,10 @@ class Notification:
 
     def notify_with_all(self, message, error_on_failure=True):
         try:
+            # notifier
+            for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
+                self.notifier_notification_factory(notifier, message)
+
             # twitter
             self.twitter_notification_factory(message, error_on_failure)
 
@@ -59,6 +61,21 @@ class Notification:
             self.telegram_notification_factory(message)
         except Exception as e:
             self.logger.error(f"Failed to notify all : {e}")
+
+    def notifier_notification_available(self, notifier, key=None):
+        return self.enabled(key) and \
+               notifier.get_name() in self.notification_type and \
+               notifier.is_setup_correctly(self.config)
+
+    def notifier_notification_factory(self, notifier, message):
+        if self.notifier_notification_available(notifier):
+            result = notifier.notify(message)
+            if not result.errors:
+                self.logger.info("Notifier message sent")
+            else:
+                self.logger.warning(f"Notifier message failed : {result.errors[-1]}")
+        else:
+            self.logger.debug("Notifier disabled")
 
     def telegram_notification_available(self, key=None):
         return self.enabled(key) and \
@@ -135,6 +152,11 @@ class Notification:
         if self.telegram_notification_available(notification_type):
             self.telegram_notification_factory(content)
 
+    def send_notifier_notification_if_necessary(self, content, notification_type=None):
+        for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
+            if self.notifier_notification_available(notifier, notification_type):
+                self.notifier_notification_factory(notifier, content)
+
 
 class EvaluatorNotification(Notification):
     def __init__(self, config):
@@ -149,6 +171,8 @@ class EvaluatorNotification(Notification):
 
         self.send_web_notification_if_necessary(InterfaceLevel.INFO, "STATE CHANGED", notify_content,
                                                 CONFIG_NOTIFICATION_PRICE_ALERTS)
+
+        self.send_notifier_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 
@@ -168,6 +192,8 @@ class EvaluatorNotification(Notification):
 
         self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
                                                 CONFIG_NOTIFICATION_PRICE_ALERTS)
+
+        self.send_notifier_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 
@@ -197,6 +223,8 @@ class OrdersNotification(Notification):
 
             self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
                                                     CONFIG_NOTIFICATION_TRADES)
+
+            self.send_notifier_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
     def notify_end(self,
                    order_filled,
@@ -228,7 +256,7 @@ class OrdersNotification(Notification):
         content = ""
         if order_filled is not None:
             content += f"\n{order_filled.trader.trader_type_str}Order(s) filled : " \
-                       f"\n- {PrettyPrinter.open_order_pretty_printer(order_filled)}"
+                f"\n- {PrettyPrinter.open_order_pretty_printer(order_filled)}"
 
         if orders_canceled is not None and orders_canceled:
             content += f"\n{orders_canceled[0].trader.trader_type_str}Order(s) canceled :"
@@ -237,11 +265,11 @@ class OrdersNotification(Notification):
 
         if trade_profitability is not None and profitability:
             content += f"\n\nTrade profitability : {'+' if trade_profitability >= 0 else ''}" \
-                       f"{round(trade_profitability * 100, 4)}%"
+                f"{round(trade_profitability * 100, 4)}%"
 
         if portfolio_profitability is not None and profitability:
             content += f"\nPortfolio profitability : {round(portfolio_profitability, 4)}% " \
-                       f"{'+' if portfolio_diff >= 0 else ''}{round(portfolio_diff, 4)}%"
+                f"{'+' if portfolio_diff >= 0 else ''}{round(portfolio_diff, 4)}%"
 
         return content
 

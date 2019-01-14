@@ -44,7 +44,8 @@ class WebApp(threading.Thread):
         self.app.run(host=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP],
                      port=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT],
                      debug=False,
-                     threaded=True)
+                     threaded=True,
+                     use_reloader=False)
 
     def stop(self):
         # func = request.environ.get('werkzeug.server.shutdown')

@@ -14,8 +14,10 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from config import *
-from services.abstract_service import *
+from config import CONFIG_CATEGORY_SERVICES, CONFIG_SERVICE_INSTANCE, CONFIG_NOTIFIER
+from services.notifier_service import NotifierService
+from services.abstract_service import AbstractService
+from services.notifier_service_factory import NotifierServiceFactory
 from tools.logging.logging_util import get_logger
 
 
@@ -28,25 +30,47 @@ class ServiceCreator:
     @staticmethod
     async def create_services(config, backtesting_enabled):
         logger = get_logger(ServiceCreator.get_name())
+        await ServiceCreator.create_services_from_abstract(logger, config, backtesting_enabled)
+        await ServiceCreator.create_notifier_services(logger, config, backtesting_enabled)
+
+    @staticmethod
+    async def create_notifier_services(logger, config, backtesting_enabled):
+        for notifier_service_class in NotifierServiceFactory(config).create_services():
+            await ServiceCreator.create_service(logger, notifier_service_class, config, backtesting_enabled)
+
+    @staticmethod
+    async def create_services_from_abstract(logger, config, backtesting_enabled):
         for service_class in AbstractService.__subclasses__():
-            service_instance = service_class()
-            if service_instance.get_is_enabled() and (not backtesting_enabled or service_instance.BACKTESTING_ENABLED):
-                service_instance.set_logger(get_logger(service_class.get_name()))
-                service_instance.set_config(config)
-                if service_instance.has_required_configuration():
-                    try:
-                        await service_instance.prepare()
+            if service_class is not NotifierService:
+                await ServiceCreator.create_service(logger, service_class, config, backtesting_enabled)
+
+    @staticmethod
+    async def create_service(logger, service_class, config, backtesting_enabled):
+        service_instance = service_class()
+        if service_instance.get_is_enabled() and (not backtesting_enabled or service_instance.BACKTESTING_ENABLED):
+            service_instance.set_logger(get_logger(service_class.get_name()))
+            service_instance.set_config(config)
+            if service_instance.has_required_configuration():
+                try:
+                    await service_instance.prepare()
+
+                    # notifier
+                    if hasattr(service_class, "PUSHOVER"):
+                        config[CONFIG_CATEGORY_SERVICES][CONFIG_NOTIFIER][CONFIG_SERVICE_INSTANCE] \
+                            .append(service_instance)
+                    else:
                         config[CONFIG_CATEGORY_SERVICES][service_instance.get_type()][CONFIG_SERVICE_INSTANCE] = \
                             service_instance
-                        if not await service_instance.say_hello():
-                            logger.warning(f"{service_class.get_name()} initial checkup failed.")
-                    except Exception as e:
-                        logger.error(f"{service_class.get_name()} preparation produced the following error: {e}")
-                        logger.exception(e)
-                else:
-                    if service_instance.get_should_warn():
-                        logger.warning(f"{service_class.get_name()} can't be initialized: configuration is missing, "
-                                       f"wrong or incomplete !")
+
+                    if not await service_instance.say_hello():
+                        logger.warning(f"{service_class.get_name()} initial checkup failed.")
+                except Exception as e:
+                    logger.error(f"{service_class.get_name()} preparation produced the following error: {e}")
+                    logger.exception(e)
+            else:
+                if service_instance.get_should_warn():
+                    logger.warning(f"{service_class.get_name()} can't be initialized: configuration is missing, "
+                                   f"wrong or incomplete !")
 
     @staticmethod
     def get_service_instances(config):
