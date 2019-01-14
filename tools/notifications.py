@@ -19,12 +19,11 @@ import pprint
 from abc import ABCMeta
 from enum import Enum
 
-from config import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, CONFIG_GMAIL, \
+from config import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
     CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE
 from interfaces.web import add_notification
 from services import TwitterService, TelegramService, WebService
-from services.gmail_service import GmailService
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.trades_manager import TradesManager
 
@@ -53,9 +52,6 @@ class Notification:
 
     def notify_with_all(self, message, error_on_failure=True):
         try:
-            # gmail
-            self.gmail_notification_factory(message, message)
-
             # twitter
             self.twitter_notification_factory(message, error_on_failure)
 
@@ -63,20 +59,6 @@ class Notification:
             self.telegram_notification_factory(message)
         except Exception as e:
             self.logger.error(f"Failed to notify all : {e}")
-
-    def gmail_notification_available(self, key=None):
-        return self.enabled(key) and \
-               GmailService.get_name() in self.notification_type and \
-               GmailService.is_setup_correctly(self.config)
-
-    def gmail_notification_factory(self, subject, mail):
-        if self.gmail_notification_available():
-            gmail_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_GMAIL][CONFIG_SERVICE_INSTANCE]
-            result = gmail_service.send_mail(subject, mail)
-            if result:
-                self.logger.info("Mail sent")
-        else:
-            self.logger.debug("Mail disabled")
 
     def telegram_notification_available(self, key=None):
         return self.enabled(key) and \
@@ -153,10 +135,6 @@ class Notification:
         if self.telegram_notification_available(notification_type):
             self.telegram_notification_factory(content)
 
-    def send_gmail_notification_if_necessary(self, subject, mail, notification_type=None):
-        if self.gmail_notification_available(notification_type):
-            self.gmail_notification_factory(subject, mail)
-
 
 class EvaluatorNotification(Notification):
     def __init__(self, config):
@@ -176,21 +154,6 @@ class EvaluatorNotification(Notification):
 
     async def notify_alert(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
         title = f"OCTOBOT ALERT : {crypto_currency_evaluator.crypto_currency} / {result}"
-
-        if self.gmail_notification_available(CONFIG_NOTIFICATION_PRICE_ALERTS):
-            profitability, profitability_percent, _, _, _ = await trader.get_trades_manager().get_profitability()
-
-            self.gmail_notification_factory(
-                title,
-                "OCTOBOT ALERT : {0} / {1} \n {2} \n Current portfolio "
-                "profitability : {3} "
-                "{4} ({5}%)".format(
-                    crypto_currency_evaluator.crypto_currency,
-                    result,
-                    pprint.pformat(matrix),
-                    round(profitability, 2),
-                    TradesManager.get_reference_market(self.config),
-                    round(profitability_percent, 2)))
 
         alert_content = PrettyPrinter.cryptocurrency_alert(
             crypto_currency_evaluator.crypto_currency,
