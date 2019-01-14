@@ -32,10 +32,7 @@ matrix:
       script:
         - pytest -n 5 --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests tests/endurance_tests
       after_success:
-        - >
-          if [ "$TRAVIS_PULL_REQUEST" = "false" ];
-            bash coveralls;
-          fi
+        - if [[ $TRAVIS_PULL_REQUEST == 'false' ]]; then bash coveralls; fi
 
 before_deploy:
   - python3 -m nltk.downloader -d $NLTK_DATA words
