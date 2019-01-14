@@ -26,31 +26,40 @@ class RedditService(AbstractService):
     PASSWORD = "password"
     USERNAME = "username"
 
-    REQUIRED_CONFIG = [CLIENT_ID, CLIENT_SECRET, PASSWORD, USERNAME]
-
-    # Used in configuration interfaces
-    CONFIG_FIELDS_DESCRIPTION = {
-        CLIENT_ID: "Your client ID.",
-        CLIENT_SECRET: "Your client ID secret.",
-        PASSWORD: "Your Reddit username.",
-        USERNAME: "Your Reddit password."
-    }
-    CONFIG_DEFAULT_VALUE = {
-        CLIENT_ID: "",
-        CLIENT_SECRET: "",
-        PASSWORD: "",
-        USERNAME: ""
-    }
-    HELP_PAGE = "https://github.com/Drakkar-Software/OctoBot/wiki/Reddit-interface#reddit-interface"
-
     def __init__(self):
         super().__init__()
         self.reddit_api = None
 
+    @classmethod
+    def get_fields_description(cls):
+        return {
+            cls.CLIENT_ID: "Your client ID.",
+            cls.CLIENT_SECRET: "Your client ID secret.",
+            cls.PASSWORD: "Your Reddit username.",
+            cls.USERNAME: "Your Reddit password."
+        }
+
+    @classmethod
+    def get_default_value(cls):
+        return {
+            cls.CLIENT_ID: "",
+            cls.CLIENT_SECRET: "",
+            cls.PASSWORD: "",
+            cls.USERNAME: ""
+        }
+
+    @classmethod
+    def get_required_config(cls):
+        return [cls.CLIENT_ID, cls.CLIENT_SECRET, cls.PASSWORD, cls.USERNAME]
+
+    @classmethod
+    def get_help_page(cls) -> str:
+        return "https://github.com/Drakkar-Software/OctoBot/wiki/Reddit-interface#reddit-interface"
+
     @staticmethod
     def is_setup_correctly(config):
         return CONFIG_REDDIT in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]
+               and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]
 
     async def prepare(self):
         if not self.reddit_api:
@@ -74,4 +83,4 @@ class RedditService(AbstractService):
 
     def get_successful_startup_message(self):
         return f"Successfully initialized using {self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT][self.USERNAME]}" \
-               f" account.", True
+                   f" account.", True

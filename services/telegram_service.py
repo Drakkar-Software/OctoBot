@@ -27,22 +27,6 @@ from tools.logging.logging_util import set_logging_level
 class TelegramService(AbstractService):
     CHAT_ID = "chat-id"
 
-    REQUIRED_CONFIG = [CHAT_ID, CONFIG_TOKEN]
-
-    # Used in configuration interfaces
-    CONFIG_FIELDS_DESCRIPTION = {
-        CHAT_ID: "ID of your chat.",
-        CONFIG_TOKEN: "Token given by 'botfather'.",
-        CONFIG_USERNAMES_WHITELIST: "List of telegram usernames allowed to talk to your OctoBot. "
-                                    "No access restriction if left empty."
-    }
-    CONFIG_DEFAULT_VALUE = {
-        CHAT_ID: "",
-        CONFIG_TOKEN: "",
-        CONFIG_USERNAMES_WHITELIST: [],
-    }
-    HELP_PAGE = "https://github.com/Drakkar-Software/OctoBot/wiki/Telegram-interface#telegram-interface"
-
     LOGGERS = ["telegram.bot", "telegram.ext.updater", "telegram.vendor.ptb_urllib3.urllib3.connectionpool"]
 
     def __init__(self):
@@ -52,10 +36,35 @@ class TelegramService(AbstractService):
         self.telegram_app = None
         self.telegram_updater = None
 
+    @classmethod
+    def get_fields_description(cls):
+        return {
+            cls.CHAT_ID: "ID of your chat.",
+            CONFIG_TOKEN: "Token given by 'botfather'.",
+            CONFIG_USERNAMES_WHITELIST: "List of telegram usernames allowed to talk to your OctoBot. "
+                                            "No access restriction if left empty."
+        }
+
+    @classmethod
+    def get_default_value(cls):
+        return {
+            cls.CHAT_ID: "",
+            CONFIG_TOKEN: "",
+            CONFIG_USERNAMES_WHITELIST: [],
+        }
+
+    @classmethod
+    def get_required_config(cls):
+        return [cls.CHAT_ID, CONFIG_TOKEN]
+
+    @classmethod
+    def get_help_page(cls) -> str:
+        return "https://github.com/Drakkar-Software/OctoBot/wiki/Telegram-interface#telegram-interface"
+
     @staticmethod
     def is_setup_correctly(config):
         return CONFIG_TELEGRAM in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]
+               and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]
 
     async def prepare(self):
         if not self.telegram_api:
@@ -95,7 +104,7 @@ class TelegramService(AbstractService):
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
-               and CONFIG_TELEGRAM in self.config[CONFIG_CATEGORY_SERVICES]  \
+               and CONFIG_TELEGRAM in self.config[CONFIG_CATEGORY_SERVICES] \
                and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]) \
                and CONFIG_INTERFACES in self.config \
                and CONFIG_INTERFACES_TELEGRAM in self.config[CONFIG_INTERFACES] \

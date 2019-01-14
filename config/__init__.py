@@ -141,9 +141,6 @@ FORCE_ASYNCIO_DEBUG_OPTION = False
 CONFIG_CATEGORY_SERVICES = "services"
 CONFIG_SERVICE_INSTANCE = "service_instance"
 
-# gmail
-CONFIG_GMAIL = "gmail"
-
 # telegram
 CONFIG_TELEGRAM = "telegram"
 CONFIG_TOKEN = "token"
