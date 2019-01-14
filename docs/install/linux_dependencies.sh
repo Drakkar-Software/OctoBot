@@ -4,4 +4,4 @@ APPLICATION_DEPS="libxml2-dev libxslt1-dev libxslt-dev libjpeg-dev zlib1g-dev li
 PYTHON_DEPS="wget python3 python3-dev python3-pip python3-tk"
 ADDITIONAL_DEPS="git"
 
-apt update && apt install -qq -y --no-install-recommends $BUILD_DEPS $APPLICATION_DEPS $PYTHON_DEPS $ADDITIONAL_DEPS
+apt update && apt install -qq -y $BUILD_DEPS $APPLICATION_DEPS $PYTHON_DEPS $ADDITIONAL_DEPS
