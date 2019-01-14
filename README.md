@@ -44,7 +44,7 @@ OctoBot's installation is **very simple**... because **very documented** !
 - Click on "Update OctoBot"
 
 #### [With Docker](https://github.com/Drakkar-Software/OctoBot/wiki/With-Docker)
-`touch config.json && docker run -v $(pwd)/config.json:/bot/octobot/config.json -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot`
+`touch config.json && docker run -it -d --name MyAmazingOctobot -v $(pwd)/config.json:/bot/octobot/config.json -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot:beta`
 
 More details in [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation) and it's done !
 
