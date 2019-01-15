@@ -108,7 +108,7 @@ class TelegramService(AbstractService):
                and CONFIG_ENABLED_OPTION in self.config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM] \
                and self.config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION]
 
-    def send_message(self, content):
+    async def send_message(self, content):
         try:
             if content:
                 self.telegram_api.send_message(chat_id=self.chat_id, text=content)

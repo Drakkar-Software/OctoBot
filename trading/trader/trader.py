@@ -292,12 +292,12 @@ class Trader(Initializable):
             await self.update_open_orders(order.get_order_symbol())
 
         # notification
-        order.get_order_notifier().end(order_closed,
-                                       orders_canceled,
-                                       order.get_profitability(),
-                                       profitability_percent,
-                                       profitability_diff,
-                                       profitability_activated)
+        await order.get_order_notifier().end(order_closed,
+                                             orders_canceled,
+                                             order.get_profitability(),
+                                             profitability_percent,
+                                             profitability_diff,
+                                             profitability_activated)
 
     def get_open_orders(self):
         return self.order_manager.get_open_orders()

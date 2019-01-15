@@ -91,7 +91,7 @@ class NotifierService(AbstractService):
     async def prepare(self):
         pass
 
-    def notify(self, message):
+    async def notify(self, message):
         return self.notifier_provider.notify(message=message, subject=PROJECT_NOTIFICATION, **self.service_config)
 
     def get_successful_startup_message(self):

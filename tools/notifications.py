@@ -48,17 +48,17 @@ class Notification:
         else:
             return False
 
-    def notify_with_all(self, message, error_on_failure=True):
+    async def notify_with_all(self, message, error_on_failure=True):
         try:
             # notifier
             for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
-                self.notifier_notification_factory(notifier, message)
+                await self.notifier_notification_factory(notifier, message)
 
             # twitter
-            self.twitter_notification_factory(message, error_on_failure)
+            await self.twitter_notification_factory(message, error_on_failure)
 
             # telegram
-            self.telegram_notification_factory(message)
+            await self.telegram_notification_factory(message)
         except Exception as e:
             self.logger.error(f"Failed to notify all : {e}")
 
@@ -67,9 +67,9 @@ class Notification:
                notifier.get_type() in self.notification_type and \
                notifier.is_setup_correctly(self.config)
 
-    def notifier_notification_factory(self, notifier, message):
+    async def notifier_notification_factory(self, notifier, message):
         if self.notifier_notification_available(notifier):
-            result = notifier.notify(message)
+            result = await notifier.notify(message)
             if not result.errors:
                 self.logger.info(f"{notifier.get_provider_name()} notifier message sent")
             else:
@@ -84,10 +84,10 @@ class Notification:
                in self.notification_type and \
                TelegramService.is_setup_correctly(self.config)
 
-    def telegram_notification_factory(self, message):
+    async def telegram_notification_factory(self, message):
         if self.telegram_notification_available():
             telegram_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_SERVICE_INSTANCE]
-            result = telegram_service.send_message(message)
+            result = await telegram_service.send_message(message)
             if result:
                 self.logger.info("Telegram message sent")
         else:
@@ -100,10 +100,10 @@ class Notification:
                in self.notification_type and \
                TwitterService.is_setup_correctly(self.config)
 
-    def twitter_notification_factory(self, tweet, error_on_failure=True):
+    async def twitter_notification_factory(self, tweet, error_on_failure=True):
         if self.twitter_notification_available():
             twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
-            result = twitter_service.post(tweet, error_on_failure)
+            result = await twitter_service.post(tweet, error_on_failure)
             if result is not None:
                 self.logger.info("Twitter sent")
             return result
@@ -111,10 +111,10 @@ class Notification:
             self.logger.debug("Twitter notification disabled")
         return None
 
-    def twitter_response_factory(self, tweet_instance, tweet, error_on_failure=True):
+    async def twitter_response_factory(self, tweet_instance, tweet, error_on_failure=True):
         if self.twitter_notification_available():
             twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
-            result = twitter_service.respond(tweet_instance.id, tweet, error_on_failure)
+            result = await twitter_service.respond(tweet_instance.id, tweet, error_on_failure)
             if result is not None:
                 self.logger.info("Twitter sent")
             return result
@@ -127,39 +127,40 @@ class Notification:
                CONFIG_WEB in self.notification_type and \
                WebService.is_available(self.config)
 
-    def web_interface_notification_factory(self, level, title, message):
+    async def web_interface_notification_factory(self, level, title, message):
         if self.web_interface_notification_available():
-            add_notification(level, title, message)
+            await add_notification(level, title, message)
         else:
             self.logger.debug("Web interface notification disabled")
         return None
 
-    def send_twitter_notification_if_necessary(self, content, notification_type=None, error_on_failure=True):
+    async def send_twitter_notification_if_necessary(self, content, notification_type=None, error_on_failure=True):
         if self.twitter_notification_available(notification_type):
-            return self.twitter_notification_factory(content, error_on_failure)
+            return await self.twitter_notification_factory(content, error_on_failure)
         return None
 
-    def sent_twitter_reply_if_necessary(self, previous_notification, content, notification_type=None,
-                                        error_on_failure=True):
+    async def sent_twitter_reply_if_necessary(self, previous_notification, content,
+                                              notification_type=None,
+                                              error_on_failure=True):
         if self.twitter_notification_available(notification_type) \
                 and previous_notification is not None \
                 and previous_notification.get_tweet_instance() is not None:
             tweet_instance = previous_notification.get_tweet_instance()
 
-            self.twitter_response_factory(tweet_instance, content, error_on_failure)
+            await self.twitter_response_factory(tweet_instance, content, error_on_failure)
 
-    def send_web_notification_if_necessary(self, level, title, message, notification_type=None):
+    async def send_web_notification_if_necessary(self, level, title, message, notification_type=None):
         if self.web_interface_notification_available(notification_type):
-            self.web_interface_notification_factory(level, title, message)
+            await self.web_interface_notification_factory(level, title, message)
 
-    def send_telegram_notification_if_necessary(self, content, notification_type=None):
+    async def send_telegram_notification_if_necessary(self, content, notification_type=None):
         if self.telegram_notification_available(notification_type):
-            self.telegram_notification_factory(content)
+            await self.telegram_notification_factory(content)
 
-    def send_notifier_notification_if_necessary(self, content, notification_type=None):
+    async def send_notifier_notification_if_necessary(self, content, notification_type=None):
         for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
             if self.notifier_notification_available(notifier, notification_type):
-                self.notifier_notification_factory(notifier, content)
+                await self.notifier_notification_factory(notifier, content)
 
     def _service_instance_is_present(self, service_type):
         return service_type in self.config[CONFIG_CATEGORY_SERVICES] and \
@@ -171,16 +172,16 @@ class EvaluatorNotification(Notification):
         super().__init__(config)
         self.tweet_instance = None
 
-    def notify_state_changed(self, notify_content):
-        self.tweet_instance = self.send_twitter_notification_if_necessary(notify_content,
-                                                                          CONFIG_NOTIFICATION_PRICE_ALERTS)
+    async def notify_state_changed(self, notify_content):
+        self.tweet_instance = await self.send_twitter_notification_if_necessary(notify_content,
+                                                                                CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        self.send_telegram_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_telegram_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        self.send_web_notification_if_necessary(InterfaceLevel.INFO, "STATE CHANGED", notify_content,
-                                                CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_web_notification_if_necessary(InterfaceLevel.INFO, "STATE CHANGED", notify_content,
+                                                      CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        self.send_notifier_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_notifier_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 
@@ -193,15 +194,15 @@ class EvaluatorNotification(Notification):
             result,
             final_eval)
 
-        self.tweet_instance = self.send_twitter_notification_if_necessary(alert_content,
-                                                                          CONFIG_NOTIFICATION_PRICE_ALERTS)
+        self.tweet_instance = await self.send_twitter_notification_if_necessary(alert_content,
+                                                                                CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        self.send_telegram_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_telegram_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
-                                                CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
+                                                      CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        self.send_notifier_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_notifier_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 
@@ -214,7 +215,7 @@ class OrdersNotification(Notification):
         super().__init__(config)
         self.evaluator_notification = None
 
-    def notify_create(self, evaluator_notification, orders):
+    async def notify_create(self, evaluator_notification, orders):
         if orders:
             content = orders[0].trader.trader_type_str
             if evaluator_notification is not None:
@@ -225,34 +226,34 @@ class OrdersNotification(Notification):
             for order in orders:
                 content += f"\n- {PrettyPrinter.open_order_pretty_printer(order)}"
 
-            self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
+            await self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
 
-            self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
+            await self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
-            self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
-                                                    CONFIG_NOTIFICATION_TRADES)
+            await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
+                                                          CONFIG_NOTIFICATION_TRADES)
 
-            self.send_notifier_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
+            await self.send_notifier_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
-    def notify_end(self,
-                   order_filled,
-                   orders_canceled,
-                   trade_profitability,
-                   portfolio_profitability,
-                   portfolio_diff,
-                   profitability=False):
+    async def notify_end(self,
+                         order_filled,
+                         orders_canceled,
+                         trade_profitability,
+                         portfolio_profitability,
+                         portfolio_diff,
+                         profitability=False):
 
         title = "Order status updated"
 
         content = self._build_notification_content(order_filled, orders_canceled, trade_profitability,
                                                    portfolio_profitability, portfolio_diff, profitability)
 
-        self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
+        await self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
 
-        self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
+        await self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
-        self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
-                                                CONFIG_NOTIFICATION_TRADES)
+        await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
+                                                       CONFIG_NOTIFICATION_TRADES)
 
     @staticmethod
     def _build_notification_content(order_filled,
