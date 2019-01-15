@@ -27,11 +27,12 @@ from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CO
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
     CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION
-from interfaces.gui import main
+from interfaces.gui import app
 from tools.commands import Commands
 from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 from tools.tentacle_manager.tentacle_util import tentacles_arch_exists
+
 
 # Keep string '+' operator to ensure backward compatibility in this file
 
@@ -137,7 +138,7 @@ def start_octobot(starting_args):
 
                     if not starting_args.no_gui:
                         try:
-                            main.__init__(config)
+                            app.__init__(config)
                         except NameError as e:
                             logging.error("{0}, impossible to display GUI".format(e))
 
@@ -170,7 +171,10 @@ def start_octobot(starting_args):
         os._exit(-1)
 
 
-if __name__ == '__main__':
+def main(args=None):
+    if not args:
+        args = sys.argv[1:]
+
     parser = argparse.ArgumentParser(description='OctoBot')
     parser.add_argument('start', help='start the OctoBot',
                         action='store_true')
@@ -218,6 +222,10 @@ if __name__ == '__main__':
                                                            ' Warning: this process may take a long time.',
                         nargs='+')
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     start_octobot(args)
+
+
+if __name__ == '__main__':
+    main()
