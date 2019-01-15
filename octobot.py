@@ -118,7 +118,7 @@ class OctoBot:
 
         # Notify starting
         if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
-            self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE, False)
+            await self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE, False)
 
     async def create_exchange_traders(self, ignore_config=False):
         self.async_loop = asyncio.get_running_loop()
@@ -283,14 +283,16 @@ class OctoBot:
             await self.main_task_group
 
     def join_threads(self):
-
         for thread in self.dispatchers_list:
             thread.join()
 
     def stop_threads(self):
         # Notify stopping
         if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
-            self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE)
+            # To be improved with a full async implementation
+            # To be done : "asyncio.run" --> replaced by a simple await
+            # PR discussion : https://github.com/Drakkar-Software/OctoBot/pull/563#discussion_r248088266
+            asyncio.run(self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
 
         self.logger.info("Stopping threads ...")
 
