@@ -1,4 +1,5 @@
 # OctoBot [0.2.4-beta](https://github.com/Drakkar-Software/OctoBot/tree/dev/docs/CHANGELOG.md)
+[![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c83a127c42ba4a389ca86a92fba7c53c)](https://www.codacy.com/app/paul.bouquet/OctoBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Drakkar-Software/OctoBot&amp;utm_campaign=Badge_Grade) 
 [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/overview/dev) 
 [![Release](https://img.shields.io/github/downloads/Drakkar-Software/OctoBot/total.svg)](https://github.com/Drakkar-Software/OctoBot/releases)

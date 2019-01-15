@@ -7,5 +7,7 @@ pytest-xdist
 coverage
 coveralls
 
+twine
+
 nltk
 git+git://github.com/Drakkar-Software/pyinstaller@develop
