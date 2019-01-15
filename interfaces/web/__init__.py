@@ -89,7 +89,7 @@ def add_to_symbol_data_history(symbol, data, time_frame, force_data_reset=False)
                                                                          new_data), axis=1)
 
 
-def add_notification(level, title, message):
+async def add_notification(level, title, message):
     notifications.append({
         "Level": level.value,
         "Title": title,

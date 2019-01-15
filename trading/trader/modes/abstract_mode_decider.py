@@ -143,13 +143,13 @@ class AbstractTradingModeDecider:
                             except InsufficientFunds as e:
                                 self.logger.error(f"Failed to create order on second attempt : {e})")
 
-                    self._push_order_notification_if_possible(new_orders, evaluator_notification)
+                    await self._push_order_notification_if_possible(new_orders, evaluator_notification)
 
     @staticmethod
-    def _push_order_notification_if_possible(order_list, notification):
+    async def _push_order_notification_if_possible(order_list, notification):
         if order_list:
             for order in order_list:
-                order.get_order_notifier().notify(notification)
+                await order.get_order_notifier().notify(notification)
 
 
 class AbstractTradingModeDeciderWithBot(AbstractTradingModeDecider):

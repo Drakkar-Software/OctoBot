@@ -60,7 +60,7 @@ class TwitterService(AbstractService):
     @staticmethod
     def is_setup_correctly(config):
         return CONFIG_TWITTER in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]
+               and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]
 
     def get_user_id(self, user_account):
         user = self.twitter_api.GetUser(screen_name=user_account)
@@ -98,9 +98,9 @@ class TwitterService(AbstractService):
             return tweet["text"]
         return ""
 
-    def post(self, content, error_on_failure=True):
+    async def post(self, content, error_on_failure=True):
         try:
-            return self.split_tweet_content(content=content, tweet_id=None)
+            return await self.split_tweet_content(content=content, tweet_id=None)
         except Exception as e:
             error = f"Failed to send tweet : {e} tweet:{content}"
             if error_on_failure:
@@ -109,9 +109,9 @@ class TwitterService(AbstractService):
                 self.logger.info(error)
         return None
 
-    def respond(self, tweet_id, content, error_on_failure=True):
+    async def respond(self, tweet_id, content, error_on_failure=True):
         try:
-            return self.split_tweet_content(content=content, tweet_id=tweet_id)
+            return await self.split_tweet_content(content=content, tweet_id=tweet_id)
         except Exception as e:
             error = f"Failed to send response tweet : {e} tweet:{content}"
             if error_on_failure:
@@ -120,7 +120,7 @@ class TwitterService(AbstractService):
                 self.logger.info(error)
         return None
 
-    def split_tweet_content(self, content, counter=None, counter_max=None, tweet_id=None):
+    async def split_tweet_content(self, content, counter=None, counter_max=None, tweet_id=None):
         # add twitter counter at the beginning
         if counter is not None and counter_max is not None:
             content = f"{counter}/{counter_max} {content}"
@@ -141,10 +141,10 @@ class TwitterService(AbstractService):
             post = self.twitter_api.PostUpdate(status=content[:CHARACTER_LIMIT], in_reply_to_status_id=tweet_id)
 
             # recursive call for all post while content > CHARACTER_LIMIT
-            self.split_tweet_content(content[CHARACTER_LIMIT:],
-                                     counter=counter,
-                                     counter_max=counter_max,
-                                     tweet_id=tweet_id)
+            await self.split_tweet_content(content[CHARACTER_LIMIT:],
+                                           counter=counter,
+                                           counter_max=counter_max,
+                                           tweet_id=tweet_id)
 
             return post
         else:

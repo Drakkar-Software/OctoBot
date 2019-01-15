@@ -28,26 +28,25 @@ class OrderNotifier:
         self.notifier = OrdersNotification(self.config)
         self.evaluator_notification = None
 
-    def notify(self, evaluator_notification):
+    async def notify(self, evaluator_notification):
         self.evaluator_notification = evaluator_notification
         orders = [order for order in self.order.get_linked_orders()]
         orders.append(self.order)
-        self.notifier.notify_create(evaluator_notification, orders)
+        await self.notifier.notify_create(evaluator_notification, orders)
 
-    def end(self,
-            order_filled,
-            orders_canceled,
-            trade_profitability,
-            portfolio_profitability,
-            portfolio_diff,
-            profitability=False):
-
-        self.notifier.notify_end(order_filled,
-                                 orders_canceled,
-                                 trade_profitability,
-                                 portfolio_profitability,
-                                 portfolio_diff,
-                                 profitability)
+    async def end(self,
+                  order_filled,
+                  orders_canceled,
+                  trade_profitability,
+                  portfolio_profitability,
+                  portfolio_diff,
+                  profitability=False):
+        await self.notifier.notify_end(order_filled,
+                                       orders_canceled,
+                                       trade_profitability,
+                                       portfolio_profitability,
+                                       portfolio_diff,
+                                       profitability)
 
     def set_order(self, order):
         self.order = order
