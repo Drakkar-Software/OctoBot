@@ -34,16 +34,13 @@ class AbstractService:
     def get_name(cls):
         return cls.__name__
 
-    @classmethod
-    def get_fields_description(cls):
+    def get_fields_description(self):
         return {}
 
-    @classmethod
-    def get_default_value(cls):
+    def get_default_value(self):
         return {}
 
-    @classmethod
-    def get_required_config(cls):
+    def get_required_config(self):
         return {}
 
     @classmethod

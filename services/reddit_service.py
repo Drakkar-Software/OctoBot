@@ -30,27 +30,24 @@ class RedditService(AbstractService):
         super().__init__()
         self.reddit_api = None
 
-    @classmethod
-    def get_fields_description(cls):
+    def get_fields_description(self):
         return {
-            cls.CLIENT_ID: "Your client ID.",
-            cls.CLIENT_SECRET: "Your client ID secret.",
-            cls.PASSWORD: "Your Reddit username.",
-            cls.USERNAME: "Your Reddit password."
+            self.CLIENT_ID: "Your client ID.",
+            self.CLIENT_SECRET: "Your client ID secret.",
+            self.PASSWORD: "Your Reddit password.",
+            self.USERNAME: "Your Reddit username."
         }
 
-    @classmethod
-    def get_default_value(cls):
+    def get_default_value(self):
         return {
-            cls.CLIENT_ID: "",
-            cls.CLIENT_SECRET: "",
-            cls.PASSWORD: "",
-            cls.USERNAME: ""
+            self.CLIENT_ID: "",
+            self.CLIENT_SECRET: "",
+            self.PASSWORD: "",
+            self.USERNAME: ""
         }
 
-    @classmethod
-    def get_required_config(cls):
-        return [cls.CLIENT_ID, cls.CLIENT_SECRET, cls.PASSWORD, cls.USERNAME]
+    def get_required_config(self):
+        return [self.CLIENT_ID, self.CLIENT_SECRET, self.PASSWORD, self.USERNAME]
 
     @classmethod
     def get_help_page(cls) -> str:

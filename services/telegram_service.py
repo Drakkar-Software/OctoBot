@@ -36,26 +36,23 @@ class TelegramService(AbstractService):
         self.telegram_app = None
         self.telegram_updater = None
 
-    @classmethod
-    def get_fields_description(cls):
+    def get_fields_description(self):
         return {
-            cls.CHAT_ID: "ID of your chat.",
+            self.CHAT_ID: "ID of your chat.",
             CONFIG_TOKEN: "Token given by 'botfather'.",
             CONFIG_USERNAMES_WHITELIST: "List of telegram usernames allowed to talk to your OctoBot. "
                                             "No access restriction if left empty."
         }
 
-    @classmethod
-    def get_default_value(cls):
+    def get_default_value(self):
         return {
-            cls.CHAT_ID: "",
+            self.CHAT_ID: "",
             CONFIG_TOKEN: "",
             CONFIG_USERNAMES_WHITELIST: [],
         }
 
-    @classmethod
-    def get_required_config(cls):
-        return [cls.CHAT_ID, CONFIG_TOKEN]
+    def get_required_config(self):
+        return [self.CHAT_ID, CONFIG_TOKEN]
 
     @classmethod
     def get_help_page(cls) -> str:
