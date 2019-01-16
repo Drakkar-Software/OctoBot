@@ -19,7 +19,7 @@ from enum import Enum
 
 from config import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
-    CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE
+    CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE, CONFIG_WEB
 from interfaces.web import add_notification
 from services import TwitterService, TelegramService, WebService, NotifierServiceFactory
 from tools.logging.logging_util import get_logger
@@ -64,22 +64,24 @@ class Notification:
 
     def notifier_notification_available(self, notifier, key=None):
         return self.enabled(key) and \
-               notifier.get_name() in self.notification_type and \
+               notifier.get_type() in self.notification_type and \
                notifier.is_setup_correctly(self.config)
 
     def notifier_notification_factory(self, notifier, message):
         if self.notifier_notification_available(notifier):
             result = notifier.notify(message)
             if not result.errors:
-                self.logger.info("Notifier message sent")
+                self.logger.info(f"{notifier.get_provider_name()} notifier message sent")
             else:
-                self.logger.warning(f"Notifier message failed : {result.errors[-1]}")
+                self.logger.warning(f"{notifier.get_provider_name()} notifier message failed : {result.errors[-1]}")
         else:
             self.logger.debug("Notifier disabled")
 
     def telegram_notification_available(self, key=None):
         return self.enabled(key) and \
-               TelegramService.get_name() in self.notification_type and \
+               self._service_instance_is_present(CONFIG_TELEGRAM) and \
+               self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_SERVICE_INSTANCE].get_type() \
+               in self.notification_type and \
                TelegramService.is_setup_correctly(self.config)
 
     def telegram_notification_factory(self, message):
@@ -93,7 +95,9 @@ class Notification:
 
     def twitter_notification_available(self, key=None):
         return self.enabled(key) and \
-               TwitterService.get_name() in self.notification_type and \
+               self._service_instance_is_present(CONFIG_TELEGRAM) and \
+               self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE].get_type() \
+               in self.notification_type and \
                TwitterService.is_setup_correctly(self.config)
 
     def twitter_notification_factory(self, tweet, error_on_failure=True):
@@ -120,7 +124,7 @@ class Notification:
 
     def web_interface_notification_available(self, key=None):
         return self.enabled(key) and \
-               WebService.get_name() in self.notification_type and \
+               CONFIG_WEB in self.notification_type and \
                WebService.is_available(self.config)
 
     def web_interface_notification_factory(self, level, title, message):
@@ -156,6 +160,10 @@ class Notification:
         for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
             if self.notifier_notification_available(notifier, notification_type):
                 self.notifier_notification_factory(notifier, content)
+
+    def _service_instance_is_present(self, service_type):
+        return service_type in self.config[CONFIG_CATEGORY_SERVICES] and \
+               CONFIG_SERVICE_INSTANCE in self.config[CONFIG_CATEGORY_SERVICES][service_type]
 
 
 class EvaluatorNotification(Notification):

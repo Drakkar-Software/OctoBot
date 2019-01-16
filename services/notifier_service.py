@@ -21,34 +21,42 @@ logging.getLogger("notifiers").setLevel(logging.WARNING)
 import notifiers
 from notifiers import NoSuchNotifierError
 
-from config import CONFIG_NOTIFIER, CONFIG_CATEGORY_SERVICES
+from config import CONFIG_NOTIFIER, CONFIG_CATEGORY_SERVICES, PROJECT_NOTIFICATION, NOTIFIER_REQUIRED_KEY, \
+    NOTIFIER_IGNORED_REQUIRED_CONFIG, NOTIFIER_REQUIRED_CONFIG, NOTIFIER_PROPERTIES_KEY
 from services.abstract_service import AbstractService
+from tools import dict_util
 
 
 class NotifierService(AbstractService):
-    PUSHOVER = None
+    NOTIFIER_PROVIDER_TYPE = None
     SERVICE_CONFIG = None
 
     def __init__(self):
         super().__init__()
-        self.pushover = self.__class__.PUSHOVER
-        self.name = self.pushover.name
+        self.notifier_provider = self.__class__.NOTIFIER_PROVIDER_TYPE
+        self.provider_name = self.notifier_provider.name
         self.service_config = self.__class__.SERVICE_CONFIG
 
-    @classmethod
-    def get_fields_description(cls):
-        return {key: key
-                for key in cls.get_required_config()}
+    def get_fields_description(self):
+        return {key: self.get_fields_description_from_schema(key)
+                for key in self.get_required_config()}
 
-    @classmethod
-    def get_default_value(cls):
+    def get_default_value(self):
         return {key: ""
-                for key in cls.get_required_config()}
+                for key in self.get_required_config()}
 
-    @classmethod
-    def get_required_config(cls):
-        required_list = cls.PUSHOVER.required["required"]
-        required_list.remove('message')
+    def get_fields_description_from_schema(self, field):
+        _, desc = dict_util.find_nested_value(self.notifier_provider.schema[NOTIFIER_PROPERTIES_KEY][field], "title")
+        return desc
+
+    def get_required_config(self):
+        required_list = []
+        if NOTIFIER_REQUIRED_KEY in self.notifier_provider.required:
+            required_list = self.notifier_provider.required[NOTIFIER_REQUIRED_KEY]
+        if NOTIFIER_IGNORED_REQUIRED_CONFIG in required_list:
+            required_list.remove(NOTIFIER_IGNORED_REQUIRED_CONFIG)
+        if self.get_provider_name() in NOTIFIER_REQUIRED_CONFIG:
+            required_list = set(required_list + NOTIFIER_REQUIRED_CONFIG[self.get_provider_name()])
         return required_list
 
     @classmethod
@@ -75,20 +83,21 @@ class NotifierService(AbstractService):
         return self.get_provider_name()
 
     def get_provider_name(self):
-        return self.pushover.name
+        return self.provider_name
 
     def get_type(self):
-        return CONFIG_NOTIFIER
+        return self.provider_name
 
     async def prepare(self):
         pass
 
     def notify(self, message):
-        return self.pushover.notify(message=message, **self.service_config)
+        return self.notifier_provider.notify(message=message, subject=PROJECT_NOTIFICATION, **self.service_config)
 
     def get_successful_startup_message(self):
         try:
-            return f"Notifier successfully initialized, more info at: {self.pushover.site_url}.", True
+            return f"{self.get_provider_name()} notifier successfully initialized, more info at: " \
+                       f"{self.notifier_provider.site_url}.", True
         except Exception as e:
             self.log_connection_error_message(e)
             return "", False

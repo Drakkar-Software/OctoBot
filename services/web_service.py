@@ -29,20 +29,17 @@ class WebService(AbstractService):
         super().__init__()
         self.web_app = None
 
-    @classmethod
-    def get_fields_description(cls):
+    def get_fields_description(self):
         return {
             CONFIG_WEB_PORT: "Port to access your OctoBot web interface from."
         }
 
-    @classmethod
-    def get_default_value(cls):
+    def get_default_value(self):
         return {
             CONFIG_WEB_PORT: 5000
         }
 
-    @classmethod
-    def get_required_config(cls):
+    def get_required_config(self):
         return [CONFIG_WEB_PORT]
 
     @classmethod
