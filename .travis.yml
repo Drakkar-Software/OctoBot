@@ -17,6 +17,11 @@ matrix:
     - os: osx
       osx_image: xcode8.3
       language: generic
+      before_cache:
+        - brew cleanup
+      cache:
+        directories:
+          - $HOME/Library/Caches/Homebrew
       before_install:
         - brew update || travis_terminate 1;
         - brew upgrade python || brew install python || travis_terminate 1;
