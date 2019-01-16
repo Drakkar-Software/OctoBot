@@ -15,15 +15,17 @@
 #  License along with this library.
 
 import json
+import notifiers
 from tools.logging.logging_util import get_logger
 
 import ccxt
 import requests
 
 from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, \
-    UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES
+    UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, CONFIG_NOTIFIER_IGNORE
 from interfaces import get_bot
 from services import AbstractService
+from services import NotifierService
 from tools.config_manager import ConfigManager
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection, trading_mode_parent_inspection
 from evaluator.abstract_evaluator import AbstractEvaluator
@@ -248,9 +250,16 @@ def get_services_list():
     services = {}
     services_names = []
     for service in AbstractService.__subclasses__():
-        srv = service()
-        services[srv.get_type()] = srv
-        services_names.append(srv.get_name())
+        if service != NotifierService:
+            srv = service()
+            services[srv.get_type()] = srv
+            services_names.append(srv.get_type())
+    for notifier_service in notifiers.core.all_providers():
+        if notifier_service not in CONFIG_NOTIFIER_IGNORE:
+            NotifierService.NOTIFIER_PROVIDER_TYPE = notifiers.get_notifier(notifier_service)
+            srv = NotifierService()
+            services[srv.get_provider_name()] = srv
+            services_names.append(srv.get_provider_name())
     return services, services_names
 
 

@@ -34,27 +34,24 @@ class TwitterService(AbstractService):
         super().__init__()
         self.twitter_api = None
 
-    @classmethod
-    def get_fields_description(cls):
+    def get_fields_description(self):
         return {
-            cls.API_KEY: "Your Twitter API key.",
-            cls.API_SECRET: "Your Twitter API-secret key.",
-            cls.ACCESS_TOKEN: "Your Twitter access token key.",
-            cls.ACCESS_TOKEN_SECRET: "Your Twitter access token secret key."
+            self.API_KEY: "Your Twitter API key.",
+            self.API_SECRET: "Your Twitter API-secret key.",
+            self.ACCESS_TOKEN: "Your Twitter access token key.",
+            self.ACCESS_TOKEN_SECRET: "Your Twitter access token secret key."
         }
 
-    @classmethod
-    def get_default_value(cls):
+    def get_default_value(self):
         return {
-            cls.API_KEY: "",
-            cls.API_SECRET: "",
-            cls.ACCESS_TOKEN: "",
-            cls.ACCESS_TOKEN_SECRET: ""
+            self.API_KEY: "",
+            self.API_SECRET: "",
+            self.ACCESS_TOKEN: "",
+            self.ACCESS_TOKEN_SECRET: ""
         }
 
-    @classmethod
-    def get_required_config(cls):
-        return [cls.API_KEY, cls.API_SECRET, cls.ACCESS_TOKEN, cls.ACCESS_TOKEN_SECRET]
+    def get_required_config(self):
+        return [self.API_KEY, self.API_SECRET, self.ACCESS_TOKEN, self.ACCESS_TOKEN_SECRET]
 
     @classmethod
     def get_help_page(cls) -> str:

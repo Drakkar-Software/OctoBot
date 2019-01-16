@@ -25,10 +25,10 @@ class NotifierServiceFactory:
 
     def create_services(self):
         for service_to_create in self.get_service_key_to_be_created():
-            service_notifier = NotifierService.is_available(service_to_create)
-            if service_notifier:
+            notifier_provider = NotifierService.is_available(service_to_create)
+            if notifier_provider:
                 notification_service = NotifierService
-                notification_service.PUSHOVER = service_notifier
+                notification_service.NOTIFIER_PROVIDER_TYPE = notifier_provider
                 notification_service.SERVICE_CONFIG = self.config[CONFIG_CATEGORY_SERVICES][service_to_create]
                 yield notification_service
 

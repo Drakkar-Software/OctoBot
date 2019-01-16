@@ -55,7 +55,7 @@ class ServiceCreator:
                     await service_instance.prepare()
 
                     # notifier
-                    if hasattr(service_class, "PUSHOVER"):
+                    if isinstance(service_instance, NotifierService):
                         config[CONFIG_CATEGORY_SERVICES][CONFIG_NOTIFIER][CONFIG_SERVICE_INSTANCE] \
                             .append(service_instance)
                     else:
