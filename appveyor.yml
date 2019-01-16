@@ -1,6 +1,8 @@
 environment:
   matrix:
     - PYTHON: "C:\\Python37-x64"
+cache:
+  - '%LOCALAPPDATA%\pip\Cache'
 install:
   - "%PYTHON%\\python.exe -m pip install -r pre_requirements.txt"
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt -r dev_requirements.txt"
