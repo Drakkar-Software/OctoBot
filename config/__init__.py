@@ -20,7 +20,7 @@ from typing import NewType, Any, Dict
 
 PROJECT_NAME = "OctoBot"
 SHORT_VERSION = "0.2.5"  # major.minor.revision
-PATCH_VERSION = ""  # .patch
+PATCH_VERSION = ""  # patch : pX
 VERSION_DEV_PHASE = "a"  # alpha : a / beta : b / release candidate : rc
 VERSION_PHASE = "0"  # XX
 VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
