@@ -11,6 +11,9 @@
 
 {% block body %}
 <div id="nav-config" class="sticky-top">
+    <div class="card card-header">
+        <h3>Activated strategies: {{ ', '.join(evaluator_config["activated_strategies"]) }}</h3>
+    </div>
     <nav class="navbar nav-tabs navbar-dark primary-color">
         <span class="white-text"> Any configuration change will be applied after OctBot restarts.</span>
         <ul class="nav mx-auto">
@@ -28,9 +31,7 @@
         </ul>
     </nav>
 </div>
-<!-- Tab panels -->
 <div id="super-container">
-    <!--Panel Evaluators-->
     <div class="config-root" id="panelEvaluators"><br>
         <div class="card">
             <div class="card-header"><h2>Technical analysis</h2></div>

@@ -86,7 +86,7 @@
         </div>
         <br>
         <div class="card">
-            <div class="card-header"><h2>Evaluation strategies</h2></div>
+            <div class="card-header"><h2>Compatible evaluation strategies</h2></div>
             <div class="card-body">
                 <div class="row config-container" id="evaluator-config-root">
                     {% for evaluator_name, info in strategy_config["strategies"].items() %}
@@ -95,7 +95,7 @@
                 </div>
             </div>
             <div class="card-footer">
-                <p class="mb-0">Full evaluators customization on <a class="btn btn-outline-white btn-md waves-effect" href="{{ url_for('advanced.evaluator_config') }}">OctoBot advanced configuration interface</a></p>
+                <p class="mb-0">Strategy customization on <a class="btn btn-outline-white btn-md waves-effect" href="{{ url_for('advanced.evaluator_config') }}">OctoBot advanced configuration interface</a></p>
             </div>
         </div>
     </div>
