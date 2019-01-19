@@ -405,10 +405,19 @@ function updated_validated_updated_global_config(updated_data){
     deleted_global_config_elements = [];
 }
 
+function check_url_required_tab(){
+    const hash = window.location.hash;
+    if(hash){
+        hash && $('ul.nav a[href="' + hash + '"]').tab('show');
+    }
+}
+
 let validated_updated_global_config = {};
 let deleted_global_config_elements = [];
 
 $(document).ready(function() {
+    check_url_required_tab();
+
     setup_editable();
     handle_editable();
 

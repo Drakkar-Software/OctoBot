@@ -19,6 +19,9 @@
             {% for pair, status in pairs_with_status.items() %}
                 {{ m_cards.pair_status_card(pair, status, watched_symbols) }}
             {% endfor %}
+            <a href="{{ url_for('config')+'#panelCurrency' }}">
+                <i class="fas fa-plus-circle fa-3x"></i>
+            </a>
         </div>
     </div>
 </div>
