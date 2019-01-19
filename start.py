@@ -142,10 +142,9 @@ def start_octobot(starting_args):
                         except NameError as e:
                             logging.error("{0}, impossible to display GUI".format(e))
 
-                    if starting_args.start:
-                        # set debug_mode = True to activate asyncio debug mode
-                        debug_mode = ConfigManager.is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
-                        asyncio.run(Commands.start_bot(bot, logger), debug=debug_mode)
+                    # set debug_mode = True to activate asyncio debug mode
+                    debug_mode = ConfigManager.is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
+                    asyncio.run(Commands.start_bot(bot, logger), debug=debug_mode)
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")
         os._exit(-1)
@@ -176,28 +175,30 @@ def main(args=None):
         args = sys.argv[1:]
 
     parser = argparse.ArgumentParser(description='OctoBot')
-    parser.add_argument('start', help='start the OctoBot',
+    parser.add_argument('-v', '--version', help='Show OctoBot current version.',
                         action='store_true')
-    parser.add_argument('-v', '--version', help='show OctoBot current version',
-                        action='store_true')
-    parser.add_argument('-s', '--simulate', help='start the OctoBot with the trader simulator',
+    parser.add_argument('-s', '--simulate', help='Force OctoBot to start with the trader simulator only.',
                         action='store_true')
     parser.add_argument('-d', '--data_collector',
-                        help='start the data collector process to create data for backtesting',
+                        help='Start the data collector process to store data for backtesting.',
                         action='store_true')
-    parser.add_argument('-b', '--backtesting', help='enable the backtesting option and use the backtesting config',
+    parser.add_argument('-b', '--backtesting', help='Start OctoBot in backesting mode using the backtesting '
+                                                    'config stored in config.json.',
                         action='store_true')
     parser.add_argument('-ba', '--backtesting_analysis',
-                        help='do not stop the bot at the end of the backtesting (useful to analyse results)',
+                        help='Additional argument in order not stop the bot at the end of the backtesting '
+                             '(useful to analyse results using interfaces like the web interface).',
                         action='store_true')
-    parser.add_argument('-r', '--risk', type=float, help='risk representation (between 0 and 1)')
-    parser.add_argument('-nw', '--no_web', help="Don't start web server",
+    parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
+    parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
                         action='store_true')
-    parser.add_argument('-ng', '--no_gui', help="Don't open gui interface",
+    parser.add_argument('-ng', '--no_gui', help="Don't open gui interface.",
                         action='store_true')
-    parser.add_argument('-t', '--telegram', help='Start telegram command handler',
+    parser.add_argument('-t', '--telegram', help='Start OctoBot with telegram interface.',
                         action='store_true')
-    parser.add_argument('--encrypter', help='Start the exchange api keys encrypter',
+    parser.add_argument('--encrypter', help="Start the exchange api keys encrypter. This tool is useful to manually add"
+                                            " exchanges configuration in your config.json without using any interface "
+                                            "(ie the web interface that handle encryption automatically)",
                         action='store_true')
     parser.add_argument('-p', '--packager', help='Start OctoBot Tentacles Manager. examples: -p install all '
                                                  'to install all tentacles packages and -p install [tentacle] to '
