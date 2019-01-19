@@ -38,4 +38,7 @@ class NotifierServiceFactory:
 
     @staticmethod
     def get_notifiers_instance(config):
-        return config[CONFIG_CATEGORY_SERVICES][CONFIG_NOTIFIER][CONFIG_SERVICE_INSTANCE]
+        if CONFIG_NOTIFIER in config[CONFIG_CATEGORY_SERVICES] \
+           and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_NOTIFIER]:
+            return config[CONFIG_CATEGORY_SERVICES][CONFIG_NOTIFIER][CONFIG_SERVICE_INSTANCE]
+        return []
