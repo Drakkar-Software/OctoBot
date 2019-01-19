@@ -4,7 +4,7 @@
        id={{evaluator_name}}
        config-type={{config_type}} config-key={{evaluator_name}} current-value={{info['activation']}} config-value={{info['activation']}} startup-config-value={{startup_config[evaluator_name]}}
        requirements="{{info['advanced_class']['requirements'] if info['advanced_class']['requirements'] else info['requirements']}}">
-        <span class="float-left {{'d-none' if not info['required']}}" role="required-flag"><i class="fa fa-flag {{'red-text' if not info['activation']}}" data-toggle="tooltip" data-placement="top" title="Should be used by the current configuration"></i></span>
+        <span class="float-left {{'d-none' if not info['required']}}" role="required-flag"><i class="fa fa-flag {{'red-text' if not info['activation']}}" data-toggle="tooltip" data-placement="top" title="Should be activated when using the current strategies"></i></span>
         {{ evaluator_name }}
         {% if info['advanced_class'] %}
         <span><i class="fa fa-graduation-cap" data-toggle="tooltip" data-placement="top" title="Advanced tentacle"></i></span>
