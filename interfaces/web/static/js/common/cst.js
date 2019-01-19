@@ -60,3 +60,9 @@ const config_default_symbol = "btc";
 
 const evaluator_config_type = "evaluator_config";
 const trading_config_type = "trading_config";
+
+const material_colors = ["#d50000", "#6200ea", "#2962ff", "#00b8d4", "#00c853", "#aeea00", "#ffab00",
+    "#dd2c00"];
+
+const material_dark_colors = ["#9b0000", "#0a00b6", "#0039cb", "#0088a3", "#009624", "#79b700", "#c67c00",
+    "#a30000"];

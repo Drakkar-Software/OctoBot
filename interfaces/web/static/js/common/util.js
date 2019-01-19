@@ -20,18 +20,14 @@ function setup_editable(){
     $.fn.editable.defaults.mode = 'inline';
 }
 
-function get_random_darkable_color(seed, ignored_colors){
-    const colors=["blue", "green", "red", "gray", "turquoise", "slateblue",
-        "salmon", "violet", "orange", "cyan", "orchid", "seagreen"];
-    let rand_index = Math.round(seed+Math.random()*colors.length) % (colors.length-1);
-    const initial_index = rand_index;
-    while (ignored_colors.includes(colors[rand_index])) {
-        rand_index = (rand_index + 1) % (colors.length-1);
-        if (rand_index === initial_index){
-            return colors[rand_index];
-        }
-    }
-    return colors[rand_index];
+function get_color(index){
+    let color_index = index % (material_colors.length-1);
+    return material_colors[color_index];
+}
+
+function get_dark_color(index){
+    let color_index = index % (material_dark_colors.length-1);
+    return material_dark_colors[color_index];
 }
 
 function handle_editable(){
