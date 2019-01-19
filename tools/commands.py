@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import subprocess
 
 from tools.logging.logging_util import get_logger
 import os
@@ -92,7 +93,7 @@ class Commands:
             await bot.start_tasks()
 
             # join threads in a not loop blocking executor
-            #TODO remove this when no thread anymore
+            # TODO remove this when no thread anymore
             await loop.run_in_executor(None, bot.join_threads)
 
         except Exception as e:
@@ -108,4 +109,8 @@ class Commands:
 
     @staticmethod
     def restart_bot():
-        os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
+        if sys.argv[0].endswith(".py"):
+            os.execl(sys.executable, sys.executable, *sys.argv)
+        else:
+            # prevent binary to add self as first argument
+            os.execl(sys.executable, *sys.argv)
