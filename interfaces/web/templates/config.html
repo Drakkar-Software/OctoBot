@@ -90,7 +90,7 @@
             <div class="card-body">
                 <div class="row config-container" id="evaluator-config-root">
                     {% for evaluator_name, info in strategy_config["strategies"].items() %}
-                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                        {{ m_config_evaluator_card.config_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config", pre_hide=True) }}
                     {% endfor %}
                 </div>
             </div>

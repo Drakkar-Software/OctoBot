@@ -325,6 +325,7 @@ function check_evaluator_configuration() {
             if(required_elements.indexOf(element.attr("id")) !== -1) {
                 if (element.attr(current_value_attr).toLowerCase() === "true") {
                     at_lest_one_activated_element = true;
+                    update_element_required_marker_and_usability(element, true);
                 }
             }else{
                 update_element_required_marker_and_usability(element, false);
