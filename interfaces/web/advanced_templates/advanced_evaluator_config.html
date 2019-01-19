@@ -12,10 +12,10 @@
 {% block body %}
 <div id="nav-config" class="sticky-top">
     <nav class="navbar nav-tabs navbar-dark primary-color">
-        <span class="white-text"> Any configuration change will be take into account after OctBot restarts.</span>
+        <span class="white-text"> Any configuration change will be applied after OctBot restarts.</span>
         <ul class="nav mx-auto">
             <li class="nav-item">
-                <a class="nav-link btn green waves-effect" id='save-config' href="#" role="tab" update-url="{{ url_for('advanced.evaluator_config') }}">Save all</a>
+                <a class="nav-link btn green waves-effect" id='save-config' href="#" role="tab" update-url="{{ url_for('advanced.evaluator_config') }}">Save and restart later</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link btn orange waves-effect" id='reset-config' href="#" role="tab">Reset all</a>
