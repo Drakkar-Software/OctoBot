@@ -12,6 +12,7 @@ build_script:
   - "%PYTHON%\\python.exe -m nltk.downloader -d %NLTK_DATA% words"
   - "%PYTHON%\\Scripts\\pyinstaller.exe docs/delivery/start.spec"
   - "echo f | xcopy /f /y dist\\OctoBot.exe dist\\OctoBot_windows.exe"
+  - "powershell get-filehash -algorithm sha1 dist\\OctoBot_windows.exe"
 test_script:
   - "%PYTHON%\\python.exe -m pytest -n 5 tests/unit_tests tests/functional_tests tests/endurance_tests"
 artifacts:
