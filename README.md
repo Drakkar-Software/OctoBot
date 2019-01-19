@@ -38,16 +38,26 @@ Octobot's main feature is **evolution** : you can [install](https://github.com/D
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** !
 
-#### With Launcher (only for 64 bits)
+#### [With Launcher (only for 64 bits)](https://github.com/Drakkar-Software/OctoBot/wiki/Installation)
 - Open the OctoBot-Launcher [release page](https://github.com/Drakkar-Software/OctoBot-Launcher/releases)
 - Download launcher (*laucher_windows.exe* or *launcher_linux*)
 - Start the launcher
 - Click on "Update OctoBot"
 
 #### [With Docker](https://github.com/Drakkar-Software/OctoBot/wiki/With-Docker)
-`touch config.json && docker run -it -d --name MyAmazingOctobot -v $(pwd)/config.json:/bot/octobot/config.json -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot:beta`
+```
+touch config.json && docker run -it -d --name MyAmazingOctobot -v $(pwd)/config.json:/bot/octobot/config.json -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot:beta
+```
 
-More details in [installation wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation) and it's done !
+#### [With PIP](https://github.com/Drakkar-Software/OctoBot/wiki/With-PIP)
+- Install python3.7 (https://www.python.org/downloads/)
+```
+python3.7 -m pip install OctoBot
+
+OctoBot-Launcher
+```
+
+More details in [wiki page](https://github.com/Drakkar-Software/OctoBot/wiki#installation) and it's done !
 
 ## Usage
 - Just start the launcher
