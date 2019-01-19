@@ -22,7 +22,7 @@ import ccxt
 import requests
 
 from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, \
-    UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, CONFIG_NOTIFIER_IGNORE
+    UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, CONFIG_NOTIFIER_IGNORE, EVALUATOR_ACTIVATION
 from interfaces import get_bot
 from services import AbstractService
 from services import NotifierService
@@ -75,7 +75,6 @@ def _get_strategy_activation_state():
     import evaluator.Strategies as strategies
     trading_mode_key = "trading-modes"
     strategies_key = "strategies"
-    activation = "activation"
     description = "description"
     advanced_class_key = "advanced_class"
     strategy_config = {
@@ -92,7 +91,7 @@ def _get_strategy_activation_state():
         config_class = get_class_from_string(key, modes.AbstractTradingMode, modes, trading_mode_parent_inspection)
         if config_class:
             strategy_config[trading_mode_key][key] = {}
-            strategy_config[trading_mode_key][key][activation] = val
+            strategy_config[trading_mode_key][key][EVALUATOR_ACTIVATION] = val
             strategy_config[trading_mode_key][key][description] = config_class.get_description()
             strategy_config[trading_mode_key][key][advanced_class_key] = \
                 _get_advanced_class_details(key, config_class, is_trading_mode=True)
@@ -104,7 +103,7 @@ def _get_strategy_activation_state():
                                              strategies, evaluator_parent_inspection)
         if config_class:
             strategy_config[strategies_key][key] = {}
-            strategy_config[strategies_key][key][activation] = val
+            strategy_config[strategies_key][key][EVALUATOR_ACTIVATION] = val
             strategy_config[strategies_key][key][description] = config_class.get_description()
             strategy_config[strategies_key][key][advanced_class_key] = \
                 _get_advanced_class_details(key, config_class, is_strategy=True)
@@ -114,13 +113,12 @@ def _get_strategy_activation_state():
 
 
 def _get_required_element(elements_config):
-    activation = "activation"
     advanced_class_key = "advanced_class"
     requirements = "requirements"
     required_elements = set()
     for element_type in elements_config.values():
         for element_name, element in element_type.items():
-            if element[activation]:
+            if element[EVALUATOR_ACTIVATION]:
                 if element[advanced_class_key] and requirements in element[advanced_class_key]:
                     required_elements = required_elements.union(element[advanced_class_key][requirements])
                 elif requirements in element:
@@ -167,13 +165,12 @@ def get_in_backtesting_mode():
 
 def _fill_evaluator_config(evaluator_name, activated, eval_type_key,
                            evaluator_type, detailed_config, is_strategy=False):
-    activation = "activation"
     description = "description"
     advanced_class_key = "advanced_class"
     klass = get_class_from_string(evaluator_name, AbstractEvaluator, evaluator_type, evaluator_parent_inspection)
     if klass:
         detailed_config[eval_type_key][evaluator_name] = {}
-        detailed_config[eval_type_key][evaluator_name][activation] = activated
+        detailed_config[eval_type_key][evaluator_name][EVALUATOR_ACTIVATION] = activated
         detailed_config[eval_type_key][evaluator_name][description] = klass.get_description()
         detailed_config[eval_type_key][evaluator_name][advanced_class_key] = \
             _get_advanced_class_details(evaluator_name, klass, is_strategy=is_strategy)
@@ -219,6 +216,8 @@ def get_evaluator_detailed_config():
         for eval_name, eval_details in eval_type.items():
             eval_details[required_key] = eval_name in required_elements
 
+    detailed_config["activated_strategies"] = [s for s, details in strategy_config[strategies_key].items()
+                                               if details[EVALUATOR_ACTIVATION]]
     return detailed_config
 
 
