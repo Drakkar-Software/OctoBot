@@ -41,13 +41,15 @@ function create_pie_chart(element, data, title, fontColor='white'){
     const values = [];
     const backgroundColors = [];
     const hoverBackgroundColors = [];
+    let index = 0;
     $.each(data, function (key, value) {
         if(value > 0){
             values.push(value);
             labels.push(key);
-            const color = get_random_darkable_color(value*10**8, backgroundColors);
+            const color = get_color(index);
             backgroundColors.push(color);
-            hoverBackgroundColors.push("dark"+color);
+            hoverBackgroundColors.push(get_dark_color(index));
+            index += 1;
         }
     });
     return new Chart(element.getContext('2d'), {
