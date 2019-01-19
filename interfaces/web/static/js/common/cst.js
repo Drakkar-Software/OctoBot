@@ -36,7 +36,7 @@ const secondary_badge = "badge-secondary";
 const primary_badge = "badge-primary";
 const modified_class = "warning-color";
 const selected_item_class = "primary-color";
-const disabled_item_class = "stylish-color";
+const disabled_item_class = "d-none";
 const hidden_class = "d-none";
 const disabled_class = "disabled-item";
 
