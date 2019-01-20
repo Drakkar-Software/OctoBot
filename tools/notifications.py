@@ -95,7 +95,7 @@ class Notification:
 
     def twitter_notification_available(self, key=None):
         return self.enabled(key) and \
-               self._service_instance_is_present(CONFIG_TELEGRAM) and \
+               self._service_instance_is_present(CONFIG_TWITTER) and \
                self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE].get_type() \
                in self.notification_type and \
                TwitterService.is_setup_correctly(self.config)
