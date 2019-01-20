@@ -20,7 +20,7 @@ import sys
 
 from config import PlatformsName, get_os
 
-MIN_PYTHON_VERSION = (3, 6)
+MIN_PYTHON_VERSION = (3, 7)
 
 # check python version
 current_version = sys.version_info
