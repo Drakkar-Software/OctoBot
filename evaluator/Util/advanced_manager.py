@@ -125,8 +125,8 @@ class AdvancedManager:
     def get_class(config, class_type):
         classes = AdvancedManager.get_classes(config, class_type)
         if classes and len(classes) > 1:
-            get_logger(AdvancedManager.__name__).warning("More than one instance of {0} available, using {1}.".
-                                                                format(class_type, classes[0]))
+            get_logger(AdvancedManager.__name__).warning(f"More than one instance of {class_type} available, "
+                                                         f"using {classes[0]}.")
         return classes[0]
 
     @staticmethod

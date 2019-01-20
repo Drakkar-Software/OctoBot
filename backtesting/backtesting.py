@@ -18,7 +18,7 @@ from tools.logging.logging_util import get_logger
 import os
 import time
 
-from config import CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_BACKTESTING , CONFIG_ENABLED_OPTION, PriceIndexes, \
+from config import CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION, PriceIndexes, \
     CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
 from tools.pretty_printer import PrettyPrinter
 

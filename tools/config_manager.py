@@ -23,10 +23,10 @@ from functools import reduce
 
 from config.config import load_config, decrypt, encrypt
 from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
-    TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_ADVANCED_CLASSES, \
+    TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_TRADING_FILE, \
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
-    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_FILE, \
-    CONFIG_TRADING_TENTACLES
+    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, \
+    CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES
 
 
 def get_logger():
@@ -82,12 +82,14 @@ class ConfigManager:
                 try:
                     decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY], silent_on_invalid_token=True)
                 except Exception:
-                    config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]).decode()
+                    config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = \
+                        encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]).decode()
 
                 try:
                     decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET], silent_on_invalid_token=True)
                 except Exception:
-                    config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]).decode()
+                    config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = \
+                        encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]).decode()
 
             except Exception:
                 config[CONFIG_EXCHANGES][exchange] = {

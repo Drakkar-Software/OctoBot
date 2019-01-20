@@ -100,14 +100,14 @@ class TestBinanceWebSocketClient:
         })
 
     @staticmethod
-    def _update_order_message(symbol, side, price, quantity, type, filled_qty, status):
+    def _update_order_message(symbol, side, price, quantity, order_type, filled_qty, status):
         return {
             "e": "executionReport",  # Event type
             "E": 1499405658658,  # Event time
             "s": symbol,  # Symbol
             "c": "mUvoqJxFIILMdfAW5iGSOW",  # Client order ID
             "S": side,  # Side
-            "o": type,  # Order type
+            "o": order_type,  # Order type
             "f": "GTC",  # Time in force
             "q": quantity,  # Order quantity
             "p": price,  # Order price

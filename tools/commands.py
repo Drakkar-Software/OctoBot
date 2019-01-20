@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import subprocess
 
 from tools.logging.logging_util import get_logger
 import os

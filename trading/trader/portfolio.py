@@ -127,12 +127,11 @@ class Portfolio(Initializable):
             # Only for log purpose
             if order.get_side() == TradeOrderSide.BUY:
                 currency_portfolio_num = order.get_filled_quantity() - order.get_total_fees(currency)
-                market_portfolio_num = -order.get_filled_quantity() * \
-                                        order.get_filled_price()
+                market_portfolio_num = -order.get_filled_quantity() * order.get_filled_price()
             else:
                 currency_portfolio_num = -order.get_filled_quantity()
-                market_portfolio_num = order.get_filled_quantity() * \
-                                       order.get_filled_price() - order.get_total_fees(market)
+                market_portfolio_num = \
+                    order.get_filled_quantity() * order.get_filled_price() - order.get_total_fees(market)
 
             self.logger.info("Portfolio updated | {0} {1} | {2} {3} | Current Portfolio : {4}"
                              .format(currency,
