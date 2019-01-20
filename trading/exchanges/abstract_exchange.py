@@ -26,7 +26,7 @@ class AbstractExchange:
         self.config = config
         self.exchange_type = exchange_type
         self.name = self.exchange_type.__name__
-        self.logger = get_logger("{0} - {1}".format(self.__class__.__name__, self.name))
+        self.logger = get_logger(f"{self.__class__.__name__} - {self.name}")
         self.trader = None
 
         self.exchange_manager = None

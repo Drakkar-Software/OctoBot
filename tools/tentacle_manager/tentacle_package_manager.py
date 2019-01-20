@@ -50,7 +50,7 @@ class TentaclePackageManager:
             # Update module file
             module_file_dir = TentacleUtil.create_path_from_type(module_type, module_subtype, target_folder)
 
-            module_file_path = "{0}/{1}.py".format(module_file_dir, module_name)
+            module_file_path = f"{module_file_dir}/{module_name}.py"
 
             # Write the new file in locations
             if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
@@ -69,19 +69,16 @@ class TentaclePackageManager:
                     did_something = False
 
             # Update local __init__
-            line_in_init = "from .{0} import *\n".format(module_name)
-            init_file = "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH,
-                                                     TENTACLE_TYPES[module_type],
-                                                     TENTACLE_TYPES[module_subtype],
-                                                     target_folder,
-                                                     PYTHON_INIT_FILE)
+            line_in_init = f"from .{module_name} import *\n"
+            init_file = f"{TENTACLES_PATH}/{TENTACLE_TYPES[module_type]}/{TENTACLE_TYPES[module_subtype]}/" \
+                f"{target_folder}/{PYTHON_INIT_FILE}"
 
             self.update_init_file(action, init_file, line_in_init)
 
             # Update module test files
             test_file_dir = TentacleUtil.create_path_from_type(module_type, module_subtype, target_folder, True)
             for test_file, test_file_content in module_test_files.items():
-                module_test_file_path = "{0}/{1}.py".format(test_file_dir, test_file)
+                module_test_file_path = f"{test_file_dir}/{test_file}.py"
 
                 # Write the new file in locations
                 if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
@@ -97,15 +94,15 @@ class TentaclePackageManager:
                         pass
 
             if action == TentacleManagerActions.INSTALL:
-                self.logger.info("{0}{1} {2} successfully installed in: {3}"
-                                 .format(self._format_current_step(), module_name, module_version, module_file_dir))
+                self.logger.info(f"{self._format_current_step()}{module_name} {module_version} "
+                                 f"successfully installed in: {module_file_dir}")
             elif action == TentacleManagerActions.UNINSTALL:
                 if did_something:
-                    self.logger.info("{0}{1} {2} successfully uninstalled (file: {3})"
-                                     .format(self._format_current_step(), module_name, module_version, module_file_dir))
+                    self.logger.info(f"{self._format_current_step()}{module_name} {module_version} "
+                                     f"successfully uninstalled (file: {module_file_dir})")
             elif action == TentacleManagerActions.UPDATE:
-                self.logger.info("{0}{1} successfully updated to version {2} in: {3}"
-                                 .format(self._format_current_step(), module_name, module_version, module_file_dir))
+                self.logger.info(f"{self._format_current_step()}{module_name} successfully updated to version "
+                                 f"{module_version} in: {module_file_dir}")
             self.just_processed_modules.append(TentacleUtil.get_full_module_identifier(module_name, module_version))
             return did_something
 
@@ -123,10 +120,11 @@ class TentaclePackageManager:
 
         if TentacleUtil.install_on_development(self.config, module_dev):
             if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
-                module_loc = "{0}.py".format(TentacleUtil.create_localization_from_type(package_localisation,
-                                                                                        module_type,
-                                                                                        module_subtype,
-                                                                                        module_name))
+                location_str = TentacleUtil.create_localization_from_type(package_localisation,
+                                                                          module_type,
+                                                                          module_subtype,
+                                                                          module_name)
+                module_loc = f"{location_str}.py"
 
                 if is_url:
                     module_file_content = TentaclePackageUtil.get_package_file_content_from_url(module_loc)
@@ -138,11 +136,12 @@ class TentaclePackageManager:
 
                 if module_test_files:
                     for test in module_tests:
-                        test_loc = "{0}.py".format(TentacleUtil.create_localization_from_type(package_localisation,
-                                                                                              module_type,
-                                                                                              module_subtype,
-                                                                                              test,
-                                                                                              True))
+                        location_str = TentacleUtil.create_localization_from_type(package_localisation,
+                                                                                  module_type,
+                                                                                  module_subtype,
+                                                                                  test,
+                                                                                  True)
+                        test_loc = f"{location_str}.py"
 
                         if is_url:
                             module_test_files[test] = TentaclePackageUtil.get_package_file_content_from_url(test_loc)
@@ -159,9 +158,9 @@ class TentaclePackageManager:
             if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
                 self._try_action_on_requirements(action, package, module_name, package_name)
         else:
-            self.logger.warning("{0} is currently on development, "
+            self.logger.warning(f"{module_name} is currently on development, "
                                 "it will not be installed (to install it anyway, "
-                                "add \"DEV-MODE\": true in your config.json)".format(module_name))
+                                "add \"DEV-MODE\": true in your config.json)")
 
     def _should_do_something(self, action, module_name, module_version, need_this_exact_version=False, requiring=None):
         if action == TentacleManagerActions.UPDATE:
@@ -170,29 +169,27 @@ class TentaclePackageManager:
                 if not need_this_exact_version:
                     new_version_available = TentacleUtil.is_first_version_superior(module_version, installed_version)
                     if not new_version_available:
-                        self.logger.info("{0}{1} version {2} is already up to date"
-                                         .format(self._format_current_step(), module_name, installed_version))
+                        self.logger.info(f"{self._format_current_step()}{module_name} version {installed_version} "
+                                         f"is already up to date")
                     return new_version_available
                 else:
                     is_required_version_installed = True
                     print_version = "any version"
                     if module_version is not None:
                         is_required_version_installed = installed_version == module_version
-                        print_version = "version {0}".format(module_version)
+                        print_version = f"version {module_version}"
                     if is_required_version_installed:
-                        self.logger.info("{0} dependency: {1} {2} is satisfied."
-                                         .format(requiring, module_name, print_version))
+                        self.logger.info(f"{requiring} dependency: {module_name} {print_version} is satisfied.")
                         return False
                     else:
                         return True
             else:
                 if requiring:
-                    self.logger.error("can't find tentacle: {0} required for {1} in installed tentacles. "
-                                      "Try to install the required tentacle".format(module_name, requiring))
+                    self.logger.error(f"can't find tentacle: {module_name} required for {requiring} in installed "
+                                      f"tentacles. Try to install the required tentacle")
                 else:
-                    self.logger.info("new tentacle found in tentacles packages: {0}. "
-                                     "You can install it using the command: {1}"
-                                     .format(module_name, "start.py -p install {0}".format(module_name)))
+                    self.logger.info(f"new tentacle found in tentacles packages: {module_name}. "
+                                     f"You can install it using the command: start.py -p install {module_name}")
 
             return False
         else:
@@ -213,13 +210,13 @@ class TentaclePackageManager:
                     self.process_module(action, package, tentacle_module, package_localisation, is_url, target_folder,
                                         package_name)
             except Exception as e:
-                error = "failed for tentacle module '{0}' ({1})".format(tentacle_module, e)
+                error = f"failed for tentacle module '{tentacle_module}' ({e})"
                 if action == TentacleManagerActions.INSTALL:
-                    self.logger.error("Installation {0}".format(error))
+                    self.logger.error(f"Installation {error}")
                 elif action == TentacleManagerActions.UNINSTALL:
-                    self.logger.error("Uninstalling {0}".format(error))
+                    self.logger.error(f"Uninstalling {error}")
                 elif action == TentacleManagerActions.UPDATE:
-                    self.logger.error("Updating {0}".format(error))
+                    self.logger.error(f"Updating {error}")
             self.inc_current_step()
 
     def _try_action_on_requirements(self, action, package, module_name, package_name):
@@ -244,18 +241,19 @@ class TentaclePackageManager:
                                                     localisation, is_url, destination, package_name)
                                 applied_modules.append(requirement_module_name)
                             else:
-                                raise Exception("module requirement '{0}' not found in package lists"
-                                                .format(requirement_data[TENTACLE_MODULE_REQUIREMENT_WITH_VERSION]))
+                                raise Exception(f"module requirement '"
+                                                f"{requirement_data[TENTACLE_MODULE_REQUIREMENT_WITH_VERSION]}' "
+                                                f"not found in package lists")
 
                         except Exception as e:
-                            error = "failed for tentacle module requirement '{0}' of module {1} ({2})" \
-                                .format(requirement_module_name, module_name, e)
+                            error = f"failed for tentacle module requirement '{requirement_module_name}' " \
+                                f"of module {module_name} ({e})"
                             if action == TentacleManagerActions.INSTALL:
-                                self.logger.error("installation {0}".format(error))
+                                self.logger.error(f"installation {error}")
                             elif action == TentacleManagerActions.UNINSTALL:
-                                self.logger.error("uninstalling {0}".format(error))
+                                self.logger.error(f"uninstalling {error}")
                             elif action == TentacleManagerActions.UPDATE:
-                                self.logger.error("updating {0}".format(error))
+                                self.logger.error(f"updating {error}")
                             success = False
 
             # failed to install requirements
@@ -285,9 +283,9 @@ class TentaclePackageManager:
 
         if parsed_module[TENTACLE_MODULE_CONFIG_FILES]:
             for config_file in parsed_module[TENTACLE_MODULE_CONFIG_FILES]:
-                config_file_path = "{0}{1}/{2}".format(file_dir, EVALUATOR_CONFIG_FOLDER, config_file)
-                default_config_file_path = "{0}{1}/{2}/{3}".format(file_dir, EVALUATOR_CONFIG_FOLDER,
-                                                                   EVALUATOR_DEFAULT_FOLDER, config_file)
+                config_file_path = f"{file_dir}{EVALUATOR_CONFIG_FOLDER}/{config_file}"
+                default_config_file_path = \
+                    f"{file_dir}{EVALUATOR_CONFIG_FOLDER}/{EVALUATOR_DEFAULT_FOLDER}/{config_file}"
 
                 self._try_action_on_config_or_resource_file(action,
                                                             module_name,
@@ -300,7 +298,7 @@ class TentaclePackageManager:
 
         if parsed_module[TENTACLE_MODULE_RESOURCE_FILES]:
             for res_file in parsed_module[TENTACLE_MODULE_RESOURCE_FILES]:
-                res_file_path = "{0}{1}/{2}".format(file_dir, EVALUATOR_RESOURCE_FOLDER, res_file)
+                res_file_path = f"{file_dir}{EVALUATOR_RESOURCE_FOLDER}/{res_file}"
 
                 self._try_action_on_config_or_resource_file(action,
                                                             module_name,
@@ -348,12 +346,12 @@ class TentaclePackageManager:
                         new_default_file.write(config_file_content)
 
                     if action == TentacleManagerActions.UPDATE:
-                        self.logger.info("{0} configuration / resource file for {1} module ignored to save the current "
-                                         "configuration. The default configuration file has been updated in: {2}."
-                                         .format(file, module_name, default_file_path))
+                        self.logger.info(f"{file} configuration / resource file for {module_name} module ignored "
+                                         f"to save the current configuration. The default configuration file has "
+                                         f"been updated in: {default_file_path}.")
 
             except Exception as e:
-                raise Exception("Fail to install configuration / resource : {}".format(e))
+                raise Exception(f"Fail to install configuration / resource : {e}")
 
         elif action == TentacleManagerActions.UNINSTALL:
             try:
@@ -377,7 +375,7 @@ class TentaclePackageManager:
         return modules
 
     def _format_current_step(self):
-        return "{0}/{1}: ".format(self.current_step, self.max_steps) if self.max_steps is not None else ""
+        return f"{self.current_step}/{self.max_steps}: " if self.max_steps is not None else ""
 
     def set_max_steps(self, max_steps):
         self.max_steps = max_steps

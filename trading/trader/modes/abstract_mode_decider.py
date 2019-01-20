@@ -67,7 +67,7 @@ class AbstractTradingModeDecider:
     def activate_deactivate_strategies(self, strategy_list, activate):
         for strategy in strategy_list:
             if strategy not in self.trading_mode.get_strategy_instances_by_classes(self.symbol):
-                raise KeyError("{} not in trading mode's strategy instances.".format(strategy))
+                raise KeyError(f"{strategy} not in trading mode's strategy instances.")
 
         strategy_instances_list = [self.trading_mode.get_strategy_instances_by_classes(self.symbol)[strategy_class]
                                    for strategy_class in strategy_list]
@@ -88,7 +88,7 @@ class AbstractTradingModeDecider:
             self.set_final_eval()
             await self.create_state()
         except Exception as e:
-            self.logger.error("Error when finalizing: {0}".format(e))
+            self.logger.error(f"Error when finalizing: {e}")
             self.logger.exception(e)
 
     def stop(self):

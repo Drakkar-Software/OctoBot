@@ -62,8 +62,8 @@ class AbstractEvaluator:
 
     @classmethod
     def get_config_file_name(cls, config_evaluator_type=None):
-        return "{0}/{1}/{2}/{3}/{4}".format(TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, config_evaluator_type
-                                            , EVALUATOR_CONFIG_FOLDER, cls.get_name() + CONFIG_FILE_EXT)
+        return f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{config_evaluator_type}/{EVALUATOR_CONFIG_FOLDER}" \
+            f"/{cls.get_name() + CONFIG_FILE_EXT}"
 
     @classmethod
     def get_evaluator_config(cls):

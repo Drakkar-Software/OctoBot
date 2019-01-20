@@ -34,7 +34,7 @@ class PerformanceAnalyser:
 
     async def start_monitoring(self):
         while self.keep_running:
-            self.logger.info("CPU : {0}% RAM : {1} Go".format(self._get_cpu(), self._get_ram_go()))
+            self.logger.info(f"CPU : {self._get_cpu()}% RAM : {self._get_ram_go()} Go")
             await asyncio.sleep(self.interval)
 
     def stop(self):

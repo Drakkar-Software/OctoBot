@@ -150,7 +150,7 @@ class SymbolEvaluator:
         # finally, refresh strategies
         await self.update_strategies_eval(next(iter(task_managers.values())).matrix, exchange, None)
 
-        self.logger.info("{} activated: {}".format([s.get_name() for s in strategies], activate))
+        self.logger.info(f"{[s.get_name() for s in strategies]} activated: {activate}")
 
     async def finalize(self, exchange):
         if not self.finalize_enabled_list[exchange.get_name()]:
