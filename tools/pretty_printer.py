@@ -33,14 +33,9 @@ class PrettyPrinter:
             except KeyError:
                 order_type_name = order.get_order_type().__class__.__name__
 
-        return "{0}: {1} {2} at {3} {4} on {5}: {6} ".format(
-            order_type_name,
-            PrettyPrinter.get_min_string_from_number(order.get_origin_quantity()),
-            currency,
-            PrettyPrinter.get_min_string_from_number(order.get_origin_price()),
-            market,
-            order.get_exchange().get_name(),
-            convert_timestamp_to_datetime(order.get_creation_time()))
+        return f"{order_type_name}: {PrettyPrinter.get_min_string_from_number(order.get_origin_quantity())} " \
+            f"{currency} at {PrettyPrinter.get_min_string_from_number(order.get_origin_price())} {market} on " \
+            f"{order.get_exchange().get_name()}: {convert_timestamp_to_datetime(order.get_creation_time())} "
 
     @staticmethod
     def trade_pretty_printer(trade):
@@ -55,39 +50,28 @@ class PrettyPrinter:
             except KeyError:
                 order_type_name = trade.order_type.__class__.__name__
 
-        return "{0}: {1} {2} at {3} {4} on {5}: {6} ".format(
-            order_type_name,
-            PrettyPrinter.get_min_string_from_number(trade.quantity),
-            currency,
-            PrettyPrinter.get_min_string_from_number(trade.price),
-            market,
-            trade.exchange.get_name(),
-            convert_timestamp_to_datetime(trade.filled_time))
+        return f"{order_type_name}: {PrettyPrinter.get_min_string_from_number(trade.quantity)} {currency} " \
+            f"at {PrettyPrinter.get_min_string_from_number(trade.price)} {market} on {trade.exchange.get_name()}: " \
+            f"{convert_timestamp_to_datetime(trade.filled_time)} "
 
     @staticmethod
     def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):
-        return "OctoBot ALERT : #{0}\n Symbol : #{1}\n Result : {2}\n Evaluation : {3}".format(
-            crypto_currency,
-            symbol.replace("/", ""),
-            str(result).split(".")[1],
-            final_eval)
+        return f"OctoBot ALERT : #{crypto_currency}\n Symbol : #{symbol.replace('/', '')}\n " \
+            f"Result : {str(result).split('.')[1]}\n Evaluation : {final_eval}"
 
     @staticmethod
     def global_portfolio_pretty_print(global_portfolio, separator="\n"):
-        result = ["{0} ({1}) {2}".format(
-            PrettyPrinter.get_min_string_from_number(amounts[Portfolio.TOTAL]),
-            PrettyPrinter.get_min_string_from_number(amounts[Portfolio.AVAILABLE]),
-            currency)
-            for currency, amounts in global_portfolio.items() if amounts[Portfolio.TOTAL] > 0]
+        result = [f"{PrettyPrinter.get_min_string_from_number(amounts[Portfolio.TOTAL])} " \
+                  f"({PrettyPrinter.get_min_string_from_number(amounts[Portfolio.AVAILABLE])}) {currency}"
+                  for currency, amounts in global_portfolio.items() if amounts[Portfolio.TOTAL] > 0]
 
         return separator.join(result)
 
     @staticmethod
     def portfolio_profitability_pretty_print(profitability, profitability_percent, reference):
-        difference = "({0}%)".format(PrettyPrinter.get_min_string_from_number(profitability_percent, 5)) \
+        difference = f"({PrettyPrinter.get_min_string_from_number(profitability_percent, 5)}%)" \
             if profitability_percent is not None else ""
-        return "{0} {1} {2}".format(PrettyPrinter.get_min_string_from_number(profitability, 5),
-                                    reference, difference)
+        return f"{PrettyPrinter.get_min_string_from_number(profitability, 5)} {reference} {difference}"
 
     @staticmethod
     def round_with_decimal_count(number, max_digits=8):

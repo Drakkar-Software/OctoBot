@@ -54,7 +54,7 @@ class DataCollector:
                     self.exchange_data_collectors.append(exchange_data_collector)
                     self.exchange_data_collectors_tasks.append(exchange_data_collector.start())
             else:
-                self.logger.error("{0} exchange not found".format(exchange_class_string))
+                self.logger.error(f"{exchange_class_string} exchange not found")
 
     async def execute_with_specific_target(self, exchange, symbol):
         try:

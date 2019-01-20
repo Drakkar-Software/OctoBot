@@ -80,7 +80,7 @@ class AbstractWebSocket:
         try:
             return self.exchange_manager.get_ccxt_exchange().get_client().markets_by_id[symbol]['symbol']
         except Exception as e:
-            self.logger.error("Can't parse {} from ccxt exchange".format(symbol))
+            self.logger.error(f"Can't parse {symbol} from ccxt exchange")
             raise e
 
     @staticmethod

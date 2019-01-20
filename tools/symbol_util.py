@@ -30,4 +30,4 @@ def merge_symbol(symbol):
 
 # Merge currency and market
 def merge_currencies(currency, market):
-    return "{0}/{1}".format(currency, market)
+    return f"{currency}/{market}"

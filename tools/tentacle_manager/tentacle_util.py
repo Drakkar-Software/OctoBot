@@ -34,7 +34,7 @@ from tools.config_manager import ConfigManager
 def tentacles_arch_exists() -> bool:
     try:
         import tentacles
-        return os.path.exists(TENTACLES_PATH) and os.path.exists("{0}/{1}".format(TENTACLES_PATH, TENTACLES_TEST_PATH))
+        return os.path.exists(TENTACLES_PATH) and os.path.exists(f"{TENTACLES_PATH}/{TENTACLES_TEST_PATH}")
     except ImportError:
         return False
 
@@ -207,40 +207,27 @@ def create_localization_from_type(localization, module_type, module_subtype, fil
     # create path from types
     test_folder_if_required = ""
     if tests:
-        test_folder_if_required = "/{0}".format(TENTACLES_TEST_PATH)
+        test_folder_if_required = f"/{TENTACLES_TEST_PATH}"
     if module_subtype:
-        return "{0}{1}/{2}/{3}/{4}".format(localization,
-                                           test_folder_if_required,
-                                           module_type,
-                                           module_subtype,
-                                           file)
+        return f"{localization}{test_folder_if_required}/{module_type}/{module_subtype}/{file}"
     else:
-        return "{0}{1}/{2}/{3}".format(localization,
-                                       test_folder_if_required,
-                                       module_type,
-                                       file)
+        return f"{localization}{test_folder_if_required}/{module_type}/{file}"
 
 
 def create_path_from_type(module_type, module_subtype, target_folder, tests=False):
     # create path from types
     test_folder_if_required = ""
     if tests:
-        test_folder_if_required = "/{0}".format(TENTACLES_TEST_PATH)
+        test_folder_if_required = f"/{TENTACLES_TEST_PATH}"
     if module_subtype:
-        return "{0}{1}/{2}/{3}/{4}".format(TENTACLES_PATH,
-                                           test_folder_if_required,
-                                           TENTACLE_TYPES[module_type],
-                                           TENTACLE_TYPES[module_subtype],
-                                           target_folder)
+        return f"{TENTACLES_PATH}{test_folder_if_required}/{TENTACLE_TYPES[module_type]}/" \
+            f"{TENTACLE_TYPES[module_subtype]}/{target_folder}"
     else:
-        return "{0}{1}/{2}/{3}".format(TENTACLES_PATH,
-                                       test_folder_if_required,
-                                       TENTACLE_TYPES[module_type],
-                                       target_folder)
+        return f"{TENTACLES_PATH}{test_folder_if_required}/{TENTACLE_TYPES[module_type]}/{target_folder}"
 
 
 def get_full_module_identifier(module_name, module_version):
-    return "{0}{1}{2}".format(module_name, TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR, module_version)
+    return f"{module_name}{TENTACLE_MODULE_REQUIREMENT_VERSION_SEPARATOR}{module_version}"
 
 
 def parse_version(version):

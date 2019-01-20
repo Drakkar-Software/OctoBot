@@ -244,7 +244,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
                   for symbol in trader_pairs]
         # add tickers
         for symbol in trader_pairs:
-            prices.append("{}{}".format(merge_symbol(symbol).lower(), self._TICKER_KEY))
+            prices.append(f"{merge_symbol(symbol).lower()}{self._TICKER_KEY}")
         connection_key = self.socket_manager.start_multiplex_socket(prices, self.all_currencies_prices_callback)
         self.open_sockets_keys[self._MULTIPLEX_SOCKET_NAME] = connection_key
 

@@ -43,7 +43,7 @@ def get_package_description(url_or_path, try_to_adapt=False):
                 package_url_or_path += "/"
             # if checking on github, try adding branch and file
             if GITHUB in package_url_or_path:
-                package_url_or_path += "{0}/{1}".format(TENTACLES_DEFAULT_BRANCH, TENTACLES_PUBLIC_LIST)
+                package_url_or_path += f"{TENTACLES_DEFAULT_BRANCH}/{TENTACLES_PUBLIC_LIST}"
             # else try adding file
             else:
                 package_url_or_path += TENTACLES_PUBLIC_LIST
@@ -89,18 +89,14 @@ def add_package_description_metadata(package_description, localisation, is_url):
 
 def get_octobot_tentacle_public_repo(to_description_file=True):
     if to_description_file:
-        return "{0}/{1}/{2}/{3}".format(GITHUB_BASE_URL,
-                                        TENTACLES_PUBLIC_REPOSITORY,
-                                        TENTACLES_DEFAULT_BRANCH,
-                                        TENTACLES_PUBLIC_LIST)
+        return f"{GITHUB_BASE_URL}/{TENTACLES_PUBLIC_REPOSITORY}/{TENTACLES_DEFAULT_BRANCH}/{TENTACLES_PUBLIC_LIST}"
     else:
-        return "{0}/{1}".format(GITHUB_BASE_URL,
-                                TENTACLES_PUBLIC_REPOSITORY)
+        return f"{GITHUB_BASE_URL}/{TENTACLES_PUBLIC_REPOSITORY}"
 
 
 def add_package_name(module_file_content, package_name):
     return module_file_content.replace('$tentacle_description: {\n', '$tentacle_description: {\n    ' +
-                                       '"package_name": "{0}",\n'.format(package_name))
+                                       f'"package_name": "{package_name}",\n')
 
 
 def get_package_name(localisation, is_url):
@@ -132,10 +128,10 @@ def read_tentacles(path, description_list):
     for file_name in os.listdir(path):
         if check_path(path) and file_name.endswith(".py") \
                 and file_name != PYTHON_INIT_FILE:
-            with open("{0}/{1}".format(path, file_name), "r") as module:
+            with open(f"{path}/{file_name}", "r") as module:
                 TentacleUtil.parse_module_file(module.read(), description_list)
         else:
-            file_name = "{0}/{1}".format(path, file_name)
+            file_name = f"{path}/{file_name}"
             if os.path.isdir(file_name) and not path.startswith('.'):
                 read_tentacles(file_name, description_list)
 
