@@ -107,11 +107,10 @@ class TelegramApp(InterfaceBot):
     def command_pause_resume(self, _, update):
         if TelegramApp._is_valid_user(update):
             if self.paused:
-                update.message.reply_text("Resuming...{0}I will restart trading when i see opportunities !"
-                                          .format(EOL))
+                update.message.reply_text(f"Resuming...{EOL}I will restart trading when i see opportunities !")
                 self.set_command_resume()
             else:
-                update.message.reply_text("Pausing...{}I'm cancelling my orders.".format(EOL))
+                update.message.reply_text(f"Pausing...{EOL}I'm cancelling my orders.")
                 self.set_command_pause()
 
     @staticmethod
@@ -175,13 +174,13 @@ class TelegramApp(InterfaceBot):
             try:
                 update.message.reply_text(InterfaceBot.get_command_market_status())
             except Exception:
-                update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, " +
+                update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, "
                                           "please retry in a few seconds.")
 
     @staticmethod
     def command_error(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text("Failed to perform this command : {0}".format(update.message.text))
+            update.message.reply_text(f"Failed to perform this command : {update.message.text}")
 
     @staticmethod
     def echo(_, update):

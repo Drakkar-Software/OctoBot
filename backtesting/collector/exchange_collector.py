@@ -62,7 +62,7 @@ class ExchangeDataCollector:
                 self.file_contents[symbol][time_frame.value] = None
 
     async def load_available_data(self):
-        self.logger.info("{0} load_available_data...".format(self.exchange.get_name()))
+        self.logger.info(f"{self.exchange.get_name()} load_available_data...")
         self._prepare_files_content()
         for symbol in self.symbols:
             for time_frame in self.time_frames:

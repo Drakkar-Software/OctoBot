@@ -43,7 +43,7 @@ def test_set_get_eval():
         matrix_inst, matrix, config = _get_tools()
         for value in values:
             for matrix_type in EvaluatorMatrixTypes:
-                key = "{}{}".format(matrix_type, value)
+                key = f"{matrix_type}{value}"
                 matrix_inst.set_eval(matrix_type, key, value, time_frame)
                 if math.isnan(value):
                     assert matrix_inst.get_eval_note(matrix, matrix_type, key, time_frame) is None

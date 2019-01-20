@@ -57,10 +57,8 @@ class OrdersManager:
         try:
             if order in self.order_list:
                 self.order_list.remove(order)
-                self.logger.debug("{0} {1} (ID : {2}) removed on {3}".format(order.get_order_symbol(),
-                                                                             order.get_name(),
-                                                                             order.get_id(),
-                                                                             self.trader.get_exchange().get_name()))
+                self.logger.debug(f"{order.get_order_symbol()} {order.get_name()} (ID : {order.get_id()}) "
+                                  f"removed on {self.trader.get_exchange().get_name()}")
 
         except Exception as e:
             self.logger.error(str(e))

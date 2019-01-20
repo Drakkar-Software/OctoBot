@@ -155,7 +155,7 @@ class ExchangeManager(Initializable):
         if self.is_simulated or self.exchange.get_name() in self.config[CONFIG_EXCHANGES]:
             return True
         else:
-            self.logger.warning("Exchange {0} is currently disabled".format(self.exchange.get_name()))
+            self.logger.warning(f"Exchange {self.exchange.get_name()} is currently disabled")
             return False
 
     def get_exchange_symbol_id(self, symbol, with_fixer=False):
@@ -251,4 +251,4 @@ class ExchangeManager(Initializable):
 
     # Exceptions
     def _raise_exchange_load_error(self):
-        raise Exception("{0} - Failed to load exchange instances".format(self.exchange))
+        raise Exception(f"{self.exchange} - Failed to load exchange instances")

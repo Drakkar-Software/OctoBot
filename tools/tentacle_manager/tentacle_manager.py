@@ -95,13 +95,13 @@ class TentacleManager:
                     self.reset_tentacles()
 
             elif commands[0] == "help":
-                self.logger.info("Welcome in Tentacle Manager, commands are:\n{0}".format(help_message))
+                self.logger.info(f"Welcome in Tentacle Manager, commands are:\n{help_message}")
 
             else:
-                self.logger.error("Command not found: {0}, commands are:\n{1}".format(commands[0], help_message))
+                self.logger.error(f"Command not found: {commands[0]}, commands are:\n{help_message}")
         else:
             arguments_help = "-p: activates the package manager."
-            self.logger.error("Invalid arguments, arguments are: {0}".format(arguments_help))
+            self.logger.error(f"Invalid arguments, arguments are: {arguments_help}")
 
     def install_parser(self, commands, command_all=False, force=False):
         should_install = True
@@ -138,10 +138,10 @@ class TentacleManager:
                                                                          package_name)
 
                         except Exception as e:
-                            self.logger.error("Installation failed for tentacle module '{0}'".format(component))
+                            self.logger.error(f"Installation failed for tentacle module '{component}'")
                             raise e
                     else:
-                        self.logger.error("No installation found for tentacle module '{0}'".format(component))
+                        self.logger.error(f"No installation found for tentacle module '{component}'")
                     self.tentacle_package_manager.inc_current_step()
 
             TentaclePackageManager.update_evaluator_config_file()
@@ -176,10 +176,10 @@ class TentacleManager:
                                                                      localisation, is_url, destination, package_name)
 
                     except Exception as e:
-                        self.logger.error("Update failed for tentacle module '{0}'".format(component))
+                        self.logger.error(f"Update failed for tentacle module '{component}'")
                         raise e
                 else:
-                    self.logger.error("No tentacle found for '{0}'".format(component))
+                    self.logger.error(f"No tentacle found for '{component}'")
                 self.tentacle_package_manager.inc_current_step()
 
             return nb_actions
@@ -207,9 +207,9 @@ class TentacleManager:
                         self.tentacle_package_manager.process_module(TentacleManagerActions.UNINSTALL, package,
                                                                      component, "", "", destination, "")
                     except Exception:
-                        self.logger.error("Uninstalling failed for module '{0}'".format(component))
+                        self.logger.error(f"Uninstalling failed for module '{component}'")
                 else:
-                    self.logger.error("No module found for '{0}'".format(component))
+                    self.logger.error(f"No module found for '{component}'")
                 self.tentacle_package_manager.inc_current_step()
             return nb_actions
 
@@ -231,7 +231,7 @@ class TentacleManager:
                     self.advanced_package_list.append(
                         TentaclePackageUtil.get_package_description_with_adaptation(package))
                 except Exception:
-                    self.logger.error("Impossible to get an OctoBot Tentacles Package at : {0}".format(package))
+                    self.logger.error(f"Impossible to get an OctoBot Tentacles Package at : {package}")
 
     def get_package_in_lists(self, component_name, component_version=None):
         if TentacleUtil.has_required_package(self.default_package, component_name, component_version):
@@ -257,7 +257,7 @@ class TentacleManager:
             return True
         else:
             confirmation = ["yes", "ye", "y", "oui", "o"]
-            user_input = input("{0} Y/N".format(action)).lower()
+            user_input = input(f"{action} Y/N").lower()
             if user_input in confirmation:
                 return True
             else:

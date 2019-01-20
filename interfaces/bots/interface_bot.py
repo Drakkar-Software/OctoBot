@@ -62,7 +62,7 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_configuration():
-        message = "My configuration:{0}{0}".format(EOL)
+        message = f"My configuration:{EOL}{EOL}"
 
         message += "Traders: " + EOL
         has_real_trader, has_simulated_trader = has_real_and_or_simulated_traders()
@@ -71,27 +71,26 @@ class InterfaceBot:
         if has_simulated_trader:
             message += "- Simulated trader" + EOL
 
-        message += "{0}Exchanges:{0}".format(EOL)
+        message += f"{EOL}Exchanges:{EOL}"
         for exchange in get_bot().get_exchanges_list().values():
-            message += "- {0}{1}".format(exchange.get_name(), EOL)
+            message += f"- {exchange.get_name()}{EOL}"
 
-        message += "{0}Evaluators:{0}".format(EOL)
+        message += f"{EOL}Evaluators:{EOL}"
         first_evaluator = next(iter(get_bot().get_symbols_tasks_manager().values())).get_evaluator()
         evaluators = copy.copy(first_evaluator.get_social_eval_list())
         evaluators += first_evaluator.get_ta_eval_list()
         evaluators += first_evaluator.get_real_time_eval_list()
         for evaluator in evaluators:
-            message += "- {0}{1}".format(evaluator.get_name(), EOL)
+            message += f"- {evaluator.get_name()}{EOL}"
 
         first_symbol_evaluator = next(iter(get_bot().get_symbol_evaluator_list().values()))
         first_exchange = next(iter(get_bot().get_exchanges_list().values()))
-        message += "{0}Strategies:{0}".format(EOL)
+        message += f"{EOL}Strategies:{EOL}"
         for strategy in first_symbol_evaluator.get_strategies_eval_list(first_exchange):
-            message += "- {0}{1}".format(strategy.get_name(), EOL)
+            message += f"- {strategy.get_name()}{EOL}"
 
-        message += "{0}Trading mode:{0}".format(EOL)
-        message += "- {0}{1}".format(next(iter(get_bot().get_exchange_trading_modes().values())).get_name(),
-                                     EOL)
+        message += f"{EOL}Trading mode:{EOL}"
+        message += f"- {next(iter(get_bot().get_exchange_trading_modes().values())).get_name()}{EOL}"
 
         return message
 
@@ -117,15 +116,14 @@ class InterfaceBot:
 
         trades_history_string = ""
         if has_real_trader:
-            trades_history_string += "{0}Trades :{1}".format(REAL_TRADER_STR, EOL)
+            trades_history_string += f"{REAL_TRADER_STR}Trades :{EOL}"
             for trades in real_trades_history:
                 for trade in trades:
                     trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + EOL
 
         if has_simulated_trader:
             for trades in simulated_trades_history:
-                trades_history_string += EOL + "{0}Trades :{1}".format(SIMULATOR_TRADER_STR,
-                                                                       EOL)
+                trades_history_string += EOL + f"{SIMULATOR_TRADER_STR}Trades :{EOL}"
                 for trade in trades:
                     trades_history_string += PrettyPrinter.trade_pretty_printer(trade) + EOL
 
@@ -141,14 +139,13 @@ class InterfaceBot:
 
         orders_string = ""
         if has_real_trader:
-            orders_string += "{0}Open orders :{1}".format(REAL_TRADER_STR, EOL)
+            orders_string += f"{REAL_TRADER_STR}Open orders :{EOL}"
             for orders in portfolio_real_open_orders:
                 for order in orders:
                     orders_string += PrettyPrinter.open_order_pretty_printer(order) + EOL
 
         if has_simulated_trader:
-            orders_string += EOL + "{0}Open orders :{1}".format(SIMULATOR_TRADER_STR,
-                                                                EOL)
+            orders_string += EOL + f"{SIMULATOR_TRADER_STR}Open orders :{EOL}"
             for orders in portfolio_simulated_open_orders:
                 for order in orders:
                     orders_string += PrettyPrinter.open_order_pretty_printer(order) + EOL
@@ -167,26 +164,16 @@ class InterfaceBot:
 
         portfolios_string = ""
         if has_real_trader:
-            portfolios_string += "{0}Portfolio value : {1} {2}{3}".format(
-                REAL_TRADER_STR,
-                PrettyPrinter.get_min_string_from_number(portfolio_real_current_value),
-                reference_market,
-                EOL)
-            portfolios_string += "{0}Portfolio : {2}{1}{2}{2}".format(
-                REAL_TRADER_STR,
-                PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio),
-                EOL)
+            portfolios_string += f"{REAL_TRADER_STR}Portfolio value : " \
+                f"{PrettyPrinter.get_min_string_from_number(portfolio_real_current_value)} {reference_market}{EOL}"
+            portfolios_string += f"{REAL_TRADER_STR}Portfolio : {EOL}" \
+                f"{PrettyPrinter.global_portfolio_pretty_print(real_global_portfolio)}{EOL}{EOL}"
 
         if has_simulated_trader:
-            portfolios_string += "{0}Portfolio value : {1} {2}{3}".format(
-                SIMULATOR_TRADER_STR,
-                PrettyPrinter.get_min_string_from_number(portfolio_simulated_current_value),
-                reference_market,
-                EOL)
-            portfolios_string += "{0}Portfolio : {2}{1}".format(
-                SIMULATOR_TRADER_STR,
-                PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio),
-                EOL)
+            portfolios_string += f"{SIMULATOR_TRADER_STR}Portfolio value : " \
+                f"{PrettyPrinter.get_min_string_from_number(portfolio_simulated_current_value)} {reference_market}{EOL}"
+            portfolios_string += f"{SIMULATOR_TRADER_STR}Portfolio : {EOL}" \
+                f"{PrettyPrinter.global_portfolio_pretty_print(simulated_global_portfolio)}"
 
         if not portfolios_string:
             portfolios_string = NO_TRADER_MESSAGE
@@ -202,26 +189,22 @@ class InterfaceBot:
          market_average_profitability = get_global_profitability()
         profitability_string = ""
         if has_real_trader:
-            profitability_string = "{0}Global profitability : {1} ({2}%), market: {3}%, initial portfolio: {4}%{5}" \
-                .format(
-                    REAL_TRADER_STR,
-                    PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
-                                                                       None,
-                                                                       get_reference_market()),
-                    PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2),
-                    PrettyPrinter.get_min_string_from_number(market_average_profitability, 2),
-                    PrettyPrinter.get_min_string_from_number(real_no_trade_profitability, 2),
-                    EOL)
+            real_profitability_pretty = PrettyPrinter.portfolio_profitability_pretty_print(real_global_profitability,
+                                                                                           None,
+                                                                                           get_reference_market())
+            profitability_string = f"{REAL_TRADER_STR}Global profitability : {real_profitability_pretty} " \
+                f"({PrettyPrinter.get_min_string_from_number(real_percent_profitability, 2)}%), " \
+                f"market: {PrettyPrinter.get_min_string_from_number(market_average_profitability, 2)}%, " \
+                f"initial portfolio: {PrettyPrinter.get_min_string_from_number(real_no_trade_profitability, 2)}%{EOL}"
         if has_simulated_trader:
-            profitability_string += "{0}Global profitability : {1} ({2}%), market: {3}%, initial portfolio: {4}%" \
-                .format(
-                    SIMULATOR_TRADER_STR,
-                    PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
-                                                                       None,
-                                                                       get_reference_market()),
-                    PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2),
-                    PrettyPrinter.get_min_string_from_number(market_average_profitability, 2),
-                    PrettyPrinter.get_min_string_from_number(simulated_no_trade_profitability, 2))
+            simulated_profitability_pretty = \
+                PrettyPrinter.portfolio_profitability_pretty_print(simulated_global_profitability,
+                                                                   None,
+                                                                   get_reference_market())
+            profitability_string += f"{SIMULATOR_TRADER_STR}Global profitability : {simulated_profitability_pretty} " \
+                f"({PrettyPrinter.get_min_string_from_number(simulated_percent_profitability, 2)}%), " \
+                f"market: {PrettyPrinter.get_min_string_from_number(market_average_profitability, 2)}%, " \
+                f"initial portfolio: {PrettyPrinter.get_min_string_from_number(simulated_no_trade_profitability, 2)}%"
         if not profitability_string:
             profitability_string = NO_TRADER_MESSAGE
 
@@ -229,8 +212,7 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_ping():
-        return "I'm alive since {0}."\
-            .format(convert_timestamp_to_datetime(get_bot().get_start_time(), '%Y-%m-%d %H:%M:%S'))
+        return f"I'm alive since {convert_timestamp_to_datetime(get_bot().get_start_time(), '%Y-%m-%d %H:%M:%S')}."
 
     @staticmethod
     def get_command_start():

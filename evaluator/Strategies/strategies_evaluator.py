@@ -59,8 +59,7 @@ class StrategiesEvaluator(AbstractEvaluator):
         if STRATEGIES_REQUIRED_TIME_FRAME in strategy_config:
             return TimeFrameManager.parse_time_frames(strategy_config[STRATEGIES_REQUIRED_TIME_FRAME])
         else:
-            raise Exception("'{0}' is missing in {1}".format(STRATEGIES_REQUIRED_TIME_FRAME,
-                                                             cls.get_config_file_name()))
+            raise Exception(f"'{STRATEGIES_REQUIRED_TIME_FRAME}' is missing in {cls.get_config_file_name()}")
 
     @classmethod
     def get_required_evaluators(cls, config):
@@ -70,8 +69,7 @@ class StrategiesEvaluator(AbstractEvaluator):
         if STRATEGIES_REQUIRED_EVALUATORS in strategy_config:
             return strategy_config[STRATEGIES_REQUIRED_EVALUATORS]
         else:
-            raise Exception("'{0}' is missing in {1}".format(STRATEGIES_REQUIRED_EVALUATORS,
-                                                             cls.get_config_file_name()))
+            raise Exception(f"'{STRATEGIES_REQUIRED_EVALUATORS}' is missing in {cls.get_config_file_name()}")
 
     # Strategies are not standalone tasks
     async def start_task(self):
