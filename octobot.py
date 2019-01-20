@@ -150,6 +150,9 @@ class OctoBot:
                 await exchange_trader_simulator.initialize()
                 self.exchange_trader_simulators[exchange_inst.get_name()] = exchange_trader_simulator
 
+                if not (exchange_trader_simulator.enabled(self.config) or exchange_trader.enabled(self.config)):
+                    self.logger.error(f"No trader simulator nor real trader activated on {exchange_inst.get_name()}")
+
                 # create trading mode
                 try:
                     self.trading_mode = get_activated_trading_mode(self.config)(self.config, exchange_inst)
