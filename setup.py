@@ -23,7 +23,7 @@ from config import PROJECT_NAME, VERSION
 def find_package_data(path):
     return (path, [os.path.join(dirpath, filename)
             for dirpath, dirnames, filenames in os.walk(path)
-            for filename in [f for f in filenames if not f.endswith(".py") and not f.endswith(".pyc")]])
+            for filename in [file for file in filenames if not file.endswith(".py") and not file.endswith(".pyc")]])
 
 
 PACKAGES = find_packages(exclude=["docs.*", "tests.*", "tentacles.*", "logs"])

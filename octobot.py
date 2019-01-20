@@ -218,16 +218,16 @@ class OctoBot:
 
         for time_frame in self.time_frames:
             if exchange.get_exchange_manager().time_frame_exists(time_frame.value, symbol_evaluator.get_symbol()):
-                self.symbol_tasks_manager[time_frame] = EvaluatorTaskManager(self.config,
-                                                                             time_frame,
-                                                                             global_price_updater,
-                                                                             symbol_evaluator,
-                                                                             exchange,
-                                                                             self.exchange_trading_modes
-                                                                                  [exchange.get_name()],
-                                                                             real_time_ta_eval_list,
-                                                                             self.async_loop,
-                                                                             self.relevant_evaluators)
+                self.symbol_tasks_manager[time_frame] = \
+                    EvaluatorTaskManager(self.config,
+                                         time_frame,
+                                         global_price_updater,
+                                         symbol_evaluator,
+                                         exchange,
+                                         self.exchange_trading_modes[exchange.get_name()],
+                                         real_time_ta_eval_list,
+                                         self.async_loop,
+                                         self.relevant_evaluators)
             else:
                 self.logger.warning(f"{exchange.get_name()} exchange is not supporting the required time frame: "
                                     f"'{time_frame.value}' for {symbol_evaluator.get_symbol()}.")

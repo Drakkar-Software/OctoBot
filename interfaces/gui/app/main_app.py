@@ -42,7 +42,8 @@ class MainApp(AbstractTkApp):
 
     def create_components(self):
         # buttons
-        self.start_button = Button(self.top_frame, command=self.start_callback, text="Open OctoBot", style='Bot.TButton')
+        self.start_button = Button(self.top_frame, command=self.start_callback,
+                                   text="Open OctoBot", style='Bot.TButton')
         self.start_button.grid(row=1, column=1)
 
     def start_callback(self):

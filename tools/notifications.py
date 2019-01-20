@@ -252,8 +252,7 @@ class OrdersNotification(Notification):
 
         await self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
-        await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
-                                                       CONFIG_NOTIFICATION_TRADES)
+        await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content, CONFIG_NOTIFICATION_TRADES)
 
     @staticmethod
     def _build_notification_content(order_filled,

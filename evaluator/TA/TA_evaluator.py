@@ -34,7 +34,7 @@ class TAEvaluator(AbstractEvaluator):
         self.data = data
 
     def get_is_evaluable(self):
-        return not self.data is None
+        return self.data is not None
 
     @abstractmethod
     async def eval_impl(self) -> None:
