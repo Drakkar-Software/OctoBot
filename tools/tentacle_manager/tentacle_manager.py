@@ -22,7 +22,7 @@ from tools.tentacle_manager.tentacle_package_manager import TentaclePackageManag
 
 from config import TENTACLE_PACKAGE_DESCRIPTION, EVALUATOR_DEFAULT_FOLDER, CONFIG_TENTACLES_KEY, \
     TENTACLE_PACKAGE_DESCRIPTION_LOCALISATION, TENTACLE_DESCRIPTION_IS_URL, EVALUATOR_ADVANCED_FOLDER, \
-    TentacleManagerActions,TENTACLE_PACKAGE_NAME
+    TentacleManagerActions, TENTACLE_PACKAGE_NAME
 
 
 class TentacleManager:
@@ -105,7 +105,6 @@ class TentacleManager:
 
     def install_parser(self, commands, command_all=False, force=False):
         should_install = True
-        nb_actions = 0
         # first ensure the current tentacles architecture is setup correctly
         if TentacleUtil.create_missing_tentacles_arch() and not force:
             should_install = self._confirm_action("Tentacles installation found on this OctoBot, this action will "

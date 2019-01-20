@@ -21,7 +21,7 @@ logging.getLogger("notifiers").setLevel(logging.WARNING)
 import notifiers
 from notifiers import NoSuchNotifierError
 
-from config import CONFIG_NOTIFIER, CONFIG_CATEGORY_SERVICES, PROJECT_NOTIFICATION, NOTIFIER_REQUIRED_KEY, \
+from config import CONFIG_CATEGORY_SERVICES, PROJECT_NOTIFICATION, NOTIFIER_REQUIRED_KEY, \
     NOTIFIER_IGNORED_REQUIRED_CONFIG, NOTIFIER_REQUIRED_CONFIG, NOTIFIER_PROPERTIES_KEY
 from services.abstract_service import AbstractService
 from tools import dict_util

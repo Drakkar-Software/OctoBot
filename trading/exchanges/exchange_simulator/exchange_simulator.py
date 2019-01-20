@@ -23,7 +23,7 @@ from backtesting.collector.data_parser import DataCollectorParser
 from config import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACKTESTING, \
     SIMULATOR_LAST_PRICES_TO_CHECK, ORDER_CREATION_LAST_TRADES_TO_USE, CONFIG_BACKTESTING_DATA_FILES, PriceIndexes, \
     TimeFramesMinutes, ExchangeConstantsTickersColumns, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, \
-    CONFIG_SIMULATOR_FEES_MAKER, CONFIG_DEFAULT_SIMULATOR_FEES, TraderOrderType, FeePropertyColumns,  \
+    CONFIG_SIMULATOR_FEES_MAKER, CONFIG_DEFAULT_SIMULATOR_FEES, TraderOrderType, FeePropertyColumns, \
     ExchangeConstantsMarketPropertyColumns, CONFIG_SIMULATOR_FEES_TAKER, CONFIG_SIMULATOR_FEES_WITHDRAW
 from tools.time_frame_manager import TimeFrameManager
 from tools.symbol_util import split_symbol
@@ -326,7 +326,7 @@ class ExchangeSimulator(AbstractExchange):
                         if candle[PriceIndexes.IND_PRICE_TIME.value] > min_time_frame_to_consider[symbol] and \
                                 index > 0:
                             # if superior: take the prvious one
-                            index_to_use = index-1
+                            index_to_use = index - 1
                         found_index = True
                         self.time_frames_offset[symbol][time_frame.value] = index_to_use
                         break

@@ -76,7 +76,8 @@ class Evaluator:
         for real_time_eval in self.real_time_eval_list:
             real_time_eval.add_evaluator_task_manager(evaluator_task_manager)
             evaluator_task_manager.get_symbol_evaluator()\
-                .add_evaluator_instance_to_strategy_instances_list(real_time_eval, evaluator_task_manager.get_exchange())
+                .add_evaluator_instance_to_strategy_instances_list(real_time_eval,
+                                                                   evaluator_task_manager.get_exchange())
 
     async def update_ta_eval(self, ignored_evaluator=None):
         # update only with new data

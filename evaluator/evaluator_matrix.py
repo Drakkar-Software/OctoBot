@@ -34,7 +34,7 @@ class EvaluatorMatrix:
                  matrix_type: EvaluatorMatrixTypes,
                  evaluator_name: str,
                  value: MatrixValueType,
-                 time_frame: TimeFrames=None) -> None:
+                 time_frame: TimeFrames = None) -> None:
         if evaluator_name not in self.matrix[matrix_type]:
             self.matrix[matrix_type][evaluator_name] = {}
 
@@ -52,7 +52,7 @@ class EvaluatorMatrix:
     def get_eval_note(matrix: MatrixType,
                       matrix_type: EvaluatorMatrixTypes,
                       evaluator_name: str,
-                      time_frame: TimeFrames=None) -> MatrixValueType:
+                      time_frame: TimeFrames = None) -> MatrixValueType:
         if matrix_type in matrix and evaluator_name in matrix[matrix_type]:
             if time_frame is not None:
                 if isinstance(matrix[matrix_type][evaluator_name], dict) \

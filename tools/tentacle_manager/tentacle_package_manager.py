@@ -412,7 +412,6 @@ class TentaclePackageManager:
                     # remove package to uninstall from init
                     init_file_w.write(init_content.replace(line_in_init, ""))
 
-
     @staticmethod
     def _log_config_file_update_exception(logger, exception):
         logger.exception(exception)
