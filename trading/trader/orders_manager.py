@@ -15,6 +15,7 @@
 #  License along with this library.
 import asyncio
 import copy
+from ccxt.async_support import BaseError
 
 from backtesting.backtesting import Backtesting
 from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
@@ -92,7 +93,12 @@ class OrdersManager:
 
         # Exchange call when not backtesting
         else:
-            last_symbol_price = await exchange.get_recent_trades(symbol)
+            last_symbol_price = []
+            try:
+                last_symbol_price = await exchange.get_recent_trades(symbol)
+            except BaseError as e:
+                self.logger.warning(f"Failed to get recent trade: {e}, skipping simulated {symbol} order(s) update for "
+                                    f"this time. Next update in {self.order_refresh_time} second(s).")
             if uniformize_timestamps and last_symbol_price:
                 timestamp_sample = last_symbol_price[0][eC.TIMESTAMP.value]
                 if exchange.get_exchange_manager().need_to_uniformize_timestamp(timestamp_sample):

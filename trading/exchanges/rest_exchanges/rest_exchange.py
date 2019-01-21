@@ -134,11 +134,8 @@ class RESTExchange(AbstractExchange, Initializable):
         self.get_symbol_data(symbol).update_order_book(await self.client.fetch_order_book(symbol, limit))
 
     async def get_recent_trades(self, symbol, limit=50):
-        try:
-            trades = await self.client.fetch_trades(symbol, limit=limit)
-            self.get_symbol_data(symbol).update_recent_trades(trades)
-        except BaseError as e:
-            self.logger.error(f"Failed to get recent trade {e}")
+        trades = await self.client.fetch_trades(symbol, limit=limit)
+        self.get_symbol_data(symbol).update_recent_trades(trades)
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     async def get_price_ticker(self, symbol):
