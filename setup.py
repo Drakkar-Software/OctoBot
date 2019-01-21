@@ -33,11 +33,25 @@ PACKAGES_DATA = [find_package_data("interfaces"),
                  ('pre_requirements.txt', ['pre_requirements.txt']),
                  ('requirements.txt', ['requirements.txt'])]
 
+
 # long description from README file
 with open('README.md', encoding='utf-8') as f:
     DESCRIPTION = f.read()
 
-REQUIRED = open('pre_requirements.txt').read() + open('requirements.txt').read() + "OctoBot-Launcher"
+SETUP_REQUIRED = []
+INSTALL_REQUIRED = []
+with open('pre_requirements.txt') as f:
+    pre_requires = f.read().splitlines()
+    SETUP_REQUIRED += pre_requires
+
+with open('requirements.txt') as f:
+    INSTALL_REQUIRED += f.read().splitlines()
+INSTALL_REQUIRED.append("OctoBot-Launcher")
+
+# with open('dev_requirements.txt') as f:
+#     DEV_REQUIRED = f.read().splitlines()
+DEV_REQUIRED = "pytest"
+
 REQUIRES_PYTHON = '>=3.7.2'
 
 setup(
@@ -47,12 +61,13 @@ setup(
     license='LGPL-3.0',
     author='Drakkar-Software',
     author_email='drakkar.software@protonmail.com',
-    description='Cryptocurrencies alert / trading bot',
+    description='Modular cryptocurrency trading bot: high frequency, daily trading, social trading...',
     py_modules=['start', 'octobot'],
     packages=PACKAGES,
     long_description=DESCRIPTION,
-    install_requires=REQUIRED,
-    tests_require=["pytest"],
+    install_requires=INSTALL_REQUIRED,
+    setup_requires=SETUP_REQUIRED,
+    tests_require=DEV_REQUIRED,
     test_suite="tests",
     zip_safe=False,
     python_requires=REQUIRES_PYTHON,

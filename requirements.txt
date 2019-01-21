@@ -4,7 +4,6 @@ OctoBot-Tentacles-Manager
 # Cryptocurrency trading
 python-binance
 ccxt
-tulipy
 
 ## Services
 notifiers
