@@ -43,24 +43,9 @@ matrix:
         - if [[ $TRAVIS_PULL_REQUEST == 'false' ]]; then bash coveralls; fi
 
 before_deploy:
-  - python3 -m nltk.downloader -d $NLTK_DATA words
-  - pyinstaller docs/delivery/start.spec
-  - mv dist/OctoBot ./OctoBot_$TRAVIS_OS_NAME && rm -rf dist/
-  - RELEASE_SHASUM=$(openssl sha1 ./OctoBot_$TRAVIS_OS_NAME)
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then python3 setup.py sdist bdist_wheel && python3 -m twine check dist/*; fi
 
 deploy:
-  - provider: releases
-    api_key:
-      secure: BleYWO52UlS4M+jjx6YpXghthDH6xwP+WWiVOGTEWY0XmwL01Fo931hLIEmIuQ3Ipi9h/DWFgnmG+JcOztMkYc/uvz4O+96xd28fAByw/acJly7LJclOpDO9AJuzZdx+L/yPMtsp3IUG1LbP/RH69RJDaDIJAAz8pJh6D5b+LccL679d2duBSmSQ27W5qU9iRPhOcPGVRF7P/1143OjVZSo9WEHKh7RGC3KVY32HihlPxYaq8YAgXZ5a0OCQN1RZKmL8csvOXKLtkzphm+3OotKTLziX7OgE7CT0M4sVPzdskodgfxB1AmEJ1t6Bar5ouCx5ogdP5EEH+suj5OQRnMQXlao/HM2/9nC51Bqnib0oeEylyM0B+3++6wfUB7DwIns+znK8IhncZKTYdT7QZqLhasP64nV573KGpLBDfsvx3rpIxRypoZ4OTHmFEgC5nwszzF7yVeUwNt7CSPESwS4GA8l2PBe86VSUSeBaAj+awdHnNgjHpzYALBi0vemd+gmzOdT/gKsSfCI5CripgnoQT0kQG08Q2sU3GjKViQwvn3nqdKU9ttnVbJALcQXEr6J14I1AoV//Isd4Ubi0cdTFJsL3bvewQkGtdJkvkuerQhfnSc5jRZMkK2V6i8Lo0NOMKmd2QI3rgTae00hvu4CBBJ100mOmcLiq2wv8BVA=
-    file: ./OctoBot_$TRAVIS_OS_NAME
-    skip_cleanup: true
-    name: Release - $TRAVIS_TAG
-    body: $RELEASE_SHASUM
-    on:
-      repo: Drakkar-Software/OctoBot
-      branch: beta
-      tags: true
   - provider: pypi
     user:
       secure: drvdAty7FzyK3SqUKKsGQJI9PLogE3UqCHxIVfbet8VYypBVoWCG0HHQHJl08q368zzylO45tUjBQP2OdfurpXnGIEcVhVvbuD4v6SrUX1lH6e/g/JBgKDPz6ZtQXpGrno1EKfop0QZVQojm2xXR9oMNxvvVJlGbWaD5BkztxQ9x4Sy0TQsoFwKawx7YuHHcl33+47YBht1fA+YpkGGKxmsqK74yCqf2GzWYNlAjJAhcos+2eHErMI8CkqnrFIjhpV/LB842AAC6bz41PFWIxll2J58+SFYerVYjOCP2JANe5SAwVQQ/rYCTE0I+pYIQiPVBRVOmSeI4DvLpjtWKrW6Uit1xo/080tZR3MBZLrBnyXERVytNY8OFcquAtwtSpfi2x2pUjRlRcwOG3mWMMfrI/UgM7uEN21iEKH57sw3lTeDGZQeuh/KzLNVsAUQGQN0ek88dlS1vWV3KfHjS1f5S/xCf0Bh4iEpw+U6eU09Xhd5+ijmtZBIZDZKlK2zXpz1MuQf5yyLRdRbCcb5rGZfmfYFYoTZTsp0i0rgxqPvOlY0KZJQwJ7EHKAulka/LkDm9JBH/n1uqF5SyHUduJMZgDT6/p9Tq/n5l3XgoJZgDKQgwA3x+RIRKinlmT9ibFiADB1j7lqLQvyAlIbCdrO/K8ULNkAU4xDrAJfEr9GE=

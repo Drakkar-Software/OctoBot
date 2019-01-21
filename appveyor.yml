@@ -8,22 +8,6 @@ install:
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt -r dev_requirements.txt"
   - copy config\default_config.json config.json
   - "%PYTHON%\\python.exe start.py -p install all"
-build_script:
-  - "%PYTHON%\\python.exe -m nltk.downloader -d %NLTK_DATA% words"
-  - "%PYTHON%\\Scripts\\pyinstaller.exe docs/delivery/start.spec"
-  - "echo f | xcopy /f /y dist\\OctoBot.exe dist\\OctoBot_windows.exe"
-  - "powershell get-filehash -algorithm sha1 dist\\OctoBot_windows.exe"
+build: off
 test_script:
   - "%PYTHON%\\python.exe -m pytest -n 5 tests/unit_tests tests/functional_tests tests/endurance_tests"
-artifacts:
-  - path: dist/OctoBot_windows.exe
-    name: OctoBot_windows.exe
-deploy:
-  - provider: Environment
-    name: GITHUB_RELEASE_OCTOBOT
-    draft: false
-    prerelease: false
-    artifact: OctoBot_windows.exe
-    on:
-      branch: beta
-      APPVEYOR_REPO_TAG: true
