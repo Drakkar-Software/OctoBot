@@ -73,25 +73,32 @@ class ExchangeDispatcher(AbstractExchange):
                                          retry_exception=BaseError):
         got_results = False
         attempt = 0
+        # extract method name
         method_name = coroutine.__qualname__.split(".")[-1]
+        # copy not to alter original coroutine
         method_args = copy(coroutine.cr_frame.f_locals)
+        # need to remove self attr to be able to find method with getattr(self, ...)
+        # and then give it the original coroutine's arguements
         method_args.pop("self")
         result = None
         while not got_results and attempt < retry_count:
             try:
                 attempt += 1
-                if attempt > 1:
-                    result = await getattr(self, method_name)(**method_args)
-                else:
+                if attempt == 1:
                     result = await coroutine
+                else:
+                    # 2nd time or more: await a new identical coroutine (can't await the same coroutine twice)
+                    result = await getattr(self, method_name)(**method_args)
                 got_results = True
             except retry_exception as e:
                 if attempt < DEFAULT_REST_RETRY_COUNT:
-                    self.logger.warning(f"Failed to execute: {method_name} ({e}) "
-                                        f"retrying in {EXCHANGE_ERROR_SLEEPING_TIME} seconds.")
-                    await asyncio.sleep(attempt*EXCHANGE_ERROR_SLEEPING_TIME)
+                    sleeping_time = attempt*EXCHANGE_ERROR_SLEEPING_TIME
+                    self.logger.warning(f"Failed to execute: {method_name} ({e}) retrying in {sleeping_time} seconds.")
+                    # maybe just a short downtime, retry a bit later
+                    await asyncio.sleep(sleeping_time)
                 else:
                     self.logger.error(f"Failed to execute: {method_name} ({e}), after {retry_count} attempts.")
+                    # real problem: raise error
                     raise e
         return result
 
