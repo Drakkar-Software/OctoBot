@@ -15,8 +15,10 @@
 #  License along with this library.
 
 import asyncio
+from copy import copy
+from ccxt.async_support import BaseError
 
-from config import ExchangeConstantsMarketPropertyColumns
+from config import ExchangeConstantsMarketPropertyColumns, DEFAULT_REST_RETRY_COUNT, EXCHANGE_ERROR_SLEEPING_TIME
 from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_symbol_data import SymbolData
@@ -66,6 +68,32 @@ class ExchangeDispatcher(AbstractExchange):
 
     def get_exchange_personal_data(self):
         return self.exchange_personal_data
+
+    async def execute_request_with_retry(self, coroutine, retry_count=DEFAULT_REST_RETRY_COUNT,
+                                         retry_exception=BaseError):
+        got_results = False
+        attempt = 0
+        method_name = coroutine.__qualname__.split(".")[-1]
+        method_args = copy(coroutine.cr_frame.f_locals)
+        method_args.pop("self")
+        result = None
+        while not got_results and attempt < retry_count:
+            try:
+                attempt += 1
+                if attempt > 1:
+                    result = await getattr(self, method_name)(**method_args)
+                else:
+                    result = await coroutine
+                got_results = True
+            except retry_exception as e:
+                if attempt < DEFAULT_REST_RETRY_COUNT:
+                    self.logger.warning(f"Failed to execute: {method_name} ({e}) "
+                                        f"retrying in {EXCHANGE_ERROR_SLEEPING_TIME} seconds.")
+                    await asyncio.sleep(attempt*EXCHANGE_ERROR_SLEEPING_TIME)
+                else:
+                    self.logger.error(f"Failed to execute: {method_name} ({e}), after {retry_count} attempts.")
+                    raise e
+        return result
 
     def get_symbol_data(self, symbol):
         if symbol not in self.symbols_data:
