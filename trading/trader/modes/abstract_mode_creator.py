@@ -15,12 +15,9 @@
 #  License along with this library.
 
 import math
-import asyncio
 from abc import *
-from ccxt.async_support import BaseError
 
-from config import DEFAULT_REST_RETRY_COUNT, CURRENCY_DEFAULT_MAX_PRICE_DIGITS, ORDER_CREATION_LAST_TRADES_TO_USE, \
-    EvaluatorStates, ORDER_CREATOR_EXCHANGE_ERROR_SLEEPING_TIME
+from config import CURRENCY_DEFAULT_MAX_PRICE_DIGITS, ORDER_CREATION_LAST_TRADES_TO_USE, EvaluatorStates
 from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 from tools.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
@@ -207,23 +204,9 @@ class AbstractTradingModeCreator:
         # other cases like neutral state or unfulfilled previous conditions
         return False
 
-    async def get_pre_order_data(self, exchange, symbol, portfolio):
-        got_recent_trades = False
-        attempt = 0
-        last_prices = []
-        while not got_recent_trades and attempt < DEFAULT_REST_RETRY_COUNT:
-            try:
-                attempt += 1
-                last_prices = await exchange.get_recent_trades(symbol)
-            except BaseError as e:
-                if attempt < DEFAULT_REST_RETRY_COUNT:
-                    self.logger.warning(f"Failed to get recent trade: {e}, when getting data for order creator, "
-                                        f"retrying in {ORDER_CREATOR_EXCHANGE_ERROR_SLEEPING_TIME} seconds.")
-                    await asyncio.sleep(ORDER_CREATOR_EXCHANGE_ERROR_SLEEPING_TIME)
-                else:
-                    self.logger.error(f"Failed to get recent trade: {e}, after {DEFAULT_REST_RETRY_COUNT} retries, "
-                                      f"impossible to get pre-order data for {symbol}")
-                    raise e
+    @staticmethod
+    async def get_pre_order_data(exchange, symbol, portfolio):
+        last_prices = await exchange.execute_request_with_retry(exchange.get_recent_trades(symbol))
 
         reference_sum = sum([float(last_price["price"])
                              for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]])
