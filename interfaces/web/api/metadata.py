@@ -14,9 +14,12 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from flask import Blueprint
+import json
 
-api = Blueprint('api', __name__, url_prefix='/api', template_folder="")
+from . import api
+from config import PROJECT_NAME, LONG_VERSION
 
-from . import trading
-from . import metadata
+
+@api.route("/version")
+def version():
+    return json.dumps(f"{PROJECT_NAME} {LONG_VERSION}")
