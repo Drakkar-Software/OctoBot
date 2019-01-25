@@ -17,8 +17,8 @@
 import json
 
 from . import api
-from config import PROJECT_NAME, LONG_VERSION, EXTERNAL_LINK_CURRENT_USER_FORM
-from tools import external_links_manager
+from config import PROJECT_NAME, LONG_VERSION, EXTERNAL_RESOURCE_CURRENT_USER_FORM
+from tools import external_resources_manager
 
 
 @api.route("/version")
@@ -28,4 +28,4 @@ def version():
 
 @api.route("/user_feedback")
 def user_feedback():
-    return json.dumps(external_links_manager.get_external_link(EXTERNAL_LINK_CURRENT_USER_FORM))
+    return json.dumps(external_resources_manager.get_external_resource(EXTERNAL_RESOURCE_CURRENT_USER_FORM))

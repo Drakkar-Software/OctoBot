@@ -17,10 +17,10 @@
 import json
 import requests
 
-from config import GITHUB_RAW_CONTENT_URL, ASSETS_BRANCH, GITHUB_REPOSITORY, EXTERNAL_LINKS_FILE
+from config import GITHUB_RAW_CONTENT_URL, ASSETS_BRANCH, GITHUB_REPOSITORY, EXTERNAL_RESOURCES_FILE
 
 
-def get_external_link(link_key):
-    external_links_url = f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{ASSETS_BRANCH}/{EXTERNAL_LINKS_FILE}"
-    external_links = json.loads(requests.get(external_links_url).text)
-    return external_links[link_key]
+def get_external_resource(resource_key):
+    external_resource_url = f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{ASSETS_BRANCH}/{EXTERNAL_RESOURCES_FILE}"
+    external_resources = json.loads(requests.get(external_resource_url).text)
+    return external_resources[resource_key]
