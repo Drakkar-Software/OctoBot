@@ -6,6 +6,7 @@
     max-width: 230px;
 }
 </style>
+<br>
 <div class="card" id="portfoliosCard" update-url="{{ url_for('portfolio_holdings') }}" reference_market="{{reference_unit}}">
     {% if real_portfolio %}
     <div class="card-header"><h1>Real portfolio: {{real_total_value}} {{reference_unit}}</h1></div>
@@ -36,6 +37,7 @@
     </div>
     {% endif %}
 </div>
+<br>
 {% endblock %}
 
 {% block additional_scripts %}

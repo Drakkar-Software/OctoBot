@@ -1,5 +1,6 @@
 {% extends "advanced_layout.html" %}
 {% block body %}
+<br>
 <div class="card" id="strategyOptimizerInputs" update-url="{{ url_for('advanced.strategy_optimizer', update_type='optimizer_status') }}">
     <div class="card-header">
         <h1>Strategy optimizer
@@ -152,6 +153,7 @@
         </div>
     </div>
 </div>
+<br>
 {% endblock %}
 
 {% block additional_scripts %}
