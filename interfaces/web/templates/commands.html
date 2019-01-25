@@ -11,4 +11,30 @@
     </div>
 </div>
 <br>
+<div class="card">
+    <div class="card-header">
+        <h1>Help us to improve OctoBot</h1>
+    </div>
+    <div class="card-body">
+        <p>
+            In order to improve OctoBot, your user feedback is extremely helpful. The best way to make this project better and better is by telling us about your experience
+            (positive and negative) when using OctoBot.
+        </p>
+        <a update-url="{{ url_for('api.user_feedback') }}" href="" id=feedbackButton class="button btn btn-primary waves-effect disabled" target="_blank" rel="noopener noreferrer">
+            Tell us what you think about OctoBot
+        </a>
+    </div>
+    <div class="card-footer">
+        <p>
+            We are two developers on the project and we work on OctoBot on our free time. If you enjoy the project, tips are much appreciated <i class="far fa-smile"></i>
+        </p>
+        <div><i class="fab fa-bitcoin"></i> 1DHfjxD3C4e2Xi37FsoTbVJ6e4zNtesiwf</div>
+        <div> <i class="fab fa-ethereum"></i> 0xF154aA84B66e2bCacd74e201496D9ac3f81234D5</div>
+    </div>
+</div>
+<br>
 {% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/components/commands.js') }}"></script>
+{% endblock additional_scripts %}
