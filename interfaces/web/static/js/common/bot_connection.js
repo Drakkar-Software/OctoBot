@@ -93,9 +93,24 @@ function send_and_interpret_bot_update(updated_data, update_url, dom_root_elemen
     })
 }
 
+function load_metadata() {
+    const botVersionTag = $("#botVersion");
+    $.get({
+        url: botVersionTag.attr(update_url_attr),
+        dataType: "json",
+        success: function(msg, status){
+            botVersionTag.text(msg);
+        },
+        error: function(result, status, error){
+            window.console&&console.error("impossible to get the current OctoBot version");
+        }
+    })
+}
+
 const update_rate_millis = 1000;
 
 $(document).ready(function () {
     handle_route_button();
     setInterval(function(){ get_update(); }, update_rate_millis);
+    load_metadata();
 });
