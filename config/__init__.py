@@ -39,8 +39,11 @@ GITHUB_BASE_URL = "https://github.com"
 GITHUB_ORGANISATION = "Drakkar-Software"
 GITHUB_REPOSITORY = f"{GITHUB_ORGANISATION}/{PROJECT_NAME}"
 GITHUB_URL = f"{GITHUB_BASE_URL}/{GITHUB_REPOSITORY}"
+ASSETS_BRANCH = "assets"
 OCTOBOT_BACKGROUND_IMAGE = "static/img/octobot.png"
 OCTOBOT_ICON = "static/favicon.ico"
+EXTERNAL_LINKS_FILE = "external_links.json"
+EXTERNAL_LINK_CURRENT_USER_FORM = "current-user-feedback-form"
 
 # git
 GIT_ORIGIN = "origin"

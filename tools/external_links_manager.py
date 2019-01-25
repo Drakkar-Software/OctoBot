@@ -15,17 +15,12 @@
 #  License along with this library.
 
 import json
+import requests
 
-from . import api
-from config import PROJECT_NAME, LONG_VERSION, EXTERNAL_LINK_CURRENT_USER_FORM
-from tools import external_links_manager
-
-
-@api.route("/version")
-def version():
-    return json.dumps(f"{PROJECT_NAME} {LONG_VERSION}")
+from config import GITHUB_RAW_CONTENT_URL, ASSETS_BRANCH, GITHUB_REPOSITORY, EXTERNAL_LINKS_FILE
 
 
-@api.route("/user_feedback")
-def user_feedback():
-    return json.dumps(external_links_manager.get_external_link(EXTERNAL_LINK_CURRENT_USER_FORM))
+def get_external_link(link_key):
+    external_links_url = f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{ASSETS_BRANCH}/{EXTERNAL_LINKS_FILE}"
+    external_links = json.loads(requests.get(external_links_url).text)
+    return external_links[link_key]
