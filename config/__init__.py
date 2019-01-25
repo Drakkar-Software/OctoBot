@@ -42,8 +42,8 @@ GITHUB_URL = f"{GITHUB_BASE_URL}/{GITHUB_REPOSITORY}"
 ASSETS_BRANCH = "assets"
 OCTOBOT_BACKGROUND_IMAGE = "static/img/octobot.png"
 OCTOBOT_ICON = "static/favicon.ico"
-EXTERNAL_LINKS_FILE = "external_links.json"
-EXTERNAL_LINK_CURRENT_USER_FORM = "current-user-feedback-form"
+EXTERNAL_RESOURCES_FILE = "external_resources.json"
+EXTERNAL_RESOURCE_CURRENT_USER_FORM = "current-user-feedback-form"
 
 # git
 GIT_ORIGIN = "origin"
