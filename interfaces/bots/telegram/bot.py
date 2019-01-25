@@ -81,6 +81,7 @@ class TelegramApp(InterfaceBot):
                        "Should normally not be necessary." + EOL
             message += "/set_risk: Changes my current risk setting into your command's parameter." + EOL
             message += "/pause or /resume: Pause or resume me." + EOL
+            message += "/version or /v: Displays my current software version." + EOL
             message += "/stop: Stops me." + EOL
             message += "/help: Displays this help."
             update.message.reply_text(message)
