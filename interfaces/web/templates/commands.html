@@ -1,12 +1,14 @@
 {% extends "layout.html" %}
 {% block body %}
-<h1>Commands</h1>
 <br>
-<table style="width: 100%">
-    <tr>
-        <td><button route="{{ url_for('commands', cmd='restart') }}" type="button" class="btn btn-warning waves-effect">Restart Octobot</button></td>
-        <td><button route="{{ url_for('commands', cmd='stop') }}" type="button" class="btn btn-danger waves-effect">Stop Octobot</button></td>
-    </tr>
-</table>
+<div class="card">
+    <div class="card-header">
+        <h1>Commands</h1>
+    </div>
+    <div class="card-body">
+        <button route="{{ url_for('commands', cmd='restart') }}" type="button" class="btn btn-warning waves-effect">Restart Octobot</button>
+        <button route="{{ url_for('commands', cmd='stop') }}" type="button" class="btn btn-danger waves-effect">Stop Octobot</button>
+    </div>
+</div>
 <br>
 {% endblock %}
