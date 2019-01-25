@@ -17,7 +17,7 @@ import copy
 import os
 
 from config import CONFIG_INTERFACES, CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_SERVICES, CONFIG_USERNAMES_WHITELIST, \
-    REAL_TRADER_STR, SIMULATOR_TRADER_STR
+    REAL_TRADER_STR, SIMULATOR_TRADER_STR, PROJECT_NAME, LONG_VERSION
 from interfaces import get_bot, get_reference_market
 from interfaces.bots import EOL, NO_CURRENCIES_MESSAGE, NO_TRADER_MESSAGE
 from interfaces.trading_util import has_real_and_or_simulated_traders, get_currencies_with_status, get_risk, \
@@ -213,6 +213,10 @@ class InterfaceBot:
     @staticmethod
     def get_command_ping():
         return f"I'm alive since {convert_timestamp_to_datetime(get_bot().get_start_time(), '%Y-%m-%d %H:%M:%S')}."
+
+    @staticmethod
+    def get_command_version():
+        return f"{PROJECT_NAME} {LONG_VERSION}"
 
     @staticmethod
     def get_command_start():
