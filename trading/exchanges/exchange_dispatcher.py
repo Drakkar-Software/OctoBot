@@ -69,6 +69,7 @@ class ExchangeDispatcher(AbstractExchange):
     def get_exchange_personal_data(self):
         return self.exchange_personal_data
 
+    # used to retry a specific method for a limited amount of attempts in case the expected exception occurs
     async def execute_request_with_retry(self, coroutine, retry_count=DEFAULT_REST_RETRY_COUNT,
                                          retry_exception=BaseError):
         got_results = False

@@ -54,6 +54,10 @@ class TradesManager(Initializable):
         # is market only => not used to compute market average profitability
         self.traded_currencies_without_market_specific = set()
 
+        # buffer of currencies containing currencies that have already been logged as without matching symbol
+        # (used not to spam logs)
+        self.already_informed_no_matching_symbol_currency = set()
+
         self.portfolio_origin_value = 0
         self.portfolio_current_value = 0
         self.trades_value = 0
@@ -233,12 +237,17 @@ class TradesManager(Initializable):
             return quantity / self.currencies_last_prices[symbol_inverted]
 
         else:
+            self._inform_no_matching_symbol(currency)
+            return 0
+
+    def _inform_no_matching_symbol(self, currency, force=False):
+        if force or currency not in self.already_informed_no_matching_symbol_currency:
+            self.already_informed_no_matching_symbol_currency.add(currency)
             if not isinstance(self.exchange.get_exchange(), ExchangeSimulator):
                 # do not log warning in backtesting or tests
                 self.logger.warning(f"Can't find matching symbol for {currency} and {self.reference_market}")
             else:
                 self.logger.info(f"Can't find matching symbol for {currency} and {self.reference_market}")
-            return 0
 
     async def _evaluate_config_crypto_currencies_values(self):
         values_dict = {}
