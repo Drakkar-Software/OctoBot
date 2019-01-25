@@ -46,6 +46,7 @@ class TelegramApp(InterfaceBot):
         self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
         self.dispatcher.add_handler(CommandHandler(["configuration", "cf"], self.command_configuration))
         self.dispatcher.add_handler(CommandHandler(["refresh_real_trader", "rrt"], self.command_real_traders_refresh))
+        self.dispatcher.add_handler(CommandHandler(["version", "v"], self.command_version))
         self.dispatcher.add_handler(CommandHandler("stop", self.command_stop))
         self.dispatcher.add_handler(CommandHandler("help", self.command_help))
         self.dispatcher.add_handler(CommandHandler(["pause", "resume"], self.command_pause_resume))
@@ -103,6 +104,11 @@ class TelegramApp(InterfaceBot):
         if TelegramApp._is_valid_user(update):
             update.message.reply_text("I'm leaving this world...")
             InterfaceBot.set_command_stop()
+
+    @staticmethod
+    def command_version(_, update):
+        if TelegramApp._is_valid_user(update):
+            update.message.reply_text(InterfaceBot.get_command_version())
 
     def command_pause_resume(self, _, update):
         if TelegramApp._is_valid_user(update):
