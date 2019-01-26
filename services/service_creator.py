@@ -47,7 +47,8 @@ class ServiceCreator:
     @staticmethod
     async def create_service(logger, service_class, config, backtesting_enabled):
         service_instance = service_class()
-        if service_instance.get_is_enabled() and (not backtesting_enabled or service_instance.BACKTESTING_ENABLED):
+        if service_instance.get_is_enabled(config) and \
+                (not backtesting_enabled or service_instance.BACKTESTING_ENABLED):
             service_instance.set_logger(get_logger(service_class.get_name()))
             service_instance.set_config(config)
             if service_instance.has_required_configuration():
