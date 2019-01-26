@@ -40,4 +40,4 @@ VOLUME /bot/$OCTOBOT_INSTALL_DIR/$CONFIG_FILE
 VOLUME /bot/$OCTOBOT_INSTALL_DIR/$TENTACLE_DIR
 VOLUME /bot/$OCTOBOT_INSTALL_DIR/$LOGS_DIR
 
-ENTRYPOINT ["python", "./start.py", "-ng"]
+ENTRYPOINT ["python", "./start.py", "-no"]
