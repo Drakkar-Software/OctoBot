@@ -16,7 +16,7 @@
  * License along with this library.
  */
 
-function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, backtesting=false, replace=false){
+function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, backtesting=false, replace=false, should_retry=false, attempts=0){
     const backtesting_enabled = backtesting ? "backtesting" : "live";
     const ajax_url = "/dashboard/currency_price_graph_update/"+ exchange_name +"/" + symbol + "/"
         + time_frame + "/" + backtesting_enabled;
@@ -26,7 +26,16 @@ function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, b
         dataType: "json",
         contentType: 'application/json',
         success: function(msg, status){
-            create_candlestick_graph(element_id, msg, symbol, exchange_name, time_frame, replace=replace);
+            if (!create_candlestick_graph(element_id, msg, symbol, exchange_name, time_frame, replace)){
+                if (should_retry && attempts < max_attempts){
+                   const marketsElement = $("#loadingMarketsDiv");
+                    marketsElement.removeClass(disabled_item_class);
+                    setTimeout(function(){
+                    marketsElement.addClass(disabled_item_class);
+                        get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, backtesting, replace, should_retry,attempts+1);
+                    }, 3000);
+                }
+            }
         },
         error: function(result, status, error){
             window.console&&console.error(error);
@@ -39,7 +48,7 @@ function get_first_symbol_price_graph(element_id, in_backtesting_mode=false) {
     $.get(url,function(data) {
         if("time_frame" in data){
             let formatted_symbol = data["symbol"].replace(new RegExp("/","g"), "|");
-            get_symbol_price_graph(element_id, data["exchange"], formatted_symbol, data["time_frame"], in_backtesting_mode);
+            get_symbol_price_graph(element_id, data["exchange"], formatted_symbol, data["time_frame"], in_backtesting_mode, false, true);
         }
     });
 }
@@ -51,7 +60,7 @@ function get_watched_symbol_price_graph(element) {
     $.get(ajax_url,function(data) {
         if("time_frame" in data){
             let formatted_symbol = data["symbol"].replace(new RegExp("/","g"), "|");
-            get_symbol_price_graph(element.attr("id"), data["exchange"], formatted_symbol, data["time_frame"], false);
+            get_symbol_price_graph(element.attr("id"), data["exchange"], formatted_symbol, data["time_frame"], false, false, true);
         }
     });
 }
@@ -163,61 +172,66 @@ function create_trades(trades, trader){
 }
 
 function create_candlestick_graph(element_id, symbol_price_data, symbol, exchange_name, time_frame, replace=false){
-    const candles = symbol_price_data["candles"];
-    const real_trades = symbol_price_data["real_trades"];
-    const simulated_trades = symbol_price_data["simulated_trades"];
+    if (symbol_price_data){
+        const candles = symbol_price_data["candles"];
+        const real_trades = symbol_price_data["real_trades"];
+        const simulated_trades = symbol_price_data["simulated_trades"];
 
-    const price_trace = create_candlesticks(candles);
+        const price_trace = create_candlesticks(candles);
 
-    const volume_trace = create_volume(candles);
+        const volume_trace = create_volume(candles);
 
-    const real_trader_trades = create_trades(real_trades, "Real trader");
-    const simulator_trades = create_trades(simulated_trades, "Simulator");
+        const real_trader_trades = create_trades(real_trades, "Real trader");
+        const simulator_trades = create_trades(simulated_trades, "Simulator");
 
-    const data = [volume_trace, price_trace, real_trader_trades, simulator_trades];
+        const data = [volume_trace, price_trace, real_trader_trades, simulator_trades];
 
-    let graph_title = symbol;
-    if (exchange_name !== "ExchangeSimulator"){
-        graph_title = graph_title + " (" + exchange_name + ", time frame: " + time_frame +")";
-    }
+        let graph_title = symbol;
+        if (exchange_name !== "ExchangeSimulator"){
+            graph_title = graph_title + " (" + exchange_name + ", time frame: " + time_frame +")";
+        }
 
-    const layout = {
-      title: graph_title,
-      dragmode: 'zoom',
-      margin: {
-        r: 10,
-        t: 25,
-        b: 40,
-        l: 60
-      },
-      showlegend: true,
-      xaxis: {
-        autorange: true,
-        domain: [0, 1],
-        title: 'Date',
-        type: 'date'
-      },
-      yaxis1: {
-        domain: [0, 0.2],
-        title: 'Volume',
-        autorange: true,
-        showgrid:false,
-        showticklabels: false
-      },
-      yaxis2: {
-        domain: [0.2, 1],
-        autorange: true,
-        title: 'Price'
-      },
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      font: {
-        color: "white"
-      }
-    };
-    if(replace){
-        Plotly.newPlot(element_id, data, layout);
+        const layout = {
+          title: graph_title,
+          dragmode: 'zoom',
+          margin: {
+            r: 10,
+            t: 25,
+            b: 40,
+            l: 60
+          },
+          showlegend: true,
+          xaxis: {
+            autorange: true,
+            domain: [0, 1],
+            title: 'Date',
+            type: 'date'
+          },
+          yaxis1: {
+            domain: [0, 0.2],
+            title: 'Volume',
+            autorange: true,
+            showgrid:false,
+            showticklabels: false
+          },
+          yaxis2: {
+            domain: [0.2, 1],
+            autorange: true,
+            title: 'Price'
+          },
+          paper_bgcolor: 'rgba(0,0,0,0)',
+          plot_bgcolor: 'rgba(0,0,0,0)',
+          font: {
+            color: "white"
+          }
+        };
+        if(replace){
+            Plotly.newPlot(element_id, data, layout);
+        }else{
+            Plotly.plot(element_id, data, layout);
+        }
+        return true;
     }else{
-        Plotly.plot(element_id, data, layout);
+        return false
     }
 }
