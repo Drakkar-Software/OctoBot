@@ -104,6 +104,19 @@ def get_watched_symbol_data(symbol):
     return {}
 
 
+def _find_symbol_evaluator_with_data(evaluators, exchange):
+    symbol_evaluator = next(iter(evaluators.values()))
+    first_symbol = symbol_evaluator.get_symbol()
+    exchange_traded_pairs = exchange.get_exchange_manager().get_traded_pairs()
+    if first_symbol in exchange_traded_pairs:
+        return symbol_evaluator
+    else:
+        for symbol in evaluators.keys():
+            if symbol in exchange_traded_pairs:
+                return evaluators[symbol]
+    return symbol_evaluator
+
+
 def get_first_symbol_data():
     bot = get_bot()
     exchanges = bot.get_exchanges_list()
@@ -113,7 +126,7 @@ def get_first_symbol_data():
             exchange = next(iter(exchanges.values()))
             evaluators = bot.get_symbol_evaluator_list()
             if evaluators:
-                symbol_evaluator = next(iter(evaluators.values()))
+                symbol_evaluator = _find_symbol_evaluator_with_data(evaluators, exchange)
                 etms = symbol_evaluator.get_evaluator_task_managers(exchange)
                 if etms:
                     time_frame = next(iter(etms))
