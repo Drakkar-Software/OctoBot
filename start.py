@@ -26,12 +26,13 @@ from config.config import load_config, init_config, is_config_empty
 from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
-    CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION
+    CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS
 from interfaces.gui import app
 from tools.commands import Commands
 from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 from tools.tentacle_manager.tentacle_util import tentacles_arch_exists
+from tools.external_resources_manager import get_external_resource
 
 
 # Keep string '+' operator to ensure backward compatibility in this file
@@ -60,6 +61,15 @@ def update_config_with_args(starting_args, config):
         config[CONFIG_TRADING][CONFIG_TRADER_RISK] = starting_args.risk
 
 
+def _check_public_announcements(logger):
+    try:
+        announcement = get_external_resource(EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS)
+        if announcement:
+            logger.info(announcement)
+    except Exception as e:
+        logger.warning("Impossible to check announcements: {0}".format(e))
+
+
 def start_octobot(starting_args):
     fileConfig(LOGGING_CONFIG_FILE)
 
@@ -76,6 +86,8 @@ def start_octobot(starting_args):
         else:
             # Version
             logger.info("Version : {0}".format(LONG_VERSION))
+
+            _check_public_announcements(logger)
 
             logger.info("Loading config files...")
 
