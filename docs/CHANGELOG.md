@@ -1,5 +1,76 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.3.0-beta
+====================
+*Released date : January 27 2019*
+
+**Warning** :
+- Now requires Python 3.7 
+- Requires to reinstall all default tentacles (start.py -p reset_tentacles && start.py -p install all)
+- If you use the telegram interface, you can add your telegram username in telegram config whitelist
+
+# Concerned issues :
+    #481 [Exchange] Use async exchange call provided by ccxt
+    #495 [Global] refactor multi-threaded architecture into async architecture
+    #502 [Setup] Update and improve setup.py
+    #505 [Web interface] add full offline support for the whole bot and interfaces services & interfaces
+    #506 [Profitability] add no trades hypothetical profitability using initial portfolio
+    #509 [Matrix] Migrate to dataclass
+    #517 [Bug][Strategy Optimizer] can't change strategy once selected the 1st one in web interface 
+    #526 [Docker] Migrate to python:3.7.2-slim-stretch
+    #532 [PIP] Create pip OctoBot package
+    #533 [Security] Add an optional authentification system for external interfaces 
+    #534 [Data collector] migrate standalone datacollector into async arch
+    #536 [Installation doc] update raspberry install script
+    #538 [Trader] MIN_NOTIONAL error when creating order
+    #539 [Web Interface] separate required config and default creation fields in services
+    #540 [Web Interface] add help info on configuration fields
+    #543 [Async] Appveyor warnings are raised
+    #549 launcher_windows.exe virus total
+    #550 [Release] Add release checksum
+    #553 [Release CI] Create macos binary at release
+    #561 [Notifier] Add notifier providers to web interface
+    #567 [Notifier] add notifier support for web interface
+    #571 [User experience] add documentation and help messages regarding configuration and interfaces
+    #572 [Donation] add donation systems
+    #576 [Binary] Can't restart bot with binary from interface
+    #585 [RestExchange] reccurent exchange side error handling
+    #591 [User feedback] add feedback systems
+    #592 start on vps?
+    #593 [Web&Bot Interface] Add OctoBot version
+    #594 [Tentacles] handle incompatible tentacles
+    #595 [GUI] Remove pre-launcher
+    #596 [Web interface] handle recurent "can't find matching symbol" warnings
+    #600 [Public Messages] add public messages handling
+    #603 [Web interface] manage candles from index page when bot just started and data are not available
+    #606 [Web interface] fix firefox link button display
+
+# New features :
+    - Full asyncio architecture for the core engine of the bot
+    - Replaced TK launcher window by web launcher
+    - Now check tentacles versions and validity at initialization
+    - Added initial portfolio profitability
+    - Can now add a user whitelist on telegram interface
+    - Improved web interface user experience
+    - Added several help systems on web interface
+    - Added current OctoBot version on web and telegram interface
+    - Can now display global announcements
+    - Added donation addresses
+    - Added several new notification systems
+    - Optimized execution using data classes
+    - Added offline mode with limited options
+    - Tested on MacOS X
+    - Octobot available on PIP
+    - Reduced Docker image size
+    - Added checksum on binary versions
+    
+# Bug fixes :
+    - Can now change selected strategy in optimizer multiple calls
+    - Can now change restart OctoBot from the web interface
+    - Won't spam can't find matching symbol warning anymore
+    - Fixed Firefox display bugs on web interface
+    - Now handles errors occuring on rest exchange api side
+
 Changelog for 0.2.4-beta
 ====================
 *Released date : December 30 2018*
