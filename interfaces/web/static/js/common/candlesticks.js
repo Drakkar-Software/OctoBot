@@ -28,12 +28,17 @@ function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, b
         success: function(msg, status){
             if (!create_candlestick_graph(element_id, msg, symbol, exchange_name, time_frame, replace)){
                 if (should_retry && attempts < max_attempts){
-                   const marketsElement = $("#loadingMarketsDiv");
+                    const marketsElement = $("#loadingMarketsDiv");
                     marketsElement.removeClass(disabled_item_class);
                     setTimeout(function(){
-                    marketsElement.addClass(disabled_item_class);
+                        marketsElement.addClass(disabled_item_class);
                         get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, backtesting, replace, should_retry,attempts+1);
                     }, 3000);
+                }
+            }else{
+                const loadingSelector = $("#loadingSpinner");
+                if (loadingSelector.length) {
+                    loadingSelector.addClass(disabled_item_class);
                 }
             }
         },
