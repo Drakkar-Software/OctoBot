@@ -17,22 +17,26 @@
 import argparse
 import asyncio
 import logging
-import sys
 import os
+import sys
 import traceback
+import webbrowser
+import socket
 from logging.config import fileConfig
+from threading import Thread
+from time import sleep
 
-from config.config import load_config, init_config, is_config_empty
 from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
-    CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS
-from interfaces.gui import app
+    CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, \
+    CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT
+from config.config import load_config, init_config, is_config_empty
 from tools.commands import Commands
 from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
-from tools.tentacle_manager.tentacle_util import tentacles_arch_exists
 from tools.external_resources_manager import get_external_resource
+from tools.tentacle_manager.tentacle_util import tentacles_arch_exists
 
 
 # Keep string '+' operator to ensure backward compatibility in this file
@@ -68,6 +72,18 @@ def _check_public_announcements(logger):
             logger.info(announcement)
     except Exception as e:
         logger.warning("Impossible to check announcements: {0}".format(e))
+
+
+def _auto_open_web(config, bot):
+    try:
+        # wait bot is ready
+        while not bot.is_ready():
+            sleep(0.1)
+
+        webbrowser.open(f"http://{socket.gethostbyname(socket.gethostname())}:"
+                        f"{config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT]}")
+    except webbrowser.Error as e:
+        logging.error("{0}, impossible to open automatically web interface".format(e))
 
 
 def start_octobot(starting_args):
@@ -148,11 +164,8 @@ def start_octobot(starting_args):
                     import interfaces
                     interfaces.__init__(bot, config)
 
-                    if not starting_args.no_gui:
-                        try:
-                            app.__init__(config)
-                        except NameError as e:
-                            logging.error("{0}, impossible to display GUI".format(e))
+                    if not starting_args.no_open_web and not starting_args.no_web:
+                        Thread(target=_auto_open_web, args=(config, bot)).start()
 
                     # set debug_mode = True to activate asyncio debug mode
                     debug_mode = ConfigManager.is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
@@ -204,7 +217,7 @@ def main(args=None):
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
                         action='store_true')
-    parser.add_argument('-ng', '--no_gui', help="Don't open gui interface.",
+    parser.add_argument('-no', '--no_open_web', help="Don't automatically open web interface.",
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start OctoBot with telegram interface.',
                         action='store_true')
