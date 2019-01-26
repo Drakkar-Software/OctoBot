@@ -67,7 +67,7 @@ class AbstractService:
         self.config = config
 
     # If this indicator is enabled
-    def get_is_enabled(self):
+    def get_is_enabled(self, config):
         return self.enabled
 
     # implement locally if the service has thread(s) to stop
