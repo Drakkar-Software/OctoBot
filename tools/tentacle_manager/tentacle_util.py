@@ -27,8 +27,10 @@ from config import EVALUATOR_DEFAULT_FOLDER, TENTACLE_TYPES, EVALUATOR_CONFIG_FO
     TENTACLES_EVALUATOR_REALTIME_PATH, TENTACLES_EVALUATOR_TA_PATH, TENTACLES_EVALUATOR_SOCIAL_PATH, \
     TENTACLES_EVALUATOR_STRATEGIES_PATH, TENTACLES_EVALUATOR_UTIL_PATH, TENTACLES_TRADING_MODE_PATH, \
     TENTACLES_PYTHON_INIT_CONTENT, PYTHON_INIT_FILE, TENTACLE_MODULE_TESTS, TENTACLES_TEST_PATH, TENTACLE_MODULE_DEV, \
-    TENTACLE_PACKAGE, TENTACLE_MODULE_RESOURCE_FILES, EVALUATOR_RESOURCE_FOLDER
+    TENTACLE_PACKAGE, TENTACLE_MODULE_RESOURCE_FILES, EVALUATOR_RESOURCE_FOLDER, \
+    TENTACLE_CURRENT_MINIMUM_DEFAULT_TENTACLES_VERSION
 from tools.config_manager import ConfigManager
+from tools.logging.logging_util import get_logger
 
 
 def tentacles_arch_exists() -> bool:
@@ -266,3 +268,39 @@ def install_on_development(config, module_dev):
         return True
 
     return False
+
+
+def _parse_package(tentacle_content):
+    description_pos = tentacle_content.find("$tentacle_description")
+    if description_pos > -1:
+        description_begin_pos = tentacle_content.find("{")
+        description_end_pos = tentacle_content.find("}") + 1
+        description_raw = tentacle_content[description_begin_pos:description_end_pos]
+        return json.loads(description_raw)
+    return None
+
+
+def _read_tentacle(file_name):
+    if file_name.endswith(".py"):
+        with open(file_name, "r") as tentacle:
+            return _parse_package(tentacle.read())
+
+
+def check_tentacle(path, tentacle, verbose=True):
+    logger = get_logger("TentacleChecker")
+    try:
+        tentacle_desc = _read_tentacle(os.path.join(path, f"{tentacle}.py"))
+        installed_version = tentacle_desc[TENTACLE_MODULE_VERSION]
+        if is_first_version_superior(installed_version, TENTACLE_CURRENT_MINIMUM_DEFAULT_TENTACLES_VERSION):
+            return True
+        else:
+            if verbose:
+                logger.error(f"Incompatible tentacle {tentacle}: version {installed_version}, "
+                             f"minimum expected: {TENTACLE_CURRENT_MINIMUM_DEFAULT_TENTACLES_VERSION} this tentacle "
+                             f"may not work properly. Please update your tentacles ('start.py -p update {tentacle}' "
+                             f"or 'start.py -p update all')")
+            return False
+    except Exception as e:
+        if verbose:
+            logger.error(f"Error when reading tentacle description: {e}")
+        return False
