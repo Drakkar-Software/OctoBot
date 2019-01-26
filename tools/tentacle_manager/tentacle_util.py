@@ -236,13 +236,15 @@ def parse_version(version):
     return [int(value) for value in version.split(".") if value]
 
 
-def is_first_version_superior(first_version, second_version):
+def is_first_version_superior(first_version, second_version, or_equal=False):
     first_version_data = parse_version(first_version)
     second_version_data = parse_version(second_version)
 
     if len(second_version_data) > len(first_version_data):
         return False
     else:
+        if or_equal and first_version_data == second_version_data:
+            return True
         for index, value in enumerate(first_version_data):
             if len(second_version_data) > index and second_version_data[index] > value:
                 return False
@@ -289,17 +291,20 @@ def _read_tentacle(file_name):
 def check_tentacle(path, tentacle, verbose=True):
     logger = get_logger("TentacleChecker")
     try:
-        tentacle_desc = _read_tentacle(os.path.join(path, f"{tentacle}.py"))
-        installed_version = tentacle_desc[TENTACLE_MODULE_VERSION]
-        if is_first_version_superior(installed_version, TENTACLE_CURRENT_MINIMUM_DEFAULT_TENTACLES_VERSION):
-            return True
-        else:
-            if verbose:
-                logger.error(f"Incompatible tentacle {tentacle}: version {installed_version}, "
-                             f"minimum expected: {TENTACLE_CURRENT_MINIMUM_DEFAULT_TENTACLES_VERSION} this tentacle "
-                             f"may not work properly. Please update your tentacles ('start.py -p update {tentacle}' "
-                             f"or 'start.py -p update all')")
-            return False
+        # only check tentacle version for default tentacles
+        if path.endswith(EVALUATOR_DEFAULT_FOLDER):
+            tentacle_desc = _read_tentacle(os.path.join(path, f"{tentacle}.py"))
+            installed_version = tentacle_desc[TENTACLE_MODULE_VERSION]
+            if is_first_version_superior(installed_version, TENTACLE_CURRENT_MINIMUM_DEFAULT_TENTACLES_VERSION,
+                                         or_equal=True):
+                return True
+            else:
+                if verbose:
+                    logger.error(f"Incompatible tentacle {tentacle}: version {installed_version}, "
+                                 f"minimum expected: {TENTACLE_CURRENT_MINIMUM_DEFAULT_TENTACLES_VERSION} this tentacle "
+                                 f"may not work properly. Please update your tentacles ('start.py -p update {tentacle}' "
+                                 f"or 'start.py -p update all')")
+                return False
     except Exception as e:
         if verbose:
             logger.error(f"Error when reading tentacle description: {e}")
