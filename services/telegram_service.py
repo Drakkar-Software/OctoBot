@@ -99,14 +99,22 @@ class TelegramService(AbstractService):
             # self.telegram_updater.dispatcher.running = False
             # self.telegram_updater.stop()
 
+    # If this indicator is enabled
+    def get_is_enabled(self, config):
+        return super().get_is_enabled(config) and self._check_enabled_option(config)
+
+    @staticmethod
+    def _check_enabled_option(config):
+        return CONFIG_INTERFACES in config \
+            and CONFIG_INTERFACES_TELEGRAM in config[CONFIG_INTERFACES] \
+            and CONFIG_ENABLED_OPTION in config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM] \
+            and config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION]
+
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
                and CONFIG_TELEGRAM in self.config[CONFIG_CATEGORY_SERVICES] \
                and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]) \
-               and CONFIG_INTERFACES in self.config \
-               and CONFIG_INTERFACES_TELEGRAM in self.config[CONFIG_INTERFACES] \
-               and CONFIG_ENABLED_OPTION in self.config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM] \
-               and self.config[CONFIG_INTERFACES][CONFIG_INTERFACES_TELEGRAM][CONFIG_ENABLED_OPTION]
+               and self._check_enabled_option(self.config)
 
     async def send_message(self, content):
         try:
