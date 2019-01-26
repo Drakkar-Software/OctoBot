@@ -69,11 +69,16 @@ class TentaclePackageManager:
                     did_something = False
 
             # Update local __init__
-            line_in_init = f"from .{module_name} import *\n"
+            lines_in_init = f"""try:
+    check_tentacle(PATH, '{module_name}')
+    from .{module_name} import *
+except Exception as e:
+    LOGGER.error(f'Error when loading {module_name}: {{e}}')
+"""
             init_file = f"{TENTACLES_PATH}/{TENTACLE_TYPES[module_type]}/{TENTACLE_TYPES[module_subtype]}/" \
                 f"{target_folder}/{PYTHON_INIT_FILE}"
 
-            self.update_init_file(action, init_file, line_in_init)
+            self.update_init_file(action, init_file, lines_in_init)
 
             # Update module test files
             test_file_dir = TentacleUtil.create_path_from_type(module_type, module_subtype, target_folder, True)
@@ -387,28 +392,46 @@ class TentaclePackageManager:
         self.current_step += 1
 
     @staticmethod
-    def update_init_file(action, init_file, line_in_init):
+    def update_init_file(action, init_file, lines_in_init):
         init_content = ""
-        if os.path.isfile(init_file):
+        init_file_exists = os.path.isfile(init_file)
+        if init_file_exists:
             with open(init_file, "r") as init_file_r:
                 init_content = init_file_r.read()
+        if not init_file_exists or not init_content:
+            init_content = TentaclePackageManager._create_init_file(init_file)
 
         # check if line already exists
-        line_exists = False if init_content.find(line_in_init) == -1 else True
+        line_exists = False if init_content.find(lines_in_init) == -1 else True
 
         # Add new package in init file
         if action == TentacleManagerActions.INSTALL or action == TentacleManagerActions.UPDATE:
             if not line_exists:
                 with open(init_file, "w") as init_file_w:
                     # add new package to init
-                    init_file_w.write(init_content + line_in_init)
+                    init_file_w.write(init_content + lines_in_init)
 
         # remove package line from init file
         elif action == TentacleManagerActions.UNINSTALL:
             if line_exists:
                 with open(init_file, "w") as init_file_w:
                     # remove package to uninstall from init
-                    init_file_w.write(init_content.replace(line_in_init, ""))
+                    init_file_w.write(init_content.replace(lines_in_init, ""))
+
+    @staticmethod
+    def _create_init_file(init_file):
+        with open(init_file, "w") as init_file_w:
+            init_file_content = """import os
+
+from tools.tentacle_manager.tentacle_util import check_tentacle
+from tools.logging.logging_util import get_logger
+
+LOGGER = get_logger("TentacleLoader")
+PATH = os.path.dirname(os.path.realpath(__file__))
+
+"""
+            init_file_w.write(init_file_content)
+            return init_file_content
 
     @staticmethod
     def _log_config_file_update_exception(logger, exception):
