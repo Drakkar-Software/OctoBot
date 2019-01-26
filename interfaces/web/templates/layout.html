@@ -109,9 +109,6 @@
                 </ul>
             </div>
         </nav>
-        {% for message in get_flashed_messages() %}
-            <div class=flash>{{ message }}</div>
-        {% endfor %}
 
         <div class="container-fluid">
             {% block body %}{% endblock %}

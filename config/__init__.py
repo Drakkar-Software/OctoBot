@@ -44,6 +44,7 @@ OCTOBOT_BACKGROUND_IMAGE = "static/img/octobot.png"
 OCTOBOT_ICON = "static/favicon.ico"
 EXTERNAL_RESOURCES_FILE = "external_resources.json"
 EXTERNAL_RESOURCE_CURRENT_USER_FORM = "current-user-feedback-form"
+EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS = "public-announcements"
 
 # git
 GIT_ORIGIN = "origin"
