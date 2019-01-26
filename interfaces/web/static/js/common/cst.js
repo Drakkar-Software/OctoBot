@@ -61,6 +61,8 @@ const config_default_symbol = "btc";
 const evaluator_config_type = "evaluator_config";
 const trading_config_type = "trading_config";
 
+const max_attempts = 20;
+
 const material_colors = ["#d50000", "#6200ea", "#2962ff", "#00b8d4", "#00c853", "#aeea00", "#ffab00",
     "#dd2c00"];
 
