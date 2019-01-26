@@ -110,8 +110,23 @@ function update_dashboard(){
     get_profitability();
 }
 
+function get_announcements(){
+    const annoncementsAlertDiv = $("#annoncementsAlert");
+    $.get({
+        url: annoncementsAlertDiv.attr(update_url_attr),
+        dataType: "json",
+        success: function(msg, status){
+            if(msg){
+                annoncementsAlertDiv.text(msg);
+                annoncementsAlertDiv.removeClass(disabled_item_class);
+            }
+        }
+    })
+}
+
 $(document).ready(function() {
     get_profitability();
+    get_announcements();
     let useDefaultGraph = true;
     $(".watched-symbol-graph").each(function () {
         useDefaultGraph = false;
