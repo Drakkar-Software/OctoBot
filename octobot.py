@@ -37,7 +37,7 @@ from services import ServiceCreator
 from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
-from tools.asyncio_tools import run_coroutine_in_asyncio_loop
+from tools.asyncio_tools import run_coroutine_in_asyncio_loop, get_gather_wrapper
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
@@ -290,12 +290,14 @@ class OctoBot:
             thread.join()
 
     def stop_threads(self):
+        stop_coroutines = []
         # Notify stopping
         if self.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
             # To be improved with a full async implementation
             # To be done : "asyncio.run" --> replaced by a simple await
             # PR discussion : https://github.com/Drakkar-Software/OctoBot/pull/563#discussion_r248088266
-            asyncio.run(self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
+            stop_coroutines.append(
+                self.config[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
 
         self.logger.info("Stopping threads ...")
 
@@ -314,7 +316,11 @@ class OctoBot:
 
         # stop exchanges threads
         for exchange in self.exchanges_list.values():
-            exchange.stop()
+            stop_coroutines.append(exchange.stop())
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        asyncio.run(get_gather_wrapper(stop_coroutines))
 
         self.logger.info("Threads stopped.")
 

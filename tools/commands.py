@@ -14,11 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
 import os
 import sys
 import asyncio
+import signal
+from threading import Thread
+from concurrent.futures import CancelledError
 
+from tools.logging.logging_util import get_logger
 from backtesting.collector.data_collector import DataCollector
 from config.config import encrypt
 from tools.tentacle_creator.tentacle_creator import TentacleCreator
@@ -26,6 +29,9 @@ from tools.tentacle_manager.tentacle_manager import TentacleManager
 
 
 class Commands:
+
+    BOT = None
+
     @staticmethod
     def data_collector(config, catch=True):
         data_collector_inst = None
@@ -80,16 +86,32 @@ class Commands:
             optimizer.print_report()
 
     @staticmethod
+    def _signal_handler(_, __):
+        # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
+        stopping_thread = Thread(target=Commands.BOT.stop_threads)
+        stopping_thread.start()
+        stopping_thread.join()
+        os._exit(0)
+
+    @staticmethod
     async def start_bot(bot, logger, catch=False):
         try:
+            Commands.BOT = bot
             loop = asyncio.get_event_loop()
-            # try to init
+
+            # handle CTRL+C signal
+            signal.signal(signal.SIGINT, Commands._signal_handler)
+
+            # init
             await bot.create_services()
             await bot.create_exchange_traders()
             bot.create_evaluation_tasks()
 
-            # try to start
-            await bot.start_tasks()
+            # start
+            try:
+                await bot.start_tasks()
+            except CancelledError:
+                logger.info("Core engine tasks cancelled.")
 
             # join threads in a not loop blocking executor
             # TODO remove this when no thread anymore
