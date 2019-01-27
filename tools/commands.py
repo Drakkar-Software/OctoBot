@@ -21,16 +21,15 @@ import signal
 from threading import Thread
 from concurrent.futures import CancelledError
 
-from tools.logging.logging_util import get_logger
 from backtesting.collector.data_collector import DataCollector
 from config.config import encrypt
+from interfaces import get_bot
+from tools.logging.logging_util import get_logger
 from tools.tentacle_creator.tentacle_creator import TentacleCreator
 from tools.tentacle_manager.tentacle_manager import TentacleManager
 
 
 class Commands:
-
-    BOT = None
 
     @staticmethod
     def data_collector(config, catch=True):
@@ -88,7 +87,7 @@ class Commands:
     @staticmethod
     def _signal_handler(_, __):
         # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
-        stopping_thread = Thread(target=Commands.BOT.stop_threads)
+        stopping_thread = Thread(target=get_bot().stop_threads)
         stopping_thread.start()
         stopping_thread.join()
         os._exit(0)
@@ -96,7 +95,6 @@ class Commands:
     @staticmethod
     async def start_bot(bot, logger, catch=False):
         try:
-            Commands.BOT = bot
             loop = asyncio.get_event_loop()
 
             # handle CTRL+C signal
