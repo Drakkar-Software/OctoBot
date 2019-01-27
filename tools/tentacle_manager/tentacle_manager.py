@@ -26,6 +26,11 @@ from config import TENTACLE_PACKAGE_DESCRIPTION, EVALUATOR_DEFAULT_FOLDER, CONFI
 
 
 class TentacleManager:
+
+    TENTACLE_INSTALLATION_FOUND_MESSAGE = "Tentacles installation found on this OctoBot, this action will " \
+                                          "replace every local tentacle file and their configuration by their " \
+                                          "remote equivalent for the command's tentacles, continue ?"
+
     def __init__(self, config):
         self.config = config
         self.tentacle_package_manager = TentaclePackageManager(config, self)
@@ -39,28 +44,22 @@ class TentacleManager:
         package = TentaclePackageUtil.get_package_description_with_adaptation(package_path_or_url)
         should_install = force
         if TentacleUtil.create_missing_tentacles_arch() and not force:
-            should_install = self._confirm_action("Tentacles installation found on this OctoBot, this action will "
-                                                  "replace every local tentacle file and their configuration by their "
-                                                  "remote equivalent for the command's tentacles, continue ?")
+            should_install = self._confirm_action(self.TENTACLE_INSTALLATION_FOUND_MESSAGE)
         if should_install:
             self.tentacle_package_manager.set_max_steps(len(package) - 1)
             self.tentacle_package_manager.try_action_on_tentacles_package(TentacleManagerActions.INSTALL,
                                                                           package, EVALUATOR_ADVANCED_FOLDER)
 
     def parse_commands(self, commands, force=False):
-        help_message = "- install: Install or re-install the given tentacles modules with their requirements if any. " \
-                                "Also reset tentacles configuration files if any.\n" \
-                                "- update: Update the given tentacle modules with their requirements if any. " \
-                                "Does not edit tentacles configuration files\n" \
-                                "- uninstall: Uninstall the given tentacle modules. " \
-                                "Also delete the tentacles configuration\n" \
-                                "- reset_tentacles: Deletes all the installed tentacle modules and " \
-                                "configuration.\n" \
-                                "Note: install, update and uninstall commands can take 2 types of arguments: \n" \
-                                "   - all: applies the command to all the available tentacles in remote and " \
-                                "installed tentacles.\n" \
-                                "   - modules_name1, module_name2, ... : force to apply the command to the given " \
-                                "tentacle modules identified by their name and separated with a ' '."
+        help_message = """- install: Install or re-install the given tentacles modules with their requirements if any.
+    Also reset tentacles configuration files if any.
+- update: Update the given tentacle modules with their requirements if any. Does not edit tentacles configuration files
+- uninstall: Uninstall the given tentacle modules. Also delete the associated tentacle configuration.
+- reset_tentacles: Deletes all the installed tentacle modules and configurations.
+Note: install, update and uninstall commands can take 2 types of arguments:
+    - all: applies the command to all available tentacles (remote and installed tentacles).
+    - modules_name1, module_name2, ... : force to apply the command to the given tentacle modules 
+          identified by their name and separated by a ' '."""
         self.update_list()
         if commands:
             if commands[0] == "install":
@@ -94,7 +93,7 @@ class TentacleManager:
                                         "This will delete all tentacle files and configuration in tentacles folder."):
                     self.reset_tentacles()
 
-            elif commands[0] == "help":
+            elif commands[0] in ["help", "h", "-h", "--help"]:
                 self.logger.info(f"Welcome in Tentacle Manager, commands are:\n{help_message}")
 
             else:
@@ -107,9 +106,7 @@ class TentacleManager:
         should_install = True
         # first ensure the current tentacles architecture is setup correctly
         if TentacleUtil.create_missing_tentacles_arch() and not force:
-            should_install = self._confirm_action("Tentacles installation found on this OctoBot, this action will "
-                                                  "replace every local tentacle file and their configuration by their "
-                                                  "remote equivalent for the command's tentacles, continue ?")
+            should_install = self._confirm_action(self.TENTACLE_INSTALLATION_FOUND_MESSAGE)
         if should_install:
             # then process installations
             if command_all:
