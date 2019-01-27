@@ -14,8 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from asyncio import CancelledError
 import pytest
+import asyncio
 
 from config import *
 from octobot import OctoBot
@@ -30,7 +30,7 @@ async def test_create_bot():
     # launch a bot
     config = load_test_config()
     bot = OctoBot(config)
-    bot.stop_threads()
+    await asyncio.get_event_loop().run_in_executor(None, bot.stop_threads)
 
 
 async def test_run_bot(event_loop):
@@ -46,11 +46,5 @@ async def test_run_bot(event_loop):
     bot.time_frames = [TimeFrames.ONE_MINUTE]
     await bot.create_exchange_traders(ignore_config=True)
     bot.create_evaluation_tasks()
-    try:
-        # let it run 2 minutes: test will fail if an exception is raised
-        # 1.9 to stop task before the next time frame
-        event_loop.call_later(1.9*60, bot.stop_threads)
-        await bot.start_tasks()
-    except CancelledError:
-        # catch CancelledError since bot main loop gather got cancelled
-        pass
+    await asyncio.sleep(1.9*60)
+    await asyncio.get_event_loop().run_in_executor(None, bot.stop_threads)

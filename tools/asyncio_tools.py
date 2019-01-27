@@ -29,3 +29,7 @@ def run_coroutine_in_asyncio_loop(coroutine, async_loop):
             .error(f'{coroutine} coroutine coroutine too long, cancelling the task.')
         future.cancel()
         raise e
+
+
+async def get_gather_wrapper(tasks):
+    await asyncio.gather(*tasks)

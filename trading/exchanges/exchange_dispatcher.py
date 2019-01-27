@@ -245,9 +245,10 @@ class ExchangeDispatcher(AbstractExchange):
                                           price=price,
                                           stop_price=stop_price)
 
-    def stop(self):
+    async def stop(self):
         if self._web_socket_available():
             self.exchange_web_socket.stop_sockets()
+        await self.exchange.stop()
 
     def get_uniform_timestamp(self, timestamp):
         return self.exchange.get_uniform_timestamp(timestamp)
