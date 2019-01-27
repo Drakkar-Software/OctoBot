@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from copy import copy
+
 from config import CONFIG_ADVANCED_CLASSES, CONFIG_ADVANCED_INSTANCES
 from evaluator.Util.abstract_util import AbstractUtil
 from evaluator.abstract_evaluator import AbstractEvaluator
@@ -116,7 +118,7 @@ class AdvancedManager:
     def get_classes(config, class_type, get_all_classes=False):
         classes = []
         if class_type.get_name() in AdvancedManager._get_advanced_classes_list(config):
-            classes = AdvancedManager._get_advanced_classes_list(config)[class_type.get_name()]
+            classes = copy(AdvancedManager._get_advanced_classes_list(config)[class_type.get_name()])
         if not classes or (get_all_classes and class_type not in classes):
             classes.append(class_type)
         return classes
