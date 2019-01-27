@@ -435,6 +435,9 @@ class ExchangeSimulator(AbstractExchange):
     async def get_order_book(self, symbol, limit=30):
         raise NotImplementedError("get_order_book not implemented")
 
+    async def stop(self):
+        pass
+
     def get_uniform_timestamp(self, timestamp):
         return timestamp / 1000
 

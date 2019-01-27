@@ -256,6 +256,11 @@ class RESTExchange(AbstractExchange, Initializable):
     def get_uniform_timestamp(self, timestamp):
         return timestamp / 1000
 
+    async def stop(self):
+        self.logger.info(f"Closing connection.")
+        await self.client.close()
+        self.logger.info(f"Connection closed.")
+
     @staticmethod
     def _get_side(order_type):
         return "buy" if order_type == TraderOrderType.BUY_LIMIT or order_type == TraderOrderType.BUY_MARKET else "sell"

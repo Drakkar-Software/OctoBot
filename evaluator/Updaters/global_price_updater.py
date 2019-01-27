@@ -17,6 +17,7 @@
 import asyncio
 import time
 import copy
+from concurrent.futures import CancelledError
 
 from tools.logging.logging_util import get_logger
 from backtesting.backtesting import Backtesting, BacktestingEndedException
@@ -78,6 +79,8 @@ class GlobalPriceUpdater:
                 while self.keep_running:
                     try:
                         await self._trigger_update(time_frames)
+                    except CancelledError:
+                        self.logger.info("Update tasks cancelled.")
                     except Exception as e:
                         self.logger.error(f"exception when triggering update: {e}")
                         self.logger.exception(e)
@@ -114,6 +117,7 @@ class GlobalPriceUpdater:
                 elif now - self.time_frame_last_update[time_frame][symbol] \
                         >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
                     update_tasks.append(self._refresh_time_frame_data(time_frame, symbol))
+
         await asyncio.gather(*update_tasks)
 
         if update_tasks:
@@ -162,6 +166,8 @@ class GlobalPriceUpdater:
         try:
             await self._refresh_data(time_frame, symbol, notify=notify)
             self.time_frame_last_update[time_frame][symbol] = time.time()
+        except CancelledError as e:
+            raise e
         except Exception as e:
             self.logger.error(f" when refreshing data for time frame {time_frame}: {e}")
             self.logger.exception(e)

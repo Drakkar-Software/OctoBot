@@ -96,6 +96,10 @@ class AbstractExchange:
         pass
 
     @abstractmethod
+    async def stop(self):
+        pass
+
+    @abstractmethod
     def get_market_status(self, symbol, price_example=None, with_fixer=True):
         pass
 
