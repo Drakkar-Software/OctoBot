@@ -19,10 +19,10 @@ from enum import Enum
 from typing import NewType, Any, Dict
 
 PROJECT_NAME = "OctoBot"
-SHORT_VERSION = "0.2.5"  # major.minor.revision
+SHORT_VERSION = "0.3.0"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
-VERSION_DEV_PHASE = "a"  # alpha : a / beta : b / release candidate : rc
-VERSION_PHASE = "0"  # XX
+VERSION_DEV_PHASE = ""  # alpha : a / beta : b / release candidate : rc
+VERSION_PHASE = ""  # XX
 VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 
