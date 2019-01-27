@@ -34,6 +34,7 @@ Changelog for 0.3.0-beta
     #571 [User experience] add documentation and help messages regarding configuration and interfaces
     #572 [Donation] add donation systems
     #576 [Binary] Can't restart bot with binary from interface
+    #578 [Bug][Async] Can't stop OctoBot properly
     #585 [RestExchange] reccurent exchange side error handling
     #591 [User feedback] add feedback systems
     #592 start on vps?
@@ -57,6 +58,8 @@ Changelog for 0.3.0-beta
     - Can now display global announcements
     - Added donation addresses
     - Added several new notification systems
+    - Can now properly stop and restart OctoBot from web interface
+    - Can now properly stop OctoBot using CTRL+C
     - Optimized execution using data classes
     - Added offline mode with limited options
     - Tested on MacOS X
