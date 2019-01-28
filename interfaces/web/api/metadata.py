@@ -29,9 +29,11 @@ def version():
 
 @api.route("/user_feedback")
 def user_feedback():
-    return json.dumps(external_resources_manager.get_external_resource(EXTERNAL_RESOURCE_CURRENT_USER_FORM))
+    return json.dumps(external_resources_manager.get_external_resource(EXTERNAL_RESOURCE_CURRENT_USER_FORM,
+                                                                       catch_exception=True))
 
 
 @api.route("/announcements")
 def announcements():
-    return json.dumps(external_resources_manager.get_external_resource(EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS))
+    return json.dumps(external_resources_manager.get_external_resource(EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS,
+                                                                       catch_exception=True))
