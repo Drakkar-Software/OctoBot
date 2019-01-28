@@ -21,7 +21,7 @@ flask
 ## Tools
 # Analysis tools
 newspaper3k
-pytrends
+simplifiedpytrends
 vaderSentiment
 
 ## Others
