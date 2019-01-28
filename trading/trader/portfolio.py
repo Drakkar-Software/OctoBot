@@ -137,7 +137,7 @@ class Portfolio(Initializable):
                              f"{market_portfolio_num} | Current Portfolio : {self.portfolio}")
         else:
             await self.update_portfolio_balance()
-            self.logger.info("Portfolio updated | Current Portfolio : {self.portfolio}")
+            self.logger.info(f"Portfolio updated | Current Portfolio : {self.portfolio}")
 
     """ update_portfolio_available performs the availability update of the concerned currency in the current portfolio
     It is called when an order is filled, created or canceled to update the "available" filed of the portfolio
