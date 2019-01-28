@@ -17,10 +17,19 @@
 import json
 import requests
 
+from tools.logging.logging_util import get_logger
 from config import GITHUB_RAW_CONTENT_URL, ASSETS_BRANCH, GITHUB_REPOSITORY, EXTERNAL_RESOURCES_FILE
 
 
-def get_external_resource(resource_key):
-    external_resource_url = f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{ASSETS_BRANCH}/{EXTERNAL_RESOURCES_FILE}"
-    external_resources = json.loads(requests.get(external_resource_url).text)
-    return external_resources[resource_key]
+def get_external_resource(resource_key, catch_exception=False, default_response=""):
+    try:
+        external_resource_url = f"{GITHUB_RAW_CONTENT_URL}/{GITHUB_REPOSITORY}/{ASSETS_BRANCH}/{EXTERNAL_RESOURCES_FILE}"
+        external_resources = json.loads(requests.get(external_resource_url).text)
+        return external_resources[resource_key]
+    except Exception as e:
+        if catch_exception:
+            get_logger("ExternalResourcesManager")\
+                .error(f"Exception when calling get_external_resource for {resource_key} key: {e}")
+            return default_response
+        else:
+            raise e
