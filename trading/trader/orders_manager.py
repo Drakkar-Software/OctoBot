@@ -20,7 +20,7 @@ from ccxt.async_support import BaseError
 from backtesting.backtesting import Backtesting
 from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
 from tools.logging.logging_util import get_logger
-from trading.trader.order import Order
+from trading.trader.order import Order, StopLossLimitOrder, StopLossOrder
 
 
 class OrdersManager:
@@ -45,8 +45,17 @@ class OrdersManager:
             self.order_refresh_time = ORDER_REFRESHER_TIME
 
     def add_order_to_list(self, order):
-        if order not in self.order_list and (self.trader.simulate or not self.has_order_id_in_list(order.get_id())):
+        if not self._order_in_list(order) and (self.trader.simulate or not self._already_has_real_or_linked_order(order)):
             self.order_list.append(order)
+
+    def _order_in_list(self, order):
+        return order in self.order_list
+
+    def _already_has_real_or_linked_order(self, order):
+        return (order.get_id() is not None and self.has_order_id_in_list(order.get_id())) or \
+               (isinstance(order, (StopLossLimitOrder, StopLossOrder)) and
+                any([other.get_linked_orders() == order.get_linked_orders()
+                     for other in self.order_list]))
 
     def has_order_id_in_list(self, order_id):
         return any([order.get_id() == order_id for order in self.order_list])
@@ -56,7 +65,7 @@ class OrdersManager:
         Remove the specified order of the current open_order list (when the order is filled or canceled)
         """
         try:
-            if order in self.order_list:
+            if self._order_in_list(order):
                 self.order_list.remove(order)
                 self.logger.debug(f"{order.get_order_symbol()} {order.get_name()} (ID : {order.get_id()}) "
                                   f"removed on {self.trader.get_exchange().get_name()}")
