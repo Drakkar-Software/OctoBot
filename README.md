@@ -52,7 +52,6 @@ touch config.json && docker run -it -d --name MyAmazingOctobot -v $(pwd)/config.
 - Install python3.7 (https://www.python.org/downloads/)
 ```
 python3.7 -m pip install OctoBot
-
 OctoBot-Launcher
 ```
 
