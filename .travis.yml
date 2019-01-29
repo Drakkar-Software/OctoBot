@@ -40,13 +40,10 @@ matrix:
 
       script:
         - pytest -n 5 --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests tests/endurance_tests
+        - python3 setup.py sdist bdist_wheel && python3 -m twine check dist/*
 
       after_success:
         - if [[ $TRAVIS_PULL_REQUEST == 'false' ]]; then bash coveralls; fi
-    - name: "Linux - Setup.py"
-      os: linux
-      script:
-        - python3 setup.py sdist bdist_wheel && python3 -m twine check dist/*
 
 deploy:
   - provider: pypi
