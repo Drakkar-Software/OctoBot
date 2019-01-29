@@ -13,7 +13,8 @@ install:
 
 matrix:
   include:
-    - os: osx
+    - name: "OS X - Python 3"
+      os: osx
       osx_image: xcode8.3
       language: generic
       before_cache:
@@ -30,7 +31,8 @@ matrix:
       script:
         - pytest -n 3 --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests
 
-    - os: linux
+    - name: "Linux - Python 3 nightly"
+      os: linux
       python: nightly
       language: python
       before_install:
@@ -41,9 +43,10 @@ matrix:
 
       after_success:
         - if [[ $TRAVIS_PULL_REQUEST == 'false' ]]; then bash coveralls; fi
-
-before_deploy:
-  - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then python3 setup.py sdist bdist_wheel && python3 -m twine check dist/*; fi
+    - name: "Linux - Setup.py"
+      os: linux
+      script:
+        - python3 setup.py sdist bdist_wheel && python3 -m twine check dist/*
 
 deploy:
   - provider: pypi
