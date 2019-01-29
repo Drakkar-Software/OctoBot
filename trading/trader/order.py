@@ -297,8 +297,8 @@ class Order:
 
 
 class BuyMarketOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+    def __init__(self, trader):
+        super().__init__(trader)
         self.side = TradeOrderSide.BUY
 
     async def update_order_status(self, simulated_time=False):
@@ -315,8 +315,8 @@ class BuyMarketOrder(Order):
 
 
 class BuyLimitOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+    def __init__(self, trader):
+        super().__init__(trader)
         self.side = TradeOrderSide.BUY
 
     async def update_order_status(self, simulated_time=False):
@@ -333,8 +333,8 @@ class BuyLimitOrder(Order):
 
 
 class SellMarketOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+    def __init__(self, trader):
+        super().__init__(trader)
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -351,8 +351,8 @@ class SellMarketOrder(Order):
 
 
 class SellLimitOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+    def __init__(self, trader):
+        super().__init__(trader)
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -369,8 +369,8 @@ class SellLimitOrder(Order):
 
 
 class StopLossOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+    def __init__(self, trader):
+        super().__init__(trader)
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -386,8 +386,8 @@ class StopLossOrder(Order):
 
 # TODO
 class StopLossLimitOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+    def __init__(self, trader):
+        super().__init__(trader)
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -396,8 +396,8 @@ class StopLossLimitOrder(Order):
 
 # TODO
 class TakeProfitOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+    def __init__(self, trader):
+        super().__init__(trader)
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -406,8 +406,8 @@ class TakeProfitOrder(Order):
 
 # TODO
 class TakeProfitLimitOrder(Order):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+    def __init__(self, trader):
+        super().__init__(trader)
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
