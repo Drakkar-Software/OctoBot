@@ -192,18 +192,18 @@ class TestAbstractTradingModeCreator:
         current_symbol_holding = 5
         quantity = 4
         price = 1
-        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
-                                                                                        price,
-                                                                                        symbol_market,
-                                                                                        current_symbol_holding) == 0
+        assert AbstractTradingModeCreator.add_dusts_to_quantity_if_necessary(quantity,
+                                                                             price,
+                                                                             symbol_market,
+                                                                             current_symbol_holding) == quantity + 0
 
         current_symbol_holding = 5
         quantity = 4.5
         price = 1
-        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
-                                                                                        price,
-                                                                                        symbol_market,
-                                                                                        current_symbol_holding) == 0.5
+        assert AbstractTradingModeCreator.add_dusts_to_quantity_if_necessary(quantity,
+                                                                             price,
+                                                                             symbol_market,
+                                                                             current_symbol_holding) == quantity + 0.5
 
         symbol_market = {Ecmsc.LIMITS.value: {
             Ecmsc.LIMITS_AMOUNT.value: {
@@ -217,27 +217,34 @@ class TestAbstractTradingModeCreator:
         current_symbol_holding = 0.99000000001
         quantity = 0.9
         price = 0.5
-        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
-                                                                                        price,
-                                                                                        symbol_market,
-                                                                                        current_symbol_holding) == 0
+        assert AbstractTradingModeCreator.add_dusts_to_quantity_if_necessary(quantity,
+                                                                             price,
+                                                                             symbol_market,
+                                                                             current_symbol_holding) == quantity + 0
 
         current_symbol_holding = 0.99000000001
         quantity = 0.0215245845
         price = 0.5
-        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
-                                                                                        price,
-                                                                                        symbol_market,
-                                                                                        current_symbol_holding) == 0
+        assert AbstractTradingModeCreator.add_dusts_to_quantity_if_necessary(quantity,
+                                                                             price,
+                                                                             symbol_market,
+                                                                             current_symbol_holding) == quantity + 0
 
         current_symbol_holding = 0.99999999
         quantity = 0.99999
         price = 0.5
-        exp = 0.00000999
-        assert AbstractTradingModeCreator.get_additional_dusts_to_quantity_if_necessary(quantity,
-                                                                                        price,
-                                                                                        symbol_market,
-                                                                                        current_symbol_holding) == exp
+        assert AbstractTradingModeCreator.add_dusts_to_quantity_if_necessary(quantity,
+                                                                             price,
+                                                                             symbol_market,
+                                                                             current_symbol_holding) == 0.99999999
+
+        current_symbol_holding = 0.88
+        quantity = 0.7055680057024826
+        price = 0.0002
+        assert AbstractTradingModeCreator.add_dusts_to_quantity_if_necessary(quantity,
+                                                                             price,
+                                                                             symbol_market,
+                                                                             current_symbol_holding) == 0.88
 
     async def test_check_and_adapt_order_details_if_necessary(self):
         atmc = AbstractTradingModeCreator(None)

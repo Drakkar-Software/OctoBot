@@ -48,7 +48,7 @@ class AbstractTradingModeCreator:
         return key in element and ExchangeMarketStatusFixer.is_ms_valid(element[key])
 
     @staticmethod
-    def get_additional_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
+    def add_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
         remaining_portfolio_amount = float("{1:.{0}f}".format(CURRENCY_DEFAULT_MAX_PRICE_DIGITS,
                                                               current_symbol_holding - quantity))
         remaining_max_total_order_price = remaining_portfolio_amount * price
@@ -68,9 +68,9 @@ class AbstractTradingModeCreator:
         min_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
 
         if remaining_max_total_order_price < min_cost or remaining_portfolio_amount < min_quantity:
-            return remaining_portfolio_amount
+            return current_symbol_holding
         else:
-            return 0
+            return quantity
 
     """
     Checks and adapts the quantity and price of the order to ensure it's exchange compliant:
