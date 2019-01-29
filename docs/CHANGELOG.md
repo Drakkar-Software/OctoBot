@@ -1,5 +1,26 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot.*
 
+Changelog for 0.3.1-beta
+====================
+*Released date : January 29 2019*
+
+**Warning** :
+- Version 0.3.0 required to reinstall all default tentacles (start.py -p reset_tentacles && start.py -p install all)
+
+# Concerned issues :
+    #624 fixed offline announcements
+    #629 fixed real trader multiple stop orders
+    #631 fixed dusts management round system
+
+# New features :
+    - Requirement cleanup    
+
+# Bug fixes :
+    - Fix pip delivery
+    - Fix real trader stop orders
+    - Fix dusts management
+    - Minor fixes on portfolio
+
 Changelog for 0.3.0-beta
 ====================
 *Released date : January 27 2019*
