@@ -47,7 +47,7 @@ class TestOrdersManagers:
         trader.stop_order_manager()
 
     async def test_add_remove_order_to_list(self):
-        config, exchange_inst, trader_inst, order_manager_inst, trader_simulator_inst, \
+        _, _, trader_inst, order_manager_inst, trader_simulator_inst, \
             order_manager_simulator_inst = await self.init_default()
 
         # real trader
