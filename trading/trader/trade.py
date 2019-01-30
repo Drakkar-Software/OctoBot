@@ -15,6 +15,7 @@
 #  License along with this library.
 
 from dataclasses import dataclass, field
+from typing import Dict, Union
 
 from config import OrderStatus, TradeOrderSide
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
@@ -31,7 +32,7 @@ class Trade:
     currency: str = field(init=False, repr=False)
     creation_time: int = field(init=False, repr=False)
     exchange: ExchangeDispatcher
-    fee: float = field(init=False, repr=False)
+    fee: Dict[str, Union[str, float]] = field(init=False, repr=False)
     filled_time: int = field(init=False, repr=False)
     final_status: OrderStatus = field(init=False, repr=False)
     market: str = field(init=False, repr=False)
