@@ -529,6 +529,28 @@ class ExchangeConstantsMarketStatusInfoColumns(Enum):
     MAX_QTY = "maxQty"
 
 
+class ExchangeConstantsOrderColumns(Enum):
+    INFO = "info"
+    ID = "id"
+    TIMESTAMP = "timestamp"
+    DATETIME = 'datetime'
+    LAST_TRADE_TIMESTAMP = "lastTradeTimestamp"
+    SYMBOL = "symbol"
+    TYPE = "type"
+    SIDE = "side"
+    PRICE = "price"
+    AMOUNT = "amount"
+    COST = "cost"
+    AVERAGE = "average"
+    FILLED = "filled"
+    REMAINING = "remaining"
+    STATUS = "status"
+    FEE = "fee"
+    TRADES = "trades"
+    MAKER = "maker"
+    TAKER = "taker"
+
+
 class ExchangeConstantsFeesColumns(Enum):
     TYPE = "type"
     CURRENCY = "currency"
