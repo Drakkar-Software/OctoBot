@@ -33,7 +33,7 @@ class BinanceWebSocketClient(AbstractWebSocket):
         'NEW': 'open',
         'PARTIALLY_FILLED': 'open',
         'FILLED': 'closed',
-        'CANCELED': 'canceled',
+        'CANCELED': 'canceled'
     }
 
     def __init__(self, config, exchange_manager):
@@ -158,8 +158,8 @@ class BinanceWebSocketClient(AbstractWebSocket):
         cost = None
         remaining = None
         fee = {
-            FeePropertyColumns.COST: self.safe_float(order, "n"),
-            FeePropertyColumns.CURRENCY: self.safe_string(order, "N", "?"),
+            FeePropertyColumns.COST.value: self.safe_float(order, "n"),
+            FeePropertyColumns.CURRENCY.value: self.safe_string(order, "N", "?"),
         }
         if filled is not None:
             if amount is not None:
@@ -167,21 +167,21 @@ class BinanceWebSocketClient(AbstractWebSocket):
             if price is not None:
                 cost = price * filled
         return {
-            'info': order,
-            'id': self.safe_string(order, "i"),
-            'timestamp': order["T"],
-            'datetime': self.iso8601(order["T"]),
-            'lastTradeTimestamp': None,
-            'symbol': self._adapt_symbol(self.safe_string(order, "s")),
-            'type': self.safe_lower_string(order, "o"),
-            'side': self.safe_lower_string(order, "S"),
-            'price': price,
-            'amount': amount,
-            'cost': cost,
-            'filled': filled,
-            'remaining': remaining,
-            'status': status,
-            'fee': fee,
+            ExchangeConstantsOrderColumns.INFO.value: order,
+            ExchangeConstantsOrderColumns.ID.value: self.safe_string(order, "i"),
+            ExchangeConstantsOrderColumns.TIMESTAMP.value: order["T"],
+            ExchangeConstantsOrderColumns.DATETIME.value: self.iso8601(order["T"]),
+            ExchangeConstantsOrderColumns.LAST_TRADE_TIMESTAMP.value: None,
+            ExchangeConstantsOrderColumns.SYMBOL.value: self._adapt_symbol(self.safe_string(order, "s")),
+            ExchangeConstantsOrderColumns.TYPE.value: self.safe_lower_string(order, "o"),
+            ExchangeConstantsOrderColumns.SIDE.value: self.safe_lower_string(order, "S"),
+            ExchangeConstantsOrderColumns.PRICE.value: price,
+            ExchangeConstantsOrderColumns.AMOUNT.value: amount,
+            ExchangeConstantsOrderColumns.COST.value: cost,
+            ExchangeConstantsOrderColumns.FILLED.value: filled,
+            ExchangeConstantsOrderColumns.REMAINING.value: remaining,
+            ExchangeConstantsOrderColumns.STATUS.value: status,
+            ExchangeConstantsOrderColumns.FEE.value: fee,
         }
 
     def close_and_restart_sockets(self):

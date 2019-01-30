@@ -14,7 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from config import *
+from config import CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_USED, CONFIG_PORTFOLIO_TOTAL, OrderStatus, \
+    ExchangeConstantsOrderColumns
 
 
 class ExchangePersonalData:
@@ -58,7 +59,7 @@ class ExchangePersonalData:
 
     def upsert_orders(self, orders):
         for order in orders:
-            self.upsert_order(order["id"], order)
+            self.upsert_order(order[ExchangeConstantsOrderColumns.ID.value], order)
 
     def upsert_order(self, order_id, ccxt_order):
         self.orders[order_id] = ccxt_order
@@ -66,14 +67,17 @@ class ExchangePersonalData:
             self.remove_oldest_orders(int(self._MAX_ORDERS_COUNT / 2))
 
     def remove_oldest_orders(self, nb_to_remove):
-        time_sorted_orders = sorted(self.orders.values(), key=lambda x: x["timestamp"])
+        time_sorted_orders = sorted(self.orders.values(),
+                                    key=lambda x: x[ExchangeConstantsOrderColumns.TIMESTAMP.value])
         shrinked_list = [time_sorted_orders[i]
                          for i in range(0, nb_to_remove)
-                         if (time_sorted_orders[i]["status"] == OrderStatus.OPEN.value
-                             or time_sorted_orders[i]["status"] == OrderStatus.PARTIALLY_FILLED.value)]
+                         if (time_sorted_orders[i][ExchangeConstantsOrderColumns.STATUS.value] ==
+                             OrderStatus.OPEN.value
+                             or time_sorted_orders[i][ExchangeConstantsOrderColumns.STATUS.value]
+                             == OrderStatus.PARTIALLY_FILLED.value)]
 
         shrinked_list += [time_sorted_orders[i] for i in range(nb_to_remove, len(time_sorted_orders))]
-        self.orders = {order["id"]: order for order in shrinked_list}
+        self.orders = {order[ExchangeConstantsOrderColumns.ID.value]: order for order in shrinked_list}
 
     def get_all_orders(self, symbol, since, limit):
         return self._select_orders(None, symbol, since, limit)
@@ -97,9 +101,9 @@ class ExchangePersonalData:
             order
             for order in self.orders.values()
             if (
-                    (state is None or order["status"] == state) and
-                    (symbol is None or (symbol and order["symbol"] == symbol)) and
-                    (since is None or (since and order['timestamp'] < since))
+                    (state is None or order[ExchangeConstantsOrderColumns.STATUS.value] == state) and
+                    (symbol is None or (symbol and order[ExchangeConstantsOrderColumns.SYMBOL.value] == symbol)) and
+                    (since is None or (since and order[ExchangeConstantsOrderColumns.TIMESTAMP.value] < since))
             )
         ]
         if limit is not None:

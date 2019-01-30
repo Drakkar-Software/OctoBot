@@ -17,7 +17,7 @@
 import logging
 
 from ccxt.async_support import OrderNotFound, BaseError, InsufficientFunds
-from ccxt.base.errors import ExchangeNotAvailable
+from ccxt.base.errors import ExchangeNotAvailable, InvalidNonce
 
 from config.config import decrypt
 from config import *
@@ -103,21 +103,27 @@ class RESTExchange(AbstractExchange, Initializable):
 
     # total (free + used), by currency
     async def get_balance(self):
-        balance = await self.client.fetch_balance()
+        try:
+            balance = await self.client.fetch_balance()
 
-        # store portfolio global info
-        self.info_list = balance[CONFIG_PORTFOLIO_INFO]
-        self.free = balance[CONFIG_PORTFOLIO_FREE]
-        self.used = balance[CONFIG_PORTFOLIO_USED]
-        self.total = balance[CONFIG_PORTFOLIO_TOTAL]
+            # store portfolio global info
+            self.info_list = balance[CONFIG_PORTFOLIO_INFO]
+            self.free = balance[CONFIG_PORTFOLIO_FREE]
+            self.used = balance[CONFIG_PORTFOLIO_USED]
+            self.total = balance[CONFIG_PORTFOLIO_TOTAL]
 
-        # remove not currency specific keys
-        balance.pop(CONFIG_PORTFOLIO_INFO, None)
-        balance.pop(CONFIG_PORTFOLIO_FREE, None)
-        balance.pop(CONFIG_PORTFOLIO_USED, None)
-        balance.pop(CONFIG_PORTFOLIO_TOTAL, None)
+            # remove not currency specific keys
+            balance.pop(CONFIG_PORTFOLIO_INFO, None)
+            balance.pop(CONFIG_PORTFOLIO_FREE, None)
+            balance.pop(CONFIG_PORTFOLIO_USED, None)
+            balance.pop(CONFIG_PORTFOLIO_TOTAL, None)
 
-        self.get_personal_data().set_portfolio(balance)
+            self.get_personal_data().set_portfolio(balance)
+
+        except InvalidNonce as e:
+            self.logger.error(f"Error when loading {self.get_name()} real trader portfolio: {e}. "
+                              f"To fix this, please synchronize your computer's clock. ")
+            raise e
 
     async def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         if limit:
