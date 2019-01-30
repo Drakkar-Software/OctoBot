@@ -60,6 +60,7 @@ class Order:
         self.linked_to = None
         self.is_from_this_octobot = True
         self.linked_portfolio = None
+        self.taker_or_maker = None
 
         self.order_notifier = None
 
@@ -249,17 +250,20 @@ class Order:
                 f"Quantity : {self.get_origin_quantity()} | "
                 f"Status : {self.get_status()}")
 
-    def get_taker_or_maker(self):
-        if self.order_type == SellMarketOrder or self.order_type == BuyMarketOrder:
-            # always true
-            return ExchangeConstantsMarketPropertyColumns.TAKER.value
-        else:
-            # true 90% of the time: impossible to know for sure the reality (should only be used for simulation anyway)
-            return ExchangeConstantsMarketPropertyColumns.MAKER.value
+    def infer_taker_or_maker(self):
+        if self.taker_or_maker is None:
+            if self.order_type == SellMarketOrder or self.order_type == BuyMarketOrder:
+                # always true
+                return ExchangeConstantsMarketPropertyColumns.TAKER.value
+            else:
+                # true 90% of the time: impossible to know for sure the reality
+                # (should only be used for simulation anyway)
+                return ExchangeConstantsMarketPropertyColumns.MAKER.value
+        return self.taker_or_maker
 
-    def compute_fee(self):
+    def get_computed_fee(self):
         computed_fee = self.exchange.get_trade_fee(self.symbol, self.order_type, self.filled_quantity,
-                                                   self.filled_price, self.get_taker_or_maker())
+                                                   self.filled_price, self.infer_taker_or_maker())
         return {
             FeePropertyColumns.COST.value: computed_fee[FeePropertyColumns.COST.value],
             FeePropertyColumns.CURRENCY.value: computed_fee[FeePropertyColumns.CURRENCY.value],
@@ -310,7 +314,7 @@ class BuyMarketOrder(Order):
             self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
-            self.fee = self.compute_fee()
+            self.fee = self.get_computed_fee()
             self.executed_time = self.generate_executed_time(simulated_time)
 
 
@@ -328,7 +332,7 @@ class BuyLimitOrder(Order):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
-                self.fee = self.compute_fee()
+                self.fee = self.get_computed_fee()
                 self.executed_time = self.generate_executed_time(simulated_time)
 
 
@@ -346,7 +350,7 @@ class SellMarketOrder(Order):
             self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
-            self.fee = self.compute_fee()
+            self.fee = self.get_computed_fee()
             self.executed_time = self.generate_executed_time(simulated_time)
 
 
@@ -364,7 +368,7 @@ class SellLimitOrder(Order):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
-                self.fee = self.compute_fee()
+                self.fee = self.get_computed_fee()
                 self.executed_time = self.generate_executed_time(simulated_time)
 
 

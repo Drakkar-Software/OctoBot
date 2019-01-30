@@ -69,7 +69,10 @@ class OrdersManager:
                 self.order_list.remove(order)
                 self.logger.debug(f"{order.get_order_symbol()} {order.get_name()} (ID : {order.get_id()}) "
                                   f"removed on {self.trader.get_exchange().get_name()}")
-
+            else:
+                self.logger.warning(f"Trying to remove order from order manager which is not in order_manager list: "
+                                    f"{order.get_order_symbol()} {order.get_name()} (ID : {order.get_id()} "
+                                    f"on {self.trader.get_exchange().get_name()}")
         except Exception as e:
             self.logger.error(str(e))
             self.logger.exception(e)

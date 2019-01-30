@@ -18,7 +18,8 @@ from tools.logging.logging_util import get_logger
 
 from backtesting.backtesting import Backtesting
 from config import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
-    CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType
+    CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType, \
+    ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.order import OrderConstants, Order
 from trading.trader.order_notifier import OrderNotifier
@@ -366,10 +367,23 @@ class Trader(Initializable):
     @staticmethod
     def update_order_with_exchange_order(exchange_order, order):
         order.status = Trader.parse_status(exchange_order)
-        order.filled_quantity = exchange_order["filled"]
-        order.filled_price = exchange_order["price"]
-        order.fee = exchange_order["fee"]
-        order.executed_time = order.trader.exchange.get_uniform_timestamp(exchange_order["timestamp"])
+        order.filled_quantity = exchange_order[ExchangeConstantsOrderColumns.FILLED.value]
+        order.filled_price = exchange_order[ExchangeConstantsOrderColumns.PRICE.value]
+        order.taker_or_maker = Trader._parse_type(exchange_order)
+        order.fee = exchange_order[ExchangeConstantsOrderColumns.FEE.value]
+        if order.fee is None:
+            order.fee = order.get_computed_fee()
+        order.executed_time = order.trader.exchange.get_uniform_timestamp(
+            exchange_order[ExchangeConstantsOrderColumns.TIMESTAMP.value])
+
+    @staticmethod
+    def _parse_type(exchange_order):
+        if ExchangeConstantsOrderColumns.TYPE.value in exchange_order:
+            order_type = exchange_order[ExchangeConstantsOrderColumns.TYPE.value]
+            if order_type == ExchangeConstantsOrderColumns.MAKER:
+                return ExchangeConstantsMarketPropertyColumns.MAKER.value
+            else:
+                return ExchangeConstantsMarketPropertyColumns.TAKER.value
 
     def parse_exchange_order_to_trade_instance(self, exchange_order, order):
         self.update_order_with_exchange_order(exchange_order, order)
