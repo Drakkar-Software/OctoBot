@@ -4,7 +4,7 @@
 {% macro extract_trades(trades_list, sim_or_real) -%}
     {% for trades in trades_list %}
         {% for trade in trades %}
-            {{ m_tables.trades_tr(trade, convert_type(trade.order_type),convert_timestamp(trade.creation_time), sim_or_real) }}
+            {{ m_tables.trades_tr(trade, convert_type(trade.order_type),convert_timestamp(trade.filled_time), sim_or_real) }}
         {% endfor %}
     {% endfor %}
 {%- endmacro %}
@@ -25,8 +25,9 @@
                 <th scope="col">Type</th>
                 <th scope="col">Price</th>
                 <th scope="col">Quantity</th>
-                <th scope="col">Real / Simulated</th>
-                <th scope="col">Creation</th>
+                <th scope="col">Total</th>
+                <th scope="col">Fee</th>
+                <th scope="col">Execution</th>
             </tr>
           </thead>
           <tbody>

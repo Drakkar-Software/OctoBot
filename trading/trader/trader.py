@@ -369,7 +369,7 @@ class Trader(Initializable):
         order.filled_quantity = exchange_order["filled"]
         order.filled_price = exchange_order["price"]
         order.fee = exchange_order["fee"]
-        order.executed_time = order.trader.exchange.get_uniform_timestamp(exchange_order["timestamp"])  # to confirm
+        order.executed_time = order.trader.exchange.get_uniform_timestamp(exchange_order["timestamp"])
 
     def parse_exchange_order_to_trade_instance(self, exchange_order, order):
         self.update_order_with_exchange_order(exchange_order, order)
