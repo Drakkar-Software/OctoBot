@@ -12,7 +12,14 @@
 {% block body %}
 <div id="nav-config" class="sticky-top">
     <div class="card card-header">
-        <h3>Activated strategies: {{ ', '.join(evaluator_config["activated_strategies"]) }}</h3>
+        <h3>
+            <span class="float-left">
+                <a href="{{ url_for('config') }}">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            </span>
+            &ensp;Activated strategies: {{ ', '.join(evaluator_config["activated_strategies"]) }}
+        </h3>
     </div>
     <nav class="navbar nav-tabs navbar-dark primary-color">
         <span class="white-text"> Any configuration change will be applied after OctBot restarts.</span>
