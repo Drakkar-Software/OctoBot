@@ -19,9 +19,9 @@ from enum import Enum
 
 from config import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
-    CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE, CONFIG_WEB
+    CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE, CONFIG_WEB, CONFIG_APPRISE
 from interfaces.web import add_notification
-from services import TwitterService, TelegramService, WebService, NotifierServiceFactory
+from services import TwitterService, TelegramService, WebService, AppriseService
 from tools.logging.logging_util import get_logger
 from tools.pretty_printer import PrettyPrinter
 
@@ -50,9 +50,8 @@ class Notification:
 
     async def notify_with_all(self, message, error_on_failure=True):
         try:
-            # notifier
-            for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
-                await self.notifier_notification_factory(notifier, message)
+            # apprise
+            await self.apprise_notification_factory(message)
 
             # twitter
             await self.twitter_notification_factory(message, error_on_failure)
@@ -62,20 +61,23 @@ class Notification:
         except Exception as e:
             self.logger.error(f"Failed to notify all : {e}")
 
-    def notifier_notification_available(self, notifier, key=None):
+    def apprise_notification_available(self, key=None):
         return self.enabled(key) and \
-               notifier.get_type() in self.notification_type and \
-               notifier.is_setup_correctly(self.config)
+               self._service_instance_is_present(CONFIG_APPRISE) and \
+               self.config[CONFIG_CATEGORY_SERVICES][CONFIG_APPRISE][CONFIG_SERVICE_INSTANCE].get_type() \
+               in self.notification_type and \
+               AppriseService.is_setup_correctly(self.config)
 
-    async def notifier_notification_factory(self, notifier, message):
-        if self.notifier_notification_available(notifier):
-            result = await notifier.notify(message)
+    async def apprise_notification_factory(self, message):
+        if self.apprise_notification_available():
+            apprise_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_APPRISE][CONFIG_SERVICE_INSTANCE]
+            result = await apprise_service.notify(message)
             if not result.errors:
-                self.logger.info(f"{notifier.get_provider_name()} notifier message sent")
+                self.logger.info(f"Apprise message sent")
             else:
-                self.logger.warning(f"{notifier.get_provider_name()} notifier message failed : {result.errors[-1]}")
+                self.logger.warning(f"Apprise message failed : {result.errors[-1]}")
         else:
-            self.logger.debug("Notifier disabled")
+            self.logger.debug("Apprise disabled")
 
     def telegram_notification_available(self, key=None):
         return self.enabled(key) and \
@@ -157,10 +159,9 @@ class Notification:
         if self.telegram_notification_available(notification_type):
             await self.telegram_notification_factory(content)
 
-    async def send_notifier_notification_if_necessary(self, content, notification_type=None):
-        for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
-            if self.notifier_notification_available(notifier, notification_type):
-                await self.notifier_notification_factory(notifier, content)
+    async def send_apprise_notification_if_necessary(self, content, notification_type=None):
+        if self.apprise_notification_available(notification_type):
+            await self.apprise_notification_factory(content)
 
     def _service_instance_is_present(self, service_type):
         return service_type in self.config[CONFIG_CATEGORY_SERVICES] and \
@@ -181,7 +182,7 @@ class EvaluatorNotification(Notification):
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, "STATE CHANGED", notify_content,
                                                       CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        await self.send_notifier_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_apprise_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 
@@ -202,7 +203,7 @@ class EvaluatorNotification(Notification):
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
                                                       CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        await self.send_notifier_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_apprise_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 
@@ -233,7 +234,7 @@ class OrdersNotification(Notification):
             await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
                                                           CONFIG_NOTIFICATION_TRADES)
 
-            await self.send_notifier_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
+            await self.send_apprise_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
     async def notify_end(self,
                          order_filled,
@@ -253,6 +254,8 @@ class OrdersNotification(Notification):
         await self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content, CONFIG_NOTIFICATION_TRADES)
+
+        await self.send_apprise_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
     @staticmethod
     def _build_notification_content(order_filled,
