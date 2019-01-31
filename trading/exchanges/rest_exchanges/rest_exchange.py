@@ -20,7 +20,9 @@ from ccxt.async_support import OrderNotFound, BaseError, InsufficientFunds
 from ccxt.base.errors import ExchangeNotAvailable, InvalidNonce
 
 from config.config import decrypt
-from config import *
+from config import CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_PORTFOLIO_FREE, \
+    CONFIG_PORTFOLIO_USED, CONFIG_PORTFOLIO_TOTAL, CONFIG_PORTFOLIO_INFO, TraderOrderType, \
+    ExchangeConstantsMarketPropertyColumns, CONFIG_DEFAULT_FEES
 from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
 from tools.initializable import Initializable
@@ -66,7 +68,7 @@ class RESTExchange(AbstractExchange, Initializable):
     def create_client(self):
         if self.exchange_manager.ignore_config or self.exchange_manager.check_config(self.get_name()):
             try:
-                if self.exchange_manager.ignore_config:
+                if self.exchange_manager.ignore_config or not self.exchange_manager.should_decrypt_token(self.logger):
                     key = ""
                     secret = ""
                 else:
@@ -80,9 +82,8 @@ class RESTExchange(AbstractExchange, Initializable):
                     'enableRateLimit': True
                 })
             except Exception as e:
+                self.exchange_manager.handle_token_error(e, self.logger)
                 self.client = self.exchange_type({'verbose': False})
-                self.logger.error(
-                    f"Exchange configuration tokens are invalid : please check your configuration ! ({e})")
         else:
             self.client = self.exchange_type({'verbose': False})
             self.logger.error("configuration issue: missing login information !")

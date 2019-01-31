@@ -31,7 +31,7 @@ from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CO
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
     CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, \
     CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT
-from config.config import load_config, init_config, is_config_empty
+from config.config import load_config, init_config, is_config_empty_or_missing
 from tools.commands import Commands
 from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
@@ -110,7 +110,7 @@ def start_octobot(starting_args):
             # configuration loading
             config = load_config(error=False)
 
-            if config is None and is_config_empty():
+            if config is None and is_config_empty_or_missing():
                 logger.info("No configuration found creating default...")
                 init_config()
                 config = load_config(error=False)

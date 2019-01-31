@@ -29,7 +29,7 @@ class AbstractWebSocket:
         self.exchange_manager = exchange_manager
         self.client = None
         self.name = self.get_name()
-        self.logger = get_logger(self.name)
+        self.logger = get_logger(f"WebSocket - {self.name}")
 
     # Abstract methods
     @classmethod

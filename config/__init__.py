@@ -70,6 +70,9 @@ BOT_TOOLS_BACKTESTING = "backtesting"
 BOT_TOOLS_STRATEGY_OPTIMIZER = "strategy_optimizer"
 BOT_TOOLS_RECORDER = "recorder"
 
+# default values in config files and interfaces
+DEFAULT_CONFIG_VALUES = {"your-api-key-here", "your-api-secret-here", "NOKEY", "Empty"}
+
 # Async settings
 DEFAULT_FUTURE_TIMEOUT = 30
 

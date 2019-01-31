@@ -17,6 +17,7 @@
 from abc import ABCMeta, abstractmethod
 
 from backtesting.backtesting import Backtesting
+from tools.config_manager import ConfigManager
 
 
 class AbstractService:
@@ -106,7 +107,8 @@ class AbstractService:
         raise NotImplementedError("get_successful_startup_message not implemented")
 
     def check_required_config(self, config):
-        return all(key in config for key in self.get_required_config())
+        return all(key in config for key in self.get_required_config()) and \
+            not ConfigManager.has_invalid_default_config_value(*(config[key] for key in self.get_required_config()))
 
     def log_connection_error_message(self, e):
         self.logger.error(f"{self.get_name()} is failing to connect, please check your internet connection: {e}")
