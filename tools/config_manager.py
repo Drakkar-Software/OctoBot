@@ -26,7 +26,7 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_TRADING_FILE, \
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
     CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, \
-    CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES
+    CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES
 
 
 def get_logger():
@@ -78,18 +78,20 @@ class ConfigManager:
     def jsonify_config(config):
         # check exchange keys encryption
         for exchange in config[CONFIG_EXCHANGES]:
+            key = config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]
+            secret = config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]
             try:
-                try:
-                    decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY], silent_on_invalid_token=True)
-                except Exception:
-                    config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = \
-                        encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]).decode()
+                if not ConfigManager.has_invalid_default_config_value(key):
+                    try:
+                        decrypt(key, silent_on_invalid_token=True)
+                    except Exception:
+                        config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = encrypt(key).decode()
 
-                try:
-                    decrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET], silent_on_invalid_token=True)
-                except Exception:
-                    config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = \
-                        encrypt(config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]).decode()
+                if not ConfigManager.has_invalid_default_config_value(secret):
+                    try:
+                        decrypt(secret, silent_on_invalid_token=True)
+                    except Exception:
+                        config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = encrypt(secret).decode()
 
             except Exception:
                 config[CONFIG_EXCHANGES][exchange] = {
@@ -245,3 +247,7 @@ class ConfigManager:
         if something_changed:
             with open(config_file_path, "w+") as config_file_w:
                 config_file_w.write(json.dumps(current_config, indent=4, sort_keys=True))
+
+    @staticmethod
+    def has_invalid_default_config_value(*config_values):
+        return any(value in DEFAULT_CONFIG_VALUES for value in config_values)
