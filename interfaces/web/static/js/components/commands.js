@@ -22,14 +22,22 @@ function load_commands_metadata() {
         url: feedbackButton.attr(update_url_attr),
         dataType: "json",
         success: function(msg, status){
-            feedbackButton.attr("href", msg);
-            feedbackButton.removeClass("disabled");
+            if(msg) {
+                feedbackButton.attr("href", msg);
+                feedbackButton.removeClass("disabled");
+            }else{
+                setNoFeedback(feedbackButton);
+            }
         },
         error: function(result, status, error){
-            feedbackButton.text("No feedback system available for now");
+            setNoFeedback(feedbackButton);
             window.console&&console.error("Impossible to get the current OctoBot feedback form: "+error);
         }
     })
+}
+
+function setNoFeedback(feedbackButton){
+    feedbackButton.text("No feedback system available for now");
 }
 
 $(document).ready(function() {
