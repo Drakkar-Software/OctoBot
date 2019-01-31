@@ -34,7 +34,8 @@
                                                         no_select=no_select,
                                                         number_step=1,
                                                         force_title=True,
-                                                        tooltip=service.get_fields_description()[req])
+                                                        tooltip=service.get_fields_description()[req],
+                                                        identifier=service_name)
                     }}
                 {% endfor %}
             </p>
