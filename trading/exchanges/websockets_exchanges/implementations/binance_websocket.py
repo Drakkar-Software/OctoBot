@@ -38,17 +38,20 @@ class BinanceWebSocketClient(AbstractWebSocket):
 
     def __init__(self, config, exchange_manager):
         super().__init__(config, exchange_manager)
-        if self.exchange_manager.should_decrypt_token(self.logger):
-            try:
+        try:
+            if self.exchange_manager.should_decrypt_token(self.logger):
                 self.client = Client(decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY]),
                                      decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET]))
+            else:
+                self.client = Client("", "")
+        except requests.exceptions.ConnectionError as e:
+            self.logger.error(f"Impossible to initialize websocket: {e}")
+        except Exception as e:
+            self.exchange_manager.handle_token_error(e, self.logger)
+            try:
+                self.client = Client("", "")
             except requests.exceptions.ConnectionError as e:
                 self.logger.error(f"Impossible to initialize websocket: {e}")
-            except Exception as e:
-                self.exchange_manager.handle_token_error(e, self.logger)
-                self.client = Client("", "")
-        else:
-            self.client = Client("", "")
 
         self.socket_manager = None
         self.open_sockets_keys = {}
