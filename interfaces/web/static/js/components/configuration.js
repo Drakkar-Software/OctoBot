@@ -64,6 +64,7 @@ function handle_add_buttons(){
         const deck = $(this).parents("." + config_root_class).find(".card-deck");
         const select_input = $("#" + button_id + "Select");
         const select_value = select_input.val();
+        const editable_selector = "select[editable_config_id=\"multi-select-element-" + select_value + "\"]:first";
         let target_template = $("#" + button_id + "-template-default");
 
         // currencies
@@ -86,7 +87,7 @@ function handle_add_buttons(){
             handle_editable();
 
             // select options with reference market if any
-            $('.multi-select-element').each(function () {
+            $(editable_selector).each(function () {
                 if ($(this).siblings('.select2').length === 0 && !$(this).parent().hasClass('default')){
                     $(this).children("option").each(function () {
                         const symbols = $(this).attr("value").split("/");
@@ -98,7 +99,7 @@ function handle_add_buttons(){
             });
 
             // add select2 selector
-            $('.multi-select-element').each(function () {
+            $(editable_selector).each(function () {
                 if ($(this).siblings('.select2').length === 0 && !$(this).parent().hasClass('default')){
                     $(this).select2({
                         width: 'resolve', // need to override the changed default
