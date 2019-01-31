@@ -37,6 +37,10 @@ class NotifierService(AbstractService):
         self.provider_name = self.notifier_provider.name
         self.service_config = self.__class__.SERVICE_CONFIG
 
+    @classmethod
+    def get_name(cls):
+        return f"{cls.__name__}[{cls.NOTIFIER_PROVIDER_TYPE.name}]"
+
     def get_fields_description(self):
         return {key: self.get_fields_description_from_schema(key)
                 for key in self.get_required_config()}

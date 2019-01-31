@@ -27,6 +27,7 @@ from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimu
 from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
 from trading.exchanges.websockets_exchanges import AbstractWebSocket
 from tools.initializable import Initializable
+from tools.config_manager import ConfigManager
 
 
 class ExchangeManager(Initializable):
@@ -252,3 +253,20 @@ class ExchangeManager(Initializable):
     # Exceptions
     def _raise_exchange_load_error(self):
         raise Exception(f"{self.exchange} - Failed to load exchange instances")
+
+    def get_exchange_name(self):
+        return self.exchange_type.__name__
+
+    def should_decrypt_token(self, logger):
+        if ConfigManager.has_invalid_default_config_value(
+                self.config[CONFIG_EXCHANGES][self.get_exchange_name()][CONFIG_EXCHANGE_KEY],
+                self.config[CONFIG_EXCHANGES][self.get_exchange_name()][CONFIG_EXCHANGE_SECRET]):
+            logger.warning("Exchange configuration tokens are not set yet, to use OctoBot's real trader's features, "
+                           "please enter your api tokens in exchange configuration")
+            return False
+        return True
+
+    @staticmethod
+    def handle_token_error(error, logger):
+        logger.error(f"Exchange configuration tokens are invalid : please check your configuration ! "
+                     f"({error.__class__.__name__})")
