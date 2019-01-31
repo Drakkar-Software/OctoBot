@@ -59,8 +59,8 @@ def init_config(config_file=CONFIG_FILE, from_config_file=DEFAULT_CONFIG_FILE):
         raise Exception("Can't init config file {0}".format(e))
 
 
-def is_config_empty(config_file=CONFIG_FILE):
-    return os.stat(config_file).st_size == 0
+def is_config_empty_or_missing(config_file=CONFIG_FILE):
+    return (not os.path.isfile(config_file)) or os.stat(config_file).st_size == 0
 
 
 def encrypt(data):
