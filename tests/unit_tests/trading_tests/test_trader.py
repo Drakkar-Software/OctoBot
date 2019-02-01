@@ -414,7 +414,7 @@ class TestTrader:
         self.stop(trader_inst)
 
     async def test_sell_all_currencies(self):
-        config, exchange_inst, trader_inst = await self.init_default()
+        _, _, trader_inst = await self.init_default()
         portfolio = trader_inst.portfolio.portfolio
         portfolio["ADA"] = {
             Portfolio.AVAILABLE: 1500,
