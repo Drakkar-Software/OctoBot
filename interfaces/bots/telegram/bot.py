@@ -42,6 +42,8 @@ class TelegramApp(InterfaceBot):
         self.dispatcher.add_handler(CommandHandler(["open_orders", "oo"], self.command_open_orders))
         self.dispatcher.add_handler(CommandHandler(["trades_history", "th"], self.command_trades_history))
         self.dispatcher.add_handler(CommandHandler(["profitability", "pb"], self.command_profitability))
+        self.dispatcher.add_handler(CommandHandler(["fees", "fs"], self.command_fees))
+        self.dispatcher.add_handler(CommandHandler(["sell_all_currencies"], self.command_sell_all_currencies))
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
         self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
         self.dispatcher.add_handler(CommandHandler(["configuration", "cf"], self.command_configuration))
@@ -74,6 +76,9 @@ class TelegramApp(InterfaceBot):
             message += "/open_orders or /oo: Displays my current open orders." + EOL
             message += "/trades_history or /th: Displays my trades history since I started." + EOL
             message += "/profitability or /pb: Displays the profitability I made since I started." + EOL
+            message += "/fees or /fs: Displays the total amount of fees I paid since I started." + EOL
+            message += "/sell_all_currencies : Cancel all my orders and market sell everything for my reference " \
+                       "market." + EOL
             message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + EOL
             message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading " \
                        "mode." + EOL
@@ -138,6 +143,16 @@ class TelegramApp(InterfaceBot):
     def command_profitability(_, update):
         if TelegramApp._is_valid_user(update):
             update.message.reply_text(InterfaceBot.get_command_profitability())
+
+    @staticmethod
+    def command_fees(_, update):
+        if TelegramApp._is_valid_user(update):
+            update.message.reply_text(InterfaceBot.get_command_fees())
+
+    @staticmethod
+    def command_sell_all_currencies(_, update):
+        if TelegramApp._is_valid_user(update):
+            update.message.reply_text(InterfaceBot.get_command_sell_all_currencies())
 
     @staticmethod
     def command_portfolio(_, update):

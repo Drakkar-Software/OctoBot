@@ -19,7 +19,7 @@ from copy import deepcopy
 from tools.logging.logging_util import get_logger
 
 from config import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
-    CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
+    CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, FeePropertyColumns
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 from tools.symbol_util import merge_currencies, split_symbol
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
@@ -86,6 +86,17 @@ class TradesManager(Initializable):
 
     def get_trade_history(self):
         return self.trade_history
+
+    def get_total_paid_fees(self):
+        total_fees = {}
+        for trade in self.trade_history:
+            fee_cost = trade.fee[FeePropertyColumns.COST.value]
+            fee_currency = trade.fee[FeePropertyColumns.CURRENCY.value]
+            if fee_currency in total_fees:
+                total_fees[fee_currency] = total_fees[fee_currency] + fee_cost
+            else:
+                total_fees[fee_currency] = fee_cost
+        return total_fees
 
     def select_trade_history(self, symbol=None):
         return [trade for trade in self.trade_history if trade.symbol == symbol] \
