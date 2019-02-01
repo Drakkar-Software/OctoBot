@@ -17,12 +17,13 @@ import copy
 import os
 
 from config import CONFIG_INTERFACES, CONFIG_ENABLED_OPTION, CONFIG_CATEGORY_SERVICES, CONFIG_USERNAMES_WHITELIST, \
-    REAL_TRADER_STR, SIMULATOR_TRADER_STR, PROJECT_NAME, LONG_VERSION
+    REAL_TRADER_STR, SIMULATOR_TRADER_STR, PROJECT_NAME, LONG_VERSION, PAID_FEES_STR
 from interfaces import get_bot, get_reference_market
 from interfaces.bots import EOL, NO_CURRENCIES_MESSAGE, NO_TRADER_MESSAGE
 from interfaces.trading_util import has_real_and_or_simulated_traders, get_currencies_with_status, get_risk, \
     force_real_traders_refresh, get_trades_history, get_global_portfolio_currencies_amounts, get_global_profitability, \
-    set_risk, set_enable_trading, cancel_all_open_orders, get_portfolio_current_value, get_open_orders
+    set_risk, set_enable_trading, cancel_all_open_orders, get_portfolio_current_value, get_open_orders, \
+    get_total_paid_fees
 from tools.logging.logging_util import get_logger
 from tools.pretty_printer import PrettyPrinter
 from tools.timestamp_util import convert_timestamp_to_datetime
@@ -154,6 +155,21 @@ class InterfaceBot:
             orders_string = NO_TRADER_MESSAGE
 
         return orders_string
+
+    @staticmethod
+    def get_command_fees():
+        real_trader_fees, simulated_trader_fees = get_total_paid_fees()
+        result_str = ""
+        if real_trader_fees is not None:
+            result_str = f"{REAL_TRADER_STR} {PAID_FEES_STR}: {PrettyPrinter.pretty_print_dict(real_trader_fees)}"
+        if simulated_trader_fees is not None:
+            result_str = f"{result_str}\n{SIMULATOR_TRADER_STR} {PAID_FEES_STR}: " \
+                f"{PrettyPrinter.pretty_print_dict(simulated_trader_fees)}"
+        return result_str
+
+    @staticmethod
+    def get_command_sell_all_currencies():
+        return "all sold :)"
 
     @staticmethod
     def get_command_portfolio():

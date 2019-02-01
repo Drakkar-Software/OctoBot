@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from config import DICT_BULLET_TOKEN_STR
 from trading.trader.order import OrderConstants
 from trading.trader.portfolio import Portfolio
 from tools.timestamp_util import convert_timestamp_to_datetime
@@ -72,6 +73,14 @@ class PrettyPrinter:
         difference = f"({PrettyPrinter.get_min_string_from_number(profitability_percent, 5)}%)" \
             if profitability_percent is not None else ""
         return f"{PrettyPrinter.get_min_string_from_number(profitability, 5)} {reference} {difference}"
+
+    @staticmethod
+    def pretty_print_dict(dict_content, default="0"):
+        if dict_content:
+            result_str = DICT_BULLET_TOKEN_STR
+            return f"{result_str}{DICT_BULLET_TOKEN_STR.join(f'{value} {key}' for key, value in dict_content.items())}"
+        else:
+            return default
 
     @staticmethod
     def round_with_decimal_count(number, max_digits=8):
