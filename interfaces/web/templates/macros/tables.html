@@ -1,10 +1,14 @@
 {% macro order_tr(order, type='', timestamp='', sim_or_real='Simulated') -%}
     <tr>
         <th scope="row">
-            {% if order.order_id is none %}
+            {% if sim_or_real == 'Simulated' %}
                 {{ sim_or_real }}
             {% else %}
-                {{ order.order_id }} ({{ sim_or_real }})
+                {% if order.order_id is none %}
+                    {{ sim_or_real }} (virtual)
+                {% else %}
+                    {{ sim_or_real }} ({{ order.order_id }})
+                {% endif %}
             {% endif %}
         </th>
         <td>{{ order.get_exchange().get_name() }}</td>
@@ -19,10 +23,14 @@
 {% macro trades_tr(trade, type='', timestamp='', sim_or_real='Simulated') -%}
     <tr>
         <th scope="row">
-            {% if trade.order_id is none %}
+            {% if sim_or_real == 'Simulated' %}
                 {{ sim_or_real }}
             {% else %}
-                {{ trade.order_id }} ({{ sim_or_real }})
+                {% if trade.order_id is none %}
+                    {{ sim_or_real }} (virtual)
+                {% else %}
+                    {{ sim_or_real }} ({{ trade.order_id }})
+                {% endif %}
             {% endif %}
         </th>
         <td>{{ trade.exchange.get_name() }}</td>
