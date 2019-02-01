@@ -77,7 +77,8 @@
     "notification-type": 1
   },
   "trading":{
-    "risk": 1
+    "risk": 1,
+    "reference-market": "BTC"
   },
   "trader":{
     "enabled": false

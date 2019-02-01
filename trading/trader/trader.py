@@ -27,7 +27,11 @@ from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
 from trading.trader.trades_manager import TradesManager
+from trading.trader.modes.abstract_mode_creator import AbstractTradingModeCreator
+from trading.trader.modes.abstract_mode_decider import AbstractTradingModeDecider
+from tools.notifications import EvaluatorNotification
 from tools.initializable import Initializable
+from tools.config_manager import ConfigManager
 
 
 class Trader(Initializable):
@@ -55,6 +59,8 @@ class Trader(Initializable):
         self.order_manager = OrdersManager(config, self)
 
         self.exchange.get_exchange_manager().register_trader(self)
+
+        self.notifier = EvaluatorNotification(self.config)
 
         if order_refresh_time is not None:
             self.order_manager.set_order_refresh_time(order_refresh_time)
@@ -236,6 +242,35 @@ class Trader(Initializable):
         for order in copy.copy(self.get_open_orders()):
             if order.get_status() is not OrderStatus.CANCELED:
                 await self.notify_order_close(order, True)
+
+    async def sell_everything(self, symbol, inverted):
+        created_orders = []
+        order_type = TraderOrderType.BUY_MARKET if inverted else TraderOrderType.SELL_MARKET
+        async with self.portfolio.get_lock():
+            portfolio = self.portfolio
+            current_symbol_holding, current_market_quantity, market_quantity, price, symbol_market = \
+                await AbstractTradingModeCreator.get_pre_order_data(self.exchange, symbol, portfolio)
+            quantity = current_market_quantity/price if inverted else current_symbol_holding
+            for order_quantity, order_price in AbstractTradingModeCreator.\
+                    check_and_adapt_order_details_if_necessary(quantity, price, symbol_market):
+                current_order = self.create_order_instance(order_type=order_type,
+                                                           symbol=symbol,
+                                                           current_price=order_price,
+                                                           quantity=order_quantity,
+                                                           price=order_price)
+                await self.create_order(current_order, portfolio)
+                created_orders.append(current_order)
+        return created_orders
+
+    async def sell_all_currencies(self):
+        orders = []
+        for currency in self.portfolio.get_portfolio():
+            symbol, inverted = ConfigManager.get_market_pair(self.config, currency)
+            if symbol is not None:
+                orders = orders + await self.sell_everything(symbol, inverted)
+
+        await AbstractTradingModeDecider.push_order_notification_if_possible(orders, self.notifier)
+        return orders
 
     async def notify_order_cancel(self, order):
         # update portfolio with ended order

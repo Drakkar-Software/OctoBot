@@ -23,7 +23,7 @@ from interfaces.bots import EOL, NO_CURRENCIES_MESSAGE, NO_TRADER_MESSAGE
 from interfaces.trading_util import has_real_and_or_simulated_traders, get_currencies_with_status, get_risk, \
     force_real_traders_refresh, get_trades_history, get_global_portfolio_currencies_amounts, get_global_profitability, \
     set_risk, set_enable_trading, cancel_all_open_orders, get_portfolio_current_value, get_open_orders, \
-    get_total_paid_fees
+    get_total_paid_fees, sell_all_currencies
 from tools.logging.logging_util import get_logger
 from tools.pretty_printer import PrettyPrinter
 from tools.timestamp_util import convert_timestamp_to_datetime
@@ -169,7 +169,12 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_sell_all_currencies():
-        return "all sold :)"
+        try:
+            cancel_all_open_orders()
+            sell_all_currencies()
+            return "Currencies sold."
+        except Exception as e:
+            return f"An error occurred: {e}"
 
     @staticmethod
     def get_command_portfolio():
