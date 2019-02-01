@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from werkzeug.serving import make_server
 
 from tools.logging.logging_util import get_logger
 import threading
@@ -29,27 +30,34 @@ class WebApp(threading.Thread):
         super().__init__()
         self.config = config
         self.logger = get_logger(self.__class__.__name__)
+
         self.app = None
+        self.srv = None
+        self.ctx = None
+
+    def prepare_server(self):
+        self.srv = make_server(host=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP],
+                               port=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT],
+                               threaded=True,
+                               app=server_instance)
+        self.ctx = server_instance.app_context()
+        self.ctx.push()
 
     def run(self):
         # wait bot is ready
         while get_bot() is None or not get_bot().is_ready():
             sleep(0.1)
 
-        # Define the WSGI application object
-        self.app = server_instance
+        # Define the WSGI server object
+        self.prepare_server()
 
         load_routes()
 
-        self.app.run(host=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP],
-                     port=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT],
-                     debug=False,
-                     threaded=True,
-                     use_reloader=False)
+        self.srv.serve_forever()
+
+    def prepare_stop(self):
+        self.srv.server_close()
 
     def stop(self):
-        # func = request.environ.get('werkzeug.server.shutdown')
-        # if func is None:
-        #     raise RuntimeError('Not running with the Werkzeug Server')
-        # func()
-        pass
+        self.prepare_stop()
+        self.srv.shutdown()
