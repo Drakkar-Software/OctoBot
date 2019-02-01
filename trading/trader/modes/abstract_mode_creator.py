@@ -32,7 +32,11 @@ class AbstractTradingModeCreator:
     def __init__(self, trading_mode):
         self.trading_mode = trading_mode
 
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = self.get_current_logger()
+
+    @classmethod
+    def get_current_logger(cls):
+        return get_logger(cls.__name__)
 
     @staticmethod
     def check_factor(min_val, max_val, factor):
@@ -89,10 +93,11 @@ class AbstractTradingModeCreator:
         => try fixing exchange data using ExchangeMarketStatusFixer are start again (once only)
     """
 
-    def _check_cost(self, total_order_price, min_cost):
+    @staticmethod
+    def _check_cost(total_order_price, min_cost):
         if total_order_price < min_cost:
             if min_cost is None:
-                self.logger.error("Invalid min_cost from exchange")
+                AbstractTradingModeCreator.get_current_logger().error("Invalid min_cost from exchange")
             return False
         return True
 
@@ -109,7 +114,8 @@ class AbstractTradingModeCreator:
                 ._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
                                                         quantity, price, symbol_market)
 
-    def check_and_adapt_order_details_if_necessary(self, quantity, price, symbol_market, fixed_symbol_data=False):
+    @staticmethod
+    def check_and_adapt_order_details_if_necessary(quantity, price, symbol_market, fixed_symbol_data=False):
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
 
         limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
@@ -117,8 +123,8 @@ class AbstractTradingModeCreator:
         limit_price = symbol_market_limits[Ecmsc.LIMITS_PRICE.value]
 
         # case 1: try with data directly from exchange
-        if self._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) \
-                and self._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value):
+        if AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) \
+                and AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value):
             min_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
             max_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value)
 
@@ -133,14 +139,14 @@ class AbstractTradingModeCreator:
                     return []
 
             # case 1.1: use only quantity and cost
-            if self._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value) \
-                    and self._is_valid(limit_cost, Ecmsc.LIMITS_COST_MAX.value):
+            if AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value) \
+                    and AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MAX.value):
 
                 min_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
                 max_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value)
 
                 # check total_order_price not < min_cost
-                if not self._check_cost(total_order_price, min_cost):
+                if not AbstractTradingModeCreator._check_cost(total_order_price, min_cost):
                     return []
 
                 # check total_order_price not > max_cost and valid_quantity not > max_quantity
@@ -154,8 +160,8 @@ class AbstractTradingModeCreator:
                     return [(valid_quantity, valid_price)]
 
             # case 1.2: use only quantity and price
-            elif self._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MIN.value) \
-                    and self._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MAX.value):
+            elif AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MIN.value) \
+                    and AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MAX.value):
 
                 min_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value)
                 max_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value)
@@ -177,8 +183,9 @@ class AbstractTradingModeCreator:
         if not fixed_symbol_data:
             # case 2: try fixing data from exchanges
             fixed_symbol_data = ExchangeMarketStatusFixer(symbol_market, price).get_market_status()
-            return self.check_and_adapt_order_details_if_necessary(quantity, price,
-                                                                   fixed_symbol_data, fixed_symbol_data=True)
+            return AbstractTradingModeCreator.check_and_adapt_order_details_if_necessary(quantity, price,
+                                                                                         fixed_symbol_data,
+                                                                                         fixed_symbol_data=True)
         else:
             # impossible to check if order is valid: refuse it
             return []
