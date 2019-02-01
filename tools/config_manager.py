@@ -258,7 +258,7 @@ class ConfigManager:
     @staticmethod
     def get_market_pair(config, currency):
         reference_market = config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET]
-        for crypto_currency, crypto_currency_data in config[CONFIG_CRYPTO_CURRENCIES].items():
+        for crypto_currency_data in config[CONFIG_CRYPTO_CURRENCIES].values():
             for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
                 symbol_currency, symbol_market = split_symbol(symbol)
                 if currency == symbol_currency and reference_market == symbol_market:

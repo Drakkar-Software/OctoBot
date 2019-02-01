@@ -248,7 +248,7 @@ class Trader(Initializable):
         order_type = TraderOrderType.BUY_MARKET if inverted else TraderOrderType.SELL_MARKET
         async with self.portfolio.get_lock():
             portfolio = self.portfolio
-            current_symbol_holding, current_market_quantity, market_quantity, price, symbol_market = \
+            current_symbol_holding, current_market_quantity, _, price, symbol_market = \
                 await AbstractTradingModeCreator.get_pre_order_data(self.exchange, symbol, portfolio)
             quantity = current_market_quantity/price if inverted else current_symbol_holding
             for order_quantity, order_price in AbstractTradingModeCreator.\
