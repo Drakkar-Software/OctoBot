@@ -141,6 +141,8 @@ NOTIFICATION_STARTING_MESSAGE = f"OctoBot v{LONG_VERSION} starting..."
 NOTIFICATION_STOPPING_MESSAGE = f"OctoBot v{LONG_VERSION} stopping..."
 REAL_TRADER_STR = "[Real Trader] "
 SIMULATOR_TRADER_STR = "[Simulator] "
+PAID_FEES_STR = "Paid fees"
+DICT_BULLET_TOKEN_STR = "\n- "
 
 # DEBUG options
 CONFIG_DEBUG_OPTION_PERF = "performance-analyser"

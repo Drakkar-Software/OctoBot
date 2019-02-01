@@ -144,3 +144,40 @@ class TestTradesManager:
         trades_manager_inst.add_new_trade_in_history(new_trade2)
         assert len(trades_manager_inst.get_trade_history()) == 2
         assert trades_manager_inst.select_trade_history(symbol) == [new_trade]
+
+    async def test_get_total_paid_fees(self):
+        _, exchange_inst, trader_inst, trades_manager_inst = await self.init_default()
+        self.stop(trader_inst)
+        symbol = "BTC/USD"
+        new_order = SellLimitOrder(trader_inst)
+        new_order.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT], symbol, 90, 4, 90)
+        new_order.fee = {
+            FeePropertyColumns.COST.value: 100,
+            FeePropertyColumns.CURRENCY.value: "BTC"
+        }
+        new_trade = Trade(exchange_inst, new_order)
+        trades_manager_inst.add_new_trade_in_history(new_trade)
+
+        assert trades_manager_inst.get_total_paid_fees() == {"BTC": 100}
+
+        new_order2 = SellLimitOrder(trader_inst)
+        new_order2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT], symbol, 90, 4, 90)
+        new_order2.fee = {
+            FeePropertyColumns.COST.value: 200,
+            FeePropertyColumns.CURRENCY.value: "PLOP"
+        }
+        new_trade2 = Trade(exchange_inst, new_order2)
+        trades_manager_inst.add_new_trade_in_history(new_trade2)
+
+        assert trades_manager_inst.get_total_paid_fees() == {"BTC": 100, "PLOP": 200}
+
+        new_order3 = SellLimitOrder(trader_inst)
+        new_order3.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT], symbol, 90, 4, 90)
+        new_order3.fee = {
+            FeePropertyColumns.COST.value: 0.01111,
+            FeePropertyColumns.CURRENCY.value: "PLOP"
+        }
+        new_trade3 = Trade(exchange_inst, new_order3)
+        trades_manager_inst.add_new_trade_in_history(new_trade3)
+
+        assert trades_manager_inst.get_total_paid_fees() == {"BTC": 100, "PLOP": 200.01111}
