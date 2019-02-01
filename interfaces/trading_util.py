@@ -125,6 +125,11 @@ def cancel_all_open_orders():
         get_bot().run_in_main_asyncio_loop(trader.cancel_all_open_orders())
 
 
+def sell_all_currencies():
+    for trader in get_traders():
+        get_bot().run_in_main_asyncio_loop(trader.sell_all_currencies())
+
+
 def set_enable_trading(enable):
     for trader in get_traders():
         if trader.enabled(trader.config):
