@@ -26,7 +26,10 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_TRADING_FILE, \
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
     CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, \
-    CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES
+    CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, CONFIG_TRADING, \
+    CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
+
+from tools.symbol_util import split_symbol
 
 
 def get_logger():
@@ -251,3 +254,15 @@ class ConfigManager:
     @staticmethod
     def has_invalid_default_config_value(*config_values):
         return any(value in DEFAULT_CONFIG_VALUES for value in config_values)
+
+    @staticmethod
+    def get_market_pair(config, currency):
+        reference_market = config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET]
+        for crypto_currency, crypto_currency_data in config[CONFIG_CRYPTO_CURRENCIES].items():
+            for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
+                symbol_currency, symbol_market = split_symbol(symbol)
+                if currency == symbol_currency and reference_market == symbol_market:
+                    return symbol, False
+                elif reference_market == symbol_currency and currency == symbol_market:
+                    return symbol, True
+        return None, None

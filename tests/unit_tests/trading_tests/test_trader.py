@@ -413,6 +413,31 @@ class TestTrader:
 
         self.stop(trader_inst)
 
+    async def test_sell_all_currencies(self):
+        config, exchange_inst, trader_inst = await self.init_default()
+        portfolio = trader_inst.portfolio.portfolio
+        portfolio["ADA"] = {
+            Portfolio.AVAILABLE: 1500,
+            Portfolio.TOTAL: 1500
+        }
+        portfolio["USDT"] = {
+            Portfolio.AVAILABLE: 1000,
+            Portfolio.TOTAL: 1000
+        }
+        orders = await trader_inst.sell_all_currencies()
+        # 1 order to sell ada, 1 order to buy btc (sell usdt), NO order for usd (not in config pairs)
+        assert len(orders) == 2
+
+        sell_ADA_order = orders[0]
+        assert sell_ADA_order.symbol == "ADA/BTC"
+        assert sell_ADA_order.order_type == TraderOrderType.SELL_MARKET
+        assert sell_ADA_order.origin_quantity == 1500
+
+        sell_USDT_order = orders[1]
+        assert sell_USDT_order.symbol == "BTC/USDT"
+        assert sell_USDT_order.order_type == TraderOrderType.BUY_MARKET
+        assert round(sell_USDT_order.origin_quantity, 8) == round(1000/sell_USDT_order.origin_price, 8)
+
     async def test_parse_exchange_order_to_trade_instance(self):
         _, exchange_inst, trader_inst = await self.init_default()
 
