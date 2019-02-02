@@ -138,7 +138,12 @@ def set_enable_trading(enable):
 
 def _merge_trader_fees(current_fees, trader):
     current_fees_dict = current_fees if current_fees else {}
-    return {**current_fees_dict, **trader.get_trades_manager().get_total_paid_fees()}
+    for key, val in trader.get_trades_manager().get_total_paid_fees().items():
+        if key in current_fees_dict:
+            current_fees_dict[key] += val
+        else:
+            current_fees_dict[key] = val
+    return current_fees_dict
 
 
 def get_total_paid_fees(bot=None):
@@ -150,7 +155,7 @@ def get_total_paid_fees(bot=None):
     for trader in traders:
         if trader.is_enabled():
             if trader.get_simulate():
-                simulated_trader_fees = _merge_trader_fees(real_trader_fees, trader)
+                simulated_trader_fees = _merge_trader_fees(simulated_trader_fees, trader)
             else:
                 real_trader_fees = _merge_trader_fees(real_trader_fees, trader)
 

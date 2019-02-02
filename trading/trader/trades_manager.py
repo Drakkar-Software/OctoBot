@@ -93,7 +93,7 @@ class TradesManager(Initializable):
             fee_cost = trade.fee[FeePropertyColumns.COST.value]
             fee_currency = trade.fee[FeePropertyColumns.CURRENCY.value]
             if fee_currency in total_fees:
-                total_fees[fee_currency] = total_fees[fee_currency] + fee_cost
+                total_fees[fee_currency] += fee_cost
             else:
                 total_fees[fee_currency] = fee_cost
         return total_fees

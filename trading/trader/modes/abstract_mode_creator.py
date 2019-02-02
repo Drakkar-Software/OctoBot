@@ -21,6 +21,7 @@ from config import CURRENCY_DEFAULT_MAX_PRICE_DIGITS, ORDER_CREATION_LAST_TRADES
 from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 from tools.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
+from tools.dict_util import get_value_or_default
 from tools.initializable import Initializable
 from trading.trader.sub_portfolio import SubPortfolio
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
@@ -68,8 +69,8 @@ class AbstractTradingModeCreator:
             limit_amount = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_AMOUNT.value]
             limit_cost = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_COST.value]
 
-        min_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
-        min_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
+        min_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value, math.nan)
+        min_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value, math.nan)
 
         if remaining_max_total_order_price < min_cost or remaining_portfolio_amount < min_quantity:
             return current_symbol_holding
@@ -125,8 +126,8 @@ class AbstractTradingModeCreator:
         # case 1: try with data directly from exchange
         if AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) \
                 and AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value):
-            min_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
-            max_quantity = AbstractTradingModeCreator.get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value)
+            min_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value, math.nan)
+            max_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value, math.nan)
 
             # adapt digits if necessary
             valid_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, quantity)
@@ -142,8 +143,8 @@ class AbstractTradingModeCreator:
             if AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value) \
                     and AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MAX.value):
 
-                min_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value)
-                max_cost = AbstractTradingModeCreator.get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value)
+                min_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value, math.nan)
+                max_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value, math.nan)
 
                 # check total_order_price not < min_cost
                 if not AbstractTradingModeCreator._check_cost(total_order_price, min_cost):
@@ -163,8 +164,8 @@ class AbstractTradingModeCreator:
             elif AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MIN.value) \
                     and AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MAX.value):
 
-                min_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value)
-                max_price = AbstractTradingModeCreator.get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value)
+                min_price = get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value, math.nan)
+                max_price = get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value, math.nan)
 
                 if not (max_price >= valid_price >= min_price):
                     # invalid order
@@ -238,28 +239,21 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     def adapt_price(symbol_market, price):
-        maximal_price_digits = AbstractTradingModeCreator.get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
-                                                                               Ecmsc.PRECISION_PRICE.value,
-                                                                               CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
+        maximal_price_digits = get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
+                                                    Ecmsc.PRECISION_PRICE.value,
+                                                    CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
         return AbstractTradingModeCreator._trunc_with_n_decimal_digits(price, maximal_price_digits)
 
     @staticmethod
     def _adapt_quantity(symbol_market, quantity):
-        maximal_volume_digits = AbstractTradingModeCreator.get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
-                                                                                Ecmsc.PRECISION_AMOUNT.value, 0)
+        maximal_volume_digits = get_value_or_default(symbol_market[Ecmsc.PRECISION.value],
+                                                     Ecmsc.PRECISION_AMOUNT.value, 0)
         return AbstractTradingModeCreator._trunc_with_n_decimal_digits(quantity, maximal_volume_digits)
 
     @staticmethod
     def _trunc_with_n_decimal_digits(value, digits):
         # force exact representation
         return float("{0:.{1}f}".format(math.trunc(value * 10 ** digits) / (10 ** digits), digits))
-
-    @staticmethod
-    def get_value_or_default(dictionary, key, default=math.nan):
-        if key in dictionary:
-            value = dictionary[key]
-            return value if value is not None else default
-        return default
 
     @staticmethod
     def _adapt_order_quantity_because_quantity(limiting_value, max_value, quantity_to_adapt, price, symbol_market):

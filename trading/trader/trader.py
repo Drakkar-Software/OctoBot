@@ -247,10 +247,15 @@ class Trader(Initializable):
         created_orders = []
         order_type = TraderOrderType.BUY_MARKET if inverted else TraderOrderType.SELL_MARKET
         async with self.portfolio.get_lock():
-            portfolio = self.portfolio
             current_symbol_holding, current_market_quantity, _, price, symbol_market = \
-                await AbstractTradingModeCreator.get_pre_order_data(self.exchange, symbol, portfolio)
-            quantity = current_market_quantity/price if inverted else current_symbol_holding
+                await AbstractTradingModeCreator.get_pre_order_data(self.exchange, symbol, self.portfolio)
+            if inverted:
+                if price > 0:
+                    quantity = current_market_quantity / price
+                else:
+                    quantity = 0
+            else:
+                quantity = current_symbol_holding
             for order_quantity, order_price in AbstractTradingModeCreator.\
                     check_and_adapt_order_details_if_necessary(quantity, price, symbol_market):
                 current_order = self.create_order_instance(order_type=order_type,
@@ -258,16 +263,15 @@ class Trader(Initializable):
                                                            current_price=order_price,
                                                            quantity=order_quantity,
                                                            price=order_price)
-                await self.create_order(current_order, portfolio)
-                created_orders.append(current_order)
+                created_orders.append(await self.create_order(current_order, self.portfolio))
         return created_orders
 
     async def sell_all_currencies(self):
         orders = []
         for currency in self.portfolio.get_portfolio():
             symbol, inverted = ConfigManager.get_market_pair(self.config, currency)
-            if symbol is not None:
-                orders = orders + await self.sell_everything(symbol, inverted)
+            if symbol:
+                orders += await self.sell_everything(symbol, inverted)
 
         await AbstractTradingModeDecider.push_order_notification_if_possible(orders, self.notifier)
         return orders
