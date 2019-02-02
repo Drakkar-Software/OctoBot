@@ -438,9 +438,3 @@ class TestAbstractTradingModeCreator:
         assert AbstractTradingModeCreator._trunc_with_n_decimal_digits(578.000145000156, 9) == 578.000145
         assert AbstractTradingModeCreator._trunc_with_n_decimal_digits(578.000145000156, 10) == 578.0001450001
         assert AbstractTradingModeCreator._trunc_with_n_decimal_digits(578.000145000156, 12) == 578.000145000156
-
-    async def test_get_value_or_default(self):
-        test_dict = {"a": 1, "b": 2, "c": 3}
-        assert AbstractTradingModeCreator.get_value_or_default(test_dict, "b", default="") == 2
-        assert AbstractTradingModeCreator.get_value_or_default(test_dict, "d") is math.nan
-        assert AbstractTradingModeCreator.get_value_or_default(test_dict, "d", default="") == ""
