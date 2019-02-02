@@ -13,7 +13,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+
 import asyncio
+from concurrent.futures import CancelledError
 import copy
 from ccxt.async_support import BaseError
 
@@ -91,7 +93,10 @@ class OrdersManager:
                 task_list.append(self._update_last_symbol_prices(order.get_order_symbol(), uniformize_timestamps))
 
                 updated.append(order.get_order_symbol())
-        await asyncio.gather(*task_list)
+        try:
+            await asyncio.gather(*task_list)
+        except CancelledError:
+            self.logger.info("Update last symbol price tasks cancelled.")
 
     async def _update_last_symbol_prices(self, symbol, uniformize_timestamps=False):
         """
