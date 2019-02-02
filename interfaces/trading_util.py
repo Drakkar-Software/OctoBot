@@ -120,14 +120,26 @@ def get_open_orders():
     return real_open_orders, simulated_open_orders
 
 
-def cancel_all_open_orders():
+def cancel_all_open_orders(currency=None):
     for trader in get_traders():
-        get_bot().run_in_main_asyncio_loop(trader.cancel_all_open_orders())
+        if currency is None:
+            get_bot().run_in_main_asyncio_loop(trader.cancel_all_open_orders())
+        else:
+            get_bot().run_in_main_asyncio_loop(trader.cancel_all_open_orders_with_currency(currency))
 
 
 def sell_all_currencies():
+    orders = []
     for trader in get_traders():
-        get_bot().run_in_main_asyncio_loop(trader.sell_all_currencies())
+        orders += get_bot().run_in_main_asyncio_loop(trader.sell_all_currencies())
+    return orders
+
+
+def sell_all(currency):
+    orders = []
+    for trader in get_traders():
+        orders += get_bot().run_in_main_asyncio_loop(trader.sell_all(currency))
+    return orders
 
 
 def set_enable_trading(enable):
