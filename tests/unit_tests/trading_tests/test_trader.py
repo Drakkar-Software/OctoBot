@@ -209,6 +209,87 @@ class TestTrader:
 
         self.stop(trader_inst)
 
+    async def test_cancel_all_open_orders_with_currency(self):
+        config, _, trader_inst = await self.init_default()
+
+        # Test buy order
+        market_buy = BuyMarketOrder(trader_inst)
+        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+                       "BTC/EUR",
+                       70,
+                       10,
+                       70)
+
+        # Test buy order
+        limit_sell = SellLimitOrder(trader_inst)
+        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+                       "XRB/BTC",
+                       70,
+                       10,
+                       70)
+
+        # Test sell order
+        market_sell = SellMarketOrder(trader_inst)
+        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+                        self.DEFAULT_SYMBOL,
+                        70,
+                        10,
+                        70)
+
+        # Test buy order
+        limit_buy = BuyLimitOrder(trader_inst)
+        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+                      self.DEFAULT_SYMBOL,
+                      70,
+                      10,
+                      70)
+
+        # create order notifier to prevent None call
+        market_buy.order_notifier = OrderNotifier(config, market_buy)
+        market_sell.order_notifier = OrderNotifier(config, market_sell)
+        limit_buy.order_notifier = OrderNotifier(config, limit_buy)
+        limit_sell.order_notifier = OrderNotifier(config, limit_sell)
+
+        trader_inst.get_order_manager().add_order_to_list(market_buy)
+        trader_inst.get_order_manager().add_order_to_list(market_sell)
+        trader_inst.get_order_manager().add_order_to_list(limit_buy)
+        trader_inst.get_order_manager().add_order_to_list(limit_sell)
+
+        assert market_buy in trader_inst.get_open_orders()
+        assert market_sell in trader_inst.get_open_orders()
+        assert limit_buy in trader_inst.get_open_orders()
+        assert limit_sell in trader_inst.get_open_orders()
+
+        await trader_inst.cancel_all_open_orders_with_currency("XYZ")
+
+        assert market_buy in trader_inst.get_open_orders()
+        assert market_sell in trader_inst.get_open_orders()
+        assert limit_buy in trader_inst.get_open_orders()
+        assert limit_sell in trader_inst.get_open_orders()
+
+        await trader_inst.cancel_all_open_orders_with_currency("XRB")
+
+        assert market_buy in trader_inst.get_open_orders()
+        assert market_sell in trader_inst.get_open_orders()
+        assert limit_buy in trader_inst.get_open_orders()
+        assert limit_sell not in trader_inst.get_open_orders()
+
+        await trader_inst.cancel_all_open_orders_with_currency("USDT")
+
+        assert market_buy in trader_inst.get_open_orders()
+        assert market_sell not in trader_inst.get_open_orders()
+        assert limit_buy not in trader_inst.get_open_orders()
+        assert limit_sell not in trader_inst.get_open_orders()
+
+        await trader_inst.cancel_all_open_orders_with_currency("BTC")
+
+        assert market_buy not in trader_inst.get_open_orders()
+        assert market_sell not in trader_inst.get_open_orders()
+        assert limit_buy not in trader_inst.get_open_orders()
+        assert limit_sell not in trader_inst.get_open_orders()
+
+        self.stop(trader_inst)
+
     async def test_notify_order_close(self):
         config, _, trader_inst = await self.init_default()
 
@@ -437,6 +518,58 @@ class TestTrader:
         assert sell_USDT_order.symbol == "BTC/USDT"
         assert sell_USDT_order.order_type == TraderOrderType.BUY_MARKET
         assert round(sell_USDT_order.origin_quantity, 8) == round(1000/sell_USDT_order.origin_price, 8)
+
+    async def test_sell_all(self):
+        _, _, trader_inst = await self.init_default()
+        portfolio = trader_inst.portfolio.portfolio
+        portfolio["ADA"] = {
+            Portfolio.AVAILABLE: 1500,
+            Portfolio.TOTAL: 1500
+        }
+        portfolio["USDT"] = {
+            Portfolio.AVAILABLE: 1000,
+            Portfolio.TOTAL: 1000
+        }
+        orders = await trader_inst.sell_all("USDT")
+        assert len(orders) == 1
+
+        sell_USDT_order = orders[0]
+        assert sell_USDT_order.symbol == "BTC/USDT"
+        assert sell_USDT_order.order_type == TraderOrderType.BUY_MARKET
+        assert round(sell_USDT_order.origin_quantity, 8) == round(1000/sell_USDT_order.origin_price, 8)
+
+        orders = await trader_inst.sell_all("ADA")
+        assert len(orders) == 1
+
+        sell_ADA_order = orders[0]
+        assert sell_ADA_order.symbol == "ADA/BTC"
+        assert sell_ADA_order.order_type == TraderOrderType.SELL_MARKET
+        assert sell_ADA_order.origin_quantity == 1500
+        assert round(sell_USDT_order.origin_quantity, 8) == round(1000/sell_USDT_order.origin_price, 8)
+
+        # currency not in portfolio
+        orders = await trader_inst.sell_all("XBT")
+        assert len(orders) == 0
+
+        portfolio["XRB"] = {
+            Portfolio.AVAILABLE: 0,
+            Portfolio.TOTAL: 0
+        }
+        # currency in portfolio but with 0 quantity
+        orders = await trader_inst.sell_all("XRB")
+        assert len(orders) == 0
+
+        # invalid currency
+        orders = await trader_inst.sell_all("")
+        assert len(orders) == 0
+
+        portfolio["ICX"] = {
+            Portfolio.AVAILABLE: 0.0000001,
+            Portfolio.TOTAL: 0.0000001
+        }
+        # currency in portfolio but with close to 0 quantity
+        orders = await trader_inst.sell_all("ICX")
+        assert len(orders) == 0
 
     async def test_parse_exchange_order_to_trade_instance(self):
         _, exchange_inst, trader_inst = await self.init_default()

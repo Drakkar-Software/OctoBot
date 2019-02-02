@@ -237,6 +237,12 @@ class Trader(Initializable):
                 if cancel_loaded_orders or order.get_is_from_this_octobot():
                     await self.notify_order_close(order, True)
 
+    async def cancel_all_open_orders_with_currency(self, currency):
+        symbols = ConfigManager.get_pairs(self.config, currency)
+        if symbols:
+            for symbol in symbols:
+                await self.cancel_open_orders(symbol, cancel_loaded_orders=True)
+
     async def cancel_all_open_orders(self):
         # use a copy of the list (not the reference)
         for order in copy.copy(self.get_open_orders()):
@@ -265,6 +271,16 @@ class Trader(Initializable):
                                                            price=order_price)
                 created_orders.append(await self.create_order(current_order, self.portfolio))
         return created_orders
+
+    async def sell_all(self, currency):
+        orders = []
+        if currency in self.portfolio.get_portfolio():
+            symbol, inverted = ConfigManager.get_market_pair(self.config, currency)
+            if symbol:
+                orders += await self.sell_everything(symbol, inverted)
+
+            await AbstractTradingModeDecider.push_order_notification_if_possible(orders, self.notifier)
+        return orders
 
     async def sell_all_currencies(self):
         orders = []

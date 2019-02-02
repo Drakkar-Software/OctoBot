@@ -2,7 +2,7 @@
   "time_frame": ["1h", "4h", "1d"],
   "crypto-currencies":{
     "Bitcoin": {
-      "pairs" : ["BTC/USDT"]
+      "pairs" : ["BTC/USDT", "BTC/EUR"]
     },
     "Neo": {
       "pairs" : ["NEO/BTC"]
