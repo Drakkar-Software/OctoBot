@@ -31,3 +31,10 @@ def find_nested_value(dict_, field):
                         if found_value:
                             return found_value, possible_value
     return False, field
+
+
+def get_value_or_default(dictionary, key, default=None):
+    if key in dictionary:
+        value = dictionary[key]
+        return value if value is not None else default
+    return default
