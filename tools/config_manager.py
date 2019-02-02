@@ -256,16 +256,30 @@ class ConfigManager:
         return any(value in DEFAULT_CONFIG_VALUES for value in config_values)
 
     @staticmethod
+    def get_symbols(config):
+        if CONFIG_CRYPTO_CURRENCIES in config and isinstance(config[CONFIG_CRYPTO_CURRENCIES], dict):
+            for crypto_currency_data in config[CONFIG_CRYPTO_CURRENCIES].values():
+                for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
+                    yield symbol
+
+    @staticmethod
+    def get_pairs(config, currency) -> []:
+        pairs = []
+        for symbol in ConfigManager.get_symbols(config):
+            if currency in split_symbol(symbol):
+                pairs.append(symbol)
+        return pairs
+
+    @staticmethod
     def get_market_pair(config, currency) -> (str, bool):
         if CONFIG_TRADING in config:
             reference_market = get_value_or_default(config[CONFIG_TRADING],
                                                     CONFIG_TRADER_REFERENCE_MARKET,
                                                     DEFAULT_REFERENCE_MARKET)
-            for crypto_currency_data in config[CONFIG_CRYPTO_CURRENCIES].values():
-                for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
-                    symbol_currency, symbol_market = split_symbol(symbol)
-                    if currency == symbol_currency and reference_market == symbol_market:
-                        return symbol, False
-                    elif reference_market == symbol_currency and currency == symbol_market:
-                        return symbol, True
+            for symbol in ConfigManager.get_symbols(config):
+                symbol_currency, symbol_market = split_symbol(symbol)
+                if currency == symbol_currency and reference_market == symbol_market:
+                    return symbol, False
+                elif reference_market == symbol_currency and currency == symbol_market:
+                    return symbol, True
         return "", False

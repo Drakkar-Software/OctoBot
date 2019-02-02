@@ -43,7 +43,8 @@ class TelegramApp(InterfaceBot):
         self.dispatcher.add_handler(CommandHandler(["trades_history", "th"], self.command_trades_history))
         self.dispatcher.add_handler(CommandHandler(["profitability", "pb"], self.command_profitability))
         self.dispatcher.add_handler(CommandHandler(["fees", "fs"], self.command_fees))
-        self.dispatcher.add_handler(CommandHandler(["sell_all_currencies"], self.command_sell_all_currencies))
+        self.dispatcher.add_handler(CommandHandler("sell_all", self.command_sell_all))
+        self.dispatcher.add_handler(CommandHandler("sell_all_currencies", self.command_sell_all_currencies))
         self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
         self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
         self.dispatcher.add_handler(CommandHandler(["configuration", "cf"], self.command_configuration))
@@ -77,8 +78,10 @@ class TelegramApp(InterfaceBot):
             message += "/trades_history or /th: Displays my trades history since I started." + EOL
             message += "/profitability or /pb: Displays the profitability I made since I started." + EOL
             message += "/fees or /fs: Displays the total amount of fees I paid since I started." + EOL
-            message += "/sell_all_currencies : Cancel all my orders and market sell everything for my reference " \
-                       "market." + EOL
+            message += "/sell_all : Cancels all my orders related to the currency in parameter and instantly " \
+                       "liquidate my holdings in this currency for my reference market." + EOL
+            message += "/sell_all_currencies : Cancels all my orders and instantly liquidate all my currencies " \
+                       "for my reference market." + EOL
             message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + EOL
             message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading " \
                        "mode." + EOL
@@ -95,7 +98,7 @@ class TelegramApp(InterfaceBot):
 
     @staticmethod
     def get_command_param(command_name, update):
-        return update.message.text.replace(command_name, "")
+        return update.message.text.replace(command_name, "").strip()
 
     @staticmethod
     def command_start(_, update):
@@ -153,6 +156,15 @@ class TelegramApp(InterfaceBot):
     def command_sell_all_currencies(_, update):
         if TelegramApp._is_valid_user(update):
             update.message.reply_text(InterfaceBot.get_command_sell_all_currencies())
+
+    @staticmethod
+    def command_sell_all(_, update):
+        if TelegramApp._is_valid_user(update):
+            currency = TelegramApp.get_command_param("/sell_all", update)
+            if not currency:
+                update.message.reply_text("Require a currency in parameter of this command.")
+            else:
+                update.message.reply_text(InterfaceBot.get_command_sell_all(currency))
 
     @staticmethod
     def command_portfolio(_, update):
