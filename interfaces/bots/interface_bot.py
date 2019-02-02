@@ -23,7 +23,7 @@ from interfaces.bots import EOL, NO_CURRENCIES_MESSAGE, NO_TRADER_MESSAGE
 from interfaces.trading_util import has_real_and_or_simulated_traders, get_currencies_with_status, get_risk, \
     force_real_traders_refresh, get_trades_history, get_global_portfolio_currencies_amounts, get_global_profitability, \
     set_risk, set_enable_trading, cancel_all_open_orders, get_portfolio_current_value, get_open_orders, \
-    get_total_paid_fees, sell_all_currencies
+    get_total_paid_fees, sell_all_currencies, sell_all
 from tools.logging.logging_util import get_logger
 from tools.pretty_printer import PrettyPrinter
 from tools.timestamp_util import convert_timestamp_to_datetime
@@ -171,10 +171,25 @@ class InterfaceBot:
     def get_command_sell_all_currencies():
         try:
             cancel_all_open_orders()
-            sell_all_currencies()
-            return "Currencies sold."
+            nb_created_orders = len(sell_all_currencies())
+            if nb_created_orders:
+                return f"Currencies sold in {nb_created_orders} order{'s' if nb_created_orders > 1 else ''}."
+            else:
+                return "Nothing to sell."
         except Exception as e:
-            return f"An error occurred: {e}"
+            return f"An error occurred: {e.__class__.__name__}"
+
+    @staticmethod
+    def get_command_sell_all(currency):
+        try:
+            cancel_all_open_orders(currency)
+            nb_created_orders = len(sell_all(currency))
+            if nb_created_orders:
+                return f"{currency} sold in {nb_created_orders} order{'s' if nb_created_orders > 1 else ''}."
+            else:
+                return f"Nothing to sell for {currency}."
+        except Exception as e:
+            return f"An error occurred: {e.__class__.__name__}"
 
     @staticmethod
     def get_command_portfolio():
