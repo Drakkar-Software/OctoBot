@@ -77,20 +77,22 @@ class TelegramApp(InterfaceBot):
             message += "/open_orders or /oo: Displays my current open orders." + EOL
             message += "/trades_history or /th: Displays my trades history since I started." + EOL
             message += "/profitability or /pb: Displays the profitability I made since I started." + EOL
+            message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + EOL
             message += "/fees or /fs: Displays the total amount of fees I paid since I started." + EOL
+            message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading " \
+                       "mode." + EOL
+            message += "******* - Trading Orders - *******" + EOL
             message += "/sell_all : Cancels all my orders related to the currency in parameter and instantly " \
                        "liquidate my holdings in this currency for my reference market." + EOL
             message += "/sell_all_currencies : Cancels all my orders and instantly liquidate all my currencies " \
                        "for my reference market." + EOL
-            message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + EOL
-            message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading " \
-                       "mode." + EOL
+            message += "******** - Management - ********" + EOL
+            message += "/set_risk: Changes my current risk setting into your command's parameter." + EOL
             message += "/refresh_real_trader or /rrt: Force OctoBot's real trader data refresh using exchange data. " \
                        "Should normally not be necessary." + EOL
-            message += "/set_risk: Changes my current risk setting into your command's parameter." + EOL
             message += "/pause or /resume: Pause or resume me." + EOL
-            message += "/version or /v: Displays my current software version." + EOL
             message += "/stop: Stops me." + EOL
+            message += "/version or /v: Displays my current software version." + EOL
             message += "/help: Displays this help."
             update.message.reply_text(message)
         else:
