@@ -21,12 +21,13 @@ import signal
 from threading import Thread
 from concurrent.futures import CancelledError
 
+from tentacles_manager.tentacle_creator.tentacle_creator import TentacleCreator
+
 from backtesting.collector.data_collector import DataCollector
 from config.config import encrypt
 from interfaces import get_bot
 from tools.logging.logging_util import get_logger
-from tools.tentacle_creator.tentacle_creator import TentacleCreator
-from tools.tentacle_manager.tentacle_manager import TentacleManager
+from tentacles_manager.tentacle_manager import TentacleManager
 
 
 class Commands:

@@ -36,7 +36,7 @@ from tools.commands import Commands
 from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 from tools.external_resources_manager import get_external_resource
-from tools.tentacle_manager.tentacle_util import tentacles_arch_exists
+from tentacles_manager.tentacle_util import tentacles_arch_exists
 
 
 # Keep string '+' operator to ensure backward compatibility in this file
