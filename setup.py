@@ -30,7 +30,6 @@ def find_package_data(path):
 PACKAGES = find_packages(exclude=["docs.*", "tests.*", "tentacles.*", "logs"])
 PACKAGES_DATA = [find_package_data("interfaces"),
                  find_package_data("config"),
-                 find_package_data("tools/tentacle_creator/templates"),
                  ('pre_requirements.txt', ['pre_requirements.txt']),
                  ('requirements.txt', ['requirements.txt'])]
 

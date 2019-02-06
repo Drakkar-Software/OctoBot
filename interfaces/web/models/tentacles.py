@@ -13,17 +13,16 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from tentacles_manager.tentacle_manager import TentacleManager
+from tentacles_manager.tentacle_package_manager import TentaclePackageManager
+from tentacles_manager.tentacle_package_util import get_octobot_tentacle_public_repo, get_is_url, get_package_name, \
+    get_package_description_with_adaptation
 
 from tools.logging.logging_util import get_logger
 
 
 from config import CONFIG_TENTACLES_KEY, TENTACLE_PACKAGE_DESCRIPTION
 from interfaces import get_bot
-from tools.tentacle_manager.tentacle_package_manager import TentaclePackageManager
-from tools.tentacle_manager.tentacle_package_util import get_is_url, get_package_name, \
-    get_octobot_tentacle_public_repo, get_package_description_with_adaptation
-from tools.tentacle_manager.tentacle_manager import TentacleManager
-
 
 logger = get_logger("TentaclesModel")
 
