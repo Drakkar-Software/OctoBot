@@ -28,6 +28,7 @@ from tools.config_manager import ConfigManager
 class AbstractEvaluator:
     __metaclass__ = ABCMeta
 
+    DEV_MODE = False
     DESCRIPTION = "No description set."
 
     def __init__(self):
@@ -109,6 +110,11 @@ class AbstractEvaluator:
     # Description of the evaluator, used as documentation
     def get_description(cls):
         return cls.DESCRIPTION
+
+    @classmethod
+    # True if evaluator is currently in development (not usable yet), default is False
+    def get_dev_mode(cls):
+        return cls.DEV_MODE
 
     # If this indicator is enabled
     def get_is_enabled(self):

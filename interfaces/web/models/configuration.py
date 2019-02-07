@@ -168,7 +168,7 @@ def _fill_evaluator_config(evaluator_name, activated, eval_type_key,
     description = "description"
     advanced_class_key = "advanced_class"
     klass = get_class_from_string(evaluator_name, AbstractEvaluator, evaluator_type, evaluator_parent_inspection)
-    if klass:
+    if klass and not klass.get_dev_mode():
         detailed_config[eval_type_key][evaluator_name] = {}
         detailed_config[eval_type_key][evaluator_name][EVALUATOR_ACTIVATION] = activated
         detailed_config[eval_type_key][evaluator_name][description] = klass.get_description()
