@@ -56,6 +56,6 @@ deploy:
     distributions: "sdist bdist_wheel"
     on:
       repo: Drakkar-Software/OctoBot
-      branch: beta
+      branch: master
       tags: true
       condition: $TRAVIS_OS_NAME = 'linux'
