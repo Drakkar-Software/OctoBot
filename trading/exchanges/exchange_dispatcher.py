@@ -157,10 +157,15 @@ class ExchangeDispatcher(AbstractExchange):
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
     async def get_order_book(self, symbol, limit=50):
-        if not self._web_socket_available():
-            await self.exchange.get_order_book(symbol, limit)
+        symbol_data = self.get_symbol_data(symbol)
 
-        return self.get_symbol_data(symbol).get_symbol_order_book(limit)
+        if not self._web_socket_available() or not symbol_data.order_book_is_initialized():
+            if not self._web_socket_available() or \
+                    (self._web_socket_available() and self.exchange_web_socket.handles_order_book()):
+                symbol_data.init_order_book()
+            await self.exchange.get_order_book(symbol=symbol, limit=limit)
+
+        return symbol_data.get_symbol_order_book()
 
     async def get_recent_trades(self, symbol, limit=50):
         symbol_data = self.get_symbol_data(symbol)
@@ -171,7 +176,7 @@ class ExchangeDispatcher(AbstractExchange):
                 symbol_data.init_recent_trades()
             await self.exchange.get_recent_trades(symbol=symbol, limit=limit)
 
-        return symbol_data.get_symbol_recent_trades(limit)
+        return symbol_data.get_symbol_recent_trades()
 
     # A price ticker contains statistics for a particular market/symbol for some period of time in recent past (24h)
     async def get_price_ticker(self, symbol):
