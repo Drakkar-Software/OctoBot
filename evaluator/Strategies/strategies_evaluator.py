@@ -82,3 +82,11 @@ class MixedStrategiesEvaluator(StrategiesEvaluator):
     @abstractmethod
     async def eval_impl(self) -> None:
         raise NotImplementedError("Eval_impl not implemented")
+
+
+class MarketMakingStrategiesEvaluator(StrategiesEvaluator):
+    __metaclass__ = StrategiesEvaluator
+
+    @abstractmethod
+    async def eval_impl(self) -> None:
+        raise NotImplementedError("Eval_impl not implemented")
