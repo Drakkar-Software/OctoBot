@@ -137,8 +137,9 @@ class RESTExchange(AbstractExchange, Initializable):
         self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles, replace_all=True)
 
     # return up to ten bidasks on each side of the order book stack
-    async def get_order_book(self, symbol, limit=30):
-        self.get_symbol_data(symbol).update_order_book(await self.client.fetch_order_book(symbol, limit))
+    async def get_order_book(self, symbol, limit=5):
+        order_book = await self.client.fetch_order_book(symbol, limit)
+        self.get_symbol_data(symbol).update_order_book(order_book)
 
     async def get_recent_trades(self, symbol, limit=50):
         trades = await self.client.fetch_trades(symbol, limit=limit)

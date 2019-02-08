@@ -14,12 +14,12 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
 import time
 
 import numpy as np
 
 from config import PriceIndexes, TimeFramesMinutes, MINUTE_TO_SECONDS
+from tools.logging.logging_util import get_logger
 
 
 class SymbolData:
@@ -38,6 +38,7 @@ class SymbolData:
         self.previous_candle_time = {}
 
         self.are_recent_trades_initialized = False
+        self.is_order_book_initialized = False
         self.logger = get_logger(f"{self.__class__.__name__} - {self.symbol}")
 
     '''
@@ -70,7 +71,7 @@ class SymbolData:
             # if update time from the previous time frame is greater than this given time frame:
             # data did not get updated => data are invalid
             if current_time - previous_candle_timestamp > \
-                    TimeFramesMinutes[time_frame]*MINUTE_TO_SECONDS*error_allowance:
+                    TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS * error_allowance:
                 return False
         return True
 
@@ -106,11 +107,11 @@ class SymbolData:
         return self.symbol_ticker
 
     # order book functions
-    def get_symbol_order_book(self, limit=None):
+    def get_symbol_order_book(self):
         return self.order_book
 
     # recent trade functions
-    def get_symbol_recent_trades(self, limit=None):
+    def get_symbol_recent_trades(self):
         return self.recent_trades
 
     # private functions
@@ -142,6 +143,12 @@ class SymbolData:
 
     def init_recent_trades(self):
         self.are_recent_trades_initialized = True
+
+    def order_book_is_initialized(self):
+        return self.is_order_book_initialized
+
+    def init_order_book(self):
+        self.is_order_book_initialized = True
 
 
 class CandleData:
@@ -209,7 +216,7 @@ class CandleData:
             return self.extract_limited_data(self.volume_candles_array, limit)
 
     def get_symbol_prices(self, limit=None, return_list=False):
-        symbol_prices = [None]*len(PriceIndexes)
+        symbol_prices = [None] * len(PriceIndexes)
         symbol_prices[PriceIndexes.IND_PRICE_CLOSE.value] = self.get_symbol_close_candles(limit, return_list)
         symbol_prices[PriceIndexes.IND_PRICE_OPEN.value] = self.get_symbol_open_candles(limit, return_list)
         symbol_prices[PriceIndexes.IND_PRICE_HIGH.value] = self.get_symbol_high_candles(limit, return_list)
@@ -292,12 +299,12 @@ class CandleData:
             low_candle_data[-1] = close_last_candle
         if high_candle_data[-1] < close_last_candle:
             high_candle_data[-1] = close_last_candle
-            
+
     @staticmethod
     def set_last_candle_arrays(list_updated, array_to_update):
         if array_to_update is not None:
             array_to_update[-1] = list_updated[-1]
-            
+
     @staticmethod
     def convert_list_to_array(list_to_convert):
         return np.array(list_to_convert)

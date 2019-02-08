@@ -476,6 +476,14 @@ class ExchangeConstantsMarketStatusInfoColumns(Enum):
     MAX_QTY = "maxQty"
 
 
+class ExchangeConstantsOrderBookInfoColumns(Enum):
+    BIDS = "bids"
+    ASKS = "asks"
+    TIMESTAMP = "timestamp"
+    DATETIME = "datetime"
+    NONCE = "nonce"
+
+
 class ExchangeConstantsOrderColumns(Enum):
     INFO = "info"
     ID = "id"

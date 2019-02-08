@@ -129,6 +129,12 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
         return await self.exchange.get_symbol_prices(self.symbol, time_frame,
                                                      limit=limit, return_list=return_list)
 
+    async def _get_order_book_from_exchange(self, limit=None):
+        return await self.exchange.get_order_book(self.symbol, limit=limit)
+
+    async def _get_recent_trades_from_exchange(self, limit=None):
+        return await self.exchange.get_recent_trades(self.symbol, limit=limit)
+
     @staticmethod
     def _compare_data(new_data, old_data):
         try:
