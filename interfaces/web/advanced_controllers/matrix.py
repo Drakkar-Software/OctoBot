@@ -14,11 +14,13 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from flask import Blueprint
+from flask import render_template
 
-advanced = Blueprint('advanced', __name__, url_prefix='/advanced', template_folder="../advanced_templates")
+from interfaces.trading_util import get_matrix_list
+from . import advanced
 
-from . import home
-from . import configuration
-from . import strategy_optimizer
-from . import matrix
+
+@advanced.route("/matrix")
+def matrix():
+    return render_template('advanced_matrix.html',
+                           matrix_list=get_matrix_list())

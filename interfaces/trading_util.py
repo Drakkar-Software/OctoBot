@@ -236,10 +236,10 @@ def get_global_profitability():
         if real_full_origin_value > 0 else 0
 
     return has_real_trader, has_simulated_trader, \
-        real_global_profitability, simulated_global_profitability, \
-        real_percent_profitability, simulated_percent_profitability, \
-        real_no_trade_profitability, simulated_no_trade_profitability, \
-        market_average_profitability
+           real_global_profitability, simulated_global_profitability, \
+           real_percent_profitability, simulated_percent_profitability, \
+           real_no_trade_profitability, simulated_no_trade_profitability, \
+           market_average_profitability
 
 
 def get_portfolios():
@@ -257,9 +257,8 @@ def get_portfolios():
 
 
 def get_currencies_with_status():
-    symbol_with_evaluation = {}
-    for symbol_evaluator in get_bot().get_symbol_evaluator_list().values():
-        symbol_with_evaluation[symbol_evaluator.get_symbol()] = \
+    return {
+        symbol_evaluator.get_symbol():
             {
                 exchange.get_name():
                     [
@@ -274,11 +273,10 @@ def get_currencies_with_status():
                             for dec in symbol_evaluator.get_deciders(exchange)
                         ]),
                     ]
-                    for exchange in get_bot().get_exchanges_list().values()
-                    if symbol_evaluator.has_exchange(exchange)
+                for exchange in get_bot().get_exchanges_list().values()
+                if symbol_evaluator.has_exchange(exchange)
             }
-
-    return symbol_with_evaluation
+        for symbol_evaluator in get_bot().get_symbol_evaluator_list().values()}
 
 
 def get_global_portfolio_currencies_amounts():
@@ -338,3 +336,14 @@ def get_trades_by_times_and_prices(symbol, side, force_timezone=False):
         simulated_times = convert_timestamps_to_datetime(simulated_trades_times, force_timezone=force_timezone)
 
     return real_trades_prices, real_times, simulated_trades_prices, simulated_times
+
+
+def get_matrix_list():
+    return {
+        symbol_evaluator.get_symbol():
+            {
+                exchange.get_name(): symbol_evaluator.get_matrix(exchange)
+                for exchange in get_bot().get_exchanges_list().values()
+                if symbol_evaluator.has_exchange(exchange)
+            }
+        for symbol_evaluator in get_bot().get_symbol_evaluator_list().values()}
