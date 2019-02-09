@@ -15,11 +15,10 @@
 #  License along with this library.
 
 from dataclasses import dataclass, field
-from typing import Dict, Union
+from typing import Dict, Union, Any
 
 from config import OrderStatus, TradeOrderSide
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
-from trading.trader.order import Order
 
 
 @dataclass
@@ -36,9 +35,9 @@ class Trade:
     filled_time: int = field(init=False, repr=False)
     final_status: OrderStatus = field(init=False, repr=False)
     market: str = field(init=False, repr=False)
-    order: Order
+    order: Any
     order_id: str = field(init=False, repr=False)
-    order_type: Order = field(init=False, repr=False)
+    order_type: Any = field(init=False, repr=False)
     price: float = field(init=False, repr=False)
     quantity: float = field(init=False, repr=False)
     side: TradeOrderSide = field(init=False, repr=False)
@@ -51,11 +50,11 @@ class Trade:
         self.price = self.order.get_filled_price()
         self.order_type = self.order.get_order_type()
         self.final_status = self.order.get_status()
-        self.fee = self.order.get_fee()
+        self.fee = self.order.fee
         self.order_id = self.order.get_id()
         self.side = self.order.get_side()
         self.creation_time = self.order.get_creation_time()
-        self.canceled_time = self.order.get_canceled_time()
-        self.filled_time = self.order.get_executed_time()
+        self.canceled_time = self.order.canceled_time
+        self.filled_time = self.order.executed_time
         self.symbol = self.order.get_order_symbol()
         self.simulated = self.order.trader.simulate

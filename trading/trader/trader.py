@@ -111,7 +111,7 @@ class Trader(Initializable):
         return self.portfolio
 
     def get_order_portfolio(self, order):
-        return order.get_linked_portfolio() if order.get_linked_portfolio() is not None else self.portfolio
+        return order.linked_portfolio if order.linked_portfolio is not None else self.portfolio
 
     def create_order_instance(self, order_type, symbol, current_price, quantity,
                               price=None,
