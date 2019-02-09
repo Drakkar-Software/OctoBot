@@ -18,54 +18,62 @@ import time
 import math
 from abc import *
 from asyncio import Lock
+from dataclasses import dataclass, field
+from typing import List, Any, Dict, Union
+
 from tools.logging.logging_util import get_logger
 
 from tools.symbol_util import split_symbol
 from config import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK, \
     ExchangeConstantsTickersColumns as eC, FeePropertyColumns, ExchangeConstantsMarketPropertyColumns
+from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 
 """ Order class will represent an open order in the specified exchange
 In simulation it will also define rules to be filled / canceled
 It is also use to store creation & fill values of the order """
 
 
+@dataclass
 class Order:
     __metaclass__ = ABCMeta
 
-    def __init__(self, trader):
-        super().__init__()
-        self.trader = trader
+    trader: Any = field(init=True, repr=False)
+    exchange: ExchangeDispatcher = field(init=False, repr=False)
+    is_simulated: bool = field(init=False, repr=False)
+    side: TradeOrderSide = None
+    symbol: str = None
+    origin_price: float = 0
+    origin_stop_price: float = 0
+    origin_quantity: float = 0
+    market_total_fees: float = 0
+    filled_quantity: float = 0
+    filled_price: float = 0
+    fee: Dict[str, Union[str, float]] = None
+    currency: str = None
+    market: str = None
+    order_id: str = None
+    status: OrderStatus = OrderStatus.OPEN
+    order_type: Any = None
+    timestamp: int = None
+    creation_time: int = time.time()
+    canceled_time: int = 0
+    executed_time: int = 0
+    last_prices: List[Any] = None
+    created_last_price: float = 0
+    order_profitability: float = 0
+    linked_to: Any = None
+    is_from_this_octobot: bool = True
+    linked_portfolio: Any = None
+    order_notifier: Any = None
+    linked_orders: List[Any] = None
+    taker_or_maker: ExchangeConstantsMarketPropertyColumns = None
+    lock: Lock = None
+
+    def __post_init__(self):
         self.exchange = self.trader.get_exchange()
         self.is_simulated = self.trader.simulate
-        self.side = None
-        self.symbol = None
-        self.origin_price = 0
-        self.origin_stop_price = 0
-        self.origin_quantity = 0
-        self.market_total_fees = 0
-        self.filled_quantity = 0
-        self.filled_price = 0
-        self.fee = None
-        self.currency, self.market = None, None
-        self.order_id = None
-        self.status = None
-        self.status = None
-        self.order_type = None
-        self.creation_time = 0
-        self.canceled_time = 0
-        self.executed_time = 0
-        self.last_prices = None
-        self.created_last_price = None
-        self.order_profitability = None
-        self.linked_to = None
-        self.is_from_this_octobot = True
-        self.linked_portfolio = None
-        self.taker_or_maker = None
-
-        self.order_notifier = None
-
-        self.linked_orders = []
         self.lock = Lock()
+        self.linked_orders = []
 
     # syntax: "async with xxx.get_lock():"
     # TODO find better way to handle async lock: reuse disposable design pattern ?
@@ -112,9 +120,11 @@ class Order:
         if self.trader.simulate:
             self.filled_quantity = quantity
 
-    # update_order_status will define the rules for a simulated order to be filled / canceled
     @abstractmethod
     async def update_order_status(self, simulated_time=False):
+        """
+        Update_order_status will define the rules for a simulated order to be filled / canceled
+        """
         raise NotImplementedError("Update_order_status not implemented")
 
     # check_last_prices is used to collect data to perform the order update_order_status process
@@ -174,12 +184,6 @@ class Order:
     def get_id(self):
         return self.order_id
 
-    def get_market_total_fees(self):
-        return self.market_total_fees
-
-    def get_fee(self):
-        return self.fee
-
     def get_total_fees(self, currency):
         if self.fee and self.fee[FeePropertyColumns.CURRENCY.value] == currency:
             return self.fee[FeePropertyColumns.COST.value]
@@ -213,12 +217,6 @@ class Order:
     def get_order_notifier(self):
         return self.order_notifier
 
-    def get_canceled_time(self):
-        return self.canceled_time
-
-    def get_executed_time(self):
-        return self.executed_time
-
     def get_creation_time(self):
         return self.creation_time
 
@@ -227,9 +225,6 @@ class Order:
 
     def get_create_last_price(self):
         return self.created_last_price
-
-    def get_linked_portfolio(self):
-        return self.linked_portfolio
 
     def is_filled(self):
         return self.status == OrderStatus.FILLED
@@ -301,8 +296,8 @@ class Order:
 
 
 class BuyMarketOrder(Order):
-    def __init__(self, trader):
-        super().__init__(trader)
+    def __post_init__(self):
+        super().__post_init__()
         self.side = TradeOrderSide.BUY
 
     async def update_order_status(self, simulated_time=False):
@@ -319,8 +314,8 @@ class BuyMarketOrder(Order):
 
 
 class BuyLimitOrder(Order):
-    def __init__(self, trader):
-        super().__init__(trader)
+    def __post_init__(self):
+        super().__post_init__()
         self.side = TradeOrderSide.BUY
 
     async def update_order_status(self, simulated_time=False):
@@ -337,8 +332,8 @@ class BuyLimitOrder(Order):
 
 
 class SellMarketOrder(Order):
-    def __init__(self, trader):
-        super().__init__(trader)
+    def __post_init__(self):
+        super().__post_init__()
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -355,8 +350,8 @@ class SellMarketOrder(Order):
 
 
 class SellLimitOrder(Order):
-    def __init__(self, trader):
-        super().__init__(trader)
+    def __post_init__(self):
+        super().__post_init__()
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -373,8 +368,8 @@ class SellLimitOrder(Order):
 
 
 class StopLossOrder(Order):
-    def __init__(self, trader):
-        super().__init__(trader)
+    def __post_init__(self):
+        super().__post_init__()
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -384,14 +379,14 @@ class StopLossOrder(Order):
             self.filled_quantity = self.origin_quantity
             self.executed_time = self.generate_executed_time(simulated_time)
             if not self.trader.simulate:
-                self.trader.create_artificial_order(TraderOrderType.SELL_MARKET, self.symbol, self.origin_price,
+                await self.trader.create_artificial_order(TraderOrderType.SELL_MARKET, self.symbol, self.origin_price,
                                                     self.origin_quantity, self.origin_price, self.linked_portfolio)
 
 
 # TODO
 class StopLossLimitOrder(Order):
-    def __init__(self, trader):
-        super().__init__(trader)
+    def __post_init__(self):
+        super().__post_init__()
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -400,8 +395,8 @@ class StopLossLimitOrder(Order):
 
 # TODO
 class TakeProfitOrder(Order):
-    def __init__(self, trader):
-        super().__init__(trader)
+    def __post_init__(self):
+        super().__post_init__()
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
@@ -410,8 +405,8 @@ class TakeProfitOrder(Order):
 
 # TODO
 class TakeProfitLimitOrder(Order):
-    def __init__(self, trader):
-        super().__init__(trader)
+    def __post_init__(self):
+        super().__post_init__()
         self.side = TradeOrderSide.SELL
 
     async def update_order_status(self, simulated_time=False):
