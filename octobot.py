@@ -14,19 +14,23 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
-import time
-import copy
 import asyncio
+import copy
 import threading
+import time
 
 import ccxt.async_support as ccxt
 
+# important keep tools as first import
+from tools.logging.logging_util import get_logger
+
 from backtesting.backtesting import Backtesting
-from config import CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
+from config import CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
     NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, \
     CONFIG_EVALUATORS_WILDCARD, FORCE_ASYNCIO_DEBUG_OPTION
+from evaluator import TA
+from evaluator.TA import TAEvaluator
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
@@ -34,17 +38,14 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_task_manager import EvaluatorTaskManager
 from evaluator.symbol_evaluator import SymbolEvaluator
 from services import ServiceCreator
-from tools.notifications import Notification
-from tools.performance_analyser import PerformanceAnalyser
-from tools.time_frame_manager import TimeFrameManager
 from tools.asyncio_tools import run_coroutine_in_asyncio_loop, get_gather_wrapper
+from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
+from tools.notifications import Notification
+from tools.time_frame_manager import TimeFrameManager
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 from trading.util.trading_config_util import get_activated_trading_mode
-from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
-from evaluator import TA
-from evaluator.TA import TAEvaluator
 
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
@@ -77,11 +78,6 @@ class OctoBot:
 
         # Advanced
         AdvancedManager.init_advanced_classes_if_necessary(self.config)
-
-        # Debug tools
-        self.performance_analyser = None
-        if CONFIG_DEBUG_OPTION_PERF in self.config and self.config[CONFIG_DEBUG_OPTION_PERF]:
-            self.performance_analyser = PerformanceAnalyser()
 
         # Init time frames using enabled strategies
         EvaluatorCreator.init_time_frames_from_strategies(self.config)
@@ -249,9 +245,6 @@ class OctoBot:
 
     async def start_tasks(self, run_in_new_thread=False):
         task_list = []
-        if self.performance_analyser:
-            task_list.append(self.performance_analyser.start_monitoring())
-
         for crypto_currency_evaluator in self.crypto_currency_evaluator_list.values():
             task_list.append(crypto_currency_evaluator.get_social_evaluator_refresh_task())
 
