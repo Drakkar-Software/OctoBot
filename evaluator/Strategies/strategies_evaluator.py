@@ -17,7 +17,7 @@
 from abc import *
 
 from config import CONFIG_EVALUATOR_STRATEGIES, STRATEGIES_REQUIRED_TIME_FRAME, STRATEGIES_REQUIRED_EVALUATORS, \
-    CONFIG_FORCED_TIME_FRAME, CONFIG_FORCED_EVALUATOR
+    CONFIG_FORCED_TIME_FRAME, CONFIG_FORCED_EVALUATOR, TENTACLE_DEFAULT_CONFIG, CONFIG_EVALUATORS_WILDCARD
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.evaluator_divergence_analyser import EvaluatorDivergenceAnalyser
 from tools.time_frame_manager import TimeFrameManager
@@ -62,14 +62,26 @@ class StrategiesEvaluator(AbstractEvaluator):
             raise Exception(f"'{STRATEGIES_REQUIRED_TIME_FRAME}' is missing in {cls.get_config_file_name()}")
 
     @classmethod
-    def get_required_evaluators(cls, config):
+    def get_required_evaluators(cls, config, strategy_config=None):
         if CONFIG_FORCED_EVALUATOR in config:
             return config[CONFIG_FORCED_EVALUATOR]
-        strategy_config = cls.get_evaluator_config()
+        strategy_config = strategy_config if strategy_config is not None else cls.get_evaluator_config()
         if STRATEGIES_REQUIRED_EVALUATORS in strategy_config:
             return strategy_config[STRATEGIES_REQUIRED_EVALUATORS]
         else:
             raise Exception(f"'{STRATEGIES_REQUIRED_EVALUATORS}' is missing in {cls.get_config_file_name()}")
+
+    @classmethod
+    def get_default_evaluators(cls, config):
+        strategy_config = cls.get_evaluator_config()
+        if TENTACLE_DEFAULT_CONFIG in strategy_config:
+            return strategy_config[TENTACLE_DEFAULT_CONFIG]
+        else:
+            required_evaluators = cls.get_required_evaluators(config, strategy_config)
+            if required_evaluators == CONFIG_EVALUATORS_WILDCARD:
+                return []
+            else:
+                return required_evaluators
 
     # Strategies are not standalone tasks
     async def start_task(self):

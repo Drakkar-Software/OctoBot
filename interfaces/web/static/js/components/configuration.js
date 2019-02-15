@@ -284,13 +284,13 @@ function handle_save_buttons_success_callback(updated_data, update_url, dom_root
 }
 
 function other_trading_mode_activated(){
-    let other_activated_modes_count = $("#trading-modes-config-root").children(".list-group-item-success").length;
+    let other_activated_modes_count = $("#trading-modes-config-root").children("."+success_list_item).length;
     return other_activated_modes_count > 1;
 }
 
 function deactivate_other_trading_modes(element) {
     const element_id = element.attr("id");
-    $("#trading-modes-config-root").children(".list-group-item-success").each(function () {
+    $("#trading-modes-config-root").children("."+success_list_item).each(function () {
         const element = $(this);
         if(element.attr("id") !== element_id){
             element.attr(current_value_attr, "false");
@@ -301,10 +301,13 @@ function deactivate_other_trading_modes(element) {
 
 function update_requirement_activation(element) {
     const required_elements = element.attr("requirements").split("'");
+    const default_elements = element.attr("default-elements").split("'");
     $("#evaluator-config-root").children(".config-element").each(function () {
         const element = $(this);
         if(required_elements.indexOf(element.attr("id")) !== -1){
-            element.attr(current_value_attr, "true");
+            if(default_elements.indexOf(element.attr("id")) !== -1){
+                element.attr(current_value_attr, "true");
+            }
             update_element_temporary_look(element);
             update_element_required_marker_and_usability(element, true);
         }else{
@@ -315,24 +318,35 @@ function update_requirement_activation(element) {
     });
 }
 
+function get_activated_strategies_count() {
+    return $("#evaluator-config-root").children("."+success_list_item).length
+}
+
+function get_activated_trading_mode_min_strategies(){
+    const activated_trading_modes = $("#trading-modes-config-root").children("."+success_list_item);
+    if(activated_trading_modes.length > 0) {
+        return parseInt(activated_trading_modes.attr("requirements-min-count"));
+    }else{
+        return 1;
+    }
+}
+
 function check_evaluator_configuration() {
-    const activated_trading_modes = $("#trading-modes-config-root").children(".list-group-item-success");
+    const activated_trading_modes = $("#trading-modes-config-root").children("."+success_list_item);
     if(activated_trading_modes.length > 0){
         const activated_trading_mode = activated_trading_modes;
         const required_elements = activated_trading_mode.attr("requirements").split("'");
-        let at_lest_one_activated_element = false;
+        let at_least_one_activated_element = false;
         $("#evaluator-config-root").children(".config-element").each(function () {
             const element = $(this);
             if(required_elements.indexOf(element.attr("id")) !== -1) {
-                if (element.attr(current_value_attr).toLowerCase() === "true") {
-                    at_lest_one_activated_element = true;
-                    update_element_required_marker_and_usability(element, true);
-                }
+                at_least_one_activated_element = true;
+                update_element_required_marker_and_usability(element, true);
             }else{
                 update_element_required_marker_and_usability(element, false);
             }
         });
-        if(!at_lest_one_activated_element){
+        if(!at_least_one_activated_element){
             create_alert("error", "Trading modes require at least one strategy to work properly, please activate the " +
                 "strategy(ies) you want for the selected mode.", "");
         }
@@ -372,6 +386,12 @@ function handle_evaluator_configuration_editor(){
                     if(is_trading_mode && !other_trading_mode_activated()){
                         create_alert("error", "Impossible to disable all trading modes.", "");
                         return;
+                    }else if (!is_trading_mode){
+                        const min_strategies = get_activated_trading_mode_min_strategies();
+                        if(get_activated_strategies_count() <= min_strategies){
+                            create_alert("error", "This trading mode requires at least " + min_strategies +" activated strategies.", "");
+                            return;
+                        }
                     }
                     new_value = "false";
                 }else if(current_value === "false"){
