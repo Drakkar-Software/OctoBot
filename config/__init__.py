@@ -252,8 +252,10 @@ LOGGING_CONFIG_FILE = "config/logging_config.ini"
 
 # Tentacle Config
 STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"
-STRATEGIES_REQUIRED_EVALUATORS = "required_evaluators"
 TRADING_MODE_REQUIRED_STRATEGIES = "required_strategies"
+TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT = "required_strategies_min_count"
+STRATEGIES_REQUIRED_EVALUATORS = "required_evaluators"
+TENTACLE_DEFAULT_CONFIG = "default_config"
 
 # Web interface
 UPDATED_CONFIG_SEPARATOR = "_"
