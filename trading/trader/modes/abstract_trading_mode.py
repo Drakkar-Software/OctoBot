@@ -20,7 +20,8 @@ from abc import *
 
 from config.config import load_config
 from config import CONFIG_FILE_EXT, EVALUATOR_CONFIG_FOLDER, \
-    TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH
+    TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH, \
+    TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT, TENTACLE_DEFAULT_CONFIG
 from evaluator import Strategies
 from evaluator.Util.advanced_manager import AdvancedManager
 from tools.class_inspector import get_deep_class_from_string
@@ -58,8 +59,15 @@ class AbstractTradingMode:
             raise e
 
     @classmethod
-    def get_required_strategies(cls):
-        config = cls.get_trading_mode_config()
+    def get_required_strategies_count(cls, config):
+        min_strategies_count = 1
+        if TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT in config:
+            min_strategies_count = config[TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT]
+        return min_strategies_count
+
+    @classmethod
+    def get_required_strategies(cls, trading_mode_config=None):
+        config = trading_mode_config if trading_mode_config is not None else cls.get_trading_mode_config()
         if TRADING_MODE_REQUIRED_STRATEGIES in config:
             strategies_classes = []
             for class_string in config[TRADING_MODE_REQUIRED_STRATEGIES]:
@@ -71,9 +79,26 @@ class AbstractTradingMode:
                     raise Exception(f"{class_string} is not found, Octobot can't use {cls.get_name()},"
                                     f" please check {cls.get_name()}{cls.get_config_file_name()}")
 
-            return strategies_classes
+            return strategies_classes, cls.get_required_strategies_count(config)
         else:
             raise Exception(f"'{TRADING_MODE_REQUIRED_STRATEGIES}' is missing in {cls.get_config_file_name()}")
+
+    @classmethod
+    def get_required_strategies_names_and_count(cls, trading_mode_config=None):
+        config = trading_mode_config if trading_mode_config is not None else cls.get_trading_mode_config()
+        if TRADING_MODE_REQUIRED_STRATEGIES in config:
+            return config[TRADING_MODE_REQUIRED_STRATEGIES], cls.get_required_strategies_count(config)
+        else:
+            raise Exception(f"'{TRADING_MODE_REQUIRED_STRATEGIES}' is missing in {cls.get_config_file_name()}")
+
+    @classmethod
+    def get_default_strategies(cls):
+        config = cls.get_trading_mode_config()
+        if TENTACLE_DEFAULT_CONFIG in config:
+            return config[TENTACLE_DEFAULT_CONFIG]
+        else:
+            strategies_classes, _ = cls.get_required_strategies_names_and_count(config)
+            return strategies_classes
 
     @abstractmethod
     def create_deciders(self, symbol, symbol_evaluator) -> None:
@@ -110,20 +135,30 @@ class AbstractTradingMode:
 
     def _init_strategies_instances(self, symbol, all_strategy_instances):
         all_strategy_classes = [s.__class__ for s in all_strategy_instances]
-        for required_class in self.get_required_strategies():
+        required_strategies, required_strategies_min_count = self.get_required_strategies()
+        missing_strategies = []
+        found_strategy_count = 0
+        for required_class in required_strategies:
             if required_class in all_strategy_classes:
                 self.strategy_instances_by_classes[symbol][required_class] = \
                     all_strategy_instances[all_strategy_classes.index(required_class)]
+                found_strategy_count += 1
             else:
                 subclass = AdvancedManager.get_class(self.config, required_class)
                 if subclass in all_strategy_classes:
                     self.strategy_instances_by_classes[symbol][required_class] = \
                         all_strategy_instances[all_strategy_classes.index(subclass)]
+                    found_strategy_count += 1
             if required_class not in self.strategy_instances_by_classes[symbol]:
-                get_logger(self.get_name()).error(f"No instance of {required_class.__name__} "
+                missing_strategies.append(required_class)
+        if found_strategy_count < required_strategies_min_count:
+            for missing_strategy in missing_strategies:
+                get_logger(self.get_name()).error(f"No instance of {missing_strategy.__name__} "
                                                   f"or advanced equivalent found, {self.get_name()} trading "
                                                   "mode can't work properly ! Maybe this strategy is disabled in"
-                                                  " tentacles/Evaluator/evaluator_config.json.")
+                                                  f" tentacles/Evaluator/evaluator_config.json (missing "
+                                                  f"{required_strategies_min_count-found_strategy_count} out of "
+                                                  f"{required_strategies_min_count} minimum required strategies).")
 
     def load_config(self):
         config_file = self.get_config_file_name()
