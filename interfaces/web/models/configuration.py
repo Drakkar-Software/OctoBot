@@ -57,6 +57,8 @@ def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_str
     name = "name"
     description = "description"
     requirements = "requirements"
+    requirements_count_key = "requirements-min-count"
+    default_config_key = "default-config"
     details = {}
     config = get_bot().get_config()
     advanced_class = AdvancedManager.get_class(config, klass)
@@ -64,9 +66,12 @@ def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_str
         details[name] = advanced_class.get_name()
         details[description] = advanced_class.get_description()
         if is_trading_mode:
-            details[requirements] = [strategy.get_name() for strategy in advanced_class.get_required_strategies()]
+            required_strategies, required_strategies_count = klass.get_required_strategies_names_and_count()
+            details[requirements] = [strategy for strategy in required_strategies]
+            details[requirements_count_key] = required_strategies_count
         elif is_strategy:
             details[requirements] = [evaluator for evaluator in advanced_class.get_required_evaluators(config)]
+            details[default_config_key] = [evaluator for evaluator in advanced_class.get_default_evaluators(config)]
     return details
 
 
@@ -131,6 +136,7 @@ def _add_strategies_requirements(strategies, strategy_config):
     requirements_key = "requirements"
     advanced_class_key = "advanced_class"
     required = "required"
+    default_config_key = "default-config"
     config = get_bot().get_config()
     required_elements = _get_required_element(strategy_config)
     for classKey, klass in strategies.items():
@@ -138,18 +144,27 @@ def _add_strategies_requirements(strategies, strategy_config):
             # no need for requirement if advanced class: requirements are already in advanced class
             strategy_config[strategies_key][classKey][requirements_key] = \
                 [evaluator for evaluator in klass.get_required_evaluators(config)]
+            strategy_config[strategies_key][classKey][default_config_key] = \
+                [evaluator for evaluator in klass.get_default_evaluators(config)]
         strategy_config[strategies_key][classKey][required] = classKey in required_elements
 
 
 def _add_trading_modes_requirements(trading_modes, strategy_config):
     trading_mode_key = "trading-modes"
     requirements_key = "requirements"
+    default_config_key = "default-config"
+    requirements_count_key = "requirements-min-count"
     for classKey, klass in trading_modes.items():
-        if klass.get_required_strategies():
+        required_strategies, required_strategies_count = klass.get_required_strategies_names_and_count()
+        if required_strategies:
             strategy_config[trading_mode_key][classKey][requirements_key] = \
-                [strategy.get_name() for strategy in klass.get_required_strategies()]
+                [strategy for strategy in required_strategies]
+            strategy_config[trading_mode_key][classKey][default_config_key] = \
+                [strategy for strategy in klass.get_default_strategies()]
+            strategy_config[trading_mode_key][classKey][requirements_count_key] = required_strategies_count
         else:
             strategy_config[trading_mode_key][classKey][requirements_key] = []
+            strategy_config[trading_mode_key][classKey][requirements_count_key] = 0
 
 
 def get_strategy_config():
