@@ -6,12 +6,8 @@ a.disabled {
   pointer-events: none;
 }
 
-.icon-green {
-  color: #10FB03;
-}
-
-.icon-red {
-  color: red;
+.icon-black {
+  color: black;
 }
 
 .danger-color{
