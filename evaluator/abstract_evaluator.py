@@ -75,8 +75,8 @@ class AbstractEvaluator:
             raise e
 
     # Override this method when self.eval_note is other than : START_PENDING_EVAL_NOTE or float[-1:1]
-    @classmethod
-    def get_eval_type(cls):
+    @staticmethod
+    def get_eval_type():
         return EvaluatorEvalTypes.FLOAT_MINUS_ONE_UP_TO_ONE
 
     # Used to provide a new logger for this particular indicator
