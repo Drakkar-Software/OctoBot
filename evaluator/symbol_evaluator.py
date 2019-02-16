@@ -88,7 +88,8 @@ class SymbolEvaluator:
                     if evaluator_type in evaluator_parents:
                         self.evaluator_instances_by_strategies[exchange_name][strategy][evaluator_type].add(evaluator)
 
-    async def update_strategies_eval(self, new_matrix, exchange, ignored_evaluator=None):
+    async def update_strategies_eval(self, new_matrix, exchange, ignored_evaluator=None,
+                                     refresh_matrix_evaluation_types=False):
         for strategies_evaluator in self.get_strategies_eval_list(exchange):
             if strategies_evaluator.get_is_active():
                 strategies_evaluator.set_matrix(new_matrix)
@@ -100,6 +101,9 @@ class SymbolEvaluator:
             else:
                 new_matrix.set_eval(EvaluatorMatrixTypes.STRATEGIES, strategies_evaluator.get_name(),
                                     START_PENDING_EVAL_NOTE)
+            if refresh_matrix_evaluation_types:
+                new_matrix.set_evaluator_eval_type(strategies_evaluator.get_name(),
+                                                   strategies_evaluator.get_eval_type())
 
     def _get_evaluators_from_strategy(self, strategy, ta_list, rt_list, social_list):
         for exchange, strategy_classes in self.evaluator_instances_by_strategies.items():

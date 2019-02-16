@@ -15,8 +15,9 @@
 #  License along with this library.
 
 from dataclasses import dataclass, field
+from typing import Dict, Union
 
-from config import CONFIG_DICT_TYPE, EvaluatorMatrixTypes, TimeFrames
+from config import CONFIG_DICT_TYPE, EvaluatorMatrixTypes, TimeFrames, EvaluatorEvalTypes
 from evaluator import default_matrix_value, MatrixType, MatrixValueType
 from tools.evaluators_util import check_valid_eval_note
 
@@ -28,6 +29,7 @@ class EvaluatorMatrix:
     """
     config: CONFIG_DICT_TYPE
     matrix: MatrixType = field(init=False, repr=False, default_factory=default_matrix_value)
+    evaluator_eval_types: Dict[str, EvaluatorEvalTypes] = field(init=False, repr=False, default_factory=dict)
 
     # setters
     def set_eval(self,
@@ -68,3 +70,14 @@ class EvaluatorMatrix:
 
     def get_matrix(self) -> MatrixType:
         return self.matrix
+
+    def set_evaluator_eval_type(self,
+                                evaluator_name: str,
+                                evaluator_eval_type: EvaluatorEvalTypes) -> None:
+        self.evaluator_eval_types[evaluator_name] = evaluator_eval_type
+
+    def get_evaluator_eval_type(self,
+                                evaluator_name: str) -> Union[EvaluatorEvalTypes, None]:
+        if evaluator_name in self.evaluator_eval_types:
+            return self.evaluator_eval_types[evaluator_name]
+        return None

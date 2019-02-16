@@ -29,10 +29,12 @@ class StrategiesEvaluator(AbstractEvaluator):
     def __init__(self):
         super().__init__()
         self.matrix = None
+        self.evaluator_types_matrix = None
         self.divergence_evaluator_analyser = None
 
     def set_matrix(self, matrix):
         self.matrix = matrix.get_matrix()
+        self.evaluator_types_matrix = matrix
 
     def get_is_evaluable(self):
         return self.matrix is not None

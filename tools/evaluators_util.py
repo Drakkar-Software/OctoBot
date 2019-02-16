@@ -16,8 +16,16 @@
 
 import math
 
-from config import START_PENDING_EVAL_NOTE
+from config import START_PENDING_EVAL_NOTE, EvaluatorEvalTypes
 
 
-def check_valid_eval_note(eval_note):
+UNSET_EVAL_TYPE = "unset_eval_type_param"
+
+
+# Will also test evaluation type if if eval_type is provided.
+# Default expected_eval_type is EvaluatorEvalTypes.FLOAT_MINUS_ONE_UP_TO_ONE
+def check_valid_eval_note(eval_note, eval_type=UNSET_EVAL_TYPE,
+                          expected_eval_type=EvaluatorEvalTypes.FLOAT_MINUS_ONE_UP_TO_ONE):
+    if eval_type != UNSET_EVAL_TYPE and eval_type != expected_eval_type:
+        return False
     return eval_note and eval_note is not START_PENDING_EVAL_NOTE and not math.isnan(eval_note)
