@@ -18,7 +18,7 @@ from tools.logging.logging_util import get_logger
 from tools.data_util import DataUtil
 
 from config import EvaluatorMatrixTypes, START_PENDING_EVAL_NOTE
-from evaluator.RealTime import RealTimeTAEvaluator
+from evaluator.RealTime import RealTimeExchangeEvaluator
 from evaluator.Social import SocialEvaluator
 from evaluator.TA import TAEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
@@ -76,7 +76,7 @@ class SymbolEvaluator:
                     self.evaluator_instances_by_strategies[exchange][strategy_class] = {
                         TAEvaluator: set(),
                         SocialEvaluator: set(),
-                        RealTimeTAEvaluator: set()
+                        RealTimeExchangeEvaluator: set()
                     }
 
     def add_evaluator_instance_to_strategy_instances_list(self, evaluator, exchange):
@@ -111,7 +111,7 @@ class SymbolEvaluator:
                 if strategy.__class__ == strategy_class:
                     strategy_instances = self.evaluator_instances_by_strategies[exchange][strategy_class]
                     ta_list.update(strategy_instances[TAEvaluator])
-                    rt_list.update(strategy_instances[RealTimeTAEvaluator])
+                    rt_list.update(strategy_instances[RealTimeExchangeEvaluator])
                     social_list.update(strategy_instances[SocialEvaluator])
 
     @staticmethod

@@ -158,6 +158,9 @@ CONFIG_SERVICE_INSTANCE = "service_instance"
 CONFIG_TELEGRAM = "telegram"
 CONFIG_TOKEN = "token"
 MESSAGE_PARSE_MODE = 'parse_mode'
+CONFIG_TELEGRAM_CHANNEL = "telegram-channel"
+CONFIG_GROUP_MESSAGE = "group-message"
+CONFIG_GROUP_MESSAGE_DESCRIPTION = "group-message-description"
 
 # web
 CONFIG_WEB = "web"
