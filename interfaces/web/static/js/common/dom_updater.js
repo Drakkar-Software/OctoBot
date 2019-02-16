@@ -172,25 +172,22 @@ function update_status(status){
     const icon_status = $("#navbar-bot-status");
     const icon_reboot = $("#navbar-bot-reboot");
 
-    // if refreshed page
-    if (icon_status.hasClass("fa-spinner")){
-        icon_status.removeClass("fa-spinner fa-spin")
-    }
-
     // create alert if required
-    if (status && icon_status.hasClass("icon-red")){
-        create_alert("success", "Connected with Octobot", "");
-    }else if(!status && icon_status.hasClass("icon-green")){
-        create_alert("error", "Connection lost with Octobot", "<br>Reconnecting...");
+    if (status && icon_status.hasClass("fa-times-circle")){
+        create_alert("success", "Reconnected to Octobot", "");
+    }else if(!status && icon_status.hasClass("fa-check")){
+        create_alert("error", "Connection lost with Octobot", "Reconnecting...");
     }
 
     // update central status
     if (status){
-        icon_status.removeClass("fa-times-circle icon-red");
-        icon_status.addClass("fa-check-circle icon-green");
+        icon_status.removeClass("fa-times-circle icon-black");
+        icon_status.addClass("fa-check");
+        icon_status.attr("title","OctoBot operational");
     }else{
-        icon_status.removeClass("fa-check-circle icon-green");
-        icon_status.addClass("fa-times-circle icon-red");
+        icon_status.removeClass("fa-check");
+        icon_status.addClass("fa-times-circle icon-black");
+        icon_status.attr("title","OctoBot offline");
     }
 
     // update reboot status
