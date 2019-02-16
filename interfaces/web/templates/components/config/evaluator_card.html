@@ -62,8 +62,8 @@
                    <button type="button"
                            config-type="evaluator_list_config"
                            strategy="{{ evaluator_name }}"
-                           class="btn btn-sm btn-outline-primary waves-effect config-element {{ 'disabled' if not (info['default-config'] or info['advanced_class']['default-config']) }}">
-                       Use default strategy configuration
+                           class="btn btn-outline-green waves-effect config-element {{ 'disabled' if not (info['default-config'] or info['advanced_class']['default-config']) }}">
+                       <i class="fas fa-check"></i> Activate
                    </button>
                 </div>
               {% endif %}
