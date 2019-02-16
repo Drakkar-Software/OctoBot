@@ -113,6 +113,11 @@ const update_rate_millis = 1000;
 
 $(document).ready(function () {
     handle_route_button();
+
+    // initial health check
+    get_update();
+    // setup cyclic health check
     setInterval(function(){ get_update(); }, update_rate_millis);
+
     load_metadata();
 });
