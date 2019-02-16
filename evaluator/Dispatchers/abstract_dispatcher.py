@@ -36,7 +36,12 @@ class AbstractDispatcher(threading.Thread):
         self.keep_running = True
         self.is_setup_correctly = False
         self.main_async_loop = main_async_loop
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(self.get_name())
+        self.service = None
+
+    @classmethod
+    def get_name(cls):
+        return cls.__class__.__name__
 
     def notify_registered_clients_if_interested(self, notification_description, notification):
         for client in self.registered_list:
@@ -45,6 +50,12 @@ class AbstractDispatcher(threading.Thread):
 
     def register_client(self, client):
         self.registered_list.append(client)
+
+    # Override this method if the dispatcher implementation is using a dispatcher handled in the service layer
+    # (ie: TelegramDispatcher)
+    @staticmethod
+    def _get_service_layer_dispatcher():
+        return None
 
     @abstractmethod
     def _start_dispatcher(self):
@@ -62,9 +73,12 @@ class AbstractDispatcher(threading.Thread):
         if self.is_setup_correctly:
             if self._something_to_watch():
                 self._get_data()
-                self._start_dispatcher()
-                self.logger.warning("Nothing can be monitored even though there is something to watch"
-                                    ", dispatcher is going to sleep.")
+                service_level_dispatcher_if_any = self._get_service_layer_dispatcher()
+                if service_level_dispatcher_if_any is not None and self.service is not None:
+                    self.service.ready(self.get_name())
+                if not self._start_dispatcher():
+                    self.logger.warning("Nothing can be monitored even though there is something to watch"
+                                        ", dispatcher is going to sleep.")
             else:
                 self.logger.info("Nothing to monitor, dispatcher is going to sleep.")
 
@@ -91,13 +105,13 @@ class DispatcherAbstractClient:
     def get_dispatcher_class():
         raise NotImplementedError("get_dispatcher_class not implemented")
 
-    def set_dispatcher(self, dispatcher):
-        self.dispatcher = dispatcher
-
     # return true if the given notification is relevant for this client
     @abstractmethod
     def is_interested_by_this_notification(self, notification_description):
         raise NotImplementedError("is_interested_by_this_notification not implemented")
+
+    def set_dispatcher(self, dispatcher):
+        self.dispatcher = dispatcher
 
     def is_client_to_this_dispatcher(self, dispatcher_instance):
         return self.get_dispatcher_class() == dispatcher_instance.__class__

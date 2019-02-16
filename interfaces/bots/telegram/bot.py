@@ -22,44 +22,47 @@ from interfaces.bots.interface_bot import InterfaceBot
 
 
 class TelegramApp(InterfaceBot):
-    def __init__(self, config, telegram_service, telegram_updater):
+
+    HANDLED_CHAT = "private"
+
+    def __init__(self, config, telegram_service):
         super().__init__(config)
         self.config = config
         self.paused = False
         self.telegram_service = telegram_service
-        self.telegram_updater = telegram_updater
-        self.dispatcher = self.telegram_updater.dispatcher
-
-        self.add_handlers()
+        self.telegram_service.register_user(self.get_name())
+        self.telegram_service.add_handlers(self.get_bot_handlers())
+        self.telegram_service.register_text_polling_handler(self.HANDLED_CHAT, self.echo)
 
         # Start the Bot
-        self.telegram_updater.start_polling()
+        self.telegram_service.ready(self.get_name())
 
-    def add_handlers(self):
-        self.dispatcher.add_handler(CommandHandler("start", self.command_start))
-        self.dispatcher.add_handler(CommandHandler("ping", self.command_ping))
-        self.dispatcher.add_handler(CommandHandler(["portfolio", "pf"], self.command_portfolio))
-        self.dispatcher.add_handler(CommandHandler(["open_orders", "oo"], self.command_open_orders))
-        self.dispatcher.add_handler(CommandHandler(["trades_history", "th"], self.command_trades_history))
-        self.dispatcher.add_handler(CommandHandler(["profitability", "pb"], self.command_profitability))
-        self.dispatcher.add_handler(CommandHandler(["fees", "fs"], self.command_fees))
-        self.dispatcher.add_handler(CommandHandler("sell_all", self.command_sell_all))
-        self.dispatcher.add_handler(CommandHandler("sell_all_currencies", self.command_sell_all_currencies))
-        self.dispatcher.add_handler(CommandHandler("set_risk", self.command_risk))
-        self.dispatcher.add_handler(CommandHandler(["market_status", "ms"], self.command_market_status))
-        self.dispatcher.add_handler(CommandHandler(["configuration", "cf"], self.command_configuration))
-        self.dispatcher.add_handler(CommandHandler(["refresh_real_trader", "rrt"], self.command_real_traders_refresh))
-        self.dispatcher.add_handler(CommandHandler(["version", "v"], self.command_version))
-        self.dispatcher.add_handler(CommandHandler("stop", self.command_stop))
-        self.dispatcher.add_handler(CommandHandler("help", self.command_help))
-        self.dispatcher.add_handler(CommandHandler(["pause", "resume"], self.command_pause_resume))
-        self.dispatcher.add_handler(MessageHandler(Filters.command, self.command_unknown))
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
 
-        # log all errors
-        self.dispatcher.add_error_handler(self.command_error)
-
-        # TEST : unhandled messages
-        self.dispatcher.add_handler(MessageHandler(Filters.text, self.echo))
+    def get_bot_handlers(self):
+        return [
+            CommandHandler("start", self.command_start),
+            CommandHandler("ping", self.command_ping),
+            CommandHandler(["portfolio", "pf"], self.command_portfolio),
+            CommandHandler(["open_orders", "oo"], self.command_open_orders),
+            CommandHandler(["trades_history", "th"], self.command_trades_history),
+            CommandHandler(["profitability", "pb"], self.command_profitability),
+            CommandHandler(["fees", "fs"], self.command_fees),
+            CommandHandler("sell_all", self.command_sell_all),
+            CommandHandler("sell_all_currencies", self.command_sell_all_currencies),
+            CommandHandler("set_risk", self.command_risk),
+            CommandHandler(["market_status", "ms"], self.command_market_status),
+            CommandHandler(["configuration", "cf"], self.command_configuration),
+            CommandHandler(["refresh_real_trader", "rrt"], self.command_real_traders_refresh),
+            CommandHandler(["version", "v"], self.command_version),
+            CommandHandler("stop", self.command_stop),
+            CommandHandler("help", self.command_help),
+            CommandHandler(["pause", "resume"], self.command_pause_resume),
+            MessageHandler(Filters.command, self.command_unknown),
+            MessageHandler(Filters.text, self.echo)
+        ]
 
     @staticmethod
     def command_unknown(_, update):
@@ -214,11 +217,6 @@ class TelegramApp(InterfaceBot):
                                           "please retry in a few seconds.")
 
     @staticmethod
-    def command_error(_, update):
-        if TelegramApp._is_valid_user(update):
-            update.message.reply_text(f"Failed to perform this command : {update.message.text}")
-
-    @staticmethod
     def echo(_, update):
         if TelegramApp._is_valid_user(update):
             update.message.reply_text(update.message.text)
@@ -233,6 +231,11 @@ class TelegramApp(InterfaceBot):
 
     @staticmethod
     def _is_valid_user(update, associated_config=CONFIG_INTERFACES_TELEGRAM):
+
+        # only authorize users from a private chat
+        if update.effective_chat["type"] != TelegramApp.HANDLED_CHAT:
+            return False
+
         update_username = update.effective_chat["username"]
 
         is_valid, white_list = InterfaceBot._is_valid_user(update_username, associated_config=associated_config)
