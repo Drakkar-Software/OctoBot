@@ -73,7 +73,9 @@ function send_and_interpret_bot_update(updated_data, update_url, dom_root_elemen
         data: JSON.stringify(updated_data),
         success: function(msg, status){
             if(typeof success_callback === "undefined") {
-                update_dom(dom_root_element, msg);
+                if(dom_root_element != null){
+                    update_dom(dom_root_element, msg);
+                }
             }
             else{
                 success_callback(updated_data, update_url, dom_root_element, msg, status)

@@ -77,7 +77,7 @@ function modules_operation_success_callback(updated_data, update_url, dom_root_e
         });
     });
     $("#selected_tentacles_operation").hide();
-    create_alert("success", "Tentacle operation success: "+msg, "");
+    create_alert("success", "Tentacle operation success", msg);
 }
 
 function modules_operation_error_callback(updated_data, update_url, dom_root_element, result, status, error){
@@ -98,7 +98,7 @@ function packages_operation_success_callback(updated_data, update_url, dom_root_
         disable_select_action_buttons();
     });
     $("#packages_action_progess_bar").hide();
-    create_alert("success", "Packages operation success: "+msg, "");
+    create_alert("success", "Packages operation success", msg);
 }
 
 function packages_operation_error_callback(updated_data, update_url, dom_root_element, result, status, error){
@@ -135,7 +135,7 @@ function post_package_action_success_callback(updated_data, update_url, dom_root
     for(const attribute in updated_data) {
         package_path = attribute;
     }
-    create_alert("success", "Tentacles packages successfully installed from: "+package_path, "");
+    create_alert("success", "Tentacles successfully installed" , "Packages installed from: "+package_path);
     $("#tentacles_packages_table").load(location.href + " #tentacles_packages_table");
     $("#tentacles_modules_table").load(location.href + " #tentacles_modules_table",function(){
         disable_select_action_buttons();

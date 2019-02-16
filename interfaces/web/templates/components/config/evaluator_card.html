@@ -6,7 +6,14 @@
        requirements="{{info['advanced_class']['requirements'] if info['advanced_class']['requirements'] else info['requirements']}}"
        default-elements="{{info['advanced_class']['default-config'] if info['advanced_class']['default-config'] else info['default-config']}}"
        requirements-min-count="{{info['advanced_class']['requirements-min-count'] if info['advanced_class']['requirements-min-count'] else info['requirements-min-count']}}">
-        <span class="float-left {{'d-none' if not info['required']}}" role="required-flag"><i class="fa fa-flag {{'red-text' if not info['activation']}}" data-toggle="tooltip" data-placement="top" title="Should be activated when using the current strategies"></i></span>
+        {% if not strategy %}
+        <span class="float-left {{'d-none' if not info['required']}}" role="required-flag">
+            <i class="fa fa-flag {{'red-text' if not info['activation']}}"
+               data-toggle="tooltip" data-placement="top"
+               title="Should be activated when using the current strategies">
+            </i>
+        </span>
+        {% endif %}
         {{ evaluator_name }}
         {% if info['advanced_class'] %}
         <span><i class="fa fa-graduation-cap" data-toggle="tooltip" data-placement="top" title="Advanced tentacle"></i></span>
@@ -35,6 +42,7 @@
                   {% if info['advanced_class']['requirements'] %}
                       <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
                       <p>{{info['advanced_class']['requirements']|join(', ')}}</p>
+                      <hr>
                       <h5>Default configuration:</h5>
                       <p>{{info['advanced_class']['default-config']|join(', ')}}</p>
                   {% endif %}
@@ -42,10 +50,22 @@
                   <p>{{info['description']}}</p>
                   {% if info['requirements'] %}
                       <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
-                      <p>{{info['requirements']|join(',')}}</p>
+                      <p>{{info['requirements']|join(', ')}}</p>
+                      <hr>
                       <h5>Default configuration:</h5>
                       <p>{{info['default-config']|join(', ')}}</p>
                   {% endif %}
+              {% endif %}
+
+              {% if strategy %}
+                <div class="text-center">
+                   <button type="button"
+                           config-type="evaluator_list_config"
+                           strategy="{{ evaluator_name }}"
+                           class="btn btn-sm btn-outline-primary waves-effect config-element {{ 'disabled' if not (info['default-config'] or info['advanced_class']['default-config']) }}">
+                       Use default strategy configuration
+                   </button>
+                </div>
               {% endif %}
           </div>
           <div class="modal-footer">
