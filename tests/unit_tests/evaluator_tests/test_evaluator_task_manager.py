@@ -28,7 +28,7 @@ from evaluator.Util.advanced_manager import AdvancedManager
 from trading.trader.portfolio import Portfolio
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from evaluator.evaluator_task_manager import EvaluatorTaskManager
-from config import TimeFrames
+from config import TimeFrames, EvaluatorEvalTypes
 from trading.util.trading_config_util import get_activated_trading_mode
 
 
@@ -89,5 +89,14 @@ async def test_refresh_matrix(event_loop):
     evaluator_task_manager, _, _, _, _ = \
         await _get_tools(event_loop)
     evaluator_task_manager.matrix = None
-    evaluator_task_manager.refresh_matrix()
+    evaluator_task_manager.refresh_matrix(refresh_matrix_evaluation_types=False)
     assert evaluator_task_manager.matrix is not None
+    assert evaluator_task_manager.matrix.evaluator_eval_types == {}
+    assert evaluator_task_manager.matrix.get_evaluator_eval_type("XYZ") is None
+    assert evaluator_task_manager.matrix.get_evaluator_eval_type("ADXMomentumEvaluator") is None
+    evaluator_task_manager.refresh_matrix(refresh_matrix_evaluation_types=True)
+    assert evaluator_task_manager.matrix is not None
+    assert len(evaluator_task_manager.matrix.evaluator_eval_types) == 5
+    assert evaluator_task_manager.matrix.get_evaluator_eval_type("ADXMomentumEvaluator") == \
+        EvaluatorEvalTypes.FLOAT_MINUS_ONE_UP_TO_ONE
+    assert evaluator_task_manager.matrix.get_evaluator_eval_type("XYZ") is None
