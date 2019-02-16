@@ -16,13 +16,17 @@
 
 import asyncio
 import time
+import os
 from abc import *
 
 from backtesting.backtesting import Backtesting
 from config.config import load_config
-from config import *
+from config import CONFIG_EVALUATOR_REALTIME, CONFIG_REFRESH_RATE, PriceIndexes, MIN_EVAL_TIME_FRAME, \
+    DEFAULT_WEBSOCKET_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS, DEFAULT_REST_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS, \
+    CONFIG_TIME_FRAME
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.time_frame_manager import TimeFrameManager
+from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 
 
 class RealTimeEvaluator(AbstractEvaluator):
@@ -98,7 +102,7 @@ class RealTimeEvaluator(AbstractEvaluator):
                     await asyncio.sleep(sleeping_time)
 
 
-class RealTimeTAEvaluator(RealTimeEvaluator):
+class RealTimeExchangeEvaluator(RealTimeEvaluator):
     __metaclass__ = RealTimeEvaluator
 
     def __init__(self, exchange_inst, symbol):
@@ -155,3 +159,39 @@ class RealTimeTAEvaluator(RealTimeEvaluator):
             CONFIG_TIME_FRAME: min_time_frame,
             CONFIG_REFRESH_RATE: refresh_rate,
         }
+
+
+class RealTimeSignalEvaluator(RealTimeEvaluator, DispatcherAbstractClient):
+    __metaclass__ = RealTimeEvaluator
+
+    def __init__(self, symbol=None):
+        RealTimeEvaluator.__init__(self)
+        DispatcherAbstractClient.__init__(self)
+        self.symbol = symbol
+        self.keep_running = False
+
+    def _refresh_data(self):
+        pass
+
+    def _should_eval(self):
+        pass
+
+    def _define_refresh_time(self):
+        pass
+
+    async def eval_impl(self) -> None:
+        pass
+
+    @abstractmethod
+    async def receive_notification_data(self, data) -> None:
+        raise NotImplementedError("receive_notification_data not implemented")
+
+    @staticmethod
+    @abstractmethod
+    def get_dispatcher_class():
+        raise NotImplementedError("get_dispatcher_class not implemented")
+
+    # return true if the given notification is relevant for this client
+    @abstractmethod
+    def is_interested_by_this_notification(self, notification_description):
+        raise NotImplementedError("is_interested_by_this_notification not implemented")
