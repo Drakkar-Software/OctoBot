@@ -213,16 +213,18 @@ function handle_save_buttons(){
         get_tabs_config().each(function(){
             $(this).find("."+config_element_class).each(function(){
                 const config_type = $(this).attr(config_type_attr);
+                if(config_type !== evaluator_list_config_type) {
 
-                if(!(config_type in updated_config)){
-                    updated_config[config_type] = {};
-                }
+                    if (!(config_type in updated_config)) {
+                        updated_config[config_type] = {};
+                    }
 
-                const new_value = parse_new_value($(this));
-                const config_key = get_config_key($(this));
+                    const new_value = parse_new_value($(this));
+                    const config_key = get_config_key($(this));
 
-                if(get_config_value_changed($(this), new_value, config_key)){
-                    updated_config[config_type][config_key] = new_value;
+                    if (get_config_value_changed($(this), new_value, config_key)) {
+                        updated_config[config_type][config_key] = new_value;
+                    }
                 }
             })
         });
@@ -274,13 +276,31 @@ function get_value_changed(new_val, dom_conf_val, config_key){
     }else{
         return false;
     }
-
 }
 
 function handle_save_buttons_success_callback(updated_data, update_url, dom_root_element, msg, status){
     updated_validated_updated_global_config(msg["global_updated_config"]);
     update_dom(dom_root_element, msg);
-    create_alert("success", "Configuration successfully updated. Restart OctoBot for it to be applied", "");
+    create_alert("success", "Configuration successfully updated", "Restart OctoBot for changes to be applied.");
+}
+
+function apply_evaluator_default_config(element) {
+    const default_config = element.attr("default-elements").replace(new RegExp("'","g"),'"');
+    const update_url = $("#save-config").attr(update_url_attr);
+    const updated_config = {};
+    const config_type = element.attr(config_type_attr);
+    updated_config[config_type] = {};
+
+    $.each($.parseJSON(default_config), function (i, config_key) {
+        updated_config[config_type][config_key] = "true";
+    });
+
+    // send update
+    send_and_interpret_bot_update(updated_config, update_url, null, handle_apply_evaluator_default_config_success_callback);
+}
+
+function handle_apply_evaluator_default_config_success_callback(updated_data, update_url, dom_root_element, msg, status){
+    create_alert("success", "Evaluators activated", "Restart OctoBot for changes to be applied");
 }
 
 function other_trading_mode_activated(){
@@ -365,50 +385,55 @@ function handle_evaluator_configuration_editor(){
 
         if (element.hasClass(config_element_class) && ! element.hasClass(disabled_class)){
 
-            if (element[0].hasAttribute(config_type_attr)
-                && (element.attr(config_type_attr) === evaluator_config_type
-                    || element.attr(config_type_attr) === trading_config_type)){
+            if (element[0].hasAttribute(config_type_attr)) {
+                if(element.attr(config_type_attr) === evaluator_config_type || element.attr(config_type_attr) === trading_config_type) {
 
-                const is_trading_mode = element.attr(config_type_attr) === trading_config_type;
+                    const is_trading_mode = element.attr(config_type_attr) === trading_config_type;
+                    const is_strategy = element.attr(config_type_attr) === evaluator_config_type;
 
-                // build data update
-                let new_value = parse_new_value(element);
-                let current_value;
+                    // build data update
+                    let new_value = parse_new_value(element);
+                    let current_value;
 
-                try {
-                    current_value = element.attr(current_value_attr).toLowerCase();
-                }
-                catch(e) {
-                    current_value = element.attr(current_value_attr);
-                }
+                    try {
+                        current_value = element.attr(current_value_attr).toLowerCase();
+                    } catch (e) {
+                        current_value = element.attr(current_value_attr);
+                    }
 
-                if (current_value === "true"){
-                    if(is_trading_mode && !other_trading_mode_activated()){
-                        create_alert("error", "Impossible to disable all trading modes.", "");
-                        return;
-                    }else if (!is_trading_mode){
-                        const min_strategies = get_activated_trading_mode_min_strategies();
-                        if(get_activated_strategies_count() <= min_strategies){
-                            create_alert("error", "This trading mode requires at least " + min_strategies +" activated strategies.", "");
+                    if (current_value === "true") {
+                        if (is_trading_mode && !other_trading_mode_activated()) {
+                            create_alert("error", "Impossible to disable all trading modes.", "");
                             return;
+                        } else if (is_strategy) {
+                            // strategy
+                            const min_strategies = get_activated_trading_mode_min_strategies();
+                            if (get_activated_strategies_count() <= min_strategies) {
+                                create_alert("error", "This trading mode requires at least " + min_strategies + " activated strategies.", "");
+                                return;
+                            }
+                        }
+                        new_value = "false";
+                    } else if (current_value === "false") {
+                        new_value = "true";
+                        if (is_trading_mode) {
+                            deactivate_other_trading_modes(element);
                         }
                     }
-                    new_value = "false";
-                }else if(current_value === "false"){
-                    new_value = "true";
-                    if(is_trading_mode){
-                        deactivate_other_trading_modes(element);
+                    if (is_trading_mode) {
+                        update_requirement_activation(element);
                     }
-                }
-                if(is_trading_mode){
-                    update_requirement_activation(element);
-                }
 
-                // update current value
-                element.attr(current_value_attr, new_value);
+                    // update current value
+                    element.attr(current_value_attr, new_value);
 
-                //update dom
-                update_element_temporary_look(element);
+                    //update dom
+                    update_element_temporary_look(element);
+                }
+                else if (element.attr(config_type_attr) === evaluator_list_config_type){
+                    const strategy_name = element.attr("strategy");
+                    apply_evaluator_default_config($("#"+strategy_name));
+                }
             }
         }
     });
