@@ -14,8 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
-
 import twitter
 
 from config import *
@@ -27,7 +25,6 @@ class TwitterDispatcher(AbstractDispatcher):
 
     def __init__(self, config, main_async_loop):
         super().__init__(config, main_async_loop)
-        self.logger = get_logger(self.__class__.__name__)
         self.user_ids = []
         self.hashtags = []
         self.counter = 0
@@ -35,7 +32,7 @@ class TwitterDispatcher(AbstractDispatcher):
 
         # check presence of twitter instance
         if TwitterService.is_setup_correctly(self.config):
-            self.twitter_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
+            self.service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE]
             self.is_setup_correctly = True
         else:
             if TwitterService.should_be_ready(config):
@@ -63,7 +60,7 @@ class TwitterDispatcher(AbstractDispatcher):
                 if account not in tempo_added_accounts:
                     tempo_added_accounts.append(account)
                     try:
-                        self.user_ids.append(str(self.twitter_service.get_user_id(account)))
+                        self.user_ids.append(str(self.service.get_user_id(account)))
                     except twitter.TwitterError as e:
                         self.logger.error(account + " : " + str(e))
 
@@ -86,11 +83,11 @@ class TwitterDispatcher(AbstractDispatcher):
                    and self.social_config[CONFIG_TWITTERS_ACCOUNTS])
 
     def _start_listener(self):
-        for tweet in self.twitter_service.get_endpoint().GetStreamFilter(follow=self.user_ids,
+        for tweet in self.service.get_endpoint().GetStreamFilter(follow=self.user_ids,
                                                                          track=self.hashtags,
                                                                          stall_warnings=True):
             self.counter += 1
-            string_tweet = self.twitter_service.get_tweet_text(tweet)
+            string_tweet = self.service.get_tweet_text(tweet)
             if string_tweet:
                 tweet_desc = str(tweet).lower()
                 self.notify_registered_clients_if_interested(tweet_desc,
@@ -111,3 +108,4 @@ class TwitterDispatcher(AbstractDispatcher):
                 self.logger.error(f"Error when receiving Twitter feed ({e}) ")
                 self.logger.exception(e)
                 self.keep_running = False
+        return False

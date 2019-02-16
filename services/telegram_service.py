@@ -15,7 +15,7 @@
 #  License along with this library.
 
 import telegram
-from telegram.ext import Updater  # , Dispatcher
+from telegram.ext import Updater, MessageHandler, Filters  # , Dispatcher
 import logging
 
 from config import CONFIG_TOKEN, CONFIG_USERNAMES_WHITELIST, CONFIG_CATEGORY_SERVICES, CONFIG_TELEGRAM, \
@@ -36,6 +36,8 @@ class TelegramService(AbstractService):
         self.chat_id = None
         self.telegram_app = None
         self.telegram_updater = None
+        self.users_dict = {}
+        self.text_chat_dispatcher = {}
 
     def get_fields_description(self):
         return {
@@ -76,9 +78,34 @@ class TelegramService(AbstractService):
                     token=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_TOKEN])
 
             if TelegramApp.is_enabled(self.config):
-                self.telegram_app = TelegramApp(self.config, self, self.telegram_updater)
+                self.telegram_app = TelegramApp(self.config, self)
 
         set_logging_level(self.LOGGERS, logging.WARNING)
+
+    def register_text_polling_handler(self, chat_type, handler):
+        self.text_chat_dispatcher[chat_type] = handler
+
+    def text_handler(self, _, update):
+        chat_type = update.effective_chat["type"]
+        if chat_type in self.text_chat_dispatcher:
+            self.text_chat_dispatcher[chat_type](_, update)
+        else:
+            self.logger.error(f"No handler for telegram update: {update}")
+
+    def add_text_handler(self):
+        self.telegram_updater.dispatcher.add_handler(MessageHandler(Filters.text, self.text_handler))
+
+    def add_handlers(self, handlers):
+        for handler in handlers:
+            self.telegram_updater.dispatcher.add_handler(handler)
+
+    def register_user(self, user_key):
+        self.users_dict[user_key] = False
+
+    def ready(self, user_key):
+        self.users_dict[user_key] = True
+        if all(ready for ready in self.users_dict.values()):
+            self.telegram_updater.start_polling()
 
     def get_type(self):
         return CONFIG_TELEGRAM
