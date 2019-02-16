@@ -159,6 +159,11 @@ body:before {
   color: #4B515D;
 }
 
+.modal,
+.modal-top-left {
+    margin-top: 50px;
+}
+
 .editable-input,
 .editable-submit,
 .editable-cancel {
