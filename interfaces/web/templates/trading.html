@@ -20,22 +20,36 @@
             {% for pair, status in pairs_with_status.items() %}
                 {{ m_cards.pair_status_card(pair, status, watched_symbols) }}
             {% endfor %}
-            <a href="{{ url_for('config')+'#panelCurrency' }}">
-                <i class="fas fa-plus-circle fa-3x"></i>
-            </a>
+
+            <!-- Add new pair Card -->
+            <div class="card mb-4 small-size unique-color-dark">
+
+                <!--Title-->
+                <div class="card-header unique-color-dark">
+                    <a class="text-white" href="{{ url_for('config')+'#panelCurrency' }}">New trading pair</a>
+                </div>
+
+                <!--Card image-->
+                <div class="view overlay animated img-fluid text-center unique-color-dark h-100">
+                  <a href="{{ url_for('config')+'#panelCurrency' }}">
+                    <i class="fas fa-8x fa-plus-circle fa-3x"></i>
+                  </a>
+                </div>
+
+
+                <!--Card content-->
+                <div class="card-footer unique-color-dark">
+                    <a class="text-white" href="{{ url_for('config')+'#panelCurrency' }}"> Add a new pair</a>
+                </div>
+
+            </div>
         </div>
     </div>
 </div>
 <br>
 <div class="card">
     <div class="card-header">
-        <h1>Open orders
-            <span class="float-right">
-                <a href="{{ url_for('trades') }}">
-                    <i class="fa fa-history" data-toggle="tooltip" data-placement="top" title="Trades history"></i>
-                </a>
-            </span>
-        </h1>
+        <h1>Open orders</h1>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -62,7 +76,7 @@
 </div>
 
 <div class="card-footer text-center">
-    <a href="{{ url_for('trades') }}" class="btn btn-outline-info btn-lg waves-effect">Trades history</a>
+    <a href="{{ url_for('trades') }}" class="btn btn-outline-info btn-lg waves-effect"><i class="fa fa-tasks"></i> Trades history</a>
 </div>
 
 {% endblock %}
