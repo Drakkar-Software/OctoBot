@@ -210,6 +210,7 @@ CONFIG_CRYPTO_CURRENCIES = "crypto-currencies"
 CONFIG_CRYPTO_PAIRS = "pairs"
 CONFIG_EVALUATORS_WILDCARD = [CONFIG_WILDCARD]
 EVALUATOR_ACTIVATION = "activation"
+EVALUATOR_EVAL_DEFAULT_TYPE = float
 
 # Socials
 SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE = 1
@@ -266,11 +267,6 @@ COIN_MARKET_CAP_CURRENCIES_LIST_URL = "https://api.coinmarketcap.com/v2/listings
 
 # Types
 CONFIG_DICT_TYPE = NewType('ConfigDictType', Dict[str, Any])
-
-
-class EvaluatorEvalTypes(Enum):
-    FLOAT_MINUS_ONE_UP_TO_ONE = "FLOAT_MINUS_ONE_UP_TO_ONE"
-    ORDER_BOOK_INFO = "ORDER_BOOK_INFO"
 
 
 class EvaluatorMatrixTypes(Enum):
