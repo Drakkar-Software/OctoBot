@@ -21,7 +21,7 @@ from abc import *
 from config.config import load_config
 
 from config import START_PENDING_EVAL_NOTE, START_EVAL_PERTINENCE, TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, \
-    EVALUATOR_CONFIG_FOLDER, CONFIG_FILE_EXT, CONFIG_EVALUATOR, INIT_EVAL_NOTE, EvaluatorEvalTypes
+    EVALUATOR_CONFIG_FOLDER, CONFIG_FILE_EXT, CONFIG_EVALUATOR, INIT_EVAL_NOTE, EVALUATOR_EVAL_DEFAULT_TYPE
 
 from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 from tools.config_manager import ConfigManager
@@ -77,7 +77,7 @@ class AbstractEvaluator:
     # Override this method when self.eval_note is other than : START_PENDING_EVAL_NOTE or float[-1:1]
     @staticmethod
     def get_eval_type():
-        return EvaluatorEvalTypes.FLOAT_MINUS_ONE_UP_TO_ONE
+        return EVALUATOR_EVAL_DEFAULT_TYPE
 
     # Used to provide a new logger for this particular indicator
     def set_logger(self, logger):
