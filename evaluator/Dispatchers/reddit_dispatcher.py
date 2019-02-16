@@ -17,7 +17,6 @@
 import time
 from prawcore.exceptions import RequestException, ResponseException, OAuthException, InvalidToken, ServerError
 
-from tools.logging.logging_util import get_logger
 from config import *
 from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
 from services import RedditService
@@ -29,7 +28,6 @@ class RedditDispatcher(AbstractDispatcher):
 
     def __init__(self, config, main_async_loop):
         super().__init__(config, main_async_loop)
-        self.logger = get_logger(self.__class__.__name__)
         self.subreddits = None
         self.counter = 0
         self.connect_attempts = 0
@@ -38,7 +36,7 @@ class RedditDispatcher(AbstractDispatcher):
 
         # check presence of twitter instance
         if RedditService.is_setup_correctly(self.config):
-            self.reddit_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT][CONFIG_SERVICE_INSTANCE]
+            self.service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT][CONFIG_SERVICE_INSTANCE]
             self.is_setup_correctly = True
         else:
             if RedditService.should_be_ready(config):
@@ -71,7 +69,7 @@ class RedditDispatcher(AbstractDispatcher):
         return CONFIG_REDDIT_SUBREDDITS in self.social_config and self.social_config[CONFIG_REDDIT_SUBREDDITS]
 
     def _start_listener(self):
-        subreddit = self.reddit_service.get_endpoint().subreddit(self.subreddits)
+        subreddit = self.service.get_endpoint().subreddit(self.subreddits)
         start_time = time.time()
         for entry in subreddit.stream.submissions():
             self.credentials_ok = True
@@ -143,3 +141,4 @@ class RedditDispatcher(AbstractDispatcher):
                 self.logger.error(f"Error when receiving Reddit feed: '{e}'")
                 self.logger.exception(e)
                 self.keep_running = False
+        return False
