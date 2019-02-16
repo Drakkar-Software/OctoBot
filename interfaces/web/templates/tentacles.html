@@ -5,9 +5,6 @@
     <div class="card-header">
         <h1>Installed Tentacles
         <span class="float-right">
-            <a href="{{ url_for('tentacle_packages') }}">
-                <i class="fa fa-cloud-download-alt" data-toggle="tooltip" data-placement="top" title="Install Tentacles packages"></i>
-            </a>
             <a class="text-danger" target="_blank" rel="noopener noreferrer" href="https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager#tentacle-manager">
                 <i class="fa fa-question"></i>
             </a>
@@ -55,7 +52,7 @@
 </div>
 
 <div class="card-footer text-center">
-    <a href="{{ url_for('tentacle_packages') }}" class="btn btn-outline-info btn-lg waves-effect">Install Tentacles packages</a>
+    <a href="{{ url_for('tentacle_packages') }}" class="btn btn-outline-info btn-lg waves-effect"><i class="fa fa-cloud-download-alt"></i> Install Tentacles packages</a>
 </div>
 
 {% endblock %}
