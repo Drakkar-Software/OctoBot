@@ -268,6 +268,11 @@ COIN_MARKET_CAP_CURRENCIES_LIST_URL = "https://api.coinmarketcap.com/v2/listings
 CONFIG_DICT_TYPE = NewType('ConfigDictType', Dict[str, Any])
 
 
+class EvaluatorEvalTypes(Enum):
+    FLOAT_MINUS_ONE_UP_TO_ONE = "FLOAT_MINUS_ONE_UP_TO_ONE"
+    ORDER_BOOK_INFO = "ORDER_BOOK_INFO"
+
+
 class EvaluatorMatrixTypes(Enum):
     TA = "TA"
     SOCIAL = "SOCIAL"
@@ -281,11 +286,6 @@ class EvaluatorStates(Enum):
     LONG = 3
     VERY_LONG = 4
     NEUTRAL = 5
-
-
-class EvaluatorsPertinence(Enum):
-    SocialEvaluator = 0  # temp
-    TAEvaluator = 1
 
 
 class PriceStrings(Enum):

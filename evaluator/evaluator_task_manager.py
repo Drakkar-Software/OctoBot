@@ -49,6 +49,7 @@ class EvaluatorTaskManager:
         self.global_price_updater = global_price_updater
         self.symbol_evaluator = symbol_evaluator
         self.main_loop = main_loop
+        self.should_refresh_matrix_evaluation_types = True
 
         self.should_save_evaluations = CONFIG_SAVE_EVALUATION in self.config and self.config[CONFIG_SAVE_EVALUATION]
 
@@ -108,10 +109,14 @@ class EvaluatorTaskManager:
         await self.evaluator.update_ta_eval(ignored_evaluator)
 
         # update matrix
-        self.refresh_matrix()
+        self.refresh_matrix(refresh_matrix_evaluation_types=self.should_refresh_matrix_evaluation_types)
 
         # update strategies matrix
-        await self.symbol_evaluator.update_strategies_eval(self.matrix, self.exchange, ignored_evaluator)
+        await self.symbol_evaluator.update_strategies_eval(
+            self.matrix, self.exchange, ignored_evaluator,
+            refresh_matrix_evaluation_types=self.should_refresh_matrix_evaluation_types)
+
+        self.should_refresh_matrix_evaluation_types = False
 
         if finalize:
             # calculate the final result
@@ -122,7 +127,7 @@ class EvaluatorTaskManager:
 
         self.logger.debug(f"MATRIX : {self.matrix.get_matrix()}")
 
-    def refresh_matrix(self):
+    def refresh_matrix(self, refresh_matrix_evaluation_types=False):
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
 
         for ta_eval in self.evaluator.get_ta_eval_list():
@@ -133,6 +138,8 @@ class EvaluatorTaskManager:
             else:
                 self.matrix.set_eval(EvaluatorMatrixTypes.TA, ta_eval.get_name(),
                                      START_PENDING_EVAL_NOTE, self.time_frame)
+            if refresh_matrix_evaluation_types:
+                self.matrix.set_evaluator_eval_type(ta_eval.get_name(), ta_eval.get_eval_type())
 
         for social_eval in self.evaluator.get_social_eval_list():
             if social_eval.get_is_active():
@@ -142,6 +149,8 @@ class EvaluatorTaskManager:
             else:
                 self.matrix.set_eval(EvaluatorMatrixTypes.SOCIAL, social_eval.get_name(),
                                      START_PENDING_EVAL_NOTE)
+            if refresh_matrix_evaluation_types:
+                self.matrix.set_evaluator_eval_type(social_eval.get_name(), social_eval.get_eval_type())
 
         for real_time_eval in self.evaluator.get_real_time_eval_list():
             if real_time_eval.get_is_active():
@@ -151,6 +160,8 @@ class EvaluatorTaskManager:
             else:
                 self.matrix.set_eval(EvaluatorMatrixTypes.REAL_TIME, real_time_eval.get_name(),
                                      START_PENDING_EVAL_NOTE)
+            if refresh_matrix_evaluation_types:
+                self.matrix.set_evaluator_eval_type(real_time_eval.get_name(), real_time_eval.get_eval_type())
 
     def _save_evaluations_if_necessary(self):
         if self.should_save_evaluations and self.symbol_evaluator.are_all_timeframes_initialized(self.exchange):
