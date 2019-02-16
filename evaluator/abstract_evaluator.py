@@ -20,7 +20,9 @@ from abc import *
 
 from config.config import load_config
 
-from config import *
+from config import START_PENDING_EVAL_NOTE, START_EVAL_PERTINENCE, TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, \
+    EVALUATOR_CONFIG_FOLDER, CONFIG_FILE_EXT, CONFIG_EVALUATOR, INIT_EVAL_NOTE, EvaluatorEvalTypes
+
 from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 from tools.config_manager import ConfigManager
 
@@ -71,6 +73,11 @@ class AbstractEvaluator:
             return load_config(cls.get_config_file_name())
         except Exception as e:
             raise e
+
+    # Override this method when self.eval_note is other than : START_PENDING_EVAL_NOTE or float[-1:1]
+    @classmethod
+    def get_eval_type(cls):
+        return EvaluatorEvalTypes.FLOAT_MINUS_ONE_UP_TO_ONE
 
     # Used to provide a new logger for this particular indicator
     def set_logger(self, logger):
@@ -143,7 +150,7 @@ class AbstractEvaluator:
     # eval new data
     # Notify if new data is relevant
     # example :
-    # def eval_impl(self):
+    # async def eval_impl(self):
     #   for post in post_selected
     #       note = sentiment_evaluator(post.text)
     #       if(note > 10 || note < 0):
