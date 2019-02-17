@@ -15,7 +15,7 @@
 #  License along with this library.
 
 from config import CONFIG_CATEGORY_SERVICES, CONFIG_TELEGRAM, CONFIG_SERVICE_INSTANCE, CONFIG_TELEGRAM_CHANNEL, \
-    CONFIG_GROUP_MESSAGE, CONFIG_GROUP_MESSAGE_DESCRIPTION
+    CONFIG_GROUP_MESSAGE, CONFIG_GROUP_MESSAGE_DESCRIPTION, CONFIG_TELEGRAM_ALL_CHANNEL
 from services.Dispatchers.abstract_dispatcher import AbstractDispatcher
 from services.Dispatchers.dispatcher_exception import DispatcherException
 from services import TelegramService
@@ -27,7 +27,10 @@ class TelegramDispatcher(AbstractDispatcher):
 
     def __init__(self, config, main_async_loop):
         super().__init__(config, main_async_loop)
-        self.social_config = {}
+        self.channel_config = {
+            CONFIG_TELEGRAM_ALL_CHANNEL: False,
+            CONFIG_TELEGRAM_CHANNEL: []
+        }
 
         # check presence of telegram instance
         if TelegramService.is_setup_correctly(self.config):
@@ -38,17 +41,23 @@ class TelegramDispatcher(AbstractDispatcher):
                 self.logger.warning(self.REQUIRED_SERVICE_ERROR_MESSAGE)
             self.is_setup_correctly = False
 
+    # configure the whitelist of Telegram groups/channels to listen to
     # merge new config into existing config
-    def update_social_config(self, config):
+    def update_channel_config(self, config):
         if not TelegramService.is_setup_correctly(self.config):
             raise DispatcherException(f"{self.get_name()} is not usable: {self.REQUIRED_SERVICE_ERROR_MESSAGE}. "
                                       "Evaluators using Telegram channels information can't work.")
-        if CONFIG_TELEGRAM_CHANNEL in self.social_config:
-            self.social_config[CONFIG_TELEGRAM_CHANNEL].extend(chanel for chanel in config[CONFIG_TELEGRAM_CHANNEL]
-                                                               if chanel not in
-                                                               self.social_config[CONFIG_TELEGRAM_CHANNEL])
-        else:
-            self.social_config[CONFIG_TELEGRAM_CHANNEL] = config[CONFIG_TELEGRAM_CHANNEL]
+        self.channel_config[CONFIG_TELEGRAM_CHANNEL].extend(chanel for chanel in config[CONFIG_TELEGRAM_CHANNEL]
+                                                            if chanel not in
+                                                            self.channel_config[CONFIG_TELEGRAM_CHANNEL])
+        self._register_if_something_to_watch()
+
+    # if True, disable channel whitelist and listen to every group/channel it is invited to
+    def set_listen_to_all_groups_and_channels(self, activate=True):
+        self.channel_config[CONFIG_TELEGRAM_ALL_CHANNEL] = activate
+        self._register_if_something_to_watch()
+
+    def _register_if_something_to_watch(self):
         if self._something_to_watch():
             self._register_to_service()
 
@@ -58,7 +67,8 @@ class TelegramDispatcher(AbstractDispatcher):
             self.service.register_text_polling_handler(self.HANDLED_CHATS, self.dispatcher_callback)
 
     def dispatcher_callback(self, _, update):
-        if update.effective_chat["title"] in self.social_config[CONFIG_TELEGRAM_CHANNEL]:
+        if self.channel_config[CONFIG_TELEGRAM_ALL_CHANNEL] or \
+                update.effective_chat["title"] in self.channel_config[CONFIG_TELEGRAM_CHANNEL]:
             message = update.effective_message.text
             message_desc = str(update)
             self.notify_registered_clients_if_interested(message_desc,
@@ -68,8 +78,7 @@ class TelegramDispatcher(AbstractDispatcher):
                                                          )
 
     def _something_to_watch(self):
-        return CONFIG_TELEGRAM_CHANNEL in self.social_config \
-               and self.social_config[CONFIG_TELEGRAM_CHANNEL]
+        return self.channel_config[CONFIG_TELEGRAM_ALL_CHANNEL] or self.channel_config[CONFIG_TELEGRAM_CHANNEL]
 
     @staticmethod
     def _get_service_layer_dispatcher():
