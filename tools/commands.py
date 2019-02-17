@@ -24,7 +24,7 @@ from concurrent.futures import CancelledError
 from tentacles_manager.tentacle_creator.tentacle_creator import TentacleCreator
 
 from backtesting.collector.data_collector import DataCollector
-from config import TENTACLES_DEFAULT_BRANCH
+from config import TENTACLES_DEFAULT_BRANCH, TENTACLES_FORCE_CONFIRM_PARAM
 from config.config import encrypt
 from interfaces import get_bot
 from tools.logging.logging_util import get_logger
@@ -47,6 +47,9 @@ class Commands:
     @staticmethod
     def package_manager(config, commands, catch=False, force=False, default_git_branch=TENTACLES_DEFAULT_BRANCH):
         try:
+            if TENTACLES_FORCE_CONFIRM_PARAM in commands:
+                force = True
+                commands.pop(commands.index(TENTACLES_FORCE_CONFIRM_PARAM))
             tentacle_manager = TentacleManager(config)
             tentacle_manager.parse_commands(commands, force=force, default_git_branch=default_git_branch)
         except Exception as e:
