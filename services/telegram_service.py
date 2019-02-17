@@ -35,7 +35,7 @@ class TelegramService(AbstractService):
         self.chat_id = None
         self.telegram_app = None
         self.telegram_updater = None
-        self.users_dict = {}
+        self.users = []
         self.text_chat_dispatcher = {}
 
     def get_fields_description(self):
@@ -89,7 +89,7 @@ class TelegramService(AbstractService):
         if chat_type in self.text_chat_dispatcher:
             self.text_chat_dispatcher[chat_type](_, update)
         else:
-            self.logger.error(f"No handler for telegram update: {update}")
+            self.logger.error(f"No handler for telegram update of type {chat_type}, update: {update}")
 
     def add_text_handler(self):
         self.telegram_updater.dispatcher.add_handler(MessageHandler(Filters.text, self.text_handler))
@@ -98,12 +98,15 @@ class TelegramService(AbstractService):
         for handler in handlers:
             self.telegram_updater.dispatcher.add_handler(handler)
 
-    def register_user(self, user_key):
-        self.users_dict[user_key] = False
+    def is_registered(self, user_key):
+        return user_key in self.users
 
-    def ready(self, user_key):
-        self.users_dict[user_key] = True
-        if all(ready for ready in self.users_dict.values()):
+    def register_user(self, user_key):
+        self.users.append(user_key)
+
+    def start_dispatcher(self):
+        if self.users:
+            self.add_text_handler()
             self.telegram_updater.start_polling()
 
     def get_type(self):
@@ -143,6 +146,10 @@ class TelegramService(AbstractService):
                and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]) \
                and self._check_enabled_option(self.config)
 
+    @classmethod
+    def should_be_ready(cls, config):
+        return super().should_be_ready(config) and cls._check_enabled_option(config)
+
     async def send_message(self, content):
         try:
             if content:
@@ -152,7 +159,9 @@ class TelegramService(AbstractService):
             try:
                 self.telegram_api.send_message(chat_id=self.chat_id, text=content)
             except telegram.error.TimedOut as e:
-                self.logger.error(f"failed to send message : {e}")
+                self.logger.error(f"Failed to send message : {e}")
+        except telegram.error.Unauthorized as e:
+                self.logger.error(f"Failed to send message ({e}): invalid telegram configuration.")
 
     def _get_bot_url(self):
         return f"https://web.telegram.org/#/im?p={self.telegram_api.get_me().name}"
@@ -162,4 +171,7 @@ class TelegramService(AbstractService):
             return f"Successfully initialized and accessible at: {self._get_bot_url()}.", True
         except telegram.error.NetworkError as e:
             self.log_connection_error_message(e)
+            return "", False
+        except telegram.error.Unauthorized as e:
+            self.logger.error(f"Error when connecting to Telegram ({e}): invalid telegram configuration.")
             return "", False

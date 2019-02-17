@@ -16,8 +16,9 @@
 
 import twitter
 
-from config import *
-from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
+from config import CONFIG_CATEGORY_SERVICES, CONFIG_TWITTERS_ACCOUNTS, CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, \
+    CONFIG_TWITTERS_HASHTAGS, CONFIG_TWEET, CONFIG_TWEET_DESCRIPTION
+from services.Dispatchers.abstract_dispatcher import AbstractDispatcher
 from services import TwitterService
 
 
@@ -36,7 +37,7 @@ class TwitterDispatcher(AbstractDispatcher):
             self.is_setup_correctly = True
         else:
             if TwitterService.should_be_ready(config):
-                self.logger.warning("Required services are not ready, dispatcher can't start")
+                self.logger.warning(self.REQUIRED_SERVICE_ERROR_MESSAGE)
             self.is_setup_correctly = False
 
     # merge new config into existing config
@@ -84,8 +85,8 @@ class TwitterDispatcher(AbstractDispatcher):
 
     def _start_listener(self):
         for tweet in self.service.get_endpoint().GetStreamFilter(follow=self.user_ids,
-                                                                         track=self.hashtags,
-                                                                         stall_warnings=True):
+                                                                 track=self.hashtags,
+                                                                 stall_warnings=True):
             self.counter += 1
             string_tweet = self.service.get_tweet_text(tweet)
             if string_tweet:

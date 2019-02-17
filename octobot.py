@@ -27,13 +27,14 @@ from config import CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFI
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
     NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, \
     CONFIG_EVALUATORS_WILDCARD, FORCE_ASYNCIO_DEBUG_OPTION
+from services import ServiceCreator
+from services.Dispatchers.dispatcher_creator import DispatcherCreator
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from evaluator.Util.advanced_manager import AdvancedManager
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_task_manager import EvaluatorTaskManager
 from evaluator.symbol_evaluator import SymbolEvaluator
-from services import ServiceCreator
 from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
@@ -168,7 +169,7 @@ class OctoBot:
         self.logger.info("Evaluation threads creation...")
 
         # create dispatchers
-        self.dispatchers_list = EvaluatorCreator.create_dispatchers(self.config, self.async_loop)
+        self.dispatchers_list = DispatcherCreator.create_dispatchers(self.config, self.async_loop)
 
         # create Social and TA evaluators
         for crypto_currency, crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].items():
@@ -216,7 +217,8 @@ class OctoBot:
             real_time_ta_eval_list = EvaluatorCreator.create_real_time_ta_evals(self.config,
                                                                                 exchange,
                                                                                 symbol_evaluator.get_symbol(),
-                                                                                self.relevant_evaluators)
+                                                                                self.relevant_evaluators,
+                                                                                self.dispatchers_list)
             self.real_time_eval_tasks = self.real_time_eval_tasks + real_time_ta_eval_list
 
         for time_frame in self.time_frames:
