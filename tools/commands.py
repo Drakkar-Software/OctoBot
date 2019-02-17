@@ -24,6 +24,7 @@ from concurrent.futures import CancelledError
 from tentacles_manager.tentacle_creator.tentacle_creator import TentacleCreator
 
 from backtesting.collector.data_collector import DataCollector
+from config import TENTACLES_DEFAULT_BRANCH
 from config.config import encrypt
 from interfaces import get_bot
 from tools.logging.logging_util import get_logger
@@ -44,10 +45,10 @@ class Commands:
                 raise e
 
     @staticmethod
-    def package_manager(config, commands, catch=False, force=False):
+    def package_manager(config, commands, catch=False, force=False, default_git_branch=TENTACLES_DEFAULT_BRANCH):
         try:
-            package_manager_inst = TentacleManager(config)
-            package_manager_inst.parse_commands(commands, force=force)
+            tentacle_manager = TentacleManager(config)
+            tentacle_manager.parse_commands(commands, force=force, default_git_branch=default_git_branch)
         except Exception as e:
             if not catch:
                 raise e

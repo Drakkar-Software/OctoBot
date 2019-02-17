@@ -130,7 +130,7 @@ def start_octobot(starting_args):
 
             else:
                 if not tentacles_arch_exists():
-                    logger.info("No tentacles found installing default...")
+                    logger.info("No tentacles found. Installing default tentacles ...")
                     Commands.package_manager(config, ["install", "all"], force=True)
 
                 config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
@@ -228,7 +228,9 @@ def main(args=None):
     parser.add_argument('-p', '--packager', help='Start OctoBot Tentacles Manager. examples: -p install all '
                                                  'to install all tentacles packages and -p install [tentacle] to '
                                                  'install specific tentacle. Tentacles Manager allows to install, '
-                                                 'update, uninstall and reset tentacles. Use: -p help to get the '
+                                                 'update, uninstall and reset tentacles. You can specify github '
+                                                 'branches using branch= parameter '
+                                                 'Use: -p help to get the '
                                                  'Tentacle Manager help.',
                         nargs='+')
 
