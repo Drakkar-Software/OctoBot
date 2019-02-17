@@ -229,8 +229,9 @@ def main(args=None):
                                                  'to install all tentacles packages and -p install [tentacle] to '
                                                  'install specific tentacle. Tentacles Manager allows to install, '
                                                  'update, uninstall and reset tentacles. You can specify github '
-                                                 'branches using branch= parameter '
-                                                 'Use: -p help to get the '
+                                                 'branches using branch= parameter. '
+                                                 'You can also skip installation confirm inputs by adding the force '
+                                                 'parameter. Use: -p help to get the '
                                                  'Tentacle Manager help.',
                         nargs='+')
 
