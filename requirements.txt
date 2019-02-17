@@ -1,5 +1,5 @@
 # Drakkar-Software requirements
-OctoBot-Tentacles-Manager>=1.0.5
+OctoBot-Tentacles-Manager==1.0.5
 
 # Cryptocurrency trading
 python-binance
