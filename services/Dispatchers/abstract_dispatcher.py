@@ -28,6 +28,7 @@ class AbstractDispatcher(threading.Thread):
 
     _SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC = 10
     DELAY_BETWEEN_STREAMS_QUERIES = 5
+    REQUIRED_SERVICE_ERROR_MESSAGE = "Required services are not ready, dispatcher can't start"
 
     def __init__(self, config, main_async_loop):
         super().__init__()
@@ -41,7 +42,7 @@ class AbstractDispatcher(threading.Thread):
 
     @classmethod
     def get_name(cls):
-        return cls.__class__.__name__
+        return cls.__name__
 
     def notify_registered_clients_if_interested(self, notification_description, notification):
         for client in self.registered_list:
@@ -71,11 +72,12 @@ class AbstractDispatcher(threading.Thread):
 
     def run(self):
         if self.is_setup_correctly:
+            self.logger.info("Starting dispatcher ...")
+            service_level_dispatcher_if_any = self._get_service_layer_dispatcher()
+            if service_level_dispatcher_if_any is not None and self.service is not None:
+                self.service.start_dispatcher()
             if self._something_to_watch():
                 self._get_data()
-                service_level_dispatcher_if_any = self._get_service_layer_dispatcher()
-                if service_level_dispatcher_if_any is not None and self.service is not None:
-                    self.service.ready(self.get_name())
                 if not self._start_dispatcher():
                     self.logger.warning("Nothing can be monitored even though there is something to watch"
                                         ", dispatcher is going to sleep.")
