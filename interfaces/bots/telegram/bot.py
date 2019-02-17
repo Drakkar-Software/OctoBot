@@ -23,7 +23,7 @@ from interfaces.bots.interface_bot import InterfaceBot
 
 class TelegramApp(InterfaceBot):
 
-    HANDLED_CHAT = "private"
+    HANDLED_CHATS = ["private"]
 
     def __init__(self, config, telegram_service):
         super().__init__(config)
@@ -32,7 +32,7 @@ class TelegramApp(InterfaceBot):
         self.telegram_service = telegram_service
         self.telegram_service.register_user(self.get_name())
         self.telegram_service.add_handlers(self.get_bot_handlers())
-        self.telegram_service.register_text_polling_handler(self.HANDLED_CHAT, self.echo)
+        self.telegram_service.register_text_polling_handler(self.HANDLED_CHATS, self.echo)
 
         # bot will start when OctoBot's dispatchers will start
 
@@ -217,7 +217,7 @@ class TelegramApp(InterfaceBot):
     @staticmethod
     def echo(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(update.message.text)
+            update.message.reply_text(update.effective_message["text"])
 
     @staticmethod
     def enable(config, is_enabled, associated_config=CONFIG_INTERFACES_TELEGRAM):
@@ -231,7 +231,7 @@ class TelegramApp(InterfaceBot):
     def _is_valid_user(update, associated_config=CONFIG_INTERFACES_TELEGRAM):
 
         # only authorize users from a private chat
-        if update.effective_chat["type"] != TelegramApp.HANDLED_CHAT:
+        if update.effective_chat["type"] not in TelegramApp.HANDLED_CHATS:
             return False
 
         update_username = update.effective_chat["username"]

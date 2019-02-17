@@ -81,8 +81,9 @@ class TelegramService(AbstractService):
 
         set_logging_level(self.LOGGERS, logging.WARNING)
 
-    def register_text_polling_handler(self, chat_type, handler):
-        self.text_chat_dispatcher[chat_type] = handler
+    def register_text_polling_handler(self, chat_types, handler):
+        for chat_type in chat_types:
+            self.text_chat_dispatcher[chat_type] = handler
 
     def text_handler(self, _, update):
         chat_type = update.effective_chat["type"]
