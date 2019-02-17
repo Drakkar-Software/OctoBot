@@ -23,7 +23,7 @@ from services import TelegramService
 
 class TelegramDispatcher(AbstractDispatcher):
 
-    HANDLED_CHAT = "group"
+    HANDLED_CHATS = ["group", "channel"]
 
     def __init__(self, config, main_async_loop):
         super().__init__(config, main_async_loop)
@@ -55,11 +55,11 @@ class TelegramDispatcher(AbstractDispatcher):
     def _register_to_service(self):
         if not self.service.is_registered(self.get_name()):
             self.service.register_user(self.get_name())
-            self.service.register_text_polling_handler(self.HANDLED_CHAT, self.dispatcher_callback)
+            self.service.register_text_polling_handler(self.HANDLED_CHATS, self.dispatcher_callback)
 
     def dispatcher_callback(self, _, update):
         if update.effective_chat["title"] in self.social_config[CONFIG_TELEGRAM_CHANNEL]:
-            message = update.message.text
+            message = update.effective_message.text
             message_desc = str(update)
             self.notify_registered_clients_if_interested(message_desc,
                                                          {CONFIG_GROUP_MESSAGE: update,
