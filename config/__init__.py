@@ -158,6 +158,7 @@ CONFIG_SERVICE_INSTANCE = "service_instance"
 CONFIG_TELEGRAM = "telegram"
 CONFIG_TOKEN = "token"
 CONFIG_TELEGRAM_CHANNEL = "telegram-channels"
+CONFIG_TELEGRAM_ALL_CHANNEL = "*"
 CONFIG_GROUP_MESSAGE = "group-message"
 CONFIG_GROUP_MESSAGE_DESCRIPTION = "group-message-description"
 

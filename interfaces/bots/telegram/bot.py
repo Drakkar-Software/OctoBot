@@ -96,7 +96,7 @@ class TelegramApp(InterfaceBot):
             message += "/version or /v: Displays my current software version." + EOL
             message += "/help: Displays this help."
             update.message.reply_text(message)
-        else:
+        elif TelegramApp._is_authorized_chat(update):
             update.message.reply_text(UNAUTHORIZED_USER_MESSAGE)
 
     @staticmethod
@@ -107,7 +107,7 @@ class TelegramApp(InterfaceBot):
     def command_start(_, update):
         if TelegramApp._is_valid_user(update):
             update.message.reply_text(InterfaceBot.get_command_start())
-        else:
+        elif TelegramApp._is_authorized_chat(update):
             update.message.reply_text(UNAUTHORIZED_USER_MESSAGE)
 
     @staticmethod
@@ -228,10 +228,14 @@ class TelegramApp(InterfaceBot):
         return InterfaceBot.is_enabled(config, associated_config=associated_config)
 
     @staticmethod
+    def _is_authorized_chat(update):
+        return update.effective_chat["type"] in TelegramApp.HANDLED_CHATS
+
+    @staticmethod
     def _is_valid_user(update, associated_config=CONFIG_INTERFACES_TELEGRAM):
 
         # only authorize users from a private chat
-        if update.effective_chat["type"] not in TelegramApp.HANDLED_CHATS:
+        if not TelegramApp._is_authorized_chat(update):
             return False
 
         update_username = update.effective_chat["username"]
