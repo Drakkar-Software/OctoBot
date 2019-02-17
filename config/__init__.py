@@ -238,6 +238,7 @@ CONFIG_TENTACLES_KEY = "tentacles-packages"
 TENTACLE_PACKAGE_DESCRIPTION = "package_description"
 EVALUATOR_CONFIG_FOLDER = "config"
 TENTACLES_TRADING_MODE_PATH = "Mode"
+TENTACLES_DEFAULT_BRANCH = "master"
 
 # Files
 CONFIG_FILE = "config.json"
