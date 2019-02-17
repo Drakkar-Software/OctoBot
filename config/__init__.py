@@ -160,6 +160,7 @@ CONFIG_TOKEN = "token"
 CONFIG_TELEGRAM_CHANNEL = "telegram-channels"
 MESSAGE_PARSE_MODE = 'parse_mode'
 CONFIG_TELEGRAM_CHANNEL = "telegram-channel"
+CONFIG_TELEGRAM_ALL_CHANNEL = "*"
 CONFIG_GROUP_MESSAGE = "group-message"
 CONFIG_GROUP_MESSAGE_DESCRIPTION = "group-message-description"
 
