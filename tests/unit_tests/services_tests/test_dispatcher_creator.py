@@ -13,3 +13,14 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+
+from services.Dispatchers.dispatcher_creator import DispatcherCreator
+from tests.test_utils.config import load_test_config
+
+
+def test_create_dispatchers(event_loop):
+    config = load_test_config()
+    dispatchers = DispatcherCreator.create_dispatchers(config, event_loop)
+    assert len(dispatchers) == 3  # creates all dispatchers but none is ready (no config for associated services)
+    for dispatcher in dispatchers:
+        assert not dispatcher.get_is_setup_correctly()

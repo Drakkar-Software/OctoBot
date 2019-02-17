@@ -14,10 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from .service_creator import *
-from .notifier_service import *
-from .reddit_service import *
-from .telegram_service import *
-from .twitter_service import *
-from .web_service import *
-from .Dispatchers import *
+from .abstract_dispatcher import AbstractDispatcher
+from .reddit_dispatcher import RedditDispatcher
+from .twitter_dispatcher import TwitterDispatcher
+from .telegram_dispatcher import TelegramDispatcher

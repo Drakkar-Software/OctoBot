@@ -219,7 +219,8 @@ def main(args=None):
                         action='store_true')
     parser.add_argument('-no', '--no_open_web', help="Don't automatically open web interface.",
                         action='store_true')
-    parser.add_argument('-t', '--telegram', help='Start OctoBot with telegram interface.',
+    parser.add_argument('-t', '--telegram', help='Start OctoBot with telegram interface. Required to listen to '
+                                                 'telegram signals.',
                         action='store_true')
     parser.add_argument('--encrypter', help="Start the exchange api keys encrypter. This tool is useful to manually add"
                                             " exchanges configuration in your config.json without using any interface "
