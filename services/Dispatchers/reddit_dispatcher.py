@@ -17,8 +17,10 @@
 import time
 from prawcore.exceptions import RequestException, ResponseException, OAuthException, InvalidToken, ServerError
 
-from config import *
-from evaluator.Dispatchers.abstract_dispatcher import AbstractDispatcher
+from config import CONFIG_CATEGORY_SERVICES, CONFIG_REDDIT, CONFIG_SERVICE_INSTANCE, CONFIG_REDDIT_SUBREDDITS, \
+    HOURS_TO_SECONDS, DAYS_TO_SECONDS, CONFIG_REDDIT_ENTRY, CONFIG_REDDIT_ENTRY_WEIGHT
+
+from services.Dispatchers.abstract_dispatcher import AbstractDispatcher
 from services import RedditService
 
 
@@ -40,7 +42,7 @@ class RedditDispatcher(AbstractDispatcher):
             self.is_setup_correctly = True
         else:
             if RedditService.should_be_ready(config):
-                self.logger.warning("Required services are not ready, dispatcher can't start")
+                self.logger.warning(self.REQUIRED_SERVICE_ERROR_MESSAGE)
             self.is_setup_correctly = False
 
     # merge new config into existing config
@@ -127,7 +129,7 @@ class RedditDispatcher(AbstractDispatcher):
                 self.logger.exception(e)
                 self.keep_running = False
             except ResponseException as e:
-                message_complement = "this may mean that reddit login info in config.json are wrong." \
+                message_complement = "this may mean that reddit login info in config.json are invalid." \
                     if not self.credentials_ok else \
                     f"Try to continue after {self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC} seconds."
                 self.logger.error(f"Error when receiving Reddit feed: '{e}' this may mean {message_complement}")

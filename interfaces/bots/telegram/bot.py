@@ -39,8 +39,7 @@ class TelegramApp(InterfaceBot):
         self.telegram_service.add_handlers(self.get_bot_handlers())
         self.telegram_service.register_text_polling_handler(self.HANDLED_CHAT, self.echo)
 
-        # Start the Bot
-        self.telegram_service.ready(self.get_name())
+        # bot will start when OctoBot's dispatchers will start
 
     @classmethod
     def get_name(cls):
@@ -65,8 +64,7 @@ class TelegramApp(InterfaceBot):
             CommandHandler("stop", self.command_stop),
             CommandHandler("help", self.command_help),
             CommandHandler(["pause", "resume"], self.command_pause_resume),
-            MessageHandler(Filters.command, self.command_unknown),
-            MessageHandler(Filters.text, self.echo)
+            MessageHandler(Filters.command, self.command_unknown)
         ]
 
     @staticmethod

@@ -26,7 +26,7 @@ from config import CONFIG_EVALUATOR_REALTIME, CONFIG_REFRESH_RATE, PriceIndexes,
     CONFIG_TIME_FRAME
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.time_frame_manager import TimeFrameManager
-from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
+from services.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 
 
 class RealTimeEvaluator(AbstractEvaluator):
@@ -66,7 +66,7 @@ class RealTimeEvaluator(AbstractEvaluator):
 
     # to implement in subclasses if config necessary
     def set_default_config(self):
-        pass
+        self.specific_config = {}
 
     @abstractmethod
     def _refresh_data(self):

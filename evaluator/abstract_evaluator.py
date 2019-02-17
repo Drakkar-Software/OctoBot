@@ -23,7 +23,6 @@ from config.config import load_config
 from config import START_PENDING_EVAL_NOTE, START_EVAL_PERTINENCE, TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, \
     EVALUATOR_CONFIG_FOLDER, CONFIG_FILE_EXT, CONFIG_EVALUATOR, INIT_EVAL_NOTE, EVALUATOR_EVAL_DEFAULT_TYPE
 
-from evaluator.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 from tools.config_manager import ConfigManager
 
 
@@ -164,13 +163,18 @@ class AbstractEvaluator:
     def reset(self) -> None:
         self.eval_note = START_PENDING_EVAL_NOTE
 
-    # explore up to the 1st parent
+    # explore up to the 2nd degree parent
     @classmethod
-    def get_is_dispatcher_client(cls):
-        if DispatcherAbstractClient in cls.__bases__:
+    def has_class_in_parents(cls, klass):
+        if klass in cls.__bases__:
+            return True
+        elif any(klass in base.__bases__ for base in cls.__bases__):
             return True
         else:
-            return any(DispatcherAbstractClient in base.__bases__ for base in cls.__bases__)
+            for base in cls.__bases__:
+                if any(klass in super_base.__bases__ for super_base in base.__bases__):
+                    return True
+        return False
 
     @classmethod
     def get_parent_evaluator_classes(cls, higher_parent_class_limit=None):

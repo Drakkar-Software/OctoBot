@@ -18,7 +18,6 @@ from abc import ABCMeta, abstractmethod
 
 from backtesting.backtesting import Backtesting
 from tools.config_manager import ConfigManager
-from config import CONFIG_CATEGORY_SERVICES, CONFIG_SERVICE_INSTANCE
 
 
 class AbstractService:
@@ -49,8 +48,8 @@ class AbstractService:
     def register_user(self, user_key):
         pass
 
-    # Override this method if a user is to be notified as ready in this service (ie: TelegramService)
-    def ready(self, user_key):
+    # Override this method if a dispatcher is located in this service (ie: TelegramService)
+    def start_dispatcher(self):
         pass
 
     @classmethod

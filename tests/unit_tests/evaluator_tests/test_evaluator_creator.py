@@ -23,7 +23,6 @@ from config import TimeFrames, CONFIG_EVALUATORS_WILDCARD
 from evaluator.evaluator import Evaluator
 from evaluator.TA import TAEvaluator
 from evaluator.Social import SocialEvaluator
-# from evaluator.RealTime import RealTimeEvaluator
 
 
 def _get_tools():
@@ -43,12 +42,6 @@ def _assert_created_instances(instances_list, super_class, config):
         eval_instance.set_config(config)
         if eval_instance.get_is_enabled():
             assert eval_class in class_list
-
-
-def test_create_dispatchers(event_loop):
-    _, config = _get_tools()
-    dispatchers = EvaluatorCreator.create_dispatchers(config, event_loop)
-    assert len(dispatchers) == 0  # no dispatcher created because no config for associated services
 
 
 def test_create_ta_eval_list():
