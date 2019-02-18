@@ -24,7 +24,7 @@ from tools.number_util import round_into_str_with_max_digits
 class PrettyPrinter:
     @staticmethod
     def open_order_pretty_printer(order, markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, _, c = PrettyPrinter.get_markets(markdown)
         currency, market = order.get_currency_and_market()
 
         try:
@@ -40,7 +40,7 @@ class PrettyPrinter:
 
     @staticmethod
     def trade_pretty_printer(trade, markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, _, c = PrettyPrinter.get_markets(markdown)
         currency = trade.currency
         market = trade.market
 
@@ -51,8 +51,8 @@ class PrettyPrinter:
                 order_type_name = OrderConstants.TraderOrderTypeClasses[trade.order_type].__name__
             except KeyError:
                 order_type_name = trade.order_type.__class__.__name__
-        return f"{c}{order_type_name}{c}: {c}{PrettyPrinter.get_min_string_from_number(trade.quantity)} {currency}{c} " \
-            f"at {c}{PrettyPrinter.get_min_string_from_number(trade.price)} {market}{c} on " \
+        return f"{c}{order_type_name}{c}: {c}{PrettyPrinter.get_min_string_from_number(trade.quantity)} {currency}{c}" \
+            f" at {c}{PrettyPrinter.get_min_string_from_number(trade.price)} {market}{c} on " \
             f"{trade.exchange.get_name()}: {convert_timestamp_to_datetime(trade.filled_time)}"
 
     @staticmethod
@@ -86,7 +86,7 @@ class PrettyPrinter:
 
     @staticmethod
     def pretty_print_dict(dict_content, default="0", markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, _, c = PrettyPrinter.get_markets(markdown)
         if dict_content:
             result_str = DICT_BULLET_TOKEN_STR
             return f"{result_str}{c}" \
