@@ -190,9 +190,11 @@ def get_trades_history(bot=None, symbol=None):
 
 def set_risk(risk):
     traders = get_traders()
+    result_risk = None
 
     for trader in traders:
-        trader.set_risk(risk)
+        result_risk = trader.set_risk(risk)
+    return result_risk
 
 
 def get_risk():

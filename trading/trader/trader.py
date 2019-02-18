@@ -103,6 +103,7 @@ class Trader(Initializable):
             self.risk = CONFIG_TRADER_RISK_MAX
         else:
             self.risk = risk
+        return self.risk
 
     def get_exchange(self):
         return self.exchange
