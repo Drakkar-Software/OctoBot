@@ -63,7 +63,7 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_configuration(markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, b, c = PrettyPrinter.get_markets(markdown)
         message = f"{b}My configuration:{b}{EOL}{EOL}"
 
         message += f"{b}Traders: {b}{EOL}"
@@ -98,7 +98,7 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_market_status(markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, b, c = PrettyPrinter.get_markets(markdown)
         message = f"{b}My cryptocurrencies evaluations are:{b} {EOL}{EOL}"
         at_least_one_currency = False
         for currency_pair, currency_info in get_currencies_with_status().items():
@@ -107,14 +107,14 @@ class InterfaceBot:
             for exchange_name, evaluation in currency_info.items():
                 message += f"{c}- {exchange_name}: {evaluation[0]}{c}{EOL}"
         if not at_least_one_currency:
-            message += f"{c}NO_CURRENCIES_MESSAGE{c}{EOL}"
+            message += f"{c}{NO_CURRENCIES_MESSAGE}{c}{EOL}"
         message += f"{EOL}{c}My current risk is: {get_risk()}{c}"
 
         return message
 
     @staticmethod
     def get_command_trades_history(markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, b, c = PrettyPrinter.get_markets(markdown)
         has_real_trader, has_simulated_trader = has_real_and_or_simulated_traders()
         real_trades_history, simulated_trades_history = get_trades_history()
 
@@ -138,7 +138,7 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_open_orders(markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, b, c = PrettyPrinter.get_markets(markdown)
         has_real_trader, has_simulated_trader = has_real_and_or_simulated_traders()
         portfolio_real_open_orders, portfolio_simulated_open_orders = get_open_orders()
 
@@ -162,7 +162,7 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_fees(markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, b, _ = PrettyPrinter.get_markets(markdown)
         real_trader_fees, simulated_trader_fees = get_total_paid_fees()
         result_str = ""
         if real_trader_fees is not None:
@@ -201,7 +201,7 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_portfolio(markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, b, c = PrettyPrinter.get_markets(markdown)
         has_real_trader, has_simulated_trader, \
          portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
         reference_market = get_reference_market()
@@ -230,7 +230,7 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_profitability(markdown=False):
-        i, b, c = PrettyPrinter.get_markets(markdown)
+        _, b, c = PrettyPrinter.get_markets(markdown)
         has_real_trader, has_simulated_trader, \
             real_global_profitability, simulated_global_profitability, \
             real_percent_profitability, simulated_percent_profitability, \
