@@ -15,11 +15,11 @@
 #  License along with this library.
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
-from telegram.utils.helpers import escape_markdown
 
 from config import CONFIG_INTERFACES_TELEGRAM
 from interfaces.bots import EOL, LOGGER, UNAUTHORIZED_USER_MESSAGE
 from interfaces.bots.interface_bot import InterfaceBot
+from tools.pretty_printer import escape_markdown
 
 # Telegram interface bot
 # telegram markdown reminder: *bold*, _italic_, `code`, [text_link](http://github.com/)

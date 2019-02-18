@@ -48,8 +48,12 @@ class Notification:
         else:
             return False
 
-    async def notify_with_all(self, message, error_on_failure=True):
+    async def notify_with_all(self, message, error_on_failure=True, italic_markdown=True):
         try:
+            message_markdown = message
+            if italic_markdown:
+                message_markdown = f"_{message_markdown}_"
+
             # notifier
             for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
                 await self.notifier_notification_factory(notifier, message)
@@ -58,7 +62,7 @@ class Notification:
             await self.twitter_notification_factory(message, error_on_failure)
 
             # telegram
-            await self.telegram_notification_factory(message)
+            await self.telegram_notification_factory(message_markdown, markdown=True)
         except Exception as e:
             self.logger.error(f"Failed to notify all : {e}")
 
@@ -84,10 +88,10 @@ class Notification:
                in self.notification_type and \
                TelegramService.is_setup_correctly(self.config)
 
-    async def telegram_notification_factory(self, message):
+    async def telegram_notification_factory(self, message, markdown=False):
         if self.telegram_notification_available():
             telegram_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_SERVICE_INSTANCE]
-            result = await telegram_service.send_message(message)
+            result = await telegram_service.send_message(message, markdown=markdown)
             if result:
                 self.logger.info("Telegram message sent")
         else:
@@ -153,9 +157,9 @@ class Notification:
         if self.web_interface_notification_available(notification_type):
             await self.web_interface_notification_factory(level, title, message)
 
-    async def send_telegram_notification_if_necessary(self, content, notification_type=None):
+    async def send_telegram_notification_if_necessary(self, content, notification_type=None, markdown=False):
         if self.telegram_notification_available(notification_type):
-            await self.telegram_notification_factory(content)
+            await self.telegram_notification_factory(content, markdown=markdown)
 
     async def send_notifier_notification_if_necessary(self, content, notification_type=None):
         for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
@@ -176,7 +180,8 @@ class EvaluatorNotification(Notification):
         self.tweet_instance = await self.send_twitter_notification_if_necessary(notify_content,
                                                                                 CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        await self.send_telegram_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_telegram_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS,
+                                                           markdown=True)
 
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, "STATE CHANGED", notify_content,
                                                       CONFIG_NOTIFICATION_PRICE_ALERTS)
@@ -188,7 +193,7 @@ class EvaluatorNotification(Notification):
     async def notify_alert(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
         title = f"OCTOBOT ALERT : {crypto_currency_evaluator.crypto_currency} / {result}"
 
-        alert_content = PrettyPrinter.cryptocurrency_alert(
+        alert_content, alert_content_markdown = PrettyPrinter.cryptocurrency_alert(
             crypto_currency_evaluator.crypto_currency,
             symbol,
             result,
@@ -197,7 +202,8 @@ class EvaluatorNotification(Notification):
         self.tweet_instance = await self.send_twitter_notification_if_necessary(alert_content,
                                                                                 CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        await self.send_telegram_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
+        await self.send_telegram_notification_if_necessary(alert_content_markdown, CONFIG_NOTIFICATION_PRICE_ALERTS,
+                                                           markdown=True)
 
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
                                                       CONFIG_NOTIFICATION_PRICE_ALERTS)
@@ -218,17 +224,21 @@ class OrdersNotification(Notification):
     async def notify_create(self, evaluator_notification, orders):
         if orders:
             content = orders[0].trader.trader_type_str
+            content_markdown = f"*{orders[0].trader.trader_type_str}*"
             if evaluator_notification is not None:
                 self.evaluator_notification = evaluator_notification
 
             title = "Order(s) creation "
             content += title
+            content_markdown += title
             for order in orders:
                 content += f"\n- {PrettyPrinter.open_order_pretty_printer(order)}"
+                content_markdown += f"\n- {PrettyPrinter.open_order_pretty_printer(order, markdown=True)}"
 
             await self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
 
-            await self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
+            await self.send_telegram_notification_if_necessary(content_markdown, CONFIG_NOTIFICATION_TRADES,
+                                                               markdown=True)
 
             await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
                                                           CONFIG_NOTIFICATION_TRADES)
@@ -245,12 +255,13 @@ class OrdersNotification(Notification):
 
         title = "Order status updated"
 
-        content = self._build_notification_content(order_filled, orders_canceled, trade_profitability,
-                                                   portfolio_profitability, portfolio_diff, profitability)
+        content, content_markdown = self._build_notification_content(order_filled, orders_canceled, trade_profitability,
+                                                                     portfolio_profitability, portfolio_diff,
+                                                                     profitability)
 
         await self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
 
-        await self.send_telegram_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
+        await self.send_telegram_notification_if_necessary(content_markdown, CONFIG_NOTIFICATION_TRADES, markdown=True)
 
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content, CONFIG_NOTIFICATION_TRADES)
 
@@ -262,24 +273,33 @@ class OrdersNotification(Notification):
                                     portfolio_diff,
                                     profitability=False):
         content = ""
+        content_markdown = ""
         if order_filled is not None:
             content += f"\n{order_filled.trader.trader_type_str}Order(s) filled : " \
                 f"\n- {PrettyPrinter.open_order_pretty_printer(order_filled)}"
+            content_markdown += f"\n*{order_filled.trader.trader_type_str}*Order(s) filled : " \
+                f"\n- {PrettyPrinter.open_order_pretty_printer(order_filled, markdown=True)}"
 
         if orders_canceled is not None and orders_canceled:
             content += f"\n{orders_canceled[0].trader.trader_type_str}Order(s) canceled :"
+            content_markdown += f"\n*{orders_canceled[0].trader.trader_type_str}*Order(s) canceled :"
             for order in orders_canceled:
                 content += f"\n- {PrettyPrinter.open_order_pretty_printer(order)}"
+                content_markdown += f"\n- {PrettyPrinter.open_order_pretty_printer(order, markdown=True)}"
 
         if trade_profitability is not None and profitability:
             content += f"\n\nTrade profitability : {'+' if trade_profitability >= 0 else ''}" \
                 f"{round(trade_profitability * 100, 4)}%"
+            content_markdown += f"\nTrade profitability : *{'+' if trade_profitability >= 0 else ''}" \
+                f"{round(trade_profitability * 100, 4)}%*"
 
         if portfolio_profitability is not None and profitability:
             content += f"\nPortfolio profitability : {round(portfolio_profitability, 4)}% " \
                 f"{'+' if portfolio_diff >= 0 else ''}{round(portfolio_diff, 4)}%"
+            content_markdown += f"\nPortfolio profitability : `{round(portfolio_profitability, 4)}% " \
+                f"{'+' if portfolio_diff >= 0 else ''}{round(portfolio_diff, 4)}%`"
 
-        return content
+        return content, content_markdown
 
 
 class InterfaceLevel(Enum):
