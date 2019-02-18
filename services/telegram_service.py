@@ -18,9 +18,10 @@ import telegram
 from telegram.ext import Updater  # , Dispatcher
 import logging
 
-from config import *
+from config import CONFIG_TOKEN, CONFIG_USERNAMES_WHITELIST, CONFIG_CATEGORY_SERVICES, CONFIG_TELEGRAM, \
+    CONFIG_SERVICE_INSTANCE, MESSAGE_PARSE_MODE, CONFIG_INTERFACES_TELEGRAM, CONFIG_INTERFACES, CONFIG_ENABLED_OPTION
 from interfaces.bots.telegram.bot import TelegramApp
-from services.abstract_service import *
+from services.abstract_service import AbstractService
 from tools.logging.logging_util import set_logging_level
 
 
@@ -116,14 +117,17 @@ class TelegramService(AbstractService):
                and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]) \
                and self._check_enabled_option(self.config)
 
-    async def send_message(self, content):
+    async def send_message(self, content, markdown=False):
+        kwargs = {}
+        if markdown:
+            kwargs[MESSAGE_PARSE_MODE] = telegram.parsemode.ParseMode.MARKDOWN
         try:
             if content:
-                self.telegram_api.send_message(chat_id=self.chat_id, text=content)
+                self.telegram_api.send_message(chat_id=self.chat_id, text=content, **kwargs)
         except telegram.error.TimedOut:
             # retry on failing
             try:
-                self.telegram_api.send_message(chat_id=self.chat_id, text=content)
+                self.telegram_api.send_message(chat_id=self.chat_id, text=content, **kwargs)
             except telegram.error.TimedOut as e:
                 self.logger.error(f"failed to send message : {e}")
 
