@@ -142,7 +142,7 @@ NOTIFICATION_STOPPING_MESSAGE = f"OctoBot v{LONG_VERSION} stopping..."
 REAL_TRADER_STR = "[Real Trader] "
 SIMULATOR_TRADER_STR = "[Simulator] "
 PAID_FEES_STR = "Paid fees"
-DICT_BULLET_TOKEN_STR = "\n- "
+DICT_BULLET_TOKEN_STR = "\n "
 
 # DEBUG options
 CONFIG_DEBUG_OPTION_PERF = "performance-analyser"
@@ -161,6 +161,7 @@ CONFIG_TELEGRAM_CHANNEL = "telegram-channels"
 CONFIG_TELEGRAM_ALL_CHANNEL = "*"
 CONFIG_GROUP_MESSAGE = "group-message"
 CONFIG_GROUP_MESSAGE_DESCRIPTION = "group-message-description"
+MESSAGE_PARSE_MODE = 'parse_mode'
 
 # web
 CONFIG_WEB = "web"

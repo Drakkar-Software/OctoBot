@@ -19,11 +19,16 @@ from trading.trader.order import OrderConstants
 from trading.trader.portfolio import Portfolio
 from tools.timestamp_util import convert_timestamp_to_datetime
 from tools.number_util import round_into_str_with_max_digits
+from telegram.utils.helpers import escape_markdown
 
 
 class PrettyPrinter:
+
+    ORDER_TIME_FORMAT = '%m-%d %H:%M'
+
     @staticmethod
-    def open_order_pretty_printer(order):
+    def open_order_pretty_printer(order, markdown=False):
+        _, _, c = PrettyPrinter.get_markets(markdown)
         currency, market = order.get_currency_and_market()
 
         try:
@@ -33,13 +38,14 @@ class PrettyPrinter:
                 order_type_name = OrderConstants.TraderOrderTypeClasses[order.get_order_type()].__name__
             except KeyError:
                 order_type_name = order.get_order_type().__class__.__name__
-
-        return f"{order_type_name}: {PrettyPrinter.get_min_string_from_number(order.get_origin_quantity())} " \
-            f"{currency} at {PrettyPrinter.get_min_string_from_number(order.get_origin_price())} {market} on " \
-            f"{order.get_exchange().get_name()}: {convert_timestamp_to_datetime(order.get_creation_time())} "
+        return f"{c}{order_type_name}{c}: {c}{PrettyPrinter.get_min_string_from_number(order.get_origin_quantity())} " \
+            f"{currency}{c} at {c}{PrettyPrinter.get_min_string_from_number(order.get_origin_price())} {market}{c} " \
+            f" {order.get_exchange().get_name()} " \
+            f"{convert_timestamp_to_datetime(order.get_creation_time(), time_format=PrettyPrinter.ORDER_TIME_FORMAT)}"
 
     @staticmethod
-    def trade_pretty_printer(trade):
+    def trade_pretty_printer(trade, markdown=False):
+        _, _, c = PrettyPrinter.get_markets(markdown)
         currency = trade.currency
         market = trade.market
 
@@ -50,21 +56,34 @@ class PrettyPrinter:
                 order_type_name = OrderConstants.TraderOrderTypeClasses[trade.order_type].__name__
             except KeyError:
                 order_type_name = trade.order_type.__class__.__name__
-
-        return f"{order_type_name}: {PrettyPrinter.get_min_string_from_number(trade.quantity)} {currency} " \
-            f"at {PrettyPrinter.get_min_string_from_number(trade.price)} {market} on {trade.exchange.get_name()}: " \
-            f"{convert_timestamp_to_datetime(trade.filled_time)} "
+        return f"{c}{order_type_name}{c}: {c}{PrettyPrinter.get_min_string_from_number(trade.quantity)} {currency}{c}" \
+            f" at {c}{PrettyPrinter.get_min_string_from_number(trade.price)} {market}{c} " \
+            f"{trade.exchange.get_name()} " \
+            f"{convert_timestamp_to_datetime(trade.filled_time, time_format=PrettyPrinter.ORDER_TIME_FORMAT)}"
 
     @staticmethod
     def cryptocurrency_alert(crypto_currency, symbol, result, final_eval):
-        return f"OctoBot ALERT : #{crypto_currency}\n Symbol : #{symbol.replace('/', '')}\n " \
+        alert = f"OctoBot ALERT : #{crypto_currency}\n Symbol : #{symbol.replace('/', '')}\n " \
             f"Result : {str(result).split('.')[1]}\n Evaluation : {final_eval}"
+        alert_markdown = f"*OctoBot ALERT* : `{crypto_currency}`\n Symbol : `{symbol.replace('/', '')}`\n " \
+            f"Result : `{str(result).split('.')[1]}`\n Evaluation : `{escape_markdown(str(final_eval))}`"
+        return alert, alert_markdown
 
     @staticmethod
-    def global_portfolio_pretty_print(global_portfolio, separator="\n"):
-        result = [f"{PrettyPrinter.get_min_string_from_number(amounts[Portfolio.TOTAL])} " \
-                  f"({PrettyPrinter.get_min_string_from_number(amounts[Portfolio.AVAILABLE])}) {currency}"
-                  for currency, amounts in global_portfolio.items() if amounts[Portfolio.TOTAL] > 0]
+    def global_portfolio_pretty_print(global_portfolio, separator="\n", markdown=False):
+        result = []
+        for currency, amounts in global_portfolio.items():
+            if amounts[Portfolio.TOTAL] > 0:
+                # fill lines with empty spaces if necessary
+                total = PrettyPrinter.get_min_string_from_number(amounts[Portfolio.TOTAL])
+                if markdown:
+                    total = "{:<10}".format(total)
+                available = f"({PrettyPrinter.get_min_string_from_number(amounts[Portfolio.AVAILABLE])})"
+                if markdown:
+                    available = "{:<12}".format(available)
+
+                holding_str = f"{total} {available} {currency}"
+                result.append(holding_str)
 
         return separator.join(result)
 
@@ -75,10 +94,12 @@ class PrettyPrinter:
         return f"{PrettyPrinter.get_min_string_from_number(profitability, 5)} {reference} {difference}"
 
     @staticmethod
-    def pretty_print_dict(dict_content, default="0"):
+    def pretty_print_dict(dict_content, default="0", markdown=False):
+        _, _, c = PrettyPrinter.get_markets(markdown)
         if dict_content:
             result_str = DICT_BULLET_TOKEN_STR
-            return f"{result_str}{DICT_BULLET_TOKEN_STR.join(f'{value} {key}' for key, value in dict_content.items())}"
+            return f"{result_str}{c}" \
+                f"{DICT_BULLET_TOKEN_STR.join(f'{value} {key}' for key, value in dict_content.items())}{c}"
         else:
             return default
 
@@ -90,7 +111,7 @@ class PrettyPrinter:
 
     @staticmethod
     def get_min_string_from_number(number, max_digits=8):
-        if round(number, max_digits) == 0.0:
+        if number is None or round(number, max_digits) == 0.0:
             return "0"
         else:
             if number % 1 != 0:
@@ -100,3 +121,11 @@ class PrettyPrinter:
                 return number_str
             else:
                 return "{:f}".format(number).split(".")[0]
+
+    # return markers for italic, bold and code
+    @staticmethod
+    def get_markets(markdown=False):
+        if markdown:
+            return "_", "*", "`"
+        else:
+            return "", "", ""

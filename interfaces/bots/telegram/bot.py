@@ -19,6 +19,10 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 from config import CONFIG_INTERFACES_TELEGRAM
 from interfaces.bots import EOL, LOGGER, UNAUTHORIZED_USER_MESSAGE
 from interfaces.bots.interface_bot import InterfaceBot
+from tools.pretty_printer import escape_markdown
+
+# Telegram interface bot
+# telegram markdown reminder: *bold*, _italic_, `code`, [text_link](http://github.com/)
 
 
 class TelegramApp(InterfaceBot):
@@ -65,38 +69,38 @@ class TelegramApp(InterfaceBot):
     @staticmethod
     def command_unknown(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text("Unfortunately, I don't know the command: {0}".
-                                      format(update.effective_message.text))
+            update.message.reply_markdown(f"`Unfortunately, I don't know the command:` "
+                                          f"{escape_markdown(update.effective_message.text)}.")
 
     @staticmethod
     def command_help(_, update):
         if TelegramApp._is_valid_user(update):
-            message = "My OctoBot skills:" + EOL + EOL
-            message += "/start: Displays my startup message." + EOL
-            message += "/ping: Shows for how long I'm working." + EOL
-            message += "/portfolio or /pf: Displays my current portfolio." + EOL
-            message += "/open_orders or /oo: Displays my current open orders." + EOL
-            message += "/trades_history or /th: Displays my trades history since I started." + EOL
-            message += "/profitability or /pb: Displays the profitability I made since I started." + EOL
-            message += "/market_status or /ms: Displays my understanding of the market and my risk parameter." + EOL
-            message += "/fees or /fs: Displays the total amount of fees I paid since I started." + EOL
-            message += "/configuration or /cf: Displays my traders, exchanges, evaluators, strategies and trading " \
-                       "mode." + EOL
-            message += "******* - Trading Orders - *******" + EOL
-            message += "/sell_all : Cancels all my orders related to the currency in parameter and instantly " \
-                       "liquidate my holdings in this currency for my reference market." + EOL
-            message += "/sell_all_currencies : Cancels all my orders and instantly liquidate all my currencies " \
-                       "for my reference market." + EOL
-            message += "******** - Management - ********" + EOL
-            message += "/set_risk: Changes my current risk setting into your command's parameter." + EOL
-            message += "/refresh_real_trader or /rrt: Force OctoBot's real trader data refresh using exchange data. " \
-                       "Should normally not be necessary." + EOL
-            message += "/pause or /resume: Pause or resume me." + EOL
-            message += "/stop: Stops me." + EOL
-            message += "/version or /v: Displays my current software version." + EOL
-            message += "/help: Displays this help."
-            update.message.reply_text(message)
-        elif TelegramApp._is_authorized_chat(update):
+            message = "* - My OctoBot skills - *" + EOL + EOL
+            message += "/start: `Displays my startup message.`" + EOL
+            message += "/ping: `Shows for how long I'm working.`" + EOL
+            message += "/portfolio or /pf: `Displays my current portfolio.`" + EOL
+            message += "/open\_orders or /oo: `Displays my current open orders.`" + EOL
+            message += "/trades\_history or /th: `Displays my trades history since I started.`" + EOL
+            message += "/profitability or /pb: `Displays the profitability I made since I started.`" + EOL
+            message += "/market\_status or /ms: `Displays my understanding of the market and my risk parameter.`" + EOL
+            message += "/fees or /fs: `Displays the total amount of fees I paid since I started.`" + EOL
+            message += "/configuration or /cf: `Displays my traders, exchanges, evaluators, strategies and trading " \
+                       "mode.`" + EOL
+            message += "* - Trading Orders - *" + EOL
+            message += "/sell\_all : `Cancels all my orders related to the currency in parameter and instantly " \
+                       "liquidate my holdings in this currency for my reference market.`" + EOL
+            message += "/sell\_all\_currencies : `Cancels all my orders and instantly liquidate all my currencies " \
+                       "for my reference market.`" + EOL
+            message += "* - Management - *" + EOL
+            message += "/set\_risk: `Changes my current risk setting into your command's parameter.`" + EOL
+            message += "/refresh\_real\_trader or /rrt: `Force OctoBot's real trader data refresh using exchange " \
+                       "data. Should normally not be necessary.`" + EOL
+            message += "/pause or /resume: `Pause or resume me.`" + EOL
+            message += "/stop: `Stops me.`" + EOL
+            message += "/version or /v: `Displays my current software version.`" + EOL
+            message += "/help: `Displays this help.`"
+            update.message.reply_markdown(message)
+        else:
             update.message.reply_text(UNAUTHORIZED_USER_MESSAGE)
 
     @staticmethod
@@ -106,7 +110,7 @@ class TelegramApp(InterfaceBot):
     @staticmethod
     def command_start(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(InterfaceBot.get_command_start())
+            update.message.reply_markdown(InterfaceBot.get_command_start(markdown=True))
         elif TelegramApp._is_authorized_chat(update):
             update.message.reply_text(UNAUTHORIZED_USER_MESSAGE)
 
@@ -114,75 +118,75 @@ class TelegramApp(InterfaceBot):
     def command_stop(_, update):
         # TODO add confirmation
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text("I'm leaving this world...")
+            update.message.reply_markdown("_I'm leaving this world..._")
             InterfaceBot.set_command_stop()
 
     @staticmethod
     def command_version(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(InterfaceBot.get_command_version())
+            update.message.reply_markdown(f"`{InterfaceBot.get_command_version()}`")
 
     def command_pause_resume(self, _, update):
         if TelegramApp._is_valid_user(update):
             if self.paused:
-                update.message.reply_text(f"Resuming...{EOL}I will restart trading when i see opportunities !")
+                update.message.reply_markdown(f"_Resuming..._{EOL}`I will restart trading when i see opportunities !`")
                 self.set_command_resume()
             else:
-                update.message.reply_text(f"Pausing...{EOL}I'm cancelling my orders.")
+                update.message.reply_markdown(f"_Pausing..._{EOL}`I'm cancelling my orders.`")
                 self.set_command_pause()
 
     @staticmethod
     def command_ping(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(InterfaceBot.get_command_ping())
+            update.message.reply_markdown(f"`{InterfaceBot.get_command_ping()}`")
 
     @staticmethod
     def command_risk(_, update):
         if TelegramApp._is_valid_user(update):
             try:
-                InterfaceBot.set_command_risk(float(TelegramApp.get_command_param("/set_risk", update)))
-                update.message.reply_text("New risk set successfully.")
+                result_risk = InterfaceBot.set_command_risk(float(TelegramApp.get_command_param("/set_risk", update)))
+                update.message.reply_markdown(f"`Risk successfully set to {result_risk}.`")
             except Exception:
-                update.message.reply_text("Failed to set new risk, please provide a number between 0 and 1.")
+                update.message.reply_markdown("`Failed to set new risk, please provide a number between 0 and 1.`")
 
     @staticmethod
     def command_profitability(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(InterfaceBot.get_command_profitability())
+            update.message.reply_markdown(InterfaceBot.get_command_profitability(markdown=True))
 
     @staticmethod
     def command_fees(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(InterfaceBot.get_command_fees())
+            update.message.reply_markdown(InterfaceBot.get_command_fees(markdown=True))
 
     @staticmethod
     def command_sell_all_currencies(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(InterfaceBot.get_command_sell_all_currencies())
+            update.message.reply_markdown(f"`{InterfaceBot.get_command_sell_all_currencies()}`")
 
     @staticmethod
     def command_sell_all(_, update):
         if TelegramApp._is_valid_user(update):
             currency = TelegramApp.get_command_param("/sell_all", update)
             if not currency:
-                update.message.reply_text("Require a currency in parameter of this command.")
+                update.message.reply_markdown("`Require a currency in parameter of this command.`")
             else:
-                update.message.reply_text(InterfaceBot.get_command_sell_all(currency))
+                update.message.reply_markdown(f"`{InterfaceBot.get_command_sell_all(currency)}`")
 
     @staticmethod
     def command_portfolio(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(InterfaceBot.get_command_portfolio())
+            update.message.reply_markdown(InterfaceBot.get_command_portfolio(markdown=True))
 
     @staticmethod
     def command_open_orders(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(InterfaceBot.get_command_open_orders())
+            update.message.reply_markdown(InterfaceBot.get_command_open_orders(markdown=True))
 
     @staticmethod
     def command_trades_history(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(InterfaceBot.get_command_trades_history())
+            update.message.reply_markdown(InterfaceBot.get_command_trades_history(markdown=True))
 
     # refresh current order lists and portfolios and reload tham from exchanges
     @staticmethod
@@ -191,28 +195,28 @@ class TelegramApp(InterfaceBot):
             result = "Refresh"
             try:
                 InterfaceBot.set_command_real_traders_refresh()
-                update.message.reply_text(result + " successful")
+                update.message.reply_markdown(f"`{result} successful`")
             except Exception as e:
-                update.message.reply_text(f"{result} failure: {e}")
+                update.message.reply_markdown(f"`{result} failure: {e}`")
 
     # Displays my trades, exchanges, evaluators, strategies and trading
     @staticmethod
     def command_configuration(_, update):
         if TelegramApp._is_valid_user(update):
             try:
-                update.message.reply_text(InterfaceBot.get_command_configuration())
+                update.message.reply_markdown(InterfaceBot.get_command_configuration(markdown=True))
             except Exception:
-                update.message.reply_text("I'm unfortunately currently unable to show you my configuration. "
-                                          "Please wait for my initialization to complete.")
+                update.message.reply_markdown("`I'm unfortunately currently unable to show you my configuration. "
+                                              "Please wait for my initialization to complete.`")
 
     @staticmethod
     def command_market_status(_, update):
         if TelegramApp._is_valid_user(update):
             try:
-                update.message.reply_text(InterfaceBot.get_command_market_status())
+                update.message.reply_markdown(InterfaceBot.get_command_market_status(markdown=True))
             except Exception:
-                update.message.reply_text("I'm unfortunately currently unable to show you my market evaluations, "
-                                          "please retry in a few seconds.")
+                update.message.reply_markdown("`I'm unfortunately currently unable to show you my market evaluations, "
+                                              "please retry in a few seconds.`")
 
     @staticmethod
     def echo(_, update):
@@ -243,7 +247,9 @@ class TelegramApp(InterfaceBot):
         is_valid, white_list = InterfaceBot._is_valid_user(update_username, associated_config=associated_config)
 
         if white_list and not is_valid:
-            LOGGER.error(f"An unauthorized Telegram user is trying to talk to me: username: "
+            LOGGER.
+            
+            (f"An unauthorized Telegram user is trying to talk to me: username: "
                          f"{update_username}, first_name: {update.effective_chat['first_name']}, "
                          f"text: {update.effective_message['text']}")
 
