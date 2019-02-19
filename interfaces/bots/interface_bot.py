@@ -30,11 +30,14 @@ from tools.timestamp_util import convert_timestamp_to_datetime
 
 
 class InterfaceBot:
-    LOGGER = get_logger("InterfaceBot")
 
     def __init__(self, config):
         self.config = config
         self.paused = False
+
+    @classmethod
+    def get_logger(cls):
+        return get_logger(cls.__name__)
 
     @staticmethod
     def enable(config, is_enabled, associated_config=None):
