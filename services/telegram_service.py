@@ -100,6 +100,9 @@ class TelegramService(AbstractService):
         for handler in handlers:
             self.telegram_updater.dispatcher.add_handler(handler)
 
+    def add_error_handler(self, handler):
+        self.telegram_updater.dispatcher.add_error_handler(handler)
+
     def is_registered(self, user_key):
         return user_key in self.users
 
