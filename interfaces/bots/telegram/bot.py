@@ -18,7 +18,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 from telegram.constants import MAX_MESSAGE_LENGTH
 
 from config import CONFIG_INTERFACES_TELEGRAM
-from interfaces.bots import EOL, LOGGER, UNAUTHORIZED_USER_MESSAGE
+from interfaces.bots import EOL, UNAUTHORIZED_USER_MESSAGE
 from interfaces.bots.interface_bot import InterfaceBot
 from tools.pretty_printer import escape_markdown
 
@@ -37,6 +37,7 @@ class TelegramApp(InterfaceBot):
         self.telegram_service = telegram_service
         self.telegram_service.register_user(self.get_name())
         self.telegram_service.add_handlers(self.get_bot_handlers())
+        self.telegram_service.add_error_handler(self.command_error)
         self.telegram_service.register_text_polling_handler(self.HANDLED_CHATS, self.echo)
 
         # bot will start when OctoBot's dispatchers will start
@@ -256,9 +257,9 @@ class TelegramApp(InterfaceBot):
         is_valid, white_list = InterfaceBot._is_valid_user(update_username, associated_config=associated_config)
 
         if white_list and not is_valid:
-            LOGGER.error(f"An unauthorized Telegram user is trying to talk to me: username: "
-                         f"{update_username}, first_name: {update.effective_chat['first_name']}, "
-                         f"text: {update.effective_message['text']}")
+            TelegramApp.get_logger().error(f"An unauthorized Telegram user is trying to talk to me: username: "
+                                           f"{update_username}, first_name: {update.effective_chat['first_name']}, "
+                                           f"text: {update.effective_message['text']}")
 
         return is_valid
 

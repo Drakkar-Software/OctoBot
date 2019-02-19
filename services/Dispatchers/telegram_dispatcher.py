@@ -47,8 +47,8 @@ class TelegramDispatcher(AbstractDispatcher):
         if not TelegramService.is_setup_correctly(self.config):
             raise DispatcherException(f"{self.get_name()} is not usable: {self.REQUIRED_SERVICE_ERROR_MESSAGE}. "
                                       "Evaluators using Telegram channels information can't work.")
-        self.channel_config[CONFIG_TELEGRAM_CHANNEL].extend(chanel for chanel in config[CONFIG_TELEGRAM_CHANNEL]
-                                                            if chanel not in
+        self.channel_config[CONFIG_TELEGRAM_CHANNEL].extend(channel for channel in config[CONFIG_TELEGRAM_CHANNEL]
+                                                            if channel not in
                                                             self.channel_config[CONFIG_TELEGRAM_CHANNEL])
         self._register_if_something_to_watch()
 
