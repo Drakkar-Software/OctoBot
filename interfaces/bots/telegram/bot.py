@@ -15,6 +15,7 @@
 #  License along with this library.
 
 from telegram.ext import CommandHandler, MessageHandler, Filters
+from telegram.constants import MAX_MESSAGE_LENGTH
 
 from config import CONFIG_INTERFACES_TELEGRAM
 from interfaces.bots import EOL, LOGGER, UNAUTHORIZED_USER_MESSAGE
@@ -69,8 +70,8 @@ class TelegramApp(InterfaceBot):
     @staticmethod
     def command_unknown(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(f"`Unfortunately, I don't know the command:` "
-                                          f"{escape_markdown(update.effective_message.text)}.")
+            TelegramApp._send_message(update, f"`Unfortunately, I don't know the command:` "
+                                              f"{escape_markdown(update.effective_message.text)}.")
 
     @staticmethod
     def command_help(_, update):
@@ -110,83 +111,84 @@ class TelegramApp(InterfaceBot):
     @staticmethod
     def command_start(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(InterfaceBot.get_command_start(markdown=True))
+            TelegramApp._send_message(update, InterfaceBot.get_command_start(markdown=True))
         elif TelegramApp._is_authorized_chat(update):
-            update.message.reply_text(UNAUTHORIZED_USER_MESSAGE)
+            TelegramApp._send_message(update, UNAUTHORIZED_USER_MESSAGE)
 
     @staticmethod
     def command_stop(_, update):
         # TODO add confirmation
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown("_I'm leaving this world..._")
+            TelegramApp._send_message(update, "_I'm leaving this world..._")
             InterfaceBot.set_command_stop()
 
     @staticmethod
     def command_version(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(f"`{InterfaceBot.get_command_version()}`")
+            TelegramApp._send_message(update, f"`{InterfaceBot.get_command_version()}`")
 
     def command_pause_resume(self, _, update):
         if TelegramApp._is_valid_user(update):
             if self.paused:
-                update.message.reply_markdown(f"_Resuming..._{EOL}`I will restart trading when i see opportunities !`")
+                TelegramApp._send_message(update,
+                                          f"_Resuming..._{EOL}`I will restart trading when i see opportunities !`")
                 self.set_command_resume()
             else:
-                update.message.reply_markdown(f"_Pausing..._{EOL}`I'm cancelling my orders.`")
+                TelegramApp._send_message(update, f"_Pausing..._{EOL}`I'm cancelling my orders.`")
                 self.set_command_pause()
 
     @staticmethod
     def command_ping(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(f"`{InterfaceBot.get_command_ping()}`")
+            TelegramApp._send_message(update, f"`{InterfaceBot.get_command_ping()}`")
 
     @staticmethod
     def command_risk(_, update):
         if TelegramApp._is_valid_user(update):
             try:
                 result_risk = InterfaceBot.set_command_risk(float(TelegramApp.get_command_param("/set_risk", update)))
-                update.message.reply_markdown(f"`Risk successfully set to {result_risk}.`")
+                TelegramApp._send_message(update, f"`Risk successfully set to {result_risk}.`")
             except Exception:
-                update.message.reply_markdown("`Failed to set new risk, please provide a number between 0 and 1.`")
+                TelegramApp._send_message(update, "`Failed to set new risk, please provide a number between 0 and 1.`")
 
     @staticmethod
     def command_profitability(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(InterfaceBot.get_command_profitability(markdown=True))
+            TelegramApp._send_message(update, InterfaceBot.get_command_profitability(markdown=True))
 
     @staticmethod
     def command_fees(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(InterfaceBot.get_command_fees(markdown=True))
+            TelegramApp._send_message(update, InterfaceBot.get_command_fees(markdown=True))
 
     @staticmethod
     def command_sell_all_currencies(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(f"`{InterfaceBot.get_command_sell_all_currencies()}`")
+            TelegramApp._send_message(update, f"`{InterfaceBot.get_command_sell_all_currencies()}`")
 
     @staticmethod
     def command_sell_all(_, update):
         if TelegramApp._is_valid_user(update):
             currency = TelegramApp.get_command_param("/sell_all", update)
             if not currency:
-                update.message.reply_markdown("`Require a currency in parameter of this command.`")
+                TelegramApp._send_message(update, "`Require a currency in parameter of this command.`")
             else:
-                update.message.reply_markdown(f"`{InterfaceBot.get_command_sell_all(currency)}`")
+                TelegramApp._send_message(update, f"`{InterfaceBot.get_command_sell_all(currency)}`")
 
     @staticmethod
     def command_portfolio(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(InterfaceBot.get_command_portfolio(markdown=True))
+            TelegramApp._send_message(update, InterfaceBot.get_command_portfolio(markdown=True))
 
     @staticmethod
     def command_open_orders(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(InterfaceBot.get_command_open_orders(markdown=True))
+            TelegramApp._send_message(update, InterfaceBot.get_command_open_orders(markdown=True))
 
     @staticmethod
     def command_trades_history(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_markdown(InterfaceBot.get_command_trades_history(markdown=True))
+            TelegramApp._send_message(update, InterfaceBot.get_command_trades_history(markdown=True))
 
     # refresh current order lists and portfolios and reload tham from exchanges
     @staticmethod
@@ -195,33 +197,40 @@ class TelegramApp(InterfaceBot):
             result = "Refresh"
             try:
                 InterfaceBot.set_command_real_traders_refresh()
-                update.message.reply_markdown(f"`{result} successful`")
+                TelegramApp._send_message(update, f"`{result} successful`")
             except Exception as e:
-                update.message.reply_markdown(f"`{result} failure: {e}`")
+                TelegramApp._send_message(update, f"`{result} failure: {e}`")
 
     # Displays my trades, exchanges, evaluators, strategies and trading
     @staticmethod
     def command_configuration(_, update):
         if TelegramApp._is_valid_user(update):
             try:
-                update.message.reply_markdown(InterfaceBot.get_command_configuration(markdown=True))
+                TelegramApp._send_message(update, InterfaceBot.get_command_configuration(markdown=True))
             except Exception:
-                update.message.reply_markdown("`I'm unfortunately currently unable to show you my configuration. "
-                                              "Please wait for my initialization to complete.`")
+                TelegramApp._send_message(update, "`I'm unfortunately currently unable to show you my configuration. "
+                                                  "Please wait for my initialization to complete.`")
 
     @staticmethod
     def command_market_status(_, update):
         if TelegramApp._is_valid_user(update):
             try:
-                update.message.reply_markdown(InterfaceBot.get_command_market_status(markdown=True))
+                TelegramApp._send_message(update, InterfaceBot.get_command_market_status(markdown=True))
             except Exception:
-                update.message.reply_markdown("`I'm unfortunately currently unable to show you my market evaluations, "
-                                              "please retry in a few seconds.`")
+                TelegramApp._send_message(update, "`I'm unfortunately currently unable to show you my market "
+                                                  "evaluations, please retry in a few seconds.`")
+
+    @staticmethod
+    def command_error(_, update, error):
+        TelegramApp.get_logger().exception(error)
+        if TelegramApp._is_valid_user(update):
+            TelegramApp._send_message(update,
+                                      f"Failed to perform this command {update.message.text} : `{error}`")
 
     @staticmethod
     def echo(_, update):
         if TelegramApp._is_valid_user(update):
-            update.message.reply_text(update.effective_message["text"])
+            TelegramApp._send_message(update, update.effective_message["text"], markdown=False)
 
     @staticmethod
     def enable(config, is_enabled, associated_config=CONFIG_INTERFACES_TELEGRAM):
@@ -252,3 +261,12 @@ class TelegramApp(InterfaceBot):
                          f"text: {update.effective_message['text']}")
 
         return is_valid
+
+    @staticmethod
+    def _send_message(update, message, markdown=True):
+        messages = InterfaceBot._split_messages_if_too_long(message, MAX_MESSAGE_LENGTH, EOL)
+        for m in messages:
+            if markdown:
+                update.message.reply_markdown(m)
+            else:
+                update.message.reply_text(m)
