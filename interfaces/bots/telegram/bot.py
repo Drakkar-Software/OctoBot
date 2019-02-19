@@ -247,9 +247,7 @@ class TelegramApp(InterfaceBot):
         is_valid, white_list = InterfaceBot._is_valid_user(update_username, associated_config=associated_config)
 
         if white_list and not is_valid:
-            LOGGER.
-            
-            (f"An unauthorized Telegram user is trying to talk to me: username: "
+            LOGGER.error(f"An unauthorized Telegram user is trying to talk to me: username: "
                          f"{update_username}, first_name: {update.effective_chat['first_name']}, "
                          f"text: {update.effective_message['text']}")
 
