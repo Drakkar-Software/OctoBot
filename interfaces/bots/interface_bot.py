@@ -30,10 +30,11 @@ from tools.timestamp_util import convert_timestamp_to_datetime
 
 
 class InterfaceBot:
+    LOGGER = get_logger("InterfaceBot")
+
     def __init__(self, config):
         self.config = config
         self.paused = False
-        self.logger = get_logger(self.__class__.__name__)
 
     @staticmethod
     def enable(config, is_enabled, associated_config=None):
@@ -298,3 +299,25 @@ class InterfaceBot:
     def set_command_resume(self):
         set_enable_trading(True)
         self.paused = False
+
+    @staticmethod
+    def _split_messages_if_too_long(message, max_length, preferred_separator):
+        if len(message) >= max_length:
+            # split message using preferred_separator as separator
+            messages_list = []
+            first_part = message[:max_length]
+            end_index = first_part.rfind(preferred_separator)
+            if end_index != -1:
+                messages_list.append(message[:end_index])
+            else:
+                messages_list.append(message[:max_length])
+                end_index = len(first_part)-1
+
+            if end_index < len(message) - 1:
+                remaining = message[end_index+1:]
+                return messages_list + InterfaceBot._split_messages_if_too_long(remaining, max_length,
+                                                                                preferred_separator)
+            else:
+                return messages_list
+        else:
+            return [message]
