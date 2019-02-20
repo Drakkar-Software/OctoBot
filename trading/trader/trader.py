@@ -423,8 +423,11 @@ class Trader(Initializable):
     @staticmethod
     def update_order_with_exchange_order(exchange_order, order):
         order.status = Trader.parse_status(exchange_order)
+        order.total_cost = exchange_order[ExchangeConstantsOrderColumns.COST.value]
         order.filled_quantity = exchange_order[ExchangeConstantsOrderColumns.FILLED.value]
         order.filled_price = exchange_order[ExchangeConstantsOrderColumns.PRICE.value]
+        if not order.filled_price and order.filled_quantity:
+            order.filled_price = order.total_cost/order.filled_quantity
         order.taker_or_maker = Trader._parse_type(exchange_order)
         order.fee = exchange_order[ExchangeConstantsOrderColumns.FEE.value]
         if order.fee is None:
