@@ -311,35 +311,6 @@ def get_global_portfolio_currencies_amounts():
     return real_global_portfolio, simulated_global_portfolio
 
 
-def get_trades_by_times_and_prices(symbol, side, force_timezone=False):
-    simulated_trades_times = []
-    simulated_trades_prices = []
-
-    real_trades_times = []
-    real_trades_prices = []
-
-    real_times = None
-    simulated_times = None
-
-    traders = get_traders()
-
-    for trader in traders:
-        for trade in trader.get_trades_manager().get_trade_history():
-            if trade.symbol == symbol:
-                if trade.side == side:
-                    if trader.get_simulate():
-                        simulated_trades_times.append(trade.filled_time)
-                        simulated_trades_prices.append(trade.price)
-                    else:
-                        real_trades_times.append(trade.filled_time)
-                        real_trades_prices.append(trade.price)
-
-        real_times = convert_timestamps_to_datetime(real_trades_times, force_timezone=force_timezone)
-        simulated_times = convert_timestamps_to_datetime(simulated_trades_times, force_timezone=force_timezone)
-
-    return real_trades_prices, real_times, simulated_trades_prices, simulated_times
-
-
 def get_matrix_list():
     return {
         symbol_evaluator.get_symbol():

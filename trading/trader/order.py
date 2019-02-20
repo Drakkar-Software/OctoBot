@@ -48,6 +48,7 @@ class Order:
     market_total_fees: float = 0
     filled_quantity: float = 0
     filled_price: float = 0
+    total_cost: float = 0
     fee: Dict[str, Union[str, float]] = None
     currency: str = None
     market: str = None
@@ -196,6 +197,9 @@ class Order:
     def get_filled_price(self):
         return self.filled_price
 
+    def get_total_cost(self):
+        return self.total_cost
+
     def get_status(self):
         return self.status
 
@@ -309,6 +313,7 @@ class BuyMarketOrder(Order):
             self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
+            self.total_cost = self.filled_price*self.filled_quantity
             self.fee = self.get_computed_fee()
             self.executed_time = self.generate_executed_time(simulated_time)
 
@@ -327,6 +332,7 @@ class BuyLimitOrder(Order):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
+                self.total_cost = self.filled_price*self.filled_quantity
                 self.fee = self.get_computed_fee()
                 self.executed_time = self.generate_executed_time(simulated_time)
 
@@ -345,6 +351,7 @@ class SellMarketOrder(Order):
             self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
+            self.total_cost = self.filled_price*self.filled_quantity
             self.fee = self.get_computed_fee()
             self.executed_time = self.generate_executed_time(simulated_time)
 
@@ -363,6 +370,7 @@ class SellLimitOrder(Order):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
+                self.total_cost = self.filled_price*self.filled_quantity
                 self.fee = self.get_computed_fee()
                 self.executed_time = self.generate_executed_time(simulated_time)
 
@@ -377,6 +385,7 @@ class StopLossOrder(Order):
             self.status = OrderStatus.FILLED
             self.filled_price = self.origin_price
             self.filled_quantity = self.origin_quantity
+            self.total_cost = self.filled_price*self.filled_quantity
             self.executed_time = self.generate_executed_time(simulated_time)
             if not self.trader.simulate:
                 await self.trader.create_artificial_order(TraderOrderType.SELL_MARKET, self.symbol, self.origin_price,
