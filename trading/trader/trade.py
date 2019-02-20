@@ -39,6 +39,7 @@ class Trade:
     order_id: str = field(init=False, repr=False)
     order_type: Any = field(init=False, repr=False)
     price: float = field(init=False, repr=False)
+    cost: float = field(init=False, repr=False)
     quantity: float = field(init=False, repr=False)
     side: TradeOrderSide = field(init=False, repr=False)
     simulated: bool = field(init=False, repr=False)
@@ -48,6 +49,7 @@ class Trade:
         self.currency, self.market = self.order.get_currency_and_market()
         self.quantity = self.order.get_filled_quantity()
         self.price = self.order.get_filled_price()
+        self.cost = self.order.get_total_cost()
         self.order_type = self.order.get_order_type()
         self.final_status = self.order.get_status()
         self.fee = self.order.fee
