@@ -137,11 +137,12 @@ function create_trades(trades, trader){
         const data_trade_description = trades["trade_description"];
         const data_order_side = trades["order_side"];
 
-        const marker_size = trader === "Simulator" ? 16 : 18;
-        const marker_opacity = trader === "Simulator" ? 0.6 : 0.75;
+        const marker_size = trader === "Simulator" ? 14 : 16;
+        const marker_opacity = trader === "Simulator" ? 0.5 : 0.65;
 
         const sell_color = "#ff0000";
         const buy_color = "#009900";
+        const border_line_color = "#b6b8c3";
         const colors = [];
         $.each(data_order_side, function (index, value) {
             if (value === "sell") {
@@ -151,7 +152,7 @@ function create_trades(trades, trader){
             }
         });
 
-        const line_with = trader === "Simulator" ? 0 : 2;
+        const line_with = trader === "Simulator" ? 0 : 1;
 
         return {
             x: data_time,
@@ -161,11 +162,11 @@ function create_trades(trades, trader){
             text: data_trade_description,
             marker: {
                 color: colors,
-                // color: buy_color,
                 size: marker_size,
                 opacity: marker_opacity,
                 line: {
-                    width: line_with
+                    width: line_with,
+					color: border_line_color
                 }
             },
             xaxis: 'x',
