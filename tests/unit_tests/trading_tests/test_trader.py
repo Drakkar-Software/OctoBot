@@ -581,6 +581,7 @@ class TestTrader:
             "status": OrderStatus.PARTIALLY_FILLED,
             "fee": 0.001,
             "price": 10.1444215411,
+            "cost": 100.1444215411,
             "filled": 1.568415145687741563132,
             "timestamp": timestamp
         }
@@ -591,6 +592,7 @@ class TestTrader:
         assert order_to_test.filled_quantity == 1.568415145687741563132
         assert order_to_test.filled_price == 10.1444215411
         assert order_to_test.fee == 0.001
+        assert order_to_test.total_cost == 100.1444215411
         assert order_to_test.executed_time == exchange_inst.get_uniform_timestamp(timestamp)
 
         self.stop(trader_inst)
