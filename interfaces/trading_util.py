@@ -99,8 +99,7 @@ def force_real_traders_refresh():
     for trader in get_bot().get_exchange_traders().values():
         if trader.is_enabled():
             at_least_one = True
-            get_bot().run_in_main_asyncio_loop(trader.force_refresh_portfolio())
-            get_bot().run_in_main_asyncio_loop(trader.force_refresh_orders())
+            get_bot().run_in_main_asyncio_loop(trader.force_refresh_orders_and_portfolio())
 
     if not at_least_one:
         raise RuntimeError("no real trader to update.")

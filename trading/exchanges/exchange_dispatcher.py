@@ -22,6 +22,7 @@ from config import ExchangeConstantsMarketPropertyColumns, DEFAULT_REST_RETRY_CO
 from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_symbol_data import SymbolData
+from trading.exchanges.exchange_exceptions import MissingOrderException
 
 """
 This class supervise exchange call by :
@@ -195,10 +196,15 @@ class ExchangeDispatcher(AbstractExchange):
 
     # ORDERS
     async def get_order(self, order_id, symbol=None):
-        if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
+        if not self._web_socket_available() \
+                or not self.exchange_personal_data.get_orders_are_initialized()\
+                or not self.exchange_personal_data.has_order(order_id):
             await self.exchange.get_order(order_id, symbol=symbol)
 
-        return self.exchange_personal_data.get_order(order_id)
+        if self.exchange_personal_data.has_order(order_id):
+            return self.exchange_personal_data.get_order(order_id)
+        else:
+            raise MissingOrderException(order_id)
 
     async def get_all_orders(self, symbol=None, since=None, limit=None):
         if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():

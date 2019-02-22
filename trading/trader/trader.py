@@ -207,6 +207,8 @@ class Trader(Initializable):
                                                              new_order.get_origin_price(),
                                                              new_order.origin_stop_price)
 
+            self.logger.info(f"Created order on {self.exchange.get_name()}: {created_order}")
+
             # get real order from exchange
             new_order = self.parse_exchange_order_to_order_instance(created_order)
 
@@ -377,6 +379,10 @@ class Trader(Initializable):
                 order = self.parse_exchange_order_to_order_instance(open_order)
                 async with self.portfolio.get_lock():
                     await self.create_order(order, self.portfolio, True)
+
+    async def force_refresh_orders_and_portfolio(self, portfolio=None):
+        await self.force_refresh_portfolio(portfolio)
+        await self.force_refresh_orders(portfolio)
 
     async def force_refresh_portfolio(self, portfolio=None):
         if not self.simulate:
