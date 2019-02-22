@@ -23,6 +23,7 @@ from backtesting.backtesting import Backtesting
 from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
 from tools.logging.logging_util import get_logger
 from trading.trader.order import Order, StopLossLimitOrder, StopLossOrder
+from trading.exchanges.exchange_exceptions import MissingOrderException
 
 
 class OrdersManager:
@@ -178,8 +179,12 @@ class OrdersManager:
             try:
                 # call update status
                 await self._update_orders_status()
+            except MissingOrderException as e:
+                self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
+                                  f"Forcing real trader refresh. ({e})")
+                self.trader.force_refresh_orders_and_portfolio()
             except Exception as e:
-                self.logger.error("Error when updating orders")
+                self.logger.error(f"Error when updating orders ({e})")
                 self.logger.exception(e)
 
             await asyncio.sleep(self.order_refresh_time)
