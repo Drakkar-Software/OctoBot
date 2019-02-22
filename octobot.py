@@ -203,7 +203,7 @@ class OctoBot:
                         # notify that exchange doesn't support this symbol
                         else:
                             if not self.backtesting_enabled:
-                                self.logger.warning(f"{exchange.get_name()} doesn't support {symbol}")
+                                self.logger.error(f"{exchange.get_name()} doesn't support {symbol}")
 
         self._check_required_evaluators()
 
