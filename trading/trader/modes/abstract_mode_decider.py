@@ -16,7 +16,6 @@
 
 from tools.logging.logging_util import get_logger
 from abc import *
-from queue import Queue
 from ccxt import InsufficientFunds
 
 from config import INIT_EVAL_NOTE
@@ -30,16 +29,13 @@ class AbstractTradingModeDecider:
         self.trading_mode = trading_mode
         self.symbol_evaluator = symbol_evaluator
         self.config = symbol_evaluator.get_config()
+        self.symbol = symbol_evaluator.get_symbol()
+        self.exchange = exchange
+        self.logger = get_logger(self.__class__.__name__)
         self.final_eval = INIT_EVAL_NOTE
         self.state = None
-        self.keep_running = True
-        self.exchange = exchange
-        self.symbol = symbol_evaluator.get_symbol()
-        self.is_computing = False
-        self.logger = get_logger(self.__class__.__name__)
 
         self.notifier = EvaluatorNotification(self.config)
-        self.queue = Queue()
 
     # create real and/or simulating orders in trader instances
     async def create_final_state_orders(self, evaluator_notification, creator_key):
@@ -90,9 +86,6 @@ class AbstractTradingModeDecider:
         except Exception as e:
             self.logger.error(f"Error when finalizing: {e}")
             self.logger.exception(e)
-
-    def stop(self):
-        self.keep_running = False
 
     # called by cancel_symbol_open_orders => return true if OctoBot should cancel all orders for a symbol including
     # orders already existing when OctoBot started up
