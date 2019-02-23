@@ -221,21 +221,33 @@ class OctoBot:
                                                                                 self.dispatchers_list)
             self.real_time_eval_tasks = self.real_time_eval_tasks + real_time_ta_eval_list
 
-        for time_frame in self.time_frames:
-            if exchange.get_exchange_manager().time_frame_exists(time_frame.value, symbol_evaluator.get_symbol()):
-                self.symbol_tasks_manager[time_frame] = \
-                    EvaluatorTaskManager(self.config,
-                                         time_frame,
-                                         global_price_updater,
-                                         symbol_evaluator,
-                                         exchange,
-                                         self.exchange_trading_modes[exchange.get_name()],
-                                         real_time_ta_eval_list,
-                                         self.async_loop,
-                                         self.relevant_evaluators)
-            else:
-                self.logger.warning(f"{exchange.get_name()} exchange is not supporting the required time frame: "
-                                    f"'{time_frame.value}' for {symbol_evaluator.get_symbol()}.")
+        if self.time_frames:
+            for time_frame in self.time_frames:
+                if exchange.get_exchange_manager().time_frame_exists(time_frame.value, symbol_evaluator.get_symbol()):
+                    self.symbol_tasks_manager[time_frame] = \
+                        EvaluatorTaskManager(self.config,
+                                             time_frame,
+                                             global_price_updater,
+                                             symbol_evaluator,
+                                             exchange,
+                                             self.exchange_trading_modes[exchange.get_name()],
+                                             real_time_ta_eval_list,
+                                             self.async_loop,
+                                             self.relevant_evaluators)
+                else:
+                    self.logger.warning(f"{exchange.get_name()} exchange is not supporting the required time frame: "
+                                        f"'{time_frame.value}' for {symbol_evaluator.get_symbol()}.")
+        else:
+            self.symbol_tasks_manager[None] = \
+                EvaluatorTaskManager(self.config,
+                                     None,
+                                     global_price_updater,
+                                     symbol_evaluator,
+                                     exchange,
+                                     self.exchange_trading_modes[exchange.get_name()],
+                                     real_time_ta_eval_list,
+                                     self.async_loop,
+                                     self.relevant_evaluators)
 
     def _check_required_evaluators(self):
         if self.symbol_tasks_manager:
@@ -269,7 +281,7 @@ class OctoBot:
             task_list.append(updater.start_update_loop())
 
         for real_time_eval in self.real_time_eval_tasks:
-            task_list.append(real_time_eval .start_task())
+            task_list.append(real_time_eval.start_task())
 
         for social_eval in self.social_eval_tasks:
             task_list.append(social_eval.start_task())

@@ -47,7 +47,8 @@ class Evaluator:
 
     def set_time_frame(self, time_frame):
         self.time_frame = time_frame
-        self.history_time = time_frame.value
+        if time_frame is not None:
+            self.history_time = time_frame.value
 
     def set_history_time(self, history_time):
         self.history_time = history_time

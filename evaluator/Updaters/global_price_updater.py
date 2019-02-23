@@ -34,28 +34,27 @@ class GlobalPriceUpdater:
         self.evaluator_task_manager_by_time_frame_by_symbol = {}
         self.refreshed_times = {}
         self.time_frame_last_update = {}
-        self.symbols = None
+        self.symbols = []
         self.symbol_evaluators = []
         self.watcher = None
         self.in_backtesting = False
 
     # add a time frame to watch and its related evaluator task manager
     def register_evaluator_task_manager(self, time_frame, evaluator_task_manager):
-        if time_frame not in self.evaluator_task_manager_by_time_frame_by_symbol:
-            self.evaluator_task_manager_by_time_frame_by_symbol[time_frame] = {}
+        if time_frame is not None:
+            if time_frame not in self.evaluator_task_manager_by_time_frame_by_symbol:
+                self.evaluator_task_manager_by_time_frame_by_symbol[time_frame] = {}
 
-        # one evaluator_task_manager per time frame per symbol
-        symbol = evaluator_task_manager.get_symbol()
-        self.evaluator_task_manager_by_time_frame_by_symbol[time_frame][symbol] = evaluator_task_manager
+            # one evaluator_task_manager per time frame per symbol
+            symbol = evaluator_task_manager.get_symbol()
+            self.evaluator_task_manager_by_time_frame_by_symbol[time_frame][symbol] = evaluator_task_manager
 
-        if self.symbols is None:
-            self.symbols = []
-        if symbol not in self.symbols:
-            self.symbols.append(symbol)
+            if symbol not in self.symbols:
+                self.symbols.append(symbol)
 
-        symbol_evaluator = evaluator_task_manager.get_symbol_evaluator()
-        if symbol_evaluator not in self.symbol_evaluators:
-            self.symbol_evaluators.append(symbol_evaluator)
+            symbol_evaluator = evaluator_task_manager.get_symbol_evaluator()
+            if symbol_evaluator not in self.symbol_evaluators:
+                self.symbol_evaluators.append(symbol_evaluator)
 
     async def start_update_loop(self):
 
@@ -85,7 +84,8 @@ class GlobalPriceUpdater:
                         self.logger.error(f"exception when triggering update: {e}")
                         self.logger.exception(e)
             else:
-                self.logger.warning("no time frames to monitor, going to sleep.")
+                self.logger.warning("No time frames to monitor, going to sleep. "
+                                    "This is normal if you did not activate any technical analysis evaluator.")
 
         except Exception as e:
             self.logger.exception(e)
@@ -169,7 +169,7 @@ class GlobalPriceUpdater:
         except CancelledError as e:
             raise e
         except Exception as e:
-            self.logger.error(f" when refreshing data for time frame {time_frame}: {e}")
+            self.logger.error(f" Error when refreshing data for time frame {time_frame}: {e}")
             self.logger.exception(e)
 
     # notify the time frame's evaluator task manager to refresh its data
@@ -205,7 +205,13 @@ class GlobalPriceUpdater:
         self.keep_running = False
 
     def get_refreshed_times(self, time_frame, symbol):
-        return self.refreshed_times[time_frame][symbol]
+        if time_frame in self.refreshed_times:
+            return self.refreshed_times[time_frame][symbol]
+        else:
+            return 0
+
+    def has_this_symbol_in_update_list(self, symbol):
+        return symbol in self.symbols
 
     def set_watcher(self, watcher):
         self.watcher = watcher
