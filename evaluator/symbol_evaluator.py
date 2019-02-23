@@ -175,7 +175,7 @@ class SymbolEvaluator:
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
         for evaluator_task in self.evaluator_task_managers[exchange.get_name()].values():
-            if evaluator_task.get_refreshed_times() == 0:
+            if evaluator_task.get_refreshed_times() == 0 and evaluator_task.has_symbol_in_update_list():
                 self.finalize_enabled_list[exchange.get_name()] = False
 
     def get_trader(self, exchange):
