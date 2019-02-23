@@ -98,6 +98,8 @@ class EvaluatorTaskManager:
                 return_val = self.symbol_evaluator.are_all_timeframes_initialized(self.exchange)
             else:
                 return True
+        elif not self.has_symbol_in_update_list():
+            return True
         else:
             return_val = False
         if not return_val:
@@ -169,6 +171,9 @@ class EvaluatorTaskManager:
 
     def get_refreshed_times(self):
         return self.global_price_updater.get_refreshed_times(self.time_frame, self.symbol)
+
+    def has_symbol_in_update_list(self):
+        return self.global_price_updater.has_this_symbol_in_update_list(self.symbol)
 
     def get_evaluator(self):
         return self.evaluator
