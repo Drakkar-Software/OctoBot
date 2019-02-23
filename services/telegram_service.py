@@ -91,7 +91,7 @@ class TelegramService(AbstractService):
         if chat_type in self.text_chat_dispatcher:
             self.text_chat_dispatcher[chat_type](_, update)
         else:
-            self.logger.error(f"No handler for telegram update of type {chat_type}, update: {update}")
+            self.logger.info(f"No handler for telegram update of type {chat_type}, update: {update}")
 
     def add_text_handler(self):
         self.telegram_updater.dispatcher.add_handler(MessageHandler(Filters.text, self.text_handler))
