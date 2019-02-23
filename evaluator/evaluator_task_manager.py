@@ -59,7 +59,7 @@ class EvaluatorTaskManager:
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
         self.matrix_exporter = MatrixExporter(self.matrix, self.symbol)
 
-        self.task_name = f"TA TASK MANAGER - {self.symbol} - {self.exchange.get_name()} - {self.time_frame}"
+        self.task_name = f"Evaluator TASK MANAGER - {self.symbol} - {self.exchange.get_name()} - {self.time_frame}"
         self.logger = get_logger(self.task_name)
 
         # Create Evaluator

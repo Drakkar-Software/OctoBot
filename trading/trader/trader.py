@@ -62,6 +62,8 @@ class Trader(Initializable):
 
         self.notifier = EvaluatorNotification(self.config)
 
+        self.trading_modes = []
+
         if order_refresh_time is not None:
             self.order_manager.set_order_refresh_time(order_refresh_time)
 
@@ -471,6 +473,13 @@ class Trader(Initializable):
                 return TraderOrderType.SELL_LIMIT
             elif order_type == TradeOrderType.MARKET:
                 return TraderOrderType.SELL_MARKET
+
+    def register_trading_mode(self, trading_mode):
+        self.trading_modes.append(trading_mode)
+
+    async def call_order_update_callback(self, order):
+        for trading_mode in self.trading_modes:
+            await trading_mode.order_update_callback(order)
 
     def get_order_manager(self):
         return self.order_manager

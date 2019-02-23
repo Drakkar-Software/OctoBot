@@ -162,6 +162,10 @@ class OctoBot:
                 except RuntimeError as e:
                     self.logger.error(e.args[0])
                     raise e
+
+                # register trading modes on traders
+                exchange_trader.register_trading_mode(self.trading_mode)
+                exchange_trader_simulator.register_trading_mode(self.trading_mode)
             else:
                 self.logger.error(f"{exchange_class_string} exchange not found")
 
