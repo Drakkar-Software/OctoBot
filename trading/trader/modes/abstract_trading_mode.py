@@ -33,6 +33,7 @@ class AbstractTradingMode:
 
     def __init__(self, config, exchange):
         self.config = config
+        self.exchange = exchange
 
         self.trading_config = None
         self.creators = {}
@@ -40,7 +41,6 @@ class AbstractTradingMode:
         self.deciders_without_keys = {}
         self.strategy_instances_by_classes = {}
         self.symbol_evaluators = {}
-        self.exchange = exchange
 
     @classmethod
     def get_name(cls):
