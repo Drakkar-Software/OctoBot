@@ -16,7 +16,7 @@
 
 from tools.logging.logging_util import get_logger
 
-from config import TimeFramesMinutes, TimeFrames, CONFIG_TIME_FRAME
+from config import TimeFramesMinutes, TimeFrames, CONFIG_TIME_FRAME, DEFAULT_DISPLAY_TIME_FRAME
 
 
 def _sort_time_frames(time_frames):
@@ -34,6 +34,18 @@ class TimeFrameManager:
     @staticmethod
     def sort_time_frames(time_frames):
         return _sort_time_frames(time_frames)
+
+    @staticmethod
+    def sort_config_time_frames(config):
+        config[CONFIG_TIME_FRAME] = TimeFrameManager.sort_time_frames(config[CONFIG_TIME_FRAME])
+
+    @staticmethod
+    def get_display_time_frame(config):
+        if DEFAULT_DISPLAY_TIME_FRAME in TimeFrameManager.get_config_time_frame(config):
+            return DEFAULT_DISPLAY_TIME_FRAME
+        else:
+            # else: return largest time frame
+            return config[CONFIG_TIME_FRAME][-1]
 
     @staticmethod
     def get_previous_time_frame(config_time_frames, time_frame, origin_time_frame):
