@@ -138,7 +138,7 @@ class OrdersManager:
     # TODO : currently blocking, may implement queue if needed
     async def force_update_order_status(self, blocking=True, simulated_time=False):
         if blocking:
-            await self._update_orders_status(simulated_time=simulated_time)
+            return await self._update_orders_status(simulated_time=simulated_time)
         else:
             raise NotImplementedError("force_update_order_status(blocking=False) not implemented")
 
@@ -149,6 +149,7 @@ class OrdersManager:
         Finally ask cancellation and filling process if it is required
         """
 
+        failed_order_updates = []
         # update all prices
         await self._update_last_symbol_list(True)
 
@@ -162,13 +163,19 @@ class OrdersManager:
                     odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
 
                 if odr in self.order_list:
-                    await odr.update_order_status(simulated_time=simulated_time)
+                    try:
+                        await odr.update_order_status(simulated_time=simulated_time)
 
-                    if odr.get_status() == OrderStatus.FILLED:
-                        self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} (ID : {odr.get_id()})"
-                                         f" filled on {self.trader.get_exchange().get_name()} "
-                                         f"at {odr.get_filled_price()}")
-                        await odr.close_order()
+                        if odr.get_status() == OrderStatus.FILLED:
+                            self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} (ID : {odr.get_id()})"
+                                             f" filled on {self.trader.get_exchange().get_name()} "
+                                             f"at {odr.get_filled_price()}")
+                            await odr.close_order()
+                    except MissingOrderException as e:
+                        self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
+                                          f"Will force a real trader refresh. ({e})")
+                        failed_order_updates.append(e.order_id)
+        return failed_order_updates
 
     async def poll_update(self):
         """
@@ -178,11 +185,10 @@ class OrdersManager:
         while self.keep_running:
             try:
                 # call update status
-                await self._update_orders_status()
-            except MissingOrderException as e:
-                self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
-                                  f"Forcing real trader refresh. ({e})")
-                self.trader.force_refresh_orders_and_portfolio()
+                failed_order_updates = await self._update_orders_status()
+                if failed_order_updates:
+                    self.logger.info(f"Forcing real trader refresh.")
+                    self.trader.force_refresh_orders_and_portfolio()
             except Exception as e:
                 self.logger.error(f"Error when updating orders ({e})")
                 self.logger.exception(e)
