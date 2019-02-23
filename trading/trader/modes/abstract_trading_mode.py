@@ -178,7 +178,7 @@ class AbstractTradingMode:
         if not self.trading_config:
             self.set_default_config()
 
-    # to implement in subclasses if config necessary
+    # to implement in subclasses if config is necessary
     def set_default_config(self):
         pass
 
