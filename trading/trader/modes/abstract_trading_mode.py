@@ -21,7 +21,7 @@ from abc import *
 from config.config import load_config
 from config import CONFIG_FILE_EXT, EVALUATOR_CONFIG_FOLDER, \
     TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH, \
-    TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT, TENTACLE_DEFAULT_CONFIG
+    TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT, TENTACLE_DEFAULT_CONFIG, OrderStatus
 from evaluator import Strategies
 from evaluator.Util.advanced_manager import AdvancedManager
 from tools.class_inspector import get_deep_class_from_string
@@ -41,6 +41,10 @@ class AbstractTradingMode:
         self.deciders_without_keys = {}
         self.strategy_instances_by_classes = {}
         self.symbol_evaluators = {}
+
+    # method automatically called when an order is filled, override in subclasses if useful
+    async def order_filled_callback(self, order):
+        pass
 
     @classmethod
     def get_name(cls):
@@ -107,6 +111,10 @@ class AbstractTradingMode:
     @abstractmethod
     def create_creators(self, symbol, symbol_evaluator) -> None:
         raise NotImplementedError("create_creators not implemented")
+
+    async def order_update_callback(self, order):
+        if order.get_status() == OrderStatus.FILLED:
+            await self.order_filled_callback(order)
 
     @classmethod
     # Description of the trading mode, used as documentation
