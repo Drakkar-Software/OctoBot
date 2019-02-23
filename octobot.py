@@ -26,7 +26,7 @@ from backtesting.backtesting import Backtesting
 from config import CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
     NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, \
-    CONFIG_EVALUATORS_WILDCARD, FORCE_ASYNCIO_DEBUG_OPTION
+    CONFIG_EVALUATORS_WILDCARD, FORCE_ASYNCIO_DEBUG_OPTION, TimeFrames
 from services import ServiceCreator
 from services.Dispatchers.dispatcher_creator import DispatcherCreator
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
@@ -86,7 +86,13 @@ class OctoBot:
 
         # Init time frames using enabled strategies
         EvaluatorCreator.init_time_frames_from_strategies(self.config)
-        self.time_frames = TimeFrameManager.get_config_time_frame(self.config)
+        self.time_frames = copy.copy(TimeFrameManager.get_config_time_frame(self.config))
+
+        # Init display time frame
+        config_time_frames = TimeFrameManager.get_config_time_frame(self.config)
+        if TimeFrames.ONE_HOUR not in config_time_frames:
+            config_time_frames.append(TimeFrames.ONE_HOUR)
+            TimeFrameManager.sort_config_time_frames(self.config)
 
         # Init relevant evaluator names list using enabled strategies
         self.relevant_evaluators = EvaluatorCreator.get_relevant_evaluators_from_strategies(self.config)

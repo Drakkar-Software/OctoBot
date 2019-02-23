@@ -15,11 +15,12 @@
 #  License along with this library.
 
 from backtesting.backtesting import Backtesting
-from config import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING, WATCHED_SYMBOLS_TIME_FRAME
+from config import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING
 from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
     get_symbol_data_history
 from tools.timestamp_util import convert_timestamps_to_datetime, convert_timestamp_to_datetime
+from tools.time_frame_manager import TimeFrameManager
 from interfaces.trading_util import get_trades_history
 from interfaces.web.models.trading import get_symbol_time_frames
 
@@ -92,13 +93,8 @@ def get_watched_symbol_data(symbol):
             evaluators = bot.get_symbol_evaluator_list()
             if evaluators and symbol in evaluators:
                 symbol_evaluator = evaluators[symbol]
-                etms = symbol_evaluator.get_evaluator_task_managers(exchange)
-                if etms:
-                    if WATCHED_SYMBOLS_TIME_FRAME in etms:
-                        time_frame = WATCHED_SYMBOLS_TIME_FRAME
-                    else:
-                        time_frame = next(iter(etms))
-                    return _get_candles_reply(exchange, symbol_evaluator, time_frame)
+                time_frame = TimeFrameManager.get_display_time_frame(bot.get_config())
+                return _get_candles_reply(exchange, symbol_evaluator, time_frame)
     except KeyError:
         return {}
     return {}
@@ -127,10 +123,8 @@ def get_first_symbol_data():
             evaluators = bot.get_symbol_evaluator_list()
             if evaluators:
                 symbol_evaluator = _find_symbol_evaluator_with_data(evaluators, exchange)
-                etms = symbol_evaluator.get_evaluator_task_managers(exchange)
-                if etms:
-                    time_frame = next(iter(etms))
-                    return _get_candles_reply(exchange, symbol_evaluator, time_frame)
+                time_frame = TimeFrameManager.get_display_time_frame(bot.get_config())
+                return _get_candles_reply(exchange, symbol_evaluator, time_frame)
     except KeyError:
         return {}
     return {}

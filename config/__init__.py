@@ -542,7 +542,7 @@ class PlatformsName(Enum):
 
 
 # web user settings
-WATCHED_SYMBOLS_TIME_FRAME = TimeFrames.ONE_HOUR
+DEFAULT_DISPLAY_TIME_FRAME = TimeFrames.ONE_HOUR
 CONFIG_WATCHED_SYMBOLS = "watched_symbols"
 
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='
