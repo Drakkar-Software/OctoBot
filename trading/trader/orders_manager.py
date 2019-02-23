@@ -155,6 +155,7 @@ class OrdersManager:
 
         for order in copy.copy(self.order_list):
 
+            order_filled = False
             # ask orders to update their status
             async with order.get_lock():
                 odr = order
@@ -167,6 +168,7 @@ class OrdersManager:
                         await odr.update_order_status(simulated_time=simulated_time)
 
                         if odr.get_status() == OrderStatus.FILLED:
+                            order_filled = True
                             self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} (ID : {odr.get_id()})"
                                              f" filled on {self.trader.get_exchange().get_name()} "
                                              f"at {odr.get_filled_price()}")
@@ -175,8 +177,6 @@ class OrdersManager:
                         self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
                                           f"Will force a real trader refresh. ({e})")
                         failed_order_updates.append(e.order_id)
-                    except InsufficientFunds as e:
-                        self.logger.error(f"Not enough funds to create order: {e} (updating {odr}).")
         return failed_order_updates
 
     async def poll_update(self):
