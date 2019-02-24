@@ -178,6 +178,9 @@ class AbstractTradingMode:
         if not self.trading_config:
             self.set_default_config()
 
+    def get_trading_config_value(self, key):
+        return self.trading_config[key]
+
     # to implement in subclasses if config is necessary
     def set_default_config(self):
         pass

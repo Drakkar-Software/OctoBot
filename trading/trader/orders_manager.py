@@ -142,6 +142,23 @@ class OrdersManager:
         else:
             raise NotImplementedError("force_update_order_status(blocking=False) not implemented")
 
+    async def _update_order_status(self, order, failed_order_updates, simulated_time=False):
+        order_filled = False
+        try:
+            await order.update_order_status(simulated_time=simulated_time)
+
+            if order.get_status() == OrderStatus.FILLED:
+                order_filled = True
+                self.logger.info(f"{order.get_order_symbol()} {order.get_name()} (ID : {order.get_id()})"
+                                 f" filled on {self.trader.get_exchange().get_name()} "
+                                 f"at {order.get_filled_price()}")
+                await order.close_order()
+        except MissingOrderException as e:
+            self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
+                              f"Will force a real trader refresh. ({e})")
+            failed_order_updates.append(e.order_id)
+        return order_filled
+
     async def _update_orders_status(self, simulated_time=False):
         """
         Prepare order status updating by getting price data
@@ -177,6 +194,8 @@ class OrdersManager:
                         self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
                                           f"Will force a real trader refresh. ({e})")
                         failed_order_updates.append(e.order_id)
+            if order_filled:
+                await self.trader.call_order_update_callback(order)
         return failed_order_updates
 
     async def poll_update(self):
