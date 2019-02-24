@@ -181,8 +181,14 @@ class SymbolEvaluator:
     def get_trader(self, exchange):
         return self.traders[exchange.get_name()]
 
+    def has_trader(self, exchange):
+        return exchange.get_name() in self.traders
+
     def get_trader_simulator(self, exchange):
         return self.trader_simulators[exchange.get_name()]
+
+    def has_trader_simulator(self, exchange):
+        return exchange.get_name() in self.trader_simulators
 
     def get_deciders(self, exchange):
         return self.trading_mode_instances[exchange.get_name()].get_deciders(self.symbol)
