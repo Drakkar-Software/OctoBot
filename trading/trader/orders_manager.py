@@ -17,7 +17,7 @@
 import asyncio
 from concurrent.futures import CancelledError
 import copy
-from ccxt.async_support import BaseError
+from ccxt.async_support import BaseError, InsufficientFunds
 
 from backtesting.backtesting import Backtesting
 from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
@@ -175,6 +175,8 @@ class OrdersManager:
                         self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
                                           f"Will force a real trader refresh. ({e})")
                         failed_order_updates.append(e.order_id)
+                    except InsufficientFunds as e:
+                        self.logger.error(f"Not enough funds to create order: {e} (updating {odr}).")
         return failed_order_updates
 
     async def poll_update(self):
