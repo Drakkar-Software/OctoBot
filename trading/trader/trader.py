@@ -190,14 +190,14 @@ class Trader(Initializable):
         return new_order
 
     async def create_artificial_order(self, order_type, symbol, current_price, quantity, price, linked_portfolio):
-        market_sell = self.create_order_instance(order_type=order_type,
-                                                 symbol=symbol,
-                                                 current_price=current_price,
-                                                 quantity=quantity,
-                                                 price=price,
-                                                 linked_portfolio=linked_portfolio)
+        order = self.create_order_instance(order_type=order_type,
+                                           symbol=symbol,
+                                           current_price=current_price,
+                                           quantity=quantity,
+                                           price=price,
+                                           linked_portfolio=linked_portfolio)
         async with self.get_portfolio().get_lock():
-            await self.create_order(market_sell, self.get_portfolio())
+            await self.create_order(order, self.get_portfolio())
 
     async def _create_not_loaded_order(self, order, new_order, portfolio) -> Order:
         if not self.simulate and not self.check_if_self_managed(new_order.get_order_type()):

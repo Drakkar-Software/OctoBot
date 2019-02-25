@@ -388,8 +388,11 @@ class StopLossOrder(Order):
             self.total_cost = self.filled_price*self.filled_quantity
             self.executed_time = self.generate_executed_time(simulated_time)
             if not self.trader.simulate:
+                for order in self.linked_orders:
+                    await self.trader.cancel_order(order)
                 await self.trader.create_artificial_order(TraderOrderType.SELL_MARKET, self.symbol, self.origin_price,
-                                                    self.origin_quantity, self.origin_price, self.linked_portfolio)
+                                                          self.origin_quantity, self.origin_price,
+                                                          self.linked_portfolio)
 
 
 # TODO
