@@ -61,5 +61,6 @@ $(document).ready(function() {
     update_pairs_colors();
     $(".watched_element").each(function () {
         $(this).click(addOrRemoveWatchedSymbol);
-    })
+    });
+    $('#open_orders_datatable').DataTable();
 });
