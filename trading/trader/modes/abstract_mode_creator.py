@@ -230,6 +230,9 @@ class AbstractTradingModeCreator:
         symbol_min_amount = symbol_limit[Ecmsc.LIMITS_AMOUNT.value][Ecmsc.LIMITS_AMOUNT_MIN.value]
         order_min_amount = symbol_limit[Ecmsc.LIMITS_COST.value][Ecmsc.LIMITS_COST_MIN.value]
 
+        if symbol_min_amount is None:
+            symbol_min_amount = 0
+
         # short cases => sell => need this currency
         if state == EvaluatorStates.VERY_SHORT or state == EvaluatorStates.SHORT:
             return portfolio.get_currency_portfolio(currency) > symbol_min_amount
