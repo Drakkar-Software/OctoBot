@@ -156,16 +156,19 @@ def _add_trading_modes_requirements(trading_modes, strategy_config):
     default_config_key = "default-config"
     requirements_count_key = "requirements-min-count"
     for classKey, klass in trading_modes.items():
-        required_strategies, required_strategies_count = klass.get_required_strategies_names_and_count()
-        if required_strategies:
-            strategy_config[trading_mode_key][classKey][requirements_key] = \
-                [strategy for strategy in required_strategies]
-            strategy_config[trading_mode_key][classKey][default_config_key] = \
-                [strategy for strategy in klass.get_default_strategies()]
-            strategy_config[trading_mode_key][classKey][requirements_count_key] = required_strategies_count
-        else:
-            strategy_config[trading_mode_key][classKey][requirements_key] = []
-            strategy_config[trading_mode_key][classKey][requirements_count_key] = 0
+        try:
+            required_strategies, required_strategies_count = klass.get_required_strategies_names_and_count()
+            if required_strategies:
+                strategy_config[trading_mode_key][classKey][requirements_key] = \
+                    [strategy for strategy in required_strategies]
+                strategy_config[trading_mode_key][classKey][default_config_key] = \
+                    [strategy for strategy in klass.get_default_strategies()]
+                strategy_config[trading_mode_key][classKey][requirements_count_key] = required_strategies_count
+            else:
+                strategy_config[trading_mode_key][classKey][requirements_key] = []
+                strategy_config[trading_mode_key][classKey][requirements_count_key] = 0
+        except Exception as e:
+            get_logger("Configuration").exception(e)
 
 
 def get_strategy_config():
