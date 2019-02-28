@@ -27,6 +27,11 @@
         </div>
     {% endif %}
     {% if has_simulated_trader %}
+        {% if has_real_trader %}
+</div>
+<br>
+<div class="card">
+        {% endif %}
         <div class="card-header"><h1>Simulated portfolio: {{simulated_total_value}} {{reference_unit}}</h1></div>
         <div class="card-body">
             {% if simulated_portfolio %}
