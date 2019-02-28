@@ -38,7 +38,7 @@
                 <a class="nav-link waves-effect" data-toggle="tab" href="#panelNotifications" role="tab">Notifications</a>
             </li>
              <li class="nav-item">
-                <a class="nav-link waves-effect" data-toggle="tab" href="#panelServices" role="tab">Services</a>
+                <a class="nav-link waves-effect" data-toggle="tab" href="#panelServices" role="tab">Interfaces</a>
             </li>
              <li class="nav-item">
                 <a class="nav-link waves-effect" data-toggle="tab" href="#panelCurrency" role="tab">Currencies</a>
@@ -184,10 +184,10 @@
     <!--Panel Services-->
     <div class="tab-pane fade config-root" id="panelServices" role="tabpanel"><br>
         <div class="card">
-            <div class="card-header"><h2>Services</h2></div>
+            <div class="card-header"><h2>Interfaces</h2></div>
             <div class="card-body deck-container">
                 <div class="card">
-                    <div class="card-body">Add a new service :
+                    <div class="card-body">Add a new interface :
                     <select id="AddServiceSelect" class="selectpicker" data-live-search="true">
                        {% for service in services_list | sort() %}
                             <option data-tokens="{{ service }}">{{ service }}</option>
