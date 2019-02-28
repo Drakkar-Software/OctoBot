@@ -127,7 +127,7 @@ class TradesManager(Initializable):
         initial_portfolio_current_profitability = 0
 
         try:
-            await self._update_portfolio_and_currencies_current_value()
+            await self.update_portfolio_and_currencies_current_value()
             initial_portfolio_current_value = await self._get_origin_portfolio_current_value()
 
             self.profitability = self.portfolio_current_value - self.portfolio_origin_value
@@ -167,7 +167,7 @@ class TradesManager(Initializable):
 
     async def get_current_crypto_currencies_values(self):
         if not self.current_crypto_currencies_values:
-            await self._update_portfolio_and_currencies_current_value()
+            await self.update_portfolio_and_currencies_current_value()
         return self.current_crypto_currencies_values
 
     async def get_current_holdings_values(self):
@@ -201,7 +201,7 @@ class TradesManager(Initializable):
                 if symbol not in self.traded_currencies_without_market_specific:
                     self.traded_currencies_without_market_specific.add(symbol)
 
-    async def _update_portfolio_and_currencies_current_value(self):
+    async def update_portfolio_and_currencies_current_value(self):
         async with self.portfolio.get_lock():
             current_portfolio = deepcopy(self.portfolio.get_portfolio())
 
