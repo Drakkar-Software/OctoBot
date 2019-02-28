@@ -65,6 +65,8 @@ def get_portfolio_current_value():
         if trader.enabled(trader.config):
             trade_manager = trader.get_trades_manager()
 
+            get_bot().run_in_main_asyncio_loop(trade_manager.update_portfolio_and_currencies_current_value())
+
             current_value = trade_manager.get_portfolio_current_value()
 
             # current_value might be 0 if no trades have been made / canceled => use origin value
