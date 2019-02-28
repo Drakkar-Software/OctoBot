@@ -117,6 +117,10 @@ MARKET_SEPARATOR = "/"
 CURRENCY_DEFAULT_MAX_PRICE_DIGITS = 8
 EXCHANGE_ERROR_SLEEPING_TIME = 10
 
+# Exchanges
+TESTED_EXCHANGES = ["binance"]
+SIMULATOR_TESTED_EXCHANGES = ["bitfinex", "bittrex", "coinbasepro", "kraken", "poloniex", "cryptopia", "bitmex"]
+
 CONFIG_SIMULATOR_FEES = "fees"
 CONFIG_SIMULATOR_FEES_MAKER = "maker"
 CONFIG_SIMULATOR_FEES_TAKER = "taker"

@@ -114,9 +114,21 @@
                 <div class="card">
                     <div class="card-body">Add a new exchange :
                         <select id="AddExchangeSelect" class="selectpicker" data-live-search="true">
-                           {% for exchange in ccxt_exchanges %}
-                                <option data-tokens="{{ exchange }}">{{ exchange }}</option>
-                           {% endfor %}
+                            <optgroup label="OctoBot fully tested">
+                               {% for exchange in ccxt_tested_exchanges %}
+                                    <option data-tokens="{{ exchange }}">{{ exchange }}</option>
+                               {% endfor %}
+                            </optgroup>
+                            <optgroup label="OctoBot tested with simulated trading">
+                               {% for exchange in ccxt_simulated_tested_exchanges %}
+                                    <option data-tokens="{{ exchange }}">{{ exchange }}</option>
+                               {% endfor %}
+                            </optgroup>
+                            <optgroup label="OctoBot untested">
+                               {% for exchange in ccxt_other_exchanges %}
+                                    <option data-tokens="{{ exchange }}">{{ exchange }}</option>
+                               {% endfor %}
+                            </optgroup>
                         </select>
                         <button type="button" id="AddExchange" class="btn btn-primary add-btn px-3 waves-effect"><i class="fa fa-plus pr-2" aria-hidden="true"></i> Add</button>
                     </div>
