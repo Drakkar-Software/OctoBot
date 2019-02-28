@@ -21,8 +21,9 @@ from tools.logging.logging_util import get_logger
 import ccxt
 import requests
 
-from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, \
-    UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, CONFIG_NOTIFIER_IGNORE, EVALUATOR_ACTIVATION
+from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, TESTED_EXCHANGES, \
+    UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, CONFIG_NOTIFIER_IGNORE, EVALUATOR_ACTIVATION, \
+    SIMULATOR_TESTED_EXCHANGES
 from interfaces import get_bot
 from services import AbstractService
 from services import NotifierService
@@ -315,6 +316,22 @@ def get_full_exchange_list(remove_config_exchanges=False):
         full_exchange_list = list(set(ccxt.exchanges))
     # can't handle exchanges containing UPDATED_CONFIG_SEPARATOR character in their name
     return [exchange for exchange in full_exchange_list if UPDATED_CONFIG_SEPARATOR not in exchange]
+
+
+def get_tested_exchange_list():
+    full_exchange_list = list(set(ccxt.exchanges))
+    return [exchange for exchange in TESTED_EXCHANGES if exchange in full_exchange_list]
+
+
+def get_simulated_exchange_list():
+    full_exchange_list = list(set(ccxt.exchanges))
+    return [exchange for exchange in SIMULATOR_TESTED_EXCHANGES if exchange in full_exchange_list]
+
+
+def get_other_exchange_list(remove_config_exchanges=False):
+    full_list = get_full_exchange_list(remove_config_exchanges)
+    return [exchange for exchange in full_list
+            if exchange not in TESTED_EXCHANGES and exchange not in SIMULATOR_TESTED_EXCHANGES]
 
 
 def get_current_exchange():
