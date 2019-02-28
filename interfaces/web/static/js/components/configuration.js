@@ -72,7 +72,8 @@ function handle_add_buttons(){
         const reference_market = select_input.attr("reference_market");
 
         //services
-        if (button_id === "AddService"){
+        const in_services = button_id === "AddService";
+        if (in_services){
             target_template = $("#" + button_id + "-template-default-"+select_value);
         }
 
@@ -98,12 +99,21 @@ function handle_add_buttons(){
                 }
             });
 
+            let placeholder = "";
+            if(select_symbol){
+                placeholder = "Select trading pair(s)";
+            }else if(in_services){
+                // telegram is the only service with a select2 element
+                placeholder = "Add user(s) in whitelist";
+            }
+
             // add select2 selector
             $(editable_selector).each(function () {
                 if ($(this).siblings('.select2').length === 0 && !$(this).parent().hasClass('default')){
                     $(this).select2({
                         width: 'resolve', // need to override the changed default
-                        tags: true
+                        tags: true,
+                        placeholder: placeholder
                     });
                 }
             });

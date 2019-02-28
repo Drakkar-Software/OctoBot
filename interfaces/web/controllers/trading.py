@@ -19,7 +19,7 @@ import datetime
 from flask import render_template, request, jsonify
 
 from interfaces.trading_util import get_open_orders, get_trades_history, get_global_portfolio_currencies_amounts, \
-    get_currencies_with_status, get_portfolio_current_value, get_portfolio_holdings
+    get_currencies_with_status, get_portfolio_current_value, get_portfolio_holdings, has_real_and_or_simulated_traders
 from interfaces import get_reference_market
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
@@ -29,6 +29,8 @@ from interfaces.web.models.interface_settings import get_watched_symbols
 
 @server_instance.route("/portfolio")
 def portfolio():
+    has_real_trader, has_simulated_trader = has_real_and_or_simulated_traders()
+
     real_portfolio, simulated_portfolio = get_global_portfolio_currencies_amounts()
 
     filtered_real_portfolio = {currency: amounts
@@ -42,6 +44,8 @@ def portfolio():
     reference_market = get_reference_market()
 
     return render_template('portfolio.html',
+                           has_real_trader=has_real_trader,
+                           has_simulated_trader=has_simulated_trader,
                            simulated_portfolio=filtered_simulated_portfolio,
                            real_portfolio=filtered_real_portfolio,
                            simulated_total_value=round(portfolio_simulated_current_value, 8),

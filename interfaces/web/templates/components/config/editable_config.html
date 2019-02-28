@@ -1,26 +1,26 @@
-{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="", no_select=False, number_step=0.01, force_title=False, tooltip=None, identifier="") -%}
+{% macro editable_key(config, key, config_key, config_type, config_value, startup_config_value, suggestions="", no_select=False, number_step=0.01, force_title=False, tooltip=None, identifier="", placeholder_str="") -%}
     <span
         {% if tooltip is not none %}
             data-toggle="tooltip" title="{{tooltip}}"
         {% endif %}
     >
         {% if config[key] is string %}
-            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, placeholder_str) }}
         {% elif config[key] | is_dict %}
-            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title, tooltip, identifier) }}
+            {{ editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title, tooltip, identifier, placeholder_str) }}
         {% elif config[key] | is_list %}
-            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, force_title, identifier) }}
+            {{ editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, force_title, identifier, placeholder_str) }}
         {% elif config[key] | is_bool %}
             {{ editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
         {% elif config[key] is number %}
             {{ editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, number_step) }}
         {% else %}
-            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) }}
+            {{ editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, placeholder_str) }}
         {% endif %}
     </span>
 {%- endmacro %}
 
-{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
+{% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, placeholder_str="") -%}
     {{ key }} : <a href="#"
             config-key="{{config_key}}"
             config-type="global_config"
@@ -29,11 +29,12 @@
             data-type="text"
             data-pk="1"
             data-clear=false
+            placeholder="{{ placeholder_str }}"
             class="editable editable-click config-element">
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title, tooltip, identifier) -%}
+{% macro editable_key_dict(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, number_step, force_title, tooltip, identifier, placeholder_str) -%}
     {{ key }} : <br>
     {% for new_key in config[key] %}
         &emsp;{{  editable_key( config[key],
@@ -47,7 +48,8 @@
                             number_step,
                             force_title,
                             tooltip,
-                            identifier)
+                            identifier,
+                            placeholder_str)
         }}
     {% endfor %}
 {%- endmacro %}
@@ -77,7 +79,7 @@
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
-{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, force_title, identifier="") -%}
+{% macro editable_key_list(config, key, config_key, config_type, config_value, startup_config_value, suggestions, no_select, force_title, identifier="", placeholder_str="") -%}
     {% if force_title %}
         {{ key }} :
     {% endif %}
@@ -106,7 +108,8 @@
     <script>
         $("select[editable_config_id=\"multi-select-element-{{ identifier }}\"]:first").select2({
             dropdownAutoWidth : true,
-            tags: true
+            tags: true,
+            placeholder:"{{ placeholder_str }}"
         });
     </script>
     {% endif %}
