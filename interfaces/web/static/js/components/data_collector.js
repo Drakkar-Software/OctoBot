@@ -101,6 +101,7 @@ function update_symbol_list(url, exchange){
           symbolSelect.append($("<option></option>")
              .attr("value", value).text(value));
         });
+        symbolSelect.selectpicker('refresh');
     });
 }
 
@@ -112,7 +113,7 @@ $(document).ready(function() {
     dataFilesTable.on("draw.dt", function(){
         handle_data_files_buttons();
     });
-    $('#exchangeSelect').on('input', function() {
+    $('#exchangeSelect').on('change', function() {
         update_symbol_list($('#symbolSelect').attr(update_url_attr), $('#exchangeSelect').val())
     });
     $('#collect_data').click(function(){
