@@ -22,7 +22,8 @@ from config import CONFIG_EXCHANGES, CONFIG_CATEGORY_SERVICES, CONFIG_CATEGORY_N
 from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_strategy_config, update_evaluator_config, \
     get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_all_symbol_list, \
-    get_full_exchange_list, get_edited_config, update_trading_config, get_trading_startup_config
+    get_tested_exchange_list, get_simulated_exchange_list, get_other_exchange_list, get_edited_config, \
+    update_trading_config, get_trading_startup_config
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -88,7 +89,9 @@ def config():
                                config_symbols=display_config[CONFIG_CRYPTO_CURRENCIES],
                                config_reference_market=display_config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET],
 
-                               ccxt_exchanges=sorted(get_full_exchange_list(True)),
+                               ccxt_tested_exchanges=get_tested_exchange_list(),
+                               ccxt_simulated_tested_exchanges=get_simulated_exchange_list(),
+                               ccxt_other_exchanges=sorted(get_other_exchange_list()),
                                services_list=service_list,
                                service_name_list=service_name_list,
                                symbol_list=sorted(get_symbol_list([exchange
