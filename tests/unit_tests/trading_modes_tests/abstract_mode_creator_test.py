@@ -437,3 +437,74 @@ class TestAbstractTradingModeCreator:
         assert AbstractTradingModeCreator._trunc_with_n_decimal_digits(578.000145000156, 9) == 578.000145
         assert AbstractTradingModeCreator._trunc_with_n_decimal_digits(578.000145000156, 10) == 578.0001450001
         assert AbstractTradingModeCreator._trunc_with_n_decimal_digits(578.000145000156, 12) == 578.000145000156
+
+    @staticmethod
+    async def test_get_min_max_amounts():
+        # normal values
+        symbol_market = {
+            Ecmsc.LIMITS.value: {
+                Ecmsc.LIMITS_AMOUNT.value: {
+                    Ecmsc.LIMITS_AMOUNT_MIN.value: 0.5,
+                    Ecmsc.LIMITS_AMOUNT_MAX.value: 100,
+                },
+                Ecmsc.LIMITS_COST.value: {
+                    Ecmsc.LIMITS_COST_MIN.value: None,
+                    Ecmsc.LIMITS_COST_MAX.value: None
+                },
+                Ecmsc.LIMITS_PRICE.value: {
+                    Ecmsc.LIMITS_PRICE_MIN.value: 0.5,
+                    Ecmsc.LIMITS_PRICE_MAX.value: 50
+                },
+            }
+        }
+        min_quantity, max_quantity, min_cost, max_cost, min_price, max_price = \
+            AbstractTradingModeCreator.get_min_max_amounts(symbol_market)
+        assert min_quantity == 0.5
+        assert max_quantity == 100
+        assert min_cost is None
+        assert max_cost is None
+        assert min_price == 0.5
+        assert max_price == 50
+
+        # missing all values
+        min_quantity, max_quantity, min_cost, max_cost, min_price, max_price = \
+            AbstractTradingModeCreator.get_min_max_amounts({})
+        assert min_quantity is None
+        assert max_quantity is None
+        assert min_cost is None
+        assert max_cost is None
+        assert min_price is None
+        assert max_price is None
+
+        # missing all values: asign default
+        min_quantity, max_quantity, min_cost, max_cost, min_price, max_price = \
+            AbstractTradingModeCreator.get_min_max_amounts({}, "xyz")
+        assert min_quantity == "xyz"
+        assert max_quantity == "xyz"
+        assert min_cost == "xyz"
+        assert max_cost == "xyz"
+        assert min_price == "xyz"
+        assert max_price == "xyz"
+
+        # missing values: assign default
+
+        symbol_market = {
+            Ecmsc.LIMITS.value: {
+                Ecmsc.LIMITS_AMOUNT.value: {
+                    Ecmsc.LIMITS_AMOUNT_MIN.value: 0.5,
+                    Ecmsc.LIMITS_AMOUNT_MAX.value: 100,
+                },
+                Ecmsc.LIMITS_COST.value: {
+                    Ecmsc.LIMITS_COST_MIN.value: None,
+                    Ecmsc.LIMITS_COST_MAX.value: None
+                }
+            }
+        }
+        min_quantity, max_quantity, min_cost, max_cost, min_price, max_price = \
+            AbstractTradingModeCreator.get_min_max_amounts(symbol_market, "xyz")
+        assert min_quantity == 0.5
+        assert max_quantity == 100
+        assert min_cost == "xyz"    # None is not a valid value => assign default
+        assert max_cost == "xyz"    # None is not a valid value => assign default
+        assert min_price == "xyz"
+        assert max_price == "xyz"
