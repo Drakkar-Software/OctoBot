@@ -26,7 +26,7 @@ To install tentacles, you just have to use the [integrated tentacle manager](htt
 and your OctoBot is ready ! 
 
 ## Your Octobot
-![Telegram Interface](../assets/telegram-interface.png)
+<a href="https://github.com/Drakkar-Software/OctoBot/blob/assets/telegram-interface.png"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>
 [![Twitter Interface](../assets/twitter-interface.png)](https://twitter.com/HerklosBotCrypt)
 
 OctoBot is highly customizable using its configuration and tentacles system. You can therefore build your own bot using the infinite [configuration](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration) possibilities.
