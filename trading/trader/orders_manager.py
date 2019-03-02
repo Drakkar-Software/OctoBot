@@ -157,6 +157,8 @@ class OrdersManager:
             self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
                               f"Will force a real trader refresh. ({e})")
             failed_order_updates.append(e.order_id)
+        except InsufficientFunds as e:
+            self.logger.error(f"Not enough funds to create order: {e} (updating {order}).")
         return order_filled
 
     async def _update_orders_status(self, simulated_time=False):
@@ -181,19 +183,7 @@ class OrdersManager:
                     odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
 
                 if odr in self.order_list:
-                    try:
-                        await odr.update_order_status(simulated_time=simulated_time)
-
-                        if odr.get_status() == OrderStatus.FILLED:
-                            order_filled = True
-                            self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} (ID : {odr.get_id()})"
-                                             f" filled on {self.trader.get_exchange().get_name()} "
-                                             f"at {odr.get_filled_price()}")
-                            await odr.close_order()
-                    except MissingOrderException as e:
-                        self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
-                                          f"Will force a real trader refresh. ({e})")
-                        failed_order_updates.append(e.order_id)
+                    order_filled = await self._update_order_status(odr, failed_order_updates, simulated_time)
             if order_filled:
                 await self.trader.call_order_update_callback(order)
         return failed_order_updates
