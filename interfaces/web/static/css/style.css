@@ -101,7 +101,7 @@ body:before {
 }
 
 .card .deck-container-modified {
-    background-color: #FF8800 !important;
+    background-color: #C66900 !important;
     -webkit-transition: all 0.5s ease;
     -moz-transition: all 0.5s ease;
     -o-transition: all 0.5s ease;
@@ -114,7 +114,7 @@ body:before {
 .card .card-deck .card-modified,
 .card .card-deck .card-modified .card-body,
  .card .card-deck .card-modified .card-text{
-    background-color: #FF8800 !important;
+    background-color: #FF9800 !important;
     -webkit-transition: all 0.5s ease;
     -moz-transition: all 0.5s ease;
     -o-transition: all 0.5s ease;

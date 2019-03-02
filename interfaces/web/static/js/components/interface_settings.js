@@ -49,9 +49,9 @@ function update_pairs_colors(){
     $(".pair_status_card").each(function () {
         const first_eval = $(this).find(".status");
         const status = first_eval.attr("status");
-        if(status === "LONG"){
+        if(status.toLowerCase().includes("long")){
             $(this).addClass("card-long");
-        }else if(status === "SHORT"){
+        }else if(status.toLowerCase().includes("short")){
             $(this).addClass("card-short");
         }
     })
