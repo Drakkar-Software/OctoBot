@@ -117,30 +117,34 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     def get_min_max_amounts(symbol_market, default_value=None):
-        symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
-        limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
-        limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
-        limit_price = symbol_market_limits[Ecmsc.LIMITS_PRICE.value]
-
         min_quantity = max_quantity = min_cost = max_cost = min_price = max_price = default_value
+        if Ecmsc.LIMITS.value in symbol_market:
+            symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
 
-        if AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) \
-                or AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value):
-            min_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value, default_value)
-            max_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value, default_value)
+            if Ecmsc.LIMITS_AMOUNT.value in symbol_market_limits:
+                limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
+                if AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) \
+                        or AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value):
+                    min_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value, default_value)
+                    max_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value, default_value)
 
-        if AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value) \
-                or AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MAX.value):
+            # case 2: use cost and price
+            if Ecmsc.LIMITS_COST.value in symbol_market_limits:
+                limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
+                if AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value) \
+                        or AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MAX.value):
 
-            min_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value, default_value)
-            max_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value, default_value)
+                    min_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value, default_value)
+                    max_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value, default_value)
 
-        # case 1.2: use only quantity and price
-        if AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MIN.value) \
-                or AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MAX.value):
+            # case 2: use quantity and price
+            if Ecmsc.LIMITS_PRICE.value in symbol_market_limits:
+                limit_price = symbol_market_limits[Ecmsc.LIMITS_PRICE.value]
+                if AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MIN.value) \
+                        or AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MAX.value):
 
-            min_price = get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value, default_value)
-            max_price = get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value, default_value)
+                    min_price = get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value, default_value)
+                    max_price = get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value, default_value)
 
         return min_quantity, max_quantity, min_cost, max_cost, min_price, max_price
 
