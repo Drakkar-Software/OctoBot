@@ -26,6 +26,7 @@ from config import CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET
 from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
 from tools.initializable import Initializable
+from tools.dict_util import get_value_or_default
 
 
 class RESTExchange(AbstractExchange, Initializable):
@@ -247,11 +248,14 @@ class RESTExchange(AbstractExchange, Initializable):
             market_status = self.client.find_market(symbol)
             return {
                 ExchangeConstantsMarketPropertyColumns.TAKER.value:
-                    market_status[ExchangeConstantsMarketPropertyColumns.TAKER.value],
+                    get_value_or_default(market_status, ExchangeConstantsMarketPropertyColumns.TAKER.value,
+                                         CONFIG_DEFAULT_FEES),
                 ExchangeConstantsMarketPropertyColumns.MAKER.value:
-                    market_status[ExchangeConstantsMarketPropertyColumns.MAKER.value],
+                    get_value_or_default(market_status, ExchangeConstantsMarketPropertyColumns.MAKER.value,
+                                         CONFIG_DEFAULT_FEES),
                 ExchangeConstantsMarketPropertyColumns.FEE.value:
-                    market_status[ExchangeConstantsMarketPropertyColumns.FEE.value],
+                    get_value_or_default(market_status, ExchangeConstantsMarketPropertyColumns.FEE.value,
+                                         CONFIG_DEFAULT_FEES)
             }
         except Exception as e:
             self.logger.error(f"Fees data for {symbol} was not found ({e})")
