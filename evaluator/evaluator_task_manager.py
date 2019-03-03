@@ -120,14 +120,14 @@ class EvaluatorTaskManager:
 
         self.should_refresh_matrix_evaluation_types = False
 
+        self.logger.debug(f"MATRIX : {self.matrix.get_matrix()}")
+
         if finalize:
             # calculate the final result
             await self.symbol_evaluator.finalize(self.exchange)
 
         # save evaluations if option is activated
         self._save_evaluations_if_necessary()
-
-        self.logger.debug(f"MATRIX : {self.matrix.get_matrix()}")
 
     def refresh_matrix(self, refresh_matrix_evaluation_types=False):
         self.matrix = self.symbol_evaluator.get_matrix(self.exchange)
