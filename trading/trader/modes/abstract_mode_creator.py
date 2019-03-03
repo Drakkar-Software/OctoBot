@@ -148,7 +148,6 @@ class AbstractTradingModeCreator:
 
         return min_quantity, max_quantity, min_cost, max_cost, min_price, max_price
 
-
     @staticmethod
     def check_and_adapt_order_details_if_necessary(quantity, price, symbol_market, fixed_symbol_data=False):
         symbol_market_limits = symbol_market[Ecmsc.LIMITS.value]
