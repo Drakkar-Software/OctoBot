@@ -52,6 +52,19 @@ class TestExchangeMarketStatusFixer:
     # Global
     def test_exchange_market_status_fixer_without_precision_cost_and_amount_with_price(self):
         current_price = 4564.1458
+
+        ms = {
+            Ecmsc.PRECISION.value: self._get_precision(1, 0, 1),
+            Ecmsc.LIMITS.value: self._get_limits(None, nan, 0.05, 1e4, nan, None)
+        }
+
+        assert ExchangeMarketStatusFixer(ms, price_example=current_price).get_market_status() == {
+            Ecmsc.PRECISION.value: self._get_precision(1, 0, 1),
+            Ecmsc.LIMITS.value: self._get_limits(0.002190990480628382, 219.0990480628382,
+                                                 current_price / 1000, current_price * 1000,
+                                                 0.010000000000000012, 1000000000.0000011)
+        }
+
         ms = {
             Ecmsc.PRECISION.value: self._get_precision(nan, None, nan),
             Ecmsc.LIMITS.value: self._get_limits(None, nan, 0.05, 1e4, nan, None)
