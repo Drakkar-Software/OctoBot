@@ -60,7 +60,7 @@ class ExchangeMarketStatusFixer:
 
         market_precision = self.market_status[Ecmsc.PRECISION.value]
 
-        if not self._check_market_status_values(market_precision.values()):
+        if not self._check_market_status_values(market_precision.values(), zero_valid=True):
             if self.price_example is not None:
                 self._fix_market_status_precision_with_price()
 
@@ -107,12 +107,12 @@ class ExchangeMarketStatusFixer:
                     for key in market_limit])
 
     @staticmethod
-    def _check_market_status_values(values):
-        return all([ExchangeMarketStatusFixer.is_ms_valid(value) for value in values])
+    def _check_market_status_values(values, zero_valid=False):
+        return all([ExchangeMarketStatusFixer.is_ms_valid(value, zero_valid=zero_valid) for value in values])
 
     @staticmethod
-    def is_ms_valid(value):
-        return value is not None and value is not nan and value > 0
+    def is_ms_valid(value, zero_valid=False):
+        return value is not None and value is not nan and (value >= 0 if zero_valid else value > 0)
 
     def _fix_market_status_limits_from_current_data(self, market_limit):
         # calculate cost
