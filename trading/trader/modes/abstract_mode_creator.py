@@ -104,16 +104,33 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     def _split_orders(total_order_price, max_cost, valid_quantity, max_quantity, price, quantity, symbol_market):
-        nb_orders_according_to_cost = total_order_price / max_cost
-        nb_orders_according_to_quantity = valid_quantity / max_quantity
-        if nb_orders_according_to_cost > nb_orders_according_to_quantity:
+        if max_cost is None and max_quantity is None:
+            raise RuntimeError("Impossible to split orders with max_cost and max_quantity undefined.")
+        nb_orders_according_to_cost = None
+        nb_orders_according_to_quantity = None
+        if max_cost:
+            nb_orders_according_to_cost = total_order_price / max_cost
+        if max_quantity:
+            nb_orders_according_to_quantity = valid_quantity / max_quantity
+        if nb_orders_according_to_cost is None:
+            # can only split using quantity
+            return AbstractTradingModeCreator \
+                ._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
+                                                        quantity, price, symbol_market)
+        elif nb_orders_according_to_quantity is None:
+            # can only split using price
             return AbstractTradingModeCreator._adapt_order_quantity_because_price(total_order_price,
                                                                                   max_cost, price,
                                                                                   symbol_market)
         else:
-            return AbstractTradingModeCreator\
-                ._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
-                                                        quantity, price, symbol_market)
+            if nb_orders_according_to_cost > nb_orders_according_to_quantity:
+                return AbstractTradingModeCreator._adapt_order_quantity_because_price(total_order_price,
+                                                                                      max_cost, price,
+                                                                                      symbol_market)
+            else:
+                return AbstractTradingModeCreator \
+                    ._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
+                                                            quantity, price, symbol_market)
 
     @staticmethod
     def check_and_adapt_order_details_if_necessary(quantity, price, symbol_market, fixed_symbol_data=False):
@@ -124,10 +141,12 @@ class AbstractTradingModeCreator:
         limit_price = symbol_market_limits[Ecmsc.LIMITS_PRICE.value]
 
         # case 1: try with data directly from exchange
-        if AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) \
-                and AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value):
+        if AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value):
             min_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value, math.nan)
-            max_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value, math.nan)
+            max_quantity = None
+            # not all symbol data have a max quantity
+            if AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value):
+                max_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MAX.value, math.nan)
 
             # adapt digits if necessary
             valid_quantity = AbstractTradingModeCreator._adapt_quantity(symbol_market, quantity)
@@ -140,18 +159,20 @@ class AbstractTradingModeCreator:
                     return []
 
             # case 1.1: use only quantity and cost
-            if AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value) \
-                    and AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MAX.value):
-
+            if AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value):
                 min_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value, math.nan)
-                max_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value, math.nan)
+                max_cost = None
+                # not all symbol data have a max cost
+                if AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MAX.value):
+                    max_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MAX.value, math.nan)
 
                 # check total_order_price not < min_cost
                 if not AbstractTradingModeCreator._check_cost(total_order_price, min_cost):
                     return []
 
                 # check total_order_price not > max_cost and valid_quantity not > max_quantity
-                elif total_order_price > max_cost or valid_quantity > max_quantity:
+                elif (max_cost is not None and total_order_price > max_cost) or \
+                        (max_quantity is not None and valid_quantity > max_quantity):
                     # split quantity into smaller orders
                     return AbstractTradingModeCreator._split_orders(total_order_price, max_cost, valid_quantity,
                                                                     max_quantity, price, quantity, symbol_market)
@@ -161,18 +182,19 @@ class AbstractTradingModeCreator:
                     return [(valid_quantity, valid_price)]
 
             # case 1.2: use only quantity and price
-            elif AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MIN.value) \
-                    and AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MAX.value):
-
+            elif AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MIN.value):
                 min_price = get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MIN.value, math.nan)
-                max_price = get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value, math.nan)
+                max_price = None
+                # not all symbol data have a max price
+                if AbstractTradingModeCreator._is_valid(limit_price, Ecmsc.LIMITS_PRICE_MAX.value):
+                    max_price = get_value_or_default(limit_price, Ecmsc.LIMITS_PRICE_MAX.value, math.nan)
 
-                if not (max_price >= valid_price >= min_price):
+                if (max_price is not None and (max_price <= valid_price)) or valid_price <= min_price:
                     # invalid order
                     return []
 
                 # check total_order_price not > max_cost and valid_quantity not > max_quantity
-                elif valid_quantity > max_quantity:
+                elif max_quantity is not None and valid_quantity > max_quantity:
                     # split quantity into smaller orders
                     return AbstractTradingModeCreator \
                         ._adapt_order_quantity_because_quantity(valid_quantity, max_quantity,
