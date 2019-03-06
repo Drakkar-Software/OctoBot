@@ -342,6 +342,13 @@ class TestAbstractTradingModeCreator:
                                                                                                    (4.08163265, 49),
                                                                                                    (4.08163265, 49)]
 
+        # high cost but no max cost => valid
+        quantity = 10
+        price = 49
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == [(1.83673469, 49),
+                                                                                                   (4.08163265, 49),
+                                                                                                   (4.08163265, 49)]
+
         # invalid cost with invalid price >=
         quantity = 10
         price = 50
@@ -401,8 +408,138 @@ class TestAbstractTradingModeCreator:
                     (100.0, 0.001), (100.0, 0.001)]
         assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market) == expected
 
+        symbol_market_without_max = {
+            Ecmsc.LIMITS.value: {
+                Ecmsc.LIMITS_AMOUNT.value: {
+                    Ecmsc.LIMITS_AMOUNT_MIN.value: 0.0000005,
+                    Ecmsc.LIMITS_AMOUNT_MAX.value: None,
+                },
+                Ecmsc.LIMITS_COST.value: {
+                    Ecmsc.LIMITS_COST_MIN.value: 0.00000001,
+                    Ecmsc.LIMITS_COST_MAX.value: None
+                },
+                Ecmsc.LIMITS_PRICE.value: {
+                    Ecmsc.LIMITS_PRICE_MIN.value: 0.000005,
+                    Ecmsc.LIMITS_PRICE_MAX.value: None
+                },
+            },
+            Ecmsc.PRECISION.value: {
+                Ecmsc.PRECISION_PRICE.value: 8,
+                Ecmsc.PRECISION_AMOUNT.value: 8
+            }
+        }
+
+        # high cost but no max cost => no split
+        quantity = 10
+        price = 49
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market_without_max) == [(10, 49)]
+
+        # high quantity but no max quantity => no split
+        quantity = 10000000
+        price = 49
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market_without_max) == \
+            [(10000000, 49)]
+
+        # high price but no max price => no split
+        quantity = 10
+        price = 4900000
+        assert atmc.check_and_adapt_order_details_if_necessary(quantity, price, symbol_market_without_max) == \
+            [(10, 4900000)]
+
     async def test_get_pre_order_data(self):
         pass
+
+    async def test_split_orders(self):
+        atmc = AbstractTradingModeCreator(None)
+
+        symbol_market = {
+            Ecmsc.LIMITS.value: {
+                Ecmsc.LIMITS_AMOUNT.value: {
+                    Ecmsc.LIMITS_AMOUNT_MIN.value: 1,
+                    Ecmsc.LIMITS_AMOUNT_MAX.value: 100,
+                },
+                Ecmsc.LIMITS_COST.value: {
+                    Ecmsc.LIMITS_COST_MIN.value: 1,
+                    Ecmsc.LIMITS_COST_MAX.value: 30
+                },
+                Ecmsc.LIMITS_PRICE.value: {
+                    Ecmsc.LIMITS_PRICE_MIN.value: 0.001,
+                    Ecmsc.LIMITS_PRICE_MAX.value: 1000
+                },
+            },
+            Ecmsc.PRECISION.value: {
+                Ecmsc.PRECISION_PRICE.value: 1,
+                Ecmsc.PRECISION_AMOUNT.value: 1
+            }
+        }
+
+        symbol_market_without_max = {
+            Ecmsc.LIMITS.value: {
+                Ecmsc.LIMITS_AMOUNT.value: {
+                    Ecmsc.LIMITS_AMOUNT_MIN.value: 1,
+                    Ecmsc.LIMITS_AMOUNT_MAX.value: None,
+                },
+                Ecmsc.LIMITS_COST.value: {
+                    Ecmsc.LIMITS_COST_MIN.value: 1,
+                    Ecmsc.LIMITS_COST_MAX.value: None
+                },
+                Ecmsc.LIMITS_PRICE.value: {
+                    Ecmsc.LIMITS_PRICE_MIN.value: 1,
+                    Ecmsc.LIMITS_PRICE_MAX.value: None
+                },
+            },
+            Ecmsc.PRECISION.value: {
+                Ecmsc.PRECISION_PRICE.value: 1,
+                Ecmsc.PRECISION_AMOUNT.value: 1
+            }
+        }
+        max_cost = symbol_market[Ecmsc.LIMITS.value][Ecmsc.LIMITS_COST.value][Ecmsc.LIMITS_COST_MAX.value]
+        max_quantity = symbol_market[Ecmsc.LIMITS.value][Ecmsc.LIMITS_AMOUNT.value][Ecmsc.LIMITS_AMOUNT_MAX.value]
+
+        # normal situation, split because of cost
+        total_price = 100
+        valid_quantity = 5
+        price = 20
+        assert atmc._split_orders(total_price, max_cost, valid_quantity,
+                                  max_quantity, price, valid_quantity, symbol_market) \
+            == [(0.5, 20), (1.5, 20), (1.5, 20), (1.5, 20)]
+
+        # normal situation, split because of quantity
+        total_price = 5.0255
+        valid_quantity = 502.55
+        price = 0.01
+        assert atmc._split_orders(total_price, max_cost, valid_quantity,
+                                  max_quantity, price, valid_quantity, symbol_market) \
+            == [(2.5, 0.01), (100, 0.01), (100, 0.01), (100, 0.01), (100, 0.01), (100, 0.01)]
+
+        # missing info situation, split because of cost
+        max_quantity = None
+        total_price = 100
+        valid_quantity = 5
+        price = 20
+        assert atmc._split_orders(total_price, max_cost, valid_quantity,
+                                  max_quantity, price, valid_quantity, symbol_market_without_max) \
+            == [(0.5, 20), (1.5, 20), (1.5, 20), (1.5, 20)]
+
+        # missing info situation, split because of quantity
+        max_quantity = symbol_market[Ecmsc.LIMITS.value][Ecmsc.LIMITS_AMOUNT.value][Ecmsc.LIMITS_AMOUNT_MAX.value]
+        max_cost = None
+        total_price = 5.0255
+        valid_quantity = 502.55
+        price = 0.01
+        assert atmc._split_orders(total_price, max_cost, valid_quantity,
+                                  max_quantity, price, valid_quantity, symbol_market_without_max) \
+            == [(2.5, 0.01), (100, 0.01), (100, 0.01), (100, 0.01), (100, 0.01), (100, 0.01)]
+
+        # missing info situation, can't split
+        max_quantity = None
+        max_cost = None
+        total_price = 5.0255
+        valid_quantity = 502.55
+        price = 0.01
+        with pytest.raises(RuntimeError):
+            assert atmc._split_orders(total_price, max_cost, valid_quantity,
+                                      max_quantity, price, valid_quantity, symbol_market_without_max)
 
     async def test_adapt_quantity(self):
         # will use symbol market
