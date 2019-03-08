@@ -90,12 +90,15 @@ class TradesManager(Initializable):
     def get_total_paid_fees(self):
         total_fees = {}
         for trade in self.trade_history:
-            fee_cost = trade.fee[FeePropertyColumns.COST.value]
-            fee_currency = trade.fee[FeePropertyColumns.CURRENCY.value]
-            if fee_currency in total_fees:
-                total_fees[fee_currency] += fee_cost
+            if trade.fee is not None:
+                fee_cost = trade.fee[FeePropertyColumns.COST.value]
+                fee_currency = trade.fee[FeePropertyColumns.CURRENCY.value]
+                if fee_currency in total_fees:
+                    total_fees[fee_currency] += fee_cost
+                else:
+                    total_fees[fee_currency] = fee_cost
             else:
-                total_fees[fee_currency] = fee_cost
+                self.logger.warning(f"Trade without any registered fee: {trade}")
         return total_fees
 
     def select_trade_history(self, symbol=None):
