@@ -251,7 +251,9 @@ class Order:
 
     def infer_taker_or_maker(self):
         if self.taker_or_maker is None:
-            if self.order_type == SellMarketOrder or self.order_type == BuyMarketOrder:
+            if self.order_type == SellMarketOrder \
+                    or self.order_type == BuyMarketOrder \
+                    or self.order_type == StopLossOrder:
                 # always true
                 return ExchangeConstantsMarketPropertyColumns.TAKER.value
             else:
@@ -260,11 +262,12 @@ class Order:
                 return ExchangeConstantsMarketPropertyColumns.MAKER.value
         return self.taker_or_maker
 
-    def get_computed_fee(self):
+    def get_computed_fee(self, forced_value=None):
         computed_fee = self.exchange.get_trade_fee(self.symbol, self.order_type, self.filled_quantity,
                                                    self.filled_price, self.infer_taker_or_maker())
         return {
-            FeePropertyColumns.COST.value: computed_fee[FeePropertyColumns.COST.value],
+            FeePropertyColumns.COST.value:
+                forced_value if forced_value is not None else computed_fee[FeePropertyColumns.COST.value],
             FeePropertyColumns.CURRENCY.value: computed_fee[FeePropertyColumns.CURRENCY.value],
         }
 
@@ -387,7 +390,12 @@ class StopLossOrder(Order):
             self.filled_quantity = self.origin_quantity
             self.total_cost = self.filled_price*self.filled_quantity
             self.executed_time = self.generate_executed_time(simulated_time)
-            if not self.trader.simulate:
+            if self.trader.simulate:
+                # compute normal fees
+                self.fee = self.get_computed_fee()
+            else:
+                # force 0 fee: not a real order: only used as a trigger
+                self.fee = self.get_computed_fee(forced_value=0)
                 for order in self.linked_orders:
                     await self.trader.cancel_order(order)
                 await self.trader.create_artificial_order(TraderOrderType.SELL_MARKET, self.symbol, self.origin_price,
