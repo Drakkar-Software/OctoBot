@@ -81,7 +81,6 @@ class Trader(Initializable):
                 self.exchange.get_exchange_personal_data().init_orders()
 
             self.logger.debug(f"Enabled on {self.exchange.get_name()}")
-            await self.start_order_manager()
         else:
             self.logger.debug(f"Disabled on {self.exchange.get_name()}")
 
