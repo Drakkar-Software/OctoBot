@@ -280,7 +280,8 @@ class OctoBot:
             task_list.append(crypto_currency_evaluator.get_social_evaluator_refresh_task())
 
         for trader in self.exchange_traders.values():
-            task_list.append(trader.launch())
+            await trader.launch()
+            task_list.append(trader.start_order_manager())
 
         for trader_simulator in self.exchange_trader_simulators.values():
             task_list.append(trader_simulator.launch())
