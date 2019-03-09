@@ -77,11 +77,11 @@ class Trader(Initializable):
                 await self.update_open_orders()
                 # self.update_close_orders()
 
-                # can current orders received: start using websocket for orders if available
+                # can receive current orders updates: start using websocket for orders if available
                 self.exchange.get_exchange_personal_data().init_orders()
 
-            await self.start_order_manager()
             self.logger.debug(f"Enabled on {self.exchange.get_name()}")
+            await self.start_order_manager()
         else:
             self.logger.debug(f"Disabled on {self.exchange.get_name()}")
 
@@ -153,7 +153,7 @@ class Trader(Initializable):
         return order
 
     async def create_order(self, order, portfolio, loaded=False):
-        linked_to = None
+        linked_order = None
 
         new_order = order
         is_to_keep = True
@@ -162,7 +162,7 @@ class Trader(Initializable):
         # if this order is linked to another (ex : a sell limit order with a stop loss order)
         if new_order.linked_to is not None:
             new_order.linked_to.add_linked_order(new_order)
-            linked_to = new_order.linked_to
+            linked_order = new_order.linked_to
 
         if not loaded:
             new_order = await self._create_not_loaded_order(order, new_order, portfolio)
@@ -186,8 +186,8 @@ class Trader(Initializable):
             self.trades_manager.add_new_trade_in_history(Trade(self.exchange, new_order))
 
         # if this order is linked to another
-        if linked_to is not None:
-            new_order.add_linked_order(linked_to)
+        if linked_order is not None:
+            new_order.add_linked_order(linked_order)
 
         return new_order
 
