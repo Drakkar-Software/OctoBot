@@ -50,15 +50,30 @@ class OrdersManager:
     def add_order_to_list(self, order):
         if not self._order_in_list(order) and (self.trader.simulate or not self._already_has_real_or_linked_order(order)):
             self.order_list.append(order)
+            self.logger.debug(f"Order added to open orders (currently {len(self.order_list)} open order(s))")
+        else:
+            self.logger.debug(f"Order not added to open orders (already in open order: {self._order_in_list(order)}) "
+                              f"(currently {len(self.order_list)} open order(s))")
 
     def _order_in_list(self, order):
         return order in self.order_list
 
     def _already_has_real_or_linked_order(self, order):
-        return (order.get_id() is not None and self.has_order_id_in_list(order.get_id())) or \
-               (isinstance(order, (StopLossLimitOrder, StopLossOrder)) and
-                any([other.get_linked_orders() == order.get_linked_orders()
-                     for other in self.order_list]))
+        if order.get_id() is not None:
+            return self.has_order_id_in_list(order.get_id())
+        else:
+            return (isinstance(order, (StopLossLimitOrder, StopLossOrder)) and
+                    self._already_an_order_linked_to_these_real_orders(order.get_linked_orders())
+                    )
+
+    def _already_an_order_linked_to_these_real_orders(self, linked_orders):
+        targed_linked_ids = set(linked.get_id() for linked in linked_orders)
+        for order in self.order_list:
+            if order.linked_orders:
+                linked_ids = set(linked.get_id() for linked in order.linked_orders)
+                if targed_linked_ids == linked_ids:
+                    return True
+        return False
 
     def has_order_id_in_list(self, order_id):
         return any([order.get_id() == order_id for order in self.order_list])
