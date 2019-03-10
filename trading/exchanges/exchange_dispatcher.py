@@ -132,16 +132,17 @@ class ExchangeDispatcher(AbstractExchange):
         if from_web_socket:
             # web socket: ensure data are the most recent one otherwise restart web socket
             if not symbol_data.ensure_data_validity(time_frame):
-                await self._handle_web_socket_reset()
+                message = "Web socket seems to be disconnected, trying to restart it"
+                await self._handle_web_socket_reset(message)
                 return self.get_symbol_prices(symbol, time_frame, limit, return_list)
 
         return symbol_prices
 
     async def reset_web_sockets_if_any(self):
         if self._web_socket_available():
-            await self._handle_web_socket_reset()
+            await self._handle_web_socket_reset("Resetting web sockets")
 
-    async def _handle_web_socket_reset(self):
+    async def _handle_web_socket_reset(self, message):
         # first check if reset is not already running
         if self.resetting_web_socket:
             # if true: a reset is being processed in another task, wait for it to be over and recall method
@@ -150,7 +151,7 @@ class ExchangeDispatcher(AbstractExchange):
         else:
             self.resetting_web_socket = True
             # otherwise: reset web socket and recall method
-            self.logger.warning("web socket seems to be disconnected, trying to restart it")
+            self.logger.warning(message)
             try:
                 self.get_exchange_manager().reset_websocket_exchange()
             except Exception as e:
