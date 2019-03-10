@@ -67,13 +67,10 @@ class OrdersManager:
                     )
 
     def _already_an_order_linked_to_these_real_orders(self, linked_orders):
-        targed_linked_ids = set(linked.get_id() for linked in linked_orders)
-        for order in self.order_list:
-            if order.linked_orders:
-                linked_ids = set(linked.get_id() for linked in order.linked_orders)
-                if targed_linked_ids == linked_ids:
-                    return True
-        return False
+        target_linked_ids = set(linked.get_id() for linked in linked_orders)
+        return \
+            any(order for order in self.order_list
+                if order.linked_orders and set(linked.get_id() for linked in order.linked_orders) == target_linked_ids)
 
     def has_order_id_in_list(self, order_id):
         return any([order.get_id() == order_id for order in self.order_list])
