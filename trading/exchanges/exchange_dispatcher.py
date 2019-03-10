@@ -137,6 +137,10 @@ class ExchangeDispatcher(AbstractExchange):
 
         return symbol_prices
 
+    async def reset_web_sockets_if_any(self):
+        if self._web_socket_available():
+            await self._handle_web_socket_reset()
+
     async def _handle_web_socket_reset(self):
         # first check if reset is not already running
         if self.resetting_web_socket:
