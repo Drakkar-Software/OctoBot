@@ -284,7 +284,8 @@ class OctoBot:
             task_list.append(trader.start_order_manager())
 
         for trader_simulator in self.exchange_trader_simulators.values():
-            task_list.append(trader_simulator.launch())
+            await trader_simulator.launch()
+            task_list.append(trader_simulator.start_order_manager())
 
         for updater in self.global_updaters_by_exchange.values():
             if self.watcher is not None:
