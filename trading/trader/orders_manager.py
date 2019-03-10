@@ -75,6 +75,9 @@ class OrdersManager:
     def has_order_id_in_list(self, order_id):
         return any([order.get_id() == order_id for order in self.order_list])
 
+    def get_orders_with_symbol(self, symbol):
+        return [order for order in self.order_list if order.symbol == symbol]
+
     def remove_order_from_list(self, order):
         """
         Remove the specified order of the current open_order list (when the order is filled or canceled)
