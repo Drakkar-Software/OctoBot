@@ -1,4 +1,49 @@
-*It is strongly advised to perform an update of your tentacles after updating OctoBot.*
+*It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
+
+Changelog for 0.3.2-beta
+====================
+*Released date : March 10 2019*
+
+# Concerned issues :
+    #635 [Interface Bot] New commands for telegram bot, etc
+    #647 [Web interface] can't add more than one currency at once bug
+    #655 [Configuration interface] do not display in dev evaluators
+    #661 HybridTradingMode.json NOT FOUND
+    #663 [Telegram evaluator] add telegram dispatcher architecture
+    #664 [SignalEvaluator] create abstract signal evaluator
+    #665 [Evaluators] add a method to know the type of evaluation carried by the evaluator
+    #667 [Web interface] add option to apply strategy default config when activating a strategy
+    #671 [Telegram Interface] Improve readability using message formatting (markdown ?)
+    #678 [Logs management] do not log errors twice
+    #681 [Web Interface] improve checkboxes design
+    #684 [Telegram Interface] telegram.error.BadRequest: Message is too long
+    #686 [Real Trader] find a way to handle market order fill prices when using ws
+    #687 [Web Interface] Improve candles & trades graph readability
+    #691 [OrderManager] KeyError "Error when updating orders"
+    #694 [TentacleEvolution] Prepare for staggered orders strategy
+    #697 [StopLoss] {"code":-2010,"msg":"Account has insufficient balance for requested action."} when triggering stop loss
+    #700 [Web interface] Filter ccxt exchanges: do not display unusable exchanges
+    #702 [Portfolio display] Portfolio total value not always updated in web and telegram interface
+    #705 [Interfaces] add default messages when no available data
+    #711 [Bug] Trade creator: does not systematically respect order rules
+    #713 [Telegram Interface] /fees command is not responding
+    #715 [Order Manager] problem with stop losses on real trades
+    #717 [Real Trader] order fill notification not received (web socket)
+
+# New features :
+    - New Strategy: staggered orders
+    - Improved web and telegram interfaces user experience
+    - Added documentation and default settings for evaluators on web interface
+    - Added telegram commands
+    - Can now handle telegram signals
+    
+
+# Bug fixes :
+    - Fixed several bugs related to orders management and synchronization
+    - Fixed a rare portfolio synchronization bug
+    - The telegram interface now splits long messages
+    - Fixed web interface bugs
+    - Fixed telegram /fees command
 
 Changelog for 0.3.1-beta
 ====================
