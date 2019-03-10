@@ -80,8 +80,9 @@ def _auto_open_web(config, bot):
         while not bot.is_ready():
             sleep(0.1)
 
-        webbrowser.open(f"http://{socket.gethostbyname(socket.gethostname())}:"
-                        f"{config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT]}")
+        webbrowser.open("http://{0}:{1}".format(socket.gethostbyname(socket.gethostname()),
+                                                config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT])
+                        )
     except webbrowser.Error as e:
         logging.error("{0}, impossible to open automatically web interface".format(e))
 
