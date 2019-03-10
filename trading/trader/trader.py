@@ -381,9 +381,9 @@ class Trader(Initializable):
                 async with self.portfolio.get_lock():
                     await self.create_order(order, self.portfolio, True)
 
-    async def force_refresh_orders_and_portfolio(self, portfolio=None):
+    async def force_refresh_orders_and_portfolio(self, portfolio=None, delete_desync_orders=True):
+        await self.force_refresh_orders(portfolio, delete_desync_orders=delete_desync_orders)
         await self.force_refresh_portfolio(portfolio)
-        await self.force_refresh_orders(portfolio)
 
     async def force_refresh_portfolio(self, portfolio=None):
         if not self.simulate:
@@ -394,16 +394,19 @@ class Trader(Initializable):
                 async with self.portfolio.get_lock():
                     await self.portfolio.update_portfolio_balance()
 
-    async def force_refresh_orders(self, portfolio=None):
+    async def force_refresh_orders(self, portfolio=None, delete_desync_orders=True):
         # useless in simulation mode
         if not self.simulate:
             self.logger.info(f"Triggered forced {self.exchange.get_name()} trader orders refresh")
             symbols = self.exchange.get_exchange_manager().get_traded_pairs()
+            added_orders = 0
+            removed_orders = 0
 
             # get orders from exchange for the specified symbols
             for symbol_traded in symbols:
-
                 orders = await self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
+
+                # create missing orders
                 for open_order in orders:
                     # do something only if order not already in list
                     if not self.order_manager.has_order_id_in_list(open_order["id"]):
@@ -413,6 +416,17 @@ class Trader(Initializable):
                         else:
                             async with self.portfolio.get_lock():
                                 await self.create_order(order, self.portfolio, True)
+                        added_orders += 1
+
+                if delete_desync_orders:
+                    # remove orders that are not online anymore
+                    order_ids = [o["id"] for o in orders]
+                    for symbol_order in self.order_manager.get_orders_with_symbol(symbol_traded):
+                        if symbol_order.get_id() not in order_ids:
+                            # remove order from order manager
+                            self.order_manager.remove_order_from_list(symbol_order)
+                            removed_orders += 1
+            self.logger.info(f"Orders refreshed: added {added_orders} order(s) and removed {removed_orders} order(s)")
 
     def parse_exchange_order_to_order_instance(self, order):
         return self.create_order_instance(order_type=self.parse_order_type(order),
