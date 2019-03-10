@@ -48,12 +48,16 @@ class OrdersManager:
             self.order_refresh_time = ORDER_REFRESHER_TIME
 
     def add_order_to_list(self, order):
-        if not self._order_in_list(order) and (self.trader.simulate or not self._already_has_real_or_linked_order(order)):
+        if self.should_add_order(order):
             self.order_list.append(order)
             self.logger.debug(f"Order added to open orders (currently {len(self.order_list)} open order(s))")
         else:
             self.logger.debug(f"Order not added to open orders (already in open order: {self._order_in_list(order)}) "
                               f"(currently {len(self.order_list)} open order(s))")
+
+    def should_add_order(self, order):
+        return not self._order_in_list(order) and \
+               (self.trader.simulate or not self._already_has_real_or_linked_order(order))
 
     def _order_in_list(self, order):
         return order in self.order_list

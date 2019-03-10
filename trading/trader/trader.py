@@ -378,10 +378,12 @@ class Trader(Initializable):
             orders = await self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)
-                async with self.portfolio.get_lock():
-                    await self.create_order(order, self.portfolio, True)
+                if self.order_manager.should_add_order(order):
+                    async with self.portfolio.get_lock():
+                        await self.create_order(order, self.portfolio, True)
 
     async def force_refresh_orders_and_portfolio(self, portfolio=None, delete_desync_orders=True):
+        await self.exchange.reset_web_sockets_if_any()
         await self.force_refresh_orders(portfolio, delete_desync_orders=delete_desync_orders)
         await self.force_refresh_portfolio(portfolio)
 
