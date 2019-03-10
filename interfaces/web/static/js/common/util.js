@@ -21,12 +21,12 @@ function setup_editable(){
 }
 
 function get_color(index){
-    let color_index = index % (material_colors.length-1);
+    let color_index = index % (material_colors.length);
     return material_colors[color_index];
 }
 
 function get_dark_color(index){
-    let color_index = index % (material_dark_colors.length-1);
+    let color_index = index % (material_dark_colors.length);
     return material_dark_colors[color_index];
 }
 
