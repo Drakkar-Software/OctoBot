@@ -40,7 +40,7 @@ class OrdersManager:
         self.trader = trader
         self.order_list = []
         self.last_symbol_prices = {}
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(f"{self.__class__.__name__}{'Simulator' if self.trader.simulate else ''}")
 
         if self.trader.get_exchange().is_web_socket_available():
             self.order_refresh_time = ORDER_REFRESHER_TIME_WS
