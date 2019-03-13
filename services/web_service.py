@@ -36,7 +36,7 @@ class WebService(AbstractService):
 
     def get_default_value(self):
         return {
-            CONFIG_WEB_PORT: 5000
+            CONFIG_WEB_PORT: DEFAULT_SERVER_PORT
         }
 
     def get_required_config(self):
