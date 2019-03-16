@@ -45,7 +45,7 @@ class Trader(Initializable):
 
         # logging
         self.trader_type_str = REAL_TRADER_STR
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(f"{self.__class__.__name__}[{self.exchange.get_name()}]")
 
         if not hasattr(self, 'simulate'):
             self.simulate = False
