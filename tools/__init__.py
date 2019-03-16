@@ -14,29 +14,30 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import logging
+from __future__ import print_function
 import os
 import sys
-
-from config import PlatformsName, get_os
 
 MIN_PYTHON_VERSION = (3, 7)
 
 # check python version
 current_version = sys.version_info
 if not current_version >= MIN_PYTHON_VERSION:
-    logging.error(" OctoBot requires Python version to be higher or equal to Python " + str(MIN_PYTHON_VERSION[0])
-                  + "." + str(MIN_PYTHON_VERSION[1]) + " current Python version is " + str(current_version[0])
-                  + "." + str(current_version[1]) + "\n"
-                  + "You can download Python last versions on: https://www.python.org/downloads/")
+    print("OctoBot requires a Python version to be higher or equal to Python " + str(MIN_PYTHON_VERSION[0])
+          + "." + str(MIN_PYTHON_VERSION[1]) + " current Python version is " + str(current_version[0])
+          + "." + str(current_version[1]) + "\n"
+          + "You can download Python last versions on: https://www.python.org/downloads/", file=sys.stderr)
     sys.exit(-1)
 
 # binary tentacle importation
 sys.path.append(os.path.dirname(sys.executable))
 
 # if compatible version, can proceed with imports
+if True:
+    from config import PlatformsName, get_os
+    from tools.logging.logging_util import get_logger
 
-# check sudo rights
-if get_os() is not PlatformsName.WINDOWS and os.getuid() == 0:
-    logging.warning("OctoBot is started with admin / sudo rights that are not required, "
-                    "please check you starting command ")
+    # check sudo rights
+    if get_os() is not PlatformsName.WINDOWS and os.getuid() == 0:
+        get_logger("PythonChecker").warning("OctoBot is started with admin / sudo rights that are not required, "
+                                            "please check you starting command ")

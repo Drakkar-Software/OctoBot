@@ -14,6 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+# tools is checking the current python version
+from tools.commands import Commands
+
 import argparse
 import asyncio
 import logging
@@ -32,7 +35,6 @@ from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CO
     CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, \
     CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT
 from config.config import load_config, init_config, is_config_empty_or_missing
-from tools.commands import Commands
 from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 from tools.external_resources_manager import get_external_resource
