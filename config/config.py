@@ -44,7 +44,7 @@ def load_config(config_file=CONFIG_FILE, error=True):
         else:
             logger.error(error_str)
     except Exception as e:
-        error_str = "{0} : {1}".format(basic_error, e)
+        error_str = f"{basic_error} : {e}"
         if error:
             raise Exception(error_str)
         else:
@@ -56,7 +56,7 @@ def init_config(config_file=CONFIG_FILE, from_config_file=DEFAULT_CONFIG_FILE):
     try:
         copyfile(from_config_file, config_file)
     except Exception as e:
-        raise Exception("Can't init config file {0}".format(e))
+        raise Exception(f"Can't init config file {e}")
 
 
 def is_config_empty_or_missing(config_file=CONFIG_FILE):
