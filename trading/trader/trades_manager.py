@@ -38,7 +38,7 @@ class TradesManager(Initializable):
         self.trader = trader
         self.portfolio = trader.get_portfolio()
         self.exchange = trader.get_exchange()
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(f"{self.__class__.__name__}[{self.exchange.get_name()}]")
 
         self.trade_history = []
         self.profitability = 0

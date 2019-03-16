@@ -40,7 +40,8 @@ class OrdersManager:
         self.trader = trader
         self.order_list = []
         self.last_symbol_prices = {}
-        self.logger = get_logger(f"{self.__class__.__name__}{'Simulator' if self.trader.simulate else ''}")
+        self.logger = get_logger(f"{self.__class__.__name__}{'Simulator' if self.trader.simulate else ''}"
+                                 f"[{self.trader.exchange.get_name()}]")
 
         if self.trader.get_exchange().is_web_socket_available():
             self.order_refresh_time = ORDER_REFRESHER_TIME_WS
@@ -50,10 +51,11 @@ class OrdersManager:
     def add_order_to_list(self, order):
         if self.should_add_order(order):
             self.order_list.append(order)
-            self.logger.debug(f"Order added to open orders (currently {len(self.order_list)} open order(s))")
+            self.logger.debug(f"Order added to open orders (total: {len(self.order_list)} open order"
+                              f"{'s' if len(self.order_list) > 1 else ''})")
         else:
             self.logger.debug(f"Order not added to open orders (already in open order: {self._order_in_list(order)}) "
-                              f"(currently {len(self.order_list)} open order(s))")
+                              f"(total: {len(self.order_list)} open order{'s' if len(self.order_list) > 1 else ''})")
 
     def should_add_order(self, order):
         return not self._order_in_list(order) and \
