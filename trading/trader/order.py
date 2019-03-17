@@ -93,6 +93,8 @@ class Order:
             linked_to=None,
             linked_portfolio=None):
 
+        if not isinstance(order_type, TraderOrderType):
+            get_logger(self.get_name()).error(f"order initialized with an invalid order-type: {order_type}")
         self.order_id = order_id
         self.origin_price = price
         self.status = status
