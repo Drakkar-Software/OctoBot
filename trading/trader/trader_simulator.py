@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from config import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR, SIMULATOR_TRADER_STR
+from config import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR, SIMULATOR_TRADER_STR, SIMULATOR_TRADE_HISTORY
 from trading.trader.trader import Trader
 
 """ TraderSimulator has a role of exchange response simulator
@@ -22,9 +22,14 @@ from trading.trader.trader import Trader
 
 
 class TraderSimulator(Trader):
-    def __init__(self, config, exchange, order_refresh_time=None):
+
+    TRADE_HISTORY_KEY = SIMULATOR_TRADE_HISTORY
+    NO_HISTORY_MESSAGE = "Starting a fresh new trading simulation session using trader simulator initial portfolio " \
+                         "in configuration."
+
+    def __init__(self, config, exchange, order_refresh_time=None, previous_state_manager=None):
         self.simulate = True
-        super().__init__(config, exchange, order_refresh_time)
+        super().__init__(config, exchange, order_refresh_time, previous_state_manager)
 
         self.trader_type_str = SIMULATOR_TRADER_STR
 

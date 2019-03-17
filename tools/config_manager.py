@@ -263,6 +263,15 @@ class ConfigManager:
                     yield symbol
 
     @staticmethod
+    def get_all_currencies(config):
+        currencies = set()
+        for symbol in ConfigManager.get_symbols(config):
+            quote, base = split_symbol(symbol)
+            currencies.add(quote)
+            currencies.add(base)
+        return currencies
+
+    @staticmethod
     def get_pairs(config, currency) -> []:
         pairs = []
         for symbol in ConfigManager.get_symbols(config):

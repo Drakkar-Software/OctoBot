@@ -19,7 +19,7 @@ from concurrent.futures import CancelledError
 import copy
 from ccxt.async_support import BaseError, InsufficientFunds
 
-from backtesting.backtesting import Backtesting
+from backtesting import backtesting_enabled
 from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
 from tools.logging.logging_util import get_logger
 from trading.trader.order import Order, StopLossLimitOrder, StopLossOrder
@@ -125,7 +125,7 @@ class OrdersManager:
 
         exchange = self.trader.get_exchange()
 
-        if Backtesting.enabled(self.config):
+        if backtesting_enabled(self.config):
             last_symbol_price = await self.trader.get_exchange().get_recent_trades(symbol)
 
         # Exchange call when not backtesting

@@ -160,7 +160,9 @@ def start_octobot(starting_args):
 
                     update_config_with_args(starting_args, config)
 
-                    bot = OctoBot(config)
+                    reset_trading_history = starting_args.reset_trading_history
+
+                    bot = OctoBot(config, reset_trading_history=reset_trading_history)
 
                     import interfaces
                     interfaces.__init__(bot, config)
@@ -204,6 +206,11 @@ def main(args=None):
     parser.add_argument('-v', '--version', help='Show OctoBot current version.',
                         action='store_true')
     parser.add_argument('-s', '--simulate', help='Force OctoBot to start with the trader simulator only.',
+                        action='store_true')
+    parser.add_argument('-rts', '--reset-trading-history', help='Force the traders to reset their history. They will '
+                                                                'now take the next portfolio as a reference for '
+                                                                'profitability and trading simulators will use a '
+                                                                'fresh new portfolio.',
                         action='store_true')
     parser.add_argument('-d', '--data_collector',
                         help='Start the data collector process to store data for backtesting.',

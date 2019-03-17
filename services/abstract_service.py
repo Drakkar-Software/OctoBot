@@ -16,7 +16,7 @@
 
 from abc import ABCMeta, abstractmethod
 
-from backtesting.backtesting import Backtesting
+from backtesting import backtesting_enabled
 from tools.config_manager import ConfigManager
 
 
@@ -64,7 +64,7 @@ class AbstractService:
 
     @classmethod
     def should_be_ready(cls, config):
-        on_backtesting = Backtesting.enabled(config)
+        on_backtesting = backtesting_enabled(config)
         return not on_backtesting or (on_backtesting and cls.BACKTESTING_ENABLED)
 
     # Used to provide a new logger for this particular indicator

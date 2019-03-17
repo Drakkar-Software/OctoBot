@@ -152,7 +152,7 @@
                  <!-- Card deck -->
                 <div class="card-deck config-container">
                     <span class="col-lg-12">
-                        {{ m_config_trader_card.config_trader_card(config_trading, "trading", "Trading settings", link="https://github.com/Drakkar-Software/OctoBot/wiki/Trader#trading-settings") }}
+                        {{ m_config_trader_card.config_trader_card(config_trading, "trading", "Trading settings", link="https://github.com/Drakkar-Software/OctoBot/wiki/Trader#trading-settings", action=("Reset trading history", url_for("config_actions", action="reset_trading_history"))) }}
                     </span>
                     {{ m_config_trader_card.config_trader_card(config_trader, "trader", "Trader", link="https://github.com/Drakkar-Software/OctoBot/wiki/Trader#trader") }}
                     {{ m_config_trader_card.config_trader_card(config_trader_simulator, "trader-simulator", "Trader simulator", link="https://github.com/Drakkar-Software/OctoBot/wiki/Simulator#simulator") }}
