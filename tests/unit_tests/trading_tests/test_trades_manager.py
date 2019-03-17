@@ -22,7 +22,7 @@ from config import *
 from tests.test_utils.config import load_test_config
 from trading.trader.trader_simulator import TraderSimulator
 from trading.trader.trade import Trade
-from trading.trader.order import SellLimitOrder, OrderConstants
+from trading.trader.order import SellLimitOrder
 from trading.trader.trades_manager import TradesManager
 
 
@@ -121,7 +121,7 @@ class TestTradesManager:
         assert len(trades_manager_inst.get_trade_history()) == 0
         symbol = "BTC/USD"
         new_order = SellLimitOrder(trader_inst)
-        new_order.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT], symbol, 90, 4, 90)
+        new_order.new(TraderOrderType.SELL_LIMIT, symbol, 90, 4, 90)
         new_trade = Trade(exchange_inst, new_order)
 
         # add new trade
@@ -138,7 +138,7 @@ class TestTradesManager:
         assert trades_manager_inst.select_trade_history() == trades_manager_inst.get_trade_history()
 
         new_order2 = SellLimitOrder(trader_inst)
-        new_order2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT], "BTC/EUR", 90, 4, 90)
+        new_order2.new(TraderOrderType.SELL_LIMIT, "BTC/EUR", 90, 4, 90)
         new_trade2 = Trade(exchange_inst, new_order2)
 
         trades_manager_inst.add_new_trade_in_history(new_trade2)
@@ -150,7 +150,7 @@ class TestTradesManager:
         self.stop(trader_inst)
         symbol = "BTC/USD"
         new_order = SellLimitOrder(trader_inst)
-        new_order.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT], symbol, 90, 4, 90)
+        new_order.new(TraderOrderType.SELL_LIMIT, symbol, 90, 4, 90)
         new_order.fee = {
             FeePropertyColumns.COST.value: 100,
             FeePropertyColumns.CURRENCY.value: "BTC"
@@ -161,7 +161,7 @@ class TestTradesManager:
         assert trades_manager_inst.get_total_paid_fees() == {"BTC": 100}
 
         new_order2 = SellLimitOrder(trader_inst)
-        new_order2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT], symbol, 90, 4, 90)
+        new_order2.new(TraderOrderType.SELL_LIMIT, symbol, 90, 4, 90)
         new_order2.fee = {
             FeePropertyColumns.COST.value: 200,
             FeePropertyColumns.CURRENCY.value: "PLOP"
@@ -172,7 +172,7 @@ class TestTradesManager:
         assert trades_manager_inst.get_total_paid_fees() == {"BTC": 100, "PLOP": 200}
 
         new_order3 = SellLimitOrder(trader_inst)
-        new_order3.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT], symbol, 90, 4, 90)
+        new_order3.new(TraderOrderType.SELL_LIMIT, symbol, 90, 4, 90)
         new_order3.fee = {
             FeePropertyColumns.COST.value: 0.01111,
             FeePropertyColumns.CURRENCY.value: "PLOP"
