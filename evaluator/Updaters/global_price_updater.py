@@ -20,7 +20,7 @@ import copy
 from concurrent.futures import CancelledError
 
 from tools.logging.logging_util import get_logger
-from backtesting.backtesting import Backtesting, BacktestingEndedException
+from backtesting import BacktestingEndedException, backtesting_enabled
 from config import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPING_TIME
 from tools.time_frame_manager import TimeFrameManager
 
@@ -194,12 +194,12 @@ class GlobalPriceUpdater:
             self.evaluator_task_manager_by_time_frame_by_symbol[time_frames[0]][self.symbols[0]]
 
         # test if we need to initialize backtesting features
-        backtesting_enabled = Backtesting.enabled(evaluator_task_manager.get_evaluator().get_config())
-        if backtesting_enabled:
+        is_backtesting_enabled = backtesting_enabled(evaluator_task_manager.get_evaluator().get_config())
+        if is_backtesting_enabled:
             for symbol in self.symbols:
                 self.exchange.get_exchange().init_candles_offset(time_frames, symbol)
 
-        return backtesting_enabled
+        return is_backtesting_enabled
 
     def stop(self):
         self.keep_running = False

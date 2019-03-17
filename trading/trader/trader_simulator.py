@@ -22,6 +22,10 @@ from trading.trader.trader import Trader
 
 
 class TraderSimulator(Trader):
+
+    NO_HISTORY_MESSAGE = "Starting a fresh new trading simulation session using trader simulator initial portfolio " \
+                         "in configuration."
+
     def __init__(self, config, exchange, order_refresh_time=None):
         self.simulate = True
         super().__init__(config, exchange, order_refresh_time)

@@ -16,7 +16,7 @@
 import copy
 from tools.logging.logging_util import get_logger
 
-from backtesting.backtesting import Backtesting
+from backtesting import backtesting_enabled
 from config import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType, \
     ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns
@@ -506,7 +506,7 @@ class Trader(Initializable):
         self.order_manager.stop()
 
     async def start_order_manager(self):
-        if not Backtesting.enabled(self.config):
+        if not backtesting_enabled(self.config):
             await self.order_manager.poll_update()
 
     def get_simulate(self):
