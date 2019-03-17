@@ -54,7 +54,7 @@ class Order:
     market: str = None
     order_id: str = None
     status: OrderStatus = OrderStatus.OPEN
-    order_type: Any = None
+    order_type: TraderOrderType = None
     timestamp: int = None
     creation_time: int = time.time()
     canceled_time: int = 0
@@ -244,16 +244,16 @@ class Order:
 
     def get_string_info(self):
         return (f"{self.get_order_symbol()} | "
-                f"{self.get_order_type()} | "
+                f"{self.get_order_type().name} | "
                 f"Price : {self.get_origin_price()} | "
                 f"Quantity : {self.get_origin_quantity()} | "
                 f"Status : {self.get_status()}")
 
     def infer_taker_or_maker(self):
         if self.taker_or_maker is None:
-            if self.order_type == SellMarketOrder \
-                    or self.order_type == BuyMarketOrder \
-                    or self.order_type == StopLossOrder:
+            if self.order_type == TraderOrderType.SELL_MARKET \
+                    or self.order_type == TraderOrderType.BUY_MARKET \
+                    or self.order_type == TraderOrderType.STOP_LOSS:
                 # always true
                 return ExchangeConstantsMarketPropertyColumns.TAKER.value
             else:

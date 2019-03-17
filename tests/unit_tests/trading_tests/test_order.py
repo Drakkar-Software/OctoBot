@@ -23,7 +23,7 @@ import ccxt
 from trading.exchanges.exchange_manager import ExchangeManager
 from config import TradeOrderSide, SIMULATOR_LAST_PRICES_TO_CHECK, TraderOrderType, OrderStatus
 from tests.test_utils.config import load_test_config
-from trading.trader.order import Order, OrderConstants
+from trading.trader.order import Order
 from trading.trader.trader_simulator import TraderSimulator
 
 
@@ -151,7 +151,7 @@ class TestOrder:
         config, order_inst, trader_inst, exchange_inst = await self.init_default()
 
         # with real trader
-        order_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        order_inst.new(TraderOrderType.BUY_MARKET,
                        "BTC/USDT",
                        10000,
                        1,
@@ -159,7 +159,7 @@ class TestOrder:
                        stop_price=None,
                        order_notifier=None)
 
-        assert order_inst.get_order_type() == OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET]
+        assert order_inst.get_order_type() == TraderOrderType.BUY_MARKET
         assert order_inst.get_order_symbol() == "BTC/USDT"
         assert order_inst.get_create_last_price() == 10000
         assert order_inst.get_origin_quantity() == 1
@@ -168,7 +168,7 @@ class TestOrder:
         assert order_inst.get_side() is None
         assert order_inst.get_status() == OrderStatus.OPEN
 
-        order_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT],
+        order_inst.new(TraderOrderType.STOP_LOSS_LIMIT,
                        "ETH/BTC",
                        0.1,
                        5.2,
@@ -183,7 +183,7 @@ class TestOrder:
         trader_sim_inst = TraderSimulator(config, exchange_inst, 1)
         order_sim_inst = Order(trader_sim_inst)
 
-        order_sim_inst.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+        order_sim_inst.new(TraderOrderType.SELL_MARKET,
                            "LTC/USDT",
                            100,
                            3.22,

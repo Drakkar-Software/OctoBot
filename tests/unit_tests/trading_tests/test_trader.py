@@ -83,7 +83,7 @@ class TestTrader:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        self.DEFAULT_SYMBOL,
                        70,
                        10,
@@ -106,7 +106,7 @@ class TestTrader:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        self.DEFAULT_SYMBOL,
                        70,
                        10,
@@ -114,7 +114,7 @@ class TestTrader:
 
         # Test sell order
         market_sell = SellMarketOrder(trader_inst)
-        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+        market_sell.new(TraderOrderType.SELL_MARKET,
                         self.DEFAULT_SYMBOL,
                         70,
                         10,
@@ -122,7 +122,7 @@ class TestTrader:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       self.DEFAULT_SYMBOL,
                       70,
                       10,
@@ -154,7 +154,7 @@ class TestTrader:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        "BTC/EUR",
                        70,
                        10,
@@ -162,7 +162,7 @@ class TestTrader:
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "NANO/USDT",
                        70,
                        10,
@@ -170,7 +170,7 @@ class TestTrader:
 
         # Test sell order
         market_sell = SellMarketOrder(trader_inst)
-        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+        market_sell.new(TraderOrderType.SELL_MARKET,
                         self.DEFAULT_SYMBOL,
                         70,
                         10,
@@ -178,7 +178,7 @@ class TestTrader:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       self.DEFAULT_SYMBOL,
                       70,
                       10,
@@ -214,7 +214,7 @@ class TestTrader:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        "BTC/EUR",
                        70,
                        10,
@@ -222,7 +222,7 @@ class TestTrader:
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "XRB/BTC",
                        70,
                        10,
@@ -230,7 +230,7 @@ class TestTrader:
 
         # Test sell order
         market_sell = SellMarketOrder(trader_inst)
-        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+        market_sell.new(TraderOrderType.SELL_MARKET,
                         self.DEFAULT_SYMBOL,
                         70,
                         10,
@@ -238,7 +238,7 @@ class TestTrader:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       self.DEFAULT_SYMBOL,
                       70,
                       10,
@@ -295,7 +295,7 @@ class TestTrader:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        "BTC/EUR",
                        70,
                        10,
@@ -303,7 +303,7 @@ class TestTrader:
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "NANO/USDT",
                        70,
                        10,
@@ -311,7 +311,7 @@ class TestTrader:
 
         # Test stop loss order
         stop_loss = StopLossOrder(trader_inst)
-        stop_loss.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss.new(TraderOrderType.STOP_LOSS,
                       "BTC/USD",
                       60,
                       10,
@@ -423,7 +423,7 @@ class TestTrader:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        "BTC/EUR",
                        70,
                        10,
@@ -431,7 +431,7 @@ class TestTrader:
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "NANO/USDT",
                        70,
                        10,
@@ -439,7 +439,7 @@ class TestTrader:
 
         # Test stop loss order
         stop_loss = StopLossOrder(trader_inst)
-        stop_loss.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss.new(TraderOrderType.STOP_LOSS,
                       "BTC/USD",
                       60,
                       10,
