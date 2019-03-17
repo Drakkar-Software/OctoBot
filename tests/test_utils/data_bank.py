@@ -97,9 +97,8 @@ class DataBank(Initializable):
         if max_index is None and min_index is None:
             return self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame]
         else:
-            min_i = min_index if min_index is not None else 0
-            max_i = max_index if max_index is not None else \
-                len(self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame][0])-1
+            min_i = min_index or 0
+            max_i = max_index or len(self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame][0])-1
             return self.reduce_data(self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame], min_i, max_i)
 
     def _init_data(self):

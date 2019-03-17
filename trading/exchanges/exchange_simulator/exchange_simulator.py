@@ -232,8 +232,8 @@ class ExchangeSimulator(AbstractExchange):
         return self.time_frames_offset[symbol][time_frame] + self.time_frame_get_times[symbol][time_frame]
 
     def _extract_data_with_limit(self, symbol, time_frame):
-        to_use_time_frame = time_frame.value if time_frame is not None \
-            else TimeFrameManager.find_min_time_frame(self.time_frames_offset[symbol].keys()).value
+        to_use_time_frame = time_frame.value or \
+                            TimeFrameManager.find_min_time_frame(self.time_frames_offset[symbol].keys()).value
         return self._extract_from_indexes(self.data[symbol][to_use_time_frame],
                                           self._get_candle_index(to_use_time_frame, symbol),
                                           symbol)

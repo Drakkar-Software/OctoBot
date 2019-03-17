@@ -71,7 +71,7 @@ class AbstractTradingMode:
 
     @classmethod
     def get_required_strategies(cls, trading_mode_config=None):
-        config = trading_mode_config if trading_mode_config is not None else cls.get_trading_mode_config()
+        config = trading_mode_config or cls.get_trading_mode_config()
         if TRADING_MODE_REQUIRED_STRATEGIES in config:
             strategies_classes = []
             for class_string in config[TRADING_MODE_REQUIRED_STRATEGIES]:
@@ -89,7 +89,7 @@ class AbstractTradingMode:
 
     @classmethod
     def get_required_strategies_names_and_count(cls, trading_mode_config=None):
-        config = trading_mode_config if trading_mode_config is not None else cls.get_trading_mode_config()
+        config = trading_mode_config or cls.get_trading_mode_config()
         if TRADING_MODE_REQUIRED_STRATEGIES in config:
             return config[TRADING_MODE_REQUIRED_STRATEGIES], cls.get_required_strategies_count(config)
         else:
