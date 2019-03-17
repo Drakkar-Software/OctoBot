@@ -67,7 +67,7 @@ class StrategiesEvaluator(AbstractEvaluator):
     def get_required_evaluators(cls, config, strategy_config=None):
         if CONFIG_FORCED_EVALUATOR in config:
             return config[CONFIG_FORCED_EVALUATOR]
-        strategy_config = strategy_config if strategy_config is not None else cls.get_evaluator_config()
+        strategy_config = strategy_config or cls.get_evaluator_config()
         if STRATEGIES_REQUIRED_EVALUATORS in strategy_config:
             return strategy_config[STRATEGIES_REQUIRED_EVALUATORS]
         else:
