@@ -17,7 +17,8 @@
 import copy
 import time
 
-from backtesting.backtesting import Backtesting, BacktestingEndedException
+from backtesting import BacktestingEndedException, backtesting_enabled
+from backtesting.backtesting import Backtesting
 from backtesting.collector.data_file_manager import interpret_file_name
 from backtesting.collector.data_parser import DataCollectorParser
 from config import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACKTESTING, \
@@ -191,7 +192,7 @@ class ExchangeSimulator(AbstractExchange):
 
         max_price = tf[PriceIndexes.IND_PRICE_HIGH.value]
         min_price = tf[PriceIndexes.IND_PRICE_LOW.value]
-        timestamp = tf[PriceIndexes.IND_PRICE_TIME.value] if Backtesting.enabled(self.config) else time.time()
+        timestamp = tf[PriceIndexes.IND_PRICE_TIME.value] if backtesting_enabled(self.config) else time.time()
 
         # TODO generate trades with different patterns (linear, waves, random, etc)
         for _ in range(0, self.RECENT_TRADES_TO_CREATE - 2):
@@ -300,7 +301,7 @@ class ExchangeSimulator(AbstractExchange):
                 [PriceIndexes.IND_PRICE_TIME.value]
         else:
             self.logger.error(f"No data for the timeframes: {time_frames} in loaded backtesting file.")
-            if Backtesting.enabled(self.config):
+            if backtesting_enabled(self.config):
                 self.backtesting.end(symbol)
 
     """

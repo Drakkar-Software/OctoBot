@@ -30,7 +30,7 @@ from services import NotifierService
 from tools.config_manager import ConfigManager
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection, trading_mode_parent_inspection
 from evaluator.abstract_evaluator import AbstractEvaluator
-from backtesting.backtesting import Backtesting
+from backtesting import backtesting_enabled
 
 
 def get_edited_config():
@@ -51,6 +51,10 @@ def _get_trading_config():
 
 def get_trading_startup_config():
     return get_bot().get_startup_config()[CONFIG_TRADING_TENTACLES]
+
+
+def reset_trading_history():
+    get_bot().get_previous_trading_state_manager().reset_trading_history()
 
 
 def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_strategy=False):
@@ -179,7 +183,7 @@ def get_strategy_config():
 
 
 def get_in_backtesting_mode():
-    return Backtesting.enabled(get_bot().get_config())
+    return backtesting_enabled(get_bot().get_config())
 
 
 def _fill_evaluator_config(evaluator_name, activated, eval_type_key,
