@@ -22,7 +22,7 @@ from config import TraderOrderType, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, CON
 from tests.test_utils.config import load_test_config
 from tests.test_utils.order_util import fill_limit_or_stop_order, fill_market_order
 from trading.exchanges.exchange_manager import ExchangeManager
-from trading.trader.order import BuyMarketOrder, OrderConstants, SellLimitOrder, BuyLimitOrder, SellMarketOrder, \
+from trading.trader.order import BuyMarketOrder, SellLimitOrder, BuyLimitOrder, SellMarketOrder, \
     StopLossOrder
 from trading.trader.portfolio import Portfolio
 from trading.trader.trader_simulator import TraderSimulator
@@ -72,7 +72,7 @@ class TestPortfolio:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        "BTC/USD",
                        70,
                        10,
@@ -93,7 +93,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        60,
                        8,
@@ -117,7 +117,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       "BTC/USD",
                       70,
                       10,
@@ -138,7 +138,7 @@ class TestPortfolio:
 
         # Test buy order
         market_sell = SellMarketOrder(trader_inst)
-        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+        market_sell.new(TraderOrderType.SELL_MARKET,
                         "BTC/USD",
                         80,
                         8,
@@ -169,7 +169,7 @@ class TestPortfolio:
 
         # Test buy order
         market_sell = SellMarketOrder(trader_inst)
-        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+        market_sell.new(TraderOrderType.SELL_MARKET,
                         "BTC/USD",
                         70,
                         3,
@@ -179,7 +179,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        100,
                        4.2,
@@ -187,7 +187,7 @@ class TestPortfolio:
 
         # Test stop loss order
         stop_loss = StopLossOrder(trader_inst)
-        stop_loss.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss.new(TraderOrderType.STOP_LOSS,
                       "BTC/USD",
                       80,
                       4.2,
@@ -198,7 +198,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       "BTC/USD",
                       50,
                       2,
@@ -249,7 +249,7 @@ class TestPortfolio:
 
         # Test buy order
         market_sell = SellMarketOrder(trader_inst)
-        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+        market_sell.new(TraderOrderType.SELL_MARKET,
                         "BTC/USD",
                         80,
                         4.1,
@@ -257,7 +257,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        10,
                        4.2,
@@ -265,7 +265,7 @@ class TestPortfolio:
 
         # Test stop loss order
         stop_loss = StopLossOrder(trader_inst)
-        stop_loss.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss.new(TraderOrderType.STOP_LOSS,
                       "BTC/USD",
                       80,
                       3.6,
@@ -276,7 +276,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       "BTC/USD",
                       50,
                       4,
@@ -306,7 +306,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        90,
                        4,
@@ -314,7 +314,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       "BTC/USD",
                       50,
                       4,
@@ -322,7 +322,7 @@ class TestPortfolio:
 
         # Test stop loss order
         stop_loss = StopLossOrder(trader_inst)
-        stop_loss.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss.new(TraderOrderType.STOP_LOSS,
                       "BTC/USD",
                       60,
                       4,
@@ -357,7 +357,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        90,
                        4,
@@ -365,7 +365,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       "BTC/USD",
                       60,
                       2,
@@ -373,7 +373,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy_2 = BuyLimitOrder(trader_inst)
-        limit_buy_2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy_2.new(TraderOrderType.BUY_LIMIT,
                         "BTC/USD",
                         50,
                         4,
@@ -381,7 +381,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell_2 = SellLimitOrder(trader_inst)
-        limit_sell_2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell_2.new(TraderOrderType.SELL_LIMIT,
                          "BTC/USD",
                          10,
                          2,
@@ -389,7 +389,7 @@ class TestPortfolio:
 
         # Test stop loss order
         stop_loss_2 = StopLossOrder(trader_inst)
-        stop_loss_2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss_2.new(TraderOrderType.STOP_LOSS,
                         "BTC/USD",
                         10,
                         2,
@@ -397,7 +397,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell_3 = SellLimitOrder(trader_inst)
-        limit_sell_3.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell_3.new(TraderOrderType.SELL_LIMIT,
                          "BTC/USD",
                          20,
                          1,
@@ -405,7 +405,7 @@ class TestPortfolio:
 
         # Test stop loss order
         stop_loss_3 = StopLossOrder(trader_inst)
-        stop_loss_3.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss_3.new(TraderOrderType.STOP_LOSS,
                         "BTC/USD",
                         20,
                         1,
@@ -450,7 +450,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        90,
                        4,
@@ -458,7 +458,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       "BTC/USD",
                       60,
                       2,
@@ -466,7 +466,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy_2 = BuyLimitOrder(trader_inst)
-        limit_buy_2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy_2.new(TraderOrderType.BUY_LIMIT,
                         "BTC/USD",
                         50,
                         4,
@@ -474,7 +474,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy_3 = BuyLimitOrder(trader_inst)
-        limit_buy_3.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy_3.new(TraderOrderType.BUY_LIMIT,
                         "BTC/USD",
                         46,
                         2,
@@ -482,7 +482,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy_4 = BuyLimitOrder(trader_inst)
-        limit_buy_4.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy_4.new(TraderOrderType.BUY_LIMIT,
                         "BTC/USD",
                         41,
                         1.78,
@@ -490,7 +490,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy_5 = BuyLimitOrder(trader_inst)
-        limit_buy_5.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy_5.new(TraderOrderType.BUY_LIMIT,
                         "BTC/USD",
                         0.2122427,
                         3.72448,
@@ -498,7 +498,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy_6 = BuyLimitOrder(trader_inst)
-        limit_buy_6.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy_6.new(TraderOrderType.BUY_LIMIT,
                         "BTC/USD",
                         430,
                         1.05,
@@ -506,7 +506,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell_2 = SellLimitOrder(trader_inst)
-        limit_sell_2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell_2.new(TraderOrderType.SELL_LIMIT,
                          "BTC/USD",
                          10,
                          2,
@@ -514,7 +514,7 @@ class TestPortfolio:
 
         # Test stop loss order
         stop_loss_2 = StopLossOrder(trader_inst)
-        stop_loss_2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss_2.new(TraderOrderType.STOP_LOSS,
                         "BTC/USD",
                         10,
                         2,
@@ -522,7 +522,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell_3 = SellLimitOrder(trader_inst)
-        limit_sell_3.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell_3.new(TraderOrderType.SELL_LIMIT,
                          "BTC/USD",
                          20,
                          1,
@@ -530,7 +530,7 @@ class TestPortfolio:
 
         # Test stop loss order
         stop_loss_3 = StopLossOrder(trader_inst)
-        stop_loss_3.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss_3.new(TraderOrderType.STOP_LOSS,
                         "BTC/USD",
                         20,
                         1,
@@ -538,7 +538,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell_4 = SellLimitOrder(trader_inst)
-        limit_sell_4.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell_4.new(TraderOrderType.SELL_LIMIT,
                          "BTC/USD",
                          50,
                          0.2,
@@ -546,7 +546,7 @@ class TestPortfolio:
 
         # Test stop loss order
         stop_loss_4 = StopLossOrder(trader_inst)
-        stop_loss_4.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss_4.new(TraderOrderType.STOP_LOSS,
                         "BTC/USD",
                         45,
                         0.2,
@@ -554,7 +554,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell_5 = SellLimitOrder(trader_inst)
-        limit_sell_5.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell_5.new(TraderOrderType.SELL_LIMIT,
                          "BTC/USD",
                          11,
                          0.7,
@@ -562,7 +562,7 @@ class TestPortfolio:
 
         # Test stop loss order
         stop_loss_5 = StopLossOrder(trader_inst)
-        stop_loss_5.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        stop_loss_5.new(TraderOrderType.STOP_LOSS,
                         "BTC/USD",
                         9,
                         0.7,
@@ -629,7 +629,7 @@ class TestPortfolio:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        "ETH/USD",
                        7,
                        100,
@@ -652,7 +652,7 @@ class TestPortfolio:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        "LTC/BTC",
                        0.0135222,
                        100,
@@ -675,7 +675,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       "XRP/BTC",
                       0.00012232132312312,
                       3000.1214545,
@@ -700,7 +700,7 @@ class TestPortfolio:
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        90,
                        4,
@@ -716,7 +716,7 @@ class TestPortfolio:
 
         # Test sell order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        90,
                        4,
@@ -725,7 +725,7 @@ class TestPortfolio:
         portfolio_inst.update_portfolio_available(limit_sell, True)
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       "VEN/BTC",
                       0.5,
                       4,
@@ -735,7 +735,7 @@ class TestPortfolio:
 
         # Test buy order
         btc_limit_buy = BuyLimitOrder(trader_inst)
-        btc_limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        btc_limit_buy.new(TraderOrderType.BUY_LIMIT,
                           "BTC/USD",
                           10,
                           50,
@@ -745,7 +745,7 @@ class TestPortfolio:
 
         # Test buy order
         btc_limit_buy2 = BuyLimitOrder(trader_inst)
-        btc_limit_buy2.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        btc_limit_buy2.new(TraderOrderType.BUY_LIMIT,
                            "BTC/USD",
                            10,
                            50,
