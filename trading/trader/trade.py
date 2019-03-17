@@ -38,7 +38,7 @@ class Trade:
     order: Any
     from_previous_execution: bool = field(init=True, repr=False, default=False)
     order_id: str = field(init=False, repr=False)
-    order_type: Any = field(init=False, repr=False)
+    order_type: TraderOrderType = field(init=False, repr=False)
     price: float = field(init=False, repr=False)
     cost: float = field(init=False, repr=False)
     quantity: float = field(init=False, repr=False)

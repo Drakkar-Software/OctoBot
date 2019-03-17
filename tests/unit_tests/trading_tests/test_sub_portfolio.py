@@ -21,7 +21,7 @@ from config import TraderOrderType
 from tests.test_utils.config import load_test_config
 from tests.test_utils.order_util import fill_market_order, fill_limit_or_stop_order
 from trading.exchanges.exchange_manager import ExchangeManager
-from trading.trader.order import BuyMarketOrder, OrderConstants, SellLimitOrder, BuyLimitOrder, SellMarketOrder
+from trading.trader.order import BuyMarketOrder, SellLimitOrder, BuyLimitOrder, SellMarketOrder
 from trading.trader.portfolio import Portfolio
 from trading.trader.sub_portfolio import SubPortfolio
 from trading.trader.trader_simulator import TraderSimulator
@@ -90,7 +90,7 @@ class TestSubPortfolio:
 
         # Test buy order
         market_buy = BuyMarketOrder(trader_inst)
-        market_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        market_buy.new(TraderOrderType.BUY_MARKET,
                        "BTC/USD",
                        70,
                        10,
@@ -124,7 +124,7 @@ class TestSubPortfolio:
 
         # Test sell order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        60,
                        8,
@@ -161,7 +161,7 @@ class TestSubPortfolio:
 
         # Test buy order
         limit_buy = BuyLimitOrder(trader_inst)
-        limit_buy.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        limit_buy.new(TraderOrderType.BUY_LIMIT,
                       "BTC/USD",
                       70,
                       10,
@@ -192,7 +192,7 @@ class TestSubPortfolio:
 
         # Test buy order
         market_sell = SellMarketOrder(trader_inst)
-        market_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+        market_sell.new(TraderOrderType.SELL_MARKET,
                         "BTC/USD",
                         80,
                         8,
@@ -227,7 +227,7 @@ class TestSubPortfolio:
 
         # Test buy order
         limit_sell = SellLimitOrder(trader_inst)
-        limit_sell.new(OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        limit_sell.new(TraderOrderType.SELL_LIMIT,
                        "BTC/USD",
                        90,
                        4,
