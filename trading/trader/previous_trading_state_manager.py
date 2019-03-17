@@ -30,8 +30,9 @@ class PreviousTradingStateManager:
 
     ERROR_MESSAGE = "Impossible to start from the previous trading state: "
 
-    def __init__(self, target_exchanges, reset_simulator, config):
+    def __init__(self, target_exchanges, reset_simulator, config, save_file=SIMULATOR_STATE_SAVE_FILE):
         self.logger = get_logger(self.__class__.__name__)
+        self.save_file = save_file
         if reset_simulator:
             self.reset_trading_history()
         self.reset_state_history = False
@@ -46,8 +47,8 @@ class PreviousTradingStateManager:
         return self.first_data
 
     def reset_trading_history(self):
-        if path.isfile(SIMULATOR_STATE_SAVE_FILE):
-            remove(SIMULATOR_STATE_SAVE_FILE)
+        if path.isfile(self.save_file):
+            remove(self.save_file)
         self.reset_state_history = True
 
     def update_previous_states(self, exchange, simulated_portfolio=None, trade=None, simulated_initial_portfolio=None,
@@ -95,7 +96,7 @@ class PreviousTradingStateManager:
         return self._previous_state[exchange.get_name()][element]
 
     def _save_state_file(self):
-        with open(SIMULATOR_STATE_SAVE_FILE, 'w') as state_file:
+        with open(self.save_file, 'w') as state_file:
             json.dump(self._previous_state, state_file, indent=True)
 
     @staticmethod
@@ -117,9 +118,9 @@ class PreviousTradingStateManager:
         }
 
     def _load_previous_state(self, target_exchanges, config):
-        if path.isfile(SIMULATOR_STATE_SAVE_FILE):
+        if path.isfile(self.save_file):
             try:
-                potential_previous_state = load_config(SIMULATOR_STATE_SAVE_FILE)
+                potential_previous_state = load_config(self.save_file)
                 if isinstance(potential_previous_state, dict):
                     required_values = [SIMULATOR_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO,
                                        SIMULATOR_CURRENT_PORTFOLIO, SIMULATOR_TRADE_HISTORY, REAL_TRADE_HISTORY,
