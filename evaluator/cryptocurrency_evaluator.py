@@ -16,7 +16,7 @@
 
 from tools.logging.logging_util import get_logger
 
-from backtesting.backtesting import Backtesting
+from backtesting import backtesting_enabled
 from evaluator.Updaters.social_evaluator_not_tasked_update_task import SocialEvaluatorNotTaskedUpdateTask
 from evaluator.evaluator_creator import EvaluatorCreator
 from config import CONFIG_EVALUATORS_WILDCARD
@@ -32,7 +32,7 @@ class CryptocurrencyEvaluator:
 
         self.symbol_evaluator_list = {}
 
-        if Backtesting.enabled(self.config):
+        if backtesting_enabled(self.config):
             self.social_eval_list = []
             self.social_not_tasked_list = []
         else:

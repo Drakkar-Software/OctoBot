@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from backtesting.backtesting import Backtesting
+from backtesting import backtesting_enabled
 from config import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING
 from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
@@ -184,7 +184,7 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
         bot = bot.get_tools()[BOT_TOOLS_BACKTESTING].get_bot()
     symbol = parse_get_symbol(symbol)
     symbol_evaluator_list = bot.get_symbol_evaluator_list()
-    in_backtesting = Backtesting.enabled(get_global_config()) or backtesting
+    in_backtesting = backtesting_enabled(get_global_config()) or backtesting
 
     exchange = exchange_name
     exchange_list = bot.get_exchanges_list()

@@ -19,7 +19,7 @@ import time
 import os
 from abc import *
 
-from backtesting.backtesting import Backtesting
+from backtesting import backtesting_enabled
 from config.config import load_config
 from config import CONFIG_EVALUATOR_REALTIME, CONFIG_REFRESH_RATE, PriceIndexes, MIN_EVAL_TIME_FRAME, \
     DEFAULT_WEBSOCKET_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS, DEFAULT_REST_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS, \
@@ -96,7 +96,7 @@ class RealTimeEvaluator(AbstractEvaluator):
                 if self._should_eval():
                     await self.eval()
 
-            if not Backtesting.enabled(self.config):
+            if not backtesting_enabled(self.config):
                 sleeping_time = self.specific_config[CONFIG_REFRESH_RATE] - (time.time() - now)
                 if sleeping_time > 0:
                     await asyncio.sleep(sleeping_time)
