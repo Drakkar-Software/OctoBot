@@ -60,7 +60,7 @@ class DataBank(Initializable):
     # not started, selling started, selling maxed, buying starting, max: back normal:
     def get_rise_after_over_sold(self):
         return np.concatenate((self._get_bank_time_frame_data(TimeFrames.FOUR_HOURS, 35, 61),
-                              self._get_bank_time_frame_data(TimeFrames.FOUR_HOURS, 0, 49)), axis=1), \
+                               self._get_bank_time_frame_data(TimeFrames.FOUR_HOURS, 0, 49)), axis=1), \
             35, 43, 46, 47
 
     # works only with default data file
@@ -87,10 +87,10 @@ class DataBank(Initializable):
     # micro down, micro up, micro down, back normal, micro down, back normal, micro down, back up, micro up, back down,
     # back normal, micro down, back up, micro down, back up, micro down, back up
     def get_overall_flat_trend(self):
-        return np.concatenate((self._get_bank_time_frame_data(TimeFrames.FIFTEEN_MINUTES, 6, 72)*0.9,
-                              self._get_bank_time_frame_data(TimeFrames.HEIGHT_HOURS, 25, 43),
-                              self._get_bank_time_frame_data(TimeFrames.FIFTEEN_MINUTES, 6, 72),
-                              self._get_bank_time_frame_data(TimeFrames.FIFTEEN_MINUTES, 6, 72)), axis=1), \
+        return np.concatenate((self._get_bank_time_frame_data(TimeFrames.FIFTEEN_MINUTES, 6, 72) * 0.9,
+                               self._get_bank_time_frame_data(TimeFrames.HEIGHT_HOURS, 25, 43),
+                               self._get_bank_time_frame_data(TimeFrames.FIFTEEN_MINUTES, 6, 72),
+                               self._get_bank_time_frame_data(TimeFrames.FIFTEEN_MINUTES, 6, 72)), axis=1), \
             67, 85, 87, 90, 95, 107, 116, 123, 138, 141, 151, 153, 161, 163, 173, 174, 175, 180, 183, 193, 198, 203, 207
 
     def _get_bank_time_frame_data(self, time_frame, min_index=None, max_index=None):
@@ -99,7 +99,7 @@ class DataBank(Initializable):
         else:
             min_i = min_index if min_index is not None else 0
             max_i = max_index if max_index is not None else \
-                len(self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame][0])-1
+                len(self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame][0]) - 1
             return self.reduce_data(self.data_by_symbol_by_data_frame[self.symbols[0]][time_frame], min_i, max_i)
 
     def _init_data(self):
@@ -119,7 +119,7 @@ class DataBank(Initializable):
 
     @staticmethod
     def reduce_data(time_frame_data, min_index, max_index):
-        symbol_prices = [None]*len(PriceIndexes)
+        symbol_prices = [None] * len(PriceIndexes)
         symbol_prices[PriceIndexes.IND_PRICE_CLOSE.value] = \
             time_frame_data[PriceIndexes.IND_PRICE_CLOSE.value][min_index:max_index]
         symbol_prices[PriceIndexes.IND_PRICE_OPEN.value] = \

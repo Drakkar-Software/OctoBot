@@ -192,10 +192,10 @@ class ConfigManager:
     @staticmethod
     def are_of_compatible_type(val1, val2):
         return (
-                (
-                    isinstance(val1, val2.__class__) or
-                    (isinstance(val1, (float, int)) and isinstance(val2, (float, int)))
-                ) and isinstance(val1, (bool, str, float, int))
+            (
+                isinstance(val1, val2.__class__)
+                or (isinstance(val1, (float, int)) and isinstance(val2, (float, int)))
+            ) and isinstance(val1, (bool, str, float, int))
         )
 
     @staticmethod
@@ -212,7 +212,7 @@ class ConfigManager:
                     # simple type: update value
                     dict_dest[key] = src_val
                 elif isinstance(dest_val, list) and isinstance(src_val, list):
-                        dict_dest[key] = src_val
+                    dict_dest[key] = src_val
                 else:
                     get_logger().error(f"Conflict when merging dict with key : {key}")
             else:

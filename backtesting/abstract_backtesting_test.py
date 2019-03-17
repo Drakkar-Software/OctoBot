@@ -27,46 +27,46 @@ DATA_FILE_PATH = "tests/static/"
 
 SYMBOLS = {
     "Bitcoin": {
-      "pairs": ["BTC/USDT"]
+        "pairs": ["BTC/USDT"]
     },
     "Neo": {
-      "pairs": ["NEO/BTC"]
+        "pairs": ["NEO/BTC"]
     },
     "Ethereum": {
-      "pairs": ["ETH/USDT"]
+        "pairs": ["ETH/USDT"]
     },
     "Icon": {
-      "pairs": ["ICX/BTC"]
+        "pairs": ["ICX/BTC"]
     },
     "VeChain": {
-      "pairs": ["VEN/BTC"]
+        "pairs": ["VEN/BTC"]
     },
     "Nano": {
-      "pairs": ["XRB/BTC"]
+        "pairs": ["XRB/BTC"]
     },
     "Cardano": {
-      "pairs": ["ADA/BTC"]
+        "pairs": ["ADA/BTC"]
     },
     "Ontology": {
-      "pairs": ["ONT/BTC"]
+        "pairs": ["ONT/BTC"]
     },
     "Stellar": {
-      "pairs": ["XLM/BTC"]
+        "pairs": ["XLM/BTC"]
     },
     "Power Ledger": {
-      "pairs": ["POWR/BTC"]
+        "pairs": ["POWR/BTC"]
     },
     "Ethereum Classic": {
-      "pairs": ["ETC/BTC"]
+        "pairs": ["ETC/BTC"]
     },
     "WAX": {
-      "pairs": ["WAX/BTC"]
+        "pairs": ["WAX/BTC"]
     },
     "XRP": {
-      "pairs": ["XRP/BTC"]
+        "pairs": ["XRP/BTC"]
     },
     "Verge": {
-      "pairs": ["XVG/BTC"]
+        "pairs": ["XVG/BTC"]
     }
 }
 

@@ -102,7 +102,7 @@ def collect_data_file(exchange, symbol):
 
 def save_data_file(name, file):
     try:
-        file.save(CONFIG_DATA_COLLECTOR_PATH+name)
+        file.save(CONFIG_DATA_COLLECTOR_PATH + name)
         message = f"{name} saved"
         LOGGER.info(message)
         return True, message

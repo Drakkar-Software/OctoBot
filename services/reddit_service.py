@@ -56,7 +56,7 @@ class RedditService(AbstractService):
     @staticmethod
     def is_setup_correctly(config):
         return CONFIG_REDDIT in config[CONFIG_CATEGORY_SERVICES] \
-               and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]
+            and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT]
 
     async def prepare(self):
         if not self.reddit_api:
@@ -75,9 +75,9 @@ class RedditService(AbstractService):
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
-               and CONFIG_REDDIT in self.config[CONFIG_CATEGORY_SERVICES] \
-               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT])
+            and CONFIG_REDDIT in self.config[CONFIG_CATEGORY_SERVICES] \
+            and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT])
 
     def get_successful_startup_message(self):
         return f"Successfully initialized using {self.config[CONFIG_CATEGORY_SERVICES][CONFIG_REDDIT][self.USERNAME]}" \
-                   f" account.", True
+            f" account.", True

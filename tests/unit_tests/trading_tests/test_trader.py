@@ -517,7 +517,7 @@ class TestTrader:
         sell_USDT_order = orders[1]
         assert sell_USDT_order.symbol == "BTC/USDT"
         assert sell_USDT_order.order_type == TraderOrderType.BUY_MARKET
-        assert round(sell_USDT_order.origin_quantity, 8) == round(1000/sell_USDT_order.origin_price, 8)
+        assert round(sell_USDT_order.origin_quantity, 8) == round(1000 / sell_USDT_order.origin_price, 8)
 
     async def test_sell_all(self):
         _, _, trader_inst = await self.init_default()
@@ -536,7 +536,7 @@ class TestTrader:
         sell_USDT_order = orders[0]
         assert sell_USDT_order.symbol == "BTC/USDT"
         assert sell_USDT_order.order_type == TraderOrderType.BUY_MARKET
-        assert round(sell_USDT_order.origin_quantity, 8) == round(1000/sell_USDT_order.origin_price, 8)
+        assert round(sell_USDT_order.origin_quantity, 8) == round(1000 / sell_USDT_order.origin_price, 8)
 
         orders = await trader_inst.sell_all("ADA")
         assert len(orders) == 1
@@ -545,7 +545,7 @@ class TestTrader:
         assert sell_ADA_order.symbol == "ADA/BTC"
         assert sell_ADA_order.order_type == TraderOrderType.SELL_MARKET
         assert sell_ADA_order.origin_quantity == 1500
-        assert round(sell_USDT_order.origin_quantity, 8) == round(1000/sell_USDT_order.origin_price, 8)
+        assert round(sell_USDT_order.origin_quantity, 8) == round(1000 / sell_USDT_order.origin_price, 8)
 
         # currency not in portfolio
         orders = await trader_inst.sell_all("XBT")

@@ -57,7 +57,7 @@ class OrdersManager:
 
     def should_add_order(self, order):
         return not self._order_in_list(order) and \
-               (self.trader.simulate or not self._already_has_real_or_linked_order(order))
+            (self.trader.simulate or not self._already_has_real_or_linked_order(order))
 
     def _order_in_list(self, order):
         return order in self.order_list
@@ -66,8 +66,8 @@ class OrdersManager:
         if order.get_id() is not None:
             return self.has_order_id_in_list(order.get_id())
         else:
-            return (isinstance(order, (StopLossLimitOrder, StopLossOrder)) and
-                    self._already_an_order_linked_to_these_real_orders(order.get_linked_orders())
+            return (isinstance(order, (StopLossLimitOrder, StopLossOrder))
+                    and self._already_an_order_linked_to_these_real_orders(order.get_linked_orders())
                     )
 
     def _already_an_order_linked_to_these_real_orders(self, linked_orders):

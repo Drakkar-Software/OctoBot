@@ -81,10 +81,10 @@ class TelegramApp(InterfaceBot):
             message += "/start: `Displays my startup message.`" + EOL
             message += "/ping: `Shows for how long I'm working.`" + EOL
             message += "/portfolio or /pf: `Displays my current portfolio.`" + EOL
-            message += "/open\_orders or /oo: `Displays my current open orders.`" + EOL
-            message += "/trades\_history or /th: `Displays my trades history since I started.`" + EOL
+            message += r"/open\_orders or /oo: `Displays my current open orders.`" + EOL
+            message += r"/trades\_history or /th: `Displays my trades history since I started.`" + EOL
             message += "/profitability or /pb: `Displays the profitability I made since I started.`" + EOL
-            message += "/market\_status or /ms: `Displays my understanding of the market and my risk parameter.`" + EOL
+            message += r"/market\_status or /ms: `Displays my understanding of the market and my risk parameter.`" + EOL
             message += "/fees or /fs: `Displays the total amount of fees I paid since I started.`" + EOL
             message += "/configuration or /cf: `Displays my traders, exchanges, evaluators, strategies and trading " \
                        "mode.`" + EOL
@@ -94,7 +94,7 @@ class TelegramApp(InterfaceBot):
             message += "/sell\_all\_currencies : `Cancels all my orders and instantly liquidate all my currencies " \
                        "for my reference market.`" + EOL
             message += "* - Management - *" + EOL
-            message += "/set\_risk: `Changes my current risk setting into your command's parameter.`" + EOL
+            message += r"/set\_risk: `Changes my current risk setting into your command's parameter.`" + EOL
             message += "/refresh\_real\_trader or /rrt: `Force OctoBot's real trader data refresh using exchange " \
                        "data. Should normally not be necessary.`" + EOL
             message += "/pause or /resume: `Pause or resume me.`" + EOL

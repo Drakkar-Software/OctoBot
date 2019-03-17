@@ -57,7 +57,7 @@ def get_evaluators_list(strategy_name):
 
 
 def get_risks_list():
-    return [i/10 for i in range(10, 0, -1)]
+    return [i / 10 for i in range(10, 0, -1)]
 
 
 def get_current_strategy():

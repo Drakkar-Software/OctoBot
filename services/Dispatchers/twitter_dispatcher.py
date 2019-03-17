@@ -80,8 +80,8 @@ class TwitterDispatcher(AbstractDispatcher):
     def _something_to_watch(self):
         return (CONFIG_TWITTERS_HASHTAGS in self.social_config
                 and self.social_config[CONFIG_TWITTERS_HASHTAGS]) \
-               or (CONFIG_TWITTERS_ACCOUNTS in self.social_config
-                   and self.social_config[CONFIG_TWITTERS_ACCOUNTS])
+            or (CONFIG_TWITTERS_ACCOUNTS in self.social_config
+                and self.social_config[CONFIG_TWITTERS_ACCOUNTS])
 
     def _start_listener(self):
         for tweet in self.service.get_endpoint().GetStreamFilter(follow=self.user_ids,

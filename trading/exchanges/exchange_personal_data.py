@@ -101,7 +101,7 @@ class ExchangePersonalData:
             order
             for order in self.orders.values()
             if (
-                    (state is None or order[ExchangeConstantsOrderColumns.STATUS.value] == state) and
+                (state is None or order[ExchangeConstantsOrderColumns.STATUS.value] == state) and
                     (symbol is None or (symbol and order[ExchangeConstantsOrderColumns.SYMBOL.value] == symbol)) and
                     (since is None or (since and order[ExchangeConstantsOrderColumns.TIMESTAMP.value] < since))
             )

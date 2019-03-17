@@ -34,7 +34,7 @@ def check_order_limits(order, market_status):
     max_price = limit_price[Ecmsc.LIMITS_PRICE_MAX.value]
     maximal_price_digits = market_status[Ecmsc.PRECISION.value][Ecmsc.PRECISION_PRICE.value]
     maximal_volume_digits = market_status[Ecmsc.PRECISION.value][Ecmsc.PRECISION_AMOUNT.value]
-    order_cost = order.origin_price*order.origin_quantity
+    order_cost = order.origin_price * order.origin_quantity
 
     assert order_cost <= max_cost
     assert order_cost >= min_cost

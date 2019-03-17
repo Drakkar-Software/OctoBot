@@ -51,7 +51,7 @@ class AdvancedManager:
     """ get_advanced will get each subclasses of the parameter class_type
     For each abstract subclasses it will call itself with the reference abstract_class not set
     If the current child is not abstract it will be set as the reference only if abstract_class is None
-    If there is not subclasses to class_type it will add class_type into the config advanced list 
+    If there is not subclasses to class_type it will add class_type into the config advanced list
     with its name as a key or the reference class name --> abstract_class
     """
     @staticmethod

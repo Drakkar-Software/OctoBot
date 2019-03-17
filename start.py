@@ -186,13 +186,13 @@ def start_octobot(starting_args):
     except ConfigEvaluatorError:
         logger.error("OctoBot can't start without a valid " + CONFIG_EVALUATOR_FILE_PATH
                      + " configuration file.\nThis file is generated on tentacle "
-                       "installation using the following command:\nstart.py -p install all")
+                     "installation using the following command:\nstart.py -p install all")
         os._exit(-1)
 
     except ConfigTradingError:
         logger.error("OctoBot can't start without a valid " + CONFIG_TRADING_FILE_PATH
                      + " configuration file.\nThis file is generated on tentacle "
-                       "installation using the following command:\nstart.py -p install all")
+                     "installation using the following command:\nstart.py -p install all")
         os._exit(-1)
 
 

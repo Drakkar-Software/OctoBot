@@ -68,8 +68,8 @@ class Notification:
 
     def notifier_notification_available(self, notifier, key=None):
         return self.enabled(key) and \
-               notifier.get_type() in self.notification_type and \
-               notifier.is_setup_correctly(self.config)
+            notifier.get_type() in self.notification_type and \
+            notifier.is_setup_correctly(self.config)
 
     async def notifier_notification_factory(self, notifier, message):
         if self.notifier_notification_available(notifier):
@@ -83,10 +83,10 @@ class Notification:
 
     def telegram_notification_available(self, key=None):
         return self.enabled(key) and \
-               self._service_instance_is_present(CONFIG_TELEGRAM) and \
-               self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_SERVICE_INSTANCE].get_type() \
-               in self.notification_type and \
-               TelegramService.is_setup_correctly(self.config)
+            self._service_instance_is_present(CONFIG_TELEGRAM) and \
+            self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM][CONFIG_SERVICE_INSTANCE].get_type() \
+            in self.notification_type and \
+            TelegramService.is_setup_correctly(self.config)
 
     async def telegram_notification_factory(self, message, markdown=False):
         if self.telegram_notification_available():
@@ -99,10 +99,10 @@ class Notification:
 
     def twitter_notification_available(self, key=None):
         return self.enabled(key) and \
-               self._service_instance_is_present(CONFIG_TWITTER) and \
-               self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE].get_type() \
-               in self.notification_type and \
-               TwitterService.is_setup_correctly(self.config)
+            self._service_instance_is_present(CONFIG_TWITTER) and \
+            self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER][CONFIG_SERVICE_INSTANCE].get_type() \
+            in self.notification_type and \
+            TwitterService.is_setup_correctly(self.config)
 
     async def twitter_notification_factory(self, tweet, error_on_failure=True):
         if self.twitter_notification_available():
@@ -128,8 +128,8 @@ class Notification:
 
     def web_interface_notification_available(self, key=None):
         return self.enabled(key) and \
-               CONFIG_WEB in self.notification_type and \
-               WebService.is_available(self.config)
+            CONFIG_WEB in self.notification_type and \
+            WebService.is_available(self.config)
 
     async def web_interface_notification_factory(self, level, title, message):
         if self.web_interface_notification_available():
@@ -168,7 +168,7 @@ class Notification:
 
     def _service_instance_is_present(self, service_type):
         return service_type in self.config[CONFIG_CATEGORY_SERVICES] and \
-               CONFIG_SERVICE_INSTANCE in self.config[CONFIG_CATEGORY_SERVICES][service_type]
+            CONFIG_SERVICE_INSTANCE in self.config[CONFIG_CATEGORY_SERVICES][service_type]
 
 
 class EvaluatorNotification(Notification):

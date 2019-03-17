@@ -754,7 +754,7 @@ class TestPortfolio:
         portfolio_inst.update_portfolio_available(btc_limit_buy2, True)
 
         # reset equivalent of the ven buy order
-        portfolio_inst.reset_portfolio_available("BTC", 4*0.5)
+        portfolio_inst.reset_portfolio_available("BTC", 4 * 0.5)
 
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.AVAILABLE) == 6
         assert portfolio_inst.get_currency_portfolio("BTC", Portfolio.TOTAL) == 10

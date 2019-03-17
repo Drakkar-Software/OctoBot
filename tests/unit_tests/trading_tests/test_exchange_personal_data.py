@@ -91,18 +91,18 @@ class TestExchangePersonalData:
             test_inst.upsert_order(i, {"id": i,
                                        "timestamp": time_stamp,
                                        "status": OrderStatus.CLOSED.value})
-            if i == nb_max_stored_orders/2:
+            if i == nb_max_stored_orders / 2:
                 max_timestamp = time_stamp
             time.sleep(0.000000001)
 
         assert len(test_inst.orders) == nb_max_stored_orders
-        test_inst.upsert_order(nb_max_stored_orders+1, {"id": nb_max_stored_orders+1,
-                                                        "timestamp": time.time(),
-                                                        "status": OrderStatus.CLOSED.value})
+        test_inst.upsert_order(nb_max_stored_orders + 1, {"id": nb_max_stored_orders + 1,
+                                                          "timestamp": time.time(),
+                                                          "status": OrderStatus.CLOSED.value})
 
         assert not [order for order in test_inst.orders.values() if order["timestamp"] < max_timestamp]
 
-        assert len(test_inst.orders) == nb_max_stored_orders/2+1
+        assert len(test_inst.orders) == nb_max_stored_orders / 2 + 1
 
     @staticmethod
     def create_fake_order(o_id, status, symbol, timestamp):

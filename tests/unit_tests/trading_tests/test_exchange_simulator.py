@@ -113,7 +113,7 @@ class TestExchangeSimulator:
         self._assert_fee(buy_market_fee, "BTC", 0.01, 0.001, ExchangeConstantsMarketPropertyColumns.TAKER.value)
 
         sell_market_fee = exchange_inst.get_trade_fee(
-            "BTC/USD",  OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
+            "BTC/USD", OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
             10, 100, ExchangeConstantsMarketPropertyColumns.TAKER.value)
         self._assert_fee(sell_market_fee, "USD", 1, 0.001, ExchangeConstantsMarketPropertyColumns.TAKER.value)
 
@@ -150,7 +150,7 @@ class TestExchangeSimulator:
 
     @staticmethod
     def _get_start_index_for_timeframe(nb_candles, min_limit, timeframe_multiplier):
-        return int(nb_candles - (nb_candles-min_limit) / timeframe_multiplier) - 1
+        return int(nb_candles - (nb_candles - min_limit) / timeframe_multiplier) - 1
 
     async def test_init_candles_offset(self):
         _, _, exchange_simulator, _ = await self.init_default()

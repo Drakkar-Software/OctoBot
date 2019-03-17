@@ -49,7 +49,7 @@ class WebService(AbstractService):
     @staticmethod
     def is_setup_correctly(config):
         return CONFIG_WEB in config[CONFIG_CATEGORY_SERVICES] \
-                and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB]
+            and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB]
 
     # If this indicator is enabled
     def get_is_enabled(self, config):
@@ -64,7 +64,7 @@ class WebService(AbstractService):
     @staticmethod
     def is_available(config):
         return WebService.is_setup_correctly(config) and \
-               config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_ENABLED_OPTION]
+            config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_ENABLED_OPTION]
 
     def has_required_configuration(self):
         return self._check_enabled_option(self.config)

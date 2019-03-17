@@ -137,7 +137,7 @@ class TestExchangeMarketStatusFixer:
 
         assert ExchangeMarketStatusFixer(ms).get_market_status() == {
             Ecmsc.PRECISION.value: self._get_precision(5, 5, 5),
-            Ecmsc.LIMITS.value: self._get_limits(0.05, 1e4, 0.01, 1e4, 0.01*0.05, 1e4*1e4)
+            Ecmsc.LIMITS.value: self._get_limits(0.05, 1e4, 0.01, 1e4, 0.01 * 0.05, 1e4 * 1e4)
         }
 
     def test_exchange_market_status_fixer_without_price(self):
@@ -148,7 +148,7 @@ class TestExchangeMarketStatusFixer:
 
         assert ExchangeMarketStatusFixer(ms).get_market_status() == {
             Ecmsc.PRECISION.value: self._get_precision(5, 5, 5),
-            Ecmsc.LIMITS.value: self._get_limits(0.01, 1e3, 0.05/0.01, 1e5/1e3, 0.05, 1e5)
+            Ecmsc.LIMITS.value: self._get_limits(0.01, 1e3, 0.05 / 0.01, 1e5 / 1e3, 0.05, 1e5)
         }
 
     def test_exchange_market_status_fixer_without_price_amount(self):
@@ -159,7 +159,7 @@ class TestExchangeMarketStatusFixer:
 
         assert ExchangeMarketStatusFixer(ms).get_market_status() == {
             Ecmsc.PRECISION.value: self._get_precision(5, 5, 5),
-            Ecmsc.LIMITS.value: self._get_limits(0.05/0.03, 1e7/1e4, 0.03, 1e4, 0.05, 1e7)
+            Ecmsc.LIMITS.value: self._get_limits(0.05 / 0.03, 1e7 / 1e4, 0.03, 1e4, 0.05, 1e7)
         }
 
     # Limits

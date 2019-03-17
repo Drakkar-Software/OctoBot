@@ -64,7 +64,7 @@ class TelegramService(AbstractService):
     @staticmethod
     def is_setup_correctly(config):
         return CONFIG_TELEGRAM in config[CONFIG_CATEGORY_SERVICES] \
-               and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]
+            and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]
 
     async def prepare(self):
         if not self.telegram_api:
@@ -147,9 +147,9 @@ class TelegramService(AbstractService):
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
-               and CONFIG_TELEGRAM in self.config[CONFIG_CATEGORY_SERVICES] \
-               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]) \
-               and self._check_enabled_option(self.config)
+            and CONFIG_TELEGRAM in self.config[CONFIG_CATEGORY_SERVICES] \
+            and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TELEGRAM]) \
+            and self._check_enabled_option(self.config)
 
     @classmethod
     def should_be_ready(cls, config):
@@ -169,7 +169,7 @@ class TelegramService(AbstractService):
             except telegram.error.TimedOut as e:
                 self.logger.error(f"Failed to send message : {e}")
         except telegram.error.Unauthorized as e:
-                self.logger.error(f"Failed to send message ({e}): invalid telegram configuration.")
+            self.logger.error(f"Failed to send message ({e}): invalid telegram configuration.")
 
     def _get_bot_url(self):
         return f"https://web.telegram.org/#/im?p={self.telegram_api.get_me().name}"

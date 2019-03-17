@@ -46,5 +46,5 @@ async def test_run_bot(event_loop):
     bot.time_frames = [TimeFrames.ONE_MINUTE]
     await bot.create_exchange_traders(ignore_config=True)
     bot.create_evaluation_tasks()
-    await asyncio.sleep(1.9*60)
+    await asyncio.sleep(1.9 * 60)
     await asyncio.get_event_loop().run_in_executor(None, bot.stop_threads)

@@ -63,7 +63,7 @@ class StrategyTestSuite(AbstractBacktestingTest):
         for i, test in enumerate(tests):
             try:
                 await test(strategy_tester)
-                self.current_progress = int((i+1)/nb_tests*100)
+                self.current_progress = int((i + 1) / nb_tests * 100)
             except NoCandleDataForThisTimeFrameException:
                 pass
             except Exception as e:

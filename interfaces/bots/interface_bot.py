@@ -50,9 +50,9 @@ class InterfaceBot:
     @staticmethod
     def is_enabled(config, associated_config=None):
         return CONFIG_INTERFACES in config \
-               and associated_config in config[CONFIG_INTERFACES] \
-               and CONFIG_ENABLED_OPTION in config[CONFIG_INTERFACES][associated_config] \
-               and config[CONFIG_INTERFACES][associated_config][CONFIG_ENABLED_OPTION]
+            and associated_config in config[CONFIG_INTERFACES] \
+            and CONFIG_ENABLED_OPTION in config[CONFIG_INTERFACES][associated_config] \
+            and config[CONFIG_INTERFACES][associated_config][CONFIG_ENABLED_OPTION]
 
     @staticmethod
     def _is_valid_user(user_name, associated_config=None):
@@ -232,7 +232,7 @@ class InterfaceBot:
     def get_command_portfolio(markdown=False):
         _, b, c = PrettyPrinter.get_markets(markdown)
         has_real_trader, has_simulated_trader, \
-          portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
+            portfolio_real_current_value, portfolio_simulated_current_value = get_portfolio_current_value()
         reference_market = get_reference_market()
         real_global_portfolio, simulated_global_portfolio = get_global_portfolio_currencies_amounts()
 
@@ -333,10 +333,10 @@ class InterfaceBot:
                 messages_list.append(message[:end_index])
             else:
                 messages_list.append(message[:max_length])
-                end_index = len(first_part)-1
+                end_index = len(first_part) - 1
 
             if end_index < len(message) - 1:
-                remaining = message[end_index+1:]
+                remaining = message[end_index + 1:]
                 return messages_list + InterfaceBot._split_messages_if_too_long(remaining, max_length,
                                                                                 preferred_separator)
             else:

@@ -133,8 +133,8 @@ class ExchangeMarketStatusFixer:
     @staticmethod
     def _get_markets_limit(market_limit):
         return market_limit[Ecmsc.LIMITS_COST.value] if Ecmsc.LIMITS_COST.value in market_limit else None, \
-               market_limit[Ecmsc.LIMITS_PRICE.value] if Ecmsc.LIMITS_PRICE.value in market_limit else None, \
-               market_limit[Ecmsc.LIMITS_AMOUNT.value] if Ecmsc.LIMITS_AMOUNT.value in market_limit else None
+            market_limit[Ecmsc.LIMITS_PRICE.value] if Ecmsc.LIMITS_PRICE.value in market_limit else None, \
+            market_limit[Ecmsc.LIMITS_AMOUNT.value] if Ecmsc.LIMITS_AMOUNT.value in market_limit else None
 
     @staticmethod
     def _calculate_costs(market_limit):
@@ -145,14 +145,14 @@ class ExchangeMarketStatusFixer:
                     and ExchangeMarketStatusFixer.is_ms_valid(limit_price[Ecmsc.LIMITS_PRICE_MAX.value]) \
                     and not ExchangeMarketStatusFixer.is_ms_valid(limit_cost[Ecmsc.LIMITS_COST_MAX.value]):
                 limit_cost[Ecmsc.LIMITS_COST_MAX.value] = limit_amount[Ecmsc.LIMITS_AMOUNT_MAX.value] * \
-                                                          limit_price[Ecmsc.LIMITS_PRICE_MAX.value]
+                    limit_price[Ecmsc.LIMITS_PRICE_MAX.value]
 
         if Ecmsc.LIMITS_AMOUNT_MIN.value in limit_amount and Ecmsc.LIMITS_PRICE_MIN.value in limit_price:
             if ExchangeMarketStatusFixer.is_ms_valid(limit_amount[Ecmsc.LIMITS_AMOUNT_MIN.value]) \
                     and ExchangeMarketStatusFixer.is_ms_valid(limit_price[Ecmsc.LIMITS_PRICE_MIN.value]) \
                     and not ExchangeMarketStatusFixer.is_ms_valid(limit_cost[Ecmsc.LIMITS_COST_MIN.value]):
                 limit_cost[Ecmsc.LIMITS_COST_MIN.value] = limit_amount[Ecmsc.LIMITS_AMOUNT_MIN.value] * \
-                                                          limit_price[Ecmsc.LIMITS_PRICE_MIN.value]
+                    limit_price[Ecmsc.LIMITS_PRICE_MIN.value]
 
     @staticmethod
     def _calculate_prices(market_limit):
@@ -163,14 +163,14 @@ class ExchangeMarketStatusFixer:
                     and ExchangeMarketStatusFixer.is_ms_valid(limit_amount[Ecmsc.LIMITS_AMOUNT_MAX.value]) \
                     and limit_amount[Ecmsc.LIMITS_AMOUNT_MAX.value] > 0:
                 limit_price[Ecmsc.LIMITS_PRICE_MAX.value] = limit_cost[Ecmsc.LIMITS_COST_MAX.value] / \
-                                                            limit_amount[Ecmsc.LIMITS_AMOUNT_MAX.value]
+                    limit_amount[Ecmsc.LIMITS_AMOUNT_MAX.value]
 
         if Ecmsc.LIMITS_COST_MIN.value in limit_cost and Ecmsc.LIMITS_AMOUNT_MIN.value in limit_amount:
             if ExchangeMarketStatusFixer.is_ms_valid(limit_cost[Ecmsc.LIMITS_COST_MIN.value]) \
                     and ExchangeMarketStatusFixer.is_ms_valid(limit_amount[Ecmsc.LIMITS_AMOUNT_MIN.value]) \
                     and limit_amount[Ecmsc.LIMITS_AMOUNT_MIN.value] > 0:
                 limit_price[Ecmsc.LIMITS_PRICE_MIN.value] = limit_cost[Ecmsc.LIMITS_COST_MIN.value] / \
-                                                            limit_amount[Ecmsc.LIMITS_AMOUNT_MIN.value]
+                    limit_amount[Ecmsc.LIMITS_AMOUNT_MIN.value]
 
     @staticmethod
     def _calculate_amounts(market_limit):
@@ -181,14 +181,14 @@ class ExchangeMarketStatusFixer:
                     and ExchangeMarketStatusFixer.is_ms_valid(limit_price[Ecmsc.LIMITS_PRICE_MAX.value]) \
                     and limit_price[Ecmsc.LIMITS_PRICE_MAX.value] > 0:
                 limit_amount[Ecmsc.LIMITS_AMOUNT_MAX.value] = limit_cost[Ecmsc.LIMITS_COST_MAX.value] / \
-                                                              limit_price[Ecmsc.LIMITS_PRICE_MAX.value]
+                    limit_price[Ecmsc.LIMITS_PRICE_MAX.value]
 
         if Ecmsc.LIMITS_COST_MIN.value in limit_cost and Ecmsc.LIMITS_PRICE_MIN.value in limit_price:
             if ExchangeMarketStatusFixer.is_ms_valid(limit_cost[Ecmsc.LIMITS_COST_MIN.value]) \
                     and ExchangeMarketStatusFixer.is_ms_valid(limit_price[Ecmsc.LIMITS_PRICE_MIN.value]) \
                     and limit_price[Ecmsc.LIMITS_PRICE_MIN.value] > 0:
                 limit_amount[Ecmsc.LIMITS_AMOUNT_MIN.value] = limit_cost[Ecmsc.LIMITS_COST_MIN.value] / \
-                                                              limit_price[Ecmsc.LIMITS_PRICE_MIN.value]
+                    limit_price[Ecmsc.LIMITS_PRICE_MIN.value]
 
     def _calculate_amount(self):
         amount_log_price = math.log(self.price_example, 10)

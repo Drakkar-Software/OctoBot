@@ -45,6 +45,7 @@ class StrategyOptimizer:
     """
     StrategyOptimizer is a tool that performs backtesting with different configurations
     """
+
     def __init__(self, config, strategy_name):
         self.is_properly_initialized = False
         self.logger = get_logger(self.get_name())
@@ -117,7 +118,7 @@ class StrategyOptimizer:
                     for evaluator_conf_iteration in range(nb_TAs):
                         current_forced_evaluator = self.all_TAs[evaluator_conf_iteration]
                         # test with 1-n evaluators at a time
-                        for nb_evaluators in range(1, nb_TAs+1):
+                        for nb_evaluators in range(1, nb_TAs + 1):
                             # test different configurations
                             for i in range(nb_TAs):
                                 activated_evaluators = self.get_activated_element(self.all_TAs,
@@ -132,7 +133,7 @@ class StrategyOptimizer:
                                     for time_frame_conf_iteration in range(nb_TFs):
                                         current_forced_time_frame = self.all_time_frames[time_frame_conf_iteration]
                                         # test with 1-n time frames at a time
-                                        for nb_time_frames in range(1, nb_TFs+1):
+                                        for nb_time_frames in range(1, nb_TFs + 1):
                                             # test different configurations
                                             for _ in range(nb_TFs):
                                                 activated_time_frames = \
@@ -213,7 +214,7 @@ class StrategyOptimizer:
                          f"average trades count: {best_result[TRADES_IN_RESULT]:f}")
 
     def get_overall_progress(self):
-        return int((self.run_id-1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
+        return int((self.run_id - 1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
 
     def get_current_test_suite_progress(self):
         return self.current_test_suite.get_progress() if self.current_test_suite else 0
@@ -259,16 +260,16 @@ class StrategyOptimizer:
         if nb_elements_to_consider > 1:
             i = 0
             while i < len(all_elements) and \
-                    len(eval_conf) < nb_elements_to_consider+additional_elements_count:
+                    len(eval_conf) < nb_elements_to_consider + additional_elements_count:
                 current_elem = all_elements[i]
                 if current_elem not in eval_conf:
                     eval_conf[current_elem] = True
-                    if len(eval_conf) == nb_elements_to_consider+additional_elements_count and \
+                    if len(eval_conf) == nb_elements_to_consider + additional_elements_count and \
                             ((eval_conf if dict_shaped else sorted([key.value for key in eval_conf]))
                              in elem_conf_history):
                         eval_conf.pop(current_elem)
                 i += 1
-        if len(eval_conf) == nb_elements_to_consider+additional_elements_count:
+        if len(eval_conf) == nb_elements_to_consider + additional_elements_count:
             to_use_conf = eval_conf
             if not dict_shaped:
                 to_use_conf = sorted([key.value for key in eval_conf])

@@ -131,7 +131,7 @@ class ExchangeSimulator(AbstractExchange):
 
     def has_data_for_time_frame(self, symbol, time_frame):
         return time_frame in self.data[symbol] \
-               and len(self.data[symbol][time_frame]) >= self.DEFAULT_LIMIT + self.MIN_LIMIT
+            and len(self.data[symbol][time_frame]) >= self.DEFAULT_LIMIT + self.MIN_LIMIT
 
     def get_symbols(self):
         return self.symbols
@@ -278,8 +278,8 @@ class ExchangeSimulator(AbstractExchange):
                 and time_frame_to_use.value in self.time_frame_get_times[symbol]:
             # -2 because take into account the +1 in self.time_frame_get_times and the fact that it's an index
             index = self.time_frames_offset[symbol][time_frame_to_use.value] \
-                    + self.time_frame_get_times[symbol][time_frame_to_use.value] \
-                    - 2
+                + self.time_frame_get_times[symbol][time_frame_to_use.value] \
+                - 2
         trades = self._create_recent_trades(
             symbol, time_frame_to_use,
             index
@@ -296,19 +296,18 @@ class ExchangeSimulator(AbstractExchange):
             else:
                 time_frames_to_consider.remove(potential_min_time_frame_to_consider)
         if self.min_time_frame_to_consider[symbol]:
-            return self.data[symbol][self.min_time_frame_to_consider[symbol]][self.MIN_LIMIT] \
-                [PriceIndexes.IND_PRICE_TIME.value]
+            return self.data[symbol][self.min_time_frame_to_consider[symbol]][self.MIN_LIMIT][PriceIndexes.IND_PRICE_TIME.value]
         else:
             self.logger.error(f"No data for the timeframes: {time_frames} in loaded backtesting file.")
             if Backtesting.enabled(self.config):
                 self.backtesting.end(symbol)
 
     """
-    Used to set self.time_frames_offset: will set offsets for all the given timeframes to keep data consistent 
+    Used to set self.time_frames_offset: will set offsets for all the given timeframes to keep data consistent
     relatively to the smallest timeframe given in timeframes list.
     Ex: timeframes = ["1m", "1h", "1d"] => this will set offsets at 0 for "1m" because it is the smallest timeframe and
     will find the corresponding offset for the "1h" and "1d" timeframes if associated data are going further in the past
-    than the "1m" timeframe. 
+    than the "1m" timeframe.
     This is used to avoid data from 500 hours ago mixed with data from 500 min ago for example.
     """
 
@@ -482,8 +481,7 @@ class ExchangeSimulator(AbstractExchange):
         currency, market = split_symbol(symbol)
         fee_currency = currency
 
-        precision = self.get_market_status(symbol)[ExchangeConstantsMarketStatusColumns.PRECISION.value] \
-            [ExchangeConstantsMarketStatusColumns.PRECISION_PRICE.value]
+        precision = self.get_market_status(symbol)[ExchangeConstantsMarketStatusColumns.PRECISION.value][ExchangeConstantsMarketStatusColumns.PRECISION_PRICE.value]
         cost = float(round_into_str_with_max_digits(quantity * rate, precision))
 
         if order_type == OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET] \

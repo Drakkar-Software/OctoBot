@@ -239,10 +239,10 @@ def get_global_profitability():
         if real_full_origin_value > 0 else 0
 
     return has_real_trader, has_simulated_trader, \
-           real_global_profitability, simulated_global_profitability, \
-           real_percent_profitability, simulated_percent_profitability, \
-           real_no_trade_profitability, simulated_no_trade_profitability, \
-           market_average_profitability
+        real_global_profitability, simulated_global_profitability, \
+        real_percent_profitability, simulated_percent_profitability, \
+        real_no_trade_profitability, simulated_no_trade_profitability, \
+        market_average_profitability
 
 
 def get_portfolios():
@@ -275,10 +275,10 @@ def get_currencies_with_status():
                             if isinstance(dec.get_final_eval(), (int, float)) else "N/A"
                             for dec in symbol_evaluator.get_deciders(exchange)
                         ]),
-                    ]
+                ]
                 for exchange in get_bot().get_exchanges_list().values()
                 if symbol_evaluator.has_exchange(exchange)
-            }
+        }
         for symbol_evaluator in get_bot().get_symbol_evaluator_list().values()}
 
 
@@ -319,5 +319,5 @@ def get_matrix_list():
                 exchange.get_name(): symbol_evaluator.get_matrix(exchange)
                 for exchange in get_bot().get_exchanges_list().values()
                 if symbol_evaluator.has_exchange(exchange)
-            }
+        }
         for symbol_evaluator in get_bot().get_symbol_evaluator_list().values()}

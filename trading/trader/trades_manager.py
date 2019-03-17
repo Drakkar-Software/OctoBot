@@ -235,7 +235,7 @@ class TradesManager(Initializable):
     """ try_get_value_of_currency will try to obtain the current value of the currency quantity
     in the reference currency.
     It will try to create the symbol that fit with the exchange logic.
-    Returns the value found of this currency quantity, if not found returns 0.   
+    Returns the value found of this currency quantity, if not found returns 0.
     """
 
     async def _try_get_value_of_currency(self, currency, quantity):

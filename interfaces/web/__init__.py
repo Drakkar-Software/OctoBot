@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from interfaces.web.advanced_controllers import advanced
 import copy
 import logging
 import time
@@ -28,7 +29,6 @@ from tools.logging import logs_database, reset_errors_count
 
 server_instance = flask.Flask(__name__)
 
-from interfaces.web.advanced_controllers import advanced
 
 server_instance.register_blueprint(advanced)
 server_instance.register_blueprint(api)

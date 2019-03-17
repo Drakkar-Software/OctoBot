@@ -14,11 +14,10 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from . import matrix
+from . import strategy_optimizer
+from . import configuration
+from . import home
 from flask import Blueprint
 
 advanced = Blueprint('advanced', __name__, url_prefix='/advanced', template_folder="../advanced_templates")
-
-from . import home
-from . import configuration
-from . import strategy_optimizer
-from . import matrix

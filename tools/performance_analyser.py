@@ -44,4 +44,4 @@ class PerformanceAnalyser:
         return self.py.cpu_percent()
 
     def _get_ram_go(self):
-        return self.py.memory_info()[0]/2.**30
+        return self.py.memory_info()[0] / 2.**30

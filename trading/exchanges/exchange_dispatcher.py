@@ -94,7 +94,7 @@ class ExchangeDispatcher(AbstractExchange):
                 got_results = True
             except retry_exception as e:
                 if attempt < DEFAULT_REST_RETRY_COUNT:
-                    sleeping_time = attempt*EXCHANGE_ERROR_SLEEPING_TIME
+                    sleeping_time = attempt * EXCHANGE_ERROR_SLEEPING_TIME
                     self.logger.warning(f"Failed to execute: {method_name} ({e}) retrying in {sleeping_time} seconds.")
                     # maybe just a short downtime, retry a bit later
                     await asyncio.sleep(sleeping_time)

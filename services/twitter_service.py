@@ -60,7 +60,7 @@ class TwitterService(AbstractService):
     @staticmethod
     def is_setup_correctly(config):
         return CONFIG_TWITTER in config[CONFIG_CATEGORY_SERVICES] \
-               and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]
+            and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER]
 
     def get_user_id(self, user_account):
         user = self.twitter_api.GetUser(screen_name=user_account)
@@ -87,8 +87,8 @@ class TwitterService(AbstractService):
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
-               and CONFIG_TWITTER in self.config[CONFIG_CATEGORY_SERVICES] \
-               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER])
+            and CONFIG_TWITTER in self.config[CONFIG_CATEGORY_SERVICES] \
+            and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][CONFIG_TWITTER])
 
     @staticmethod
     def decode_tweet(tweet):

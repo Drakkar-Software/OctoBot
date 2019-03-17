@@ -47,7 +47,7 @@ class TAEvaluator(AbstractEvaluator):
     async def eval(self) -> None:
         start_time = time.time()
         await super().eval()
-        execution_time = time.time()-start_time
+        execution_time = time.time() - start_time
         if execution_time > MAX_TA_EVAL_TIME_SECONDS:
             self.logger.warning(f"for {self.symbol} took longer than expected: {execution_time} seconds.")
 

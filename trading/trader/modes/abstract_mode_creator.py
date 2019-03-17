@@ -63,8 +63,8 @@ class AbstractTradingModeCreator:
         limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
         limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
 
-        if not (AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) and
-                AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value)):
+        if not (AbstractTradingModeCreator._is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value)
+                and AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value)):
             fixed_market_status = ExchangeMarketStatusFixer(symbol_market, price).get_market_status()
             limit_amount = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_AMOUNT.value]
             limit_cost = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_COST.value]
@@ -84,7 +84,7 @@ class AbstractTradingModeCreator:
     - is the quantity valid
     - are the order total price and quantity superior or equal to the exchange's minimum order requirement
         => otherwise order is impossible => returns empty list
-    - if total cost data are unavailable: 
+    - if total cost data are unavailable:
     - is the price of the currency compliant with the exchange's price interval for this currency
         => otherwise order is impossible => returns empty list
     - are the order total price and quantity inferior or equal to the exchange's maximum order requirement
@@ -189,7 +189,7 @@ class AbstractTradingModeCreator:
 
             if valid_quantity < min_quantity:
                     # invalid order
-                    return []
+                return []
 
             # case 1.1: use only quantity and cost
             if AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value):

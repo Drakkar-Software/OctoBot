@@ -14,9 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from . import metadata
+from . import trading
 from flask import Blueprint
 
 api = Blueprint('api', __name__, url_prefix='/api', template_folder="")
-
-from . import trading
-from . import metadata

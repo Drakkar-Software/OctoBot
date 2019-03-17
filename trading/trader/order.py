@@ -316,7 +316,7 @@ class BuyMarketOrder(Order):
             self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
-            self.total_cost = self.filled_price*self.filled_quantity
+            self.total_cost = self.filled_price * self.filled_quantity
             self.fee = self.get_computed_fee()
             self.executed_time = self.generate_executed_time(simulated_time)
 
@@ -335,7 +335,7 @@ class BuyLimitOrder(Order):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
-                self.total_cost = self.filled_price*self.filled_quantity
+                self.total_cost = self.filled_price * self.filled_quantity
                 self.fee = self.get_computed_fee()
                 self.executed_time = self.generate_executed_time(simulated_time)
 
@@ -354,7 +354,7 @@ class SellMarketOrder(Order):
             self.origin_price = self.created_last_price
             self.filled_price = self.created_last_price
             self.filled_quantity = self.origin_quantity
-            self.total_cost = self.filled_price*self.filled_quantity
+            self.total_cost = self.filled_price * self.filled_quantity
             self.fee = self.get_computed_fee()
             self.executed_time = self.generate_executed_time(simulated_time)
 
@@ -373,7 +373,7 @@ class SellLimitOrder(Order):
                 self.status = OrderStatus.FILLED
                 self.filled_price = self.origin_price
                 self.filled_quantity = self.origin_quantity
-                self.total_cost = self.filled_price*self.filled_quantity
+                self.total_cost = self.filled_price * self.filled_quantity
                 self.fee = self.get_computed_fee()
                 self.executed_time = self.generate_executed_time(simulated_time)
 
@@ -388,7 +388,7 @@ class StopLossOrder(Order):
             self.status = OrderStatus.FILLED
             self.filled_price = self.origin_price
             self.filled_quantity = self.origin_quantity
-            self.total_cost = self.filled_price*self.filled_quantity
+            self.total_cost = self.filled_price * self.filled_quantity
             self.executed_time = self.generate_executed_time(simulated_time)
             if self.trader.simulate:
                 # compute normal fees

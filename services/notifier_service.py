@@ -14,17 +14,15 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from tools import dict_util
+from services.abstract_service import AbstractService
+from config import CONFIG_CATEGORY_SERVICES, PROJECT_NOTIFICATION, NOTIFIER_REQUIRED_KEY, \
+    NOTIFIER_IGNORED_REQUIRED_CONFIG, NOTIFIER_REQUIRED_CONFIG, NOTIFIER_PROPERTIES_KEY
+from notifiers import NoSuchNotifierError
+import notifiers
 import logging
 
 logging.getLogger("notifiers").setLevel(logging.WARNING)
-
-import notifiers
-from notifiers import NoSuchNotifierError
-
-from config import CONFIG_CATEGORY_SERVICES, PROJECT_NOTIFICATION, NOTIFIER_REQUIRED_KEY, \
-    NOTIFIER_IGNORED_REQUIRED_CONFIG, NOTIFIER_REQUIRED_CONFIG, NOTIFIER_PROPERTIES_KEY
-from services.abstract_service import AbstractService
-from tools import dict_util
 
 
 class NotifierService(AbstractService):
@@ -80,8 +78,8 @@ class NotifierService(AbstractService):
 
     def has_required_configuration(self):
         return CONFIG_CATEGORY_SERVICES in self.config \
-               and self.get_provider_name() in self.config[CONFIG_CATEGORY_SERVICES] \
-               and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][self.get_provider_name()])
+            and self.get_provider_name() in self.config[CONFIG_CATEGORY_SERVICES] \
+            and self.check_required_config(self.config[CONFIG_CATEGORY_SERVICES][self.get_provider_name()])
 
     def get_endpoint(self):
         return self.get_provider_name()
@@ -101,7 +99,7 @@ class NotifierService(AbstractService):
     def get_successful_startup_message(self):
         try:
             return f"{self.get_provider_name()} notifier successfully initialized, more info at: " \
-                       f"{self.notifier_provider.site_url}.", True
+                f"{self.notifier_provider.site_url}.", True
         except Exception as e:
             self.log_connection_error_message(e)
             return "", False
