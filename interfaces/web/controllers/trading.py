@@ -102,7 +102,7 @@ def utility_processor():
     def convert_timestamp(str_time):
         return datetime.datetime.fromtimestamp(str_time).strftime('%Y-%m-%d %H:%M:%S')
 
-    def convert_type(str_type):
-        return str(str_type).replace("TraderOrderType.", "")
+    def convert_type(order_type):
+        return order_type.name
 
     return dict(convert_timestamp=convert_timestamp, convert_type=convert_type)

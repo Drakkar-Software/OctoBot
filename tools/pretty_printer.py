@@ -15,7 +15,6 @@
 #  License along with this library.
 
 from config import DICT_BULLET_TOKEN_STR
-from trading.trader.order import OrderConstants
 from trading.trader.portfolio import Portfolio
 from tools.timestamp_util import convert_timestamp_to_datetime
 from tools.number_util import round_into_str_with_max_digits
@@ -30,14 +29,8 @@ class PrettyPrinter:
     def open_order_pretty_printer(order, markdown=False):
         _, _, c = PrettyPrinter.get_markets(markdown)
         currency, market = order.get_currency_and_market()
+        order_type_name = order.get_order_type().name
 
-        try:
-            order_type_name = order.get_order_type().name
-        except AttributeError:
-            try:
-                order_type_name = OrderConstants.TraderOrderTypeClasses[order.get_order_type()].__name__
-            except KeyError:
-                order_type_name = order.get_order_type().__class__.__name__
         return f"{c}{order_type_name}{c}: {c}{PrettyPrinter.get_min_string_from_number(order.get_origin_quantity())} " \
             f"{currency}{c} at {c}{PrettyPrinter.get_min_string_from_number(order.get_origin_price())} {market}{c} " \
             f" {order.get_exchange().get_name()} " \
@@ -48,14 +41,8 @@ class PrettyPrinter:
         _, _, c = PrettyPrinter.get_markets(markdown)
         currency = trade.currency
         market = trade.market
-
-        try:
-            order_type_name = trade.order_type.name
-        except AttributeError:
-            try:
-                order_type_name = OrderConstants.TraderOrderTypeClasses[trade.order_type].__name__
-            except KeyError:
-                order_type_name = trade.order_type.__class__.__name__
+        order_type_name = trade.order_type.name
+        
         return f"{c}{order_type_name}{c}: {c}{PrettyPrinter.get_min_string_from_number(trade.quantity)} {currency}{c}" \
             f" at {c}{PrettyPrinter.get_min_string_from_number(trade.price)} {market}{c} " \
             f"{trade.exchange.get_name()} " \

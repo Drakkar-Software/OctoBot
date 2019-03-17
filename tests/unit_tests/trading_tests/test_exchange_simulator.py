@@ -23,7 +23,6 @@ from config import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_
 from tests.test_utils.config import load_test_config
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader_simulator import TraderSimulator
-from trading.trader.order import OrderConstants
 
 
 # All test coroutines will be treated as marked.
@@ -107,23 +106,19 @@ class TestExchangeSimulator:
             CONFIG_SIMULATOR_FEES_TAKER: 0.1
         }
 
-        buy_market_fee = exchange_inst.get_trade_fee("BTC/USD",
-                                                     OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_MARKET],
+        buy_market_fee = exchange_inst.get_trade_fee("BTC/USD", TraderOrderType.BUY_MARKET,
                                                      10, 100, ExchangeConstantsMarketPropertyColumns.TAKER.value)
         self._assert_fee(buy_market_fee, "BTC", 0.01, 0.001, ExchangeConstantsMarketPropertyColumns.TAKER.value)
 
         sell_market_fee = exchange_inst.get_trade_fee(
-            "BTC/USD",  OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_MARKET],
-            10, 100, ExchangeConstantsMarketPropertyColumns.TAKER.value)
+            "BTC/USD",  TraderOrderType.SELL_MARKET, 10, 100, ExchangeConstantsMarketPropertyColumns.TAKER.value)
         self._assert_fee(sell_market_fee, "USD", 1, 0.001, ExchangeConstantsMarketPropertyColumns.TAKER.value)
 
-        buy_limit_fee = exchange_inst.get_trade_fee("BTC/USD",
-                                                    OrderConstants.TraderOrderTypeClasses[TraderOrderType.BUY_LIMIT],
+        buy_limit_fee = exchange_inst.get_trade_fee("BTC/USD", TraderOrderType.BUY_LIMIT,
                                                     10, 100, ExchangeConstantsMarketPropertyColumns.MAKER.value)
         self._assert_fee(buy_limit_fee, "BTC", 0.005, 0.0005, ExchangeConstantsMarketPropertyColumns.MAKER.value)
 
-        sell_limit_fee = exchange_inst.get_trade_fee("BTC/USD",
-                                                     OrderConstants.TraderOrderTypeClasses[TraderOrderType.SELL_LIMIT],
+        sell_limit_fee = exchange_inst.get_trade_fee("BTC/USD", TraderOrderType.SELL_LIMIT,
                                                      10, 100, ExchangeConstantsMarketPropertyColumns.TAKER.value)
         self._assert_fee(sell_limit_fee, "USD", 1, 0.001, ExchangeConstantsMarketPropertyColumns.TAKER.value)
 
