@@ -17,9 +17,11 @@
 from tools.logging.logging_util import get_logger
 from asyncio import Lock
 
-from config import *
+from config import CONFIG_SIMULATOR, CONFIG_STARTING_PORTFOLIO, CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_TOTAL, \
+    TradeOrderSide, TraderOrderType, SIMULATOR_CURRENT_PORTFOLIO
 from trading.trader.order import OrderConstants
 from tools.initializable import Initializable
+from backtesting import backtesting_enabled
 
 """ The Portfolio class manage an exchange portfolio
 This will begin by loading current exchange portfolio (by pulling user data)
@@ -60,8 +62,30 @@ class Portfolio(Initializable):
                 await self.update_portfolio_balance()
 
     def set_starting_simulated_portfolio(self):
-        self.portfolio = {currency: {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
-                          for currency, total in self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO].items()}
+        if self.trader.get_loaded_previous_state():
+            # load portfolio from previous execution
+            portfolio_amount_dict = self.trader.get_previous_state_manager().get_previous_state(
+                self.trader.get_exchange(),
+                SIMULATOR_CURRENT_PORTFOLIO
+            )
+        else:
+            # load new portfolio from config settings
+            portfolio_amount_dict = self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO]
+        try:
+            self.portfolio = self.get_portfolio_from_amount_dict(portfolio_amount_dict)
+        except Exception as e:
+            self.logger.warning(f"Error when loading trading history, will reset history. ({e})")
+            self.logger.exception(e)
+            self.trader.get_previous_state_manager.reset_trading_history()
+            self.portfolio = self.get_portfolio_from_amount_dict(
+                self.config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO])
+
+    @staticmethod
+    def get_portfolio_from_amount_dict(amount_dict):
+        if not all(isinstance(i, (int, float)) for i in amount_dict.values()):
+            raise RuntimeError("Portfolio has to be initialized using numbers")
+        return {currency: {Portfolio.AVAILABLE: total, Portfolio.TOTAL: total}
+                for currency, total in amount_dict.items()}
 
     async def update_portfolio_balance(self):
         if not self.is_simulated and self.is_enabled:
@@ -135,6 +159,14 @@ class Portfolio(Initializable):
 
             self.logger.info(f"Portfolio updated | {currency} {currency_portfolio_num} | {market} "
                              f"{market_portfolio_num} | Current Portfolio : {self.portfolio}")
+
+            if not backtesting_enabled(self.config) and self.trader.get_previous_state_manager() is not None:
+                if self.is_simulated:
+                    self.trader.get_previous_state_manager().update_previous_states(self.trader.exchange,
+                                                                                    simulated_portfolio=self.portfolio)
+                else:
+                    self.trader.get_previous_state_manager().update_previous_states(self.trader.exchange,
+                                                                                    real_portfolio=self.portfolio)
         else:
             await self.update_portfolio_balance()
             self.logger.info(f"Portfolio updated | Current Portfolio : {self.portfolio}")

@@ -180,15 +180,5 @@ class Backtesting:
         return market_delta
 
     @staticmethod
-    def enabled(config):
-        return CONFIG_BACKTESTING in config and config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION]
-
-    @staticmethod
     def analysis_enabled(config):
         return CONFIG_BACKTESTING in config and config[CONFIG_BACKTESTING][CONFIG_ANALYSIS_ENABLED_OPTION]
-
-
-class BacktestingEndedException(Exception):
-    def __init__(self, symbol=""):
-        self.msg = f"Backtesting finished for {symbol}."
-        super().__init__(self.msg)

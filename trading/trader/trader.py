@@ -16,10 +16,11 @@
 import copy
 from tools.logging.logging_util import get_logger
 
-from backtesting.backtesting import Backtesting
+from backtesting import backtesting_enabled
 from config import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType, \
-    ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns
+    ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns, REAL_TRADE_HISTORY, \
+    SIMULATOR_INITIAL_STARTUP_PORTFOLIO, SIMULATOR_CURRENT_PORTFOLIO
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.order import OrderConstants, Order
 from trading.trader.order_notifier import OrderNotifier
@@ -36,7 +37,11 @@ from tools.config_manager import ConfigManager
 
 class Trader(Initializable):
 
-    def __init__(self, config, exchange, order_refresh_time=None):
+    TRADE_HISTORY_KEY = REAL_TRADE_HISTORY
+    NO_HISTORY_MESSAGE = "Starting a fresh new trading session using the current portfolio as a profitability " \
+                         "reference."
+
+    def __init__(self, config, exchange, order_refresh_time=None, previous_state_manager=None):
         super().__init__()
         self.exchange = exchange
         self.config = config
@@ -46,6 +51,8 @@ class Trader(Initializable):
         # logging
         self.trader_type_str = REAL_TRADER_STR
         self.logger = get_logger(f"{self.__class__.__name__}[{self.exchange.get_name()}]")
+        self.previous_state_manager = previous_state_manager
+        self.loaded_previous_state = False
 
         if not hasattr(self, 'simulate'):
             self.simulate = False
@@ -68,6 +75,8 @@ class Trader(Initializable):
             self.order_manager.set_order_refresh_time(order_refresh_time)
 
     async def initialize_impl(self):
+        if self.enable and self.previous_state_manager is not None:
+            self.load_previous_state_if_any()
         await self.portfolio.initialize()
         await self.trades_manager.initialize()
 
@@ -83,6 +92,34 @@ class Trader(Initializable):
             self.logger.debug(f"Enabled on {self.exchange.get_name()}")
         else:
             self.logger.debug(f"Disabled on {self.exchange.get_name()}")
+
+    def load_previous_state_if_any(self):
+        loaded_previous_state = self.previous_state_manager.has_previous_state(self.exchange)
+        if not self.previous_state_manager.should_initialize_data() and loaded_previous_state:
+            try:
+                self._print_previous_state_info()
+                self._add_previous_trades_into_history()
+                self.loaded_previous_state = True
+            except Exception as e:
+                self.logger.warning(f"Error when loading trading history, will reset history. ({e})")
+                self.logger.exception(e)
+                self.previous_state_manager.reset_trading_history()
+        else:
+            self.logger.info(self.NO_HISTORY_MESSAGE)
+
+    def _add_previous_trades_into_history(self):
+        for trade_data in self.previous_state_manager.get_previous_state(self.exchange, self.TRADE_HISTORY_KEY):
+            historical_trade = Trade.from_dict(self.exchange, trade_data)
+            self.trades_manager.add_new_trade_in_history(historical_trade)
+
+    def _print_previous_state_info(self):
+        self.logger.info("Resuming the previous trading session.")
+        initial_portfolio = self.previous_state_manager.get_previous_state(self.exchange,
+                                                                           SIMULATOR_INITIAL_STARTUP_PORTFOLIO)
+        self.logger.info(f"Initial portfolio: {initial_portfolio}")
+        trades_count = len(self.previous_state_manager.get_previous_state(self.exchange, self.TRADE_HISTORY_KEY))
+        current_portfolio = self.previous_state_manager.get_previous_state(self.exchange, SIMULATOR_CURRENT_PORTFOLIO)
+        self.logger.info(f"Current portfolio (after {trades_count} trades): {current_portfolio}")
 
     @staticmethod
     def enabled(config):
@@ -506,11 +543,17 @@ class Trader(Initializable):
         self.order_manager.stop()
 
     async def start_order_manager(self):
-        if not Backtesting.enabled(self.config):
+        if not backtesting_enabled(self.config):
             await self.order_manager.poll_update()
 
     def get_simulate(self):
         return self.simulate
+
+    def get_previous_state_manager(self):
+        return self.previous_state_manager
+
+    def get_loaded_previous_state(self):
+        return self.loaded_previous_state
 
     @staticmethod
     def check_if_self_managed(order_type):

@@ -23,7 +23,7 @@ from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_strategy_config, update_evaluator_config, \
     get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_all_symbol_list, \
     get_tested_exchange_list, get_simulated_exchange_list, get_other_exchange_list, get_edited_config, \
-    update_trading_config, get_trading_startup_config
+    update_trading_config, get_trading_startup_config, reset_trading_history
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -101,6 +101,19 @@ def config():
                                evaluator_startup_config=get_evaluator_startup_config(),
                                trading_startup_config=get_trading_startup_config()
                                )
+
+
+@server_instance.route('/config_actions', methods=['POST'])
+def config_actions():
+    action = request.args.get("action")
+    if action == "reset_trading_history":
+        reset_trading_history()
+        return jsonify({
+            "title": "Trading history reset",
+            "details": "Next trading sessions will not consider past sessions for "
+                       "profitability and trading simulator will start using a fresh portfolio."
+            })
+    return get_rest_reply("No specified action.", code=500)
 
 
 @server_instance.template_filter()

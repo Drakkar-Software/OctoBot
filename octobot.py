@@ -22,7 +22,7 @@ import threading
 
 import ccxt.async_support as ccxt
 
-from backtesting.backtesting import Backtesting
+from backtesting import backtesting_enabled
 from config import CONFIG_DEBUG_OPTION_PERF, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EXCHANGES, \
     CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, CONFIG_CRYPTO_PAIRS, CONFIG_CRYPTO_CURRENCIES, \
     NOTIFICATION_STOPPING_MESSAGE, BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING, \
@@ -40,6 +40,7 @@ from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
 from tools.asyncio_tools import run_coroutine_in_asyncio_loop, get_gather_wrapper
 from trading.exchanges.exchange_manager import ExchangeManager
+from trading.trader.previous_trading_state_manager import PreviousTradingStateManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 from trading.util.trading_config_util import get_activated_trading_mode
@@ -57,14 +58,16 @@ class OctoBot:
     - Load configs
     """
 
-    def __init__(self, config):
+    def __init__(self, config, reset_trading_history=False):
         self.start_time = time.time()
         self.config = config
+        self.reset_trading_history = reset_trading_history
         self.startup_config = copy.deepcopy(config)
         self.edited_config = copy.deepcopy(config)
         self.ready = False
         self.watcher = None
         self.current_loop_thread = None
+        self.previous_trading_state_manager = None
 
         # tools: used for alternative operations on a bot on the fly (ex: backtesting started from web interface)
         self.tools = {
@@ -98,7 +101,7 @@ class OctoBot:
         self.relevant_evaluators = EvaluatorCreator.get_relevant_evaluators_from_strategies(self.config)
 
         # Backtesting
-        self.backtesting_enabled = Backtesting.enabled(self.config)
+        self.backtesting_enabled = backtesting_enabled(self.config)
 
         # Notifier
         self.config[CONFIG_NOTIFICATION_INSTANCE] = Notification(self.config)
@@ -130,7 +133,12 @@ class OctoBot:
     async def create_exchange_traders(self, ignore_config=False):
         self.async_loop = asyncio.get_running_loop()
         available_exchanges = ccxt.exchanges
-        for exchange_class_string in self.config[CONFIG_EXCHANGES]:
+        target_exchanges = self.config[CONFIG_EXCHANGES]
+        if not backtesting_enabled(self.config):
+            self.previous_trading_state_manager = PreviousTradingStateManager(target_exchanges,
+                                                                              self.reset_trading_history,
+                                                                              self.config)
+        for exchange_class_string in target_exchanges:
             if exchange_class_string in available_exchanges:
                 exchange_type = getattr(ccxt, exchange_class_string)
 
@@ -148,12 +156,18 @@ class OctoBot:
                 self.global_updaters_by_exchange[exchange_inst.get_name()] = GlobalPriceUpdater(exchange_inst)
 
                 # create trader instance for this exchange
-                exchange_trader = Trader(self.config, exchange_inst)
+                exchange_trader = \
+                    Trader(self.config,
+                           exchange_inst,
+                           previous_state_manager=self.previous_trading_state_manager)
                 await exchange_trader.initialize()
                 self.exchange_traders[exchange_inst.get_name()] = exchange_trader
 
                 # create trader simulator instance for this exchange
-                exchange_trader_simulator = TraderSimulator(self.config, exchange_inst)
+                exchange_trader_simulator = \
+                    TraderSimulator(self.config,
+                                    exchange_inst,
+                                    previous_state_manager=self.previous_trading_state_manager)
                 await exchange_trader_simulator.initialize()
                 self.exchange_trader_simulators[exchange_inst.get_name()] = exchange_trader_simulator
 
@@ -220,7 +234,7 @@ class OctoBot:
 
     def _create_symbol_threads_managers(self, exchange, symbol_evaluator, global_price_updater):
 
-        if Backtesting.enabled(self.config):
+        if backtesting_enabled(self.config):
             real_time_ta_eval_list = []
         else:
             # Create real time TA evaluators
@@ -356,7 +370,7 @@ class OctoBot:
 
     def run_in_main_asyncio_loop(self, coroutine):
         # restart a new loop if necessary (for backtesting analysis)
-        if Backtesting.enabled(self.config) and self.async_loop.is_closed():
+        if backtesting_enabled(self.config) and self.async_loop.is_closed():
             self.logger.debug("Main loop is closed, starting a new main loop.")
             self._create_new_asyncio_main_loop()
 
@@ -425,3 +439,6 @@ class OctoBot:
 
     def get_async_loop(self):
         return self.async_loop
+
+    def get_previous_trading_state_manager(self):
+        return self.previous_trading_state_manager

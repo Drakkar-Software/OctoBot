@@ -117,6 +117,19 @@ MARKET_SEPARATOR = "/"
 CURRENCY_DEFAULT_MAX_PRICE_DIGITS = 8
 EXCHANGE_ERROR_SLEEPING_TIME = 10
 
+# Trader persistence
+HISTORY_EXCHANGE_KEY = "exchange"
+SIMULATOR_INITIAL_STARTUP_PORTFOLIO = "simulator_initial_portfolio"
+REAL_INITIAL_STARTUP_PORTFOLIO = "real_initial_portfolio"
+SIMULATOR_CURRENT_PORTFOLIO = "simulator_current_portfolio"
+SIMULATOR_TRADE_HISTORY = "simulator_trades_history"
+REAL_TRADE_HISTORY = "real_trades_history"
+SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE = "simulator_initial_portfolio_value"
+REAL_INITIAL_STARTUP_PORTFOLIO_VALUE = "real_initial_portfolio_value"
+SIMULATOR_REFERENCE_MARKET = "reference_market"
+WATCHED_MARKETS_INITIAL_STARTUP_VALUES = "initial_watched_markets_value"
+
+
 # Exchanges
 TESTED_EXCHANGES = ["binance"]
 SIMULATOR_TESTED_EXCHANGES = ["bitfinex", "bittrex", "coinbasepro", "kraken", "poloniex", "cryptopia", "bitmex"]
@@ -257,10 +270,12 @@ CONFIG_EVALUATOR_FILE = "evaluator_config.json"
 CONFIG_TRADING_FILE = "trading_config.json"
 CONFIG_EVALUATOR_FILE_PATH = f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{CONFIG_EVALUATOR_FILE}"
 CONFIG_TRADING_FILE_PATH = f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{CONFIG_TRADING_FILE}"
-CONFIG_DEFAULT_EVALUATOR_FILE = "config/default_evaluator_config.json"
-CONFIG_DEFAULT_TRADING_FILE = "config/default_trading_config.json"
-DEFAULT_CONFIG_FILE = "config/default_config.json"
-LOGGING_CONFIG_FILE = "config/logging_config.ini"
+CONFIG_FOLDER = "config"
+CONFIG_DEFAULT_EVALUATOR_FILE = f"{CONFIG_FOLDER}/default_evaluator_config.json"
+CONFIG_DEFAULT_TRADING_FILE = f"{CONFIG_FOLDER}/default_trading_config.json"
+DEFAULT_CONFIG_FILE = f"{CONFIG_FOLDER}/default_config.json"
+LOGGING_CONFIG_FILE = f"{CONFIG_FOLDER}/logging_config.ini"
+SIMULATOR_STATE_SAVE_FILE = f"{CONFIG_FOLDER}/trading_state_history.json"
 
 # Tentacle Config
 STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"
