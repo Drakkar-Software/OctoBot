@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
+from tools.errors import TentacleNotFound
 from tools.logging.logging_util import get_logger
 import os
 from abc import *
@@ -80,8 +80,8 @@ class AbstractTradingMode:
                     if s_class not in strategies_classes:
                         strategies_classes.append(s_class)
                 else:
-                    raise Exception(f"{class_string} is not found, Octobot can't use {cls.get_name()},"
-                                    f" please check {cls.get_name()}{cls.get_config_file_name()}")
+                    raise TentacleNotFound(f'{class_string} is not found, Octobot can\'t use {cls.get_name()},'
+                                           f' please check {cls.get_name()}{cls.get_config_file_name()}')
 
             return strategies_classes, cls.get_required_strategies_count(config)
         else:
