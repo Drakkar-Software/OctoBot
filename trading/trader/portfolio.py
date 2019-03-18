@@ -40,7 +40,8 @@ class Portfolio(Initializable):
         self.is_simulated = trader.simulate
         self.is_enabled = trader.enable
         self.portfolio = {}
-        self.logger = get_logger(self.__class__.__name__)
+        exchange = self.trader.get_exchange().get_name()
+        self.logger = get_logger(f"{self.__class__.__name__}{'Simulator' if self.is_simulated else ''}[{exchange}]")
         self.lock = Lock()
 
     async def initialize_impl(self):
