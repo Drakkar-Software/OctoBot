@@ -153,7 +153,7 @@ def start_octobot(starting_args):
                 else:
 
                     # In those cases load OctoBot
-                    from octobot import OctoBot
+                    from core.octobot import OctoBot
                     from interfaces.bots.telegram.bot import TelegramApp
                     from services import WebService
 

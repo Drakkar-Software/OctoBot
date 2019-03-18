@@ -285,7 +285,7 @@ class InterfaceBot:
 
     @staticmethod
     def get_command_ping():
-        return f"I'm alive since {convert_timestamp_to_datetime(get_bot().get_start_time(), '%Y-%m-%d %H:%M:%S')}."
+        return f"I'm alive since {convert_timestamp_to_datetime(get_bot().start_time, '%Y-%m-%d %H:%M:%S')}."
 
     @staticmethod
     def get_command_version():
@@ -308,7 +308,7 @@ class InterfaceBot:
 
     @staticmethod
     def set_command_stop():
-        get_bot().stop_threads()
+        get_bot().stop()
         return os._exit(0)
 
     def set_command_pause(self):

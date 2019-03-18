@@ -22,7 +22,7 @@ from config import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRAD
     CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADING_TENTACLES, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, \
     CONFIG_DATA_COLLECTOR_PATH, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_STARTING_PORTFOLIO, \
     CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO, DEFAULT_REFERENCE_MARKET, CONFIG_SIMULATOR_FEES
-from octobot import OctoBot
+from core.octobot import OctoBot
 from config.config import load_config
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_file_manager import interpret_file_name , is_valid_ending
@@ -113,17 +113,16 @@ def create_backtesting_bot(config):
 
 
 async def start_backtesting_bot(bot, in_thread=False, watcher=None):
-    await bot.create_exchange_traders()
+    await bot.initialize()
 
     # fix backtesting exit
-    for exchange in bot.exchanges_list:
-        exchange_inst = bot.exchanges_list[exchange].get_exchange()
+    for exchange in bot.get_exchanges_list():
+        exchange_inst = bot.get_exchanges_list()[exchange].get_exchange()
         try:
             exchange_inst.backtesting.force_exit_at_end = False
         except Exception:
             get_logger(f"fail to stop force exit for exchange {exchange_inst.get_name()}")
 
-    bot.create_evaluation_tasks()
     if not bot.get_symbols_tasks_manager():
         raise RuntimeError(f"No candles data for the current configuration. Please ensure the required data files for "
                            f"the activated symbol(s) are available. Symbol(s): {list(bot.get_symbols_list())}")
@@ -132,10 +131,10 @@ async def start_backtesting_bot(bot, in_thread=False, watcher=None):
         bot.set_watcher(watcher)
 
     if in_thread:
-        await bot.start_tasks(True)
+        await bot.start(True)
         return True
     else:
-        await bot.start_tasks()
+        await bot.start()
         trader = next(iter(bot.get_exchange_trader_simulators().values()))
         return await Backtesting.get_profitability(trader)
 

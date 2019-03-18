@@ -25,3 +25,7 @@ class ConfigEvaluatorError(Exception):
 
 class ConfigTradingError(Exception):
     pass
+
+
+class TentacleNotFound(Exception):
+    pass

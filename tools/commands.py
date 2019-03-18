@@ -92,7 +92,7 @@ class Commands:
     @staticmethod
     def _signal_handler(_, __):
         # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
-        stopping_thread = Thread(target=get_bot().stop_threads)
+        stopping_thread = Thread(target=get_bot().stop)
         stopping_thread.start()
         stopping_thread.join()
         os._exit(0)
@@ -105,20 +105,16 @@ class Commands:
             # handle CTRL+C signal
             signal.signal(signal.SIGINT, Commands._signal_handler)
 
-            # init
-            await bot.create_services()
-            await bot.create_exchange_traders()
-            bot.create_evaluation_tasks()
-
             # start
             try:
-                await bot.start_tasks()
+                await bot.initialize()
+                await bot.start()
             except CancelledError:
                 logger.info("Core engine tasks cancelled.")
 
             # join threads in a not loop blocking executor
             # TODO remove this when no thread anymore
-            await loop.run_in_executor(None, bot.join_threads)
+            await loop.run_in_executor(None, bot.task_manager.join_threads)
 
         except Exception as e:
             logger.exception(f"OctoBot Exception : {e}")
@@ -128,7 +124,7 @@ class Commands:
 
     @staticmethod
     def stop_bot(bot):
-        bot.stop_threads()
+        bot.stop()
         os._exit(0)
 
     @staticmethod

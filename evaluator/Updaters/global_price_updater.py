@@ -57,7 +57,6 @@ class GlobalPriceUpdater:
                 self.symbol_evaluators.append(symbol_evaluator)
 
     async def start_update_loop(self):
-
         error = None
         try:
             time_frames = self.evaluator_task_manager_by_time_frame_by_symbol.keys()
