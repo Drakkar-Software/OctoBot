@@ -23,7 +23,7 @@ from tools.config_manager import ConfigManager
 
 
 def _get_config():
-    return get_bot().get_edited_config()
+    return get_bot().edited_config
 
 
 def _symbol_in_currencies_config(config, symbol):

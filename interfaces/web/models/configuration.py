@@ -34,7 +34,7 @@ from backtesting import backtesting_enabled
 
 
 def get_edited_config():
-    return get_bot().get_edited_config()
+    return get_bot().edited_config
 
 
 def _get_evaluator_config():
@@ -42,7 +42,7 @@ def _get_evaluator_config():
 
 
 def get_evaluator_startup_config():
-    return get_bot().get_startup_config()[CONFIG_EVALUATOR]
+    return get_bot().startup_config[CONFIG_EVALUATOR]
 
 
 def _get_trading_config():
@@ -50,7 +50,7 @@ def _get_trading_config():
 
 
 def get_trading_startup_config():
-    return get_bot().get_startup_config()[CONFIG_TRADING_TENTACLES]
+    return get_bot().startup_config[CONFIG_TRADING_TENTACLES]
 
 
 def reset_trading_history():
