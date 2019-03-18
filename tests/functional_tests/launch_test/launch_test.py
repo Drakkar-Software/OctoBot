@@ -18,9 +18,11 @@ import pytest
 import asyncio
 
 from config import *
-from octobot import OctoBot
+from core.octobot import OctoBot
 from tests.test_utils.config import load_test_config
 
+
+from tools.errors import TentacleNotFound
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -35,9 +37,12 @@ async def test_run_bot(event_loop):
                 "pairs": ["BTC/USDT"]
             }
     }
-    bot = OctoBot(config)
+    bot = OctoBot(config, ignore_config=True)
     bot.time_frames = [TimeFrames.ONE_MINUTE]
-    await bot.create_exchange_traders(ignore_config=True)
-    bot.create_evaluation_tasks()
+    try:
+        await bot.initialize()
+    except TentacleNotFound:
+        pass
+    await bot.start()
     await asyncio.sleep(5)
-    await asyncio.get_event_loop().run_in_executor(None, bot.stop_threads)
+    await asyncio.get_event_loop().run_in_executor(None, bot.stop)
