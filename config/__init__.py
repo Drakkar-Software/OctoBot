@@ -263,7 +263,6 @@ CONFIG_DEFAULT_EVALUATOR_FILE = f"{CONFIG_FOLDER}/default_evaluator_config.json"
 CONFIG_DEFAULT_TRADING_FILE = f"{CONFIG_FOLDER}/default_trading_config.json"
 DEFAULT_CONFIG_FILE = f"{CONFIG_FOLDER}/default_config.json"
 LOGGING_CONFIG_FILE = f"{CONFIG_FOLDER}/logging_config.ini"
-SIMULATOR_STATE_SAVE_FILE = f"{CONFIG_FOLDER}/trading_state_history.json"
 
 # Tentacle Config
 STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"

@@ -122,5 +122,3 @@ config\.json
 *.ods
 temp_config\.json
 log
-
-config/trading_state_history\.json

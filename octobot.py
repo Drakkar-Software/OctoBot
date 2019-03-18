@@ -130,8 +130,7 @@ class OctoBot:
     async def create_exchange_traders(self, ignore_config=False):
         self.async_loop = asyncio.get_running_loop()
         available_exchanges = ccxt.exchanges
-        target_exchanges = self.config[CONFIG_EXCHANGES]
-        for exchange_class_string in target_exchanges:
+        for exchange_class_string in self.config[CONFIG_EXCHANGES]:
             if exchange_class_string in available_exchanges:
                 exchange_type = getattr(ccxt, exchange_class_string)
 
