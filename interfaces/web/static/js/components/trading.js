@@ -108,7 +108,9 @@ function orders_request_failure_callback(updated_data, update_url, dom_root_elem
 
 function reload_orders(){
     $("#openOrderTable").load(location.href + " #openOrderTable",function(){
-        $('#open_orders_datatable').DataTable();
+        $('#open_orders_datatable').DataTable({
+            "paging":   false,
+        });
         add_cancel_individual_orders_button();
         if ($("button[action=cancel_order]").length === 0){
             $("#cancel_all_orders").prop("disabled",true);
@@ -121,6 +123,8 @@ $(document).ready(function() {
     $(".watched_element").each(function () {
         $(this).click(addOrRemoveWatchedSymbol);
     });
-    $('#open_orders_datatable').DataTable();
+    $('#open_orders_datatable').DataTable({
+        "paging":   false,
+    });
     handle_cancel_buttons();
 });
