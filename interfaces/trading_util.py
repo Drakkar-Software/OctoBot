@@ -114,11 +114,15 @@ def get_open_orders():
 
     for trader in traders:
         if trader.get_simulate():
-            simulated_open_orders.append(trader.get_open_orders())
+            simulated_open_orders += trader.get_open_orders()
         else:
-            real_open_orders.append(trader.get_open_orders())
+            real_open_orders += trader.get_open_orders()
 
     return real_open_orders, simulated_open_orders
+
+
+def cancel_order(order_desc):
+    pass
 
 
 def cancel_all_open_orders(currency=None):
@@ -182,9 +186,9 @@ def get_trades_history(bot=None, symbol=None):
 
     for trader in traders:
         if trader.get_simulate():
-            simulated_trades_history.append(trader.get_trades_manager().select_trade_history(symbol))
+            simulated_trades_history += trader.get_trades_manager().select_trade_history(symbol)
         else:
-            real_trades_history.append(trader.get_trades_manager().select_trade_history(symbol))
+            real_trades_history += trader.get_trades_manager().select_trade_history(symbol)
 
     return real_trades_history, simulated_trades_history
 

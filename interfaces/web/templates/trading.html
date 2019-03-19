@@ -3,10 +3,8 @@
 {% import 'macros/cards.html' as m_cards %}
 
 {% macro extract_orders(order_list, sim_or_real) -%}
-    {% for orders in order_list %}
-        {% for order in orders %}
-            {{ m_tables.order_tr(order, convert_type(order.get_order_type()), convert_timestamp(order.get_creation_time()), sim_or_real) }}
-        {% endfor %}
+    {% for order in order_list %}
+        {{ m_tables.order_tr(order, convert_type(order.get_order_type()), convert_timestamp(order.get_creation_time()), sim_or_real) }}
     {% endfor %}
 {%- endmacro %}
 
@@ -49,7 +47,12 @@
 <br>
 <div class="card">
     <div class="card-header">
-        <h1>Open orders</h1>
+        <h1>Open orders
+            <button type="button" class="btn btn-outline-danger waves-effect float-right" id="cancel_all_orders" update-url="{{ url_for('api.orders', action='cancel_all_orders') }}"
+                    {{ "disabled" if not(real_open_orders or simulated_open_orders) }}>
+                <i class="fas fa-ban"></i> Cancel all
+            </button>
+        </h1>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -58,12 +61,14 @@
           <thead>
             <tr>
                 <th scope="col">#</th>
+                <th scope="col">Date</th>
                 <th scope="col">Exchange</th>
-                <th scope="col">Symbol</th>
-                <th scope="col">Type</th>
+                <th scope="col">Pair</th>
+                <th class="text-center" scope="col">Type</th>
                 <th scope="col">Price</th>
                 <th scope="col">Quantity</th>
-                <th scope="col">Creation</th>
+                <th class="text-right" scope="col">Total</th>
+                <th class="text-center" scope="col">Cancel</th>
             </tr>
           </thead>
           <tbody>

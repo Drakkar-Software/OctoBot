@@ -59,13 +59,12 @@ def _format_trades(trade_history):
         trade_order_side_key: []
     }
 
-    for trades_per_trader in trade_history:
-        for trade in trades_per_trader:
-            trades[trade_time_key].append(convert_timestamp_to_datetime(trade.filled_time,
-                                                                        time_format="%y-%m-%d %H:%M:%S"))
-            trades[trade_price_key].append(trade.price)
-            trades[trade_description_key].append(f"{trade.order_type.name}: {trade.quantity}")
-            trades[trade_order_side_key].append(trade.side.value)
+    for trade in trade_history:
+        trades[trade_time_key].append(convert_timestamp_to_datetime(trade.filled_time,
+                                                                    time_format="%y-%m-%d %H:%M:%S"))
+        trades[trade_price_key].append(trade.price)
+        trades[trade_description_key].append(f"{trade.order_type.name}: {trade.quantity}")
+        trades[trade_order_side_key].append(trade.side.value)
 
     return trades
 

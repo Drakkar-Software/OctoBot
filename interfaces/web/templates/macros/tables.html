@@ -11,12 +11,16 @@
                 {% endif %}
             {% endif %}
         </th>
+        <td>{{ timestamp }}</td>
         <td>{{ order.get_exchange().get_name() }}</td>
         <td>{{ order.get_order_symbol() }}</td>
-        <td>{{ type }}</td>
+        <td class="text-center">{{ type }}</td>
         <td>{{ order.get_origin_price() }}</td>
         <td>{{ order.get_origin_quantity() }}</td>
-        <td>{{ timestamp }}</td>
+        <td class="text-right">{{ order.get_origin_price() * order.get_origin_quantity() | round(8) }}  {{ order.market }}</td>
+        <td class="text-center py-1">
+            <button type="button" class="btn btn-sm btn-outline-danger waves-effect" id="cancel_all_orders" update-url="{{ url_for('api.orders', action='cancel_all_orders') }}"><i class="fas fa-ban"></i></button>
+        </td>
     </tr>
 {%- endmacro %}
 
@@ -35,12 +39,12 @@
         </th>
         <td>{{ trade.exchange.get_name() }}</td>
         <td>{{ trade.symbol }}</td>
-        <td>{{ type }}</td>
+        <td class="text-center">{{ type }}</td>
         <td>{{ trade.price }}</td>
         <td>{{ trade.quantity }}</td>
-        <td>{{ trade.cost }}</td>
-        <td>{{ trade.fee['cost'] }} {{ trade.fee['currency'] }}</td>
-        <td>{{ timestamp }}</td>
+        <td class="text-right">{{ trade.cost }} {{ trade.market }}</td>
+        <td class="text-right">{{ trade.fee['cost'] }} {{ trade.fee['currency'] }}</td>
+        <td class="text-right">{{ timestamp }}</td>
     </tr>
 {%- endmacro %}
 
