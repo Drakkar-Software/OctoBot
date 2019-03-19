@@ -57,10 +57,51 @@ function update_pairs_colors(){
     })
 }
 
+function handle_cancel_buttons() {
+    $("#cancel_all_orders").click(function () {
+        send_and_interpret_bot_update(null, $(this).attr(update_url_attr), null, orders_request_success_callback, orders_request_failure_callback);
+    });
+    add_cancel_individual_orders_button();
+}
+
+function add_cancel_individual_orders_button(){
+    $("button[action=cancel_order]").each(function () {
+        $(this).click(function () {
+            const order_description = $(this).attr("order_desc");
+            send_and_interpret_bot_update(order_description, $(this).attr(update_url_attr), null, orders_request_success_callback, orders_request_failure_callback);
+        });
+    });
+}
+
+function orders_request_success_callback(updated_data, update_url, dom_root_element, msg, status) {
+    if(msg.hasOwnProperty("title")){
+        create_alert("success", msg["title"], msg["details"]);
+    }else{
+        create_alert("success", msg, "");
+    }
+    reload_orders();
+}
+
+function orders_request_failure_callback(updated_data, update_url, dom_root_element, msg, status) {
+    create_alert("error", msg.responseText, "");
+    reload_orders();
+}
+
+function reload_orders(){
+    $("#openOrderTable").load(location.href + " #openOrderTable",function(){
+        $('#open_orders_datatable').DataTable();
+        add_cancel_individual_orders_button();
+        if ($("button[action=cancel_order]").length === 0){
+            $("#cancel_all_orders").prop("disabled",true);
+        }
+    });
+}
+
 $(document).ready(function() {
     update_pairs_colors();
     $(".watched_element").each(function () {
         $(this).click(addOrRemoveWatchedSymbol);
     });
     $('#open_orders_datatable').DataTable();
+    handle_cancel_buttons();
 });
