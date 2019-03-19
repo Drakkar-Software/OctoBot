@@ -247,7 +247,13 @@ class Order:
                 f"{self.get_order_type().name} | "
                 f"Price : {self.get_origin_price()} | "
                 f"Quantity : {self.get_origin_quantity()} | "
-                f"Status : {self.get_status()}")
+                f"Status : {self.get_status().name}")
+
+    def get_description(self):
+        return f"{self.get_id()}{self.exchange.get_name()}{self.get_string_info()}"
+
+    def matches_description(self, description):
+        return self.get_description() == description
 
     def infer_taker_or_maker(self):
         if self.taker_or_maker is None:

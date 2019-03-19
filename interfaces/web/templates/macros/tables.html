@@ -19,7 +19,7 @@
         <td>{{ order.get_origin_quantity() }}</td>
         <td class="text-right">{{ order.get_origin_price() * order.get_origin_quantity() | round(8) }}  {{ order.market }}</td>
         <td class="text-center py-1">
-            <button type="button" class="btn btn-sm btn-outline-danger waves-effect" id="cancel_all_orders" update-url="{{ url_for('api.orders', action='cancel_all_orders') }}"><i class="fas fa-ban"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-danger waves-effect" action="cancel_order" order_desc="{{ order.get_description() }}" update-url="{{ url_for('api.orders', action='cancel_order') }}"><i class="fas fa-ban"></i></button>
         </td>
     </tr>
 {%- endmacro %}

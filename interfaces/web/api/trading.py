@@ -19,6 +19,7 @@ from flask import request, jsonify
 
 from interfaces.trading_util import get_open_orders, cancel_all_open_orders, cancel_order
 from . import api
+from interfaces.web.util.flask_util import get_rest_reply
 
 
 @api.route("/orders", methods=['GET', 'POST'])
@@ -30,11 +31,13 @@ def orders():
     elif request.method == "POST":
         result = ""
         request_data = request.get_json()
-        if request_data["action"] == "cancel_order":
-            order_desc = request_data["order"]
-            cancel_order(order_desc)
-            result = "Order cancelled"
-        elif request_data["action"] == "cancel_all_orders":
+        action = request.args.get("action")
+        if action == "cancel_order":
+            if cancel_order(request_data):
+                result = "Order cancelled"
+            else:
+                return get_rest_reply('Impossible to cancel order: order not found.', 500)
+        elif action == "cancel_all_orders":
             cancel_all_open_orders()
             result = "All orders are now cancelled"
         return jsonify(result)
