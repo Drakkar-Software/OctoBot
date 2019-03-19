@@ -120,12 +120,11 @@ class InterfaceBot:
     def _print_trades(trades_history, trader_str, markdown=False):
         _, b, c = PrettyPrinter.get_markets(markdown)
         trades_history_string = f"{b}{trader_str}{b}{c}Trades :{EOL}{c}"
-        for trades in trades_history:
-            if trades:
-                for trade in trades:
-                    trades_history_string += f"{PrettyPrinter.trade_pretty_printer(trade, markdown=markdown)}{EOL}"
-            else:
-                trades_history_string += f"{c}No trade yet.{c}"
+        if trades_history:
+            for trade in trades_history:
+                trades_history_string += f"{PrettyPrinter.trade_pretty_printer(trade, markdown=markdown)}{EOL}"
+        else:
+            trades_history_string += f"{c}No trade yet.{c}"
         return trades_history_string
 
     @staticmethod
@@ -150,12 +149,11 @@ class InterfaceBot:
     def _print_open_orders(open_orders, trader_str, markdown=False):
         _, b, c = PrettyPrinter.get_markets(markdown)
         orders_string = f"{b}{trader_str}{b}{c}Open orders :{c}{EOL}"
-        for orders in open_orders:
-            if orders:
-                for order in orders:
-                    orders_string += PrettyPrinter.open_order_pretty_printer(order, markdown=markdown) + EOL
-            else:
-                orders_string += f"{c}No open order yet.{c}"
+        if open_orders:
+            for order in open_orders:
+                orders_string += PrettyPrinter.open_order_pretty_printer(order, markdown=markdown) + EOL
+        else:
+            orders_string += f"{c}No open order yet.{c}"
         return orders_string
 
     @staticmethod

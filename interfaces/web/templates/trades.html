@@ -2,10 +2,8 @@
 {% import 'macros/tables.html' as m_tables %}
 
 {% macro extract_trades(trades_list, sim_or_real) -%}
-    {% for trades in trades_list %}
-        {% for trade in trades %}
-            {{ m_tables.trades_tr(trade, convert_type(trade.order_type),convert_timestamp(trade.filled_time), sim_or_real) }}
-        {% endfor %}
+    {% for trade in trades_list %}
+        {{ m_tables.trades_tr(trade, convert_type(trade.order_type),convert_timestamp(trade.filled_time), sim_or_real) }}
     {% endfor %}
 {%- endmacro %}
 
@@ -28,13 +26,13 @@
             <tr>
                 <th scope="col">#</th>
                 <th scope="col">Exchange</th>
-                <th scope="col">Symbol</th>
-                <th scope="col">Type</th>
+                <th scope="col">Pair</th>
+                <th class="text-center" scope="col">Type</th>
                 <th scope="col">Price</th>
                 <th scope="col">Quantity</th>
-                <th scope="col">Total</th>
-                <th scope="col">Fee</th>
-                <th scope="col">Execution</th>
+                <th class="text-right" scope="col">Total</th>
+                <th class="text-right" scope="col">Fee</th>
+                <th class="text-right" scope="col">Execution</th>
             </tr>
           </thead>
           <tbody>
