@@ -122,7 +122,11 @@ def get_open_orders():
 
 
 def cancel_order(order_desc):
-    pass
+    if order_desc:
+        for trader in get_traders():
+            if get_bot().run_in_main_asyncio_loop(trader.cancel_order_using_description(order_desc)):
+                return True
+    return False
 
 
 def cancel_all_open_orders(currency=None):

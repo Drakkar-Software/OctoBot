@@ -55,7 +55,7 @@
         </h1>
     </div>
     <div class="card-body">
-        <div class="table-responsive">
+        <div class="table-responsive" id="openOrderTable">
           <table id="open_orders_datatable" class="table table-striped table-bordered table-hover">
             <caption>List of open orders</caption>
           <thead>
@@ -87,5 +87,5 @@
 {% endblock %}
 
 {% block additional_scripts %}
-<script src="{{ url_for('static', filename='js/components/interface_settings.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/trading.js') }}"></script>
 {% endblock additional_scripts %}
