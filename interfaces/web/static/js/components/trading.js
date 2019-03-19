@@ -59,16 +59,35 @@ function update_pairs_colors(){
 
 function handle_cancel_buttons() {
     $("#cancel_all_orders").click(function () {
-        send_and_interpret_bot_update(null, $(this).attr(update_url_attr), null, orders_request_success_callback, orders_request_failure_callback);
+        cancel_after_confirm($('#CancelAllOrdersModal'), null, $(this).attr(update_url_attr));
     });
     add_cancel_individual_orders_button();
+}
+
+function cancel_after_confirm(modalElement, data, update_url){
+    modalElement.modal("toggle");
+    const confirmButton = modalElement.find(".btn-danger");
+    confirmButton.off("click");
+    modalElement.keypress(function(e) {
+        if(e.which === 13) {
+            handle_confirm(modalElement, confirmButton, data, update_url);
+        }
+    });
+    confirmButton.click(function () {
+        handle_confirm(modalElement, confirmButton, data, update_url);
+    });
+}
+
+function handle_confirm(modalElement, confirmButton, data, update_url){
+    send_and_interpret_bot_update(data, update_url, null, orders_request_success_callback, orders_request_failure_callback);
+    modalElement.unbind("keypress");
+    modalElement.modal("hide");
 }
 
 function add_cancel_individual_orders_button(){
     $("button[action=cancel_order]").each(function () {
         $(this).click(function () {
-            const order_description = $(this).attr("order_desc");
-            send_and_interpret_bot_update(order_description, $(this).attr(update_url_attr), null, orders_request_success_callback, orders_request_failure_callback);
+            cancel_after_confirm($('#CancelOrderModal'), $(this).attr("order_desc"), $(this).attr(update_url_attr));
         });
     });
 }
