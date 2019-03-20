@@ -41,6 +41,7 @@ class Trader(Initializable):
         self.exchange = exchange
         self.config = config
         self.risk = None
+        self.order_refresh_time = order_refresh_time
         self.set_risk(self.config[CONFIG_TRADING][CONFIG_TRADER_RISK])
 
         # logging
@@ -52,24 +53,33 @@ class Trader(Initializable):
 
         self.enable = self.enabled(self.config)
 
+        self.order_manager = None
+        self.portfolio = None
+        self.trades_manager = None
+        self.notifier = None
+        self.trading_modes = []
+
+        if self.enable:
+            self.initialize_trader()
+
+    def initialize_trader(self):
         self.portfolio = Portfolio(self.config, self)
 
-        self.trades_manager = TradesManager(config, self)
+        self.trades_manager = TradesManager(self.config, self)
 
-        self.order_manager = OrdersManager(config, self)
+        self.order_manager = OrdersManager(self.config, self)
 
         self.exchange.get_exchange_manager().register_trader(self)
 
         self.notifier = EvaluatorNotification(self.config)
 
-        self.trading_modes = []
-
-        if order_refresh_time is not None:
-            self.order_manager.set_order_refresh_time(order_refresh_time)
+        if self.order_refresh_time is not None:
+            self.order_manager.set_order_refresh_time(self.order_refresh_time)
 
     async def initialize_impl(self):
-        await self.portfolio.initialize()
-        await self.trades_manager.initialize()
+        if self.enable:
+            await self.portfolio.initialize()
+            await self.trades_manager.initialize()
 
     async def launch(self):
         if self.enable:
