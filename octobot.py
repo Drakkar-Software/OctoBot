@@ -284,12 +284,14 @@ class OctoBot:
             task_list.append(crypto_currency_evaluator.get_social_evaluator_refresh_task())
 
         for trader in self.exchange_traders.values():
-            await trader.launch()
-            task_list.append(trader.start_order_manager())
+            if trader.enable:
+                await trader.launch()
+                task_list.append(trader.start_order_manager())
 
         for trader_simulator in self.exchange_trader_simulators.values():
-            await trader_simulator.launch()
-            task_list.append(trader_simulator.start_order_manager())
+            if trader_simulator.enable:
+                await trader_simulator.launch()
+                task_list.append(trader_simulator.start_order_manager())
 
         for updater in self.global_updaters_by_exchange.values():
             if self.watcher is not None:

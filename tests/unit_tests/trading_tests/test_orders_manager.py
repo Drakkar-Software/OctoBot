@@ -17,6 +17,7 @@
 import ccxt
 import pytest
 
+from config import CONFIG_ENABLED_OPTION, CONFIG_TRADER
 from trading.exchanges.exchange_manager import ExchangeManager
 from tests.test_utils.config import load_test_config
 from trading.trader.trader import Trader
@@ -32,14 +33,15 @@ class TestOrdersManagers:
     @staticmethod
     async def init_default():
         config = load_test_config()
+        config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = True
         exchange_manager = ExchangeManager(config, ccxt.binance, is_simulated=True)
         await exchange_manager.initialize()
         exchange_inst = exchange_manager.get_exchange()
-        trader_inst = Trader(config, exchange_inst, 1)
+        trader_real_inst = Trader(config, exchange_inst, 1)
         trader_simulator_inst = TraderSimulator(config, exchange_inst, 1)
-        order_manager_inst = trader_inst.get_order_manager()
+        order_manager_inst = trader_real_inst.get_order_manager()
         order_manager_simulator_inst = trader_simulator_inst.get_order_manager()
-        return config, exchange_inst, trader_inst, order_manager_inst, trader_simulator_inst, \
+        return config, exchange_inst, trader_real_inst, order_manager_inst, trader_simulator_inst, \
             order_manager_simulator_inst
 
     @staticmethod
