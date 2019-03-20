@@ -233,13 +233,12 @@ class Trader(Initializable):
 
                 self.order_manager.remove_order_from_list(order)
 
-    async def cancel_order_using_description(self, order_description, first_only=True):
+    async def cancel_order_using_description(self, order_description):
         # use a copy of the list (not the reference)
         for order in copy.copy(self.get_open_orders()):
             if order.matches_description(order_description):
                 await self.cancel_order(order)
-                if first_only:
-                    return True
+                return True
         return False
 
     # Should be called only if we want to cancel all symbol open orders (no filled)

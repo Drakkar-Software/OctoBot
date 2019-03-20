@@ -154,7 +154,7 @@ def create_candles_data(symbol, time_frame, new_data, bot, list_arrays, in_backt
     if real_trades_history:
         result_dict[real_trades_key] = _format_trades(real_trades_history)
 
-    if real_trades_history:
+    if simulated_trades_history:
         result_dict[simulated_trades_key] = _format_trades(simulated_trades_history)
 
     if list_arrays:
