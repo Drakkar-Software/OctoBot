@@ -19,7 +19,7 @@ import pytest
 
 from config import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_SECONDS, PriceIndexes, \
     TraderOrderType, ExchangeConstantsMarketPropertyColumns, FeePropertyColumns, CONFIG_SIMULATOR, \
-    CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, CONFIG_SIMULATOR_FEES_TAKER
+    CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, CONFIG_SIMULATOR_FEES_TAKER, BACKTESTING_DATA_OHLCV
 from tests.test_utils.config import load_test_config
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader_simulator import TraderSimulator
@@ -155,7 +155,9 @@ class TestExchangeSimulator:
         exchange_simulator.init_candles_offset(timeframes, self.DEFAULT_SYMBOL)
 
         offsets = exchange_simulator.time_frames_offset[self.DEFAULT_SYMBOL]
-        nb_candles = len(exchange_simulator.data[self.DEFAULT_SYMBOL][TimeFrames.THIRTY_MINUTES.value])
+        ohlcv = exchange_simulator.data[self.DEFAULT_SYMBOL][BACKTESTING_DATA_OHLCV]
+        assert ohlcv is exchange_simulator.get_ohlcv(self.DEFAULT_SYMBOL)
+        nb_candles = len(ohlcv[TimeFrames.THIRTY_MINUTES.value])
         assert offsets[TimeFrames.THIRTY_MINUTES.value] == \
             self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 1) + 1
         assert offsets[TimeFrames.ONE_HOUR.value] ==  \

@@ -60,7 +60,7 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
         config_to_use = copy.deepcopy(self.config)
         if data_file_to_use is not None:
             for index, datafile in enumerate(config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES]):
-                _, file_symbol, _ = interpret_file_name(datafile)
+                _, file_symbol, _, _ = interpret_file_name(datafile)
                 if symbol == file_symbol:
                     config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES][index] = \
                         DATA_FILE_PATH + data_file_to_use + DATA_FILE_EXT

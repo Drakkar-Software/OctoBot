@@ -38,12 +38,14 @@ def interpret_file_name(file_name):
         exchange_name = data[0]
         symbol = merge_currencies(data[1], data[2])
         timestamp = data[3] + data[4].replace(DATA_FILE_EXT, "")
+        data_type = get_data_type(file_name)
     except KeyError:
         exchange_name = None
         symbol = None
         timestamp = None
+        data_type = None
 
-    return exchange_name, symbol, timestamp
+    return exchange_name, symbol, timestamp, data_type
 
 
 def build_file_name(exchange, symbol):
@@ -106,13 +108,13 @@ def get_file_description(file_name):
     DATE = "date"
     CANDLES = "candles"
     TYPE = "type"
-    exchange_name, symbol, time_info = interpret_file_name(file_name)
+    exchange_name, symbol, time_info, data_type = interpret_file_name(file_name)
     return {
         SYMBOL: symbol,
         EXCHANGE: exchange_name,
         DATE: get_date(time_info),
         CANDLES: get_number_of_candles(join(CONFIG_DATA_COLLECTOR_PATH, file_name)),
-        TYPE: get_data_type(file_name).name
+        TYPE: data_type.name
     }
 
 

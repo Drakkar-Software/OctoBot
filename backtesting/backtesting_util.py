@@ -57,7 +57,7 @@ def get_standalone_backtesting_bot(config, data_files):
         _switch_reference_market(config_to_use, reference_market)
     if data_files:
         for data_file_to_use in data_files:
-            _, file_symbol, _ = interpret_file_name(data_file_to_use)
+            _, file_symbol, _, _ = interpret_file_name(data_file_to_use)
             currency, _ = split_symbol(file_symbol)
             full_file_path = CONFIG_DATA_COLLECTOR_PATH + data_file_to_use
             full_file_path += full_file_path if not full_file_path.endswith(DATA_FILE_EXT) else ""
@@ -148,7 +148,7 @@ def _switch_reference_market(config_to_use, market):
 def _get_reference_market(data_files):
     reference_market = None
     for data_file in data_files:
-        _, file_symbol, _ = interpret_file_name(data_file)
+        _, file_symbol, _, _ = interpret_file_name(data_file)
         currency, market = split_symbol(file_symbol)
         if reference_market is None:
             reference_market = market

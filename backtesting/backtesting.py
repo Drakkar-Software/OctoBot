@@ -97,7 +97,7 @@ class Backtesting:
             self.logger.exception(e)
 
     async def _get_symbol_report(self, symbol, trader):
-        market_data = self.exchange_simulator.get_data()[symbol][self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
+        market_data = self.exchange_simulator.get_ohlcv(symbol)[self.exchange_simulator.MIN_ENABLED_TIME_FRAME.value]
 
         # profitability
         total_profitability = 0
