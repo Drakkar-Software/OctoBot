@@ -16,10 +16,17 @@
  * License along with this library.
  */
 
+
+function get_in_backtesting_mode() {
+    return $("#symbol_graph").attr("backtesting_mode") === "True";
+}
+
+
 function update_graph(time_frame, symbol, exchange){
     if(isDefined(time_frame) && isDefined(symbol) && isDefined(exchange)){
         const formated_symbol = symbol.replace(new RegExp("/","g"), "|");
-        get_symbol_price_graph("graph-symbol-price", exchange, formated_symbol, time_frame, backtesting=false, replace=true);
+        const valid_exchange = exchange.split("[")[0];
+        get_symbol_price_graph("graph-symbol-price", valid_exchange, formated_symbol, time_frame, backtesting=get_in_backtesting_mode(), replace=true);
     }else{
         $("#graph-symbol-price").text("Impossible to display price graph.")
     }

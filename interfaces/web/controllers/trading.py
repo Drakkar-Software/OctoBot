@@ -23,6 +23,7 @@ from interfaces.trading_util import get_open_orders, get_trades_history, get_glo
 from interfaces import get_reference_market
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
+from interfaces.web.models.configuration import get_in_backtesting_mode
 from interfaces.web.models.trading import get_symbol_time_frames, get_evaluation
 from interfaces.web.models.interface_settings import get_watched_symbols
 
@@ -76,7 +77,8 @@ def symbol_market_status():
                            symbol=symbol,
                            exchange=exchange,
                            symbol_evaluation=symbol_evaluation,
-                           time_frames=time_frames)
+                           time_frames=time_frames,
+                           backtesting_mode=get_in_backtesting_mode())
 
 
 @server_instance.route("/trading")
