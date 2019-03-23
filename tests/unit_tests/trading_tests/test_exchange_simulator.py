@@ -19,7 +19,8 @@ import pytest
 
 from config import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_TO_SECONDS, PriceIndexes, \
     TraderOrderType, ExchangeConstantsMarketPropertyColumns, FeePropertyColumns, CONFIG_SIMULATOR, \
-    CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, CONFIG_SIMULATOR_FEES_TAKER, BACKTESTING_DATA_OHLCV
+    CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, CONFIG_SIMULATOR_FEES_TAKER, BACKTESTING_DATA_OHLCV, \
+    BACKTESTING_DATA_TRADES, ExchangeConstantsOrderColumns
 from tests.test_utils.config import load_test_config
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.trader_simulator import TraderSimulator
@@ -167,3 +168,52 @@ class TestExchangeSimulator:
         assert offsets[TimeFrames.FOUR_HOURS.value] ==  \
             self._get_start_index_for_timeframe(nb_candles, exchange_simulator.MIN_LIMIT, 8)
         assert offsets[TimeFrames.ONE_DAY.value] == 244
+
+    async def test_select_trades(self):
+        _, _, exchange_simulator, _ = await self.init_default()
+        trades = [
+            {
+                ExchangeConstantsOrderColumns.TIMESTAMP.value: 1549413007896,
+                ExchangeConstantsOrderColumns.PRICE.value: "3415.30000"
+            },
+            {
+                ExchangeConstantsOrderColumns.TIMESTAMP.value: 1549413032879,
+                ExchangeConstantsOrderColumns.PRICE.value: "3415.30000"
+            },
+            {
+                ExchangeConstantsOrderColumns.TIMESTAMP.value: 1549413032922,
+                ExchangeConstantsOrderColumns.PRICE.value: "3415.90000"
+            }
+        ]
+        exchange_simulator.data[self.DEFAULT_SYMBOL][BACKTESTING_DATA_TRADES] = trades
+        assert exchange_simulator.select_trades(10, 10, self.DEFAULT_SYMBOL) == []
+        assert exchange_simulator.select_trades(1549413007896, -1, self.DEFAULT_SYMBOL) == []
+        with pytest.raises(KeyError):
+            assert exchange_simulator.select_trades(1549413007.896, 1549413032.879, "ETH/USD") == []
+        assert exchange_simulator.select_trades(exchange_simulator.get_uniform_timestamp(1549413007896),
+                                                exchange_simulator.get_uniform_timestamp(1549413032879),
+                                                self.DEFAULT_SYMBOL) == [
+            {
+                ExchangeConstantsOrderColumns.TIMESTAMP.value: exchange_simulator.get_uniform_timestamp(1549413007896),
+                ExchangeConstantsOrderColumns.PRICE.value: 3415.30000
+            },
+            {
+                ExchangeConstantsOrderColumns.TIMESTAMP.value: exchange_simulator.get_uniform_timestamp(1549413032879),
+                ExchangeConstantsOrderColumns.PRICE.value: 3415.30000
+            }
+        ]
+        assert exchange_simulator.select_trades(exchange_simulator.get_uniform_timestamp(1549413007896),
+                                                -1, self.DEFAULT_SYMBOL) == [
+            {
+                ExchangeConstantsOrderColumns.TIMESTAMP.value: exchange_simulator.get_uniform_timestamp(1549413007896),
+                ExchangeConstantsOrderColumns.PRICE.value: 3415.30000
+            },
+            {
+                ExchangeConstantsOrderColumns.TIMESTAMP.value: exchange_simulator.get_uniform_timestamp(1549413032879),
+                ExchangeConstantsOrderColumns.PRICE.value: 3415.30000
+            },
+            {
+                ExchangeConstantsOrderColumns.TIMESTAMP.value: exchange_simulator.get_uniform_timestamp(1549413032922),
+                ExchangeConstantsOrderColumns.PRICE.value: 3415.90000
+            }
+        ]
