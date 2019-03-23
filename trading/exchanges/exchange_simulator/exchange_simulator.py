@@ -26,7 +26,7 @@ from config import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACK
     TimeFramesMinutes, ExchangeConstantsTickersColumns, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, \
     CONFIG_SIMULATOR_FEES_MAKER, CONFIG_DEFAULT_SIMULATOR_FEES, TraderOrderType, FeePropertyColumns, \
     ExchangeConstantsMarketPropertyColumns, CONFIG_SIMULATOR_FEES_TAKER, CONFIG_SIMULATOR_FEES_WITHDRAW, \
-    BACKTESTING_DATA_OHLCV, BACKTESTING_DATA_TRADES
+    BACKTESTING_DATA_OHLCV, BACKTESTING_DATA_TRADES, ExchangeConstantsOrderColumns
 from tools.time_frame_manager import TimeFrameManager
 from tools.symbol_util import split_symbol
 from tools.data_util import DataUtil
@@ -124,6 +124,13 @@ class ExchangeSimulator(AbstractExchange):
     def get_ohlcv(self, symbol):
         return self.data[symbol][BACKTESTING_DATA_OHLCV]
 
+    # returns trades data for a given symbol
+    def get_trades(self, symbol):
+        return self.data[symbol][BACKTESTING_DATA_TRADES]
+
+    def handles_trades_history(self, symbol):
+        return self.get_trades(symbol)
+
     def symbol_exists(self, symbol):
         return symbol in self.symbols
 
@@ -185,15 +192,35 @@ class ExchangeSimulator(AbstractExchange):
             raise NoCandleDataForThisTimeFrameException(
                 f"No candle data for {self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value} time frame for {symbol}.")
 
-    def _create_recent_trades(self, symbol, timeframe, index):
-        tf = self.get_ohlcv(symbol)[timeframe.value][index]
+    def _fetch_recent_trades(self, symbol, timeframe, index):
+        time_frame = self.get_ohlcv(symbol)[timeframe.value][index]
+        start_timestamp = time_frame[PriceIndexes.IND_PRICE_TIME.value] \
+            if backtesting_enabled(self.config) else time.time()
+
+        if not self.handles_trades_history(symbol) or not backtesting_enabled(self.config):
+            return self.generate_trades(time_frame, start_timestamp)
+        else:
+            end_timestamp = self.get_ohlcv(symbol)[timeframe.value][index+1][PriceIndexes.IND_PRICE_TIME.value] \
+                if len(self.get_ohlcv(symbol)[timeframe.value]) >= index else -1
+            return self.select_trades(start_timestamp, end_timestamp, symbol)
+
+    def select_trades(self, start_timestamp, end_timestamp, symbol):
+        trades = self.get_trades(symbol)
+        current_trades = [trade for trade in trades
+                          if (trade[ExchangeConstantsOrderColumns.TIMESTAMP] >= start_timestamp
+                              and (trade[ExchangeConstantsOrderColumns.TIMESTAMP] <= end_timestamp
+                                   or end_timestamp == -1))
+                          ]
+        return [{
+                    "price": trade_dict[ExchangeConstantsOrderColumns.PRICE],
+                    "timestamp": trade_dict[ExchangeConstantsOrderColumns.TIMESTAMP]
+                } for trade_dict in current_trades]
+
+    def generate_trades(self, time_frame, timestamp):
         trades = []
         created_trades = []
-
-        max_price = tf[PriceIndexes.IND_PRICE_HIGH.value]
-        min_price = tf[PriceIndexes.IND_PRICE_LOW.value]
-        timestamp = tf[PriceIndexes.IND_PRICE_TIME.value] if backtesting_enabled(self.config) else time.time()
-
+        max_price = time_frame[PriceIndexes.IND_PRICE_HIGH.value]
+        min_price = time_frame[PriceIndexes.IND_PRICE_LOW.value]
         # TODO generate trades with different patterns (linear, waves, random, etc)
         for _ in range(0, self.RECENT_TRADES_TO_CREATE - 2):
             trades.append((max_price + min_price) / 2)
@@ -281,7 +308,7 @@ class ExchangeSimulator(AbstractExchange):
             index = self.time_frames_offset[symbol][time_frame_to_use.value] \
                     + self.time_frame_get_times[symbol][time_frame_to_use.value] \
                     - 2
-        trades = self._create_recent_trades(
+        trades = self._fetch_recent_trades(
             symbol, time_frame_to_use,
             index
         )
