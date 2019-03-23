@@ -90,7 +90,7 @@ class OctoBot:
 
         # Init display time frame
         config_time_frames = TimeFrameManager.get_config_time_frame(self.config)
-        if TimeFrames.ONE_HOUR not in config_time_frames:
+        if TimeFrames.ONE_HOUR not in config_time_frames and not backtesting_enabled(self.config):
             config_time_frames.append(TimeFrames.ONE_HOUR)
             TimeFrameManager.sort_config_time_frames(self.config)
 

@@ -308,6 +308,15 @@ class PriceStrings(Enum):
     STR_PRICE_VOL = "vol"
 
 
+class OHLCVStrings(Enum):
+    TIMESTAMP = "timestamp"
+    OPEN = "open"
+    HIGH = "high"
+    LOW = "low"
+    CLOSE = "close"
+    VOLUME = "volume"
+
+
 class PriceIndexes(Enum):
     IND_PRICE_TIME = 0
     IND_PRICE_OPEN = 1
@@ -547,6 +556,7 @@ class PlatformsName(Enum):
 
 class BacktestingDataFormats(Enum):
     REGULAR_COLLECTOR_DATA = 0
+    KAIKO_DATA = 1
 
 
 # web user settings
