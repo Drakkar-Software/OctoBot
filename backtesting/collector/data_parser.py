@@ -16,7 +16,8 @@
 
 import os
 
-from config import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes, BacktestingDataFormats
+from config import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes, BacktestingDataFormats, BACKTESTING_DATA_OHLCV, \
+    BACKTESTING_DATA_TRADES
 from backtesting import BacktestingDataFileException
 from backtesting.collector.data_file_manager import read_data_file, get_data_type
 
@@ -41,23 +42,27 @@ class DataCollectorParser:
 
     @staticmethod
     def merge_arrays(arrays):
-        time_frames_data = {}
+        parsed_data = {
+            BACKTESTING_DATA_OHLCV: {},
+            BACKTESTING_DATA_TRADES: {}
+        }
+        ohlcv_data = parsed_data[BACKTESTING_DATA_OHLCV]
         for time_frame in arrays:
             data = arrays[time_frame]
-            time_frames_data[time_frame] = []
+            ohlcv_data[time_frame] = []
             for i in range(len(data[PriceIndexes.IND_PRICE_TIME.value])):
-                time_frames_data[time_frame].insert(i, [None]*len(PriceIndexes))
-                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_CLOSE.value] = \
+                ohlcv_data[time_frame].insert(i, [None]*len(PriceIndexes))
+                ohlcv_data[time_frame][i][PriceIndexes.IND_PRICE_CLOSE.value] = \
                     data[PriceIndexes.IND_PRICE_CLOSE.value][i]
-                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_OPEN.value] = \
+                ohlcv_data[time_frame][i][PriceIndexes.IND_PRICE_OPEN.value] = \
                     data[PriceIndexes.IND_PRICE_OPEN.value][i]
-                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_HIGH.value] = \
+                ohlcv_data[time_frame][i][PriceIndexes.IND_PRICE_HIGH.value] = \
                     data[PriceIndexes.IND_PRICE_HIGH.value][i]
-                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_LOW.value] = \
+                ohlcv_data[time_frame][i][PriceIndexes.IND_PRICE_LOW.value] = \
                     data[PriceIndexes.IND_PRICE_LOW.value][i]
-                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_TIME.value] = \
+                ohlcv_data[time_frame][i][PriceIndexes.IND_PRICE_TIME.value] = \
                     data[PriceIndexes.IND_PRICE_TIME.value][i]
-                time_frames_data[time_frame][i][PriceIndexes.IND_PRICE_VOL.value] = \
+                ohlcv_data[time_frame][i][PriceIndexes.IND_PRICE_VOL.value] = \
                     data[PriceIndexes.IND_PRICE_VOL.value][i]
 
-        return time_frames_data
+        return parsed_data
