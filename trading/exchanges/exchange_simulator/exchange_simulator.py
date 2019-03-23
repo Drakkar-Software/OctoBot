@@ -26,7 +26,7 @@ from config import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACK
     TimeFramesMinutes, ExchangeConstantsTickersColumns, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, \
     CONFIG_SIMULATOR_FEES_MAKER, CONFIG_DEFAULT_SIMULATOR_FEES, TraderOrderType, FeePropertyColumns, \
     ExchangeConstantsMarketPropertyColumns, CONFIG_SIMULATOR_FEES_TAKER, CONFIG_SIMULATOR_FEES_WITHDRAW, \
-    BACKTESTING_DATA_OHLCV, BACKTESTING_DATA_TRADES, ExchangeConstantsOrderColumns
+    BACKTESTING_DATA_OHLCV, BACKTESTING_DATA_TRADES, ExchangeConstantsOrderColumns, OHLCVStrings
 from tools.time_frame_manager import TimeFrameManager
 from tools.symbol_util import split_symbol
 from tools.data_util import DataUtil
@@ -201,19 +201,21 @@ class ExchangeSimulator(AbstractExchange):
             return self.generate_trades(time_frame, start_timestamp)
         else:
             end_timestamp = self.get_ohlcv(symbol)[timeframe.value][index+1][PriceIndexes.IND_PRICE_TIME.value] \
-                if len(self.get_ohlcv(symbol)[timeframe.value]) >= index else -1
+                if len(self.get_ohlcv(symbol)[timeframe.value]) > index+1 else -1
             return self.select_trades(start_timestamp, end_timestamp, symbol)
 
     def select_trades(self, start_timestamp, end_timestamp, symbol):
         trades = self.get_trades(symbol)
         current_trades = [trade for trade in trades
-                          if (trade[ExchangeConstantsOrderColumns.TIMESTAMP] >= start_timestamp
-                              and (trade[ExchangeConstantsOrderColumns.TIMESTAMP] <= end_timestamp
+                          if (self.get_uniform_timestamp(trade[ExchangeConstantsOrderColumns.TIMESTAMP.value])
+                              >= start_timestamp
+                              and (self.get_uniform_timestamp(trade[ExchangeConstantsOrderColumns.TIMESTAMP.value])
+                                   <= end_timestamp
                                    or end_timestamp == -1))
                           ]
         return [{
-                    "price": trade_dict[ExchangeConstantsOrderColumns.PRICE],
-                    "timestamp": trade_dict[ExchangeConstantsOrderColumns.TIMESTAMP]
+                    "price": float(trade_dict[ExchangeConstantsOrderColumns.PRICE.value]),
+                    "timestamp": self.get_uniform_timestamp(trade_dict[ExchangeConstantsOrderColumns.TIMESTAMP.value])
                 } for trade_dict in current_trades]
 
     def generate_trades(self, time_frame, timestamp):

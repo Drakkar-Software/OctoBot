@@ -37,8 +37,9 @@ def interpret_file_name(file_name):
     try:
         exchange_name = data[0]
         symbol = merge_currencies(data[1], data[2])
-        timestamp = data[3] + data[4].replace(DATA_FILE_EXT, "")
         data_type = get_data_type(file_name)
+        file_ext = get_file_ending(data_type)
+        timestamp = data[3] + data[4].replace(file_ext, "")
     except KeyError:
         exchange_name = None
         symbol = None
@@ -73,6 +74,11 @@ def read_data_file(file_name):
 def get_data_type(file_name):
     if file_name.endswith(DATA_FILE_EXT):
         return BacktestingDataFormats.REGULAR_COLLECTOR_DATA
+
+
+def get_file_ending(data_type):
+    if data_type == BacktestingDataFormats.REGULAR_COLLECTOR_DATA:
+        return DATA_FILE_EXT
 
 
 def get_number_of_candles(file_path):

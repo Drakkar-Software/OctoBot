@@ -42,10 +42,7 @@ class DataCollectorParser:
 
     @staticmethod
     def merge_arrays(arrays):
-        parsed_data = {
-            BACKTESTING_DATA_OHLCV: {},
-            BACKTESTING_DATA_TRADES: {}
-        }
+        parsed_data = DataCollectorParser.get_empty_parsed_data()
         ohlcv_data = parsed_data[BACKTESTING_DATA_OHLCV]
         for time_frame in arrays:
             data = arrays[time_frame]
@@ -66,3 +63,10 @@ class DataCollectorParser:
                     data[PriceIndexes.IND_PRICE_VOL.value][i]
 
         return parsed_data
+
+    @staticmethod
+    def get_empty_parsed_data():
+        return {
+            BACKTESTING_DATA_OHLCV: {},
+            BACKTESTING_DATA_TRADES: {}
+        }
