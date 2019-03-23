@@ -47,15 +47,6 @@ class TestTradesManager:
     def stop(trader):
         trader.stop_order_manager()
 
-    async def test_get_reference_market(self):
-        config, _, trader_inst, _ = await self.init_default()
-        assert TradesManager.get_reference_market(config) == DEFAULT_REFERENCE_MARKET
-
-        config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET] = "ETH"
-        assert TradesManager.get_reference_market(config) == "ETH"
-
-        self.stop(trader_inst)
-
     async def test_get_profitability(self):
         _, _, trader_inst, trades_manager_inst = await self.init_default()
         self.stop(trader_inst)

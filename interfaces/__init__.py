@@ -14,6 +14,10 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+
+from tools.config_manager import ConfigManager
+
+
 bot_instance = None
 global_config = None
 reference_market = None
@@ -49,8 +53,7 @@ def get_reference_market():
     global reference_market
     if reference_market is None:
         try:
-            reference_market = next(
-                iter(get_bot().get_exchange_traders().values())).get_trades_manager().get_reference()
+            reference_market = ConfigManager.get_reference_market(global_config)
         except StopIteration:
             reference_market = None
     return reference_market

@@ -18,12 +18,12 @@ from copy import deepcopy
 
 from tools.logging.logging_util import get_logger
 
-from config import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
-    CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, FeePropertyColumns
+from config import CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, FeePropertyColumns
 from trading.trader.portfolio import Portfolio, ExchangeConstantsTickersColumns
 from tools.symbol_util import merge_currencies, split_symbol
-from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from tools.initializable import Initializable
+from tools.config_manager import ConfigManager
+from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 
 """ TradesManager will store all trades performed by the exchange trader
 Another feature of TradesManager is the profitability calculation
@@ -62,18 +62,10 @@ class TradesManager(Initializable):
         self.portfolio_current_value = 0
         self.trades_value = 0
 
-        self.reference_market = TradesManager.get_reference_market(self.config)
+        self.reference_market = ConfigManager.get_reference_market(self.config)
 
     async def initialize_impl(self):
         await self._init_origin_portfolio_and_currencies_value()
-
-    @staticmethod
-    def get_reference_market(config):
-        # The reference market is the currency unit of the calculated quantity value
-        if CONFIG_TRADER_REFERENCE_MARKET in config[CONFIG_TRADING]:
-            return config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET]
-        else:
-            return DEFAULT_REFERENCE_MARKET
 
     def is_in_history(self, order):
         return any([order.get_id() == trade.order_id for trade in self.trade_history])

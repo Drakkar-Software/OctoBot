@@ -79,3 +79,11 @@ def test_get_market_pair():
     pair, inverted = ConfigManager.get_market_pair(config, "ADA")
     assert pair == ""
     assert inverted is False
+
+
+async def test_get_reference_market():
+    config = load_config("tests/static/config.json")
+    assert ConfigManager.get_reference_market(config) == DEFAULT_REFERENCE_MARKET
+
+    config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET] = "ETH"
+    assert ConfigManager.get_reference_market(config) == "ETH"
