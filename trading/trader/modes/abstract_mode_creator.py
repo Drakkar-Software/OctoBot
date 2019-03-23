@@ -273,10 +273,11 @@ class AbstractTradingModeCreator:
     async def get_pre_order_data(exchange, symbol, portfolio):
         last_prices = await exchange.execute_request_with_retry(exchange.get_recent_trades(symbol))
 
-        reference_sum = sum([float(last_price["price"])
-                             for last_price in last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]])
+        used_last_prices = last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]
 
-        reference = reference_sum / ORDER_CREATION_LAST_TRADES_TO_USE
+        reference_sum = sum([float(last_price["price"]) for last_price in used_last_prices])
+
+        reference = reference_sum / len(used_last_prices)
 
         currency, market = split_symbol(symbol)
 
