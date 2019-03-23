@@ -543,6 +543,10 @@ class PlatformsName(Enum):
     MAC = "mac"
 
 
+class BacktestingDataFormats(Enum):
+    REGULAR_COLLECTOR_DATA = 0
+
+
 # web user settings
 DEFAULT_DISPLAY_TIME_FRAME = TimeFrames.ONE_HOUR
 CONFIG_WATCHED_SYMBOLS = "watched_symbols"

@@ -16,8 +16,9 @@
 
 import os
 
-from config import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes
-from backtesting.collector.data_file_manager import read_data_file
+from config import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes, BacktestingDataFormats
+from backtesting import BacktestingDataFileException
+from backtesting.collector.data_file_manager import read_data_file, get_data_type
 
 
 class DataCollectorParser:
@@ -32,7 +33,11 @@ class DataCollectorParser:
     @staticmethod
     def get_file_content(file_name):
         file_content = read_data_file(file_name)
-        return DataCollectorParser.merge_arrays(file_content)
+        data_type = get_data_type(file_name)
+        if data_type == BacktestingDataFormats.REGULAR_COLLECTOR_DATA:
+            return DataCollectorParser.merge_arrays(file_content)
+        else:
+            raise BacktestingDataFileException(file_name)
 
     @staticmethod
     def merge_arrays(arrays):
