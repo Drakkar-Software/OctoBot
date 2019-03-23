@@ -273,9 +273,7 @@ class ConfigManager:
     @staticmethod
     def get_market_pair(config, currency) -> (str, bool):
         if CONFIG_TRADING in config:
-            reference_market = get_value_or_default(config[CONFIG_TRADING],
-                                                    CONFIG_TRADER_REFERENCE_MARKET,
-                                                    DEFAULT_REFERENCE_MARKET)
+            reference_market = ConfigManager.get_reference_market(config)
             for symbol in ConfigManager.get_symbols(config):
                 symbol_currency, symbol_market = split_symbol(symbol)
                 if currency == symbol_currency and reference_market == symbol_market:
@@ -283,3 +281,8 @@ class ConfigManager:
                 elif reference_market == symbol_currency and currency == symbol_market:
                     return symbol, True
         return "", False
+
+    @staticmethod
+    def get_reference_market(config) -> str:
+        # The reference market is the currency unit of the calculated quantity value
+        return get_value_or_default(config[CONFIG_TRADING], CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET)

@@ -132,7 +132,7 @@ class TelegramApp(InterfaceBot):
         if TelegramApp._is_valid_user(update):
             if self.paused:
                 TelegramApp._send_message(update,
-                                          f"_Resuming..._{EOL}`I will restart trading when i see opportunities !`")
+                                          f"_Resuming..._{EOL}`I will restart trading when I see opportunities !`")
                 self.set_command_resume()
             else:
                 TelegramApp._send_message(update, f"_Pausing..._{EOL}`I'm cancelling my orders.`")

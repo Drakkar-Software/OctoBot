@@ -113,10 +113,11 @@ def get_open_orders():
     traders = get_traders()
 
     for trader in traders:
-        if trader.get_simulate():
-            simulated_open_orders += trader.get_open_orders()
-        else:
-            real_open_orders += trader.get_open_orders()
+        if trader.is_enabled():
+            if trader.get_simulate():
+                simulated_open_orders += trader.get_open_orders()
+            else:
+                real_open_orders += trader.get_open_orders()
 
     return real_open_orders, simulated_open_orders
 
@@ -124,30 +125,34 @@ def get_open_orders():
 def cancel_order(order_desc):
     if order_desc:
         for trader in get_traders():
-            if get_bot().run_in_main_asyncio_loop(trader.cancel_order_using_description(order_desc)):
-                return True
+            if trader.is_enabled():
+                if get_bot().run_in_main_asyncio_loop(trader.cancel_order_using_description(order_desc)):
+                    return True
     return False
 
 
 def cancel_all_open_orders(currency=None):
     for trader in get_traders():
-        if currency is None:
-            get_bot().run_in_main_asyncio_loop(trader.cancel_all_open_orders())
-        else:
-            get_bot().run_in_main_asyncio_loop(trader.cancel_all_open_orders_with_currency(currency))
+        if trader.is_enabled():
+            if currency is None:
+                get_bot().run_in_main_asyncio_loop(trader.cancel_all_open_orders())
+            else:
+                get_bot().run_in_main_asyncio_loop(trader.cancel_all_open_orders_with_currency(currency))
 
 
 def sell_all_currencies():
     orders = []
     for trader in get_traders():
-        orders += get_bot().run_in_main_asyncio_loop(trader.sell_all_currencies())
+        if trader.is_enabled():
+            orders += get_bot().run_in_main_asyncio_loop(trader.sell_all_currencies())
     return orders
 
 
 def sell_all(currency):
     orders = []
     for trader in get_traders():
-        orders += get_bot().run_in_main_asyncio_loop(trader.sell_all(currency))
+        if trader.is_enabled():
+            orders += get_bot().run_in_main_asyncio_loop(trader.sell_all(currency))
     return orders
 
 
@@ -189,10 +194,11 @@ def get_trades_history(bot=None, symbol=None):
     traders = get_traders(bot)
 
     for trader in traders:
-        if trader.get_simulate():
-            simulated_trades_history += trader.get_trades_manager().select_trade_history(symbol)
-        else:
-            real_trades_history += trader.get_trades_manager().select_trade_history(symbol)
+        if trader.is_enabled():
+            if trader.get_simulate():
+                simulated_trades_history += trader.get_trades_manager().select_trade_history(symbol)
+            else:
+                real_trades_history += trader.get_trades_manager().select_trade_history(symbol)
 
     return real_trades_history, simulated_trades_history
 
@@ -259,10 +265,11 @@ def get_portfolios():
     traders = get_traders()
 
     for trader in traders:
-        if trader.get_simulate():
-            simulated_portfolios.append(trader.get_portfolio().get_portfolio())
-        else:
-            real_portfolios.append(trader.get_portfolio().get_portfolio())
+        if trader.is_enabled():
+            if trader.get_simulate():
+                simulated_portfolios.append(trader.get_portfolio().get_portfolio())
+            else:
+                real_portfolios.append(trader.get_portfolio().get_portfolio())
 
     return real_portfolios, simulated_portfolios
 
