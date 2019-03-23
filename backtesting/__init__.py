@@ -26,3 +26,9 @@ class BacktestingEndedException(Exception):
     def __init__(self, symbol=""):
         self.msg = f"Backtesting finished for {symbol}."
         super().__init__(self.msg)
+
+
+class BacktestingDataFileException(Exception):
+    def __init__(self, file_name):
+        self.msg = f"Unhandled backtesting data for: {file_name}."
+        super().__init__(self.msg)

@@ -22,7 +22,7 @@ from os import listdir, remove
 
 from tools.symbol_util import merge_currencies
 from tools.time_frame_manager import TimeFrameManager
-from config import CONFIG_DATA_COLLECTOR_PATH, TimeFrames
+from config import CONFIG_DATA_COLLECTOR_PATH, TimeFrames, BacktestingDataFormats
 
 
 DATA_FILE_EXT = ".data"
@@ -68,6 +68,11 @@ def read_data_file(file_name):
     return file_content
 
 
+def get_data_type(file_name):
+    if file_name.endswith(DATA_FILE_EXT):
+        return BacktestingDataFormats.REGULAR_COLLECTOR_DATA
+
+
 def get_number_of_candles(file_path):
     try:
         content = read_data_file(file_path)
@@ -100,12 +105,14 @@ def get_file_description(file_name):
     EXCHANGE = "exchange"
     DATE = "date"
     CANDLES = "candles"
+    TYPE = "type"
     exchange_name, symbol, time_info = interpret_file_name(file_name)
     return {
         SYMBOL: symbol,
         EXCHANGE: exchange_name,
         DATE: get_date(time_info),
-        CANDLES: get_number_of_candles(join(CONFIG_DATA_COLLECTOR_PATH, file_name))
+        CANDLES: get_number_of_candles(join(CONFIG_DATA_COLLECTOR_PATH, file_name)),
+        TYPE: get_data_type(file_name).name
     }
 
 
