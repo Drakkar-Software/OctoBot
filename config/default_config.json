@@ -1,6 +1,5 @@
 {
   "backtesting": {
-      "enabled": false,
       "files": []
   },
   "crypto-currencies":{

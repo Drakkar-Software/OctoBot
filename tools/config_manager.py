@@ -27,9 +27,11 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
     CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, \
     CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, CONFIG_TRADING, \
-    CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET
+    CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET, \
+    CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
+from backtesting import backtesting_enabled
 
 
 def get_logger():
@@ -142,9 +144,25 @@ class ConfigManager:
         config.pop(CONFIG_NOTIFICATION_INSTANCE, None)
         config.pop(CONFIG_ADVANCED_INSTANCES, None)
 
+        # remove backtesting specific differences
+        if backtesting_enabled(config):
+            if CONFIG_BACKTESTING in config:
+                config[CONFIG_BACKTESTING].pop(CONFIG_ENABLED_OPTION, None)
+                config[CONFIG_BACKTESTING].pop(CONFIG_ANALYSIS_ENABLED_OPTION, None)
+
+    @staticmethod
+    def filter_to_update_data(to_update_data, current_config):
+        if backtesting_enabled(current_config):
+            for key in set(to_update_data.keys()):
+                # remove changes to currency config when in backtesting
+                if CONFIG_CRYPTO_CURRENCIES in key:
+                    to_update_data.pop(key)
+
     @staticmethod
     def update_global_config(to_update_data, current_config, update_input=False, delete=False):
         new_current_config = copy(current_config)
+
+        ConfigManager.filter_to_update_data(to_update_data, current_config)
 
         ConfigManager.remove_loaded_only_element(new_current_config)
 

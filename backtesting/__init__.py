@@ -19,7 +19,8 @@ from config import CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION
 
 
 def backtesting_enabled(config):
-    return CONFIG_BACKTESTING in config and config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION]
+    return CONFIG_BACKTESTING in config and CONFIG_ENABLED_OPTION in config[CONFIG_BACKTESTING] \
+           and config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION]
 
 
 class BacktestingEndedException(Exception):
