@@ -25,6 +25,7 @@ from interfaces.web.models.configuration import get_strategy_config, update_eval
     get_tested_exchange_list, get_simulated_exchange_list, get_other_exchange_list, get_edited_config, \
     update_trading_config, get_trading_startup_config
 from interfaces.web.util.flask_util import get_rest_reply
+from backtesting import backtesting_enabled
 
 
 @server_instance.route("/config")
@@ -99,7 +100,9 @@ def config():
                                full_symbol_list=get_all_symbol_list(),
                                strategy_config=get_strategy_config(),
                                evaluator_startup_config=get_evaluator_startup_config(),
-                               trading_startup_config=get_trading_startup_config()
+                               trading_startup_config=get_trading_startup_config(),
+
+                               in_backtesting=backtesting_enabled(display_config)
                                )
 
 

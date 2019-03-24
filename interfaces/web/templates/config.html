@@ -214,6 +214,11 @@
         <div class="card">
             <div class="card-header"><h2>Currencies</h2></div>
             <div class="card-body deck-container">
+                {%  if in_backtesting %}
+                <div class="alert alert-warning" role="alert">
+                    OctoBot is currently running in backtesting analysis, information in this section may not be accurate and changes won't be saved.
+                </div>
+                {%  endif %}
                 <div class="card">
                     <div class="card-body">
                         Add a new currency :
