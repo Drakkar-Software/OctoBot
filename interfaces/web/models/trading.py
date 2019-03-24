@@ -17,10 +17,10 @@
 from interfaces import get_bot
 
 
-def get_symbol_time_frames(symbol, exchange_name):
+def get_exchange_time_frames(exchange_name):
     for exchange in get_bot().get_exchanges_list().values():
         if not exchange_name or exchange.get_name() == exchange_name:
-            return exchange.get_exchange_manager().get_symbol_available_time_frames(symbol), exchange.get_name()
+            return exchange.get_exchange_manager().get_config_time_frame(), exchange.get_name()
     return [], ""
 
 
