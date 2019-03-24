@@ -30,7 +30,7 @@ LOGGER = get_logger("DataCollectorWebInterfaceModel")
 def get_data_files_with_description():
     files = get_all_available_data_files()
     files_with_description = {
-        file: get_file_description(file) for file in files
+        data_file: get_file_description(data_file) for data_file in files
     }
     return files_with_description
 

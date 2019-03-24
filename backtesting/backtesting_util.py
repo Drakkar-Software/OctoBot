@@ -25,7 +25,7 @@ from config import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRAD
 from octobot import OctoBot
 from config.config import load_config
 from backtesting.backtesting import Backtesting
-from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
+from backtesting.collector.data_file_manager import interpret_file_name , is_valid_ending
 from tools.symbol_util import split_symbol
 from services.web_service import WebService
 
@@ -60,7 +60,8 @@ def get_standalone_backtesting_bot(config, data_files):
             _, file_symbol, _, _ = interpret_file_name(data_file_to_use)
             currency, _ = split_symbol(file_symbol)
             full_file_path = CONFIG_DATA_COLLECTOR_PATH + data_file_to_use
-            full_file_path += full_file_path if not full_file_path.endswith(DATA_FILE_EXT) else ""
+            ending = f".{full_file_path.split('.')[-1]}"
+            full_file_path += full_file_path if not is_valid_ending(ending) else ""
             if currency not in config_to_use[CONFIG_CRYPTO_CURRENCIES]:
                 config_to_use[CONFIG_CRYPTO_CURRENCIES][currency] = {CONFIG_CRYPTO_PAIRS: []}
             if file_symbol not in config_to_use[CONFIG_CRYPTO_CURRENCIES][currency][CONFIG_CRYPTO_PAIRS]:

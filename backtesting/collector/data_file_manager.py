@@ -49,9 +49,10 @@ def interpret_file_name(file_name):
     return exchange_name, symbol, timestamp, data_type
 
 
-def build_file_name(exchange, symbol):
-    return f"{exchange.get_name()}_{symbol.replace('/', '_')}_" \
-           f"{time.strftime(DATA_FILE_TIME_WRITE_FORMAT)}{DATA_FILE_EXT}"
+def build_file_name(exchange, symbol, ending=DATA_FILE_EXT):
+    symbol_str = symbol.replace('/', '_').replace('-', '_').upper()
+    return f"{exchange.strip().lower()}_{symbol_str}_" \
+           f"{time.strftime(DATA_FILE_TIME_WRITE_FORMAT)}{ending}"
 
 
 def write_data_file(file_name, content):
@@ -81,21 +82,42 @@ def get_file_ending(data_type):
         return DATA_FILE_EXT
 
 
+def get_time_frames(file_path, content):
+    data_type = get_data_type(file_path)
+    if data_type == BacktestingDataFormats.REGULAR_COLLECTOR_DATA:
+        return content.keys()
+
+
+def get_ohlcv_per_timeframe(file_path, content):
+    data_type = get_data_type(file_path)
+    if data_type == BacktestingDataFormats.REGULAR_COLLECTOR_DATA:
+        return content
+
+
+def get_candles_count(file_path, tf_content):
+    data_type = get_data_type(file_path)
+    if data_type == BacktestingDataFormats.REGULAR_COLLECTOR_DATA:
+        return len(tf_content[0])
+
+
 def get_number_of_candles(file_path):
     try:
         content = read_data_file(file_path)
         if content:
             candles_info = []
-            min_time_frame = TimeFrameManager.find_min_time_frame(content.keys())
+            time_frames = get_time_frames(file_path, content)
+            min_time_frame = TimeFrameManager.find_min_time_frame(time_frames)
             additional_time_frames = [min_time_frame.value]
             for tf in TIME_FRAMES_TO_DISPLAY:
                 if tf not in additional_time_frames:
                     additional_time_frames.append(tf)
 
+            ohlcv_per_tf = get_ohlcv_per_timeframe(file_path, content)
             for time_frame in additional_time_frames:
-                if time_frame in content:
-                    tf_content = content[time_frame]
-                    candles_info.append(f"{time_frame}: {len(tf_content[0]) if tf_content else 0}")
+                if time_frame in ohlcv_per_tf:
+                    tf_content = ohlcv_per_tf[time_frame]
+                    candles_count = get_candles_count(file_path, tf_content) if tf_content else 0
+                    candles_info.append(f"{time_frame}: {candles_count}")
 
             return ", ".join(candles_info)
         return 0
@@ -124,12 +146,16 @@ def get_file_description(file_name):
     }
 
 
+def is_valid_ending(ending):
+    return ending in [DATA_FILE_EXT]
+
+
 def get_all_available_data_files():
     path = CONFIG_DATA_COLLECTOR_PATH
     try:
         files = [file
                  for file in listdir(path)
-                 if isfile(join(path, file)) and splitext(file)[1] == DATA_FILE_EXT]
+                 if isfile(join(path, file)) and is_valid_ending(splitext(file)[1])]
     except FileNotFoundError:
         files = []
     return files
