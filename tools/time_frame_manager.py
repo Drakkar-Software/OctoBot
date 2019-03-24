@@ -19,8 +19,8 @@ from tools.logging.logging_util import get_logger
 from config import TimeFramesMinutes, TimeFrames, CONFIG_TIME_FRAME, DEFAULT_DISPLAY_TIME_FRAME
 
 
-def _sort_time_frames(time_frames):
-    return sorted(time_frames, key=TimeFramesMinutes.__getitem__)
+def _sort_time_frames(time_frames, reverse=False):
+    return sorted(time_frames, key=TimeFramesMinutes.__getitem__, reverse=reverse)
 
 
 class TimeFrameManager:
@@ -32,8 +32,8 @@ class TimeFrameManager:
         return config[CONFIG_TIME_FRAME]
 
     @staticmethod
-    def sort_time_frames(time_frames):
-        return _sort_time_frames(time_frames)
+    def sort_time_frames(time_frames, reverse=False):
+        return _sort_time_frames(time_frames, reverse)
 
     @staticmethod
     def sort_config_time_frames(config):

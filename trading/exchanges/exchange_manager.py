@@ -172,6 +172,8 @@ class ExchangeManager(Initializable):
         if client_shortest_time_frame not in self.time_frames:
             self.time_frames.append(client_shortest_time_frame)
 
+        self.time_frames = TimeFrameManager.sort_time_frames(self.time_frames, reverse=True)
+
     def get_config_time_frame(self):
         return self.time_frames
 
@@ -222,9 +224,6 @@ class ExchangeManager(Initializable):
 
     def get_symbol_data(self, symbol):
         return self.get_exchange().get_symbol_data(symbol)
-
-    def get_symbol_available_time_frames(self, symbol):
-        return self.get_exchange().get_symbol_data(symbol).get_available_time_frames()
 
     def get_personal_data(self):
         return self.get_exchange().get_exchange_personal_data()

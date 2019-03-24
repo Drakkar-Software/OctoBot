@@ -22,7 +22,7 @@ from interfaces.web import add_to_symbol_data_history, \
 from tools.timestamp_util import convert_timestamps_to_datetime, convert_timestamp_to_datetime
 from tools.time_frame_manager import TimeFrameManager
 from interfaces.trading_util import get_trades_history
-from interfaces.web.models.trading import get_symbol_time_frames
+from interfaces.web.models.trading import get_exchange_time_frames
 
 GET_SYMBOL_SEPARATOR = "|"
 
@@ -206,7 +206,7 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
                 else:
                     evaluator_thread_manager = evaluator_thread_managers[time_frame]
                     data = evaluator_thread_manager.get_evaluator().get_data()
-            elif not backtesting and time_frame in get_symbol_time_frames(symbol, exchange_name)[0]:
+            elif not backtesting and time_frame in get_exchange_time_frames(exchange_name)[0]:
                 # might be the real-time evaluator time frame => check in symbol data
                 data = get_bot().run_in_main_asyncio_loop(
                     exchange_list[exchange].get_symbol_prices(symbol, time_frame, return_list=False)
