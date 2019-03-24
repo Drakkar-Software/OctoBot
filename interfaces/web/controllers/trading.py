@@ -24,7 +24,7 @@ from interfaces import get_reference_market
 from interfaces.web import server_instance
 from trading.trader.portfolio import Portfolio
 from interfaces.web.models.configuration import get_in_backtesting_mode
-from interfaces.web.models.trading import get_symbol_time_frames, get_evaluation
+from interfaces.web.models.trading import get_exchange_time_frames, get_evaluation
 from interfaces.web.models.interface_settings import get_watched_symbols
 
 
@@ -69,7 +69,7 @@ def portfolio_holdings():
 def symbol_market_status():
     exchange = request.args["exchange"]
     symbol = request.args["symbol"]
-    symbol_time_frames, exchange = get_symbol_time_frames(symbol, exchange)
+    symbol_time_frames, exchange = get_exchange_time_frames(exchange)
     time_frames = list(symbol_time_frames)
     time_frames.reverse()
     symbol_evaluation = get_evaluation(symbol, exchange)
