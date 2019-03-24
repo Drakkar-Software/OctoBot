@@ -57,7 +57,7 @@ class ExchangeDataCollector:
         for symbol in self.symbols:
             self.file_contents[symbol] = {}
             self.time_frame_update[symbol] = {}
-            self.file_names[symbol] = build_file_name(self.exchange, symbol)
+            self.file_names[symbol] = build_file_name(self.exchange.get_name(), symbol)
             for time_frame in self.time_frames:
                 self.file_contents[symbol][time_frame.value] = None
 
