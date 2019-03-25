@@ -19,7 +19,7 @@ from tools.logging.logging_util import get_logger
 from backtesting import backtesting_enabled
 from config import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType, \
-    ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns
+    ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns, SIMULATOR_INITIAL_STARTUP_PORTFOLIO
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.order import OrderConstants, Order
 from trading.trader.order_notifier import OrderNotifier
@@ -36,7 +36,10 @@ from tools.config_manager import ConfigManager
 
 class Trader(Initializable):
 
-    def __init__(self, config, exchange, order_refresh_time=None):
+    NO_HISTORY_MESSAGE = "Starting a fresh new trading session using the current portfolio as a profitability " \
+                         "reference."
+
+    def __init__(self, config, exchange, order_refresh_time=None, previous_state_manager=None):
         super().__init__()
         self.exchange = exchange
         self.config = config
@@ -47,6 +50,8 @@ class Trader(Initializable):
         # logging
         self.trader_type_str = REAL_TRADER_STR
         self.logger = get_logger(f"{self.__class__.__name__}[{self.exchange.get_name()}]")
+        self.previous_state_manager = previous_state_manager
+        self.loaded_previous_state = False
 
         if not hasattr(self, 'simulate'):
             self.simulate = False
@@ -78,8 +83,14 @@ class Trader(Initializable):
 
     async def initialize_impl(self):
         if self.enable:
+            if self.previous_state_manager is not None:
+                self.load_previous_state_if_any()
             await self.portfolio.initialize()
             await self.trades_manager.initialize()
+
+    def load_previous_state_if_any(self):
+        # unused for real trader yet
+        pass
 
     async def launch(self):
         if self.enable:
@@ -529,6 +540,12 @@ class Trader(Initializable):
 
     def get_simulate(self):
         return self.simulate
+
+    def get_previous_state_manager(self):
+        return self.previous_state_manager
+
+    def get_loaded_previous_state(self):
+        return self.loaded_previous_state
 
     @staticmethod
     def check_if_self_managed(order_type):

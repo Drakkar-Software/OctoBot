@@ -21,8 +21,9 @@
     "notification-type": []
   },
   "trading":{
-    "risk": 0.5,
-    "reference-market": "BTC"
+    "multi-session-profitability": false,
+    "reference-market": "BTC",
+    "risk": 0.5
   },
   "trader":{
     "enabled": false

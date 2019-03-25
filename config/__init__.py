@@ -30,6 +30,7 @@ LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE
 LOG_DATABASE = "log_db"
 LOG_NEW_ERRORS_COUNT = "log_new_errors_count"
 STORED_LOG_MIN_LEVEL = WARNING
+LOGS_FOLDER = "logs"
 
 # github
 GITHUB = "github"
@@ -118,6 +119,18 @@ DEFAULT_REFERENCE_MARKET = "BTC"
 MARKET_SEPARATOR = "/"
 CURRENCY_DEFAULT_MAX_PRICE_DIGITS = 8
 EXCHANGE_ERROR_SLEEPING_TIME = 10
+
+# Trader persistence
+HISTORY_EXCHANGE_KEY = "exchange"
+SIMULATOR_INITIAL_STARTUP_PORTFOLIO = "simulator_initial_portfolio"
+REAL_INITIAL_STARTUP_PORTFOLIO = "real_initial_portfolio"
+SIMULATOR_CURRENT_PORTFOLIO = "simulator_current_portfolio"
+SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE = "simulator_initial_portfolio_value"
+REAL_INITIAL_STARTUP_PORTFOLIO_VALUE = "real_initial_portfolio_value"
+WATCHED_MARKETS_INITIAL_STARTUP_VALUES = "initial_watched_markets_value"
+SIMULATOR_REFERENCE_MARKET = "reference_market"
+CURRENT_PORTFOLIO_STRING = "Current Portfolio :"
+CONFIG_ENABLED_PERSISTENCE = "multi-session-profitability"
 
 
 # Exchanges
@@ -265,6 +278,9 @@ CONFIG_DEFAULT_EVALUATOR_FILE = f"{CONFIG_FOLDER}/default_evaluator_config.json"
 CONFIG_DEFAULT_TRADING_FILE = f"{CONFIG_FOLDER}/default_trading_config.json"
 DEFAULT_CONFIG_FILE = f"{CONFIG_FOLDER}/default_config.json"
 LOGGING_CONFIG_FILE = f"{CONFIG_FOLDER}/logging_config.ini"
+LOG_FILE = f"{LOGS_FOLDER}/{PROJECT_NAME}.log"
+STATES_FOLDER = f"{LOGS_FOLDER}/states"
+SIMULATOR_STATE_SAVE_FILE = f"{STATES_FOLDER}/trading_state_history.json"
 
 # Tentacle Config
 STRATEGIES_REQUIRED_TIME_FRAME = "required_time_frames"

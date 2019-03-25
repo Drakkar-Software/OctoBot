@@ -54,7 +54,13 @@ def get_trading_startup_config():
 
 
 def reset_trading_history():
-    get_bot().get_previous_trading_state_manager().reset_trading_history()
+    previous_state_manager = get_bot().get_previous_trading_state_manager()
+    if previous_state_manager:
+        previous_state_manager.reset_trading_history()
+
+
+def is_trading_persistence_activated():
+    return get_bot().get_previous_trading_state_manager() is not None
 
 
 def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_strategy=False):

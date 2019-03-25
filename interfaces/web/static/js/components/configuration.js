@@ -47,6 +47,14 @@ function handle_remove_buttons(){
     });
 }
 
+function handle_buttons() {
+    $("button[action=post]").each(function () {
+        $(this).click(function () {
+            send_and_interpret_bot_update(null, $(this).attr(update_url_attr), null, generic_request_success_callback, generic_request_failure_callback);
+        });
+    });
+}
+
 function check_deck_modifications(deck){
     if(deck.find("."+added_class).length > 0 || deleted_global_config_elements.length > 0){
         toogle_deck_container_modified(deck);
@@ -482,6 +490,8 @@ $(document).ready(function() {
 
     handle_add_buttons();
     handle_remove_buttons();
+    
+    handle_buttons();
 
     handle_evaluator_configuration_editor();
 
