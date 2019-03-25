@@ -82,3 +82,16 @@ function check_has_event_using_handler(elem, event_type, handler){
     });
     return has_events;
 }
+
+function generic_request_success_callback(updated_data, update_url, dom_root_element, msg, status) {
+    if(msg.hasOwnProperty("title")){
+        create_alert("success", msg["title"], msg["details"]);
+    }else{
+        create_alert("success", msg, "");
+    }
+
+}
+
+function generic_request_failure_callback(updated_data, update_url, dom_root_element, msg, status) {
+    create_alert("error", msg.responseText, "");
+}

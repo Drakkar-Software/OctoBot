@@ -1,5 +1,5 @@
 {% import 'components/config/editable_config.html' as m_editable_config %}
-{% macro config_trader_card(config, config_name, trader, add_class='', link='') -%}
+{% macro config_trader_card(config, config_name, trader, add_class='', link='', action=None) -%}
     <!-- Card -->
     <div class="card mb-4 {{add_class}} config-card">
 
@@ -25,6 +25,11 @@
                                                         config[key])
                     }}
                 {% endfor %}
+                {% if action %}
+                    <div class="text-center">
+                        <button class="btn btn-warning waves-effect" type="button" action="post" update-url="{{ action[1] }}">{{ action[0] }}</button>
+                    </div>
+                {% endif %}
             </p>
         </div>
     </div>
