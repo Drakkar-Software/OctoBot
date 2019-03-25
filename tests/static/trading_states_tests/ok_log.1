@@ -1,0 +1,23 @@
+2019-03-26 00:00:48 INFO   OctoBot Launcher     start.py:107      Version : 0.3.2
+2019-03-26 00:00:48 INFO   OctoBot Launcher     start.py:111      Loading config files...
+2019-03-26 00:00:49 INFO   RedditService        logging_util.py:54       Successfully initialized using  account.
+2019-03-26 00:00:49 INFO   TwitterService       logging_util.py:54       Successfully initialized and accessible at: 
+2019-03-26 00:00:49 INFO   WebService           logging_util.py:54       Interface successfully initialized and accessible at: 
+2019-03-26 00:00:49 DEBUG  Notification         logging_util.py:50       Twitter notification disabled
+2019-03-26 00:00:49 DEBUG  Notification         logging_util.py:50       Telegram disabled
+2019-03-26 00:00:49 INFO   ExchangeDispatcher[binance] logging_util.py:54       online with REST api and web socket api
+2019-03-26 00:00:49 INFO   TraderSimulator[binance] logging_util.py:54       Starting a fresh new trading simulation session using trader simulator initial portfolio in configuration.
+2019-03-26 00:00:49 INFO   PortfolioSimulator[ExchangeSimulator['BTC/USDT', 'ETH/USDT', 'ICX/BTC', 'NEO/BTC', 'VEN/BTC', 'XRB/BTC', 'ONT/BTC', 'XLM/BTC', 'POWR/BTC', 'ADA/BTC', 'ETC/BTC', 'WAX/BTC', 'XRP/BTC', 'XVG/BTC']] logging_util.py:54       Current Portfolio : {'BTC': {'available': 100, 'total': 100}, 'USD': {'available': 9999, 'total': 9999}}
+2019-03-26 00:00:50 DEBUG  OctoBot              logging_util.py:50       Using DailyTradingMode trading mode
+2019-03-26 00:00:50 INFO   OctoBot              logging_util.py:54       Evaluation threads creation...
+2019-03-26 00:00:50 DEBUG  TraderSimulator[binance] logging_util.py:50       Enabled on binance
+2019-03-26 00:00:50 INFO   RedditDispatcher     logging_util.py:54       Starting dispatcher ...
+2019-03-26 00:00:50 INFO   RedditDispatcher     logging_util.py:54       Nothing to monitor, dispatcher is going to sleep.
+2019-03-26 00:00:50 INFO   TwitterDispatcher    logging_util.py:54       Starting dispatcher ...
+2019-03-26 00:00:50 INFO   TwitterDispatcher    logging_util.py:54       Nothing to monitor, dispatcher is going to sleep.
+2019-03-26 00:00:50 INFO   OctoBot              logging_util.py:54       Evaluation tasks started...
+2019-03-26 00:00:50 DEBUG  Evaluator TASK MANAGER - BTC/USDT - binance - TimeFrames.ONE_DAY logging_util.py:50       ** Notified by GlobalPriceUpdater **
+2019-03-26 00:00:50 DEBUG  Evaluator TASK MANAGER - BTC/USDT - binance - TimeFrames.ONE_DAY logging_util.py:50       MATRIX : {<EvaluatorMatrixTypes.TA: 'TA'>: {'RSIMomentumEvaluator': {<TimeFrames.ONE_DAY: '1d'>: -0.589521677519556}, 'DoubleMovingAverageTrendEvaluator': {<TimeFrames.ONE_DAY: '1d'>: -0.0025316988136961653}}, <EvaluatorMatrixTypes.SOCIAL: 'SOCIAL'>: {}, <EvaluatorMatrixTypes.REAL_TIME: 'REAL_TIME'>: {}, <EvaluatorMatrixTypes.STRATEGIES: 'STRATEGIES'>: {'SimpleMixedStrategiesEvaluator': -0.2960266881666261}}
+2019-03-26 00:00:50 INFO   DailyTradingModeDecider logging_util.py:54       BTC/USDT ** NEW FINAL STATE ** : EvaluatorStates.LONG
+2019-03-26 00:00:51 INFO   TraderSimulator[binance] logging_util.py:54       Order creation : BTC/USDT | BUY_LIMIT | Price : 3894.96 | Quantity : 0.608916 | Status : OPEN 
+2019-03-26 00:00:51 DEBUG  OrdersManagerSimulator[binance] logging_util.py:50       Order added to open orders (total: 1 open order)
