@@ -19,7 +19,7 @@ import json
 import regex
 
 from config import SIMULATOR_STATE_SAVE_FILE, SIMULATOR_INITIAL_STARTUP_PORTFOLIO, SIMULATOR_CURRENT_PORTFOLIO, \
-    SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE, WATCHED_MARKETS_INITIAL_STARTUP_VALUES, SIMULATOR_REFERENCE_MARKET, \
+    SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE, WATCHED_MARKETS_INITIAL_STARTUP_VALUES, REFERENCE_MARKET, \
     REAL_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO_VALUE, STATES_FOLDER, LOG_FILE, \
     CURRENT_PORTFOLIO_STRING, CONFIG_TRADING, CONFIG_ENABLED_PERSISTENCE
 from config.config import load_config
@@ -33,9 +33,11 @@ class PreviousTradingStateManager:
 
     ERROR_MESSAGE = "Impossible to start from the previous trading state: "
 
-    def __init__(self, target_exchanges, reset_simulator, config, save_file=SIMULATOR_STATE_SAVE_FILE):
+    def __init__(self, target_exchanges, reset_simulator, config,
+                 save_file=SIMULATOR_STATE_SAVE_FILE, log_file=LOG_FILE):
         self.logger = get_logger(self.__class__.__name__)
         self.save_file = save_file
+        self.log_file = log_file
         if reset_simulator:
             self.reset_trading_history()
         self.reset_state_history = False
@@ -81,7 +83,7 @@ class PreviousTradingStateManager:
                     self._previous_state[exchange_name][WATCHED_MARKETS_INITIAL_STARTUP_VALUES] = \
                         watched_markets_initial_values
                 if reference_market is not None:
-                    self._previous_state[exchange_name][SIMULATOR_REFERENCE_MARKET] = reference_market
+                    self._previous_state[exchange_name][REFERENCE_MARKET] = reference_market
                 self._save_state_file()
             except Exception as e:
                 self.logger.error(f"Error when saving simulator state: {e}")
@@ -111,7 +113,7 @@ class PreviousTradingStateManager:
             SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE: None,
             REAL_INITIAL_STARTUP_PORTFOLIO_VALUE: None,
             WATCHED_MARKETS_INITIAL_STARTUP_VALUES: None,
-            SIMULATOR_REFERENCE_MARKET: None
+            REFERENCE_MARKET: None
         }
 
     def _load_previous_state(self, target_exchanges, config):
@@ -130,7 +132,7 @@ class PreviousTradingStateManager:
                 if isinstance(potential_previous_state, dict):
                     required_values = [SIMULATOR_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO,
                                        SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE, REAL_INITIAL_STARTUP_PORTFOLIO_VALUE,
-                                       WATCHED_MARKETS_INITIAL_STARTUP_VALUES, SIMULATOR_REFERENCE_MARKET]
+                                       WATCHED_MARKETS_INITIAL_STARTUP_VALUES, REFERENCE_MARKET]
                     # check trading data
                     for exchange, state_data in potential_previous_state.items():
                         if all(v in state_data for v in required_values):
@@ -172,28 +174,37 @@ class PreviousTradingStateManager:
         # read previous executions log files to reconstruct previous portfolios
         to_load_exchanges = set(target_exchanges.keys())
         for i in range(1, 21):
-            with open(f"{LOG_FILE}.{i}") as f:
-                for line in reversed(list(f)):
-                    if CURRENT_PORTFOLIO_STRING in line:
-                        exchange_name, is_simulator = self._extract_exchange_name(line)
-                        if exchange_name is not None and is_simulator \
-                                and SIMULATOR_CURRENT_PORTFOLIO not in self._previous_state[exchange_name]:
-                            extracted_portfolio = self._extract_portfolio(line)
-                            if extracted_portfolio is not None:
-                                self._previous_state[exchange_name][SIMULATOR_CURRENT_PORTFOLIO] = extracted_portfolio
-                            to_load_exchanges.remove(exchange_name)
-                            if not to_load_exchanges:
-                                return True
+            file_name = f"{self.log_file}.{i}"
+            if path.isfile(file_name):
+                with open(file_name) as f:
+                    for line in reversed(list(f)):
+                        if CURRENT_PORTFOLIO_STRING in line:
+                            exchange_name, is_simulator = self._extract_exchange_name(line)
+                            if exchange_name is not None and is_simulator and exchange_name in self._previous_state \
+                                    and SIMULATOR_CURRENT_PORTFOLIO not in self._previous_state[exchange_name]:
+                                extracted_portfolio = self._extract_portfolio(line)
+                                if extracted_portfolio is not None:
+                                    self._previous_state[exchange_name][SIMULATOR_CURRENT_PORTFOLIO] = \
+                                        extracted_portfolio
+                                to_load_exchanges.remove(exchange_name)
+                                if not to_load_exchanges:
+                                    return True
         return not to_load_exchanges
 
     @staticmethod
     def _extract_exchange_name(line):
-        split_pattern = regex.compile("\[|]")
-        split_line = split_pattern.split(line)
-        if len(split_line) == 3:
-            is_simulator = "Simulator" in split_line[0]
-            return split_line[1], is_simulator
-        return None, None
+        if "PortfolioSimulator[ExchangeSimulator" in line:
+            # for tests
+            left_split_line = line.split("PortfolioSimulator[")
+            right_split_line = left_split_line[1].split("]]")
+            return f"{right_split_line[0]}]", True
+        else:
+            split_pattern = regex.compile("\[|]")
+            split_line = split_pattern.split(line)
+            if len(split_line) == 3:
+                is_simulator = "Simulator" in split_line[0]
+                return split_line[1], is_simulator
+            return None, None
 
     def _extract_portfolio(self, line):
         split_line = line.split(CURRENT_PORTFOLIO_STRING)

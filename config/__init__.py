@@ -128,7 +128,7 @@ SIMULATOR_CURRENT_PORTFOLIO = "simulator_current_portfolio"
 SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE = "simulator_initial_portfolio_value"
 REAL_INITIAL_STARTUP_PORTFOLIO_VALUE = "real_initial_portfolio_value"
 WATCHED_MARKETS_INITIAL_STARTUP_VALUES = "initial_watched_markets_value"
-SIMULATOR_REFERENCE_MARKET = "reference_market"
+REFERENCE_MARKET = "reference_market"
 CURRENT_PORTFOLIO_STRING = "Current Portfolio :"
 CONFIG_ENABLED_PERSISTENCE = "multi-session-profitability"
 
