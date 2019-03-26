@@ -58,6 +58,7 @@ class PreviousTradingStateManager:
 
     def reset_trading_history(self):
         if path.isfile(self.save_file):
+            self.logger.info("Resetting trading history")
             remove(self.save_file)
         self.reset_state_history = True
 
@@ -130,42 +131,15 @@ class PreviousTradingStateManager:
             try:
                 potential_previous_state = load_config(self.save_file)
                 if isinstance(potential_previous_state, dict):
-                    required_values = [SIMULATOR_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO,
-                                       SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE, REAL_INITIAL_STARTUP_PORTFOLIO_VALUE,
-                                       WATCHED_MARKETS_INITIAL_STARTUP_VALUES, REFERENCE_MARKET]
-                    # check trading data
-                    for exchange, state_data in potential_previous_state.items():
-                        if all(v in state_data for v in required_values):
-                            self._previous_state[exchange] = potential_previous_state[exchange]
-                        else:
-                            self.logger.warning(f"{self.ERROR_MESSAGE}Missing data in saving file.")
-                            return False
-                    # check symbol data
-                    found_currencies_prices = {currency: False for currency in ConfigManager.get_all_currencies(config)}
-                    for exchange_data in self._previous_state.values():
-                        missing_traded_currencies = set()
-                        for currency in exchange_data[WATCHED_MARKETS_INITIAL_STARTUP_VALUES].keys():
-                            if currency in found_currencies_prices:
-                                found_currencies_prices[currency] = True
-                            else:
-                                missing_traded_currencies.add(currency)
-                        if missing_traded_currencies:
-                            self.logger.warning(f"{self.ERROR_MESSAGE}Missing trading pair(s) for "
-                                                f"{', '.join(missing_traded_currencies)}.")
-                            return False
-                        if exchange_data[REFERENCE_MARKET] != config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET]:
-                            self.logger.warning(f"{self.ERROR_MESSAGE}Reference market changed, "
-                                                f"reinitializing traders.")
-                            return False
-                    if not all(found_currencies_prices.values()):
-                        missing_symbol = [c for c, v in found_currencies_prices.items() if not v]
-                        self.logger.warning(f"{self.ERROR_MESSAGE}Missing symbol historical "
-                                            f"data for {', '.join(missing_symbol)}.")
+                    if not self._check_required_values(potential_previous_state):
                         return False
-                if not all(e in self._previous_state for e in target_exchanges):
-                    missing_exchanges = [e for e in target_exchanges if e not in self._previous_state]
-                    self.logger.warning(f"{self.ERROR_MESSAGE}Missing historical data from exchange(s): "
-                                        f"{', '.join(missing_exchanges)}.")
+                    # check data
+                    found_currencies_prices = {currency: False for currency in ConfigManager.get_all_currencies(config)}
+                    if not self._check_exchange_data(config, found_currencies_prices):
+                        return False
+                    if not self._check_missing_symbols(found_currencies_prices):
+                        return False
+                if not self._check_no_missing_exchanges(target_exchanges):
                     return False
             except Exception as e:
                 self.logger.warning(f"{self.ERROR_MESSAGE}{e}")
@@ -173,6 +147,53 @@ class PreviousTradingStateManager:
             return True
         else:
             return False
+
+    def _check_required_values(self, potential_previous_state):
+        required_values = [SIMULATOR_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO,
+                           SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE, REAL_INITIAL_STARTUP_PORTFOLIO_VALUE,
+                           WATCHED_MARKETS_INITIAL_STARTUP_VALUES, REFERENCE_MARKET]
+        # check trading data
+        for exchange, state_data in potential_previous_state.items():
+            if all(v in state_data for v in required_values):
+                self._previous_state[exchange] = potential_previous_state[exchange]
+            else:
+                self.logger.warning(f"{self.ERROR_MESSAGE}Missing data in saving file.")
+                return False
+        return True
+
+    def _check_exchange_data(self, config, found_currencies_prices):
+        for exchange_data in self._previous_state.values():
+            missing_traded_currencies = set()
+            for currency in exchange_data[WATCHED_MARKETS_INITIAL_STARTUP_VALUES].keys():
+                if currency in found_currencies_prices:
+                    found_currencies_prices[currency] = True
+                else:
+                    missing_traded_currencies.add(currency)
+            if missing_traded_currencies:
+                self.logger.warning(f"{self.ERROR_MESSAGE}Missing trading pair(s) for "
+                                    f"{', '.join(missing_traded_currencies)}.")
+                return False
+            if exchange_data[REFERENCE_MARKET] != config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET]:
+                self.logger.warning(f"{self.ERROR_MESSAGE}Reference market changed, "
+                                    f"reinitializing traders.")
+                return False
+        return True
+
+    def _check_missing_symbols(self, found_currencies_prices):
+        if not all(found_currencies_prices.values()):
+            missing_symbol = [c for c, v in found_currencies_prices.items() if not v]
+            self.logger.warning(f"{self.ERROR_MESSAGE}Missing symbol historical "
+                                f"data for {', '.join(missing_symbol)}.")
+            return False
+        return True
+
+    def _check_no_missing_exchanges(self, target_exchanges):
+        if not all(e in self._previous_state for e in target_exchanges):
+            missing_exchanges = [e for e in target_exchanges if e not in self._previous_state]
+            self.logger.warning(f"{self.ERROR_MESSAGE}Missing historical data from exchange(s): "
+                                f"{', '.join(missing_exchanges)}.")
+            return False
+        return True
 
     def _load_previous_state_portfolios(self, target_exchanges):
         # read previous executions log files to reconstruct previous portfolios
