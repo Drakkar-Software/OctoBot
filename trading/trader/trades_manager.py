@@ -210,51 +210,57 @@ class TradesManager(Initializable):
         previous_state_manager = self.trader.get_previous_state_manager()
         if backtesting_enabled(self.config) or force_ignore_history or \
                 previous_state_manager is None or previous_state_manager.should_initialize_data():
-            self.origin_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
-            async with self.portfolio.get_lock():
-                self.origin_portfolio = deepcopy(self.portfolio.get_portfolio())
-
-            self.portfolio_origin_value = \
-                await self._update_portfolio_current_value(self.origin_portfolio,
-                                                           currencies_values=self.origin_crypto_currencies_values)
-
-            if not backtesting_enabled(self.config) and previous_state_manager is not None:
-                if self.trader.simulate:
-                    previous_state_manager.update_previous_states(
-                        self.exchange,
-                        simulated_initial_portfolio=deepcopy(self.origin_portfolio),
-                        simulated_initial_portfolio_value=self.portfolio_origin_value,
-                        watched_markets_initial_values=self.origin_crypto_currencies_values,
-                        reference_market=self.reference_market
-                    )
-                else:
-                    previous_state_manager.update_previous_states(
-                        self.exchange,
-                        real_initial_portfolio=deepcopy(self.origin_portfolio),
-                        real_initial_portfolio_value=self.portfolio_origin_value,
-                        watched_markets_initial_values=self.origin_crypto_currencies_values,
-                        reference_market=self.reference_market
-                    )
+            await self._init_origin_portfolio_and_currencies_value_from_scratch(previous_state_manager)
         else:
-            try:
-                self.origin_crypto_currencies_values = \
-                    previous_state_manager.get_previous_state(self.exchange, WATCHED_MARKETS_INITIAL_STARTUP_VALUES)
-                portfolio_key = SIMULATOR_INITIAL_STARTUP_PORTFOLIO if self.trader.simulate \
-                    else REAL_INITIAL_STARTUP_PORTFOLIO
-                self.origin_portfolio = Portfolio.get_portfolio_from_amount_dict(
-                    previous_state_manager.get_previous_state(self.exchange, portfolio_key)
+            await self._init_origin_portfolio_and_currencies_value_from_previous_executions(previous_state_manager)
+
+    async def _init_origin_portfolio_and_currencies_value_from_scratch(self, previous_state_manager):
+        self.origin_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
+        async with self.portfolio.get_lock():
+            self.origin_portfolio = deepcopy(self.portfolio.get_portfolio())
+
+        self.portfolio_origin_value = \
+            await self._update_portfolio_current_value(self.origin_portfolio,
+                                                       currencies_values=self.origin_crypto_currencies_values)
+
+        if not backtesting_enabled(self.config) and previous_state_manager is not None:
+            if self.trader.simulate:
+                previous_state_manager.update_previous_states(
+                    self.exchange,
+                    simulated_initial_portfolio=deepcopy(self.origin_portfolio),
+                    simulated_initial_portfolio_value=self.portfolio_origin_value,
+                    watched_markets_initial_values=self.origin_crypto_currencies_values,
+                    reference_market=self.reference_market
                 )
-                self.logger.info(f"Resuming the previous trading session: using this initial portfolio as a "
-                                 f"profitability reference: {self.origin_portfolio}")
-                portfolio_origin_value_key = SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE if self.trader.simulate \
-                    else REAL_INITIAL_STARTUP_PORTFOLIO_VALUE
-                self.portfolio_origin_value = \
-                    previous_state_manager.get_previous_state(self.exchange, portfolio_origin_value_key)
-            except Exception as e:
-                self.logger.warning(f"Error when loading trading history, will reset history. ({e})")
-                self.logger.exception(e)
-                previous_state_manager.reset_trading_history()
-                await self._init_origin_portfolio_and_currencies_value(force_ignore_history=True)
+            else:
+                previous_state_manager.update_previous_states(
+                    self.exchange,
+                    real_initial_portfolio=deepcopy(self.origin_portfolio),
+                    real_initial_portfolio_value=self.portfolio_origin_value,
+                    watched_markets_initial_values=self.origin_crypto_currencies_values,
+                    reference_market=self.reference_market
+                )
+
+    async def _init_origin_portfolio_and_currencies_value_from_previous_executions(self, previous_state_manager):
+        try:
+            self.origin_crypto_currencies_values = \
+                previous_state_manager.get_previous_state(self.exchange, WATCHED_MARKETS_INITIAL_STARTUP_VALUES)
+            portfolio_key = SIMULATOR_INITIAL_STARTUP_PORTFOLIO if self.trader.simulate \
+                else REAL_INITIAL_STARTUP_PORTFOLIO
+            self.origin_portfolio = Portfolio.get_portfolio_from_amount_dict(
+                previous_state_manager.get_previous_state(self.exchange, portfolio_key)
+            )
+            self.logger.info(f"Resuming the previous trading session: using this initial portfolio as a "
+                             f"profitability reference: {self.origin_portfolio}")
+            portfolio_origin_value_key = SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE if self.trader.simulate \
+                else REAL_INITIAL_STARTUP_PORTFOLIO_VALUE
+            self.portfolio_origin_value = \
+                previous_state_manager.get_previous_state(self.exchange, portfolio_origin_value_key)
+        except Exception as e:
+            self.logger.warning(f"Error when loading trading history, will reset history. ({e})")
+            self.logger.exception(e)
+            previous_state_manager.reset_trading_history()
+            await self._init_origin_portfolio_and_currencies_value(force_ignore_history=True)
 
     async def _get_origin_portfolio_current_value(self, refresh_values=False):
         if refresh_values:
