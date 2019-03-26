@@ -21,6 +21,7 @@ from config import CONFIG_EXCHANGES
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from tools.logging.logging_util import get_logger
 from trading.exchanges.exchange_manager import ExchangeManager
+from trading.trader.previous_trading_state_manager import PreviousTradingStateManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator
 from trading.util.trading_config_util import get_activated_trading_mode
@@ -42,17 +43,28 @@ class ExchangeFactory:
         self.exchange_trader_simulators = {}
         self.exchange_trading_modes = {}
         self.trading_mode = None
+        self.previous_trading_state_manager = None
         self.exchanges_list = {}
         self.global_updaters_by_exchange = {}
 
         self.available_exchanges = ccxt.exchanges
 
     async def create(self):
+        self.create_previous_state_manager()
+
         for exchange_class_string in self.octobot.get_config()[CONFIG_EXCHANGES]:
             if exchange_class_string in self.available_exchanges:
                 await self._create_exchange_traders(exchange_class_string)
             else:
                 self.logger.error(f"{exchange_class_string} exchange not found")
+
+    def create_previous_state_manager(self):
+        if not backtesting_enabled(self.octobot.get_config()) and \
+                PreviousTradingStateManager.enabled(self.octobot.get_config()):
+
+            self.previous_trading_state_manager = PreviousTradingStateManager(self.octobot.get_config()[CONFIG_EXCHANGES],
+                                                                              self.octobot.reset_trading_history,
+                                                                              self.octobot.get_config())
 
     async def _create_exchange_traders(self, exchange_class_string):
         # create exchange manager (can be a backtesting or a real one)
@@ -91,7 +103,8 @@ class ExchangeFactory:
             return ExchangeManager(self.octobot.get_config(), exchange_type, ignore_config=self.ignore_config)
 
     async def _create_trader(self, trader_class, exchange_inst) -> Trader:
-        exchange_trader = trader_class(self.octobot.get_config(), exchange_inst)
+        exchange_trader = trader_class(self.octobot.get_config(), exchange_inst,
+                                       previous_state_manager=self.previous_trading_state_manager)
         await exchange_trader.initialize()
         return exchange_trader
 
