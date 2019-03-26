@@ -33,9 +33,10 @@ class OctoBot:
     - Load configs
     """
 
-    def __init__(self, config, ignore_config=False):
+    def __init__(self, config, ignore_config=False, reset_trading_history=False):
         self.start_time = time.time()
         self.config = config
+        self.reset_trading_history = reset_trading_history
         self.startup_config = copy.deepcopy(config)
         self.edited_config = copy.deepcopy(config)
 
