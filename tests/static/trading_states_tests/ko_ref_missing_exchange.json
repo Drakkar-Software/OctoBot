@@ -1,0 +1,33 @@
+{
+ "ExchangeSimulator['BTC/USDT', 'ETH/USDT', 'ICX/BTC', 'NEO/BTC', 'VEN/BTC']": {
+  "simulator_initial_portfolio": {
+   "BTC": 10,
+   "USD": 1000
+  },
+  "real_initial_portfolio": {
+  	"ZYX": 9999,
+  	"DAI": 1
+  },
+  "simulator_initial_portfolio_value": 10,
+  "real_initial_portfolio_value": 100,
+  "initial_watched_markets_value": {
+    "BTC": 1,
+    "USDT": 0.00025075791580050704,
+	"XLM": 10,
+	"ETC": 10,
+	"XRB": 10,
+	"VEN": 10,
+	"ONT": 10,
+	"XRP": 10,
+	"NEO": 10,
+	"ADA": 10,
+	"EUR": 10,
+	"POWR": 10,
+	"WAX": 10,
+	"ICX": 10,
+	"XVG": 10,
+	"ETH": 10
+  },
+  "reference_market": "BTC"
+ }
+}

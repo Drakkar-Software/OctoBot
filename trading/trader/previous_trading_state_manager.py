@@ -21,7 +21,7 @@ import regex
 from config import SIMULATOR_STATE_SAVE_FILE, SIMULATOR_INITIAL_STARTUP_PORTFOLIO, SIMULATOR_CURRENT_PORTFOLIO, \
     SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE, WATCHED_MARKETS_INITIAL_STARTUP_VALUES, REFERENCE_MARKET, \
     REAL_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO_VALUE, STATES_FOLDER, LOG_FILE, \
-    CURRENT_PORTFOLIO_STRING, CONFIG_TRADING, CONFIG_ENABLED_PERSISTENCE
+    CURRENT_PORTFOLIO_STRING, CONFIG_TRADING, CONFIG_ENABLED_PERSISTENCE, CONFIG_TRADER_REFERENCE_MARKET
 from config.config import load_config
 from tools.config_manager import ConfigManager
 from tools.logging.logging_util import get_logger
@@ -152,6 +152,10 @@ class PreviousTradingStateManager:
                         if missing_traded_currencies:
                             self.logger.warning(f"{self.ERROR_MESSAGE}Missing trading pair(s) for "
                                                 f"{', '.join(missing_traded_currencies)}.")
+                            return False
+                        if exchange_data[REFERENCE_MARKET] != config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET]:
+                            self.logger.warning(f"{self.ERROR_MESSAGE}Reference market changed, "
+                                                f"reinitializing traders.")
                             return False
                     if not all(found_currencies_prices.values()):
                         missing_symbol = [c for c, v in found_currencies_prices.items() if not v]
