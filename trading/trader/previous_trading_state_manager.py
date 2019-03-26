@@ -199,7 +199,7 @@ class PreviousTradingStateManager:
             right_split_line = left_split_line[1].split("]]")
             return f"{right_split_line[0]}]", True
         else:
-            split_pattern = regex.compile("\[|]")
+            split_pattern = regex.compile(r"\[|]")
             split_line = split_pattern.split(line)
             if len(split_line) == 3:
                 is_simulator = "Simulator" in split_line[0]

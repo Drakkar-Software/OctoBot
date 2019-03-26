@@ -81,7 +81,7 @@ def test_get_market_pair():
     assert inverted is False
 
 
-async def test_get_reference_market():
+def test_get_reference_market():
     config = load_config("tests/static/config.json")
     assert ConfigManager.get_reference_market(config) == DEFAULT_REFERENCE_MARKET
 
