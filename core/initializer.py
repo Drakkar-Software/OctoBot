@@ -44,36 +44,36 @@ class Initializer:
 
     async def create(self):
         # prepare advanced classes if any
-        self.manage_advanced_classes()
+        self._manage_advanced_classes()
 
         # manage time frames
-        self.init_time_frames()
+        self._init_time_frames()
 
         # initialize evaluators
-        self.init_relevant_evaluators()
+        self._init_relevant_evaluators()
 
         # initialize tools
-        self.create_performance_analyser()
+        self._create_performance_analyser()
 
         # initialize notifications and services
-        self.create_notifier()
-        await self.create_services()
+        self._create_notifier()
+        await self._create_services()
 
-    def manage_advanced_classes(self):
+    def _manage_advanced_classes(self):
         AdvancedManager.init_advanced_classes_if_necessary(self.octobot.get_config())
 
-    def init_relevant_evaluators(self):
+    def _init_relevant_evaluators(self):
         # Init relevant evaluator names list using enabled strategies
         self.relevant_evaluators = EvaluatorCreator.get_relevant_evaluators_from_strategies(self.octobot.get_config())
 
-    def create_performance_analyser(self):
+    def _create_performance_analyser(self):
         if CONFIG_DEBUG_OPTION_PERF in self.octobot.get_config() and self.octobot.get_config()[CONFIG_DEBUG_OPTION_PERF]:
             return PerformanceAnalyser()
 
-    def create_notifier(self):
+    def _create_notifier(self):
         self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE] = Notification(self.octobot.get_config())
 
-    def init_time_frames(self):
+    def _init_time_frames(self):
         # Init time frames using enabled strategies
         EvaluatorCreator.init_time_frames_from_strategies(self.octobot.get_config())
         self.time_frames = copy.copy(TimeFrameManager.get_config_time_frame(self.octobot.get_config()))
@@ -84,7 +84,7 @@ class Initializer:
             config_time_frames.append(TimeFrames.ONE_HOUR)
             TimeFrameManager.sort_config_time_frames(self.octobot.get_config())
 
-    async def create_services(self):
+    async def _create_services(self):
         # Add services to self.octobot.get_config()[CONFIG_CATEGORY_SERVICES]
         await ServiceCreator.create_services(self.octobot.get_config(), backtesting_enabled(self.octobot.get_config()))
 

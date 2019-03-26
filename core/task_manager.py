@@ -98,13 +98,13 @@ class TaskManager:
             # To be improved with a full async implementation
             # To be done : "asyncio.run" --> replaced by a simple await
             # PR discussion : https://github.com/Drakkar-Software/OctoBot/pull/563#discussion_r248088266
-            stop_coroutines.append(
-                self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
+            stop_coroutines.append(self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE]
+                                   .notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
 
         self.logger.info("Stopping threads ...")
 
         if self.main_task_group:
-            self.main_task_group.cancel()
+            self.async_loop.call_soon_threadsafe(self.main_task_group.cancel)
 
         for thread in self.octobot.get_dispatchers_list():
             thread.stop()
