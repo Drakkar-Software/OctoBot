@@ -23,7 +23,8 @@ import json
 
 from config import SIMULATOR_INITIAL_STARTUP_PORTFOLIO, SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE, \
     REAL_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO_VALUE, WATCHED_MARKETS_INITIAL_STARTUP_VALUES, \
-    REFERENCE_MARKET, SIMULATOR_CURRENT_PORTFOLIO, CONFIG_TRADING, CONFIG_ENABLED_PERSISTENCE
+    REFERENCE_MARKET, SIMULATOR_CURRENT_PORTFOLIO, CONFIG_TRADING, CONFIG_ENABLED_PERSISTENCE, CONFIG_TRADER, \
+    CONFIG_ENABLED_OPTION
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.previous_trading_state_manager import PreviousTradingStateManager
 from tests.test_utils.config import load_test_config
@@ -255,4 +256,21 @@ async def test_load_ko_file_7():
     state_manager = PreviousTradingStateManager({exchange_inst.get_name(): None}, False, config,
                                                 save_file=f"{TESTS_STATE_SAVE_FOLDER}ok_ref.json",
                                                 log_file=f"{TESTS_STATE_SAVE_FOLDER}ko_log")
+    assert state_manager.first_data
+
+
+async def test_load_ko_file_8():
+    config, exchange_inst = await init_default()
+    state_manager = PreviousTradingStateManager({exchange_inst.get_name(): None}, False, config,
+                                                save_file=f"{TESTS_STATE_SAVE_FOLDER}ko_missing_trader_s_data.json",
+                                                log_file=f"{TESTS_STATE_SAVE_FOLDER}ok_log")
+    assert state_manager.first_data
+
+
+async def test_load_ko_file_9():
+    config, exchange_inst = await init_default()
+    config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = True
+    state_manager = PreviousTradingStateManager({exchange_inst.get_name(): None}, False, config,
+                                                save_file=f"{TESTS_STATE_SAVE_FOLDER}ko_missing_trader_data.json",
+                                                log_file=f"{TESTS_STATE_SAVE_FOLDER}ok_log")
     assert state_manager.first_data

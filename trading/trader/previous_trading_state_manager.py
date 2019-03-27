@@ -27,6 +27,7 @@ from tools.config_manager import ConfigManager
 from tools.logging.logging_util import get_logger
 from trading.trader.portfolio import Portfolio
 from trading.trader.trader_simulator import TraderSimulator
+from trading.trader.trader import Trader
 
 
 class PreviousTradingStateManager:
@@ -163,6 +164,7 @@ class PreviousTradingStateManager:
 
     def _check_exchange_data(self, config, found_currencies_prices):
         for exchange_data in self._previous_state.values():
+            # check currencies
             missing_traded_currencies = set()
             for currency in exchange_data[WATCHED_MARKETS_INITIAL_STARTUP_VALUES].keys():
                 if currency in found_currencies_prices:
@@ -173,10 +175,21 @@ class PreviousTradingStateManager:
                 self.logger.warning(f"{self.ERROR_MESSAGE}Missing trading pair(s) for "
                                     f"{', '.join(missing_traded_currencies)}.")
                 return False
+            # check reference market
             if exchange_data[REFERENCE_MARKET] != config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET]:
                 self.logger.warning(f"{self.ERROR_MESSAGE}Reference market changed, "
                                     f"reinitializing traders.")
                 return False
+
+            # check initial portfolios and portfolios values
+            if TraderSimulator.enabled(config):
+                if exchange_data[SIMULATOR_INITIAL_STARTUP_PORTFOLIO] is None \
+                        or exchange_data[SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE] is None:
+                    return False
+            if Trader.enabled(config):
+                if exchange_data[REAL_INITIAL_STARTUP_PORTFOLIO] is None\
+                        or exchange_data[REAL_INITIAL_STARTUP_PORTFOLIO_VALUE] is None:
+                    return False
         return True
 
     def _check_missing_symbols(self, found_currencies_prices):
