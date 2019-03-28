@@ -196,17 +196,22 @@ class OrdersManager:
         for order in copy.copy(self.order_list):
 
             order_filled = False
-            # ask orders to update their status
-            async with order.get_lock():
-                odr = order
-                # update symbol prices from exchange
-                if odr.get_order_symbol() in self.last_symbol_prices:
-                    odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
+            try:
+                # ask orders to update their status
+                async with order.get_lock():
+                    odr = order
+                    # update symbol prices from exchange
+                    if odr.get_order_symbol() in self.last_symbol_prices:
+                        odr.set_last_prices(self.last_symbol_prices[odr.get_order_symbol()])
 
-                if odr in self.order_list:
-                    order_filled = await self._update_order_status(odr, failed_order_updates, simulated_time)
-            if order_filled:
-                await self.trader.call_order_update_callback(order)
+                    if odr in self.order_list:
+                        order_filled = await self._update_order_status(odr, failed_order_updates, simulated_time)
+            except Exception as e:
+                raise e
+            finally:
+                # ensure always call fill callback
+                if order_filled:
+                    await self.trader.call_order_update_callback(order)
         return failed_order_updates
 
     async def poll_update(self):
