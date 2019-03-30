@@ -19,9 +19,9 @@ from enum import Enum
 
 from config import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
-    CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE, CONFIG_WEB
+    CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE, CONFIG_DISCORD, CONFIG_WEB
 from interfaces.web import add_notification
-from services import TwitterService, TelegramService, WebService, NotifierServiceFactory
+from services import TwitterService, TelegramService, WebService, NotifierServiceFactory, DiscordService
 from tools.logging.logging_util import get_logger
 from tools.pretty_printer import PrettyPrinter
 
@@ -63,6 +63,9 @@ class Notification:
 
             # telegram
             await self.telegram_notification_factory(message_markdown, markdown=True)
+
+            # discord
+            await self.discord_notification_factory(message)
         except Exception as e:
             self.logger.error(f"Failed to notify all : {e}")
 
@@ -96,6 +99,22 @@ class Notification:
                 self.logger.info("Telegram message sent")
         else:
             self.logger.debug("Telegram disabled")
+
+    def discord_notification_available(self, key=None):
+        return self.enabled(key) and \
+               self._service_instance_is_present(CONFIG_DISCORD) and \
+               self.config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD][CONFIG_SERVICE_INSTANCE].get_type() \
+               in self.notification_type and \
+               DiscordService.is_setup_correctly(self.config)
+
+    async def discord_notification_factory(self, message):
+        if self.discord_notification_available():
+            discord_service = self.config[CONFIG_CATEGORY_SERVICES][CONFIG_DISCORD][CONFIG_SERVICE_INSTANCE]
+            result = await discord_service.send_message(message)
+            if result:
+                self.logger.info("Discord message sent")
+        else:
+            self.logger.debug("Discord disabled")
 
     def twitter_notification_available(self, key=None):
         return self.enabled(key) and \
@@ -161,6 +180,10 @@ class Notification:
         if self.telegram_notification_available(notification_type):
             await self.telegram_notification_factory(content, markdown=markdown)
 
+    async def send_discord_notification_if_necessary(self, content, notification_type=None):
+        if self.discord_notification_available(notification_type):
+            await self.discord_notification_factory(content)
+
     async def send_notifier_notification_if_necessary(self, content, notification_type=None):
         for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
             if self.notifier_notification_available(notifier, notification_type):
@@ -186,6 +209,8 @@ class EvaluatorNotification(Notification):
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, "STATE CHANGED", notify_content,
                                                       CONFIG_NOTIFICATION_PRICE_ALERTS)
 
+        await self.send_discord_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
+
         await self.send_notifier_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
@@ -207,6 +232,8 @@ class EvaluatorNotification(Notification):
 
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
                                                       CONFIG_NOTIFICATION_PRICE_ALERTS)
+
+        await self.send_discord_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         await self.send_notifier_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
@@ -240,6 +267,8 @@ class OrdersNotification(Notification):
             await self.send_telegram_notification_if_necessary(content_markdown, CONFIG_NOTIFICATION_TRADES,
                                                                markdown=True)
 
+            await self.send_discord_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
+
             await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
                                                           CONFIG_NOTIFICATION_TRADES)
 
@@ -262,6 +291,8 @@ class OrdersNotification(Notification):
         await self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
 
         await self.send_telegram_notification_if_necessary(content_markdown, CONFIG_NOTIFICATION_TRADES, markdown=True)
+
+        await self.send_discord_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content, CONFIG_NOTIFICATION_TRADES)
 

@@ -155,9 +155,11 @@ def start_octobot(starting_args):
                     # In those cases load OctoBot
                     from core.octobot import OctoBot
                     from interfaces.bots.telegram.bot import TelegramApp
+                    from interfaces.bots.discord.bot import DiscordApp
                     from services import WebService
 
                     TelegramApp.enable(config, starting_args.telegram)
+                    DiscordApp.enable(config, starting_args.discord)
                     WebService.enable(config, not starting_args.no_web)
 
                     update_config_with_args(starting_args, config)
@@ -230,8 +232,9 @@ def main(args=None):
     parser.add_argument('-no', '--no_open_web', help="Don't automatically open web interface.",
                         action='store_true')
     parser.add_argument('-t', '--telegram', help='Start OctoBot with telegram interface. Required to listen to '
-                                                 'telegram signals.',
-                        action='store_true')
+                                                 'telegram signals.', action='store_true')
+    parser.add_argument('-dd', '--discord', help='Start discord command handler. Required to listen to '
+                                                 'discord signals.', action='store_true')
     parser.add_argument('--encrypter', help="Start the exchange api keys encrypter. This tool is useful to manually add"
                                             " exchanges configuration in your config.json without using any interface "
                                             "(ie the web interface that handle encryption automatically)",

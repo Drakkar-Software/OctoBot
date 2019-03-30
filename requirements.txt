@@ -18,6 +18,9 @@ python-telegram-bot
 # Twitter
 Python-Twitter
 
+# Discord
+git+https://github.com/Rapptz/discord.py@rewrite # waiting for python3.7 support
+
 # Web
 flask
 

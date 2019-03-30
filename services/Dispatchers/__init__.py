@@ -18,3 +18,4 @@ from .abstract_dispatcher import AbstractDispatcher
 from .reddit_dispatcher import RedditDispatcher
 from .twitter_dispatcher import TwitterDispatcher
 from .telegram_dispatcher import TelegramDispatcher
+from .discord_dispatcher import DiscordDispatcher
