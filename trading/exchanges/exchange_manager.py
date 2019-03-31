@@ -19,7 +19,8 @@ import time
 
 from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
-    PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET
+    PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET, CONFIG_CRYPTO_QUOTE, CONFIG_CRYPTO_ADD
+from tools.symbol_util import split_symbol
 from tools.time_frame_manager import TimeFrameManager
 from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
@@ -31,7 +32,6 @@ from tools.config_manager import ConfigManager
 
 
 class ExchangeManager(Initializable):
-
     WEB_SOCKET_RESET_MIN_INTERVAL = 15
 
     def __init__(self, config, exchange_type, is_simulated=False, rest_only=False, ignore_config=False):
@@ -55,6 +55,7 @@ class ExchangeManager(Initializable):
         self.client_symbols = []
         self.client_time_frames = {}
 
+        self.cryptocurrencies_traded_pairs = {}
         self.traded_pairs = []
         self.time_frames = []
 
@@ -94,7 +95,7 @@ class ExchangeManager(Initializable):
                         self.exchange_web_socket = socket_manager.get_websocket_client(self.config, self)
 
                         # init websocket
-                        self.exchange_web_socket.init_web_sockets(self.get_config_time_frame(), self.get_traded_pairs())
+                        self.exchange_web_socket.init_web_sockets(self.get_config_time_frame(), self.traded_pairs)
 
                         # start the websocket
                         self.exchange_web_socket.start_sockets()
@@ -116,7 +117,6 @@ class ExchangeManager(Initializable):
 
     def reset_websocket_exchange(self):
         if self.exchange_web_socket and self.did_not_just_try_to_reset_web_socket():
-
             # set web socket reset time
             self.last_web_socket_reset = time.time()
 
@@ -146,7 +146,7 @@ class ExchangeManager(Initializable):
 
     def force_disable_web_socket(self, exchange_name):
         return CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
-            and not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]
+               and not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]
 
     def check_web_socket_config(self, exchange_name):
         return self.check_config(exchange_name) and not self.force_disable_web_socket(exchange_name)
@@ -162,6 +162,67 @@ class ExchangeManager(Initializable):
     def get_exchange_symbol_id(self, symbol, with_fixer=False):
         return self.exchange.get_market_status(symbol, with_fixer=with_fixer)["id"]
 
+    def _load_config_symbols_and_time_frames(self):
+        client = self.exchange.get_client()
+        if client:
+            self.client_symbols = client.symbols
+            self.client_time_frames[CONFIG_WILDCARD] = client.timeframes if hasattr(client, "timeframes") else {}
+        else:
+            self.logger.error("Failed to load client from REST exchange")
+            self._raise_exchange_load_error()
+
+    # SYMBOLS
+    def _set_config_traded_pairs(self):
+        for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
+            if self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS] != CONFIG_WILDCARD:
+                self.cryptocurrencies_traded_pairs[cryptocurrency] = \
+                    [symbol
+                     for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]
+                     if self.symbol_exists(symbol)]
+
+            else:
+                self.cryptocurrencies_traded_pairs[cryptocurrency] = self._create_wildcard_symbol_list(
+                    self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_QUOTE])
+
+                # additionnal pairs
+                if CONFIG_CRYPTO_ADD in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency]:
+                    self.cryptocurrencies_traded_pairs[cryptocurrency] += self._add_tradable_symbols(cryptocurrency)
+
+            # add to global traded pairs
+            self.traded_pairs += self.cryptocurrencies_traded_pairs[cryptocurrency]
+
+    def get_traded_pairs(self, cryptocurrency=None):
+        if cryptocurrency and cryptocurrency in self.cryptocurrencies_traded_pairs:
+            return self.cryptocurrencies_traded_pairs[cryptocurrency]
+        return self.traded_pairs
+
+    def get_client_symbols(self):
+        return self.client_symbols
+
+    def symbol_exists(self, symbol):
+        if self.client_symbols is None:
+            self.logger.error(f"Failed to load available symbols from REST exchange, impossible to check if "
+                              f"{symbol} exists on {self.exchange.get_name()}")
+            return False
+        return symbol in self.client_symbols
+
+    def _create_wildcard_symbol_list(self, cryptocurrency):
+        return [s for s in (self._is_tradable_with_cryptocurrency(symbol, cryptocurrency)
+                            for symbol in self.client_symbols) if s is not None]
+
+    def _add_tradable_symbols(self, cryptocurrency):
+        return [
+            symbol
+            for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_ADD]
+            if self.symbol_exists(symbol) and symbol not in self.cryptocurrencies_traded_pairs[cryptocurrency]
+        ]
+
+    @staticmethod
+    def _is_tradable_with_cryptocurrency(symbol, cryptocurrency):
+        currency, market = split_symbol(symbol)
+        return symbol if market == cryptocurrency else None
+
+    # TIME FRAMES
     def _set_config_time_frame(self):
         for time_frame in TimeFrameManager.get_config_time_frame(self.config):
             if self.time_frame_exists(time_frame.value):
@@ -177,40 +238,12 @@ class ExchangeManager(Initializable):
     def get_config_time_frame(self):
         return self.time_frames
 
-    def _set_config_traded_pairs(self):
-        for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
-            for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]:
-                if self.symbol_exists(symbol):
-                    self.traded_pairs.append(symbol)
-
-    def get_traded_pairs(self):
-        return self.traded_pairs
-
-    def _load_config_symbols_and_time_frames(self):
-        client = self.exchange.get_client()
-        if client:
-            self.client_symbols = client.symbols
-            self.client_time_frames[CONFIG_WILDCARD] = client.timeframes if hasattr(client, "timeframes") else {}
-        else:
-            self.logger.error("Failed to load client from REST exchange")
-            self._raise_exchange_load_error()
-
-    def symbol_exists(self, symbol):
-        if self.client_symbols is None:
-            self.logger.error(f"Failed to load available symbols from REST exchange, impossible to check if "
-                              f"{symbol} exists on {self.exchange.get_name()}")
-            return False
-        return symbol in self.client_symbols
-
     def time_frame_exists(self, time_frame, symbol=None):
         if CONFIG_WILDCARD in self.client_time_frames or symbol is None:
             return time_frame in self.client_time_frames[CONFIG_WILDCARD]
         else:
             # should only happen in backtesting (or with an exchange with different timeframes per symbol)
             return time_frame in self.client_time_frames[symbol]
-
-    def get_client_symbols(self):
-        return self.client_symbols
 
     def get_client_timeframes(self):
         return self.client_time_frames

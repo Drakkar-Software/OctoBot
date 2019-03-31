@@ -16,18 +16,16 @@
 
 from copy import deepcopy
 
-from tools.logging.logging_util import get_logger
-
-from config import CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET, \
-    CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, FeePropertyColumns, ExchangeConstantsTickersColumns, \
+from backtesting import backtesting_enabled
+from config import CONFIG_CRYPTO_CURRENCIES, FeePropertyColumns, ExchangeConstantsTickersColumns, \
     WATCHED_MARKETS_INITIAL_STARTUP_VALUES, SIMULATOR_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO, \
     SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE, REAL_INITIAL_STARTUP_PORTFOLIO_VALUE
-from backtesting import backtesting_enabled
-from trading.trader.portfolio import Portfolio
-from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
+from tools.logging.logging_util import get_logger
 from tools.symbol_util import merge_currencies, split_symbol
+from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
+from trading.trader.portfolio import Portfolio
 
 """ TradesManager will store all trades performed by the exchange trader
 Another feature of TradesManager is the profitability calculation
@@ -194,8 +192,8 @@ class TradesManager(Initializable):
                 if currency in self.traded_currencies_without_market_specific}
 
     def init_traded_currencies_without_market_specific(self):
-        for crypto_currency in self.config[CONFIG_CRYPTO_CURRENCIES].values():
-            for pair in crypto_currency[CONFIG_CRYPTO_PAIRS]:
+        for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
+            for pair in self.exchange.get_exchange_manager().get_traded_pairs(cryptocurrency):
                 symbol, _ = split_symbol(pair)
                 if symbol not in self.traded_currencies_without_market_specific:
                     self.traded_currencies_without_market_specific.add(symbol)
@@ -309,8 +307,8 @@ class TradesManager(Initializable):
     async def _evaluate_config_crypto_currencies_values(self):
         values_dict = {}
         evaluated_currencies = set()
-        for crypto_currency_data in self.config[CONFIG_CRYPTO_CURRENCIES].values():
-            pairs = crypto_currency_data[CONFIG_CRYPTO_PAIRS]
+        for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
+            pairs = self.exchange.get_exchange_manager().get_traded_pairs(cryptocurrency)
             if pairs:
                 currency, market = split_symbol(pairs[0])
                 if currency not in evaluated_currencies:
