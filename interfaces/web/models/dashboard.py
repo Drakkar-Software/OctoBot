@@ -15,7 +15,7 @@
 #  License along with this library.
 
 from backtesting import backtesting_enabled
-from config import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING
+from config import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING, CONFIG_WILDCARD
 from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
     get_symbol_data_history
@@ -105,6 +105,8 @@ def _find_symbol_evaluator_with_data(evaluators, exchange):
     exchange_traded_pairs = exchange.get_exchange_manager().get_traded_pairs()
     if first_symbol in exchange_traded_pairs:
         return symbol_evaluator
+    elif first_symbol == CONFIG_WILDCARD:
+        return evaluators[exchange_traded_pairs[0]]
     else:
         for symbol in evaluators.keys():
             if symbol in exchange_traded_pairs:

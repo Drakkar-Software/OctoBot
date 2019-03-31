@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from backtesting import backtesting_enabled
-from config import CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, CONFIG_EVALUATORS_WILDCARD
+from config import CONFIG_CRYPTO_CURRENCIES, CONFIG_EVALUATORS_WILDCARD
 from evaluator import TA
 from evaluator.TA import TAEvaluator
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
@@ -50,46 +50,48 @@ class EvaluatorFactory:
         self.evaluation_tasks_creation()
 
     def create_dispatchers(self):
-        self.dispatchers_list = DispatcherCreator.create_dispatchers(self.octobot.get_config(), self.octobot.get_async_loop())
+        self.dispatchers_list = DispatcherCreator.create_dispatchers(self.octobot.get_config(),
+                                                                     self.octobot.get_async_loop())
 
     def evaluation_tasks_creation(self):
         self.logger.info("Evaluation threads creation...")
 
+        crypto_currency_list = self.octobot.get_config()[CONFIG_CRYPTO_CURRENCIES]
+
         # create Social and TA evaluators
-        for crypto_currency, crypto_currency_data in self.octobot.get_config()[CONFIG_CRYPTO_CURRENCIES].items():
-            self._create_crypto_currency_evaluator_tasks(crypto_currency, crypto_currency_data)
+        for crypto_currency in crypto_currency_list:
+            self._create_crypto_currency_evaluator_tasks(crypto_currency)
 
         self._check_required_evaluators()
 
-    def _create_crypto_currency_evaluator_tasks(self, crypto_currency, crypto_currency_data):
+    def _create_crypto_currency_evaluator_tasks(self, crypto_currency):
         crypto_currency_evaluator = self._create_crypto_currency_evaluator(crypto_currency)
         self.social_eval_tasks += crypto_currency_evaluator.get_social_tasked_eval_list()
 
-        # create TA evaluators
-        for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
-            self._create_symbol_evaluators(symbol, crypto_currency_evaluator)
+        # create symbol evaluators
+        for exchange in self.octobot.exchange_factory.exchanges_list.values():
+            if exchange.get_exchange_manager().enabled():
+                self._create_symbol_evaluators(exchange, crypto_currency)
 
     def _create_crypto_currency_evaluator(self, crypto_currency) -> CryptocurrencyEvaluator:
         crypto_currency_evaluator = CryptocurrencyEvaluator(self.octobot.get_config(), crypto_currency,
-                                                            self.dispatchers_list, self.octobot.get_relevant_evaluators())
+                                                            self.dispatchers_list,
+                                                            self.octobot.get_relevant_evaluators())
         self.crypto_currency_evaluator_list[crypto_currency] = crypto_currency_evaluator
         return crypto_currency_evaluator
 
-    def _create_symbol_evaluators(self, symbol, crypto_currency_evaluator):
-        symbol_evaluator = self._create_symbol_evaluator(symbol, crypto_currency_evaluator)
+    def _create_symbol_evaluators(self, exchange, crypto_currency):
+        # create TA evaluators
+        for symbol in exchange.get_exchange_manager().get_traded_pairs(cryptocurrency=crypto_currency):
+            if symbol in self.symbol_evaluator_list:
+                symbol_evaluator = self.symbol_evaluator_list[symbol]
+            else:
+                symbol_evaluator = self._create_symbol_evaluator(symbol,
+                                                                 self.crypto_currency_evaluator_list[crypto_currency])
 
-        for exchange in self.octobot.exchange_factory.exchanges_list.values():
-            if exchange.get_exchange_manager().enabled():
-                # Verify that symbol exists on this exchange
-                if symbol in exchange.get_exchange_manager().get_traded_pairs():
-                    self._create_symbol_threads_managers(exchange,
-                                                         symbol_evaluator,
-                                                         self._get_global_price_updater_from_exchange_name(exchange))
-
-                # notify that exchange doesn't support this symbol
-                else:
-                    if not backtesting_enabled(self.octobot.get_config()):
-                        self.logger.error(f"{exchange.get_name()} doesn't support {symbol}")
+            self._create_symbol_threads_managers(exchange,
+                                                 symbol_evaluator,
+                                                 self._get_global_price_updater_from_exchange_name(exchange))
 
     def _create_symbol_evaluator(self, symbol, crypto_currency_evaluator) -> SymbolEvaluator:
         symbol_evaluator = SymbolEvaluator(self.octobot.get_config(), symbol, crypto_currency_evaluator)

@@ -274,7 +274,7 @@ class Trader(Initializable):
         symbols = ConfigManager.get_pairs(self.config, currency)
         if symbols:
             for symbol in symbols:
-                await self.cancel_open_orders(symbol, cancel_loaded_orders=True)
+                await self.cancel_open_orders(symbol)
 
     async def cancel_all_open_orders(self):
         # use a copy of the list (not the reference)
