@@ -14,8 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import asyncio
-
+from concurrent.futures import CancelledError
+from threading import Thread
 import pytest
 
 from config import *
@@ -24,6 +24,12 @@ from tests.test_utils.config import load_test_config
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
+
+
+def stop_bot(bot):
+    thread = Thread(target=bot.stop)
+    thread.start()
+    thread.join()
 
 
 async def test_run_bot(event_loop):
@@ -38,6 +44,6 @@ async def test_run_bot(event_loop):
     bot = OctoBot(config, ignore_config=True)
     bot.time_frames = [TimeFrames.ONE_MINUTE]
     await bot.initialize()
-    await asyncio.get_event_loop().run_in_executor(None, bot.start)
-    await asyncio.sleep(5)
-    await asyncio.get_event_loop().run_in_executor(None, bot.stop)
+    event_loop.call_later(5, stop_bot, bot)
+    with pytest.raises(CancelledError):
+        await bot.start()
