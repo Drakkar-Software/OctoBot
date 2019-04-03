@@ -47,6 +47,9 @@ class OctoBot:
             BOT_TOOLS_RECORDER: None,
         }
 
+        # metrics if enabled
+        self.metrics_handler = None
+
         # Logger
         self.logger = get_logger(self.__class__.__name__)
 
