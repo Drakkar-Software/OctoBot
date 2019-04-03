@@ -73,6 +73,9 @@ class TaskManager:
         for social_eval in self.octobot.evaluator_factory.social_eval_tasks:
             task_list.append(social_eval.start_task())
 
+        if self.octobot.metrics_handler:
+            task_list.append(self.octobot.metrics_handler.start_metrics_task())
+
         for thread in self.octobot.get_dispatchers_list():
             thread.start()
 

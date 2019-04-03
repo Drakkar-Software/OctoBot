@@ -25,6 +25,7 @@ from tools import get_logger
 from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
+from tools.metrics_manager import MetricsManager
 
 
 class Initializer:
@@ -59,6 +60,8 @@ class Initializer:
         self._create_notifier()
         await self._create_services()
 
+        self._init_metrics()
+
     def _manage_advanced_classes(self):
         AdvancedManager.init_advanced_classes_if_necessary(self.octobot.get_config())
 
@@ -67,7 +70,8 @@ class Initializer:
         self.relevant_evaluators = EvaluatorCreator.get_relevant_evaluators_from_strategies(self.octobot.get_config())
 
     def _create_performance_analyser(self):
-        if CONFIG_DEBUG_OPTION_PERF in self.octobot.get_config() and self.octobot.get_config()[CONFIG_DEBUG_OPTION_PERF]:
+        if CONFIG_DEBUG_OPTION_PERF in self.octobot.get_config() \
+                and self.octobot.get_config()[CONFIG_DEBUG_OPTION_PERF]:
             return PerformanceAnalyser()
 
     def _create_notifier(self):
@@ -90,4 +94,9 @@ class Initializer:
 
         # Notify starting
         if self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
-            await self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE, False)
+            await self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE,
+                                                                                          False)
+
+    def _init_metrics(self):
+        if not backtesting_enabled(self.octobot.get_config()):
+            self.octobot.metrics_handler = MetricsManager(self.octobot)
