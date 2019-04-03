@@ -162,6 +162,10 @@ class AdvancedManager:
             for eval_class in evaluator_subclass.__subclasses__():
                 for eval_class_type in AdvancedManager.get_classes(config, eval_class):
                     evaluator_advanced_eval_class_list.append(eval_class_type)
+
+        if not AdvancedManager._check_duplicate(evaluator_advanced_eval_class_list):
+            get_logger(AdvancedManager.__name__).warning("Duplicate evaluator name.")
+
         return evaluator_advanced_eval_class_list
 
     @staticmethod
@@ -172,3 +176,7 @@ class AdvancedManager:
                 for eval_class_type in AdvancedManager.get_classes(config, eval_class, True):
                     evaluator_all_classes_list.append(eval_class_type)
         return evaluator_all_classes_list
+
+    @staticmethod
+    def _check_duplicate(list_to_check):
+        return len(set(list_to_check)) == len(list_to_check)
