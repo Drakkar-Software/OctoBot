@@ -29,7 +29,6 @@ class SymbolEvaluator:
     def __init__(self, config, symbol, crypto_currency_evaluator):
         self.crypto_currency_evaluator = crypto_currency_evaluator
         self.symbol = symbol
-        self.trader_simulator = None
         self.config = config
         self.traders = None
         self.trader_simulators = None
