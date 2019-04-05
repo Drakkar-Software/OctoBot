@@ -56,10 +56,8 @@ class EvaluatorFactory:
     def evaluation_tasks_creation(self):
         self.logger.info("Evaluation threads creation...")
 
-        crypto_currency_list = self.octobot.get_config()[CONFIG_CRYPTO_CURRENCIES]
-
         # create Social and TA evaluators
-        for crypto_currency in crypto_currency_list:
+        for crypto_currency in self.octobot.get_config()[CONFIG_CRYPTO_CURRENCIES]:
             self._create_crypto_currency_evaluator_tasks(crypto_currency)
 
         self._check_required_evaluators()
