@@ -13,21 +13,21 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-from tools.logging.logging_util import get_logger
 from copy import deepcopy
 
+from backtesting.backtesting import Backtesting
+from backtesting.collector.data_file_manager import interpret_file_name, is_valid_ending
 from config import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, \
     CONFIG_SIMULATOR, CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, \
     CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADING_TENTACLES, CONFIG_EVALUATOR, CONFIG_TRADER_RISK, \
     CONFIG_DATA_COLLECTOR_PATH, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_STARTING_PORTFOLIO, \
     CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO, DEFAULT_REFERENCE_MARKET, CONFIG_SIMULATOR_FEES
-from core.octobot import OctoBot
 from config.config import load_config
-from backtesting.backtesting import Backtesting
-from backtesting.collector.data_file_manager import interpret_file_name , is_valid_ending
-from tools.symbol_util import split_symbol
+from core.octobot import OctoBot
 from services.web_service import WebService
+from tests.test_utils.bot_management import initialize_bot, start_bot
+from tools.logging.logging_util import get_logger
+from tools.symbol_util import split_symbol
 
 
 def create_blank_config_using_loaded_one(loaded_config, other_config=None):
@@ -108,12 +108,12 @@ def filter_wanted_symbols(config, wanted_symbols):
         raise SymbolNotFoundException(f"No symbol matching {wanted_symbols} found in configuration file.")
 
 
-def create_backtesting_bot(config):
+def create_backtesting_bot(config) -> OctoBot:
     return OctoBot(config)
 
 
 async def start_backtesting_bot(bot, in_thread=False, watcher=None):
-    await bot.initialize()
+    await initialize_bot(bot)
 
     # fix backtesting exit
     for exchange in bot.get_exchanges_list():
@@ -131,10 +131,10 @@ async def start_backtesting_bot(bot, in_thread=False, watcher=None):
         bot.set_watcher(watcher)
 
     if in_thread:
-        await bot.start(True)
+        await start_bot(bot, True)
         return True
     else:
-        await bot.start()
+        await start_bot(bot)
         trader = next(iter(bot.get_exchange_trader_simulators().values()))
         return await Backtesting.get_profitability(trader)
 

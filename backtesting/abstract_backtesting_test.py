@@ -222,8 +222,8 @@ class AbstractBacktestingTest:
             self._assert_results(run_results, profitability_1, bot)
 
     def _register_only_strategy(self, strategy_evaluator_class):
-        for evaluatotor_name in self.config[CONFIG_EVALUATOR]:
-            if get_class_from_string(evaluatotor_name, StrategiesEvaluator, Strategies,
+        for evaluator_name in self.config[CONFIG_EVALUATOR]:
+            if get_class_from_string(evaluator_name, StrategiesEvaluator, Strategies,
                                      evaluator_parent_inspection) is not None:
-                self.config[CONFIG_EVALUATOR][evaluatotor_name] = False
+                self.config[CONFIG_EVALUATOR][evaluator_name] = False
         self.config[CONFIG_EVALUATOR][strategy_evaluator_class.get_name()] = True
