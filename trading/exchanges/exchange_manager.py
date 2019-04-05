@@ -219,8 +219,7 @@ class ExchangeManager(Initializable):
 
     @staticmethod
     def _is_tradable_with_cryptocurrency(symbol, cryptocurrency):
-        currency, market = split_symbol(symbol)
-        return symbol if market == cryptocurrency else None
+        return symbol if split_symbol(symbol)[1] == cryptocurrency else None
 
     # TIME FRAMES
     def _set_config_time_frame(self):
