@@ -13,39 +13,39 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-from concurrent.futures import CancelledError
+from asyncio import CancelledError
+from threading import Thread
 
 import pytest
 
-from config import *
 from core.octobot import OctoBot
-from tests.test_utils.bot_management import create_bot, initialize_bot, call_stop_later, start_bot_with_raise, stop_bot
 from tests.test_utils.config import load_test_config
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
+
+def stop_bot(bot):
+    thread = Thread(target=bot.stop)
+    thread.start()
+    thread.join()
 
 
-async def test_create_bot(event_loop):
-    # launch a bot
-    bot = await create_bot()
-    await initialize_bot(bot)
-    await call_stop_later(1, event_loop, bot)
-    await start_bot_with_raise(bot)
-
-
-async def test_run_bot(event_loop):
+async def create_bot() -> OctoBot:
     # launch a bot
     config = load_test_config()
-    config[CONFIG_CRYPTO_CURRENCIES] = {
-        "Bitcoin":
-            {
-                "pairs": ["BTC/USDT"]
-            }
-    }
-    bot = OctoBot(config, ignore_config=True)
-    bot.time_frames = [TimeFrames.ONE_MINUTE]
-    await initialize_bot(bot)
-    await call_stop_later(1.9 * 60, event_loop, bot)
-    await start_bot_with_raise(bot)
+    return OctoBot(config)
+
+
+async def initialize_bot(bot):
+    await bot.initialize()
+
+
+async def call_stop_later(time, event_loop, bot):
+    event_loop.call_later(time, stop_bot, bot)
+
+
+async def start_bot_with_raise(bot, run_in_new_thread=False):
+    with pytest.raises(CancelledError):
+        await start_bot(bot, run_in_new_thread)
+
+
+async def start_bot(bot, run_in_new_thread=False):
+    await bot.start(run_in_new_thread)
