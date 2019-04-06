@@ -14,13 +14,12 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from concurrent.futures import CancelledError
-
 import pytest
 
 from config import *
 from core.octobot import OctoBot
-from tests.test_utils.bot_management import create_bot, initialize_bot, call_stop_later, start_bot_with_raise, stop_bot
+from backtesting.backtesting_util import initialize_bot
+from tests.test_utils.bot_management import create_bot, call_stop_later, start_bot_with_raise
 from tests.test_utils.config import load_test_config
 
 # All test coroutines will be treated as marked.

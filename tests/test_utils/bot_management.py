@@ -18,6 +18,7 @@ from threading import Thread
 
 import pytest
 
+from backtesting.backtesting_util import start_bot
 from core.octobot import OctoBot
 from tests.test_utils.config import load_test_config
 
@@ -45,7 +46,3 @@ async def call_stop_later(time, event_loop, bot):
 async def start_bot_with_raise(bot, run_in_new_thread=False):
     with pytest.raises(CancelledError):
         await start_bot(bot, run_in_new_thread)
-
-
-async def start_bot(bot, run_in_new_thread=False):
-    await bot.start(run_in_new_thread)

@@ -25,7 +25,6 @@ from config import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRAD
 from config.config import load_config
 from core.octobot import OctoBot
 from services.web_service import WebService
-from tests.test_utils.bot_management import initialize_bot, start_bot
 from tools.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
 
@@ -137,6 +136,14 @@ async def start_backtesting_bot(bot, in_thread=False, watcher=None):
         await start_bot(bot)
         trader = next(iter(bot.get_exchange_trader_simulators().values()))
         return await Backtesting.get_profitability(trader)
+
+
+async def start_bot(bot, run_in_new_thread=False):
+    await bot.start(run_in_new_thread)
+
+
+async def initialize_bot(bot):
+    await bot.initialize()
 
 
 def _switch_reference_market(config_to_use, market):
