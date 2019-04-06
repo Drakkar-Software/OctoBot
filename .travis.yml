@@ -29,7 +29,7 @@ matrix:
         - source venv/bin/activate;
 
       script:
-        - pytest -n 3 --cov=. --cov-config=.coveragerc tests/unit_tests tests/functional_tests
+        - pytest -n 3 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests
 
     - name: "Linux - Python 3 nightly"
       os: linux
@@ -39,7 +39,7 @@ matrix:
         - sudo bash ./docs/install/linux_dependencies.sh
 
       script:
-        - pytest -n 5 --cov=. --cov-config=.coveragerc --durations=0 tests/unit_tests tests/functional_tests tests/endurance_tests
+        - pytest -n 5 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests tests/endurance_tests
         - python3 setup.py sdist bdist_wheel && python3 -m twine check dist/*
 
       after_success:
