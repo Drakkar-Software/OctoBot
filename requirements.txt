@@ -26,6 +26,7 @@ flask
 newspaper3k
 simplifiedpytrends
 vaderSentiment
+aiohttp
 
 ## Others
 psutil
