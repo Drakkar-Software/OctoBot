@@ -225,17 +225,3 @@ class TestBinanceWebSocketClient:
         assert new_pf["XRP"]["free"] == 25978
         assert new_pf["LTC"]["used"] == 14875.1445
         assert new_pf["BCH"]["total"] == 0.00015 + 0.1055456
-
-    async def test_set_ticker(self):
-        _, binance_web_socket = await self.init_default()
-
-        symbol = "BTCUSDT"
-
-        symbol_data = binance_web_socket.get_symbol_data(symbol)
-        symbol_data.update_symbol_ticker({})
-
-        msg = self._ticker_message(symbol)
-        binance_web_socket.all_currencies_prices_callback(msg)
-
-        assert symbol == symbol_data.symbol_ticker["symbol"]
-        assert symbol_data.symbol_ticker["info"] == msg["data"]

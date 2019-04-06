@@ -14,16 +14,24 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from cryptofeed.bitfinex.bitfinex import Bitfinex
+from cryptofeed.bitstamp.bitstamp import Bitstamp
+from cryptofeed.coinbase.coinbase import Coinbase
+from cryptofeed.exx.exx import EXX
+from cryptofeed.hitbtc.hitbtc import HITBTC
+from cryptofeed.huobi.huobi import HUOBI
+from cryptofeed.poloniex.poloniex import Poloniex
+from cryptofeed.gemini.gemini import GEMINI
 
-from tools.logging.logging_util import get_logger
-from .abstract_websocket import AbstractWebSocket
-
-try:
-    from trading.exchanges.websockets_exchanges.user_websocket.binance_websocket import BinanceWebSocketClient
-except ImportError as e:
-    get_logger("websocket_exchanges").warning(f"Error when importing BinanceWebSocketClient: {e}")
-
-try:
-    from trading.exchanges.websockets_exchanges.websocket.cryptofeed_websocket import CryptoFeedWebSocketClient
-except ImportError as e:
-    get_logger("websocket_exchanges").warning(f"Error when importing CryptoFeedWebSocketClient: {e}")
+cryptofeed_classes = {
+    "Bitfinex": Bitfinex,
+    "Bitfinex2": Bitfinex,
+    "Hitbtc": HITBTC,
+    "Coinbase": Coinbase,
+    "Coinbasepro": Coinbase,
+    "Exx": EXX,
+    "Poloniex": Poloniex,
+    "Bitstamp": Bitstamp,
+    "Huobi": HUOBI,
+    "Gemini": GEMINI
+}

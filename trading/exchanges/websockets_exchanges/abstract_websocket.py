@@ -37,13 +37,10 @@ class AbstractWebSocket:
     def get_name(cls):
         raise NotImplementedError("get_name not implemented")
 
+    @classmethod
     @abstractmethod
-    def convert_into_ccxt_order(self, order):
-        raise NotImplementedError("convert_into_ccxt_order not implemented")
-
-    @abstractmethod
-    def convert_into_ccxt_ticker(self, ticker):
-        raise NotImplementedError("convert_into_ccxt_ticker not implemented")
+    def has_name(cls, name: str) -> bool:
+        raise NotImplementedError("has_name not implemented")
 
     @abstractmethod
     def start_sockets(self):
@@ -67,26 +64,12 @@ class AbstractWebSocket:
         raise NotImplementedError("close_and_restart_sockets not implemented")
 
     # ============== ccxt adaptation methods ==============
-    def init_ccxt_order_from_other_source(self, ccxt_order):
-        if self.exchange_manager.get_personal_data().get_orders_are_initialized():
-            self.exchange_manager.get_personal_data().upsert_order(ccxt_order["id"], ccxt_order)
-
-    def _update_order(self, msg):
-        if self.exchange_manager.get_personal_data().get_orders_are_initialized():
-            ccxt_order = self.convert_into_ccxt_order(msg)
-            self.exchange_manager.get_personal_data().upsert_order(ccxt_order["id"], ccxt_order)
-
     def _parse_symbol_from_ccxt(self, symbol):
         try:
             return self.exchange_manager.get_ccxt_exchange().get_client().markets_by_id[symbol]['symbol']
         except Exception as e:
             self.logger.error(f"Can't parse {symbol} from ccxt exchange")
             self.logger.exception(e)
-
-    @staticmethod
-    @abstractmethod
-    def parse_order_status(status):
-        raise NotImplementedError("parse_order_status not implemented")
 
     @staticmethod
     def safe_lower_string(dictionary, key, default_value=None):
@@ -115,23 +98,7 @@ class AbstractWebSocket:
     def iso8601(value):
         return ccxtExchange.iso8601(value)
 
-    @classmethod
-    @abstractmethod
-    def handles_recent_trades(cls):
-        raise NotImplementedError("handles_recent_trades not implemented")
-
-    @classmethod
-    @abstractmethod
-    def handles_order_book(cls):
-        raise NotImplementedError("handles_order_book not implemented")
-
-    @classmethod
-    @abstractmethod
-    def handles_price_ticker(cls):
-        raise NotImplementedError("handles_price_ticker not implemented")
-
-    @staticmethod
-    def _adapt_symbol(symbol):
+    def _adapt_symbol(self, symbol):
         return symbol
 
     @staticmethod

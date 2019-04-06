@@ -3,6 +3,7 @@ OctoBot-Tentacles-Manager>=1.0.5
 
 # Cryptocurrency trading
 python-binance
+cryptofeed
 ccxt
 tulipy
 

@@ -16,6 +16,7 @@
 
 import logging
 
+import ccxt.async_support as ccxt
 from ccxt.async_support import OrderNotFound, BaseError, InsufficientFunds
 from ccxt.base.errors import ExchangeNotAvailable, InvalidNonce
 
@@ -64,6 +65,13 @@ class RESTExchange(AbstractExchange, Initializable):
 
     def get_personal_data(self):
         return self.exchange_manager.get_personal_data()
+
+    @staticmethod
+    def create_exchange_type(exchange_class_string):
+        if isinstance(exchange_class_string, str):
+            return getattr(ccxt, exchange_class_string)
+        else:
+            return exchange_class_string
 
     # ccxt exchange instance creation
     def create_client(self):

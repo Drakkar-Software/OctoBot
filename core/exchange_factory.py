@@ -68,7 +68,7 @@ class ExchangeFactory:
 
     async def _create_exchange_traders(self, exchange_class_string):
         # create exchange manager (can be a backtesting or a real one)
-        exchange_manager = self._create_exchange_manager(getattr(ccxt, exchange_class_string))
+        exchange_manager = self._create_exchange_manager(exchange_class_string)
 
         await exchange_manager.initialize()
 
@@ -94,13 +94,13 @@ class ExchangeFactory:
     def _create_global_price_updater(self, exchange_inst) -> None:
         self.global_updaters_by_exchange[exchange_inst.get_name()] = GlobalPriceUpdater(exchange_inst)
 
-    def _create_exchange_manager(self, exchange_type) -> ExchangeManager:
+    def _create_exchange_manager(self, exchange_class_string) -> ExchangeManager:
         # Backtesting Exchange
         if backtesting_enabled(self.octobot.get_config()):
-            return ExchangeManager(self.octobot.get_config(), exchange_type, is_simulated=True)
+            return ExchangeManager(self.octobot.get_config(), exchange_class_string, is_simulated=True)
         else:
             # Real Exchange
-            return ExchangeManager(self.octobot.get_config(), exchange_type, ignore_config=self.ignore_config)
+            return ExchangeManager(self.octobot.get_config(), exchange_class_string, ignore_config=self.ignore_config)
 
     async def _create_trader(self, trader_class, exchange_inst) -> Trader:
         exchange_trader = trader_class(self.octobot.get_config(), exchange_inst,

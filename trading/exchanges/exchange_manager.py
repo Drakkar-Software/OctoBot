@@ -13,31 +13,31 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-from tools.logging.logging_util import get_logger
 import time
 
 from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
     PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET, CONFIG_CRYPTO_QUOTE, CONFIG_CRYPTO_ADD
+from tools.config_manager import ConfigManager
+from tools.initializable import Initializable
+from tools.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
 from tools.time_frame_manager import TimeFrameManager
 from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from trading.exchanges.rest_exchanges.rest_exchange import RESTExchange
-from trading.exchanges.websockets_exchanges import AbstractWebSocket
-from tools.initializable import Initializable
-from tools.config_manager import ConfigManager
+from trading.exchanges.websockets_exchanges.user_websocket.user_websocket import UserWebSocket
+from trading.exchanges.websockets_exchanges.websocket.websocket import WebSocket
 
 
 class ExchangeManager(Initializable):
     WEB_SOCKET_RESET_MIN_INTERVAL = 15
 
-    def __init__(self, config, exchange_type, is_simulated=False, rest_only=False, ignore_config=False):
+    def __init__(self, config, exchange_class_string, is_simulated=False, rest_only=False, ignore_config=False):
         super().__init__()
         self.config = config
-        self.exchange_type = exchange_type
+        self.exchange_class_string = exchange_class_string
         self.rest_only = rest_only
         self.ignore_config = ignore_config
         self.logger = get_logger(self.__class__.__name__)
@@ -46,7 +46,9 @@ class ExchangeManager(Initializable):
         self.is_simulated = is_simulated
 
         self.exchange = None
+        self.exchange_type = None
         self.exchange_web_socket = None
+        self.exchange_user_web_socket = None
         self.exchange_dispatcher = None
         self.trader = None
 
@@ -76,10 +78,15 @@ class ExchangeManager(Initializable):
     def websocket_available(self):
         return self.exchange_web_socket
 
+    def user_websocket_available(self):
+        return self.exchange_user_web_socket
+
     def need_user_stream(self):
         return self.config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]
 
     async def create_exchanges(self):
+        self.exchange_type = RESTExchange.create_exchange_type(self.exchange_class_string)
+
         if not self.is_simulated:
             # create REST based on ccxt exchange
             self.exchange = RESTExchange(self.config, self.exchange_type, self)
@@ -88,27 +95,43 @@ class ExchangeManager(Initializable):
             self._load_constants()
 
             # create Websocket exchange if possible
-            if not self.rest_only and self.check_web_socket_config(self.exchange.get_name()):
-                for socket_manager in AbstractWebSocket.__subclasses__():
-                    # add websocket exchange if available
-                    if socket_manager.get_name() == self.exchange.get_name():
-                        self.exchange_web_socket = socket_manager.get_websocket_client(self.config, self)
+            if not self.rest_only:
 
-                        # init websocket
-                        self.exchange_web_socket.init_web_sockets(self.get_config_time_frame(), self.traded_pairs)
+                # search for websocket
+                if self.check_web_socket_config(self.exchange.get_name()):
+                    self.exchange_web_socket = self._search_and_create_websocket(WebSocket)
 
-                        # start the websocket
-                        self.exchange_web_socket.start_sockets()
+                if self.check_user_web_socket_config(self.exchange.get_name()):
+                    self.exchange_user_web_socket = self._search_and_create_websocket(UserWebSocket)
 
         # if simulated : create exchange simulator instance
         else:
             self.exchange = ExchangeSimulator(self.config, self.exchange_type, self)
             self._set_config_traded_pairs()
 
-        self.exchange_dispatcher = ExchangeDispatcher(self.config, self.exchange_type,
-                                                      self.exchange, self.exchange_web_socket)
+        self.exchange_dispatcher = ExchangeDispatcher(self.config, self.exchange_type, self.exchange,
+                                                      self.exchange_web_socket, self.exchange_user_web_socket)
 
         self.is_ready = True
+
+    def _search_and_create_websocket(self, websocket_class):
+        for socket_manager in websocket_class.__subclasses__():
+            # add websocket exchange if available
+            if socket_manager.has_name(self.exchange.get_name()):
+                exchange_web_socket = socket_manager.get_websocket_client(self.config, self)
+
+                # init websocket
+                try:
+                    exchange_web_socket.init_web_sockets(self.get_config_time_frame(), self.traded_pairs)
+
+                    # start the websocket
+                    exchange_web_socket.start_sockets()
+
+                    return exchange_web_socket
+                except Exception as e:
+                    self.logger.error(f"Fail to init websocket for {websocket_class} : {e}")
+                    raise e
+        return None
 
     def did_not_just_try_to_reset_web_socket(self):
         if self.last_web_socket_reset is None:
@@ -117,7 +140,7 @@ class ExchangeManager(Initializable):
             return time.time() - self.last_web_socket_reset > self.WEB_SOCKET_RESET_MIN_INTERVAL
 
     def reset_websocket_exchange(self):
-        if self.exchange_web_socket and self.did_not_just_try_to_reset_web_socket():
+        if self.did_not_just_try_to_reset_web_socket():
             # set web socket reset time
             self.last_web_socket_reset = time.time()
 
@@ -126,7 +149,11 @@ class ExchangeManager(Initializable):
             self.exchange_dispatcher.reset_exchange_personal_data()
 
             # close and restart websockets
-            self.exchange_web_socket.close_and_restart_sockets()
+            if self.websocket_available():
+                self.exchange_web_socket.close_and_restart_sockets()
+
+            if self.user_websocket_available():
+                self.exchange_user_web_socket.close_and_restart_sockets()
 
             # databases will be filled at the next calls similarly to bot startup process
 
@@ -149,8 +176,11 @@ class ExchangeManager(Initializable):
         return CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \
                and not self.config[CONFIG_EXCHANGES][exchange_name][CONFIG_EXCHANGE_WEB_SOCKET]
 
-    def check_web_socket_config(self, exchange_name):
+    def check_user_web_socket_config(self, exchange_name):
         return self.check_config(exchange_name) and not self.force_disable_web_socket(exchange_name)
+
+    def check_web_socket_config(self, exchange_name):
+        return not self.force_disable_web_socket(exchange_name)
 
     def enabled(self):
         # if we can get candlestick data

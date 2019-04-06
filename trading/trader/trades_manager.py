@@ -109,7 +109,8 @@ class TradesManager(Initializable):
 
     async def _update_currencies_prices(self, symbol):
         ticker = await self.exchange.get_price_ticker(symbol)
-        self.currencies_last_prices[symbol] = ticker[ExchangeConstantsTickersColumns.LAST.value]
+        if ticker:
+            self.currencies_last_prices[symbol] = ticker[ExchangeConstantsTickersColumns.LAST.value]
 
     """ Get profitability calls get_currencies_prices to update required data
     Then calls get_portfolio_current_value to set the current value of portfolio_current_value attribute
