@@ -103,6 +103,7 @@ class ExchangeManager(Initializable):
         # if simulated : create exchange simulator instance
         else:
             self.exchange = ExchangeSimulator(self.config, self.exchange_type, self)
+            self._set_config_traded_pairs()
 
         self.exchange_dispatcher = ExchangeDispatcher(self.config, self.exchange_type,
                                                       self.exchange, self.exchange_web_socket)
@@ -173,6 +174,7 @@ class ExchangeManager(Initializable):
 
     # SYMBOLS
     def _set_config_traded_pairs(self):
+        self.cryptocurrencies_traded_pairs = {}
         for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
             if self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS] != CONFIG_WILDCARD:
                 self.cryptocurrencies_traded_pairs[cryptocurrency] = \
@@ -192,8 +194,11 @@ class ExchangeManager(Initializable):
             self.traded_pairs += self.cryptocurrencies_traded_pairs[cryptocurrency]
 
     def get_traded_pairs(self, cryptocurrency=None):
-        if cryptocurrency and cryptocurrency in self.cryptocurrencies_traded_pairs:
-            return self.cryptocurrencies_traded_pairs[cryptocurrency]
+        if cryptocurrency:
+            if cryptocurrency in self.cryptocurrencies_traded_pairs:
+                return self.cryptocurrencies_traded_pairs[cryptocurrency]
+            else:
+                return []
         return self.traded_pairs
 
     def get_client_symbols(self):
