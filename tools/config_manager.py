@@ -28,7 +28,7 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, \
     CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, CONFIG_TRADING, \
     CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET, \
-    CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION
+    CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, CONFIG_METRICS
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
@@ -320,3 +320,11 @@ class ConfigManager:
     def get_reference_market(config) -> str:
         # The reference market is the currency unit of the calculated quantity value
         return get_value_or_default(config[CONFIG_TRADING], CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET)
+
+    @staticmethod
+    def get_metrics_enabled(config):
+        if CONFIG_METRICS in config and config[CONFIG_METRICS] and \
+                CONFIG_ENABLED_OPTION in config[CONFIG_METRICS]:
+            return bool(config[CONFIG_METRICS][CONFIG_ENABLED_OPTION])
+        else:
+            return True
