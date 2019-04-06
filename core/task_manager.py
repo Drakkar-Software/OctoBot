@@ -119,6 +119,9 @@ class TaskManager:
             except Exception as e:
                 raise e
 
+        # close metrics session
+        stop_coroutines.append(self.octobot.metrics_handler.stop_task())
+
         # stop exchanges threads
         for exchange in self.octobot.exchange_factory.exchanges_list.values():
             stop_coroutines.append(exchange.stop())
