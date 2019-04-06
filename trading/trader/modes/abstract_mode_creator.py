@@ -74,7 +74,12 @@ class AbstractTradingModeCreator:
         min_quantity = get_value_or_default(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value, math.nan)
         min_cost = get_value_or_default(limit_cost, Ecmsc.LIMITS_COST_MIN.value, math.nan)
 
-        if remaining_max_total_order_price < min_cost or remaining_portfolio_amount < min_quantity:
+        # check with 40% more than remaining total not to require huge market moves to sell this asset
+        min_cost_to_consider = min_cost * 1.4
+        min_quantity_to_consider = min_quantity * 1.4
+
+        if remaining_max_total_order_price < min_cost_to_consider \
+                or remaining_portfolio_amount < min_quantity_to_consider:
             return current_symbol_holding
         else:
             return quantity
