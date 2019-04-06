@@ -221,12 +221,20 @@ class TestAbstractTradingModeCreator:
         }}
 
         current_symbol_holding = 5
-        quantity = 4
+        quantity = 3
         price = 1
         assert AbstractTradingModeCreator.add_dusts_to_quantity_if_necessary(quantity,
                                                                              price,
                                                                              symbol_market,
                                                                              current_symbol_holding) == quantity + 0
+
+        current_symbol_holding = 5
+        quantity = 4
+        price = 1
+        assert AbstractTradingModeCreator.add_dusts_to_quantity_if_necessary(quantity,
+                                                                             price,
+                                                                             symbol_market,
+                                                                             current_symbol_holding) == quantity + 1
 
         current_symbol_holding = 5
         quantity = 4.5
