@@ -53,7 +53,6 @@ class ExchangeSimulator(AbstractExchange):
 
         # set exchange manager attributes
         self.exchange_manager.client_symbols = self.symbols
-        self.exchange_manager.traded_pairs = self.symbols
         self.exchange_manager.client_time_frames = self.get_available_timeframes()
         self.exchange_manager.time_frames = self.config_time_frames
 
