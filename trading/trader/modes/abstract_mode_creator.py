@@ -14,8 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import math
 from abc import *
+from copy import deepcopy
+import math
 
 from config import CURRENCY_DEFAULT_MAX_PRICE_DIGITS, ORDER_CREATION_LAST_TRADES_TO_USE, EvaluatorStates
 from config import ExchangeConstantsMarketStatusColumns as Ecmsc
@@ -23,6 +24,7 @@ from tools.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from tools.initializable import Initializable
+from trading.trader.portfolio import Portfolio
 from trading.trader.sub_portfolio import SubPortfolio
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
 
@@ -244,6 +246,19 @@ class AbstractTradingModeCreator:
         else:
             # impossible to check if order is valid: refuse it
             return []
+
+    @staticmethod
+    async def get_holdings_ratio(trader, portfolio, currency):
+        pf_copy = deepcopy(portfolio.get_portfolio())
+        pf_value = await trader.get_trades_manager().update_portfolio_current_value(pf_copy)
+        currency_holdings = Portfolio.get_currency_from_given_portfolio(pf_copy, currency,
+                                                                        portfolio_type=Portfolio.TOTAL)
+        currency_value = await trader.get_trades_manager().evaluate_value(currency, currency_holdings)
+        return currency_value / pf_value
+
+    @staticmethod
+    def get_number_of_traded_assets(trader):
+        return len(trader.get_trades_manager().origin_crypto_currencies_values)
 
     @staticmethod
     # Can be overwritten

@@ -101,16 +101,20 @@ class Portfolio(Initializable):
     def get_portfolio(self):
         return self.portfolio
 
-    # Get specified currency quantity in the portfolio
-    def get_currency_portfolio(self, currency, portfolio_type=AVAILABLE):
-        if currency in self.portfolio:
-            return self.portfolio[currency][portfolio_type]
+    @staticmethod
+    def get_currency_from_given_portfolio(portfolio, currency, portfolio_type=AVAILABLE):
+        if currency in portfolio:
+            return portfolio[currency][portfolio_type]
         else:
-            self.portfolio[currency] = {
+            portfolio[currency] = {
                 Portfolio.AVAILABLE: 0,
                 Portfolio.TOTAL: 0
             }
-            return self.portfolio[currency][portfolio_type]
+            return portfolio[currency][portfolio_type]
+
+    # Get specified currency quantity in the portfolio
+    def get_currency_portfolio(self, currency, portfolio_type=AVAILABLE):
+        return self.get_currency_from_given_portfolio(self.portfolio, currency, portfolio_type)
 
     # Set new currency quantity in the portfolio
     def _update_portfolio_data(self, currency, value, total=True, available=False):
