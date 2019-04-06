@@ -23,7 +23,7 @@ import requests
 
 from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, TESTED_EXCHANGES, \
     UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, CONFIG_NOTIFIER_IGNORE, EVALUATOR_ACTIVATION, \
-    SIMULATOR_TESTED_EXCHANGES
+    SIMULATOR_TESTED_EXCHANGES, CONFIG_METRICS, CONFIG_ENABLED_OPTION
 from interfaces import get_bot
 from services import AbstractService
 from services import NotifierService
@@ -272,6 +272,19 @@ def update_global_config(new_config, delete=False):
     current_edited_config = get_edited_config()
     ConfigManager.update_global_config(new_config, current_edited_config, update_input=True, delete=delete)
     return True
+
+
+def manage_metrics(enable_metrics):
+    current_edited_config = get_edited_config()
+    if CONFIG_METRICS not in current_edited_config:
+        current_edited_config[CONFIG_METRICS] = {CONFIG_ENABLED_OPTION: enable_metrics}
+    else:
+        current_edited_config[CONFIG_METRICS][CONFIG_ENABLED_OPTION] = enable_metrics
+    ConfigManager.simple_save_config_update(current_edited_config)
+
+
+def get_metrics_enabled():
+    return get_bot().metrics_handler.is_enabled()
 
 
 def get_services_list():

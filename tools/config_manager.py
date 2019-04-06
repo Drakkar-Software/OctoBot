@@ -189,6 +189,13 @@ class ConfigManager:
         ConfigManager.save_config(CONFIG_FILE, new_current_config, TEMP_RESTORE_CONFIG_FILE)
 
     @staticmethod
+    def simple_save_config_update(updated_config):
+        to_save_config = copy(updated_config)
+        ConfigManager.remove_loaded_only_element(to_save_config)
+        ConfigManager.save_config(CONFIG_FILE, to_save_config, TEMP_RESTORE_CONFIG_FILE)
+        return True
+
+    @staticmethod
     def parse_and_update(key, new_data):
         parsed_data_array = key.split(UPDATED_CONFIG_SEPARATOR)
         new_config = {}

@@ -21,6 +21,7 @@ from flask import render_template, jsonify
 from interfaces.web import server_instance, get_notifications, flush_notifications, get_errors_count
 from interfaces import get_bot
 from tools.commands import Commands
+from interfaces.web.models.configuration import get_metrics_enabled
 
 
 logger = get_logger("ServerInstance Controller")
@@ -37,7 +38,9 @@ def commands(cmd=None):
         Commands.stop_bot(get_bot())
         return jsonify("Success")
 
-    return render_template('commands.html', cmd=cmd)
+    return render_template('commands.html',
+                           cmd=cmd,
+                           metrics_enabled=get_metrics_enabled())
 
 
 @server_instance.route("/update")
