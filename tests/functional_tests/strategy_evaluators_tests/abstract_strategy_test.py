@@ -53,7 +53,9 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
         self._assert_init()
 
     def _assert_results(self, run_results, profitability, bot):
-        # print(f"results: {run_results} expected: {profitability}")  # convenient for building tests
+        # convenient for building tests
+        # print(f"results: {run_results} expected: {profitability} => {run_results[0] >= profitability}")
+
         assert run_results[0] >= profitability
 
     async def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
