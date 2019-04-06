@@ -284,7 +284,7 @@ def manage_metrics(enable_metrics):
 
 
 def get_metrics_enabled():
-    return get_bot().metrics_handler.is_enabled()
+    return ConfigManager.get_metrics_enabled(get_edited_config())
 
 
 def get_services_list():

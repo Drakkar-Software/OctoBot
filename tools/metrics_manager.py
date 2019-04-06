@@ -37,7 +37,7 @@ class MetricsManager:
     def __init__(self, octobot):
         self.octobot = octobot
         self.edited_config = octobot.edited_config
-        self.enabled = self._init_enabled()
+        self.enabled = ConfigManager.get_metrics_enabled(self.edited_config)
         self.bot_id = self._init_config_bot_id()
         self.logger = get_logger(self.__class__.__name__)
         self.current_config = None
@@ -58,13 +58,6 @@ class MetricsManager:
                     self._update_uptime()
                 except Exception as e:
                     self.logger.debug(f"Exception when handling metrics: {e}")
-
-    def _init_enabled(self):
-        if CONFIG_METRICS in self.edited_config and self.edited_config[CONFIG_METRICS] and \
-                CONFIG_ENABLED_OPTION in self.edited_config[CONFIG_METRICS]:
-            return bool(self.edited_config[CONFIG_METRICS][CONFIG_ENABLED_OPTION])
-        else:
-            return True
 
     def _init_config_bot_id(self):
         if CONFIG_METRICS in self.edited_config and self.edited_config[CONFIG_METRICS] and \
