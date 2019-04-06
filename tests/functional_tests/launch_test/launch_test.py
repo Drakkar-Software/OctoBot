@@ -14,22 +14,15 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from concurrent.futures import CancelledError
-from threading import Thread
 import pytest
 
 from config import *
 from core.octobot import OctoBot
 from tests.test_utils.config import load_test_config
+from tests.test_utils.bot_management import call_stop_later, start_bot_with_raise
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
-
-
-def stop_bot(bot):
-    thread = Thread(target=bot.stop)
-    thread.start()
-    thread.join()
 
 
 async def test_run_bot(event_loop):
@@ -44,6 +37,5 @@ async def test_run_bot(event_loop):
     bot = OctoBot(config, ignore_config=True)
     bot.time_frames = [TimeFrames.ONE_MINUTE]
     await bot.initialize()
-    event_loop.call_later(5, stop_bot, bot)
-    with pytest.raises(CancelledError):
-        await bot.start()
+    await call_stop_later(5, event_loop, bot)
+    await start_bot_with_raise(bot)
