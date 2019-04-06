@@ -202,7 +202,7 @@ class TradesManager(Initializable):
         async with self.portfolio.get_lock():
             current_portfolio = deepcopy(self.portfolio.get_portfolio())
 
-        self.portfolio_current_value = await self._update_portfolio_current_value(current_portfolio)
+        self.portfolio_current_value = await self.update_portfolio_current_value(current_portfolio)
 
     async def _init_origin_portfolio_and_currencies_value(self, force_ignore_history=False):
         previous_state_manager = self.trader.get_previous_state_manager()
@@ -218,8 +218,8 @@ class TradesManager(Initializable):
             self.origin_portfolio = deepcopy(self.portfolio.get_portfolio())
 
         self.portfolio_origin_value = \
-            await self._update_portfolio_current_value(self.origin_portfolio,
-                                                       currencies_values=self.origin_crypto_currencies_values)
+            await self.update_portfolio_current_value(self.origin_portfolio,
+                                                      currencies_values=self.origin_crypto_currencies_values)
 
         if not backtesting_enabled(self.config) and previous_state_manager is not None:
             if self.trader.simulate:
@@ -263,10 +263,10 @@ class TradesManager(Initializable):
     async def _get_origin_portfolio_current_value(self, refresh_values=False):
         if refresh_values:
             self.current_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
-        return await self._update_portfolio_current_value(self.origin_portfolio,
-                                                          currencies_values=self.current_crypto_currencies_values)
+        return await self.update_portfolio_current_value(self.origin_portfolio,
+                                                         currencies_values=self.current_crypto_currencies_values)
 
-    async def _update_portfolio_current_value(self, portfolio, currencies_values=None):
+    async def update_portfolio_current_value(self, portfolio, currencies_values=None):
         values = currencies_values
         if values is None:
             self.current_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
@@ -312,10 +312,10 @@ class TradesManager(Initializable):
             if pairs:
                 currency, market = split_symbol(pairs[0])
                 if currency not in evaluated_currencies:
-                    values_dict[currency] = await self._evaluate_value(currency, 1)
+                    values_dict[currency] = await self.evaluate_value(currency, 1)
                     evaluated_currencies.add(currency)
                 if market not in evaluated_currencies:
-                    values_dict[market] = await self._evaluate_value(market, 1)
+                    values_dict[market] = await self.evaluate_value(market, 1)
                     evaluated_currencies.add(market)
         return values_dict
 
@@ -334,11 +334,11 @@ class TradesManager(Initializable):
             if currencies_values and currency in currencies_values:
                 return currencies_values[currency] * portfolio[currency][Portfolio.TOTAL]
             else:
-                return await self._evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
+                return await self.evaluate_value(currency, portfolio[currency][Portfolio.TOTAL])
         return 0
 
     # Evaluate value returns the currency quantity value in the reference (attribute) currency
-    async def _evaluate_value(self, currency, quantity):
+    async def evaluate_value(self, currency, quantity):
         # easy case --> the current currency is the reference currency
         if currency == self.reference_market:
             return quantity

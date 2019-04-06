@@ -156,6 +156,38 @@ class TestAbstractTradingModeCreator:
         except NotImplementedError:
             assert True
 
+    async def test_get_holdings_ratio(self):
+        _, exchange, trader, symbol = await self._get_tools()
+        new_portfolio = {
+            "BTC": {
+                Portfolio.TOTAL: 10
+            },
+            "USDT": {
+                Portfolio.TOTAL: 1000
+            }
+        }
+        order_creator = AbstractTradingModeCreator(None)
+        trader.get_portfolio().portfolio = new_portfolio
+        portfolio = trader.get_portfolio()
+        ratio = await order_creator.get_holdings_ratio(trader, portfolio, "BTC")
+        assert round(ratio, 8) == 0.9859353
+        ratio = await order_creator.get_holdings_ratio(trader, portfolio, "USDT")
+        assert round(ratio, 8) == 0.0140647
+
+        new_portfolio.pop("USDT")
+        ratio = await order_creator.get_holdings_ratio(trader, portfolio, "BTC")
+        assert round(ratio, 8) == 1
+        ratio = await order_creator.get_holdings_ratio(trader, portfolio, "USDT")
+        assert round(ratio, 8) == 0
+        ratio = await order_creator.get_holdings_ratio(trader, portfolio, "XYZ")
+        assert round(ratio, 8) == 0
+
+    async def test_get_number_of_traded_assets(self):
+        _, exchange, trader, symbol = await self._get_tools()
+        await trader.trades_manager.initialize()
+        order_creator = AbstractTradingModeCreator(None)
+        assert order_creator.get_number_of_traded_assets(trader) == 15
+
     async def test_adapt_price(self):
         # will use symbol market
         symbol_market = {Ecmsc.PRECISION.value: {Ecmsc.PRECISION_PRICE.value: 4}}
