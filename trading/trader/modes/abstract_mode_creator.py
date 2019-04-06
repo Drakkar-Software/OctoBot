@@ -259,7 +259,7 @@ class AbstractTradingModeCreator:
         currency_holdings = Portfolio.get_currency_from_given_portfolio(pf_copy, currency,
                                                                         portfolio_type=Portfolio.TOTAL)
         currency_value = await trader.get_trades_manager().evaluate_value(currency, currency_holdings)
-        return currency_value / pf_value
+        return currency_value / pf_value if pf_value else 0
 
     @staticmethod
     def get_number_of_traded_assets(trader):
