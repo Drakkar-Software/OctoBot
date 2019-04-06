@@ -23,7 +23,8 @@ from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_strategy_config, update_evaluator_config, \
     get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_all_symbol_list, \
     get_tested_exchange_list, get_simulated_exchange_list, get_other_exchange_list, get_edited_config, \
-    update_trading_config, get_trading_startup_config, reset_trading_history, is_trading_persistence_activated
+    update_trading_config, get_trading_startup_config, reset_trading_history, is_trading_persistence_activated, \
+    manage_metrics
 from interfaces.web.util.flask_util import get_rest_reply
 from backtesting import backtesting_enabled
 
@@ -105,6 +106,12 @@ def config():
                                is_trading_persistence_activated=is_trading_persistence_activated(),
                                in_backtesting=backtesting_enabled(display_config)
                                )
+
+
+@server_instance.route('/metrics_settings', methods=['POST'])
+def metrics_settings():
+    enable_metrics = request.get_json()
+    return get_rest_reply(jsonify(manage_metrics(enable_metrics)))
 
 
 @server_instance.route('/config_actions', methods=['POST'])

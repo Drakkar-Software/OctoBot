@@ -56,7 +56,5 @@ def remove_watched_symbol(symbol):
 
 
 def _save_edition():
-    to_save_config = copy.copy(_get_config())
-    ConfigManager.remove_loaded_only_element(to_save_config)
-    ConfigManager.save_config(CONFIG_FILE, to_save_config, TEMP_RESTORE_CONFIG_FILE)
+    ConfigManager.simple_save_config_update(_get_config())
     return True
