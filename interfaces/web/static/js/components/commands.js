@@ -40,6 +40,29 @@ function setNoFeedback(feedbackButton){
     feedbackButton.text("No feedback system available for now");
 }
 
+function update_metrics_option(){
+    const metrics_input = $("#metricsCheckbox");
+    const activated_metrics = metrics_input.is(':checked');
+    const updated_url = metrics_input.attr(update_url_attr);
+    send_and_interpret_bot_update(activated_metrics, updated_url, null, metrics_success_callback, metrics_failure_callback);
+}
+
+
+function metrics_success_callback(updated_data, update_url, dom_root_element, msg, status) {
+    if(updated_data){
+        create_alert("success", "Anonymous statistics enabled", "Thank you for supporting OctoBot development!");
+    }else{
+        create_alert("success", "Anonymous statistics disabled", "");
+    }
+}
+
+function metrics_failure_callback(updated_data, update_url, dom_root_element, msg, status) {
+    create_alert("error", msg.responseText, "");
+}
+
 $(document).ready(function() {
     load_commands_metadata();
+    $("#metricsCheckbox").change(function(){
+        update_metrics_option();
+    });
 });
