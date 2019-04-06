@@ -31,6 +31,7 @@ from tools.time_frame_manager import TimeFrameManager
 from tools.symbol_util import split_symbol
 from tools.data_util import DataUtil
 from tools.number_util import round_into_str_with_max_digits
+from tools.config_manager import ConfigManager
 from trading import AbstractExchange
 from trading.exchanges.exchange_symbol_data import SymbolData
 
@@ -94,21 +95,23 @@ class ExchangeSimulator(AbstractExchange):
         self.symbols = []
         self.data = {}
         symbols_appended = {}
+        relevant_symbols = set(ConfigManager.get_symbols(self.config))
 
         # parse files
         for file in self.config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES]:
             exchange_name, symbol, timestamp, data_type = interpret_file_name(file)
-            if exchange_name is not None and symbol is not None and timestamp is not None and data_type is not None:
+            if symbol is not None and symbol in relevant_symbols:
+                if exchange_name is not None and timestamp is not None and data_type is not None:
 
-                # check if symbol data already in symbols
-                # TODO check exchanges ?
-                if symbol not in symbols_appended:
-                    symbols_appended[symbol] = 0
-                    if symbols_appended[symbol] < int(timestamp):
-                        symbols_appended[symbol] = int(timestamp)
-                        self.symbols.append(symbol)
-                        data = DataCollectorParser.parse(file)
-                        self.data[symbol] = self.fix_timestamps(data)
+                    # check if symbol data already in symbols
+                    # TODO check exchanges ?
+                    if symbol not in symbols_appended:
+                        symbols_appended[symbol] = 0
+                        if symbols_appended[symbol] < int(timestamp):
+                            symbols_appended[symbol] = int(timestamp)
+                            self.symbols.append(symbol)
+                            data = DataCollectorParser.parse(file)
+                            self.data[symbol] = self.fix_timestamps(data)
 
     def fix_timestamps(self, data):
         for time_frame in data[BACKTESTING_DATA_OHLCV]:
