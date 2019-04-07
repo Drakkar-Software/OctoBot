@@ -86,7 +86,7 @@ METRICS_ROUTE_REGISTER = f"{METRICS_ROUTE}/register"
 DEFAULT_CONFIG_VALUES = {"your-api-key-here", "your-api-secret-here", "NOKEY", "Empty"}
 
 # Async settings
-DEFAULT_FUTURE_TIMEOUT = 30
+DEFAULT_FUTURE_TIMEOUT = 120
 
 # Advanced
 CONFIG_ADVANCED_CLASSES = "advanced_classes"
