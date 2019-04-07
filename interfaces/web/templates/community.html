@@ -1,12 +1,95 @@
 {% extends "layout.html" %}
-{% import 'macros/cards.html' as m_cards %}
+{% import 'macros/tables.html' as m_tables %}
 {% block body %}
 <br>
 {% if can_get_metrics %}
     <div class="card">
-        <div class="card-header"><h1>OctoBot community</h1></div>
-        <div class="card-body">
-            {{ community_metrics }}
+        <div class="card-header"><h1>OctoBot Community</h1></div>
+    </div>
+    <br>
+    <div class="col card text-center align-self-start">
+        <div class="card-header"><h3>Active OctoBots</h3></div>
+        <h4>
+            <div class="card-body row">
+                <div class="col-2">
+                    Total:
+                </div>
+                <div class="col-2">
+                    <span class="badge unique-color-dark font-weight-bold">{{ community_metrics['total_count'] }}</span>
+                </div>
+                <div class="col-2">
+                    This month:
+                </div>
+                <div class="col-2">
+                    <span class="badge unique-color font-weight-bold">{{ community_metrics['this_month'] }}</span>
+                </div>
+                <div class="col-2">
+                    Last 6 months:
+                </div>
+                <div class="col-2">
+                    <span class="badge unique-color-dark font-weight-bold">{{ community_metrics['last_six_month'] }}</span>
+                </div>
+            </div>
+        </h4>
+    </div>
+    <br>
+    <div class="card-deck">
+        <div class="card table-card mb-4">
+            <div class="card-header"><h3>Top community traded pairs</h3></div>
+            <div class="card-body table-responsive">
+              <table id="pairs_datatable" class="table table-striped table-bordered table-hover">
+                  <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Pair</th>
+                        <th scope="col">OctoBots</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for stategy in community_metrics['top_pairs'] %}
+                        {{ m_tables.top_tr(stategy) }}
+                    {% endfor %}
+                  </tbody>
+              </table>
+            </div>
+        </div>
+        <div class="card table-card mb-4">
+            <div class="card-header"><h3>Top community tentacles</h3></div>
+            <div class="card-body table-responsive">
+              <table id="strategies_datatable" class="table table-striped table-bordered table-hover">
+                  <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Tentacle</th>
+                        <th scope="col">OctoBots</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for stategy in community_metrics['top_strategies'] %}
+                        {{ m_tables.top_tr(stategy) }}
+                    {% endfor %}
+                  </tbody>
+              </table>
+            </div>
+        </div>
+        <div class="card table-card mb-4">
+            <div class="card-header"><h3>Top community exchanges</h3></div>
+            <div class="card-body table-responsive">
+              <table id="exchanges_datatable" class="table table-striped table-bordered table-hover">
+                  <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Exchange</th>
+                        <th scope="col">OctoBots</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for stategy in community_metrics['top_exchanges'] %}
+                        {{ m_tables.top_tr(stategy) }}
+                    {% endfor %}
+                  </tbody>
+              </table>
+            </div>
         </div>
     </div>
 {% else %}
@@ -18,5 +101,5 @@
 {% endblock %}
 
 {% block additional_scripts %}
-<script src="{{ url_for('static', filename='js/common/community.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/community.js') }}"></script>
 {% endblock additional_scripts %}

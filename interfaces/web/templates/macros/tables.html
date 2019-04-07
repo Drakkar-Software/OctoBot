@@ -63,3 +63,19 @@
         <td>{{ log["Message"] }}</td>
     </tr>
 {%- endmacro %}
+
+{% macro top_tr(item) -%}
+    <tr
+    {% if item["rank"] == 1 %}
+        class="unique-color-dark"
+    {% elif item["rank"] == 2 %}
+        class="unique-color"
+    {% elif item["rank"] == 3 %}
+        class="special-color"
+    {% endif %}
+    >
+        <th scope="row">{{ item["rank"] }}</th>
+        <th class="text-capitalize">{{ item["name"] }}</th>
+        <td>{{ item["count"] }}</td>
+    </tr>
+{%- endmacro %}
