@@ -23,7 +23,7 @@ from interfaces.web.models.community import can_get_community_metrics, get_commu
 @server_instance.route("/community")
 def community():
     can_get_metrics = can_get_community_metrics()
-    community_metrics = get_community_metrics_to_display()
+    community_metrics = get_community_metrics_to_display() if can_get_metrics else None
     return render_template('community.html',
                            can_get_metrics=can_get_metrics,
                            community_metrics=community_metrics
