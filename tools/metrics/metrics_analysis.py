@@ -16,7 +16,6 @@
 
 import requests
 import json
-import time
 from datetime import datetime, timedelta
 
 from tools.logging.logging_util import get_logger
@@ -28,17 +27,14 @@ LOGGER = get_logger("MetricsAnalysis")
 
 
 def get_community_metrics():
-    if can_read_metrics:
-        try:
-            resp = requests.get(METRICS_URL)
-            if resp.status_code != 200:
-                LOGGER.error(f"Error when getting metrics: error code={resp.status_code}")
-            else:
-                return _format_metrics(json.loads(resp.text))
-        except Exception as e:
-            LOGGER.error(f"Error when getting metrics: {e}")
-    else:
-        return None
+    try:
+        resp = requests.get(METRICS_URL)
+        if resp.status_code != 200:
+            LOGGER.error(f"Error when getting metrics: error code={resp.status_code}")
+        else:
+            return _format_metrics(json.loads(resp.text))
+    except Exception as e:
+        LOGGER.error(f"Error when getting metrics: {e}")
 
 
 def can_read_metrics(config):
@@ -93,4 +89,3 @@ def _count_occurrences(items, session_key, key):
                 else:
                     occurrences_by_item[pair] = 1
     return occurrences_by_item
-
