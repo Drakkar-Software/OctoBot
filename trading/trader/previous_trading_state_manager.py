@@ -52,6 +52,8 @@ class PreviousTradingStateManager:
         except Exception as e:
             self.logger.error(f"{self.ERROR_MESSAGE}{e}")
             self.logger.exception(e)
+            self._previous_state = self._initialize_new_previous_state(target_exchanges)
+            self.first_data = True
 
     @staticmethod
     def enabled(config):
