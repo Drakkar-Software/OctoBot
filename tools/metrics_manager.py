@@ -91,10 +91,14 @@ class MetricsManager:
                     "simulator": TraderSimulator.enabled(self.edited_config),
                     "trader": Trader.enabled(self.edited_config),
                     "evalconfig": self._get_eval_config(),
+                    "pairs": self._get_traded_pairs(),
                     "exchanges": list(self.octobot.get_exchanges_list().keys()),
                     "notifications": self._get_notification_types()
                 }
             }
+
+    def _get_traded_pairs(self):
+        return list(set(evaluator.get_symbol() for evaluator in self.octobot.get_symbol_evaluator_list().values()))
 
     def _get_notification_types(self):
         has_notifications = CONFIG_CATEGORY_NOTIFICATION in self.edited_config \
