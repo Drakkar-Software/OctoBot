@@ -18,7 +18,7 @@
 
 
 $(document).ready(function() {
-    $('#strategies_datatable').DataTable();
-    $('#pairs_datatable').DataTable();
-    $('#exchanges_datatable').DataTable();
+    $('.table').each(function () {
+        $(this).DataTable();
+    });
 });
