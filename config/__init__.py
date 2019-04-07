@@ -74,13 +74,14 @@ BOT_TOOLS_RECORDER = "recorder"
 # metrics
 CONFIG_METRICS = "metrics"
 CONFIG_METRICS_BOT_ID = "metrics-bot-id"
-TIMER_BEFORE_METRICS_REGISTRATION_SECONDS = 1#600
+TIMER_BEFORE_METRICS_REGISTRATION_SECONDS = 600
 TIMER_BETWEEN_METRICS_UPTIME_UPDATE = 3600 * 4
 METRICS_URL = "https://octobotmetrics.herokuapp.com/"
 METRICS_ROUTE_GEN_BOT_ID = "gen-bot-id"
 METRICS_ROUTE = "metrics"
 METRICS_ROUTE_UPTIME = f"{METRICS_ROUTE}/uptime"
 METRICS_ROUTE_REGISTER = f"{METRICS_ROUTE}/register"
+COMMUNITY_TOPS_COUNT = 20
 
 # default values in config files and interfaces
 DEFAULT_CONFIG_VALUES = {"your-api-key-here", "your-api-secret-here", "NOKEY", "Empty"}
@@ -590,7 +591,7 @@ class BacktestingDataFormats(Enum):
 
 class MetricsFields(Enum):
     ID = "_id"
-    CURRENT_SESSION = "currentSession"
+    CURRENT_SESSION = "currentsession"
     STARTED_AT = "startedat"
     UP_TIME = "uptime"
     SIMULATOR = "simulator"

@@ -54,6 +54,10 @@ body:before {
   flex-basis: 33.3%;
   .rounded-bottom !important;
 }
+.card,
+.table-card {
+  flex-basis: 45% !important;
+}
 .medium-size {
   max-width: 18rem;
   min-width: 12rem;
