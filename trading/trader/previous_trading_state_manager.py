@@ -43,11 +43,15 @@ class PreviousTradingStateManager:
             self.reset_trading_history()
         self.reset_state_history = False
         self._previous_state = {}
-        if not self._load_previous_state(target_exchanges, config):
-            self._previous_state = self._initialize_new_previous_state(target_exchanges)
-            self.first_data = True
-        else:
-            self.first_data = False
+        try:
+            if not self._load_previous_state(target_exchanges, config):
+                self._previous_state = self._initialize_new_previous_state(target_exchanges)
+                self.first_data = True
+            else:
+                self.first_data = False
+        except Exception as e:
+            self.logger.error(f"{self.ERROR_MESSAGE}{e}")
+            self.logger.exception(e)
 
     @staticmethod
     def enabled(config):
@@ -224,7 +228,8 @@ class PreviousTradingStateManager:
                                 if extracted_portfolio is not None:
                                     self._previous_state[exchange_name][SIMULATOR_CURRENT_PORTFOLIO] = \
                                         extracted_portfolio
-                                to_load_exchanges.remove(exchange_name)
+                                if exchange_name in to_load_exchanges:
+                                    to_load_exchanges.remove(exchange_name)
                                 if not to_load_exchanges:
                                     return True
         return not to_load_exchanges
