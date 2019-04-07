@@ -62,16 +62,19 @@ class MetricsManager:
 
     async def start_metrics_task(self):
         if self.enabled:
-            # first ensure this session is not just a configuration test: register after a timer
-            await asyncio.sleep(TIMER_BEFORE_METRICS_REGISTRATION_SECONDS)
-            await self._register_session()
-            while self.keep_running:
-                # send a keepalive at periodic intervals
-                await asyncio.sleep(TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
-                try:
-                    await self._update_uptime()
-                except Exception as e:
-                    self.logger.debug(f"Exception when handling metrics: {e}")
+            try:
+                # first ensure this session is not just a configuration test: register after a timer
+                await asyncio.sleep(TIMER_BEFORE_METRICS_REGISTRATION_SECONDS)
+                await self._register_session()
+                while self.keep_running:
+                    # send a keepalive at periodic intervals
+                    await asyncio.sleep(TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
+                    try:
+                        await self._update_uptime()
+                    except Exception as e:
+                        self.logger.debug(f"Exception when handling metrics: {e}")
+            except Exception as e:
+                self.logger.debug(f"Exception when handling metrics registration: {e}")
 
     async def stop_task(self):
         self.keep_running = False
