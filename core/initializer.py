@@ -16,8 +16,8 @@
 import copy
 
 from backtesting import backtesting_enabled
-from config import CONFIG_DEBUG_OPTION_PERF, TimeFrames, CONFIG_NOTIFICATION_GLOBAL_INFO, NOTIFICATION_STARTING_MESSAGE, \
-    CONFIG_NOTIFICATION_INSTANCE
+from config import CONFIG_DEBUG_OPTION_PERF, TimeFrames, CONFIG_NOTIFICATION_GLOBAL_INFO, \
+    NOTIFICATION_STARTING_MESSAGE, CONFIG_NOTIFICATION_INSTANCE
 from evaluator.Util import AdvancedManager
 from evaluator.evaluator_creator import EvaluatorCreator
 from services import ServiceCreator
@@ -25,7 +25,7 @@ from tools import get_logger
 from tools.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
 from tools.time_frame_manager import TimeFrameManager
-from tools.metrics_manager import MetricsManager
+from tools.metrics.metrics_manager import MetricsManager
 
 
 class Initializer:

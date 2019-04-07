@@ -13,6 +13,19 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
 
 
 import aiohttp
@@ -24,7 +37,7 @@ import json
 from config import CONFIG_METRICS_BOT_ID, METRICS_URL, METRICS_ROUTE_GEN_BOT_ID, \
     METRICS_ROUTE_UPTIME, METRICS_ROUTE_REGISTER, TIMER_BEFORE_METRICS_REGISTRATION_SECONDS, \
     TIMER_BETWEEN_METRICS_UPTIME_UPDATE, CONFIG_CATEGORY_NOTIFICATION, CONFIG_NOTIFICATION_TYPE, CONFIG_METRICS, \
-    CONFIG_ENABLED_OPTION
+    CONFIG_ENABLED_OPTION, MetricsFields
 from tools.logging.logging_util import get_logger
 from tools.config_manager import ConfigManager
 from trading.trader.trader import Trader
@@ -76,7 +89,8 @@ class MetricsManager:
         await self._post_metrics(METRICS_ROUTE_REGISTER, self.current_config, retry_on_error)
 
     async def _update_uptime(self, retry_on_error=True):
-        self.current_config["currentSession"]["uptime"] = int(time.time() - self.octobot.start_time)
+        self.current_config[MetricsFields.CURRENT_SESSION.value][MetricsFields.UP_TIME.value] = \
+            int(time.time() - self.octobot.start_time)
         await self._post_metrics(METRICS_ROUTE_UPTIME, self.current_config, retry_on_error)
 
     async def _get_current_metrics_config(self):
@@ -84,16 +98,16 @@ class MetricsManager:
             await self._init_bot_id()
         if self.bot_id:
             return {
-                "_id": self.bot_id,
-                "currentSession": {
-                    "startedat": int(self.octobot.start_time),
-                    "uptime": int(time.time() - self.octobot.start_time),
-                    "simulator": TraderSimulator.enabled(self.edited_config),
-                    "trader": Trader.enabled(self.edited_config),
-                    "evalconfig": self._get_eval_config(),
-                    "pairs": self._get_traded_pairs(),
-                    "exchanges": list(self.octobot.get_exchanges_list().keys()),
-                    "notifications": self._get_notification_types()
+                MetricsFields.ID.value: self.bot_id,
+                MetricsFields.CURRENT_SESSION.value: {
+                    MetricsFields.STARTED_AT.value: int(self.octobot.start_time),
+                    MetricsFields.UP_TIME.value: int(time.time() - self.octobot.start_time),
+                    MetricsFields.SIMULATOR.value: TraderSimulator.enabled(self.edited_config),
+                    MetricsFields.TRADER.value: Trader.enabled(self.edited_config),
+                    MetricsFields.EVAL_CONFIG.value: self._get_eval_config(),
+                    MetricsFields.PAIRS.value: self._get_traded_pairs(),
+                    MetricsFields.EXCHANGES.value: list(self.octobot.get_exchanges_list().keys()),
+                    MetricsFields.NOTIFICATIONS.value: self._get_notification_types()
                 }
             }
 

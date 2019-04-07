@@ -14,14 +14,17 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-def load_routes():
-    from . import tentacles
-    from . import backtesting
-    from . import commands
-    from . import configuration
-    from . import home
-    from . import dashboard
-    from . import trading
-    from . import logs
-    from . import interface_settings
-    from . import community
+from flask import render_template
+
+from interfaces.web import server_instance
+from interfaces.web.models.community import can_get_community_metrics, get_community_metrics_to_display
+
+
+@server_instance.route("/community")
+def community():
+    can_get_metrics = can_get_community_metrics()
+    community_metrics = get_community_metrics_to_display()
+    return render_template('community.html',
+                           can_get_metrics=can_get_metrics,
+                           community_metrics=community_metrics
+                           )
