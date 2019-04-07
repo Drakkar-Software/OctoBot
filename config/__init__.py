@@ -74,7 +74,7 @@ BOT_TOOLS_RECORDER = "recorder"
 # metrics
 CONFIG_METRICS = "metrics"
 CONFIG_METRICS_BOT_ID = "metrics-bot-id"
-TIMER_BEFORE_METRICS_REGISTRATION_SECONDS = 600
+TIMER_BEFORE_METRICS_REGISTRATION_SECONDS = 1#600
 TIMER_BETWEEN_METRICS_UPTIME_UPDATE = 3600 * 4
 METRICS_URL = "https://octobotmetrics.herokuapp.com/"
 METRICS_ROUTE_GEN_BOT_ID = "gen-bot-id"
@@ -586,6 +586,19 @@ class PlatformsName(Enum):
 class BacktestingDataFormats(Enum):
     REGULAR_COLLECTOR_DATA = 0
     KAIKO_DATA = 1
+
+
+class MetricsFields(Enum):
+    ID = "_id"
+    CURRENT_SESSION = "currentSession"
+    STARTED_AT = "startedat"
+    UP_TIME = "uptime"
+    SIMULATOR = "simulator"
+    TRADER = "trader"
+    EVAL_CONFIG = "evalconfig"
+    PAIRS = "pairs"
+    EXCHANGES = "exchanges"
+    NOTIFICATIONS = "notifications"
 
 
 # web user settings

@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% import 'macros/cards.html' as m_cards %}
+{% block body %}
+<br>
+{% if can_get_metrics %}
+    <div class="card">
+        <div class="card-header"><h1>OctoBot community</h1></div>
+        <div class="card-body">
+            {{ community_metrics }}
+        </div>
+    </div>
+{% else %}
+    <div class="card">
+        <div class="card-header"><h1>To be part of the OctoBot community, please enable <a href="{{ url_for('commands') }}"> OctoBot community data</a>.</h1></div>
+    </div>
+{% endif %}
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/community.js') }}"></script>
+{% endblock additional_scripts %}
