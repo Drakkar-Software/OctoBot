@@ -14,8 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from config import CONFIG_ENABLED_OPTION, CONFIG_SIMULATOR, SIMULATOR_TRADER_STR, SIMULATOR_CURRENT_PORTFOLIO
+from config import SIMULATOR_TRADER_STR, SIMULATOR_CURRENT_PORTFOLIO
 from trading.trader.trader import Trader
+from tools.config_manager import ConfigManager
 
 """ TraderSimulator has a role of exchange response simulator
 - During order creation / filling / canceling process"""
@@ -34,7 +35,7 @@ class TraderSimulator(Trader):
 
     @staticmethod
     def enabled(config):
-        return config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION]
+        return ConfigManager.get_trader_simulator_enabled(config)
 
     def load_previous_state_if_any(self):
         loaded_previous_state = self.previous_state_manager.has_previous_state(self.exchange)
