@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import time
 
 from tools import get_logger
 
@@ -27,39 +28,31 @@ class CryptoFeedCallBack:
 
 
 class OrderBookCallBack(CryptoFeedCallBack):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-    async def order_book_callback(self, feed, pair, update, timestamp):
-        # self.logger.info(f'ORDERBOOK / Timestamp: {timestamp} Feed: {feed} Pair: {pair}')
-        # symbol_data = self._get_symbol_data_from_pair(pair)
-        # if symbol_data:
-        #     symbol_data.update_order_book(self.convert_into_ccxt_order_book(update))
-        pass  # TODO
+    async def l2_order_book_callback(self, _, pair, book, timestamp):
+        symbol_data = self.parent.get_symbol_data_from_pair(pair)
+        if symbol_data and symbol_data.order_book_is_initialized():
+            symbol_data.update_order_book(self.parent.convert_into_ccxt_full_order_book(symbol_data.symbol,
+                                                                                        book,
+                                                                                        timestamp))
 
 
 class RecentTradesCallBack(CryptoFeedCallBack):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-    async def recent_trades_callback(self, feed, pair, order_id, timestamp, side, amount, price):
-        # self.logger.info(
-        #     f"RECENT / Timestamp: {timestamp} Feed: {feed} Pair: {pair} ID: {order_id} Side: {side} Amount: {amount} Price: {price}")
-        # symbol_data = self._get_symbol_data_from_pair(pair) if symbol_data:
-        # symbol_data.update_recent_trades(self.convert_into_ccxt_recent_trades(side, amount, price))
-        pass  # TODO
+    async def recent_trades_callback(self, _, pair, order_id, timestamp, side, amount, price):
+        symbol_data = self.parent.get_symbol_data_from_pair(pair)
+        if symbol_data and symbol_data.recent_trades_are_initialized():
+            symbol_data.add_new_recent_trades(self.parent.convert_into_ccxt_recent_trade(symbol_data.symbol,
+                                                                                         side,
+                                                                                         amount,
+                                                                                         price,
+                                                                                         timestamp))
 
 
 class TickersCallBack(CryptoFeedCallBack):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-    async def tickers_callback(self, feed, pair, bid, ask):
-        # self.logger.info(f'TICKER / Pair: {pair} Bid: {bid} Ask: {ask}')
-        # symbol_data = self._get_symbol_data_from_pair(pair)
-        # if symbol_data:
-        #     symbol_data.update_symbol_ticker(self.convert_into_ccxt_ticker(bid, ask))
-        pass  # TODO
+    async def tickers_callback(self, _, pair, bid, ask):
+        symbol_data = self.parent.get_symbol_data_from_pair(pair)
+        if symbol_data:
+            symbol_data.update_symbol_price_ticker(
+                self.parent.convert_into_ccxt_price_ticker(symbol_data.symbol, bid, ask, time.time()))
 
 
 class OHLCVCallBack(CryptoFeedCallBack):
@@ -69,18 +62,22 @@ class OHLCVCallBack(CryptoFeedCallBack):
         self.time_frame = time_frame
 
     async def ohlcv_callback(self, data=None):
-        self.logger.info("OHLCV callback")
+        timestamp = time.time()  # TODO
         for symbol in data:
             symbol_data = self.parent.get_symbol_data_from_pair(symbol)
-            if symbol_data.candles_are_initialized(self.time_frame):
-                candle = self.parent.convert_into_ccxt_ohlcv(data, symbol)
-                self.parent.exchange_manager.uniformize_candles_if_necessary(candle)
-                symbol_data.update_symbol_candles(self.time_frame, candle, replace_all=False)
+            if symbol_data:
+                if self.time_frame > 0 and symbol_data.candles_are_initialized(self.time_frame):
+                    candle = self.parent.convert_into_ccxt_ohlcv(data, symbol, timestamp)
+                    self.parent.exchange_manager.uniformize_candles_if_necessary(candle)
+                    symbol_data.update_symbol_candles(self.time_frame, candle, replace_all=False)
+                else:
+                    # real time data
+                    symbol_data.update_symbol_ticker(
+                        self.parent.convert_into_ccxt_ticker(symbol, data, timestamp))
 
 
 class FundingCallBack(CryptoFeedCallBack):
-    def __init__(self, parent):
-        super().__init__(parent)
-
     async def funding_callback(self, **kwargs):
-        pass  # TODO
+        # Not implemented
+        timestamp = time.time()
+        feed = kwargs['feed']

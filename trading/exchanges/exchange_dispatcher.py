@@ -188,7 +188,7 @@ class ExchangeDispatcher(AbstractExchange):
         symbol_data = self.get_symbol_data(symbol)
 
         if not (self._web_socket_available() and self.exchange_web_socket.handles_price_ticker()) or \
-                not symbol_data.price_ticker_is_initialized():
+                not symbol_data.ticker_is_initialized():
             await self.exchange.get_price_ticker(symbol=symbol)
 
         return symbol_data.get_symbol_ticker()

@@ -20,7 +20,10 @@ from config import MARKET_SEPARATOR
 # Return currency, market
 def split_symbol(symbol):
     splitted = symbol.split(MARKET_SEPARATOR)
-    return splitted[0], splitted[1]
+    if len(splitted) > 1:
+        return splitted[0], splitted[1]
+    else:
+        return symbol, None
 
 
 # Return merged currency and market without /

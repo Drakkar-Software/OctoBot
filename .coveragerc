@@ -7,6 +7,7 @@ omit =
     tools/*
     evaluator/Dispatchers/*
     trading/exchanges/rest_exchanges/*
+    trading/exchanges/websockets_exchanges/*
     tentacles/*
     setup.py
     start.py

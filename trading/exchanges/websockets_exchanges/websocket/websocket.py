@@ -65,10 +65,16 @@ class WebSocket(AbstractWebSocket):
     def convert_into_ccxt_ticker(self, **kwargs):
         raise NotImplementedError("convert_into_ccxt_ticker not implemented")
 
-    def convert_into_ccxt_order_book(self, **kwargs):
-        raise NotImplementedError("convert_into_ccxt_order_book not implemented")
+    def convert_into_ccxt_price_ticker(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxtconvert_into_ccxt_price_ticker_ticker not implemented")
 
-    def convert_into_ccxt_recent_trades(self, **kwargs):
+    def convert_into_ccxt_full_order_book(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxt_full_order_book not implemented")
+
+    def convert_into_ccxt_updated_order_book(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxt_updated_order_book not implemented")
+
+    def convert_into_ccxt_recent_trade(self, **kwargs):
         raise NotImplementedError("convert_into_ccxt_recent_trades not implemented")
 
     def convert_into_ccxt_ohlcv(self, **kwargs):

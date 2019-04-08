@@ -18,20 +18,21 @@ from cryptofeed.bitfinex.bitfinex import Bitfinex
 from cryptofeed.bitstamp.bitstamp import Bitstamp
 from cryptofeed.coinbase.coinbase import Coinbase
 from cryptofeed.exx.exx import EXX
-from cryptofeed.hitbtc.hitbtc import HITBTC
-from cryptofeed.huobi.huobi import HUOBI
-from cryptofeed.poloniex.poloniex import Poloniex
-from cryptofeed.gemini.gemini import GEMINI
+from cryptofeed.hitbtc.hitbtc import HitBTC
+from cryptofeed.huobi.huobi import Huobi
+
+# from cryptofeed.poloniex.poloniex import Poloniex
+# from cryptofeed.gemini.gemini import Gemini
 
 cryptofeed_classes = {
     "Bitfinex": Bitfinex,
     "Bitfinex2": Bitfinex,
-    "Hitbtc": HITBTC,
+    "Hitbtc": HitBTC,
     "Coinbase": Coinbase,
     "Coinbasepro": Coinbase,
     "Exx": EXX,
-    "Poloniex": Poloniex,
+    # "Poloniex": Poloniex, TODO Poloniex does not handle unsupported pairs
     "Bitstamp": Bitstamp,
-    "Huobi": HUOBI,
-    "Gemini": GEMINI
+    "Huobi": Huobi,  # Not supported by ccxt
+    # "Gemini": Gemini TODO Gemini requires a websocket per trading pair
 }

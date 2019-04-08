@@ -13,12 +13,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import time
 
 from cryptofeed import FeedHandler
 from cryptofeed.backends.aggregate import OHLCV
-from cryptofeed.callback import Callback, TickerCallback, TradeCallback, BookCallback
-from cryptofeed.defines import TRADES, TICKER, L2_BOOK
+from cryptofeed.callback import Callback, TickerCallback, TradeCallback, BookCallback, FundingCallback
+from cryptofeed.defines import TRADES, TICKER, L2_BOOK, BID, ASK, FUNDING
 from cryptofeed.feed import Feed
 from cryptofeed.standards import feed_to_exchange
 
@@ -26,7 +25,7 @@ from config import MARKET_SEPARATOR, TimeFrames, TimeFramesMinutes, MINUTE_TO_SE
 from trading.exchanges.websockets_exchanges import AbstractWebSocket
 from trading.exchanges.websockets_exchanges.websocket import cryptofeed_classes
 from trading.exchanges.websockets_exchanges.websocket.cryptofeed_callbacks import OHLCVCallBack, OrderBookCallBack, \
-    RecentTradesCallBack, TickersCallBack
+    RecentTradesCallBack, TickersCallBack, FundingCallBack
 from trading.exchanges.websockets_exchanges.websocket.websocket import WebSocket
 
 
@@ -57,7 +56,7 @@ class CryptoFeedWebSocketClient(WebSocket):
 
     def init_web_sockets(self, time_frames, trader_pairs):
         self.cryptofeed_handler = FeedHandler()
-        self.exchange_class = self.__class__._get_cryptofeed_class(self.exchange_manager.exchange_class_string.title())
+        self.exchange_class = self._get_cryptofeed_class(self.exchange_manager.exchange_class_string.title())
         self.trader_pairs = trader_pairs
         self.time_frames = time_frames
         self.converted_traded_pairs = self._get_converted_traded_pairs(trader_pairs)
@@ -67,6 +66,8 @@ class CryptoFeedWebSocketClient(WebSocket):
             self.add_order_book_feed()
             self.add_tickers_feed()
             self.add_ohlcv_feed()
+
+            # Not implemented
             # self.add_funding_feed()
 
             # ensure feeds are added
@@ -86,7 +87,7 @@ class CryptoFeedWebSocketClient(WebSocket):
 
     def add_order_book_feed(self):
         if self._is_feed_available(L2_BOOK):
-            self._add_feed_and_run_if_required(L2_BOOK, BookCallback(OrderBookCallBack(self).order_book_callback))
+            self._add_feed_and_run_if_required(L2_BOOK, BookCallback(OrderBookCallBack(self).l2_order_book_callback))
             self.is_handling_order_book = True
         else:
             self.logger.warning(f"{self.exchange_manager.exchange_class_string.title()}'s "
@@ -108,20 +109,29 @@ class CryptoFeedWebSocketClient(WebSocket):
                     OHLCV(Callback(OHLCVCallBack(self, time_frame).ohlcv_callback),
                           window=self._convert_time_frame_minutes_to_seconds(TimeFramesMinutes[time_frame])))
 
+            # add real time handler
+            self._add_feed_and_run_if_required(
+                TRADES,
+                OHLCV(Callback(OHLCVCallBack(self, 0).ohlcv_callback), window=0))
+
             self.is_handling_ohlcv = True
         else:
             self.logger.warning(f"{self.exchange_manager.exchange_class_string.title()}'s "
                                 f"websocket is not handling ohlcv")
 
     def add_funding_feed(self):
-        # Not implemented
-        self.is_handling_funding = False
+        if self._is_feed_available(FUNDING):
+            self._add_feed_and_run_if_required(FUNDING, FundingCallback(FundingCallBack(self).funding_callback))
+            self.is_handling_funding = True
+        else:
+            self.logger.warning(f"{self.exchange_manager.exchange_class_string.title()}'s "
+                                f"websocket is not handling funding")
 
     def _is_feed_available(self, feed):
         try:
             feed_to_exchange(self.exchange_class.id, feed)
             return True
-        except ValueError:
+        except (KeyError, ValueError):
             return False
 
     def _add_feed_and_run_if_required(self, feed, callback):
@@ -163,7 +173,7 @@ class CryptoFeedWebSocketClient(WebSocket):
 
     @classmethod
     def has_name(cls, name: str):
-        return cls._get_cryptofeed_class(name) is not None or name in cryptofeed_classes
+        return cls._get_cryptofeed_class(name) is not None or name.title() in cryptofeed_classes
 
     @classmethod
     def _get_cryptofeed_class(cls, name):
@@ -192,7 +202,7 @@ class CryptoFeedWebSocketClient(WebSocket):
 
         if not is_websocket_running:
             self.logger.error(f"{self.exchange_manager.exchange_class_string.title()}'s "
-                              f"websocket is handling anything, it will not be started, ")
+                              f"websocket is not handling anything, it will not be started, ")
 
     def close_and_restart_sockets(self):
         # TODO
@@ -202,8 +212,13 @@ class CryptoFeedWebSocketClient(WebSocket):
         pass
 
     def get_symbol_data_from_pair(self, pair):
-        symbol_data = self.exchange_manager.get_symbol_data(self._adapt_symbol(pair))
-        if symbol_data and symbol_data.price_ticker_is_initialized():
+        symbol_data = None
+        if pair in self.converted_traded_pairs:
+            symbol_data = self.exchange_manager.get_symbol_data(self._adapt_symbol(pair))
+        elif pair in self.fixed_converted_traded_pairs:
+            symbol_data = self.exchange_manager.get_symbol_data(self._adapt_symbol(pair, with_fix=True))
+
+        if symbol_data and symbol_data.ticker_is_initialized():
             return symbol_data
         return None
 
@@ -223,18 +238,51 @@ class CryptoFeedWebSocketClient(WebSocket):
         return self.is_handling_funding  # TODO implement dynamicaly
 
     # Converters
-    def convert_into_ccxt_ticker(self, bid, ask):
+    def convert_into_ccxt_ticker(self, symbol, data, timestamp):
+        iso8601 = None if (timestamp is None) else self.iso8601(timestamp)
+        return {
+            'symbol': symbol,
+            'timestamp': timestamp,
+            'datetime': iso8601,
+            'high': self.safe_float(data, 'high'),
+            'low': self.safe_float(data, 'low'),
+            'volume': self.safe_float(data, 'volume'),
+            'vwap': self.safe_float(data, 'vwap'),
+            'open': self.safe_float(data, 'open'),
+            'close': self.safe_float(data, 'close'),
+            'last': self.safe_float(data, 'close')
+        }
+
+    def convert_into_ccxt_price_ticker(self, symbol, bid, ask, timestamp):
+        return {
+            'symbol': symbol,
+            'timestamp': timestamp,
+            'bid': bid,
+            'ask': ask
+        }
+
+    def convert_into_ccxt_full_order_book(self, symbol, book, timestamp):
+        return {
+            'bids': book[BID],
+            'asks': book[ASK],
+            'timestamp': timestamp,
+        }
+
+    def convert_into_ccxt_updated_order_book(self, symbol, update, timestamp):
         pass
 
-    def convert_into_ccxt_order_book(self, order_book_update):
-        pass
+    def convert_into_ccxt_recent_trade(self, symbol, side, amount, price, timestamp):
+        return {
+            'timestamp': timestamp,
+            'symbol': symbol,
+            'side': side,
+            'price': price,
+            'amount': amount
+        }
 
-    def convert_into_ccxt_recent_trades(self, side, amount, price):
-        pass
-
-    def convert_into_ccxt_ohlcv(self, data, symbol):
+    def convert_into_ccxt_ohlcv(self, data, symbol, timestamp):
         return [
-            time.time(),  # TODO
+            timestamp,
             AbstractWebSocket.safe_float(data[symbol], "open"),
             AbstractWebSocket.safe_float(data[symbol], "high"),
             AbstractWebSocket.safe_float(data[symbol], "low"),
@@ -263,13 +311,21 @@ class CryptoFeedWebSocketClient(WebSocket):
                 return self._fix_adapt_symbol(symbol, symbol_proposal)
             else:
                 return symbol_proposal
-        elif self.CF_MARKET_SEPARATOR in symbol:
-            return symbol.replace(self.CF_MARKET_SEPARATOR, MARKET_SEPARATOR)
-        return symbol
-
-    def _fix_adapt_symbol(self, symbol, symbol_proposal):
-        # bitmex support
-        if hasattr(self.exchange_class, 'get_active_symbols'):
-            if symbol_proposal in self.exchange_class.get_active_symbols():
+        else:
+            if self.CF_MARKET_SEPARATOR in symbol:
+                symbol = symbol.replace(self.CF_MARKET_SEPARATOR, MARKET_SEPARATOR)
+            symbol_proposal = symbol
+            if with_fix:
+                return self._fix_adapt_symbol(symbol, symbol_proposal, with_id=False)
+            else:
                 return symbol_proposal
-        return self.exchange_manager.get_exchange_symbol_id(symbol)
+
+    def _fix_adapt_symbol(self, symbol, symbol_proposal, with_id=True):
+        if with_id:
+            # bitmex support
+            if hasattr(self.exchange_class, 'get_active_symbols'):
+                if symbol_proposal in self.exchange_class.get_active_symbols():
+                    return symbol_proposal
+            return self.exchange_manager.get_exchange_symbol_id(symbol)
+        else:
+            return self.exchange_manager.get_exchange_symbol(symbol)

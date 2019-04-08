@@ -193,6 +193,9 @@ class ExchangeManager(Initializable):
     def get_exchange_symbol_id(self, symbol, with_fixer=False):
         return self.exchange.get_market_status(symbol, with_fixer=with_fixer)["id"]
 
+    def get_exchange_symbol(self, symbol, with_fixer=False):
+        return self.exchange.get_market_status(symbol, with_fixer=with_fixer)["symbol"]
+
     def _load_config_symbols_and_time_frames(self):
         client = self.exchange.get_client()
         if client:

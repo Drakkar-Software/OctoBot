@@ -34,11 +34,14 @@ class SymbolData:
         self.order_book = []
         self.recent_trades = []
         self.symbol_ticker = None
+        self.symbol_price_ticker = None
 
         self.previous_candle_time = {}
 
         self.are_recent_trades_initialized = False
         self.is_order_book_initialized = False
+        self.is_price_ticker_initialized = False
+
         self.logger = get_logger(f"{self.__class__.__name__} - {self.symbol}")
 
     '''
@@ -79,6 +82,10 @@ class SymbolData:
     def update_symbol_ticker(self, new_symbol_ticker_data):
         self.symbol_ticker = new_symbol_ticker_data
 
+    # price ticker functions
+    def update_symbol_price_ticker(self, new_symbol_price_ticker_data):
+        self.symbol_price_ticker = new_symbol_price_ticker_data
+
     # order book functions
     def update_order_book(self, new_order_book_data):
         self.order_book = new_order_book_data
@@ -86,6 +93,11 @@ class SymbolData:
     # recent trade functions
     def update_recent_trades(self, new_recent_trades_data):
         self.recent_trades = new_recent_trades_data
+
+    def add_new_recent_trades(self, recent_trade_data):
+        self.recent_trades.append(recent_trade_data)
+        if len(self.recent_trades) >= SymbolData.MAX_RECENT_TRADES_COUNT:
+            self.recent_trades.pop(0)
 
     '''
     Called by non-trade classes
@@ -105,6 +117,10 @@ class SymbolData:
     # ticker functions
     def get_symbol_ticker(self):
         return self.symbol_ticker
+
+    # price ticker functions
+    def get_symbol_price_ticker(self):
+        return self.symbol_price_ticker
 
     # order book functions
     def get_symbol_order_book(self):
@@ -132,7 +148,7 @@ class SymbolData:
             return True
         return False
 
-    def price_ticker_is_initialized(self) -> bool:
+    def ticker_is_initialized(self) -> bool:
         return True if self.symbol_ticker is not None else False
 
     def get_symbol_prices(self, time_frame, limit=None, return_list=False):
@@ -148,6 +164,12 @@ class SymbolData:
         return self.is_order_book_initialized
 
     def init_order_book(self):
+        self.is_order_book_initialized = True
+
+    def price_ticker_is_initialized(self):
+        return self.is_order_book_initialized
+
+    def init_price_ticker(self):
         self.is_order_book_initialized = True
 
 
