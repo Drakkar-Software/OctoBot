@@ -19,7 +19,7 @@ import json
 from datetime import datetime, timedelta
 
 from tools.logging.logging_util import get_logger
-from config import METRICS_URL, MetricsFields, COMMUNITY_TOPS_COUNT
+from config import METRICS_URL, MetricsFields, COMMUNITY_TOPS_COUNT, METRICS_ROUTE_COMMUNITY
 from tools.config_manager import ConfigManager
 
 
@@ -28,7 +28,7 @@ LOGGER = get_logger("MetricsAnalysis")
 
 def get_community_metrics():
     try:
-        resp = requests.get(METRICS_URL)
+        resp = requests.get(f"{METRICS_URL}{METRICS_ROUTE_COMMUNITY}")
         if resp.status_code != 200:
             LOGGER.error(f"Error when getting metrics: error code={resp.status_code}")
         else:
