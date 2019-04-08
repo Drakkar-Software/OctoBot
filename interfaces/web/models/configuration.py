@@ -31,6 +31,7 @@ from tools.config_manager import ConfigManager
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection, trading_mode_parent_inspection
 from evaluator.abstract_evaluator import AbstractEvaluator
 from backtesting import backtesting_enabled
+from tools.metrics.metrics_manager import MetricsManager
 
 
 def get_edited_config():
@@ -280,6 +281,8 @@ def manage_metrics(enable_metrics):
         current_edited_config[CONFIG_METRICS] = {CONFIG_ENABLED_OPTION: enable_metrics}
     else:
         current_edited_config[CONFIG_METRICS][CONFIG_ENABLED_OPTION] = enable_metrics
+    if enable_metrics and MetricsManager.should_register_bot(current_edited_config):
+        MetricsManager.background_get_id_and_register_bot(get_bot())
     ConfigManager.simple_save_config_update(current_edited_config)
 
 

@@ -28,7 +28,8 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, \
     CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, CONFIG_TRADING, \
     CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET, \
-    CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, CONFIG_METRICS
+    CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, CONFIG_METRICS, CONFIG_TRADER, \
+    CONFIG_SIMULATOR
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
@@ -328,3 +329,11 @@ class ConfigManager:
             return bool(config[CONFIG_METRICS][CONFIG_ENABLED_OPTION])
         else:
             return True
+
+    @staticmethod
+    def get_trader_enabled(config):
+        return config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]
+
+    @staticmethod
+    def get_trader_simulator_enabled(config):
+        return config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION]
