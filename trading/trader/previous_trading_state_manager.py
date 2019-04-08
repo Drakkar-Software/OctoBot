@@ -26,8 +26,6 @@ from config.config import load_config
 from tools.config_manager import ConfigManager
 from tools.logging.logging_util import get_logger
 from trading.trader.portfolio import Portfolio
-from trading.trader.trader_simulator import TraderSimulator
-from trading.trader.trader import Trader
 
 
 class PreviousTradingStateManager:
@@ -126,7 +124,7 @@ class PreviousTradingStateManager:
 
     def _load_previous_state(self, target_exchanges, config):
         if self._load_previous_state_metadata(target_exchanges, config):
-            if TraderSimulator.enabled(config):
+            if ConfigManager.get_trader_simulator_enabled(config):
                 return self._load_previous_state_portfolios(target_exchanges)
             else:
                 return True
@@ -188,11 +186,11 @@ class PreviousTradingStateManager:
                 return False
 
             # check initial portfolios and portfolios values
-            if TraderSimulator.enabled(config):
+            if ConfigManager.get_trader_simulator_enabled(config):
                 if exchange_data[SIMULATOR_INITIAL_STARTUP_PORTFOLIO] is None \
                         or exchange_data[SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE] is None:
                     return False
-            if Trader.enabled(config):
+            if ConfigManager.get_trader_enabled(config):
                 if exchange_data[REAL_INITIAL_STARTUP_PORTFOLIO] is None\
                         or exchange_data[REAL_INITIAL_STARTUP_PORTFOLIO_VALUE] is None:
                     return False

@@ -17,9 +17,9 @@ import copy
 from tools.logging.logging_util import get_logger
 
 from backtesting import backtesting_enabled
-from config import CONFIG_ENABLED_OPTION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
+from config import CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType, \
-    ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns, SIMULATOR_INITIAL_STARTUP_PORTFOLIO
+    ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.order import OrderConstants, Order
 from trading.trader.order_notifier import OrderNotifier
@@ -107,7 +107,7 @@ class Trader(Initializable):
 
     @staticmethod
     def enabled(config):
-        return config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]
+        return ConfigManager.get_trader_enabled(config)
 
     def is_enabled(self):
         return self.enable

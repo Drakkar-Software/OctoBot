@@ -15,6 +15,7 @@
 #  License along with this library.
 import copy
 import time
+import aiohttp
 
 from config import BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
 from core.evaluator_factory import EvaluatorFactory
@@ -46,6 +47,9 @@ class OctoBot:
             BOT_TOOLS_STRATEGY_OPTIMIZER: None,
             BOT_TOOLS_RECORDER: None,
         }
+
+        # unique aiohttp session: to be initialized from getter in a task
+        self._aiohttp_session = None
 
         # metrics if enabled
         self.metrics_handler = None
@@ -126,3 +130,8 @@ class OctoBot:
 
     def get_async_loop(self):
         return self.task_manager.async_loop
+
+    def get_aiohttp_session(self):
+        if self._aiohttp_session is None:
+            self._aiohttp_session = aiohttp.ClientSession()
+        return self._aiohttp_session
