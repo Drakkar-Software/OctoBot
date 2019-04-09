@@ -84,20 +84,22 @@ class ConfigManager:
     def jsonify_config(config):
         # check exchange keys encryption
         for exchange in config[CONFIG_EXCHANGES]:
-            key = config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]
-            secret = config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]
             try:
-                if not ConfigManager.has_invalid_default_config_value(key):
-                    try:
-                        decrypt(key, silent_on_invalid_token=True)
-                    except Exception:
-                        config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = encrypt(key).decode()
+                if CONFIG_EXCHANGE_KEY in config[CONFIG_EXCHANGES][exchange]:
+                    key = config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]
+                    if not ConfigManager.has_invalid_default_config_value(key):
+                        try:
+                            decrypt(key, silent_on_invalid_token=True)
+                        except Exception:
+                            config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = encrypt(key).decode()
 
-                if not ConfigManager.has_invalid_default_config_value(secret):
-                    try:
-                        decrypt(secret, silent_on_invalid_token=True)
-                    except Exception:
-                        config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = encrypt(secret).decode()
+                if CONFIG_EXCHANGE_SECRET in config[CONFIG_EXCHANGES][exchange]:
+                    secret = config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]
+                    if not ConfigManager.has_invalid_default_config_value(secret):
+                        try:
+                            decrypt(secret, silent_on_invalid_token=True)
+                        except Exception:
+                            config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = encrypt(secret).decode()
 
             except Exception:
                 config[CONFIG_EXCHANGES][exchange] = {
