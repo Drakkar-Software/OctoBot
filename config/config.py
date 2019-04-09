@@ -93,6 +93,6 @@ def _fill_missing_config_fields(config, reference_config_file=DEFAULT_CONFIG_FIL
         default_config = load_config(reference_config_file, error=True)
         exception_list = [CONFIG_CRYPTO_CURRENCIES, CONFIG_STARTING_PORTFOLIO, CONFIG_EXCHANGES,
                           CONFIG_CATEGORY_SERVICES]
-        check_and_merge_values_from_reference(config, default_config, exception_list)
+        check_and_merge_values_from_reference(config, default_config, exception_list, logger)
     except Exception as e:
         logger.warning(f"Impossible to check configuration file integrity ({e})")

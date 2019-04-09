@@ -40,9 +40,11 @@ def get_value_or_default(dictionary, key, default=None):
     return default
 
 
-def check_and_merge_values_from_reference(current_dict, reference_dict, exception_list):
+def check_and_merge_values_from_reference(current_dict, reference_dict, exception_list, logger=None):
     for key, val in reference_dict.items():
         if key not in current_dict:
             current_dict[key] = val
+            if logger is not None:
+                logger.warning(f"Missing {key} in configuration, added default value: {val}")
         elif isinstance(val, dict) and key not in exception_list:
-            check_and_merge_values_from_reference(current_dict[key], val, exception_list)
+            check_and_merge_values_from_reference(current_dict[key], val, exception_list, logger=logger)
