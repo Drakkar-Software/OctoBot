@@ -36,12 +36,16 @@ class WebApp(threading.Thread):
         self.ctx = None
 
     def prepare_server(self):
-        self.srv = make_server(host=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP],
-                               port=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT],
-                               threaded=True,
-                               app=server_instance)
-        self.ctx = server_instance.app_context()
-        self.ctx.push()
+        try:
+            self.srv = make_server(host=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_IP],
+                                   port=self.config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT],
+                                   threaded=True,
+                                   app=server_instance)
+            self.ctx = server_instance.app_context()
+            self.ctx.push()
+        except OSError as e:
+            self.srv = None
+            self.logger.exception(f"Fail to start web interface : {e}")
 
     def run(self):
         # wait bot is ready
@@ -53,7 +57,8 @@ class WebApp(threading.Thread):
 
         load_routes()
 
-        self.srv.serve_forever()
+        if self.srv:
+            self.srv.serve_forever()
 
     def prepare_stop(self):
         self.srv.server_close()
