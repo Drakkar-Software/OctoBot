@@ -38,3 +38,11 @@ def get_value_or_default(dictionary, key, default=None):
         value = dictionary[key]
         return value or default
     return default
+
+
+def check_and_merge_values_from_reference(current_dict, reference_dict, exception_list):
+    for key, val in reference_dict.items():
+        if key not in current_dict:
+            current_dict[key] = val
+        elif isinstance(val, dict) and key not in exception_list:
+            check_and_merge_values_from_reference(current_dict[key], val, exception_list)

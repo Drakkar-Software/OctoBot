@@ -111,7 +111,7 @@ def start_octobot(starting_args):
             logger.info("Loading config files...")
 
             # configuration loading
-            config = load_config(error=False)
+            config = load_config(error=False, fill_missing_fields=True)
 
             if config is None and is_config_empty_or_missing():
                 logger.info("No configuration found creating default...")

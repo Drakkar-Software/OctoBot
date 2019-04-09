@@ -21,15 +21,19 @@ from shutil import copyfile
 
 from cryptography.fernet import Fernet, InvalidToken
 
-from config import CONFIG_FILE, OCTOBOT_KEY, DEFAULT_CONFIG_FILE
+from config import CONFIG_FILE, OCTOBOT_KEY, DEFAULT_CONFIG_FILE, CONFIG_CRYPTO_CURRENCIES, CONFIG_CATEGORY_SERVICES, \
+    CONFIG_STARTING_PORTFOLIO, CONFIG_EXCHANGES
+from tools.dict_util import check_and_merge_values_from_reference
 
 
-def load_config(config_file=CONFIG_FILE, error=True):
+def load_config(config_file=CONFIG_FILE, error=True, fill_missing_fields=False):
     logger = logging.getLogger("CONFIG LOADER")
     basic_error = "Error when load config file {0}".format(config_file)
     try:
         with open(config_file) as json_data_file:
             config = json.load(json_data_file)
+            if fill_missing_fields:
+                _fill_missing_config_fields(config)
         return config
     except ValueError as e:
         error_str = "{0} : json decoding failed ({1})".format(basic_error, e)
@@ -81,3 +85,14 @@ def decrypt(data, silent_on_invalid_token=False):
     except Exception as e:
         logging.getLogger().error(f"Failed to decrypt : {data} ({e})")
         raise e
+
+
+def _fill_missing_config_fields(config, reference_config_file=DEFAULT_CONFIG_FILE):
+    logger = logging.getLogger("CONFIG LOADER")
+    try:
+        default_config = load_config(reference_config_file, error=True)
+        exception_list = [CONFIG_CRYPTO_CURRENCIES, CONFIG_STARTING_PORTFOLIO, CONFIG_EXCHANGES,
+                          CONFIG_CATEGORY_SERVICES]
+        check_and_merge_values_from_reference(config, default_config, exception_list)
+    except Exception as e:
+        logger.warning(f"Impossible to check configuration file integrity ({e})")
