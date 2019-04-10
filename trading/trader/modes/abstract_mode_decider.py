@@ -28,8 +28,8 @@ class AbstractTradingModeDecider:
     def __init__(self, trading_mode, symbol_evaluator, exchange):
         self.trading_mode = trading_mode
         self.symbol_evaluator = symbol_evaluator
-        self.config = symbol_evaluator.get_config()
-        self.symbol = symbol_evaluator.get_symbol()
+        self.config = symbol_evaluator.config
+        self.symbol = symbol_evaluator.symbol
         self.exchange = exchange
         self.logger = get_logger(self.__class__.__name__)
         self.final_eval = INIT_EVAL_NOTE

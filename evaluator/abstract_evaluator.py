@@ -32,7 +32,6 @@ class AbstractEvaluator:
     DESCRIPTION = "No description set."
 
     def __init__(self):
-        super().__init__()
         self.logger = None
         self.config = None
         self.enabled = True

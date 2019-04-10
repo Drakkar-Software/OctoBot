@@ -18,14 +18,16 @@ import time
 from abc import *
 
 from config import MAX_TA_EVAL_TIME_SECONDS, CONFIG_EVALUATOR_TA
+from core.evaluator.evaluator import TAEvaluatorConsumer
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
-class TAEvaluator(AbstractEvaluator):
+class TAEvaluator(AbstractEvaluator, TAEvaluatorConsumer):
     __metaclass__ = AbstractEvaluator
 
     def __init__(self):
-        super().__init__()
+        AbstractEvaluator.__init__(self)
+        TAEvaluatorConsumer.__init__(self, self)
         self.data = None
         self.short_term_averages = [7, 5, 4, 3, 2, 1]
         self.long_term_averages = [40, 30, 20, 15, 10]

@@ -62,10 +62,11 @@ class TaskManager:
                 await trader_simulator.launch()
                 task_list.append(trader_simulator.start_order_manager())
 
-        for updater in self.octobot.get_global_updaters_by_exchange().values():
-            if self.watcher is not None:
-                updater.set_watcher(self.watcher)
-            task_list.append(updater.start_update_loop())
+        # for updater in self.octobot.get_global_updaters_by_exchange().values():
+        #     if self.watcher is not None: TODO
+        #         updater.set_watcher(self.watcher)
+        for exchange in self.octobot.exchange_factory.exchanges_managers.values():
+            task_list.append(exchange.start_consumers())
 
         for real_time_eval in self.octobot.evaluator_factory.real_time_eval_tasks:
             task_list.append(real_time_eval.start_task())

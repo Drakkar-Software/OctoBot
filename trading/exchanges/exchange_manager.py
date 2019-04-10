@@ -18,6 +18,12 @@ import time
 from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
     PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET, CONFIG_CRYPTO_QUOTE, CONFIG_CRYPTO_ADD
+from core.exchange.balance import BalanceConsumer
+from core.exchange.ohlcv import OHLCVConsumer, OHLCV
+from core.exchange.order_book import OrderBookConsumer
+from core.exchange.orders import OrdersConsumer
+from core.exchange.recent_trade import RecentTradeConsumer
+from core.exchange.ticker import TickerConsumer
 from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
 from tools.logging.logging_util import get_logger
@@ -50,6 +56,8 @@ class ExchangeManager(Initializable):
         self.exchange_web_socket = None
         self.exchange_user_web_socket = None
         self.exchange_dispatcher = None
+        self.exchange_consumers_manager = None
+
         self.trader = None
 
         self.last_web_socket_reset = None
@@ -61,8 +69,29 @@ class ExchangeManager(Initializable):
         self.traded_pairs = []
         self.time_frames = []
 
+        # user data consumers
+        self.orders_consumer: OrdersConsumer = OrdersConsumer(self)
+        self.balance_consumer: BalanceConsumer = BalanceConsumer(self)
+
+        # exchange data consumers
+        self.ohlcv_consumer: OHLCV = OHLCV(self)
+        self.order_book_consumer: OrderBookConsumer = OrderBookConsumer(self)
+        self.ticker_consumer: TickerConsumer = TickerConsumer(self)
+        self.recent_trade_consumer: RecentTradeConsumer = RecentTradeConsumer(self)
+
     async def initialize_impl(self):
         await self.create_exchanges()
+
+    async def start_consumers(self):
+        # user data consumers
+        await self.orders_consumer.run()
+        await self.balance_consumer.run()
+
+        # exchange data consumers
+        await self.ohlcv_consumer.run()
+        await self.order_book_consumer.run()
+        await self.ticker_consumer.run()
+        await self.recent_trade_consumer.run()
 
     def register_trader(self, trader):
         self.trader = trader
@@ -109,8 +138,7 @@ class ExchangeManager(Initializable):
             self.exchange = ExchangeSimulator(self.config, self.exchange_type, self)
             self._set_config_traded_pairs()
 
-        self.exchange_dispatcher = ExchangeDispatcher(self.config, self.exchange_type, self.exchange,
-                                                      self.exchange_web_socket, self.exchange_user_web_socket)
+        self.exchange_dispatcher = ExchangeDispatcher(self.config, self)
 
         self.is_ready = True
 

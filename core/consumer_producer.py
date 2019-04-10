@@ -13,9 +13,31 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
+
+from core.consumer import Consumer
+from core.producers import Producer
 
 
-class MissingOrderException(Exception):
+class ConsumerProducer:
+    def __init__(self):
+        self.producer: Producer = None
+        self.consumer: Consumer = None
 
-    def __init__(self, order_id):
-        self.order_id = order_id
+    async def start(self):
+        await self.consumer.start()
+        await self.producer.start()
+
+    async def stop(self):
+        await self.consumer.stop()
+        await self.producer.stop()
+
+    async def run(self):
+        await self.consumer.run()
+        await self.producer.run()
+
+    def get_consumer_queue(self) -> asyncio.Queue:
+        return self.consumer.queue
+
+    def subscribe_to_producer(self, consumer: Consumer, **kwargs):
+        self.producer.add_consumer(consumer)

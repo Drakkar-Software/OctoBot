@@ -122,7 +122,7 @@ class AbstractTradingMode:
         return cls.DESCRIPTION
 
     def add_symbol_evaluator(self, symbol_evaluator):
-        new_symbol = symbol_evaluator.get_symbol()
+        new_symbol = symbol_evaluator.symbol
         self.symbol_evaluators[new_symbol] = symbol_evaluator
 
         # init maps

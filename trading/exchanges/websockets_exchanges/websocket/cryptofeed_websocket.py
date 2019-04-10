@@ -34,7 +34,7 @@ class CryptoFeedWebSocketClient(WebSocket):
 
     def __init__(self, config, exchange_manager):
         super().__init__(config, exchange_manager)
-
+        self.exchange_manager = exchange_manager
         self.cryptofeed_handler = None
 
         self.open_sockets_keys = {}
@@ -79,7 +79,9 @@ class CryptoFeedWebSocketClient(WebSocket):
     # Feeds
     def add_recent_trade_feed(self):
         if self._is_feed_available(TRADES):
-            self._add_feed_and_run_if_required(TRADES, TradeCallback(RecentTradesCallBack(self).recent_trades_callback))
+            recent_trade_callback = RecentTradesCallBack(self)
+            recent_trade_callback.add_consumer(self.exchange_manager.recent_trade_consumer)
+            self._add_feed_and_run_if_required(TRADES, TradeCallback(recent_trade_callback.recent_trades_callback))
             self.is_handling_recent_trades = True
         else:
             self.logger.warning(f"{self.exchange_manager.exchange_class_string.title()}'s "
@@ -87,7 +89,9 @@ class CryptoFeedWebSocketClient(WebSocket):
 
     def add_order_book_feed(self):
         if self._is_feed_available(L2_BOOK):
-            self._add_feed_and_run_if_required(L2_BOOK, BookCallback(OrderBookCallBack(self).l2_order_book_callback))
+            order_book_callback = OrderBookCallBack(self)
+            order_book_callback.add_consumer(self.exchange_manager.order_book_consumer)
+            self._add_feed_and_run_if_required(L2_BOOK, BookCallback(order_book_callback.l2_order_book_callback))
             self.is_handling_order_book = True
         else:
             self.logger.warning(f"{self.exchange_manager.exchange_class_string.title()}'s "
@@ -95,7 +99,9 @@ class CryptoFeedWebSocketClient(WebSocket):
 
     def add_tickers_feed(self):
         if self._is_feed_available(TICKER):
-            self._add_feed_and_run_if_required(TICKER, TickerCallback(TickersCallBack(self).tickers_callback))
+            tickers_callback = TickersCallBack(self)
+            tickers_callback.add_consumer(self.exchange_manager.ticker_consumer)
+            self._add_feed_and_run_if_required(TICKER, TickerCallback(tickers_callback.tickers_callback))
             self.is_handling_price_ticker = True
         else:
             self.logger.warning(f"{self.exchange_manager.exchange_class_string.title()}'s "
@@ -104,15 +110,19 @@ class CryptoFeedWebSocketClient(WebSocket):
     def add_ohlcv_feed(self):
         if self._is_feed_available(TRADES):
             for time_frame in self.time_frames:
+                time_frame_ohlcv_callback = OHLCVCallBack(self, time_frame)
+                time_frame_ohlcv_callback.add_consumer(self.exchange_manager.ohlcv_consumer)
                 self._add_feed_and_run_if_required(
                     TRADES,
-                    OHLCV(Callback(OHLCVCallBack(self, time_frame).ohlcv_callback),
+                    OHLCV(Callback(time_frame_ohlcv_callback.ohlcv_callback),
                           window=self._convert_time_frame_minutes_to_seconds(TimeFramesMinutes[time_frame])))
 
             # add real time handler
+            real_time_ohlcv_callback = OHLCVCallBack(self, TimeFrames.REAL_TIME)
+            real_time_ohlcv_callback.add_consumer(self.exchange_manager.ohlcv_consumer)
             self._add_feed_and_run_if_required(
                 TRADES,
-                OHLCV(Callback(OHLCVCallBack(self, 0).ohlcv_callback), window=0))
+                OHLCV(Callback(real_time_ohlcv_callback.ohlcv_callback), window=0))
 
             self.is_handling_ohlcv = True
         else:

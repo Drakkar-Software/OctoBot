@@ -76,7 +76,7 @@ def remove_invalid_chars(string):
 def _get_candles_reply(exchange, symbol_evaluator, time_frame):
     return {
         "exchange": remove_invalid_chars(exchange.get_name()),
-        "symbol": symbol_evaluator.get_symbol(),
+        "symbol": symbol_evaluator.symbol,
         "time_frame": time_frame.value
     }
 
@@ -101,7 +101,7 @@ def get_watched_symbol_data(symbol):
 
 def _find_symbol_evaluator_with_data(evaluators, exchange):
     symbol_evaluator = next(iter(evaluators.values()))
-    first_symbol = symbol_evaluator.get_symbol()
+    first_symbol = symbol_evaluator.symbol
     exchange_traded_pairs = exchange.get_exchange_manager().get_traded_pairs()
     if first_symbol in exchange_traded_pairs:
         return symbol_evaluator

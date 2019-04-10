@@ -34,7 +34,7 @@ class SymbolEvaluator:
         self.trader_simulators = None
         self.logger = get_logger(f"{self.symbol} {self.__class__.__name__}")
 
-        self.evaluator_task_managers = {}
+        self.evaluation_consumers = {}
         self.trading_mode_instances = {}
         self.matrices = {}
         self.strategies_eval_lists = {}
@@ -44,17 +44,11 @@ class SymbolEvaluator:
 
         self.evaluator_instances_by_strategies = {}
 
-    def set_traders(self, trader):
-        self.traders = trader
-
-    def set_trader_simulators(self, simulator):
-        self.trader_simulators = simulator
-
-    def add_evaluator_task_manager(self, exchange, time_frame, trading_mode, evaluator_task_manager):
-        if exchange.get_name() in self.evaluator_task_managers:
-            self.evaluator_task_managers[exchange.get_name()][time_frame] = evaluator_task_manager
+    def add_evaluation_consumer(self, exchange, time_frame, trading_mode, evaluation_consumer):
+        if exchange.get_name() in self.evaluation_consumers:
+            self.evaluation_consumers[exchange.get_name()][time_frame] = evaluation_consumer
         else:
-            self.evaluator_task_managers[exchange.get_name()] = {time_frame: evaluator_task_manager}
+            self.evaluation_consumers[exchange.get_name()] = {time_frame: evaluation_consumer}
 
             self.matrices[exchange.get_name()] = EvaluatorMatrix(self.config)
             self.strategies_eval_lists[exchange.get_name()] = EvaluatorCreator.create_strategies_eval_list(self.config)
@@ -142,16 +136,16 @@ class SymbolEvaluator:
         self._filter_and_activate_or_deactivate_evaluator(to_change_rt, to_keep_rt, activate)
         self._filter_and_activate_or_deactivate_evaluator(to_change_ta, to_keep_ta, activate)
 
-        task_managers = self.evaluator_task_managers[exchange.get_name()]
-        for evaluator_task_manager in task_managers.values():
+        evaluation_consumers = self.evaluation_consumers[exchange.get_name()]
+        for evaluation_consumer in evaluation_consumers.values():
             # force refresh TA eval
             if activate:
-                evaluator_task_manager.get_evaluator().data_changed = True
-                evaluator_task_manager.get_evaluator().update_ta_eval()
-            evaluator_task_manager.refresh_matrix()
+                evaluation_consumer.get_evaluator().data_changed = True
+                evaluation_consumer.get_evaluator().update_ta_eval()
+            evaluation_consumer.refresh_matrix()
 
         # finally, refresh strategies
-        await self.update_strategies_eval(next(iter(task_managers.values())).matrix, exchange, None)
+        await self.update_strategies_eval(next(iter(evaluation_consumers.values())).matrix, exchange)
 
         self.logger.info(f"{[s.get_name() for s in strategies]} activated: {activate}")
 
@@ -173,8 +167,8 @@ class SymbolEvaluator:
 
     def _check_finalize(self, exchange):
         self.finalize_enabled_list[exchange.get_name()] = True
-        for evaluator_task in self.evaluator_task_managers[exchange.get_name()].values():
-            if evaluator_task.get_refreshed_times() == 0 and evaluator_task.has_symbol_in_update_list():
+        for evaluation_consumer in self.evaluation_consumers[exchange.get_name()].values():
+            if evaluation_consumer.get_refreshed_times() == 0 and evaluation_consumer.has_symbol_in_update_list():
                 self.finalize_enabled_list[exchange.get_name()] = False
 
     def get_trader(self, exchange):
@@ -198,11 +192,8 @@ class SymbolEvaluator:
     def get_matrix(self, exchange):
         return self.matrices[exchange.get_name()]
 
-    def get_evaluator_task_managers(self, exchange):
-        return self.evaluator_task_managers[exchange.get_name()]
-
-    def get_config(self):
-        return self.config
+    def get_evaluation_consumers(self, exchange):
+        return self.evaluation_consumers[exchange.get_name()]
 
     def get_strategies_eval_list(self, exchange, active_only=False):
         if not active_only:
@@ -217,9 +208,3 @@ class SymbolEvaluator:
                      for s in self.get_strategies_eval_list(exchange, active_only)
                      if isinstance(s.get_eval_note(), (int, float))]
         return DataUtil.mean(eval_list)
-
-    def get_symbol(self):
-        return self.symbol
-
-    def get_crypto_currency_evaluator(self):
-        return self.crypto_currency_evaluator

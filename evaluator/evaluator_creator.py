@@ -35,13 +35,13 @@ class EvaluatorCreator:
     @staticmethod
     def create_ta_eval_list(evaluator, relevant_evaluators):
         ta_eval_instance_list = []
-        for ta_eval_class in AdvancedManager.create_advanced_evaluator_types_list(TAEvaluator, evaluator.get_config()):
+        for ta_eval_class in AdvancedManager.create_advanced_evaluator_types_list(TAEvaluator, evaluator.config):
             ta_eval_class_instance = ta_eval_class()
             ta_eval_class_instance.set_config(evaluator.config)
             if EvaluatorCreator.is_relevant_evaluator(ta_eval_class_instance, relevant_evaluators):
                 ta_eval_class_instance.set_logger(get_logger(ta_eval_class.get_name()))
                 ta_eval_class_instance.set_data(evaluator.data)
-                ta_eval_class_instance.set_symbol(evaluator.get_symbol())
+                ta_eval_class_instance.set_symbol(evaluator.symbol)
                 ta_eval_instance_list.append(ta_eval_class_instance)
 
         return ta_eval_instance_list

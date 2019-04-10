@@ -22,7 +22,7 @@ from config import ExchangeConstantsMarketPropertyColumns, DEFAULT_REST_RETRY_CO
 from trading import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_symbol_data import SymbolData
-from trading.exchanges.exchange_exceptions import MissingOrderException
+from trading.exchanges import MissingOrderException
 
 """
 This class supervise exchange call by :
@@ -32,12 +32,12 @@ This class supervise exchange call by :
 
 
 class ExchangeDispatcher(AbstractExchange):
-    def __init__(self, config, exchange_type, exchange, exchange_web_socket, exchange_user_web_socket):
-        super().__init__(config, exchange_type)
+    def __init__(self, config, exchange_manager):
+        super().__init__(config, exchange_manager.exchange_type, exchange_manager)
 
-        self.exchange = exchange
-        self.exchange_web_socket = exchange_web_socket
-        self.exchange_user_web_socket = exchange_user_web_socket
+        self.exchange = exchange_manager.exchange
+        self.exchange_web_socket = exchange_manager.exchange_web_socket
+        self.exchange_user_web_socket = exchange_manager.exchange_user_web_socket
         self.symbols_data = None
 
         self.resetting_web_socket = False

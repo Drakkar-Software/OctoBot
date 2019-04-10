@@ -17,7 +17,7 @@
 from tools.logging.logging_util import get_logger
 
 from backtesting import backtesting_enabled
-from evaluator.Updaters.social_evaluator_not_tasked_update_task import SocialEvaluatorNotTaskedUpdateTask
+from tools.social_evaluator_not_tasked_update_task import SocialEvaluatorNotTaskedUpdateTask
 from evaluator.evaluator_creator import EvaluatorCreator
 from config import CONFIG_EVALUATORS_WILDCARD
 
@@ -65,23 +65,8 @@ class CryptocurrencyEvaluator:
     def get_social_evaluator_refresh_task(self):
         return self.social_evaluator_refresh_task.start_loop()
 
-    def get_social_eval_list(self):
-        return self.social_eval_list
-
     def get_social_tasked_eval_list(self):
         return [s for s in self.social_eval_list if s.get_is_to_be_started_as_task()]
 
-    def get_dispatchers_list(self):
-        return self.dispatchers_list
-
-    def get_social_not_tasked_list(self):
-        return self.social_not_tasked_list
-
     def get_symbol_pairs(self):
         return self.config["crypto_currencies"][self.crypto_currency]["pairs"]
-
-    def get_symbol_evaluator_list(self):
-        return self.symbol_evaluator_list
-
-    def get_config(self):
-        return self.config

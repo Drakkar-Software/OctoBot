@@ -80,9 +80,6 @@ class OctoBot:
     def set_watcher(self, watcher):
         self.task_manager.watcher = watcher
 
-    def get_symbols_tasks_manager(self):
-        return self.evaluator_factory.symbol_tasks_manager
-
     def get_exchange_traders(self):
         return self.exchange_factory.exchange_traders
 
@@ -106,9 +103,6 @@ class OctoBot:
 
     def get_dispatchers_list(self):
         return self.evaluator_factory.dispatchers_list
-
-    def get_global_updaters_by_exchange(self):
-        return self.exchange_factory.global_updaters_by_exchange
 
     def get_trading_mode(self):
         return self.exchange_factory.trading_mode

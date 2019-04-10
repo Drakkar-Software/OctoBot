@@ -358,6 +358,7 @@ class PriceIndexes(Enum):
 
 
 class TimeFrames(Enum):
+    REAL_TIME = "0"
     ONE_MINUTE = "1m"
     THREE_MINUTES = "3m"
     FIVE_MINUTES = "5m"
@@ -378,6 +379,7 @@ class TimeFrames(Enum):
 MIN_EVAL_TIME_FRAME = TimeFrames.FIVE_MINUTES
 
 TimeFramesMinutes = {
+    TimeFrames.REAL_TIME: 0,
     TimeFrames.ONE_MINUTE: 1,
     TimeFrames.THREE_MINUTES: 3,
     TimeFrames.FIVE_MINUTES: 5,
@@ -397,6 +399,7 @@ TimeFramesMinutes = {
 
 # ladder : 1-100
 TimeFramesRelevance = {
+    TimeFrames.REAL_TIME: 0,
     TimeFrames.ONE_MINUTE: 5,
     TimeFrames.THREE_MINUTES: 5,
     TimeFrames.FIVE_MINUTES: 5,

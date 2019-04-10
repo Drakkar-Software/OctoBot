@@ -15,13 +15,16 @@
 #  License along with this library.
 import time
 
+from config import TimeFrames
+from core.exchange.ohlcv import OHLCVConsumer
+from core.producers import Producer
 from tools import get_logger
 
 
-class CryptoFeedCallBack:
+class CryptoFeedCallBack(Producer):
     def __init__(self, parent):
+        super().__init__()
         self.parent = parent
-
         self.logger = get_logger(f"WebSocket"
                                  f" - {self.parent.exchange_manager.exchange.get_name()}"
                                  f" - {self.__class__.__name__}")
@@ -34,6 +37,7 @@ class OrderBookCallBack(CryptoFeedCallBack):
             symbol_data.update_order_book(self.parent.convert_into_ccxt_full_order_book(symbol_data.symbol,
                                                                                         book,
                                                                                         timestamp))
+            await self.send(True)  # TODO
 
 
 class RecentTradesCallBack(CryptoFeedCallBack):
@@ -45,6 +49,7 @@ class RecentTradesCallBack(CryptoFeedCallBack):
                                                                                          amount,
                                                                                          price,
                                                                                          timestamp))
+            await self.send(True)  # TODO
 
 
 class TickersCallBack(CryptoFeedCallBack):
@@ -53,6 +58,7 @@ class TickersCallBack(CryptoFeedCallBack):
         if symbol_data:
             symbol_data.update_symbol_price_ticker(
                 self.parent.convert_into_ccxt_price_ticker(symbol_data.symbol, bid, ask, time.time()))
+            await self.send(True)  # TODO
 
 
 class OHLCVCallBack(CryptoFeedCallBack):
@@ -66,7 +72,7 @@ class OHLCVCallBack(CryptoFeedCallBack):
         for symbol in data:
             symbol_data = self.parent.get_symbol_data_from_pair(symbol)
             if symbol_data:
-                if self.time_frame > 0 and symbol_data.candles_are_initialized(self.time_frame):
+                if self.time_frame is not TimeFrames.REAL_TIME and symbol_data.candles_are_initialized(self.time_frame):
                     candle = self.parent.convert_into_ccxt_ohlcv(data, symbol, timestamp)
                     self.parent.exchange_manager.uniformize_candles_if_necessary(candle)
                     symbol_data.update_symbol_candles(self.time_frame, candle, replace_all=False)
@@ -74,6 +80,7 @@ class OHLCVCallBack(CryptoFeedCallBack):
                     # real time data
                     symbol_data.update_symbol_ticker(
                         self.parent.convert_into_ccxt_ticker(symbol, data, timestamp))
+                await self.send(OHLCVConsumer.create_feed(self.time_frame, symbol))
 
 
 class FundingCallBack(CryptoFeedCallBack):

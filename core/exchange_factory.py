@@ -18,7 +18,6 @@ import ccxt.async_support as ccxt
 
 from backtesting import backtesting_enabled
 from config import CONFIG_EXCHANGES
-from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from tools.logging.logging_util import get_logger
 from trading.exchanges.exchange_manager import ExchangeManager
 from trading.trader.previous_trading_state_manager import PreviousTradingStateManager
@@ -45,7 +44,7 @@ class ExchangeFactory:
         self.trading_mode = None
         self.previous_trading_state_manager = None
         self.exchanges_list = {}
-        self.global_updaters_by_exchange = {}
+        self.exchanges_managers = {}
 
         self.available_exchanges = ccxt.exchanges
 
@@ -74,8 +73,6 @@ class ExchangeFactory:
 
         exchange_inst = self._create_exchange_instances(exchange_manager)
 
-        self._create_global_price_updater(exchange_inst)
-
         await self._create_traders(exchange_inst)
 
         # check traders activation
@@ -88,11 +85,9 @@ class ExchangeFactory:
 
     def _create_exchange_instances(self, exchange_manager):
         exchange_inst = exchange_manager.get_exchange()
+        self.exchanges_managers[exchange_inst.get_name()] = exchange_manager
         self.exchanges_list[exchange_inst.get_name()] = exchange_inst
         return exchange_inst
-
-    def _create_global_price_updater(self, exchange_inst) -> None:
-        self.global_updaters_by_exchange[exchange_inst.get_name()] = GlobalPriceUpdater(exchange_inst)
 
     def _create_exchange_manager(self, exchange_class_string) -> ExchangeManager:
         # Backtesting Exchange
@@ -120,7 +115,8 @@ class ExchangeFactory:
 
     def _create_trading_mode(self, exchange_inst) -> None:
         try:
-            self.trading_mode = get_activated_trading_mode(self.octobot.get_config())(self.octobot.get_config(), exchange_inst)
+            self.trading_mode = get_activated_trading_mode(self.octobot.get_config())(self.octobot.get_config(),
+                                                                                      exchange_inst)
             self.exchange_trading_modes[exchange_inst.get_name()] = self.trading_mode
             self.logger.debug(f"Using {self.trading_mode.get_name()} trading mode")
         except RuntimeError as e:

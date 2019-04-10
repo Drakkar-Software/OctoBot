@@ -36,9 +36,8 @@ class RESTExchange(AbstractExchange, Initializable):
     """
 
     def __init__(self, config, exchange_type, exchange_manager):
-        AbstractExchange.__init__(self, config, exchange_type)
+        AbstractExchange.__init__(self, config, exchange_type, exchange_manager)
         Initializable.__init__(self)
-        self.exchange_manager = exchange_manager
 
         # ccxt client
         self.client = None

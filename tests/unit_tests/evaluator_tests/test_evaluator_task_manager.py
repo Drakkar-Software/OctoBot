@@ -26,7 +26,7 @@ from evaluator.evaluator import Evaluator
 from tests.test_utils.config import load_test_config
 from evaluator.Util.advanced_manager import AdvancedManager
 from trading.trader.portfolio import Portfolio
-from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
+from core.global_price_updater import GlobalPriceUpdater
 from evaluator.evaluator_task_manager import EvaluatorTaskManager
 from config import TimeFrames, EVALUATOR_EVAL_DEFAULT_TYPE
 from trading.util.trading_config_util import get_activated_trading_mode

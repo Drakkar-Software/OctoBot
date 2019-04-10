@@ -276,7 +276,7 @@ def get_portfolios():
 
 def get_currencies_with_status():
     return {
-        symbol_evaluator.get_symbol():
+        symbol_evaluator.symbol:
             {
                 exchange.get_name():
                     [
@@ -329,7 +329,7 @@ def get_global_portfolio_currencies_amounts():
 
 def get_matrix_list():
     return {
-        symbol_evaluator.get_symbol():
+        symbol_evaluator.symbol:
             {
                 exchange.get_name(): symbol_evaluator.get_matrix(exchange)
                 for exchange in get_bot().get_exchanges_list().values()

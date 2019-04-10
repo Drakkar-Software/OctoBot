@@ -24,16 +24,18 @@ from config.config import load_config
 from config import CONFIG_EVALUATOR_REALTIME, CONFIG_REFRESH_RATE, PriceIndexes, MIN_EVAL_TIME_FRAME, \
     DEFAULT_WEBSOCKET_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS, DEFAULT_REST_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS, \
     CONFIG_TIME_FRAME
+from core.evaluator.evaluator import RealTimeEvaluatorConsumer
 from evaluator.abstract_evaluator import AbstractEvaluator
 from tools.time_frame_manager import TimeFrameManager
 from services.Dispatchers.abstract_dispatcher import DispatcherAbstractClient
 
 
-class RealTimeEvaluator(AbstractEvaluator):
+class RealTimeEvaluator(AbstractEvaluator, RealTimeEvaluatorConsumer):
     __metaclass__ = AbstractEvaluator
 
     def __init__(self):
-        super().__init__()
+        AbstractEvaluator.__init__(self)
+        RealTimeEvaluatorConsumer.__init__(self, self)
         self.specific_config = None
         self.refresh_time = 0
         self.data = None
