@@ -33,3 +33,4 @@ psutil
 colorlog
 cryptography
 requests
+uvloop

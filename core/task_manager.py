@@ -15,10 +15,11 @@
 #  License along with this library.
 import asyncio
 import threading
+import uvloop
 
 from backtesting import backtesting_enabled
 from config import CONFIG_NOTIFICATION_INSTANCE, CONFIG_NOTIFICATION_GLOBAL_INFO, FORCE_ASYNCIO_DEBUG_OPTION, \
-    NOTIFICATION_STOPPING_MESSAGE
+    NOTIFICATION_STOPPING_MESSAGE, PlatformsName, get_os
 from services import ServiceCreator
 from tools.asyncio_tools import get_gather_wrapper, run_coroutine_in_asyncio_loop
 from tools.logging.logging_util import get_logger
@@ -42,6 +43,9 @@ class TaskManager:
         self.current_loop_thread = None
 
     def init_async_loop(self):
+        # asyncio improvement with Cpython on linux
+        if get_os() is not PlatformsName.WINDOWS:
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.async_loop = asyncio.get_running_loop()
 
     async def start_tasks(self, run_in_new_thread=False):
