@@ -33,7 +33,7 @@ from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CO
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
     CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, \
-    CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT
+    CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT, DEFAULT_CONFIG_FILE
 from config.config import load_config, init_config, is_config_empty_or_missing
 from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
@@ -117,6 +117,11 @@ def start_octobot(starting_args):
                 logger.info("No configuration found creating default...")
                 init_config()
                 config = load_config(error=False)
+            else:
+                is_valid, e = ConfigManager.validate_config_file(config=config)
+                if not is_valid:
+                    logger.error("OctoBot can't repair your config.json file: " + str(e))
+                    raise ConfigError
 
             if config is None:
                 raise ConfigError
@@ -176,7 +181,8 @@ def start_octobot(starting_args):
                     debug_mode = ConfigManager.is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
                     asyncio.run(Commands.start_bot(bot, logger), debug=debug_mode)
     except ConfigError:
-        logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file.")
+        logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file."  + "\nYou can use " +
+                     DEFAULT_CONFIG_FILE + " as an example to fix it.")
         os._exit(-1)
 
     except ModuleNotFoundError as e:
