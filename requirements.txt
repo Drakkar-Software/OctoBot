@@ -27,6 +27,7 @@ newspaper3k
 simplifiedpytrends
 vaderSentiment
 aiohttp
+jsonschema
 
 ## Others
 psutil
