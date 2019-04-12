@@ -20,6 +20,7 @@ import os
 import shutil
 from copy import copy, deepcopy
 from functools import reduce
+import jsonschema
 
 from config.config import load_config, decrypt, encrypt
 from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
@@ -29,7 +30,7 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, CONFIG_TRADING, \
     CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET, \
     CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, CONFIG_METRICS, CONFIG_TRADER, \
-    CONFIG_SIMULATOR
+    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
@@ -67,6 +68,16 @@ class ConfigManager:
             get_logger().error(f"Save config failed : {e}")
             ConfigManager.restore_config(temp_restore_config_file, config_file)
             raise e
+
+    @staticmethod
+    def validate_config_file(config=None, schema_file=CONFIG_FILE_SCHEMA):
+        try:
+            with open(schema_file) as json_schema:
+                loaded_schema = json.load(json_schema)
+            jsonschema.validate(instance=config, schema=loaded_schema)
+        except Exception as e:
+            return False, e
+        return True, None
 
     @staticmethod
     def restore_config(restore_file, target_file):
