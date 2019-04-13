@@ -181,6 +181,9 @@ class AbstractTradingMode:
     def get_trading_config_value(self, key):
         return self.trading_config[key]
 
+    def get_symbol_trading_config_value(self, symbol, key):
+        return self.trading_config[symbol][key]
+
     # to implement in subclasses if config is necessary
     def set_default_config(self):
         pass

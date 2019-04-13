@@ -388,8 +388,11 @@ class Trader(Initializable):
                                              profitability_diff,
                                              profitability_activated)
 
-    def get_open_orders(self):
-        return self.order_manager.get_open_orders()
+    def get_open_orders(self, symbol=None):
+        if symbol is None:
+            return self.order_manager.get_open_orders()
+        else:
+            return [o for o in self.order_manager.get_open_orders() if o.get_order_symbol() == symbol]
 
     def update_close_orders(self):
         for symbol in self.exchange.get_exchange_manager().get_traded_pairs():
