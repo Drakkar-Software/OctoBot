@@ -29,7 +29,24 @@
       }
     },
     "crypto-currencies": {
-      "type": "object"
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+            "type": "object",
+            "properties": {
+                "pairs": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "quote": {
+                    "type": "string"
+                    }
+                }
+           }
+        }
     },
     "data-collector": {
       "type": "object",
@@ -40,7 +57,10 @@
       }
     },
     "exchanges": {
-      "type": "object"
+      "type": "object",
+      "patternProperties": {
+          "^.*$": { "type": "object" }
+      }
     },
     "metrics": {
       "type": "object",
@@ -80,7 +100,10 @@
       ]
     },
     "services": {
-      "type": "object"
+      "type": "object",
+      "patternProperties": {
+          "^.*$": { "type": "object" }
+      }
     },
     "tentacles-packages": {
       "type": "array",
@@ -125,7 +148,13 @@
           ]
         },
         "starting-portfolio": {
-          "type": "object"
+          "type": "object",
+          "patternProperties": {
+              "^.*$": {
+                "type": "number",
+                "minimum": 0
+              }
+          }
         }
       },
       "required": [
