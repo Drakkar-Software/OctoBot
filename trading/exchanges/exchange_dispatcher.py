@@ -134,7 +134,7 @@ class ExchangeDispatcher(AbstractExchange):
             if not symbol_data.ensure_data_validity(time_frame):
                 message = "Web socket seems to be disconnected, trying to restart it"
                 await self._handle_web_socket_reset(message)
-                return self.get_symbol_prices(symbol, time_frame, limit, return_list)
+                return await self.get_symbol_prices(symbol, time_frame, limit, return_list)
 
         return symbol_prices
 
