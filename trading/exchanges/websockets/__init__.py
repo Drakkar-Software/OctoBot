@@ -13,3 +13,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+
+from tools.logging.logging_util import get_logger
+
+try:
+    from trading.exchanges.websockets.octobot_websocket import OctoBotWebSocketClient
+except ImportError as e:
+    get_logger("websocket_exchanges").warning(f"Error when importing OctoBotWebSocketClient: {e}")

@@ -21,7 +21,7 @@ from binance.websockets import BinanceSocketManager
 from config.config import decrypt
 from config import *
 from tools.symbol_util import merge_symbol
-from trading.exchanges.websockets_exchanges.abstract_websocket import AbstractWebSocket
+from trading.exchanges.websockets.abstract_websocket import AbstractWebSocket
 
 
 class BinanceWebSocketClient(AbstractWebSocket):
@@ -74,6 +74,21 @@ class BinanceWebSocketClient(AbstractWebSocket):
         except BinanceAPIException as e:
             self.logger.error(f"error when connecting to binance web sockets: {e}")
 
+    def _init_price_sockets(self, time_frames, trader_pairs):
+        # add klines
+        prices = [f"{self.exchange_manager.get_exchange_symbol_id(symbol).lower()}{self._KLINE_KEY}_{time_frame.value}"
+                  for time_frame in time_frames
+                  for symbol in trader_pairs]
+        # add tickers
+        for symbol in trader_pairs:
+            prices.append(f"{merge_symbol(symbol).lower()}{self._TICKER_KEY}")
+        connection_key = self.socket_manager.start_multiplex_socket(prices, self.all_currencies_prices_callback)
+        self.open_sockets_keys[self._MULTIPLEX_SOCKET_NAME] = connection_key
+
+    def _init_user_socket(self):
+        connection_key = self.socket_manager.start_user_socket(self.user_callback)
+        self.open_sockets_keys[self._USER_SOCKET_NAME] = connection_key
+
     def start_sockets(self):
         if self.socket_manager:
             self.socket_manager.start()
@@ -82,6 +97,13 @@ class BinanceWebSocketClient(AbstractWebSocket):
         if self.socket_manager:
             self.socket_manager.close()
 
+    def close_and_restart_sockets(self):
+        for socket_key in self.open_sockets_keys.values():
+            self.socket_manager.stop_socket(socket_key)
+        self.socket_manager.close()
+        self.init_web_sockets(self.ws_time_frames, self.ws_trader_pairs)
+        self.logger.info(f"{len(self.open_sockets_keys)} web socket(s) restarted")
+
     def get_socket_manager(self):
         return self.socket_manager
 
@@ -89,36 +111,26 @@ class BinanceWebSocketClient(AbstractWebSocket):
     def get_name(cls):
         return "binance"
 
-    # Binance rest API documentation
-    # (https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md):
-    #
-    # Recent trades list
-    # GET /api/v1/trades
-    # Get recent trades(up to last 500).
-    #
-    # Weight: 1
-    #
-    # and:
-    #
-    # Compressed/Aggregate trades list
-    # GET /api/v1/aggTrades
-    # Get compressed, aggregate trades. Trades that fill at the time, from the same order, with the same price will
-    # have the quantity aggregated.
-    #
-    # Weight: 1
-    #
-    # => Better using rest exchange services to save cpu resources (minimal rest request weigh).
-    @classmethod
-    def handles_recent_trades(cls):
+    def handles_recent_trades(self) -> bool:
         return False
 
-    @classmethod
-    def handles_order_book(cls):
+    def handles_order_book(self) -> bool:
         return False
 
-    @classmethod
-    def handles_price_ticker(cls):
+    def handles_price_ticker(self) -> bool:
         return True
+
+    def handles_ohlcv(self) -> bool:
+        pass
+
+    def handles_funding(self) -> bool:
+        pass
+
+    def handles_balance(self) -> bool:
+        pass
+
+    def handles_orders(self) -> bool:
+        pass
 
     @staticmethod
     def parse_order_status(status):
@@ -193,13 +205,6 @@ class BinanceWebSocketClient(AbstractWebSocket):
             ExchangeConstantsOrderColumns.FEE.value: fee,
         }
 
-    def close_and_restart_sockets(self):
-        for socket_key in self.open_sockets_keys.values():
-            self.socket_manager.stop_socket(socket_key)
-        self.socket_manager.close()
-        self.init_web_sockets(self.ws_time_frames, self.ws_trader_pairs)
-        self.logger.info(f"{len(self.open_sockets_keys)} web socket(s) restarted")
-
     def all_currencies_prices_callback(self, msg):
         # TODO
         # ORDER BOOK : Stream Name: <symbol>@depth<levels>
@@ -246,21 +251,6 @@ class BinanceWebSocketClient(AbstractWebSocket):
             self.logger.error(f"error: {e}, restarting calling restart_sockets()")
             self.close_and_restart_sockets()
 
-    def _init_price_sockets(self, time_frames, trader_pairs):
-        # add klines
-        prices = [f"{self.exchange_manager.get_exchange_symbol_id(symbol).lower()}{self._KLINE_KEY}_{time_frame.value}"
-                  for time_frame in time_frames
-                  for symbol in trader_pairs]
-        # add tickers
-        for symbol in trader_pairs:
-            prices.append(f"{merge_symbol(symbol).lower()}{self._TICKER_KEY}")
-        connection_key = self.socket_manager.start_multiplex_socket(prices, self.all_currencies_prices_callback)
-        self.open_sockets_keys[self._MULTIPLEX_SOCKET_NAME] = connection_key
-
-    def _init_user_socket(self):
-        connection_key = self.socket_manager.start_user_socket(self.user_callback)
-        self.open_sockets_keys[self._USER_SOCKET_NAME] = connection_key
-
     # candle: list[0:5]  #time, open, high, low, close, vol
     @staticmethod
     def _create_candle(kline_data):
@@ -301,3 +291,26 @@ class BinanceWebSocketClient(AbstractWebSocket):
         else:
             # used only for tests
             return symbol
+
+    @classmethod
+    def has_name(cls, name: str) -> bool:
+        pass
+
+    def convert_into_ccxt_price_ticker(self, **kwargs):
+        pass
+
+    def convert_into_ccxt_full_order_book(self, **kwargs):
+        pass
+
+    def convert_into_ccxt_updated_order_book(self, **kwargs):
+        pass
+
+    def convert_into_ccxt_recent_trade(self, **kwargs):
+        pass
+
+    def convert_into_ccxt_ohlcv(self, **kwargs):
+        pass
+
+    def convert_into_ccxt_funding(self, **kwargs):
+        pass
+

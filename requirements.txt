@@ -1,5 +1,6 @@
 # Drakkar-Software requirements
 OctoBot-Tentacles-Manager>=1.0.5
+git+git://github.com/Drakkar-Software/OctoBot-Websockets@master
 
 # Cryptocurrency trading
 python-binance

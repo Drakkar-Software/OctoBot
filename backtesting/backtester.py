@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
+from trading.exchanges.exchange_simulator import ExchangeSimulator
 from backtesting.backtesting_util import start_backtesting_bot, get_standalone_backtesting_bot
 
 

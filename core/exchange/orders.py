@@ -13,12 +13,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from core.consumers_producers.consumer import ExchangeConsumer
 
 
-from tools.logging.logging_util import get_logger
-from .abstract_websocket import AbstractWebSocket
+class OrdersConsumer(ExchangeConsumer):
+    def __init__(self, exchange):
+        super().__init__(exchange)
 
-try:
-    from trading.exchanges.websockets_exchanges.implementations.binance_websocket import BinanceWebSocketClient
-except ImportError as e:
-    get_logger("websocket_exchanges").warning(f"Error when importing BinanceWebSocketClient: {e}")
+    async def consume(self):
+        pass

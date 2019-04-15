@@ -14,8 +14,19 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+"""
+Handle or frequently update balance changes
+"""
+from core.consumers_producers.consumer import ExchangeConsumer
 
-class MissingOrderException(Exception):
 
-    def __init__(self, order_id):
-        self.order_id = order_id
+class BalanceConsumer(ExchangeConsumer):
+    def __init__(self, exchange):
+        super().__init__(exchange)
+
+    async def consume(self):
+        pass
+
+    @staticmethod
+    def create_feed(**kwargs):
+        pass

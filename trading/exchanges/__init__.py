@@ -13,3 +13,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+
+
+class MissingOrderException(Exception):
+
+    def __init__(self, order_id):
+        self.order_id = order_id
