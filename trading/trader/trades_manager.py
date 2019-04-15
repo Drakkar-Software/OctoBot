@@ -24,7 +24,7 @@ from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
 from tools.logging.logging_util import get_logger
 from tools.symbol_util import merge_currencies, split_symbol
-from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
+from trading.exchanges.exchange_simulator import ExchangeSimulator
 from trading.trader.portfolio import Portfolio
 
 """ TradesManager will store all trades performed by the exchange trader

@@ -19,10 +19,10 @@ from copy import copy
 from ccxt.async_support import BaseError
 
 from config import ExchangeConstantsMarketPropertyColumns, DEFAULT_REST_RETRY_COUNT, EXCHANGE_ERROR_SLEEPING_TIME
-from trading import AbstractExchange
+from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_symbol_data import SymbolData
-from trading.exchanges.exchange_exceptions import MissingOrderException
+from trading.exchanges import MissingOrderException
 
 """
 This class supervise exchange call by :
@@ -32,11 +32,11 @@ This class supervise exchange call by :
 
 
 class ExchangeDispatcher(AbstractExchange):
-    def __init__(self, config, exchange_type, exchange, exchange_web_socket):
-        super().__init__(config, exchange_type)
+    def __init__(self, config, exchange_manager):
+        super().__init__(config, exchange_manager.exchange_type, exchange_manager)
 
-        self.exchange = exchange
-        self.exchange_web_socket = exchange_web_socket
+        self.exchange = exchange_manager.exchange
+        self.exchange_web_socket = exchange_manager.exchange_web_socket
         self.symbols_data = None
 
         self.resetting_web_socket = False
@@ -44,7 +44,8 @@ class ExchangeDispatcher(AbstractExchange):
         self.reset_symbols_data()
         self.exchange_personal_data = ExchangePersonalData()
 
-        self.logger.info(f"online with REST api{' and web socket api' if self.exchange_web_socket else ''}")
+        self.logger.info(f"online with REST api"
+                         f"{' and web socket api' if self.exchange_web_socket else ''}")
 
     def reset_symbols_data(self):
         self.symbols_data = {}
@@ -104,40 +105,6 @@ class ExchangeDispatcher(AbstractExchange):
                     raise e
         return result
 
-    def get_symbol_data(self, symbol):
-        if symbol not in self.symbols_data:
-            self.symbols_data[symbol] = SymbolData(symbol)
-        return self.symbols_data[symbol]
-
-    # total (free + used), by currency
-    async def get_balance(self):
-        if not self._web_socket_available() or not self.exchange_personal_data.get_portfolio_is_initialized():
-            if not self.exchange_personal_data.get_portfolio_is_initialized():
-                self.exchange_personal_data.init_portfolio()
-
-            await self.exchange.get_balance()
-
-        return self.exchange_personal_data.get_portfolio()
-
-    async def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
-        symbol_data = self.get_symbol_data(symbol)
-        from_web_socket = False
-        if not self._web_socket_available() or not symbol_data.candles_are_initialized(time_frame):
-            await self.exchange.get_symbol_prices(symbol=symbol, time_frame=time_frame, limit=limit)
-        else:
-            from_web_socket = True
-
-        symbol_prices = symbol_data.get_symbol_prices(time_frame, limit, return_list)
-
-        if from_web_socket:
-            # web socket: ensure data are the most recent one otherwise restart web socket
-            if not symbol_data.ensure_data_validity(time_frame):
-                message = "Web socket seems to be disconnected, trying to restart it"
-                await self._handle_web_socket_reset(message)
-                return await self.get_symbol_prices(symbol, time_frame, limit, return_list)
-
-        return symbol_prices
-
     async def reset_web_sockets_if_any(self):
         if self._web_socket_available():
             await self._handle_web_socket_reset("Resetting web sockets")
@@ -159,6 +126,30 @@ class ExchangeDispatcher(AbstractExchange):
                 self.logger.exception(e)
             finally:
                 self.resetting_web_socket = False
+
+    def get_symbol_data(self, symbol):
+        if symbol not in self.symbols_data:
+            self.symbols_data[symbol] = SymbolData(symbol)
+        return self.symbols_data[symbol]
+
+    async def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
+        symbol_data = self.get_symbol_data(symbol)
+        from_web_socket = False
+        if not self._web_socket_available() or not symbol_data.candles_are_initialized(time_frame):
+            await self.exchange.get_symbol_prices(symbol=symbol, time_frame=time_frame, limit=limit)
+        else:
+            from_web_socket = True
+
+        symbol_prices = symbol_data.get_symbol_prices(time_frame, limit, return_list)
+
+        if from_web_socket:
+            # web socket: ensure data are the most recent one otherwise restart web socket
+            if not symbol_data.ensure_data_validity(time_frame):
+                message = "Web socket seems to be disconnected, trying to restart it"
+                await self._handle_web_socket_reset(message)
+                return await self.get_symbol_prices(symbol, time_frame, limit, return_list)
+
+        return symbol_prices
 
     # return bid and asks on each side of the order book stack
     # careful here => can be for binance limit > 100 has a 5 weight and > 500 a 10 weight !
@@ -188,7 +179,8 @@ class ExchangeDispatcher(AbstractExchange):
     async def get_price_ticker(self, symbol):
         symbol_data = self.get_symbol_data(symbol)
 
-        if not self._web_socket_available() or not symbol_data.price_ticker_is_initialized():
+        if not (self._web_socket_available() and self.exchange_web_socket.handles_price_ticker()) or \
+                not symbol_data.ticker_is_initialized():
             await self.exchange.get_price_ticker(symbol=symbol)
 
         return symbol_data.get_symbol_ticker()
@@ -198,6 +190,17 @@ class ExchangeDispatcher(AbstractExchange):
 
     def get_market_status(self, symbol, price_example=None, with_fixer=True):
         return self.exchange.get_market_status(symbol, price_example, with_fixer)
+
+    # total (free + used), by currency
+    async def get_balance(self):
+        if not self._web_socket_available() or not self.exchange_personal_data.get_portfolio_is_initialized():
+            if not self.exchange_personal_data.get_portfolio_is_initialized():
+                self.exchange_personal_data.init_portfolio()
+
+            if self._web_socket_available() and self._web_socket_available().handles_balance():
+                await self.exchange.get_balance()
+
+        return self.exchange_personal_data.get_portfolio()
 
     # ORDERS
     async def get_order(self, order_id, symbol=None):

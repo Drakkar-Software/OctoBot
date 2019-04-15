@@ -22,14 +22,14 @@ from config import ExchangeConstantsMarketPropertyColumns
 class AbstractExchange:
     __metaclass__ = ABCMeta
 
-    def __init__(self, config, exchange_type):
+    def __init__(self, config, exchange_type, exchange_manager):
         self.config = config
         self.exchange_type = exchange_type
         self.name = self.exchange_type.__name__
         self.logger = get_logger(f"{self.__class__.__name__}[{self.name}]")
         self.trader = None
 
-        self.exchange_manager = None
+        self.exchange_manager = exchange_manager
 
     def get_name(self):
         return self.name
