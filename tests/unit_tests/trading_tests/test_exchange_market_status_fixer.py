@@ -17,7 +17,7 @@ from math import nan
 
 from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 from config import ExchangeConstantsMarketStatusInfoColumns as Ecmsic
-from trading import ExchangeMarketStatusFixer
+from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
 
 
 class TestExchangeMarketStatusFixer:

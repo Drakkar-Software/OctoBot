@@ -13,13 +13,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-from tools.logging.logging_util import get_logger
-from abc import *
-
-from ccxt.base.exchange import Exchange as ccxtExchange
+from abc import abstractmethod
 
 from config import TimeFrames
+from tools import get_logger
+from ccxt.base.exchange import Exchange as ccxtExchange
 
 
 class AbstractWebSocket:
@@ -37,13 +35,10 @@ class AbstractWebSocket:
     def get_name(cls):
         raise NotImplementedError("get_name not implemented")
 
+    @classmethod
     @abstractmethod
-    def convert_into_ccxt_order(self, order):
-        raise NotImplementedError("convert_into_ccxt_order not implemented")
-
-    @abstractmethod
-    def convert_into_ccxt_ticker(self, ticker):
-        raise NotImplementedError("convert_into_ccxt_ticker not implemented")
+    def has_name(cls, name: str) -> bool:
+        raise NotImplementedError("has_name not implemented")
 
     @abstractmethod
     def start_sockets(self):
@@ -66,6 +61,73 @@ class AbstractWebSocket:
     def close_and_restart_sockets(self):
         raise NotImplementedError("close_and_restart_sockets not implemented")
 
+    @abstractmethod
+    def handles_recent_trades(self) -> bool:
+        raise NotImplementedError("handles_recent_trades not implemented")
+
+    @abstractmethod
+    def handles_order_book(self) -> bool:
+        raise NotImplementedError("handles_order_book not implemented")
+
+    @abstractmethod
+    def handles_price_ticker(self) -> bool:
+        raise NotImplementedError("handles_price_ticker not implemented")
+
+    @abstractmethod
+    def handles_ohlcv(self) -> bool:
+        raise NotImplementedError("handles_ohlcv not implemented")
+
+    @abstractmethod
+    def handles_funding(self) -> bool:
+        raise NotImplementedError("handles_funding not implemented")
+
+    # Converters
+    @abstractmethod
+    def convert_into_ccxt_ticker(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxt_ticker not implemented")
+
+    @abstractmethod
+    def convert_into_ccxt_price_ticker(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxtconvert_into_ccxt_price_ticker_ticker not implemented")
+
+    @abstractmethod
+    def convert_into_ccxt_full_order_book(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxt_full_order_book not implemented")
+
+    @abstractmethod
+    def convert_into_ccxt_updated_order_book(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxt_updated_order_book not implemented")
+
+    @abstractmethod
+    def convert_into_ccxt_recent_trade(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxt_recent_trades not implemented")
+
+    @abstractmethod
+    def convert_into_ccxt_ohlcv(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxt_ohlcv not implemented")
+
+    @abstractmethod
+    def convert_into_ccxt_funding(self, **kwargs):
+        raise NotImplementedError("convert_into_ccxt_funding not implemented")
+
+    # User data
+    @abstractmethod
+    def convert_into_ccxt_order(self, order):
+        raise NotImplementedError("convert_into_ccxt_order not implemented")
+
+    @staticmethod
+    @abstractmethod
+    def parse_order_status(status):
+        raise NotImplementedError("parse_order_status not implemented")
+
+    @abstractmethod
+    def handles_balance(self) -> bool:
+        raise NotImplementedError("handles_balance not implemented")
+
+    @abstractmethod
+    def handles_orders(self) -> bool:
+        raise NotImplementedError("handles_orders not implemented")
+
     # ============== ccxt adaptation methods ==============
     def init_ccxt_order_from_other_source(self, ccxt_order):
         if self.exchange_manager.get_personal_data().get_orders_are_initialized():
@@ -82,11 +144,6 @@ class AbstractWebSocket:
         except Exception as e:
             self.logger.error(f"Can't parse {symbol} from ccxt exchange")
             self.logger.exception(e)
-
-    @staticmethod
-    @abstractmethod
-    def parse_order_status(status):
-        raise NotImplementedError("parse_order_status not implemented")
 
     @staticmethod
     def safe_lower_string(dictionary, key, default_value=None):
@@ -115,23 +172,7 @@ class AbstractWebSocket:
     def iso8601(value):
         return ccxtExchange.iso8601(value)
 
-    @classmethod
-    @abstractmethod
-    def handles_recent_trades(cls):
-        raise NotImplementedError("handles_recent_trades not implemented")
-
-    @classmethod
-    @abstractmethod
-    def handles_order_book(cls):
-        raise NotImplementedError("handles_order_book not implemented")
-
-    @classmethod
-    @abstractmethod
-    def handles_price_ticker(cls):
-        raise NotImplementedError("handles_price_ticker not implemented")
-
-    @staticmethod
-    def _adapt_symbol(symbol):
+    def _adapt_symbol(self, symbol):
         return symbol
 
     @staticmethod

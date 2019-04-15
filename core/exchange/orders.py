@@ -13,9 +13,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from core.consumers_producers.consumer import ExchangeConsumer
 
 
-class MissingOrderException(Exception):
+class OrdersConsumer(ExchangeConsumer):
+    def __init__(self, exchange):
+        super().__init__(exchange)
 
-    def __init__(self, order_id):
-        self.order_id = order_id
+    async def consume(self):
+        pass

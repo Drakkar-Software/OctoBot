@@ -32,15 +32,14 @@ from tools.symbol_util import split_symbol
 from tools.data_util import DataUtil
 from tools.number_util import round_into_str_with_max_digits
 from tools.config_manager import ConfigManager
-from trading import AbstractExchange
+from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.exchange_symbol_data import SymbolData
 
 
 class ExchangeSimulator(AbstractExchange):
     def __init__(self, config, exchange_type, exchange_manager):
-        super().__init__(config, exchange_type)
+        super().__init__(config, exchange_type, exchange_manager)
         self.initializing = True
-        self.exchange_manager = exchange_manager
 
         if CONFIG_BACKTESTING not in self.config:
             raise Exception("Backtesting config not found")

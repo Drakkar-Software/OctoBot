@@ -16,16 +16,11 @@
 
 import ccxt
 import pytest
+from trading.exchanges.exchange_simulator import ExchangeSimulator
 
-from trading import RESTExchange
-from trading.exchanges.exchange_manager import ExchangeManager
 from config import *
 from tests.test_utils.config import load_test_config
-from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
-from trading.trader.trader_simulator import TraderSimulator
-from trading.trader.trade import Trade
-from trading.trader.order import SellLimitOrder
-from trading.trader.trades_manager import TradesManager
+from trading.exchanges.exchange_manager import ExchangeManager
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
