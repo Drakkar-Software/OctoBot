@@ -24,6 +24,7 @@ from core.exchange.order_book import OrderBookConsumerProducers
 from core.exchange.orders import OrdersConsumer
 from core.exchange.recent_trade import RecentTradeConsumerProducers
 from core.exchange.ticker import TickerConsumerProducers
+from core.updaters.ohlcv_updater import OHLCVUpdater
 from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
 from tools.logging.logging_util import get_logger
@@ -77,6 +78,9 @@ class ExchangeManager(Initializable):
         self.ticker_consumer_producer: TickerConsumerProducers = TickerConsumerProducers(self)
         self.recent_trade_consumer_producer: RecentTradeConsumerProducers = RecentTradeConsumerProducers(self)
 
+        # exchange data producer
+        self.ohlcv_updater_producer: OHLCVUpdater = OHLCVUpdater(self)
+
     async def initialize_impl(self):
         await self.create_exchanges()
 
@@ -90,6 +94,9 @@ class ExchangeManager(Initializable):
         await self.order_book_consumer_producer.run()
         await self.ticker_consumer_producer.run()
         await self.recent_trade_consumer_producer.run()
+
+        # exchange data producer
+        await self.ohlcv_updater_producer.run()
 
     def register_trader(self, trader):
         self.trader = trader
