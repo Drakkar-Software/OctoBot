@@ -15,9 +15,9 @@
 #  License along with this library.
 from asyncio import CancelledError
 
-from core.consumers_producers.consumer import ExchangeConsumer
-from core.consumers_producers.consumer_producers import ConsumerProducers
-from core.consumers_producers.producers import ExchangeProducer
+from core.consumer import ExchangeConsumer
+from core.channels.factories import ConsumerProducers
+from core.producers import ExchangeProducer
 
 
 class RecentTradeConsumerProducers(ConsumerProducers):
@@ -46,9 +46,6 @@ class RecentTradeProducer(ExchangeProducer):
 
 
 class RecentTradeConsumer(ExchangeConsumer):
-    SYMBOL = "SYMBOL"
-    RECENT_TRADE = "RECENT_TRADE"
-
     def __init__(self, exchange, recent_trade: RecentTradeConsumerProducers):
         super().__init__(exchange)
         self.recent_trade: RecentTradeConsumerProducers = recent_trade
@@ -56,8 +53,8 @@ class RecentTradeConsumer(ExchangeConsumer):
     async def perform(self, symbol, recent_trade):
         try:
             if symbol in self.recent_trade.producers:  # and symbol_data.recent_trades_are_initialized()
-                self.exchange.get_symbol_data_from_pair(symbol).add_new_recent_trades(recent_trade)
-                await self.recent_trade.producers[symbol].receive(symbol, recent_trade)
+                self.exchange.get_symbol_data(symbol).add_new_recent_trades(recent_trade)
+                await self.recent_trade.producers[symbol].receive(recent_trade)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
@@ -67,11 +64,5 @@ class RecentTradeConsumer(ExchangeConsumer):
     async def consume(self):
         while not self.should_stop:
             data = await self.queue.get()
-            await self.perform(data[self.SYMBOL], data[self.RECENT_TRADE])
-
-    @staticmethod
-    def create_feed(symbol, recent_trade):
-        return {
-            RecentTradeConsumer.SYMBOL: symbol,
-            RecentTradeConsumer.RECENT_TRADE: recent_trade
-        }
+            await self.perform(data["pair"],
+                               data["recent_trade"])

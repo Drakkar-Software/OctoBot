@@ -15,25 +15,28 @@
 #  License along with this library.
 from asyncio import CancelledError
 
-from core.consumers_producers.consumer import ExchangeConsumer
-from core.consumers_producers.consumer_producers import ConsumerProducers
-from core.consumers_producers.producers import ExchangeProducer
+from core.consumer import ExchangeConsumer
+from core.channels.factories import ConsumerProducers
+from core.producers import ExchangeProducer
 
 
-class TickerConsumerProducers(ConsumerProducers):
+class OHLCVConsumerProducers(ConsumerProducers):
     def __init__(self, exchange):
         super().__init__()
         self.exchange = exchange
-        self.consumer = TickerConsumer(exchange, self)
+        self.consumer = OHLCVConsumer(exchange, self)
 
-    def subscribe_to_producer(self, consumer, symbol=None):
+    def subscribe_to_producer(self, consumer, time_frame=None, symbol=None):
         if symbol not in self.producers:
-            self.producers[symbol] = TickerProducer(self.exchange)
+            self.producers[symbol] = {}
 
-        self.producers[symbol].add_consumer(consumer)
+        if time_frame not in self.producers:
+            self.producers[symbol][time_frame] = OHLCVProducer(self.exchange)
+
+        self.producers[symbol][time_frame].add_consumer(consumer)
 
 
-class TickerProducer(ExchangeProducer):
+class OHLCVProducer(ExchangeProducer):
     def __init__(self, exchange):
         super().__init__(exchange)
 
@@ -44,19 +47,19 @@ class TickerProducer(ExchangeProducer):
         await self.send(True)  # TODO
 
 
-class TickerConsumer(ExchangeConsumer):
-    SYMBOL = "SYMBOL"
-    TICKER = "TICKER"
-
-    def __init__(self, exchange, ticker: TickerConsumerProducers):
+class OHLCVConsumer(ExchangeConsumer):
+    def __init__(self, exchange, ohlcv: OHLCVConsumerProducers):
         super().__init__(exchange)
-        self.ticker: TickerConsumerProducers = ticker
+        self.ohlcv = ohlcv
 
-    async def perform(self, symbol, ticker):
+    async def perform(self, time_frame, symbol, candle):
         try:
-            if symbol in self.ticker.producers:  # and price_ticker_is_initialized
-                self.exchange.get_symbol_data_from_pair(symbol).update_symbol_price_ticker(ticker)
-                await self.ticker.producers[symbol].receive()
+            if symbol in self.ohlcv.producers and time_frame in self.ohlcv.producers[symbol]:
+                self.exchange.uniformize_candles_if_necessary(candle)
+                self.exchange.get_symbol_data(symbol).update_symbol_candles(time_frame,
+                                                                                      candle,
+                                                                                      replace_all=False)
+                await self.ohlcv.producers[symbol][time_frame].receive()
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
@@ -66,11 +69,6 @@ class TickerConsumer(ExchangeConsumer):
     async def consume(self):
         while not self.should_stop:
             data = await self.queue.get()
-            await self.perform(data[self.SYMBOL], data[self.TICKER])
-
-    @staticmethod
-    def create_feed(symbol, ticker):
-        return {
-            TickerConsumer.SYMBOL: symbol,
-            TickerConsumer.TICKER: ticker
-        }
+            await self.perform(data["pair"],
+                               data["time_frame"],
+                               data["candle"])

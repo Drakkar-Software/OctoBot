@@ -18,14 +18,6 @@ import time
 from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
     PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET, CONFIG_CRYPTO_QUOTE, CONFIG_CRYPTO_ADD
-from core.exchange.balance import BalanceConsumer
-from core.exchange.ohlcv import OHLCVConsumerProducers
-from core.exchange.order_book import OrderBookConsumerProducers
-from core.exchange.orders import OrdersConsumer
-from core.exchange.recent_trade import RecentTradeConsumerProducers
-from core.exchange.ticker import TickerConsumerProducers
-from core.updaters.orders_updater import OrderUpdaterProducer, OrderUpdater
-from core.updaters.ohlcv_updater import OHLCVUpdater
 from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
 from tools.logging.logging_util import get_logger
@@ -69,38 +61,8 @@ class ExchangeManager(Initializable):
         self.traded_pairs = []
         self.time_frames = []
 
-        # user data consumer_producers
-        self.orders_consumer: OrdersConsumer = OrdersConsumer(self)
-        self.balance_consumer: BalanceConsumer = BalanceConsumer(self)
-
-        # exchange data consumer_producers
-        self.ohlcv_consumer_producer: OHLCVConsumerProducers = OHLCVConsumerProducers(self)
-        self.order_book_consumer_producer: OrderBookConsumerProducers = OrderBookConsumerProducers(self)
-        self.ticker_consumer_producer: TickerConsumerProducers = TickerConsumerProducers(self)
-        self.recent_trade_consumer_producer: RecentTradeConsumerProducers = RecentTradeConsumerProducers(self)
-
-        # exchange data producer
-        self.orders_updater_producer: OrderUpdater = OrderUpdater(self, self.recent_trade_consumer_producer.producers)
-        self.orders_updater_producer.producer.add_consumer(self.orders_consumer)
-        self.ohlcv_updater_producer: OHLCVUpdater = OHLCVUpdater(self)
-
     async def initialize_impl(self):
         await self.create_exchanges()
-
-    async def start_consumers(self):
-        # user data consumer_producers
-        await self.orders_consumer.run()
-        await self.balance_consumer.run()
-
-        # exchange data consumer_producers
-        await self.ohlcv_consumer_producer.run()
-        await self.order_book_consumer_producer.run()
-        await self.ticker_consumer_producer.run()
-        await self.recent_trade_consumer_producer.run()
-
-        # exchange data producer
-        await self.ohlcv_updater_producer.run()
-        await self.orders_updater_producer.run()
 
     def register_trader(self, trader):
         self.trader = trader
@@ -142,8 +104,6 @@ class ExchangeManager(Initializable):
             self._set_config_traded_pairs()
 
         self.exchange_dispatcher = ExchangeDispatcher(self.config, self)
-
-        await self.start_consumers()
 
         self.is_ready = True
 

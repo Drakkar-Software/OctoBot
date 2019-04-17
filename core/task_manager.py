@@ -126,6 +126,10 @@ class TaskManager:
         for exchange in self.octobot.exchange_factory.exchanges_list.values():
             stop_coroutines.append(exchange.stop())
 
+        for task in asyncio.all_tasks():
+            task.cancel()
+
+        self.async_loop.close()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         asyncio.run(get_gather_wrapper(stop_coroutines))

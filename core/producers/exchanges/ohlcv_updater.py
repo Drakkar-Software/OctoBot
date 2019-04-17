@@ -20,7 +20,7 @@ from typing import Dict
 
 from backtesting import backtesting_enabled, BacktestingEndedException
 from config import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPING_TIME
-from core.consumers_producers.producers import ExchangeProducer
+from core.producers import ExchangeProducer
 
 
 class OHLCVUpdaterProducer(ExchangeProducer):
@@ -32,7 +32,7 @@ class OHLCVUpdaterProducer(ExchangeProducer):
     async def send(self, data):
         self.refreshed_times += 1
         self.last_update = time.time()
-        await super().send(data)
+        await super().send(data=data)
 
 
 class OHLCVUpdater(ExchangeProducer):

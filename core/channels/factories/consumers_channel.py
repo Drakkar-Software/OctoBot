@@ -14,43 +14,35 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from typing import Dict, ValuesView
+from typing import Dict
 
-from core.consumers_producers.consumer import Consumer
-from core.consumers_producers.producers import Producer
+from core.consumer import Consumer
+from core.producers import Producer
 
 """
-A ConsumersProducers is an equivalent of a big dispatcher, its handles data from multiple subscribed source 
-from multiple consumer queues. It will then dispatch the data through multiple producers.
+A ConsumerProducer aggregates the data from multiple consumers queue to one final producer.
 """
 
 
-class ConsumersProducers:
+class ConsumersProducer:
     def __init__(self):
-        self.producers: Dict[Producer] = {}
+        self.producer: Producer = None
         self.consumers: Dict[Consumer] = {}
 
     async def start(self):
         for consumer in [consumer.values() for consumer in self.consumers.values()]:
             await consumer.start()
-        for producer in [producer.values() for producer in self.producers.values()]:
-            await producer.start()
+        await self.producer.start()
 
     async def stop(self):
         for consumer in [consumer.values() for consumer in self.consumers.values()]:
             await consumer.stop()
-        for producer in [producer.values() for producer in self.producers.values()]:
-            await producer.stop()
+        await self.producer.stop()
 
     async def run(self):
         for consumer in [consumer.values() for consumer in self.consumers.values()]:
             await consumer.run()
-        for producer in [producer.values() for producer in self.producers.values()]:
-            await producer.run()
-
-    def get_consumer_queue(self) -> ValuesView:
-        return self.consumers.values()
+        await self.producer.run()
 
     def subscribe_to_producer(self, consumer: Consumer, **kwargs):
-        for producer in [producer.values() for producer in self.producers.values()]:
-            producer.add_consumer(consumer)
+        self.producer.add_consumer(consumer)

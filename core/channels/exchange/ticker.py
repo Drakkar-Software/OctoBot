@@ -15,25 +15,25 @@
 #  License along with this library.
 from asyncio import CancelledError
 
-from core.consumers_producers.consumer import ExchangeConsumer
-from core.consumers_producers.consumer_producers import ConsumerProducers
-from core.consumers_producers.producers import ExchangeProducer
+from core.consumer import ExchangeConsumer
+from core.channels.factories import ConsumerProducers
+from core.producers import ExchangeProducer
 
 
-class OrderBookConsumerProducers(ConsumerProducers):
+class TickerConsumerProducers(ConsumerProducers):
     def __init__(self, exchange):
         super().__init__()
         self.exchange = exchange
-        self.consumer = OrderBookConsumer(exchange, self)
+        self.consumer = TickerConsumer(exchange, self)
 
     def subscribe_to_producer(self, consumer, symbol=None):
         if symbol not in self.producers:
-            self.producers[symbol] = OrderBookProducer(self.exchange)
+            self.producers[symbol] = TickerProducer(self.exchange)
 
         self.producers[symbol].add_consumer(consumer)
 
 
-class OrderBookProducer(ExchangeProducer):
+class TickerProducer(ExchangeProducer):
     def __init__(self, exchange):
         super().__init__(exchange)
 
@@ -44,19 +44,16 @@ class OrderBookProducer(ExchangeProducer):
         await self.send(True)  # TODO
 
 
-class OrderBookConsumer(ExchangeConsumer):
-    SYMBOL = "SYMBOL"
-    ORDER_BOOK = "ORDER_BOOK"
-
-    def __init__(self, exchange, order_book: OrderBookConsumerProducers):
+class TickerConsumer(ExchangeConsumer):
+    def __init__(self, exchange, ticker: TickerConsumerProducers):
         super().__init__(exchange)
-        self.order_book: OrderBookConsumerProducers = order_book
+        self.ticker: TickerConsumerProducers = ticker
 
-    async def perform(self, symbol, order_book):
+    async def perform(self, symbol, ticker):
         try:
-            if symbol in self.order_book.producers:  # and symbol_data.order_book_is_initialized()
-                self.exchange.get_symbol_data_from_pair(symbol).update_order_book(order_book)
-                await self.order_book.producers[symbol].receive()
+            if symbol in self.ticker.producers:  # and price_ticker_is_initialized
+                self.exchange.get_symbol_data(symbol).update_symbol_price_ticker(ticker)
+                await self.ticker.producers[symbol].receive()
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
@@ -66,11 +63,6 @@ class OrderBookConsumer(ExchangeConsumer):
     async def consume(self):
         while not self.should_stop:
             data = await self.queue.get()
-            await self.perform(data[self.SYMBOL], data[self.ORDER_BOOK])
+            await self.perform(data["pair"],
+                               data["ticker"])
 
-    @staticmethod
-    def create_feed(symbol, order_book):
-        return {
-            OrderBookConsumer.SYMBOL: symbol,
-            OrderBookConsumer.ORDER_BOOK: order_book
-        }

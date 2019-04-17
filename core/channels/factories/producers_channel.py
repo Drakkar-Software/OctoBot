@@ -13,35 +13,38 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import asyncio
 
-from core.consumers_producers.consumer import Consumer
-from core.consumers_producers.producers import Producer
+from typing import Dict
+
+from core.consumer import Consumer
+from core.producers import Producer
 
 """
-A ConsumerProducer collects, transform and move the data into another queue
+A ConsumerProducers is an equivalent of a dispatcher, it handles data from one/multiple subscribed source/s 
+and dispatch to multiple producers
 """
 
 
-class ConsumerProducer:
+class ConsumerProducers:
     def __init__(self):
-        self.producer: Producer = None
+        self.producers: Dict[Producer] = {}
         self.consumer: Consumer = None
 
     async def start(self):
         await self.consumer.start()
-        await self.producer.start()
+        for producer in [producer.values() for producer in self.producers.values()]:
+            await producer.start()
 
     async def stop(self):
         await self.consumer.stop()
-        await self.producer.stop()
+        for producer in [producer.values() for producer in self.producers.values()]:
+            await producer.stop()
 
     async def run(self):
         await self.consumer.run()
-        await self.producer.run()
-
-    def get_consumer_queue(self) -> asyncio.Queue:
-        return self.consumer.queue
+        for producer in [producer.values() for producer in self.producers.values()]:
+            await producer.run()
 
     def subscribe_to_producer(self, consumer: Consumer, **kwargs):
-        self.producer.add_consumer(consumer)
+        for producer in [producer.values() for producer in self.producers.values()]:
+            producer.add_consumer(consumer)

@@ -17,7 +17,7 @@
 """
 Handle or frequently update balance changes
 """
-from core.consumers_producers.consumer import ExchangeConsumer
+from core.consumer import ExchangeConsumer
 
 
 class BalanceConsumer(ExchangeConsumer):
@@ -25,8 +25,4 @@ class BalanceConsumer(ExchangeConsumer):
         super().__init__(exchange)
 
     async def consume(self):
-        pass
-
-    @staticmethod
-    def create_feed(**kwargs):
         pass
