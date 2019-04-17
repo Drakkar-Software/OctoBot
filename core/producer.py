@@ -14,53 +14,52 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
-from abc import ABCMeta, abstractmethod
-from asyncio import Queue
+from abc import ABCMeta
+from asyncio import Task
+from queue import Queue
+from typing import List
 
 from tools import get_logger
 
 
-class Consumer:
+class Producer:
     __metaclass__ = ABCMeta
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__name__)
 
-        self.queue: Queue = Queue()
-        self.consume_task = None
-        self.should_stop = False
+        # List of consumer queues to be fill
+        self.consumer_queues: List[Queue] = []
+        self.produce_task: Task = None
+        self.should_stop: bool = False
 
-    @abstractmethod
-    async def consume(self):
+    async def send(self, **kwargs):
         """
-        Should implement self.queue.get() in a while loop
-
-        while not self.should_close:
-            await self.queue.get()
-
+        Send to each consumer data though its queue
+        :param data:
         :return:
         """
-        raise NotImplementedError("consume not implemented")
+        for queue in self.consumer_queues:
+            await queue.put(kwargs)
 
-    @staticmethod
-    def create_feed(**kwargs):
+    async def receive(self, **kwargs):
         """
-        Create the expected receive data structure
-        :param kwargs:
+        Receive notification that new data should be sent implementation
+        When nothing should be done on data : self.send()
         :return:
         """
-        raise NotImplementedError("create_feed not implemented")
+        pass
 
     async def start(self):
         """
-        Should be implemented for consumer's non-triggered tasks
+        Should be implemented for producer's non-triggered tasks
         :return:
         """
         pass
 
     async def perform(self, **kwargs):
         """
-        Should implement consumer's non-triggered tasks
+        Should implement producer's non-triggered tasks
         Can be use to force producer to perform tasks
         :return:
         """
@@ -74,20 +73,11 @@ class Consumer:
         self.should_stop = True
 
     def create_task(self):
-        self.consume_task = asyncio.create_task(self.consume())
+        self.produce_task = asyncio.create_task(self.receive())
+
+    def add_consumer(self, consumer):
+        self.consumer_queues.append(consumer)
 
     async def run(self):
         await self.start()
         self.create_task()
-
-
-class ExchangeConsumer(Consumer):
-    __metaclass__ = ABCMeta
-
-    def __init__(self, exchange):
-        super().__init__()
-        self.exchange = exchange
-
-    @abstractmethod
-    async def consume(self):
-        raise NotImplementedError("consume not implemented")

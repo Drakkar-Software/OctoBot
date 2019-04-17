@@ -14,11 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from core.consumers_producers.producers import Producer
-from core.exchange.ohlcv import OHLCVConsumer
-from core.exchange.order_book import OrderBookConsumer
-from core.exchange.recent_trade import RecentTradeConsumer
-from core.exchange.ticker import TickerConsumer
+from core.producers import Producer
 from tools import get_logger
 
 
@@ -34,33 +30,32 @@ class WebsocketCallBack(Producer):
 
 class OrderBookCallBack(WebsocketCallBack):
     async def l2_order_book_callback(self, _, pair, book, timestamp):
-        await self.send(
-            OrderBookConsumer.create_feed(pair,
-                                          self.parent.convert_into_ccxt_full_order_book(
-                                              pair,
-                                              book,
-                                              timestamp)))
+        await self.send(pair=pair,
+                        order_book=self.parent.convert_into_ccxt_full_order_book(
+                            pair,
+                            book,
+                            timestamp))
 
 
 class RecentTradesCallBack(WebsocketCallBack):
     async def recent_trades_callback(self, _, pair, order_id, timestamp, side, amount, price):
-        await self.send(RecentTradeConsumer.create_feed(pair,
-                                                        self.parent.convert_into_ccxt_recent_trade(
-                                                            pair,
-                                                            side,
-                                                            amount,
-                                                            price,
-                                                            timestamp)))
+        await self.send(pair=pair,
+                        recent_trade=self.parent.convert_into_ccxt_recent_trade(
+                            pair,
+                            side,
+                            amount,
+                            price,
+                            timestamp))
 
 
 class TickersCallBack(WebsocketCallBack):
     async def tickers_callback(self, _, pair, bid, ask, timestamp):
-        await self.send(TickerConsumer.create_feed(pair,
-                                                   self.parent.convert_into_ccxt_price_ticker(
-                                                       pair,
-                                                       bid,
-                                                       ask,
-                                                       timestamp)))
+        await self.send(pair=pair,
+                        ticker=self.parent.convert_into_ccxt_price_ticker(
+                            pair,
+                            bid,
+                            ask,
+                            timestamp))
 
 
 class OHLCVCallBack(WebsocketCallBack):
@@ -71,8 +66,6 @@ class OHLCVCallBack(WebsocketCallBack):
 
     async def ohlcv_callback(self, data=None):
         for symbol in data:
-            await self.send(OHLCVConsumer.create_feed(self.time_frame,
-                                                      symbol,
-                                                      self.parent.convert_into_ccxt_ohlcv(
-                                                          data,
-                                                          symbol)))
+            await self.send(pair=symbol,
+                            time_frame=self.time_frame,
+                            candle=self.parent.convert_into_ccxt_ohlcv(data[symbol]))

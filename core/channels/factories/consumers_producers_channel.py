@@ -13,41 +13,40 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import asyncio
 
 from typing import Dict
 
-from core.consumers_producers.consumer import Consumer
-from core.consumers_producers.producers import Producer
+from core.consumer import Consumer
+from core.producers import Producer
 
 """
-A ConsumerProducers is an equivalent of a dispatcher, it handles data from one/multiple subscribed source/s 
-and dispatch to multiple producers
+A ConsumersProducers is an equivalent of a big dispatcher, its handles data from multiple subscribed source 
+from multiple consumer queues. It will then dispatch the data through multiple producers.
 """
 
 
-class ConsumerProducers:
+class ConsumersProducers:
     def __init__(self):
         self.producers: Dict[Producer] = {}
-        self.consumer: Consumer = None
+        self.consumers: Dict[Consumer] = {}
 
     async def start(self):
-        await self.consumer.start()
+        for consumer in [consumer.values() for consumer in self.consumers.values()]:
+            await consumer.start()
         for producer in [producer.values() for producer in self.producers.values()]:
             await producer.start()
 
     async def stop(self):
-        await self.consumer.stop()
+        for consumer in [consumer.values() for consumer in self.consumers.values()]:
+            await consumer.stop()
         for producer in [producer.values() for producer in self.producers.values()]:
             await producer.stop()
 
     async def run(self):
-        await self.consumer.run()
+        for consumer in [consumer.values() for consumer in self.consumers.values()]:
+            await consumer.run()
         for producer in [producer.values() for producer in self.producers.values()]:
             await producer.run()
-
-    def get_consumer_queue(self) -> asyncio.Queue:
-        return self.consumer.queue
 
     def subscribe_to_producer(self, consumer: Consumer, **kwargs):
         for producer in [producer.values() for producer in self.producers.values()]:

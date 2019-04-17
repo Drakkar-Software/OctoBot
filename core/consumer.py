@@ -14,51 +14,45 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
-from abc import ABCMeta
-from typing import List
+from abc import ABCMeta, abstractmethod
+from asyncio import Queue, Task
 
-from core.consumers_producers.consumer import Consumer
 from tools import get_logger
 
 
-class Producer:
+class Consumer:
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, queue: Queue):
         self.logger = get_logger(self.__class__.__name__)
 
-        # List of consumer queues to be fill
-        self.consumer_queues: List[Consumer] = []
-        self.produce_task = None
-        self.should_stop = False
+        self.queue: Queue = queue
+        self.consume_task: Task = None
+        self.should_stop: bool = False
 
-    async def send(self, **kwargs):
+    async def consume(self):
         """
-        Send to each consumer data though its queue
-        :param data:
+        Should implement self.queue.get() in a while loop
+
+        while not self.should_stop:
+            await self.queue.get()
+
         :return:
         """
-        for consumer in self.consumer_queues:
-            await consumer.queue.put(**kwargs)
-
-    async def receive(self, **kwargs):
-        """
-        Receive notification that new data should be sent implementation
-        When nothing should be done on data : self.send()
-        :return:
-        """
-        pass
+        while not self.should_stop:
+            await self.perform(data=(await self.queue.get()))
 
     async def start(self):
         """
-        Should be implemented for producer's non-triggered tasks
+        Should be implemented for consumer's non-triggered tasks
         :return:
         """
         pass
 
+    @abstractmethod
     async def perform(self, **kwargs):
         """
-        Should implement producer's non-triggered tasks
+        Should implement consumer's non-triggered tasks
         Can be use to force producer to perform tasks
         :return:
         """
@@ -72,19 +66,8 @@ class Producer:
         self.should_stop = True
 
     def create_task(self):
-        self.produce_task = asyncio.create_task(self.receive())
-
-    def add_consumer(self, consumer):
-        self.consumer_queues.append(consumer)
+        self.consume_task = asyncio.create_task(self.consume())
 
     async def run(self):
         await self.start()
         self.create_task()
-
-
-class ExchangeProducer(Producer):
-    __metaclass__ = ABCMeta
-
-    def __init__(self, exchange):
-        super().__init__()
-        self.exchange = exchange
