@@ -28,20 +28,21 @@ class RecentTradeConsumerProducers(ConsumerProducers):
 
     def subscribe_to_producer(self, consumer, symbol=None):
         if symbol not in self.producers:
-            self.producers[symbol] = RecentTradeProducer(self.exchange)
+            self.producers[symbol] = RecentTradeProducer(self.exchange, symbol)
 
         self.producers[symbol].add_consumer(consumer)
 
 
 class RecentTradeProducer(ExchangeProducer):
-    def __init__(self, exchange):
+    def __init__(self, exchange, symbol):
         super().__init__(exchange)
+        self.symbol = symbol
 
-    async def receive(self):
-        await self.perform()
+    async def receive(self, recent_trade):
+        await self.perform(recent_trade)
 
-    async def perform(self):
-        await self.send(True)  # TODO
+    async def perform(self, recent_trade):
+        await super().send(recent_trade=recent_trade)
 
 
 class RecentTradeConsumer(ExchangeConsumer):
@@ -56,7 +57,7 @@ class RecentTradeConsumer(ExchangeConsumer):
         try:
             if symbol in self.recent_trade.producers:  # and symbol_data.recent_trades_are_initialized()
                 self.exchange.get_symbol_data_from_pair(symbol).add_new_recent_trades(recent_trade)
-                await self.recent_trade.producers[symbol].receive()
+                await self.recent_trade.producers[symbol].receive(symbol, recent_trade)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
