@@ -32,14 +32,14 @@ class Producer:
         self.produce_task = None
         self.should_stop = False
 
-    async def send(self, data):
+    async def send(self, **kwargs):
         """
         Send to each consumer data though its queue
         :param data:
         :return:
         """
         for consumer in self.consumer_queues:
-            await consumer.queue.put(data)
+            await consumer.queue.put(**kwargs)
 
     async def receive(self, **kwargs):
         """
@@ -88,6 +88,3 @@ class ExchangeProducer(Producer):
     def __init__(self, exchange):
         super().__init__()
         self.exchange = exchange
-
-    async def send(self, data):
-        await super().send(data)
