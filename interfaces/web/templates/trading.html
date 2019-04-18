@@ -48,7 +48,7 @@
 <div class="card">
     <div class="card-header">
         <h1>Open orders
-            <button type="button" class="btn btn-outline-danger waves-effect float-right" id="cancel_all_orders" update-url="{{ url_for('api.orders', action='cancel_all_orders') }}"
+            <button type="button" class="btn btn-outline-danger waves-effect float-right" id="cancel_all_orders" update-url="{{ url_for('api.orders', action='cancel_orders') }}"
                     {{ "disabled" if not(real_open_orders or simulated_open_orders) }}>
                 <i id="cancel_all_icon" class="fas fa-ban"></i> Cancel all
             </button>
@@ -94,10 +94,10 @@
         </button>
       </div>
       <div class="modal-body text-center">
-          <h4>Cancel all open orders ?</h4>
+          <h4>Cancel all <strong id="ordersCount"></strong> displayed orders ?</h4>
       </div>
       <div class="modal-footer">
-        <button type="button" id="confirmCancelAllOrders" class="btn btn-danger" data-dismiss="modal"><i class="fas fa-ban"></i> Cancel all</button>
+        <button type="button" id="confirmCancelAllOrders" class="btn btn-danger" data-dismiss="modal"><i class="fas fa-ban"></i> Cancel orders</button>
         <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
       </div>
     </div>
