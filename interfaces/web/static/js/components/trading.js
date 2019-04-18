@@ -57,9 +57,19 @@ function update_pairs_colors(){
     })
 }
 
+function get_displayed_orders_desc(){
+    const orders_desc = [];
+    ordersDataTable.rows({filter: 'applied'}).data().each(function (value) {
+        orders_desc.push($(value[cancelButtonIndex]).attr("order_desc"));
+    });
+    return orders_desc;
+}
+
 function handle_cancel_buttons() {
     $("#cancel_all_orders").click(function () {
-        cancel_after_confirm($('#CancelAllOrdersModal'), null, $(this).attr(update_url_attr), true);
+        $("#ordersCount").text(ordersDataTable.rows({filter: 'applied'}).data().length);
+        const to_cancel_orders = get_displayed_orders_desc();
+        cancel_after_confirm($('#CancelAllOrdersModal'), to_cancel_orders, $(this).attr(update_url_attr), true);
     });
     add_cancel_individual_orders_button();
 }
@@ -121,7 +131,7 @@ function orders_request_failure_callback(updated_data, update_url, dom_root_elem
 
 function reload_orders(){
     $("#openOrderTable").load(location.href + " #openOrderTable",function(){
-        $('#open_orders_datatable').DataTable({
+        ordersDataTable = $('#open_orders_datatable').DataTable({
             "paging":   false,
         });
         add_cancel_individual_orders_button();
@@ -138,12 +148,15 @@ function reload_orders(){
     });
 }
 
+const cancelButtonIndex = 8;
+let ordersDataTable = null;
+
 $(document).ready(function() {
     update_pairs_colors();
     $(".watched_element").each(function () {
         $(this).click(addOrRemoveWatchedSymbol);
     });
-    $('#open_orders_datatable').DataTable({
+    ordersDataTable = $('#open_orders_datatable').DataTable({
         "paging":   false,
     });
     handle_cancel_buttons();

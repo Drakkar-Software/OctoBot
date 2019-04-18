@@ -122,13 +122,13 @@ def get_open_orders():
     return real_open_orders, simulated_open_orders
 
 
-def cancel_order(order_desc):
-    if order_desc:
+def cancel_orders(orders_desc):
+    removed_count = 0
+    if orders_desc:
         for trader in get_traders():
             if trader.is_enabled():
-                if get_bot().run_in_main_asyncio_loop(trader.cancel_order_using_description(order_desc)):
-                    return True
-    return False
+                removed_count += get_bot().run_in_main_asyncio_loop(trader.cancel_orders_using_description(orders_desc))
+    return removed_count
 
 
 def cancel_all_open_orders(currency=None):
