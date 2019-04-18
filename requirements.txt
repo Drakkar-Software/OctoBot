@@ -6,9 +6,6 @@ python-binance
 ccxt
 tulipy
 
-## Services
-notifiers
-
 # Reddit
 praw
 
