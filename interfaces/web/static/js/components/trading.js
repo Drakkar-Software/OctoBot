@@ -59,26 +59,29 @@ function update_pairs_colors(){
 
 function handle_cancel_buttons() {
     $("#cancel_all_orders").click(function () {
-        cancel_after_confirm($('#CancelAllOrdersModal'), null, $(this).attr(update_url_attr));
+        cancel_after_confirm($('#CancelAllOrdersModal'), null, $(this).attr(update_url_attr), true);
     });
     add_cancel_individual_orders_button();
 }
 
-function cancel_after_confirm(modalElement, data, update_url){
+function cancel_after_confirm(modalElement, data, update_url, disable_cancel_buttons=false){
     modalElement.modal("toggle");
     const confirmButton = modalElement.find(".btn-danger");
     confirmButton.off("click");
     modalElement.keypress(function(e) {
         if(e.which === 13) {
-            handle_confirm(modalElement, confirmButton, data, update_url);
+            handle_confirm(modalElement, confirmButton, data, update_url, disable_cancel_buttons);
         }
     });
     confirmButton.click(function () {
-        handle_confirm(modalElement, confirmButton, data, update_url);
+        handle_confirm(modalElement, confirmButton, data, update_url, disable_cancel_buttons);
     });
 }
 
-function handle_confirm(modalElement, confirmButton, data, update_url){
+function handle_confirm(modalElement, confirmButton, data, update_url, disable_cancel_buttons){
+    if (disable_cancel_buttons){
+        disable_cancel_all_buttons();
+    }
     send_and_interpret_bot_update(data, update_url, null, orders_request_success_callback, orders_request_failure_callback);
     modalElement.unbind("keypress");
     modalElement.modal("hide");
@@ -89,6 +92,16 @@ function add_cancel_individual_orders_button(){
         $(this).click(function () {
             cancel_after_confirm($('#CancelOrderModal'), $(this).attr("order_desc"), $(this).attr(update_url_attr));
         });
+    });
+}
+
+function disable_cancel_all_buttons(){
+    $("#cancel_all_orders").prop("disabled",true);
+    const cancelIcon = $("#cancel_all_icon");
+    cancelIcon.removeClass("fas fa-ban");
+    cancelIcon.addClass("fa fa-spinner fa-spin");
+    $("button[action=cancel_order]").each(function () {
+        $(this).prop("disabled",true);
     });
 }
 
@@ -112,8 +125,15 @@ function reload_orders(){
             "paging":   false,
         });
         add_cancel_individual_orders_button();
+        const cancelIcon = $("#cancel_all_icon");
+        if(cancelIcon.hasClass("fa-spinner")){
+            cancelIcon.removeClass("fa fa-spinner fa-spin");
+            cancelIcon.addClass("fas fa-ban");
+        }
         if ($("button[action=cancel_order]").length === 0){
-            $("#cancel_all_orders").prop("disabled",true);
+            $("#cancel_all_orders").prop("disabled", true);
+        }else{
+            $("#cancel_all_orders").prop("disabled", false);
         }
     });
 }
