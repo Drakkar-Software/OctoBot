@@ -363,8 +363,7 @@ class Trader(Initializable):
             # debug purpose
             profitability_str = PrettyPrinter.portfolio_profitability_pretty_print(profitability,
                                                                                    profitability_percent,
-                                                                                   self.get_trades_manager().
-                                                                                   get_reference())
+                                                                                   self.get_reference_market())
 
             self.logger.debug(f"Current portfolio profitability : {profitability_str}")
 
@@ -387,6 +386,9 @@ class Trader(Initializable):
                                              profitability_percent,
                                              profitability_diff,
                                              profitability_activated)
+
+    def get_reference_market(self):
+        return self.get_trades_manager().get_reference()
 
     def get_open_orders(self, symbol=None):
         if symbol is None:
