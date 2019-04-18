@@ -15,7 +15,6 @@
 #  License along with this library.
 
 from .service_creator import *
-from .notifier_service import *
 from .reddit_service import *
 from .telegram_service import *
 from .twitter_service import *

@@ -21,7 +21,7 @@ from config import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, \
     CONFIG_SERVICE_INSTANCE, CONFIG_TWITTER, CONFIG_TELEGRAM, CONFIG_NOTIFICATION_PRICE_ALERTS, \
     CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE, CONFIG_WEB
 from interfaces.web import add_notification
-from services import TwitterService, TelegramService, WebService, NotifierServiceFactory
+from services import TwitterService, TelegramService, WebService
 from tools.logging.logging_util import get_logger
 from tools.pretty_printer import PrettyPrinter
 
@@ -54,10 +54,6 @@ class Notification:
             if italic_markdown:
                 message_markdown = f"_{message_markdown}_"
 
-            # notifier
-            for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
-                await self.notifier_notification_factory(notifier, message)
-
             # twitter
             await self.twitter_notification_factory(message, error_on_failure)
 
@@ -65,21 +61,6 @@ class Notification:
             await self.telegram_notification_factory(message_markdown, markdown=True)
         except Exception as e:
             self.logger.error(f"Failed to notify all : {e}")
-
-    def notifier_notification_available(self, notifier, key=None):
-        return self.enabled(key) and \
-               notifier.get_type() in self.notification_type and \
-               notifier.is_setup_correctly(self.config)
-
-    async def notifier_notification_factory(self, notifier, message):
-        if self.notifier_notification_available(notifier):
-            result = await notifier.notify(message)
-            if not result.errors:
-                self.logger.info(f"{notifier.get_provider_name()} notifier message sent")
-            else:
-                self.logger.warning(f"{notifier.get_provider_name()} notifier message failed : {result.errors[-1]}")
-        else:
-            self.logger.debug("Notifier disabled")
 
     def telegram_notification_available(self, key=None):
         return self.enabled(key) and \
@@ -161,11 +142,6 @@ class Notification:
         if self.telegram_notification_available(notification_type):
             await self.telegram_notification_factory(content, markdown=markdown)
 
-    async def send_notifier_notification_if_necessary(self, content, notification_type=None):
-        for notifier in NotifierServiceFactory.get_notifiers_instance(self.config):
-            if self.notifier_notification_available(notifier, notification_type):
-                await self.notifier_notification_factory(notifier, content)
-
     def _service_instance_is_present(self, service_type):
         return service_type in self.config[CONFIG_CATEGORY_SERVICES] and \
                CONFIG_SERVICE_INSTANCE in self.config[CONFIG_CATEGORY_SERVICES][service_type]
@@ -186,8 +162,6 @@ class EvaluatorNotification(Notification):
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, "STATE CHANGED", notify_content,
                                                       CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        await self.send_notifier_notification_if_necessary(notify_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
-
         return self
 
     async def notify_alert(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
@@ -207,8 +181,6 @@ class EvaluatorNotification(Notification):
 
         await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
                                                       CONFIG_NOTIFICATION_PRICE_ALERTS)
-
-        await self.send_notifier_notification_if_necessary(alert_content, CONFIG_NOTIFICATION_PRICE_ALERTS)
 
         return self
 
@@ -242,8 +214,6 @@ class OrdersNotification(Notification):
 
             await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
                                                           CONFIG_NOTIFICATION_TRADES)
-
-            await self.send_notifier_notification_if_necessary(content, CONFIG_NOTIFICATION_TRADES)
 
     async def notify_end(self,
                          order_filled,
