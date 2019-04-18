@@ -1,5 +1,37 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+Changelog for 0.3.3-beta
+====================
+*Released date : April 18 2019*
+
+# Concerned issues :
+    #425 [Telemetry] Create telemetry deamon
+    #731 [Trader] Allow to start from the previous execution last move
+    #734 [Order] order_type is not consistent
+    #740 [RunInAsyncMainLoop] problem with exchange commands
+    #741 [WebInterface] add possibility to cancel orders
+    #747 [Backtesting] prepare for multiple data formats
+    #749 [Backtesting] impossible to display candles on specific timeframe from web interface
+    #750 [OrderCreator] error when computing order price
+    #751 [Backtesting] problem when saving config from web interface on backtesting
+    #752 [WebInterface] candles display bug
+    #756 [OrderManager] call_order_update_callback not called when exception in _update_order_status
+    #785 [Metrics] community metrics display
+    #792 [Web interface][Configuration] force display of parameters that are not in config.json
+
+# New features :
+    - Cancel orders from web interface
+    - Community metrics though optionnal and anonymous telemetry
+    - Added bot trader state save and recovery
+    - Added telegram commands
+    
+
+# Bug fixes :
+    - Fixed several bugs related to traders
+    - Fixed an exchange timeout bug
+    - Fixed web interface bugs
+    - Fixed order creator bugs
+
 Changelog for 0.3.2-beta
 ====================
 *Released date : March 10 2019*

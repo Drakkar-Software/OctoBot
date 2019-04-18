@@ -1,4 +1,4 @@
-# OctoBot [0.3.2-beta](https://github.com/Drakkar-Software/OctoBot/tree/dev/docs/CHANGELOG.md)
+# OctoBot [0.3.3-beta](https://github.com/Drakkar-Software/OctoBot/tree/dev/docs/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
 [![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/overview/dev) 
 [![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
