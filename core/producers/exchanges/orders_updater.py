@@ -16,9 +16,6 @@
 from asyncio import CancelledError
 
 from backtesting import backtesting_enabled
-from core.consumer import ExchangeConsumer
-from core.channels.factories import ConsumersProducer
-from core.producers import ExchangeProducer
 
 
 class OrderUpdater(ConsumersProducer):

@@ -75,8 +75,10 @@ class Producer:
     def create_task(self):
         self.produce_task = asyncio.create_task(self.receive())
 
-    def add_consumer(self, consumer):
-        self.consumer_queues.append(consumer)
+    def new_consumer(self, size=0):
+        consumer_queue = Queue(size)
+        self.consumer_queues.append(consumer_queue)
+        return consumer_queue
 
     async def run(self):
         await self.start()

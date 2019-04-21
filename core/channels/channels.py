@@ -13,31 +13,27 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from typing import Dict
 
-from core.consumer import Consumer
-from core.producer import Producer
+from core.channels.channel import Channel
 
 """
-A ConsumerProducer collects, transform and move the data into another queue
+Channels ***
 """
 
 
-class Channel:
+class Channels:
     def __init__(self):
-        self.producer: Producer = None
-        self.consumer: Consumer = None
+        self.channels: Dict[Channel] = {}
 
     async def start(self):
-        await self.consumer.start()
-        await self.producer.start()
+        for channel in [channel.values() for channel in self.channels.values()]:
+            await channel.start()
 
     async def stop(self):
-        await self.consumer.stop()
-        await self.producer.stop()
+        for channel in [channel.values() for channel in self.channels.values()]:
+            await channel.stop()
 
     async def run(self):
-        await self.consumer.run()
-        await self.producer.run()
-
-    def subscribe_to_producer(self, consumer: Consumer, **kwargs):
-        self.producer.add_consumer(consumer)
+        for channel in [channel.values() for channel in self.channels.values()]:
+            await channel.run()

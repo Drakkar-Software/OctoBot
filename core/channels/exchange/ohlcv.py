@@ -15,50 +15,34 @@
 #  License along with this library.
 from asyncio import CancelledError
 
-from core.consumer import ExchangeConsumer
-from core.channels.factories import ConsumerProducers
-from core.producers import ExchangeProducer
+from core.channels.factories.producers_channel import ProducersChannel
+from core.consumer import Consumer
+from core.producer import Producer
 
 
-class OHLCVConsumerProducers(ConsumerProducers):
-    def __init__(self, exchange):
+class OHLCVProducer(Producer):
+    def __init__(self):
         super().__init__()
-        self.exchange = exchange
-        self.consumer = OHLCVConsumer(exchange, self)
-
-    def subscribe_to_producer(self, consumer, time_frame=None, symbol=None):
-        if symbol not in self.producers:
-            self.producers[symbol] = {}
-
-        if time_frame not in self.producers:
-            self.producers[symbol][time_frame] = OHLCVProducer(self.exchange)
-
-        self.producers[symbol][time_frame].add_consumer(consumer)
-
-
-class OHLCVProducer(ExchangeProducer):
-    def __init__(self, exchange):
-        super().__init__(exchange)
 
     async def receive(self):
         await self.perform()
 
     async def perform(self):
-        await self.send(True)  # TODO
+        await self.send()  # TODO
 
 
-class OHLCVConsumer(ExchangeConsumer):
-    def __init__(self, exchange, ohlcv: OHLCVConsumerProducers):
-        super().__init__(exchange)
+class OHLCVConsumer(Consumer):
+    def __init__(self, queue, ohlcv):
+        super().__init__(queue)
         self.ohlcv = ohlcv
 
     async def perform(self, time_frame, symbol, candle):
         try:
             if symbol in self.ohlcv.producers and time_frame in self.ohlcv.producers[symbol]:
-                self.exchange.uniformize_candles_if_necessary(candle)
-                self.exchange.get_symbol_data(symbol).update_symbol_candles(time_frame,
-                                                                                      candle,
-                                                                                      replace_all=False)
+                self.ohlcv.exchange.uniformize_candles_if_necessary(candle)
+                self.ohlcv.exchange.get_symbol_data(symbol).update_symbol_candles(time_frame,
+                                                                                  candle,
+                                                                                  replace_all=False)
                 await self.ohlcv.producers[symbol][time_frame].receive()
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
@@ -72,3 +56,18 @@ class OHLCVConsumer(ExchangeConsumer):
             await self.perform(data["pair"],
                                data["time_frame"],
                                data["candle"])
+
+
+class OHLCVChannel(ProducersChannel):
+    def __init__(self, exchange):
+        super().__init__()
+        self.exchange = exchange
+
+    def new_consumer(self, time_frame=None, symbol=None) -> OHLCVConsumer:
+        if symbol not in self.producers:
+            self.producers[symbol] = {}
+
+        if time_frame not in self.producers:
+            self.producers[symbol][time_frame] = OHLCVProducer()
+
+        return OHLCVConsumer(self.producers[symbol][time_frame].new_consumer(), self)

@@ -17,12 +17,12 @@
 """
 Handle or frequently update balance changes
 """
-from core.consumer import ExchangeConsumer
+from core.channels.channel import Channel
 
 
-class BalanceConsumer(ExchangeConsumer):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+class BalanceConsumer(Channel):
+    def __init__(self):
+        super().__init__()
 
     async def consume(self):
         pass
