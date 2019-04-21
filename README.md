@@ -59,6 +59,16 @@ pip3 install -r requirements.txt
 python3 start.py -p install all
 ```
 
+#### [With python sources](https://github.com/Drakkar-Software/OctoBot/wiki/With-Python-only) (unix)
+- Install python3.7 (https://www.python.org/downloads/)
+```
+git clone git@github.com:Drakkar-Software/OctoBot.git && cd OctoBot
+cp ./config/default_config.json ./config.json
+pip3 install -r pre_requirements.txt
+pip3 install -r requirements.txt
+python3 start.py -p install all
+```
+
 More details in [wiki page](https://github.com/Drakkar-Software/OctoBot/wiki#installation) and it's done !
 
 ## Usage

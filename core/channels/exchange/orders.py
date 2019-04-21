@@ -13,12 +13,3 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from core.consumer import ExchangeConsumer
-
-
-class OrdersConsumer(ExchangeConsumer):
-    def __init__(self, exchange):
-        super().__init__(exchange)
-
-    async def consume(self):
-        pass

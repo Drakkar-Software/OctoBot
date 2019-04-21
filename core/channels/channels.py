@@ -13,27 +13,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from typing import Dict
-
-from core.channels.channel import Channel
-
-"""
-Channels ***
-"""
 
 
-class Channels:
-    def __init__(self):
-        self.channels: Dict[Channel] = {}
+class Channels(type):
+    _instances = {}
 
-    async def start(self):
-        for channel in [channel.values() for channel in self.channels.values()]:
-            await channel.start()
-
-    async def stop(self):
-        for channel in [channel.values() for channel in self.channels.values()]:
-            await channel.stop()
-
-    async def run(self):
-        for channel in [channel.values() for channel in self.channels.values()]:
-            await channel.run()
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Channels, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

@@ -15,14 +15,5 @@
 #  License along with this library.
 
 """
-Handle or frequently update balance changes
+Handles balance changes
 """
-from core.channels.channel import Channel
-
-
-class BalanceConsumer(Channel):
-    def __init__(self):
-        super().__init__()
-
-    async def consume(self):
-        pass
