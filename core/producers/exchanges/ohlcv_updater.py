@@ -20,7 +20,6 @@ from typing import Dict
 
 from backtesting import backtesting_enabled, BacktestingEndedException
 from config import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPING_TIME
-from core.producers import ExchangeProducer
 
 
 class OHLCVUpdaterProducer(ExchangeProducer):

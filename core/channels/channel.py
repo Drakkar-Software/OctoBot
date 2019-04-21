@@ -13,18 +13,17 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
 from typing import Dict
 
 from core.consumer import Consumer
-from core.producers import Producer
+from core.producer import Producer
 
 """
-A ConsumerProducer aggregates the data from multiple consumers queue to one final producer.
+A Channel ****
 """
 
 
-class ConsumersProducer:
+class Channel:
     def __init__(self):
         self.producer: Producer = None
         self.consumers: Dict[Consumer] = {}
@@ -32,17 +31,20 @@ class ConsumersProducer:
     async def start(self):
         for consumer in [consumer.values() for consumer in self.consumers.values()]:
             await consumer.start()
-        await self.producer.start()
+
+        if self.producer:
+            await self.producer.start()
 
     async def stop(self):
         for consumer in [consumer.values() for consumer in self.consumers.values()]:
             await consumer.stop()
-        await self.producer.stop()
+
+        if self.producer:
+            await self.producer.stop()
 
     async def run(self):
         for consumer in [consumer.values() for consumer in self.consumers.values()]:
             await consumer.run()
-        await self.producer.run()
 
-    def subscribe_to_producer(self, consumer: Consumer, **kwargs):
-        self.producer.add_consumer(consumer)
+        if self.producer:
+            await self.producer.run()

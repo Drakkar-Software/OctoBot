@@ -71,6 +71,7 @@ For more information have a look at the
 
 ## Exchanges
 [![Binance](../assets/binance-logo.png)](https://www.binance.com)
+[![Bitmex](../assets/bitmex-logo.png)](https://bitmex.com)
 [![Bitfinex](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
 [![Bitfinex](../assets/kucoin-logo.png)](https://www.kucoin.com)
 [![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
