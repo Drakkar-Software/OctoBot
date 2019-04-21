@@ -15,54 +15,61 @@
 #  License along with this library.
 from asyncio import CancelledError
 
-from core.consumer import ExchangeConsumer
-from core.channels.factories import ConsumerProducers
-from core.producers import ExchangeProducer
+from core.channels import CallbackType
+from core.channels.exchange.exchange_channel import ExchangeChannel
+from core.consumer import Consumer
+from core.producer import Producer
 
 
-class RecentTradeConsumerProducers(ConsumerProducers):
-    def __init__(self, exchange):
-        super().__init__()
-        self.exchange = exchange
-        self.consumer = RecentTradeConsumer(exchange, self)
+class RecentTradeProducer(Producer):
+    def __init__(self, channel: ExchangeChannel):
+        super().__init__(channel)
 
-    def subscribe_to_producer(self, consumer, symbol=None):
-        if symbol not in self.producers:
-            self.producers[symbol] = RecentTradeProducer(self.exchange, symbol)
-
-        self.producers[symbol].add_consumer(consumer)
-
-
-class RecentTradeProducer(ExchangeProducer):
-    def __init__(self, exchange, symbol):
-        super().__init__(exchange)
-        self.symbol = symbol
-
-    async def receive(self, recent_trade):
-        await self.perform(recent_trade)
-
-    async def perform(self, recent_trade):
-        await super().send(recent_trade=recent_trade)
-
-
-class RecentTradeConsumer(ExchangeConsumer):
-    def __init__(self, exchange, recent_trade: RecentTradeConsumerProducers):
-        super().__init__(exchange)
-        self.recent_trade: RecentTradeConsumerProducers = recent_trade
+    async def receive(self, symbol, recent_trade):
+        await self.perform(symbol, recent_trade)
 
     async def perform(self, symbol, recent_trade):
         try:
-            if symbol in self.recent_trade.producers:  # and symbol_data.recent_trades_are_initialized()
-                self.exchange.get_symbol_data(symbol).add_new_recent_trades(recent_trade)
-                await self.recent_trade.producers[symbol].receive(recent_trade)
+            if symbol in self.channel.consumers[symbol]:  # and symbol_data.recent_trades_are_initialized()
+                self.channel.exchange.get_symbol_data(symbol).add_new_recent_trades(recent_trade)
+                await self.send(symbol, recent_trade)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
             self.logger.error(f"exception when triggering update: {e}")
             self.logger.exception(e)
 
+    async def send(self, symbol, recent_trade):
+        for consumer in self.channel.get_consumers(symbol=symbol):
+            await consumer.queue.put({
+                "symbol": symbol,
+                "recent_trade": recent_trade
+            })
+
+
+class RecentTradeConsumer(Consumer):
+    def __init__(self, callback: CallbackType):
+        super().__init__(callback)
+
     async def consume(self):
         while not self.should_stop:
             data = await self.queue.get()
-            await self.perform(data["pair"],
-                               data["recent_trade"])
+            self.callback(symbol=data["symbol"], recent_trade=data["recent_trade"])
+
+
+class RecentTradeChannel(ExchangeChannel):
+    def __init__(self, exchange, symbol):
+        super().__init__(exchange)
+        self.symbol = symbol
+
+    def get_consumers(self, symbol):
+        if symbol not in self.consumers:
+            self.consumers[symbol] = {}
+
+        return self.consumers[symbol]
+
+    def new_consumer(self, callback: CallbackType, size=0, symbol=None):
+        # create dict and list if required
+        self.get_consumers(symbol=symbol)
+
+        self.consumers[symbol] = RecentTradeConsumer(callback)

@@ -13,6 +13,18 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from abc import ABCMeta
 
-class ChannelManager:
-    pass
+from core.channels.channel import Channel
+
+
+class ExchangeChannel(Channel):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, exchange):
+        super().__init__()
+        self.exchange = exchange
+
+    @classmethod
+    def get_name(cls):
+        return cls.__name__.replace('ExchangeChannel', '')

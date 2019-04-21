@@ -14,55 +14,63 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from asyncio import CancelledError
+from typing import Iterable
 
-from core.consumer import ExchangeConsumer
-from core.channels.factories import ConsumerProducers
-from core.producers import ExchangeProducer
-
-
-class TickerConsumerProducers(ConsumerProducers):
-    def __init__(self, exchange):
-        super().__init__()
-        self.exchange = exchange
-        self.consumer = TickerConsumer(exchange, self)
-
-    def subscribe_to_producer(self, consumer, symbol=None):
-        if symbol not in self.producers:
-            self.producers[symbol] = TickerProducer(self.exchange)
-
-        self.producers[symbol].add_consumer(consumer)
+from core.channels import CallbackType
+from core.channels.exchange.exchange_channel import ExchangeChannel
+from core.consumer import Consumer
+from core.producer import Producer
 
 
-class TickerProducer(ExchangeProducer):
-    def __init__(self, exchange):
-        super().__init__(exchange)
+class TickerProducer(Producer):
+    def __init__(self, channel: ExchangeChannel):
+        super().__init__(channel)
 
-    async def receive(self):
-        await self.perform()
-
-    async def perform(self):
-        await self.send(True)  # TODO
-
-
-class TickerConsumer(ExchangeConsumer):
-    def __init__(self, exchange, ticker: TickerConsumerProducers):
-        super().__init__(exchange)
-        self.ticker: TickerConsumerProducers = ticker
+    async def receive(self, symbol, ticker):
+        await self.perform(symbol, ticker)
 
     async def perform(self, symbol, ticker):
         try:
-            if symbol in self.ticker.producers:  # and price_ticker_is_initialized
-                self.exchange.get_symbol_data(symbol).update_symbol_price_ticker(ticker)
-                await self.ticker.producers[symbol].receive()
+            if symbol in self.channel.consumers[symbol]:  # and price_ticker_is_initialized
+                self.channel.exchange.get_symbol_data(symbol).update_symbol_price_ticker(ticker)
+                await self.send(symbol, ticker)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
             self.logger.error(f"exception when triggering update: {e}")
             self.logger.exception(e)
 
+    async def send(self, symbol, ticker):
+        for consumer in self.channel.get_consumers(symbol=symbol):
+            await consumer.queue.put({
+                "symbol": symbol,
+                "ticker": ticker
+            })
+
+
+class TickerConsumer(Consumer):
+    def __init__(self, callback: CallbackType):
+        super().__init__(callback)
+
     async def consume(self):
         while not self.should_stop:
             data = await self.queue.get()
-            await self.perform(data["pair"],
-                               data["ticker"])
+            self.callback(symbol=data["symbol"], ticker=data["ticker"])
 
+
+class TickerChannel(ExchangeChannel):
+    def __init__(self, exchange, symbol):
+        super().__init__(exchange)
+        self.symbol = symbol
+
+    def get_consumers(self, symbol) -> Iterable[TickerConsumer]:
+        if symbol not in self.consumers:
+            self.consumers[symbol] = {}
+
+        return self.consumers[symbol]
+
+    def new_consumer(self, callback: CallbackType, size=0, symbol=None):
+        # create dict and list if required
+        self.get_consumers(symbol=symbol)
+
+        self.consumers[symbol] = TickerConsumer(callback)

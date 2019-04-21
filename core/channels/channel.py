@@ -13,8 +13,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from typing import Dict
+from abc import abstractmethod, ABCMeta
+from typing import Dict, List, Iterable
 
+from core.channels import CallbackType
 from core.consumer import Consumer
 from core.producer import Producer
 
@@ -24,9 +26,35 @@ A Channel ****
 
 
 class Channel:
+    __metaclass__ = ABCMeta
+
+    CHANNEL_NAMES_SEPARATORS = "#"
+
     def __init__(self):
         self.producer: Producer = None
         self.consumers: Dict[Consumer] = {}
+
+    @classmethod
+    def get_name(cls):
+        return cls.__name__.replace('Channel', '')
+
+    @abstractmethod
+    async def new_consumer(self, callback: CallbackType, size=0, **kwargs):
+        """
+        Create an appropriate consumer instance for this channel
+        :param callback: method that should be called when consuming the queue
+        :param size: queue size, default 0
+        :return: a new consumer instance
+        """
+        raise NotImplemented("new consumer is not implemented")
+
+    def get_consumers(self, **kwargs) -> Iterable[Consumer]:
+        """
+        Should be overwritten according to the class needs
+        :param kwargs:
+        :return:
+        """
+        return self.consumers
 
     async def start(self):
         for consumer in [consumer.values() for consumer in self.consumers.values()]:
@@ -48,3 +76,7 @@ class Channel:
 
         if self.producer:
             await self.producer.run()
+
+    @staticmethod
+    def create_channel_name(params: List):
+        return Channel.CHANNEL_NAMES_SEPARATORS.join(params)

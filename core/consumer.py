@@ -17,43 +17,36 @@ import asyncio
 from abc import ABCMeta, abstractmethod
 from asyncio import Queue, Task
 
+from core.channels import CallbackType
 from tools import get_logger
 
 
 class Consumer:
     __metaclass__ = ABCMeta
 
-    def __init__(self, queue: Queue):
+    def __init__(self, callback: CallbackType):
         self.logger = get_logger(self.__class__.__name__)
 
-        self.queue: Queue = queue
+        self.queue: Queue = Queue()
+        self.callback: CallbackType = callback
         self.consume_task: Task = None
         self.should_stop: bool = False
 
+    @abstractmethod
     async def consume(self):
         """
         Should implement self.queue.get() in a while loop
 
         while not self.should_stop:
-            await self.queue.get()
+            self.callback(await self.queue.get())
 
         :return:
         """
-        while not self.should_stop:
-            await self.perform(data=(await self.queue.get()))
+        raise NotImplemented("consume is not implemented")
 
     async def start(self):
         """
         Should be implemented for consumer's non-triggered tasks
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    async def perform(self, **kwargs):
-        """
-        Should implement consumer's non-triggered tasks
-        Can be use to force producer to perform tasks
         :return:
         """
         pass
