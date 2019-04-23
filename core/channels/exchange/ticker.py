@@ -14,9 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from asyncio import CancelledError
-from typing import Iterable
+from typing import List
 
-from core.channels import CallbackType
+from config import CONSUMER_CALLBACK_TYPE
 from core.channels.exchange.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
 from core.producer import Producer
@@ -31,8 +31,8 @@ class TickerProducer(Producer):
 
     async def perform(self, symbol, ticker):
         try:
-            if symbol in self.channel.consumers[symbol]:  # and price_ticker_is_initialized
-                self.channel.exchange.get_symbol_data(symbol).update_symbol_price_ticker(ticker)
+            if symbol in self.channel.consumers:  # and price_ticker_is_initialized
+                self.channel.exchange_manager.get_symbol_data(symbol).update_symbol_price_ticker(ticker)
                 await self.send(symbol, ticker)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
@@ -49,7 +49,7 @@ class TickerProducer(Producer):
 
 
 class TickerConsumer(Consumer):
-    def __init__(self, callback: CallbackType):
+    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
         super().__init__(callback)
 
     async def consume(self):
@@ -59,18 +59,19 @@ class TickerConsumer(Consumer):
 
 
 class TickerChannel(ExchangeChannel):
-    def __init__(self, exchange, symbol):
-        super().__init__(exchange)
-        self.symbol = symbol
+    def __init__(self, exchange_manager):
+        super().__init__(exchange_manager)
 
-    def get_consumers(self, symbol) -> Iterable[TickerConsumer]:
+    def get_consumers(self, symbol) -> List:
         if symbol not in self.consumers:
-            self.consumers[symbol] = {}
+            self.consumers[symbol] = []
 
         return self.consumers[symbol]
 
-    def new_consumer(self, callback: CallbackType, size=0, symbol=None):
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, symbol=None):
         # create dict and list if required
         self.get_consumers(symbol=symbol)
 
-        self.consumers[symbol] = TickerConsumer(callback)
+        consumer = TickerConsumer(callback)
+        self.consumers[symbol].append(consumer)
+        consumer.run()

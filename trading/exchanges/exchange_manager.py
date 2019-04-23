@@ -18,6 +18,7 @@ import time
 from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
     PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET, CONFIG_CRYPTO_QUOTE, CONFIG_CRYPTO_ADD
+from core.channels.exchange.exchange_channel import ExchangeChannel, ExchangeChannels
 from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
 from tools.logging.logging_util import get_logger
@@ -90,6 +91,7 @@ class ExchangeManager(Initializable):
             await self.exchange.initialize()
 
             self._load_constants()
+            await self._create_exchange_channels()
 
             # create Websocket exchange if possible
             if not self.rest_only:
@@ -106,6 +108,12 @@ class ExchangeManager(Initializable):
         self.exchange_dispatcher = ExchangeDispatcher(self.config, self)
 
         self.is_ready = True
+
+    async def _create_exchange_channels(self):  # TODO filter creation
+        for exchange_channel_class in ExchangeChannel.__subclasses__():
+            exchange_channel = exchange_channel_class(self)
+            ExchangeChannels.set_chan(exchange_channel, name=exchange_channel_class.get_name())
+            await exchange_channel.start()
 
     def _search_and_create_websocket(self, websocket_class):
         for socket_manager in websocket_class.__subclasses__():

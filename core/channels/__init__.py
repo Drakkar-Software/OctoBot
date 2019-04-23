@@ -13,6 +13,16 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from typing import NewType, Callable
+from core.channels.exchange.ohlcv import OHLCVChannel
+from core.channels.exchange.order_book import OrderBookChannel
+from core.channels.exchange.recent_trade import RecentTradeChannel
+from core.channels.exchange.ticker import TickerChannel
 
-CallbackType = NewType('CallbackType', Callable[..., None])
+# General channels
+# TODO
+
+# Exchange channels
+TICKER_CHANNEL = TickerChannel.get_name()
+RECENT_TRADES_CHANNEL = RecentTradeChannel.get_name()
+ORDER_BOOK_CHANNEL = OrderBookChannel.get_name()
+OHLCV_CHANNEL = OHLCVChannel.get_name()

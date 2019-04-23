@@ -14,11 +14,10 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from tools.singleton import Singleton
 
-class Channels(type):
-    _instances = {}
 
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Channels, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+@Singleton
+class ChannelInstances:
+    def __init__(self):
+        self.channels = {}

@@ -16,7 +16,7 @@
 
 from logging import WARNING
 from enum import Enum
-from typing import NewType, Any, Dict
+from typing import NewType, Any, Dict, Callable
 
 PROJECT_NAME = "OctoBot"
 SHORT_VERSION = "0.4.0"  # major.minor.revision
@@ -317,6 +317,7 @@ COIN_MARKET_CAP_CURRENCIES_LIST_URL = "https://api.coinmarketcap.com/v2/listings
 
 # Types
 CONFIG_DICT_TYPE = NewType('ConfigDictType', Dict[str, Any])
+CONSUMER_CALLBACK_TYPE = NewType('CallbackType', Callable[..., None])
 
 
 class EvaluatorMatrixTypes(Enum):

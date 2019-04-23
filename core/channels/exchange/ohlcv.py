@@ -14,9 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from asyncio import CancelledError
-from typing import Iterable
+from typing import List
 
-from core.channels import CallbackType
+from config import CONSUMER_CALLBACK_TYPE
 from core.channels.exchange.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
 from core.producer import Producer
@@ -32,10 +32,10 @@ class OHLCVProducer(Producer):
     async def perform(self, time_frame, symbol, candle):
         try:
             if symbol in self.channel.consumers and time_frame in self.channel.consumers[symbol]:
-                self.channel.exchange.uniformize_candles_if_necessary(candle)
-                self.channel.exchange.get_symbol_data(symbol).update_symbol_candles(time_frame,
-                                                                                    candle,
-                                                                                    replace_all=False)
+                self.channel.exchange_manager.uniformize_candles_if_necessary(candle)
+                self.channel.exchange_manager.get_symbol_data(symbol).update_symbol_candles(time_frame,
+                                                                                            candle,
+                                                                                            replace_all=False)
                 await self.send(time_frame, symbol, candle)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
@@ -53,7 +53,7 @@ class OHLCVProducer(Producer):
 
 
 class OHLCVConsumer(Consumer):
-    def __init__(self, callback: CallbackType):
+    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
         super().__init__(callback)
 
     async def consume(self):
@@ -63,12 +63,10 @@ class OHLCVConsumer(Consumer):
 
 
 class OHLCVChannel(ExchangeChannel):
-    def __init__(self, exchange, symbol, time_frame):
-        super().__init__(exchange)
-        self.symbol = symbol
-        self.time_frame = time_frame
+    def __init__(self, exchange_manager):
+        super().__init__(exchange_manager)
 
-    def get_consumers(self, time_frame, symbol) -> Iterable[OHLCVConsumer]:
+    def get_consumers(self, time_frame, symbol) -> List:
         if symbol not in self.consumers:
             self.consumers[symbol] = {}
 
@@ -77,8 +75,10 @@ class OHLCVChannel(ExchangeChannel):
 
         return self.consumers[symbol][time_frame]
 
-    def new_consumer(self, callback: CallbackType, size=0, time_frame=None, symbol=None):
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, time_frame=None, symbol=None):
         # create dict and list if required
         self.get_consumers(time_frame=time_frame, symbol=symbol)
 
-        self.consumers[symbol][time_frame] = OHLCVConsumer(callback)
+        consumer = OHLCVConsumer(callback)
+        self.consumers[symbol].append(consumer)
+        consumer.run()

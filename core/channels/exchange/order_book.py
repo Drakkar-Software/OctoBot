@@ -14,9 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from asyncio import CancelledError
-from typing import Iterable
+from typing import List
 
-from core.channels import CallbackType
+from config import CONSUMER_CALLBACK_TYPE
 from core.channels.exchange.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
 from core.producer import Producer
@@ -31,8 +31,8 @@ class OrderBookProducer(Producer):
 
     async def perform(self, symbol, order_book):
         try:
-            if symbol in self.channel.consumers[symbol]:  # and symbol_data.order_book_is_initialized()
-                self.channel.exchange.get_symbol_data(symbol).update_order_book(order_book)
+            if symbol in self.channel.consumers:  # and symbol_data.order_book_is_initialized()
+                self.channel.exchange_manager.get_symbol_data(symbol).update_order_book(order_book)
                 await self.send(symbol, order_book)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
@@ -49,7 +49,7 @@ class OrderBookProducer(Producer):
 
 
 class OrderBookConsumer(Consumer):
-    def __init__(self, callback: CallbackType):
+    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
         super().__init__(callback)
 
     async def consume(self):
@@ -59,18 +59,19 @@ class OrderBookConsumer(Consumer):
 
 
 class OrderBookChannel(ExchangeChannel):
-    def __init__(self, exchange, symbol):
-        super().__init__(exchange)
-        self.symbol = symbol
+    def __init__(self, exchange_manager):
+        super().__init__(exchange_manager)
 
-    def get_consumers(self, symbol) -> Iterable[OrderBookConsumer]:
+    def get_consumers(self, symbol) -> List:
         if symbol not in self.consumers:
-            self.consumers[symbol] = {}
+            self.consumers[symbol] = []
 
         return self.consumers[symbol]
 
-    def new_consumer(self, callback: CallbackType, size=0, symbol=None):
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, symbol=None):
         # create dict and list if required
         self.get_consumers(symbol=symbol)
 
-        self.consumers[symbol] = OrderBookConsumer(callback)
+        consumer = OrderBookConsumer(callback)
+        self.consumers[symbol].append(consumer)
+        consumer.run()
