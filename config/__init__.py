@@ -211,6 +211,11 @@ CONFIG_TWITTER_API_INSTANCE = "twitter_api_instance"
 CONFIG_TWEET = "tweet"
 CONFIG_TWEET_DESCRIPTION = "tweet_description"
 
+# discord
+CONFIG_DISCORD = "discord"
+CONFIG_DISCORD_ALL_CHANNEL = "*"
+CONFIG_DISCORD_CHANNEL = "discord-channels"
+
 # reddit
 CONFIG_REDDIT = "reddit"
 CONFIG_REDDIT_SUBREDDITS = "subreddits"
@@ -268,6 +273,7 @@ CONFIG_INTERFACES = "interfaces"
 CONFIG_INTERFACES_WEB = "web"
 CONFIG_INTERFACES_TELEGRAM = "telegram"
 CONFIG_USERNAMES_WHITELIST = "usernames-whitelist"
+CONFIG_INTERFACES_DISCORD = "discord"
 
 # Tentacles (packages)
 PYTHON_INIT_FILE = "__init__.py"

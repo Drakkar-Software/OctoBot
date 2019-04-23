@@ -14,19 +14,16 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from .service_creator import *
-from .notifier_service import *
-from .reddit_service import *
-from .telegram_service import *
-from .discord_service import *
-from .twitter_service import *
-from .web_service import *
-from .Dispatchers import *
+from services.Dispatchers.abstract_dispatcher import AbstractDispatcher
 
-# disable Discord logging
-log = logging.getLogger('websockets.protocol')
-log.setLevel(logging.WARNING)
-log = logging.getLogger('discord.http')
-log.setLevel(logging.WARNING)
-log = logging.getLogger('discord.client')
-log.setLevel(logging.WARNING)
+
+class DiscordDispatcher(AbstractDispatcher):
+
+    def _start_dispatcher(self):
+        pass
+
+    def _something_to_watch(self):
+        pass
+
+    def _get_data(self):
+        pass
