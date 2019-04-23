@@ -29,6 +29,10 @@ class WebsocketCallBack:
 
 
 class OrderBookCallBack(WebsocketCallBack, OrderBookProducer):
+    def __init__(self, parent, channel):
+        WebsocketCallBack.__init__(self, parent)
+        OrderBookProducer.__init__(self, channel)
+
     async def l2_order_book_callback(self, _, pair, book, timestamp):
         await self.receive(symbol=pair,
                            order_book=self.parent.convert_into_ccxt_full_order_book(
@@ -38,6 +42,10 @@ class OrderBookCallBack(WebsocketCallBack, OrderBookProducer):
 
 
 class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
+    def __init__(self, parent, channel):
+        WebsocketCallBack.__init__(self, parent)
+        RecentTradeProducer.__init__(self, channel)
+
     async def recent_trades_callback(self, _, pair, order_id, timestamp, side, amount, price):
         await self.receive(symbol=pair,
                            recent_trade=self.parent.convert_into_ccxt_recent_trade(
@@ -49,6 +57,10 @@ class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
 
 
 class TickersCallBack(WebsocketCallBack, TickerProducer):
+    def __init__(self, parent, channel):
+        WebsocketCallBack.__init__(self, parent)
+        TickerProducer.__init__(self, channel)
+
     async def tickers_callback(self, _, pair, bid, ask, timestamp):
         await self.receive(symbol=pair,
                            ticker=self.parent.convert_into_ccxt_price_ticker(
@@ -59,9 +71,9 @@ class TickersCallBack(WebsocketCallBack, TickerProducer):
 
 
 class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
-    def __init__(self, parent, time_frame):
-        super().__init__(parent)
-
+    def __init__(self, parent, channel, time_frame):
+        WebsocketCallBack.__init__(self, parent)
+        OHLCVProducer.__init__(self, channel)
         self.time_frame = time_frame
 
     async def ohlcv_callback(self, data=None):

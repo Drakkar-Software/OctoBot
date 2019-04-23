@@ -15,14 +15,15 @@
 #  License along with this library.
 
 from config import TimeFrames, TimeFramesMinutes, MINUTE_TO_SECONDS
+from core.channels import TICKER_CHANNEL, ORDER_BOOK_CHANNEL, RECENT_TRADES_CHANNEL
+from core.channels.exchange.exchange_channel import ExchangeChannels
 from octobot_websockets import ASK, BID, TICKER, L2_BOOK, TRADES, UNSUPPORTED
+from octobot_websockets.bitmex.bitmex import Bitmex
 from octobot_websockets.callback import TickerCallback, BookCallback, TradeCallback
 from octobot_websockets.feedhandler import FeedHandler
 from trading.exchanges.websockets.abstract_websocket import AbstractWebSocket
 from trading.exchanges.websockets.websocket_callbacks import OrderBookCallBack, \
     RecentTradesCallBack, TickersCallBack
-
-from octobot_websockets.bitmex.bitmex import Bitmex
 
 WEBSOCKET_CLASSES = {
     # "Bitfinex": Bitfinex,
@@ -45,6 +46,7 @@ class OctoBotWebSocketClient(AbstractWebSocket):
     def __init__(self, config, exchange_manager):
         super().__init__(config, exchange_manager)
         self.exchange_manager = exchange_manager
+        self.exchange_name = exchange_manager.exchange.get_name()
         self.octobot_feed_handler = None
 
         self.open_sockets_keys = {}
@@ -83,7 +85,9 @@ class OctoBotWebSocketClient(AbstractWebSocket):
     def add_recent_trade_feed(self):
         if self._is_feed_available(TRADES):
             recent_trade_callback = RecentTradesCallBack(self,
-                                                         self.exchange_manager.recent_trade_consumer_producers.consumer)
+                                                         ExchangeChannels.get_chan(RECENT_TRADES_CHANNEL,
+                                                                                   self.exchange_name))
+
             self._add_feed_and_run_if_required(TRADES, TradeCallback(recent_trade_callback.recent_trades_callback))
             self.is_handling_recent_trades = True
         else:
@@ -92,7 +96,9 @@ class OctoBotWebSocketClient(AbstractWebSocket):
 
     def add_order_book_feed(self):
         if self._is_feed_available(L2_BOOK):
-            order_book_callback = OrderBookCallBack(self, self.exchange_manager.order_book_consumer_producers.consumer)
+            order_book_callback = OrderBookCallBack(self, ExchangeChannels.get_chan(ORDER_BOOK_CHANNEL,
+                                                                                    self.exchange_name))
+
             self._add_feed_and_run_if_required(L2_BOOK, BookCallback(order_book_callback.l2_order_book_callback))
             self.is_handling_order_book = True
         else:
@@ -101,7 +107,9 @@ class OctoBotWebSocketClient(AbstractWebSocket):
 
     def add_tickers_feed(self):
         if self._is_feed_available(TICKER):
-            tickers_callback = TickersCallBack(self, self.exchange_manager.ticker_consumer_producers.consumer)
+            tickers_callback = TickersCallBack(self, ExchangeChannels.get_chan(TICKER_CHANNEL,
+                                                                               self.exchange_name))
+
             self._add_feed_and_run_if_required(TICKER, TickerCallback(tickers_callback.tickers_callback))
             self.is_handling_price_ticker = True
         else:

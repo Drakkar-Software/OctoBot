@@ -14,9 +14,10 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from abc import abstractmethod, ABCMeta
-from typing import Dict, List, Iterable
+from typing import Dict, List
 
-from core.channels import CallbackType
+from config import CONSUMER_CALLBACK_TYPE
+from core.channels.channel_instances import ChannelInstances
 from core.consumer import Consumer
 from core.producer import Producer
 
@@ -39,7 +40,7 @@ class Channel:
         return cls.__name__.replace('Channel', '')
 
     @abstractmethod
-    async def new_consumer(self, callback: CallbackType, size=0, **kwargs):
+    async def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, **kwargs):
         """
         Create an appropriate consumer instance for this channel
         :param callback: method that should be called when consuming the queue
@@ -48,7 +49,7 @@ class Channel:
         """
         raise NotImplemented("new consumer is not implemented")
 
-    def get_consumers(self, **kwargs) -> Iterable[Consumer]:
+    def get_consumers(self, **kwargs):
         """
         Should be overwritten according to the class needs
         :param kwargs:
@@ -77,6 +78,16 @@ class Channel:
         if self.producer:
             await self.producer.run()
 
+
+class Channels:
     @staticmethod
-    def create_channel_name(params: List):
-        return Channel.CHANNEL_NAMES_SEPARATORS.join(params)
+    def set_chan(chan: Channel, name: str = None):
+        chan_name = chan.get_name() if name else name
+        if chan_name not in ChannelInstances.instance().channels:
+            ChannelInstances.instance().channels[chan_name] = chan
+        else:
+            raise ValueError(f"Channel {chan_name} already exists.")
+
+    @staticmethod
+    def get_chan(chan_name: str, **kwargs) -> Channel:
+        return ChannelInstances.instance().channels[chan_name]

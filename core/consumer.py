@@ -17,18 +17,18 @@ import asyncio
 from abc import ABCMeta, abstractmethod
 from asyncio import Queue, Task
 
-from core.channels import CallbackType
+from config import CONSUMER_CALLBACK_TYPE
 from tools import get_logger
 
 
 class Consumer:
     __metaclass__ = ABCMeta
 
-    def __init__(self, callback: CallbackType):
+    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
         self.logger = get_logger(self.__class__.__name__)
 
         self.queue: Queue = Queue()
-        self.callback: CallbackType = callback
+        self.callback: CONSUMER_CALLBACK_TYPE = callback
         self.consume_task: Task = None
         self.should_stop: bool = False
 
@@ -44,14 +44,14 @@ class Consumer:
         """
         raise NotImplemented("consume is not implemented")
 
-    async def start(self):
+    def start(self):
         """
         Should be implemented for consumer's non-triggered tasks
         :return:
         """
         pass
 
-    async def stop(self):
+    def stop(self):
         """
         Stops non-triggered tasks management
         :return:
@@ -61,6 +61,6 @@ class Consumer:
     def create_task(self):
         self.consume_task = asyncio.create_task(self.consume())
 
-    async def run(self):
-        await self.start()
+    def run(self):
+        self.start()
         self.create_task()

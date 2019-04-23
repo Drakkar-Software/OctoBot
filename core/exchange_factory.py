@@ -39,6 +39,7 @@ class ExchangeFactory:
         # Logger
         self.logger = get_logger(self.__class__.__name__)
 
+        self.exchange_manager = None
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.exchange_trading_modes = {}
@@ -65,6 +66,10 @@ class ExchangeFactory:
     def create_previous_state_manager(self):
         if not backtesting_enabled(self.octobot.get_config()) and \
                 PreviousTradingStateManager.enabled(self.octobot.get_config()):
+            self.previous_trading_state_manager = PreviousTradingStateManager(
+                self.octobot.get_config()[CONFIG_EXCHANGES],
+                self.octobot.reset_trading_history,
+                self.octobot.get_config())
 
             self.previous_trading_state_manager = PreviousTradingStateManager(
                 self.octobot.get_config()[CONFIG_EXCHANGES],
@@ -74,11 +79,11 @@ class ExchangeFactory:
 
     async def _create_exchange_traders(self, exchange_class_string):
         # create exchange manager (can be a backtesting or a real one)
-        exchange_manager = self._create_exchange_manager(getattr(ccxt, exchange_class_string))
+        self.exchange_manager = self._create_exchange_manager(getattr(ccxt, exchange_class_string))
 
-        await exchange_manager.initialize()
+        await self.exchange_manager.initialize()
 
-        exchange_inst = self._create_exchange_instances(exchange_manager)
+        exchange_inst = self._create_exchange_instances()
 
         self._create_global_price_updater(exchange_inst)
 
@@ -92,8 +97,8 @@ class ExchangeFactory:
 
         self.register_trading_mode_on_traders(exchange_inst)
 
-    def _create_exchange_instances(self, exchange_manager):
-        exchange_inst = exchange_manager.get_exchange()
+    def _create_exchange_instances(self):
+        exchange_inst = self.exchange_manager.get_exchange()
         self.exchanges_list[exchange_inst.get_name()] = exchange_inst
         return exchange_inst
 
