@@ -38,11 +38,6 @@ def config():
         response = ""
 
         if request_data:
-            # update global config if required
-            if GLOBAL_CONFIG_KEY in request_data and request_data[GLOBAL_CONFIG_KEY]:
-                success = update_global_config(request_data[GLOBAL_CONFIG_KEY])
-            else:
-                request_data[GLOBAL_CONFIG_KEY] = ""
 
             # update trading config if required
             if TRADING_CONFIG_KEY in request_data and request_data[TRADING_CONFIG_KEY]:
@@ -62,6 +57,12 @@ def config():
                 success = success and update_global_config(request_data[removed_elements_key], delete=True)
             else:
                 request_data[removed_elements_key] = ""
+
+            # update global config if required
+            if GLOBAL_CONFIG_KEY in request_data and request_data[GLOBAL_CONFIG_KEY]:
+                success = update_global_config(request_data[GLOBAL_CONFIG_KEY])
+            else:
+                request_data[GLOBAL_CONFIG_KEY] = ""
 
             response = {
                 "evaluator_updated_config": request_data[EVALUATOR_CONFIG_KEY],
