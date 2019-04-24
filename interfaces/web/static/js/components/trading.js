@@ -107,6 +107,7 @@ function add_cancel_individual_orders_button(){
 
 function disable_cancel_all_buttons(){
     $("#cancel_all_orders").prop("disabled",true);
+    $("#cancel_progress_bar").show();
     const cancelIcon = $("#cancel_all_icon");
     cancelIcon.removeClass("fas fa-ban");
     cancelIcon.addClass("fa fa-spinner fa-spin");
@@ -136,6 +137,7 @@ function reload_orders(){
         });
         add_cancel_individual_orders_button();
         const cancelIcon = $("#cancel_all_icon");
+        $("#cancel_progress_bar").hide();
         if(cancelIcon.hasClass("fa-spinner")){
             cancelIcon.removeClass("fa fa-spinner fa-spin");
             cancelIcon.addClass("fas fa-ban");
