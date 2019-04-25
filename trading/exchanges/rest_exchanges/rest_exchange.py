@@ -20,8 +20,8 @@ from ccxt.async_support import OrderNotFound, BaseError, InsufficientFunds
 from ccxt.base.errors import ExchangeNotAvailable, InvalidNonce
 
 from config.config import decrypt
-from config import CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_PORTFOLIO_FREE, \
-    CONFIG_PORTFOLIO_USED, CONFIG_PORTFOLIO_TOTAL, CONFIG_PORTFOLIO_INFO, TraderOrderType, \
+from config import CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_PASSWORD, \
+    CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_USED, CONFIG_PORTFOLIO_TOTAL, CONFIG_PORTFOLIO_INFO, TraderOrderType, \
     ExchangeConstantsMarketPropertyColumns, CONFIG_DEFAULT_FEES
 from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
@@ -72,13 +72,18 @@ class RESTExchange(AbstractExchange, Initializable):
                 if self.exchange_manager.ignore_config or not self.exchange_manager.should_decrypt_token(self.logger):
                     key = ""
                     secret = ""
+                    password = ""
                 else:
-                    key = decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_KEY])
-                    secret = decrypt(self.config[CONFIG_EXCHANGES][self.name][CONFIG_EXCHANGE_SECRET])
+                    config_exchange = self.config[CONFIG_EXCHANGES][self.name]
+                    key = decrypt(config_exchange[CONFIG_EXCHANGE_KEY])
+                    secret = decrypt(config_exchange[CONFIG_EXCHANGE_SECRET])
+                    password = decrypt(config_exchange[CONFIG_EXCHANGE_PASSWORD]) \
+                        if CONFIG_EXCHANGE_PASSWORD in config_exchange else None
 
                 self.client = self.exchange_type({
                     'apiKey': key,
                     'secret': secret,
+                    'password': password,
                     'verbose': False,
                     'enableRateLimit': True
                 })

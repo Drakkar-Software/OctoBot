@@ -26,11 +26,11 @@ from config.config import load_config, decrypt, encrypt
 from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
     TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_TRADING_FILE, \
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
-    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, \
-    CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, CONFIG_TRADING, \
+    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_PASSWORD, CONFIG_EVALUATOR_FILE, \
+    CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, \
     CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET, \
     CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, CONFIG_METRICS, CONFIG_TRADER, \
-    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA
+    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
@@ -92,31 +92,26 @@ class ConfigManager:
         os.remove(restore_file)
 
     @staticmethod
+    def _handle_encrypted_value(value_key, config_element):
+        if value_key in config_element:
+            key = config_element[value_key]
+            if not ConfigManager.has_invalid_default_config_value(key):
+                try:
+                    decrypt(key, silent_on_invalid_token=True)
+                except Exception:
+                    config_element[value_key] = encrypt(key).decode()
+
+    @staticmethod
     def jsonify_config(config):
         # check exchange keys encryption
+        exchange_encrypted_keys = [CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_PASSWORD]
         for exchange in config[CONFIG_EXCHANGES]:
             try:
-                if CONFIG_EXCHANGE_KEY in config[CONFIG_EXCHANGES][exchange]:
-                    key = config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY]
-                    if not ConfigManager.has_invalid_default_config_value(key):
-                        try:
-                            decrypt(key, silent_on_invalid_token=True)
-                        except Exception:
-                            config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_KEY] = encrypt(key).decode()
-
-                if CONFIG_EXCHANGE_SECRET in config[CONFIG_EXCHANGES][exchange]:
-                    secret = config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET]
-                    if not ConfigManager.has_invalid_default_config_value(secret):
-                        try:
-                            decrypt(secret, silent_on_invalid_token=True)
-                        except Exception:
-                            config[CONFIG_EXCHANGES][exchange][CONFIG_EXCHANGE_SECRET] = encrypt(secret).decode()
-
+                exchange_config = config[CONFIG_EXCHANGES][exchange]
+                for key in exchange_encrypted_keys:
+                    ConfigManager._handle_encrypted_value(key, exchange_config)
             except Exception:
-                config[CONFIG_EXCHANGES][exchange] = {
-                    CONFIG_EXCHANGE_KEY: "",
-                    CONFIG_EXCHANGE_SECRET: ""
-                }
+                config[CONFIG_EXCHANGES][exchange] = {key: "" for key in exchange_encrypted_keys}
 
         return json.dumps(config, indent=4, sort_keys=True)
 
