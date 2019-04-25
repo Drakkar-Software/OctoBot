@@ -51,7 +51,7 @@ class WebService(AbstractService):
         return CONFIG_WEB in config[CONFIG_CATEGORY_SERVICES] \
                 and CONFIG_SERVICE_INSTANCE in config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB]
 
-    # If this indicator is enabled
+    # If this service is enabled
     def get_is_enabled(self, config):
         return super().get_is_enabled(config) and self._check_enabled_option(config)
 

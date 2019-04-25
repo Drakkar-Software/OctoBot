@@ -75,7 +75,7 @@ class AbstractService:
     def set_config(self, config):
         self.config = config
 
-    # If this indicator is enabled
+    # If this service is enabled
     def get_is_enabled(self, config):
         return self.enabled
 
