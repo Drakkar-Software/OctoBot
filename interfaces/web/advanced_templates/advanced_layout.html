@@ -64,16 +64,18 @@
         <script src="{{ url_for('static', filename='js/common/bot_connection.js') }}"></script>
         <script src="{{ url_for('static', filename='js/common/dom_updater.js') }}"></script>
 
+        {% set active_page = active_page|default('advanced.home') -%}
+
         <nav class="navbar navbar-expand-md navbar-dark bg-dark">
             <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
                 <ul class="navbar-nav mr-auto">
-                    <li class="nav-item">
+                    <li class="nav-item mx-1 px-0 {% if 'advanced.home' == active_page %} active{% endif %}">
                         <a class="nav-link" href="{{ url_for('advanced.home') }}">Home</a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item mx-1 px-0 {% if 'advanced.strategy_optimizer' == active_page %} active{% endif %}">
                         <a class="nav-link" href="{{ url_for('advanced.strategy_optimizer') }}">Strategy optimizer</a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item mx-1 px-0 {% if 'advanced.matrix' == active_page %} active{% endif %}">
                         <a class="nav-link" href="{{ url_for('advanced.matrix') }}">Evaluation matrix</a>
                     </li>
                 </ul>
@@ -86,13 +88,13 @@
             </div>
             <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
                 <ul class="navbar-nav ml-auto">
-                    <li class="nav-item">
+                    <li class="nav-item mx-1 px-0 {% if 'advanced.evaluator_config' == active_page %} active{% endif %}">
                         <a class="nav-link" href="{{ url_for('advanced.evaluator_config') }}">Evaluator configuration</a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item mx-1 px-0">
                         <a class="btn btn-sm btn-outline-default waves-effect" href="{{ url_for('home') }}"><i class="fa fa-home"></i> Back to OctoBot</a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item mx-1 px-0">
                         <a class="nav-link" href="{{ url_for('commands') }}"><i id="navbar-bot-reboot" class="fa fa-sync"  data-toggle="tooltip" data-placement="top" title="Commands"></i></a>
                     </li>
                 </ul>
