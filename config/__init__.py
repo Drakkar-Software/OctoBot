@@ -85,7 +85,7 @@ METRICS_ROUTE_REGISTER = f"{METRICS_ROUTE}/register"
 COMMUNITY_TOPS_COUNT = 20
 
 # default values in config files and interfaces
-DEFAULT_CONFIG_VALUES = {"your-api-key-here", "your-api-secret-here", "NOKEY", "Empty"}
+DEFAULT_CONFIG_VALUES = {"your-api-key-here", "your-api-secret-here", "your-api-password-here", "NOKEY", "Empty"}
 
 # Async settings
 DEFAULT_FUTURE_TIMEOUT = 120
@@ -112,6 +112,7 @@ CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 CONFIG_EXCHANGES = "exchanges"
 CONFIG_EXCHANGE_KEY = "api-key"
 CONFIG_EXCHANGE_SECRET = "api-secret"
+CONFIG_EXCHANGE_PASSWORD = "api-password"
 CONFIG_EXCHANGE_WEB_SOCKET = "web-socket"
 DEFAULT_REST_RETRY_COUNT = 3
 CONFIG_TRADING = "trading"

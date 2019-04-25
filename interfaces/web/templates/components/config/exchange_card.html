@@ -36,6 +36,18 @@
                             data-title="Enter exchange api secret"
                             class="editable editable-click config-element">
                 {{keys_value}}</a><br>
+
+                API Password (if required by exchange) : <a href="#"
+                            id="exchange_api-secret"
+                            config-key="exchanges_{{exchange}}_api-password"
+                            config-type="global_config"
+                            config-value="{{keys_value}}"
+                            startup-config-value="{{keys_value}}"
+                            data-type="text"
+                            data-pk="1"
+                            data-title="Enter exchange api password"
+                            class="editable editable-click config-element">
+                {{keys_value}}</a><br>
             </p>
 
             <button type="button" class="btn btn-danger remove-btn px-3 waves-effect"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
