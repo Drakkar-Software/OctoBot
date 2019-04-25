@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% set active_page = "home" %}
 {% block body %}
     <div update-url="{{ url_for('api.announcements') }}" class="alert alert-danger text-center d-none" role="alert" id="annoncementsAlert"></div>
     <br>
