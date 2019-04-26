@@ -75,10 +75,21 @@ def add_to_symbol_data_history(symbol, data, time_frame, force_data_reset=False)
         # find index from where data is new
         new_data_index = 0
         candle_times = data[PriceIndexes.IND_PRICE_TIME.value]
+        current_candle_list = symbol_data_history[symbol][time_frame]
         for i in range(1, len(candle_times)):
-            if candle_times[-i] > symbol_data_history[symbol][time_frame][PriceIndexes.IND_PRICE_TIME.value][-1]:
+            if candle_times[-i] > current_candle_list[PriceIndexes.IND_PRICE_TIME.value][-1]:
                 new_data_index = i
             else:
+                # update last candle if necessary, then break loop
+                if current_candle_list[PriceIndexes.IND_PRICE_TIME.value][-1] == candle_times[-i]:
+                    current_candle_list[PriceIndexes.IND_PRICE_CLOSE.value][-1] = \
+                        data[PriceIndexes.IND_PRICE_CLOSE.value][-i]
+                    current_candle_list[PriceIndexes.IND_PRICE_HIGH.value][-1] = \
+                        data[PriceIndexes.IND_PRICE_HIGH.value][-i]
+                    current_candle_list[PriceIndexes.IND_PRICE_LOW.value][-1] = \
+                        data[PriceIndexes.IND_PRICE_LOW.value][-i]
+                    current_candle_list[PriceIndexes.IND_PRICE_VOL.value][-1] = \
+                        data[PriceIndexes.IND_PRICE_VOL.value][-i]
                 break
         if new_data_index > 0:
             data_list = [None] * len(PriceIndexes)
