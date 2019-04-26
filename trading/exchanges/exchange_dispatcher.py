@@ -254,12 +254,12 @@ class ExchangeDispatcher(AbstractExchange):
         return await self.exchange.cancel_order(symbol=symbol,
                                                 order_id=order_id)
 
-    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
-        return self.exchange.create_order(symbol=symbol,
-                                          order_type=order_type,
-                                          quantity=quantity,
-                                          price=price,
-                                          stop_price=stop_price)
+    async def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
+        return await self.exchange.create_order(symbol=symbol,
+                                                order_type=order_type,
+                                                quantity=quantity,
+                                                price=price,
+                                                stop_price=stop_price)
 
     async def stop(self):
         if self._web_socket_available():
