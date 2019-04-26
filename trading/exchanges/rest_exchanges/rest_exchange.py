@@ -22,7 +22,7 @@ from ccxt.base.errors import ExchangeNotAvailable, InvalidNonce
 from config.config import decrypt
 from config import CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_PASSWORD, \
     CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_USED, CONFIG_PORTFOLIO_TOTAL, CONFIG_PORTFOLIO_INFO, TraderOrderType, \
-    ExchangeConstantsMarketPropertyColumns, CONFIG_DEFAULT_FEES, ExchangeConstantsOrderColumns as ecoc
+    ExchangeConstantsMarketPropertyColumns, CONFIG_DEFAULT_FEES, ExchangeConstantsOrderColumns as ecoc, OrderStatus
 from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
 from tools.initializable import Initializable
@@ -169,7 +169,12 @@ class RESTExchange(AbstractExchange, Initializable):
     # ORDERS
     async def get_order(self, order_id, symbol=None):
         if self.client.has['fetchOrder']:
-            self.get_personal_data().upsert_order(order_id, await self.client.fetch_order(order_id, symbol))
+            try:
+                updated_order = await self.client.fetch_order(order_id, symbol)
+                self.get_personal_data().upsert_order(order_id, updated_order)
+            except OrderNotFound:
+                # some exchanges are throwing this error when an order is cancelled (ex: coinbase pro)
+                self.get_personal_data().update_order_attribute(order_id, ecoc.STATUS.value, OrderStatus.CANCELED.value)
         else:
             raise Exception("This exchange doesn't support fetchOrder")
 

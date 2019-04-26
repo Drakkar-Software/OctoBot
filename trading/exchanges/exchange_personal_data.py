@@ -66,6 +66,9 @@ class ExchangePersonalData:
         if len(self.orders) > self._MAX_ORDERS_COUNT:
             self.remove_oldest_orders(int(self._MAX_ORDERS_COUNT / 2))
 
+    def update_order_attribute(self, order_id, key, value):
+        self.orders[order_id][key] = value
+
     def remove_oldest_orders(self, nb_to_remove):
         time_sorted_orders = sorted(self.orders.values(),
                                     key=lambda x: x[ExchangeConstantsOrderColumns.TIMESTAMP.value])
