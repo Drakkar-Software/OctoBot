@@ -219,7 +219,7 @@ class RESTExchange(AbstractExchange, Initializable):
             if created_order and not self._ensure_order_details_completeness(created_order):
                 if ecoc.ID.value in created_order:
                     order_id = created_order[ecoc.ID.value]
-                    order_symbol = created_order[ecoc.SYMBOL.value] if ecoc.ID.value in created_order else None
+                    order_symbol = created_order[ecoc.SYMBOL.value] if ecoc.SYMBOL.value in created_order else None
                     return await self.exchange_manager.get_exchange().get_order(order_id, order_symbol)
             return created_order
 
