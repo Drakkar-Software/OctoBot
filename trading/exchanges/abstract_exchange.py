@@ -92,7 +92,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
+    async def create_order(self, order_type, symbol, quantity, price=None, stop_price=None):
         pass
 
     @abstractmethod
