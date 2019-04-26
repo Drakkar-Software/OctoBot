@@ -37,7 +37,11 @@
                             class="editable editable-click config-element">
                 {{keys_value}}</a><br>
 
-                API Password (if required by exchange) : <a href="#"
+                API Password
+                <i class="fa fa-question"
+                   data-toggle="tooltip" data-placement="top"
+                   title="An API password is required by some exchanges, leave as is otherwise.">
+                </i> : <a href="#"
                             id="exchange_api-secret"
                             config-key="exchanges_{{exchange}}_api-password"
                             config-type="global_config"
