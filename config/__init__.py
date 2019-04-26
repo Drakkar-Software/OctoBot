@@ -148,8 +148,9 @@ CONFIG_ENABLED_PERSISTENCE = "multi-session-profitability"
 
 
 # Exchanges
-TESTED_EXCHANGES = ["binance"]
-SIMULATOR_TESTED_EXCHANGES = ["bitfinex", "bittrex", "coinbasepro", "kraken", "poloniex", "cryptopia", "bitmex"]
+TESTED_EXCHANGES = ["binance", "kucoin2"]
+SIMULATOR_TESTED_EXCHANGES = ["bitfinex", "bittrex", "coinbasepro", "kraken", "kucoin2", "poloniex", "cryptopia",
+                              "bitmex"]
 
 CONFIG_SIMULATOR_FEES = "fees"
 CONFIG_SIMULATOR_FEES_MAKER = "maker"
