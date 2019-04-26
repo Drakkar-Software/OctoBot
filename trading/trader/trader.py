@@ -85,8 +85,14 @@ class Trader(Initializable):
         if self.enable:
             if self.previous_state_manager is not None:
                 self.load_previous_state_if_any()
-            await self.portfolio.initialize()
-            await self.trades_manager.initialize()
+            try:
+                await self.portfolio.initialize()
+                await self.trades_manager.initialize()
+            except Exception as e:
+                self.enable = False
+                self.logger.error(f"Error when initializing portfolio: {e}. "
+                                  f"{self.exchange.get_name()} trader disabled.")
+                self.logger.exception(e)
 
     def load_previous_state_if_any(self):
         # unused for real trader yet

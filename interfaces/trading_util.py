@@ -41,7 +41,7 @@ def get_portfolio_holdings():
     simulated_currency_portfolio = {}
 
     for trader in traders:
-        if trader.enabled(trader.config):
+        if trader.is_enabled():
             trade_manager = trader.get_trades_manager()
 
             trader_currencies_values = get_bot().run_in_main_asyncio_loop(trade_manager.get_current_holdings_values())
@@ -62,7 +62,7 @@ def get_portfolio_current_value():
     has_simulated_trader = False
 
     for trader in traders:
-        if trader.enabled(trader.config):
+        if trader.is_enabled():
             trade_manager = trader.get_trades_manager()
 
             get_bot().run_in_main_asyncio_loop(trade_manager.update_portfolio_and_currencies_current_value())
@@ -229,7 +229,7 @@ def get_global_profitability():
     has_simulated_trader = False
 
     for trader in traders:
-        if trader.enabled(trader.config):
+        if trader.is_enabled():
             trade_manager = trader.get_trades_manager()
 
             # TODO : use other return values
