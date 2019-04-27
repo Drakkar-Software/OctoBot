@@ -181,6 +181,17 @@ class GlobalPriceUpdater:
             limit=limit,
             return_list=False))
 
+        if self.in_backtesting:
+            # dev tool:
+            # can be used to stop backtesting on a given candle before technical evaluators update
+            # (set target_candle_date to the date of the wanted candle in web interface in %d/%m/%y %H:%M format)
+            # ex: target_candle_date = "8/04/19 06"
+            target_candle_date = ""
+            if target_candle_date:
+                from tools.timestamp_util import convert_timestamp_to_datetime
+                if target_candle_date in convert_timestamp_to_datetime(numpy_candle_data[0][-1]):
+                    print("found candle")
+
         evaluator_task_manager_to_notify.evaluator.set_data(numpy_candle_data)
         self.refreshed_times[time_frame][symbol] += 1
         if notify:
