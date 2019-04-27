@@ -59,7 +59,11 @@ class Backtester:
 
     async def start_backtesting(self, in_thread=False):
         self.error = None
-        return await start_backtesting_bot(self.octobot, in_thread=in_thread, watcher=self)
+        try:
+            return await start_backtesting_bot(self.octobot, in_thread=in_thread, watcher=self)
+        except Exception as e:
+            self.error = e
+            raise e
 
     def get_bot(self):
         return self.octobot
