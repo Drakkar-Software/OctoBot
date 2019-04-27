@@ -218,9 +218,9 @@ class RESTExchange(AbstractExchange, Initializable):
             # some exchanges are not returning the full order details on creation: fetch it if necessary
             if created_order and not self._ensure_order_details_completeness(created_order):
                 if ecoc.ID.value in created_order:
-                    order_id = created_order[ecoc.ID.value]
                     order_symbol = created_order[ecoc.SYMBOL.value] if ecoc.SYMBOL.value in created_order else None
-                    return await self.exchange_manager.get_exchange().get_order(order_id, order_symbol)
+                    return await self.exchange_manager.get_exchange().get_order(created_order[ecoc.ID.value],
+                                                                                order_symbol)
             return created_order
 
         except InsufficientFunds as e:
@@ -253,9 +253,10 @@ class RESTExchange(AbstractExchange, Initializable):
         return created_order
 
     @staticmethod
-    def _ensure_order_details_completeness(order):
-        order_required_fields = [ecoc.ID.value, ecoc.TIMESTAMP.value, ecoc.SYMBOL.value, ecoc.TYPE.value,
-                                 ecoc.SIDE.value, ecoc.PRICE.value, ecoc.AMOUNT.value, ecoc.REMAINING.value]
+    def _ensure_order_details_completeness(order, order_required_fields=None):
+        if order_required_fields is None:
+            order_required_fields = [ecoc.ID.value, ecoc.TIMESTAMP.value, ecoc.SYMBOL.value, ecoc.TYPE.value,
+                                     ecoc.SIDE.value, ecoc.PRICE.value, ecoc.AMOUNT.value, ecoc.REMAINING.value]
         return all(key in order for key in order_required_fields)
 
     def _log_error(self, error, order_type, symbol, quantity, price, stop_price):
