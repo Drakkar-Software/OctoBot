@@ -67,6 +67,12 @@ class AbstractEvaluator:
             f"/{cls.get_name() + CONFIG_FILE_EXT}"
 
     @classmethod
+    def get_config_file_error_message(cls, error):
+        return f"Key Error when computing {cls.get_name()} this probably means an error in " \
+            f"{cls.get_config_file_name()} config file" \
+            f". (error: {error})"
+
+    @classmethod
     def get_evaluator_config(cls):
         try:
             return load_config(cls.get_config_file_name())
