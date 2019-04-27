@@ -168,12 +168,12 @@ class AbstractBacktestingTest:
         self._assert_results(run_results, profitability, bot)
 
     async def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3, profitability_4,
-                                      skip_long_ones=False):
+                                      skip_bittrex=False):
         run_results, bot = await self._run_backtesting_with_current_config("ICX/BTC")
         self._assert_results(run_results, profitability_1, bot)
         run_results, bot = await self._run_backtesting_with_current_config("ONT/BTC")
         self._assert_results(run_results, profitability_2, bot)
-        if not skip_long_ones:
+        if not skip_bittrex:
             run_results, bot = \
                 await self._run_backtesting_with_current_config("NEO/BTC", "bittrex_NEO_BTC_20180722_195942")
             self._assert_results(run_results, profitability_3, bot)
@@ -181,21 +181,21 @@ class AbstractBacktestingTest:
                 await self._run_backtesting_with_current_config("XVG/BTC", "bittrex_XVG_BTC_20180726_211225")
             self._assert_results(run_results, profitability_4, bot)
 
-    async def run_test_sharp_downtrend(self, profitability_1, profitability_2, skip_long_ones=False):
+    async def run_test_sharp_downtrend(self, profitability_1, profitability_2, skip_bittrex=False):
         run_results, bot = await self._run_backtesting_with_current_config("VEN/BTC")
         self._assert_results(run_results, profitability_1, bot)
-        if not skip_long_ones:
+        if not skip_bittrex:
             run_results, bot = \
                 await self._run_backtesting_with_current_config("XRP/BTC", "bittrex_XRP_BTC_20180726_210927")
             self._assert_results(run_results, profitability_2, bot)
 
     async def run_test_flat_markets(self, profitability_1, profitability_2, profitability_3, profitability_4,
-                                    skip_long_ones=False):
+                                    skip_bittrex=False):
         run_results, bot = await self._run_backtesting_with_current_config("NEO/BTC")
         self._assert_results(run_results, profitability_1, bot)
         run_results, bot = await self._run_backtesting_with_current_config("XRB/BTC")
         self._assert_results(run_results, profitability_2, bot)
-        if not skip_long_ones:
+        if not skip_bittrex:
             run_results, bot = \
                 await self._run_backtesting_with_current_config("ADA/BTC", "bittrex_ADA_BTC_20180722_223357")
             self._assert_results(run_results, profitability_3, bot)
