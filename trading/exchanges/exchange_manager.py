@@ -177,10 +177,12 @@ class ExchangeManager(Initializable):
         self.cryptocurrencies_traded_pairs = {}
         for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
             if self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS] != CONFIG_WILDCARD:
-                self.cryptocurrencies_traded_pairs[cryptocurrency] = \
-                    [symbol
-                     for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]
-                     if self.symbol_exists(symbol)]
+                self.cryptocurrencies_traded_pairs[cryptocurrency] = []
+                for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]:
+                    if self.symbol_exists(symbol):
+                        self.cryptocurrencies_traded_pairs[cryptocurrency].append(symbol)
+                    else:
+                        self.logger.error(f"{self.exchange.get_name()} is not supporting the {symbol} trading pair.")
 
             else:
                 self.cryptocurrencies_traded_pairs[cryptocurrency] = self._create_wildcard_symbol_list(
@@ -191,6 +193,9 @@ class ExchangeManager(Initializable):
                     self.cryptocurrencies_traded_pairs[cryptocurrency] += self._add_tradable_symbols(cryptocurrency)
 
             # add to global traded pairs
+            if not self.cryptocurrencies_traded_pairs[cryptocurrency]:
+                self.logger.error(f"{self.exchange.get_name()} is not supporting any {cryptocurrency} trading pair "
+                                  f"from current configuration.")
             self.traded_pairs += self.cryptocurrencies_traded_pairs[cryptocurrency]
 
     def get_traded_pairs(self, cryptocurrency=None):
