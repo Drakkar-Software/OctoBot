@@ -28,21 +28,33 @@ from services.Dispatchers.dispatcher_creator import DispatcherCreator
 
 class EvaluatorCreator:
 
+    LOGGER = None
+
     @classmethod
     def get_name(cls):
         return cls.__name__
 
     @staticmethod
+    def get_logger():
+        if EvaluatorCreator.LOGGER is None:
+            EvaluatorCreator.LOGGER = get_logger(EvaluatorCreator.get_name())
+        return EvaluatorCreator.LOGGER
+
+    @staticmethod
     def create_ta_eval_list(evaluator, relevant_evaluators):
         ta_eval_instance_list = []
         for ta_eval_class in AdvancedManager.create_advanced_evaluator_types_list(TAEvaluator, evaluator.get_config()):
-            ta_eval_class_instance = ta_eval_class()
-            ta_eval_class_instance.set_config(evaluator.config)
-            if EvaluatorCreator.is_relevant_evaluator(ta_eval_class_instance, relevant_evaluators):
-                ta_eval_class_instance.set_logger(get_logger(ta_eval_class.get_name()))
-                ta_eval_class_instance.set_data(evaluator.data)
-                ta_eval_class_instance.set_symbol(evaluator.get_symbol())
-                ta_eval_instance_list.append(ta_eval_class_instance)
+            try:
+                ta_eval_class_instance = ta_eval_class()
+                ta_eval_class_instance.set_config(evaluator.config)
+                if EvaluatorCreator.is_relevant_evaluator(ta_eval_class_instance, relevant_evaluators):
+                    ta_eval_class_instance.set_logger(get_logger(ta_eval_class.get_name()))
+                    ta_eval_class_instance.set_data(evaluator.data)
+                    ta_eval_class_instance.set_symbol(evaluator.get_symbol())
+                    ta_eval_instance_list.append(ta_eval_class_instance)
+            except Exception as e:
+                EvaluatorCreator.get_logger().error(f"Error when creating evaluator {ta_eval_class}: {e}")
+                EvaluatorCreator.get_logger().exception(e)
 
         return ta_eval_instance_list
 
@@ -50,27 +62,31 @@ class EvaluatorCreator:
     def create_social_eval(config, symbol, dispatchers_list, relevant_evaluators):
         social_eval_list = []
         for social_eval_class in AdvancedManager.create_advanced_evaluator_types_list(SocialEvaluator, config):
-            social_eval_class_instance = social_eval_class()
-            social_eval_class_instance.set_config(config)
-            if EvaluatorCreator.is_relevant_evaluator(social_eval_class_instance, relevant_evaluators):
-                is_evaluator_to_be_used = True
-                social_eval_class_instance.set_logger(get_logger(social_eval_class.get_name()))
-                social_eval_class_instance.set_symbol(symbol)
-                social_eval_class_instance.prepare()
+            try:
+                social_eval_class_instance = social_eval_class()
+                social_eval_class_instance.set_config(config)
+                if EvaluatorCreator.is_relevant_evaluator(social_eval_class_instance, relevant_evaluators):
+                    is_evaluator_to_be_used = True
+                    social_eval_class_instance.set_logger(get_logger(social_eval_class.get_name()))
+                    social_eval_class_instance.set_symbol(symbol)
+                    social_eval_class_instance.prepare()
 
-                is_dispatcher_client, is_evaluator_to_be_used = \
-                    DispatcherCreator.bind_to_dispatcher_if_necessary(social_eval_class_instance,
-                                                                      dispatchers_list,
-                                                                      symbol,
-                                                                      is_evaluator_to_be_used)
-                # register refreshing task if the evaluator is not managed by a dispatcher
-                if not is_dispatcher_client and \
-                        is_evaluator_to_be_used and \
-                        social_eval_class_instance.get_is_to_be_independently_tasked():
-                    social_eval_class_instance.set_is_to_be_started_as_task(True)
+                    is_dispatcher_client, is_evaluator_to_be_used = \
+                        DispatcherCreator.bind_to_dispatcher_if_necessary(social_eval_class_instance,
+                                                                          dispatchers_list,
+                                                                          symbol,
+                                                                          is_evaluator_to_be_used)
+                    # register refreshing task if the evaluator is not managed by a dispatcher
+                    if not is_dispatcher_client and \
+                            is_evaluator_to_be_used and \
+                            social_eval_class_instance.get_is_to_be_independently_tasked():
+                        social_eval_class_instance.set_is_to_be_started_as_task(True)
 
-                if is_evaluator_to_be_used:
-                    social_eval_list.append(social_eval_class_instance)
+                    if is_evaluator_to_be_used:
+                        social_eval_list.append(social_eval_class_instance)
+            except Exception as e:
+                EvaluatorCreator.get_logger().error(f"Error when creating evaluator {social_eval_class}: {e}")
+                EvaluatorCreator.get_logger().exception(e)
 
         return social_eval_list
 
@@ -86,22 +102,26 @@ class EvaluatorCreator:
     def create_real_time_ta_evals(config, exchange_inst, symbol, relevant_evaluators, dispatchers_list):
         real_time_ta_eval_list = []
         for real_time_eval_class in AdvancedManager.create_advanced_evaluator_types_list(RealTimeEvaluator, config):
-            real_time_eval_class_instance = EvaluatorCreator.instantiate_real_time_evaluator(real_time_eval_class,
-                                                                                             exchange_inst, symbol)
-            real_time_eval_class_instance.set_config(config)
-            if EvaluatorCreator.is_relevant_evaluator(real_time_eval_class_instance, relevant_evaluators):
-                real_time_eval_class_instance.set_logger(get_logger(real_time_eval_class.get_name()))
+            try:
+                real_time_eval_class_instance = EvaluatorCreator.instantiate_real_time_evaluator(real_time_eval_class,
+                                                                                                 exchange_inst, symbol)
+                real_time_eval_class_instance.set_config(config)
+                if EvaluatorCreator.is_relevant_evaluator(real_time_eval_class_instance, relevant_evaluators):
+                    real_time_eval_class_instance.set_logger(get_logger(real_time_eval_class.get_name()))
 
-                is_dispatcher_client, is_evaluator_to_be_used = \
-                    DispatcherCreator.bind_to_dispatcher_if_necessary(real_time_eval_class_instance,
-                                                                      dispatchers_list, symbol, True)
+                    is_dispatcher_client, is_evaluator_to_be_used = \
+                        DispatcherCreator.bind_to_dispatcher_if_necessary(real_time_eval_class_instance,
+                                                                          dispatchers_list, symbol, True)
 
-                # register refreshing task
-                if not is_dispatcher_client:
-                    real_time_eval_class_instance.set_is_to_be_started_as_task(True)
+                    # register refreshing task
+                    if not is_dispatcher_client:
+                        real_time_eval_class_instance.set_is_to_be_started_as_task(True)
 
-                if is_evaluator_to_be_used:
-                    real_time_ta_eval_list.append(real_time_eval_class_instance)
+                    if is_evaluator_to_be_used:
+                        real_time_ta_eval_list.append(real_time_eval_class_instance)
+            except Exception as e:
+                EvaluatorCreator.get_logger().error(f"Error when creating evaluator {real_time_eval_class}: {e}")
+                EvaluatorCreator.get_logger().exception(e)
 
         return real_time_ta_eval_list
 
@@ -117,13 +137,17 @@ class EvaluatorCreator:
     def create_strategies_eval_list(config):
         strategies_eval_list = []
         for strategies_eval_class in AdvancedManager.create_advanced_evaluator_types_list(StrategiesEvaluator, config):
-            strategies_eval_class_instance = strategies_eval_class()
-            strategies_eval_class_instance.set_config(config)
-            if strategies_eval_class_instance.get_is_enabled():
-                strategies_eval_class_instance.set_logger(
-                    get_logger(strategies_eval_class_instance.get_name()))
+            try:
+                strategies_eval_class_instance = strategies_eval_class()
+                strategies_eval_class_instance.set_config(config)
+                if strategies_eval_class_instance.get_is_enabled():
+                    strategies_eval_class_instance.set_logger(
+                        get_logger(strategies_eval_class_instance.get_name()))
 
-                strategies_eval_list.append(strategies_eval_class_instance)
+                    strategies_eval_list.append(strategies_eval_class_instance)
+            except Exception as e:
+                EvaluatorCreator.get_logger().error(f"Error when creating strategy {strategies_eval_class}: {e}")
+                EvaluatorCreator.get_logger().exception(e)
 
         return strategies_eval_list
 
