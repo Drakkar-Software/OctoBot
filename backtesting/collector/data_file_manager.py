@@ -29,7 +29,8 @@ DATA_FILE_EXT = ".data"
 DATA_FILE_TIME_WRITE_FORMAT = '%Y%m%d_%H%M%S'
 DATA_FILE_TIME_READ_FORMAT = DATA_FILE_TIME_WRITE_FORMAT.replace("_", "")
 DATA_FILE_TIME_DISPLAY_FORMAT = '%d %B %Y at %H:%M:%S'
-TIME_FRAMES_TO_DISPLAY = [TimeFrames.THIRTY_MINUTES.value, TimeFrames.ONE_DAY.value]
+TIME_FRAMES_TO_DISPLAY = [TimeFrames.THIRTY_MINUTES.value, TimeFrames.ONE_HOUR.value,
+                          TimeFrames.FOUR_HOURS.value, TimeFrames.ONE_DAY.value]
 
 
 def interpret_file_name(file_name):
