@@ -107,6 +107,12 @@ def filter_wanted_symbols(config, wanted_symbols):
         raise SymbolNotFoundException(f"No symbol matching {wanted_symbols} found in configuration file.")
 
 
+def update_starting_portfolio_if_required(config, wanted_symbol):
+    quote, base = split_symbol(wanted_symbol)
+    if DEFAULT_REFERENCE_MARKET != base:
+        _switch_reference_market(config, base)
+
+
 def create_backtesting_bot(config) -> OctoBot:
     return OctoBot(config)
 
