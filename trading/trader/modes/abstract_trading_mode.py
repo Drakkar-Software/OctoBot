@@ -34,6 +34,7 @@ class AbstractTradingMode:
     def __init__(self, config, exchange):
         self.config = config
         self.exchange = exchange
+        self.logger = get_logger(self.get_name())
 
         self.trading_config = None
         self.creators = {}
@@ -135,8 +136,12 @@ class AbstractTradingMode:
         self._init_strategies_instances(new_symbol, symbol_evaluator.get_strategies_eval_list(self.exchange))
 
         # create decider and creators
-        self.create_creators(new_symbol, symbol_evaluator)
-        self.create_deciders(new_symbol, symbol_evaluator)
+        try:
+            self.create_creators(new_symbol, symbol_evaluator)
+            self.create_deciders(new_symbol, symbol_evaluator)
+        except Exception as e:
+            self.logger.error(f"Error when initializing trading mode: {e}")
+            self.logger.exception({e})
 
     def get_strategy_instances_by_classes(self, symbol):
         return self.strategy_instances_by_classes[symbol]
@@ -161,12 +166,11 @@ class AbstractTradingMode:
                 missing_strategies.append(required_class)
         if found_strategy_count < required_strategies_min_count:
             for missing_strategy in missing_strategies:
-                get_logger(self.get_name()).error(f"No instance of {missing_strategy.__name__} "
-                                                  f"or advanced equivalent found, {self.get_name()} trading "
-                                                  "mode can't work properly ! Maybe this strategy is disabled in"
-                                                  f" tentacles/Evaluator/evaluator_config.json (missing "
-                                                  f"{required_strategies_min_count-found_strategy_count} out of "
-                                                  f"{required_strategies_min_count} minimum required strategies).")
+                self.logger.error(f"No instance of {missing_strategy.__name__} or advanced equivalent found, "
+                                  f"{self.get_name()} trading mode can't work properly ! Maybe this strategy is "
+                                  f"disabled in tentacles/Evaluator/evaluator_config.json (missing "
+                                  f"{required_strategies_min_count-found_strategy_count} out of "
+                                  f"{required_strategies_min_count} minimum required strategies).")
 
     def load_config(self):
         config_file = self.get_config_file_name()
