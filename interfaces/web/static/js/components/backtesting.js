@@ -195,7 +195,7 @@ $(document).ready(function() {
     });
     lock_interface();
 
-    setInterval(function(){refresh_status();}, 1000);
+    setInterval(function(){refresh_status();}, 300);
     function refresh_status(){
         check_backtesting_state();
     }
