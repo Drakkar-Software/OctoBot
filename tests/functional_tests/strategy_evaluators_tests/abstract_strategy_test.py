@@ -18,7 +18,7 @@ from abc import ABCMeta, ABC
 import copy
 
 from backtesting.backtesting_util import create_backtesting_config, create_backtesting_bot, \
-    start_backtesting_bot, filter_wanted_symbols
+    start_backtesting_bot, filter_wanted_symbols, update_starting_portfolio_if_required
 from backtesting.abstract_backtesting_test import AbstractBacktestingTest
 from config import CONFIG_EVALUATOR, CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADING_TENTACLES, \
     CONFIG_EVALUATORS_WILDCARD
@@ -70,6 +70,7 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
         # do not activate web interface on standalone backtesting bot
         WebService.enable(config_to_use, False)
         filter_wanted_symbols(config_to_use, [symbol])
+        update_starting_portfolio_if_required(config_to_use, symbol)
         bot = create_backtesting_bot(config_to_use)
         return await start_backtesting_bot(bot), bot
 
