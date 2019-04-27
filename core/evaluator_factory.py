@@ -133,8 +133,8 @@ class EvaluatorFactory:
                                                         exchange=exchange,
                                                         real_time_ta_eval_list=real_time_ta_eval_list)
             else:
-                self.logger.warning(f"{exchange.get_name()} exchange is not supporting the required time frame: "
-                                    f"'{time_frame.value}' for {symbol_evaluator.get_symbol()}.")
+                self.logger.error(f"{exchange.get_name()} exchange is not supporting the required time frame: "
+                                  f"'{time_frame.value}' for {symbol_evaluator.get_symbol()}.")
 
     @staticmethod
     def _is_time_frame_exists_in_exchange(exchange, symbol_evaluator, time_frame):
