@@ -20,28 +20,26 @@
         &ensp;Trades
     </h1></div>
     <div class="card-body">
-        <div class="table-responsive">
-          <table id="open_trades_datatable" class="table table-striped table-bordered table-hover">
-            <caption>List of trades</caption>
-          <thead>
-            <tr>
-                <th scope="col">#</th>
-                <th scope="col">Exchange</th>
-                <th scope="col">Pair</th>
-                <th class="text-center" scope="col">Type</th>
-                <th scope="col">Price</th>
-                <th scope="col">Quantity</th>
-                <th class="text-right" scope="col">Total</th>
-                <th class="text-right" scope="col">Fee</th>
-                <th class="text-right" scope="col">Execution</th>
-            </tr>
-          </thead>
-          <tbody>
-          {{ extract_trades(real_trades_history, "Real") }}
-          {{ extract_trades(simulated_trades_history, "Simulated") }}
-          </tbody>
-          </table>
-        </div>
+      <table id="open_trades_datatable" class="table table-striped table-bordered table-hover">
+        <caption>List of trades</caption>
+      <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Exchange</th>
+            <th scope="col">Pair</th>
+            <th class="text-center" scope="col">Type</th>
+            <th scope="col">Price</th>
+            <th scope="col">Quantity</th>
+            <th class="text-right" scope="col">Total</th>
+            <th class="text-right" scope="col">Fee</th>
+            <th class="text-right" scope="col">Execution</th>
+        </tr>
+      </thead>
+      <tbody>
+      {{ extract_trades(real_trades_history, "Real") }}
+      {{ extract_trades(simulated_trades_history, "Simulated") }}
+      </tbody>
+      </table>
     </div>
 </div>
 

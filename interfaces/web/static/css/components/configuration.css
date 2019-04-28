@@ -1,0 +1,17 @@
+li.nav-item {
+    padding-right: 5px;
+}
+
+.navbar .nav-item .nav-link {
+    color: white;
+}
+
+.navbar .nav-item .nav-link.active {
+    color: black;
+    font-weight: 400;
+    background: white;
+}
+
+a.editable.editable-click {
+    color: blue;
+}

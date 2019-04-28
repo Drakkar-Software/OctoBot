@@ -3,11 +3,7 @@
 {% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
 
 {% block additional_style %}
-<style>
-    li.nav-item {
-        padding-right: 5px;
-    }
-</style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/configuration.css') }}">
 {% endblock additional_style %}
 
 {% block body %}
