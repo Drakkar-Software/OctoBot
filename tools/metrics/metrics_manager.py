@@ -34,6 +34,7 @@ import asyncio
 import json
 import requests
 import threading
+from concurrent.futures import CancelledError
 
 from config import CONFIG_METRICS_BOT_ID, METRICS_URL, METRICS_ROUTE_GEN_BOT_ID, \
     METRICS_ROUTE_UPTIME, METRICS_ROUTE_REGISTER, TIMER_BEFORE_METRICS_REGISTRATION_SECONDS, \
@@ -72,6 +73,8 @@ class MetricsManager:
                         await self._update_uptime()
                     except Exception as e:
                         self.logger.debug(f"Exception when handling metrics: {e}")
+            except CancelledError:
+                pass
             except Exception as e:
                 self.logger.debug(f"Exception when handling metrics registration: {e}")
 
