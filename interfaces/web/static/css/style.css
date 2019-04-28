@@ -39,7 +39,6 @@ body:before {
     width: 100%;
     height: 100%;
     opacity : 0.2;
-
 }
 
 .nav-item.active  {
@@ -177,4 +176,30 @@ body:before {
 .editable-cancel {
     position: relative;
     z-index: 2;
+}
+
+/* tables */
+table tbody tr,
+table.dataTable,
+.dataTables_wrapper label,
+.dataTables_wrapper caption,
+.dataTables_wrapper .dataTables_info {
+    color: white;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: #666 !important;
+}
+
+table tr,
+table.dataTable tbody tr {
+    color: white;
+    background-color: #4B515D;
+}
+
+table tbody tr:hover td,
+table.dataTable tbody tr:hover td {
+    -moz-box-shadow: inset 0 0 100px 100px rgba(255, 255, 255, 0.5);
+    -webkit-box-shadow: inset 0 0 100px 100px rgba(255, 255, 255, 0.5);
+    box-shadow: inset 0 0 100px 100px rgba(255, 255, 255, 0.5);
 }
