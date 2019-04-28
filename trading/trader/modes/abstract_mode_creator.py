@@ -195,8 +195,8 @@ class AbstractTradingModeCreator:
             total_order_price = valid_quantity * valid_price
 
             if valid_quantity < min_quantity:
-                    # invalid order
-                    return []
+                # invalid order
+                return []
 
             # case 1.1: use only quantity and cost
             if AbstractTradingModeCreator._is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value):
