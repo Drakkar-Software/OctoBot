@@ -14,9 +14,10 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from copy import copy
+
+
 from tools.logging.logging_util import get_logger
-
-
 from backtesting.collector.data_file_manager import get_all_available_data_files, get_file_description, delete_data_file
 from backtesting.backtester import Backtester
 from backtesting.collector.data_collector import DataCollector
@@ -85,7 +86,7 @@ def get_delete_data_file(file_name):
 
 def collect_data_file(exchange, symbol):
     success = False
-    data_collector = DataCollector(get_bot().get_config(), False)
+    data_collector = DataCollector(copy(get_bot().get_config()), False)
 
     try:
         result = get_bot().run_in_main_asyncio_loop(data_collector.execute_with_specific_target(exchange, symbol))
