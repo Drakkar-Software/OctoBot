@@ -30,7 +30,7 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, \
     CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET, \
     CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, CONFIG_METRICS, CONFIG_TRADER, \
-    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING
+    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
@@ -345,3 +345,14 @@ class ConfigManager:
     @staticmethod
     def get_trader_simulator_enabled(config):
         return config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION]
+
+    @staticmethod
+    def accepted_terms(config):
+        if CONFIG_ACCEPTED_TERMS in config:
+            return config[CONFIG_ACCEPTED_TERMS]
+        return False
+
+    @staticmethod
+    def accept_terms(config, accepted):
+        config[CONFIG_ACCEPTED_TERMS] = accepted
+        ConfigManager.simple_save_config_update(config)

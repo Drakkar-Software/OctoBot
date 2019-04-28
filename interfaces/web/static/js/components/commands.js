@@ -18,22 +18,24 @@
 
 function load_commands_metadata() {
     const feedbackButton = $("#feedbackButton");
-    $.get({
-        url: feedbackButton.attr(update_url_attr),
-        dataType: "json",
-        success: function(msg, status){
-            if(msg) {
-                feedbackButton.attr("href", msg);
-                feedbackButton.removeClass("disabled");
-            }else{
+    if(feedbackButton.length > 0){
+        $.get({
+            url: feedbackButton.attr(update_url_attr),
+            dataType: "json",
+            success: function(msg, status){
+                if(msg) {
+                    feedbackButton.attr("href", msg);
+                    feedbackButton.removeClass("disabled");
+                }else{
+                    setNoFeedback(feedbackButton);
+                }
+            },
+            error: function(result, status, error){
                 setNoFeedback(feedbackButton);
+                window.console&&console.error("Impossible to get the current OctoBot feedback form: "+error);
             }
-        },
-        error: function(result, status, error){
-            setNoFeedback(feedbackButton);
-            window.console&&console.error("Impossible to get the current OctoBot feedback form: "+error);
-        }
-    })
+        })
+    }
 }
 
 function setNoFeedback(feedbackButton){

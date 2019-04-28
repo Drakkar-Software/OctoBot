@@ -38,5 +38,6 @@
       "BTC": 10,
       "USDT": 1000
     }
-  }
+  },
+  "accepted_terms": false
 }

@@ -14,23 +14,16 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from flask import render_template, request, redirect
 
+from flask import render_template
+
+from config.disclaimer import DISCLAIMER
 from interfaces.web import server_instance
-from interfaces.web.models.configuration import get_in_backtesting_mode, accepted_terms, accept_terms
-from interfaces.web.models.interface_settings import get_watched_symbols
+from interfaces.web.models.configuration import accepted_terms
 
 
-@server_instance.route("/")
-@server_instance.route("/home")
-def home():
-    if request.args:
-        accepted = request.args.get("accept_terms") == "True"
-        accept_terms(accepted)
-    if accepted_terms():
-        in_backtesting = get_in_backtesting_mode()
-        return render_template('index.html',
-                               watched_symbols=get_watched_symbols(),
-                               backtesting_mode=in_backtesting)
-    else:
-        return redirect("/terms")
+@server_instance.route("/terms")
+def terms():
+    return render_template("terms.html",
+                           disclaimer=DISCLAIMER,
+                           accepted_terms=accepted_terms())

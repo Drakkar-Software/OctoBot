@@ -191,6 +191,14 @@ def get_in_backtesting_mode():
     return backtesting_enabled(get_bot().get_config())
 
 
+def accepted_terms():
+    return ConfigManager.accepted_terms(get_edited_config())
+
+
+def accept_terms(accepted):
+    return ConfigManager.accept_terms(get_edited_config(), accepted)
+
+
 def _fill_evaluator_config(evaluator_name, activated, eval_type_key,
                            evaluator_type, detailed_config, is_strategy=False):
     description = "description"
