@@ -1,0 +1,7 @@
+{% macro text_lines(lines) -%}
+    {% for line in lines %}
+        <p>
+            {{ line }}
+        </p>
+    {% endfor %}
+{%- endmacro %}

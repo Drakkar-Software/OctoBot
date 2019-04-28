@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% set active_page = "commands" %}
+{% set show_nab_bar = accepted_terms %}
+{% import 'macros/text.html' as m_text %}
+
+{% block body %}
+<br>
+
+<div class="card">
+    <div class="card-header"><h1>Disclaimer</h1></div>
+    <div class="card-body">
+        {{ m_text.text_lines(disclaimer) }}
+        <div>
+            <a href="{{ url_for('home', accept_terms=True) }}" class="button btn btn-primary waves-effect">
+                Accept and go to OctoBot
+            </a>
+            <button route="{{ url_for('commands', cmd='stop') }}" type="button" class="btn btn-danger waves-effect">
+                Stop Octobot
+            </button>
+        </div>
+    </div>
+</div>
+
+<br>
+{% endblock %}
+
+{% block additional_scripts %}
+    <script src="{{ url_for('static', filename='js/components/commands.js') }}"></script>
+{% endblock additional_scripts %}

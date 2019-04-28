@@ -18,6 +18,7 @@ from tools.logging.logging_util import get_logger
 from copy import copy
 from flask import render_template, jsonify
 
+from config.disclaimer import DISCLAIMER
 from interfaces.web import server_instance, get_notifications, flush_notifications, get_errors_count
 from interfaces import get_bot
 from tools.commands import Commands
@@ -40,7 +41,8 @@ def commands(cmd=None):
 
     return render_template('commands.html',
                            cmd=cmd,
-                           metrics_enabled=get_metrics_enabled())
+                           metrics_enabled=get_metrics_enabled(),
+                           disclaimer=DISCLAIMER)
 
 
 @server_instance.route("/update")
