@@ -14,26 +14,26 @@
         {% endblock additional_meta %}
 
         <!-- Bootstrap CSS -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
         <!-- Fontawesome CSS -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/fontawesome_all.css') }}">
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
 
         <!-- toaster -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/toastr.min.css') }}">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" crossorigin="anonymous">
 
         <!-- mdb CSS -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/mdb.min.css') }}">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.7.7/css/mdb.min.css" rel="stylesheet" crossorigin="anonymous">
 
         <!-- Datatables -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/dataTables.min.css') }}">
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.css" crossorigin="anonymous">
 
         <!-- Select -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-select.min.css') }}">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.9/dist/css/bootstrap-select.min.css" crossorigin="anonymous">
 
         <!-- Editable -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-editable.css') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/select2.min.css') }}">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" crossorigin="anonymous"/>
 
         <!-- Own -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -45,19 +45,17 @@
     <body class="bg-dark" style="{% block body_style %}{% endblock body_style %}">
         <!-- Scripts -->
         <!-- At the beginning of the page : be available for template scripts -->
-        <script src="{{ url_for('static', filename='js/lib/jquery-3.3.1.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/popper.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/toastr.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/mdb.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/plotly.min.js') }}"></script>
+        <script src="https://code.jquery.com/jquery-3.4.0.min.js" integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.7.7/js/mdb.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.plot.ly/plotly-1.47.4.min.js" crossorigin="anonymous"></script>
 
-        <script src="{{ url_for('static', filename='js/lib/jquery.dataTables.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/dataTables.min.js') }}"></script>
-
-        <script src="{{ url_for('static', filename='js/lib/bootstrap-select.js') }}"></script>
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.9/dist/js/bootstrap-select.min.js" crossorigin="anonymous"></script>
         <script src="{{ url_for('static', filename='js/lib/bootstrap-editable.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/lib/select2.full.min.js') }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"  crossorigin="anonymous"></script>
 
         <script src="{{ url_for('static', filename='js/common/cst.js') }}"></script>
         <script src="{{ url_for('static', filename='js/common/util.js') }}"></script>
