@@ -35,6 +35,7 @@ from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CO
     CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, \
     CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT, DEFAULT_CONFIG_FILE
 from config.config import load_config, init_config, is_config_empty_or_missing
+from config.disclaimer import DISCLAIMER
 from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 from tools.external_resources_manager import get_external_resource
@@ -87,6 +88,16 @@ def _auto_open_web(config, bot):
                         )
     except webbrowser.Error as e:
         logging.error("{0}, impossible to open automatically web interface".format(e))
+
+
+def _log_terms_if_unaccepted(config, logger):
+    if not ConfigManager.accepted_terms(config):
+        logger.info("*** Disclaimer ***")
+        for line in DISCLAIMER:
+            logger.info(line)
+        logger.info("... Disclaimer ...")
+    else:
+        logger.info("Disclaimer accepted by user.")
 
 
 def start_octobot(starting_args):
@@ -170,6 +181,8 @@ def start_octobot(starting_args):
                     reset_trading_history = starting_args.reset_trading_history
 
                     bot = OctoBot(config, reset_trading_history=reset_trading_history)
+
+                    _log_terms_if_unaccepted(config, logger)
 
                     import interfaces
                     interfaces.__init__(bot, config)

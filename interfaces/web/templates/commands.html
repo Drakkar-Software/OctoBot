@@ -1,5 +1,7 @@
 {% extends "layout.html" %}
 {% set active_page = "commands" %}
+{% import 'macros/text.html' as m_text %}
+
 {% block body %}
 <br>
 <div class="card">
@@ -40,10 +42,23 @@
     </div>
     <div class="card-footer">
         <p>
-            We are two developers on the project on our free time. If you enjoy the OctoBot, tips are much appreciated <i class="far fa-smile"></i>
+            We are two developers working on the project on our free time. If you enjoy the OctoBot, tips are much appreciated <i class="far fa-smile"></i>
         </p>
         <div><i class="fab fa-bitcoin"></i> 1DHfjxD3C4e2Xi37FsoTbVJ6e4zNtesiwf</div>
         <div> <i class="fab fa-ethereum"></i> 0xF154aA84B66e2bCacd74e201496D9ac3f81234D5</div>
+    </div>
+</div>
+<br>
+
+<div class="card">
+    <div class="card-header"><h1>Disclaimer</h1></div>
+    <div class="card-body">
+        {{ m_text.text_lines(disclaimer) }}
+        <p>
+            <a href="{{ url_for('terms') }}">
+                Terms and conditions
+            </a>
+        </p>
     </div>
 </div>
 <br>

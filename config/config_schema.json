@@ -17,6 +17,9 @@
     "performance-analyser": {
       "type": "boolean"
     },
+    "accepted_terms": {
+      "type": "boolean"
+    },
     "backtesting": {
       "type": "object",
       "properties": {

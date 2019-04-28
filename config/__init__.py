@@ -51,6 +51,9 @@ EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS = "public-announcements"
 GIT_ORIGIN = "origin"
 ORIGIN_URL = f"{GITHUB_URL}.git"
 
+# terms of service
+CONFIG_ACCEPTED_TERMS = "accepted_terms"
+
 # constants
 MSECONDS_TO_SECONDS = 1000
 MINUTE_TO_SECONDS = 60
