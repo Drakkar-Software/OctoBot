@@ -87,6 +87,12 @@ class AbstractTradingModeDecider:
             self.logger.error(f"Error when finalizing: {e}")
             self.logger.exception(e)
 
+    def get_strategy_evaluation(self, strategy_class):
+        for evaluated_strategies in self.symbol_evaluator.get_strategies_eval_list(self.exchange):
+            if isinstance(evaluated_strategies, strategy_class) or \
+               evaluated_strategies.has_class_in_parents(strategy_class):
+                return evaluated_strategies.get_eval_note()
+
     # called by cancel_symbol_open_orders => return true if OctoBot should cancel all orders for a symbol including
     # orders already existing when OctoBot started up
     @classmethod
