@@ -219,8 +219,13 @@ class RESTExchange(AbstractExchange, Initializable):
             if created_order and not self._ensure_order_details_completeness(created_order):
                 if ecoc.ID.value in created_order:
                     order_symbol = created_order[ecoc.SYMBOL.value] if ecoc.SYMBOL.value in created_order else None
-                    return await self.exchange_manager.get_exchange().get_order(created_order[ecoc.ID.value],
-                                                                                order_symbol)
+                    created_order = await self.exchange_manager.get_exchange().get_order(created_order[ecoc.ID.value],
+                                                                                         order_symbol)
+
+            # on some exchange, market order are not not including price, add it manually to ensure uniformity
+            if created_order[ecoc.PRICE.value] is None and price is not None:
+                created_order[ecoc.PRICE.value] = price
+
             return created_order
 
         except InsufficientFunds as e:
