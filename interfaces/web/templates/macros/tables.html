@@ -1,6 +1,6 @@
 {% macro order_tr(order, type='', timestamp='', sim_or_real='Simulated') -%}
     <tr>
-        <th scope="row">
+        <td scope="row">
             {% if sim_or_real == 'Simulated' %}
                 {{ sim_or_real }}
             {% else %}
@@ -10,7 +10,7 @@
                     {{ sim_or_real }} ({{ order.order_id }})
                 {% endif %}
             {% endif %}
-        </th>
+        </td>
         <td>{{ timestamp }}</td>
         <td>{{ order.get_exchange().get_name() }}</td>
         <td>{{ order.get_order_symbol() }}</td>
@@ -26,7 +26,7 @@
 
 {% macro trades_tr(trade, type='', timestamp='', sim_or_real='Simulated') -%}
     <tr>
-        <th scope="row">
+        <td scope="row">
             {% if sim_or_real == 'Simulated' %}
                 {{ sim_or_real }}
             {% else %}
@@ -36,7 +36,7 @@
                     {{ sim_or_real }} ({{ trade.order_id }})
                 {% endif %}
             {% endif %}
-        </th>
+        </td>
         <td>{{ trade.exchange.get_name() }}</td>
         <td>{{ trade.symbol }}</td>
         <td class="text-center">{{ type }}</td>
@@ -54,7 +54,7 @@
         class="bg-danger"
     {% endif %}
     {% if "WARNING" in log["Level"] %}
-        class="bg-warning"
+        class="bg-warning-dark"
     {% endif %}
     >
         <td scope="row">{{ log["Time"] }}</td>
@@ -74,8 +74,8 @@
         class="special-color"
     {% endif %}
     >
-        <th scope="row">{{ item["rank"] }}</th>
-        <th class="text-capitalize">{{ item["name"] }}</th>
+        <td scope="row">{{ item["rank"] }}</td>
+        <td class="text-capitalize">{{ item["name"] }}</td>
         <td>{{ item["count"] }}</td>
     </tr>
 {%- endmacro %}
