@@ -28,7 +28,7 @@ class ExchangeChannel(Channel):
         self.exchange_manager = exchange_manager
 
     @abstractmethod
-    async def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, **kwargs):
+    async def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, **kwargs):
         raise NotImplemented("new consumer is not implemented")
 
 
