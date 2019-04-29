@@ -55,8 +55,11 @@ class RecentTradeConsumer(Consumer):
 
     async def consume(self):
         while not self.should_stop:
-            data = await self.queue.get()
-            self.callback(symbol=data["symbol"], recent_trade=data["recent_trade"])
+            try:
+                data = await self.queue.get()
+                await self.callback(symbol=data["symbol"], recent_trade=data["recent_trade"])
+            except Exception as e:
+                self.logger.exception(f"Exception when calling callback : {e}")
 
 
 class RecentTradeChannel(ExchangeChannel):

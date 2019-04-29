@@ -58,8 +58,11 @@ class OHLCVConsumer(Consumer):
 
     async def consume(self):
         while not self.should_stop:
-            data = await self.queue.get()
-            self.callback(symbol=data["symbol"], time_frame=data["time_frame"], candle=data["candle"])
+            try:
+                data = await self.queue.get()
+                await self.callback(symbol=data["symbol"], time_frame=data["time_frame"], candle=data["candle"])
+            except Exception as e:
+                self.logger.exception(f"Exception when calling callback : {e}")
 
 
 class OHLCVChannel(ExchangeChannel):
