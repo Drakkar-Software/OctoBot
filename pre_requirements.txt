@@ -1,5 +1,5 @@
 numpy
 Cython
 lxml
-urllib3==1.24.2
+urllib3==1.25.2
 Twisted # to be removed (python-binance)
