@@ -31,24 +31,23 @@ class BalanceProducer(Producer):
     def __init__(self, channel: ExchangeChannel):
         super().__init__(channel)
 
-    async def receive(self, symbol, balance):
-        await self.perform(symbol, balance)
+    async def receive(self, balance):
+        await self.perform(balance)
 
-    async def perform(self, symbol, balance):
+    async def perform(self, balance):
         try:
-            if symbol in self.channel.consumers:  # and personnal_data.portfolio_is_initialized()
-                self.channel.exchange_manager.get_personal_data(symbol).set_portfolio(balance)  # TODO check if full or just update
-                await self.send(symbol, balance)
+            # if personnal_data.portfolio_is_initialized()
+            self.channel.exchange_manager.get_personal_data().set_portfolio(balance)  # TODO check if full or just update
+            await self.send(balance)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
             self.logger.error(f"exception when triggering update: {e}")
             self.logger.exception(e)
 
-    async def send(self, symbol, balance):
-        for consumer in self.channel.get_consumers(symbol=symbol):
+    async def send(self, balance):
+        for consumer in self.channel.get_consumers():
             await consumer.queue.put({
-                "symbol": symbol,
                 "balance": balance
             })
 
@@ -61,7 +60,7 @@ class BalanceConsumer(Consumer):
         while not self.should_stop:
             try:
                 data = await self.queue.get()
-                await self.callback(symbol=data["symbol"], balance=data["balance"])
+                await self.callback(balance=data["balance"])
             except Exception as e:
                 self.logger.exception(f"Exception when calling callback : {e}")
 
@@ -70,14 +69,14 @@ class BalanceChannel(ExchangeChannel):
     def __init__(self, exchange_manager):
         super().__init__(exchange_manager)
 
-    def get_consumers(self, symbol) -> List:
-        if symbol not in self.consumers:
-            self.consumers[symbol] = []
+    def get_consumers(self) -> List:
+        if CONFIG_WILDCARD not in self.consumers:
+            self.consumers[CONFIG_WILDCARD] = []
 
-        return self.consumers[symbol] + self.consumers[CONFIG_WILDCARD]
+        return self.consumers[CONFIG_WILDCARD]
 
-    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, symbol=CONFIG_WILDCARD):
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0):
         # create dict and list if required
         consumer = BalanceConsumer(callback)
-        self.consumers[symbol].append(consumer)
+        self.consumers[CONFIG_WILDCARD].append(consumer)
         consumer.run()
