@@ -74,8 +74,7 @@ class Producer:
         self.should_stop = True
 
     def create_task(self):
-        self.produce_task = asyncio.create_task(self.receive())
+        self.produce_task = asyncio.create_task(self.start())
 
     async def run(self):
-        await self.start()
         self.create_task()

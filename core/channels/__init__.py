@@ -13,8 +13,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from core.channels.exchange.balance import BalanceChannel
 from core.channels.exchange.ohlcv import OHLCVChannel
 from core.channels.exchange.order_book import OrderBookChannel
+from core.channels.exchange.orders import OrdersChannel
 from core.channels.exchange.recent_trade import RecentTradeChannel
 from core.channels.exchange.ticker import TickerChannel
 
@@ -26,3 +28,5 @@ TICKER_CHANNEL = TickerChannel.get_name()
 RECENT_TRADES_CHANNEL = RecentTradeChannel.get_name()
 ORDER_BOOK_CHANNEL = OrderBookChannel.get_name()
 OHLCV_CHANNEL = OHLCVChannel.get_name()
+ORDERS_CHANNEL = OrdersChannel.get_name()
+BALANCE_CHANNEL = BalanceChannel.get_name()

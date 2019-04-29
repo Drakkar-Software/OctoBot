@@ -33,7 +33,7 @@ class OrdersProducer(Producer):
     async def perform(self, symbol, order):
         try:
             if symbol in self.channel.consumers:  # and personnal_data.orders_are_initialized()
-                self.channel.exchange_manager.get_personal_data(symbol).upsert_order(order.id, order)  # TODO check if exists
+                self.channel.exchange_manager.get_personal_data().upsert_order(order.id, order)  # TODO check if exists
                 await self.send(symbol, order)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")

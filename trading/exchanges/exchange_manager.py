@@ -18,7 +18,15 @@ import time
 from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
     PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET, CONFIG_CRYPTO_QUOTE, CONFIG_CRYPTO_ADD
+from core.channels import RECENT_TRADES_CHANNEL, TICKER_CHANNEL, ORDER_BOOK_CHANNEL, OHLCV_CHANNEL, ORDERS_CHANNEL, \
+    BALANCE_CHANNEL
 from core.channels.exchange.exchange_channel import ExchangeChannel, ExchangeChannels
+from core.producers.exchange.balance_updater import BalanceUpdater
+from core.producers.exchange.ohlcv_updater import OHLCVUpdater
+from core.producers.exchange.order_book_updater import OrderBookUpdater
+from core.producers.exchange.orders_updater import OrdersUpdater
+from core.producers.exchange.recent_trade_updater import RecentTradeUpdater
+from core.producers.exchange.ticker_updater import TickerUpdater
 from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
 from tools.logging.logging_util import get_logger
@@ -107,6 +115,9 @@ class ExchangeManager(Initializable):
 
         self.exchange_dispatcher = ExchangeDispatcher(self.config, self)
 
+        # create exchange producers if necessaary
+        await self._create_exchange_producers()
+
         self.is_ready = True
 
     async def _create_exchange_channels(self):  # TODO filter creation
@@ -114,6 +125,14 @@ class ExchangeManager(Initializable):
             exchange_channel = exchange_channel_class(self)
             ExchangeChannels.set_chan(exchange_channel, name=exchange_channel_class.get_name())
             await exchange_channel.start()
+
+    async def _create_exchange_producers(self):  # TODO filter creation
+        await BalanceUpdater(ExchangeChannels.get_chan(BALANCE_CHANNEL, self.exchange.get_name())).run()
+        await OHLCVUpdater(ExchangeChannels.get_chan(OHLCV_CHANNEL, self.exchange.get_name())).run()
+        await OrderBookUpdater(ExchangeChannels.get_chan(ORDER_BOOK_CHANNEL, self.exchange.get_name())).run()
+        await OrdersUpdater(ExchangeChannels.get_chan(ORDERS_CHANNEL, self.exchange.get_name())).run()
+        await RecentTradeUpdater(ExchangeChannels.get_chan(RECENT_TRADES_CHANNEL, self.exchange.get_name())).run()
+        await TickerUpdater(ExchangeChannels.get_chan(TICKER_CHANNEL, self.exchange.get_name())).run()
 
     def _search_and_create_websocket(self, websocket_class):
         for socket_manager in websocket_class.__subclasses__():
