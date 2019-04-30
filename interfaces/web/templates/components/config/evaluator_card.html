@@ -1,3 +1,4 @@
+{% import 'macros/text.html' as m_text %}
 {% macro config_evaluator_card(startup_config, evaluator_name, info, config_type, strategy=False) %}
     <a href="#" onclick="return false;"
        class="col-md-6 col-lg-4 list-group-item list-group-item-action waves-effect {{ 'd-none' if strategy }} {{'list-group-item-success' if info['activation'] else 'list-group-item-light'}} config-element evaluator-config-element"
@@ -37,7 +38,7 @@
           <div class="modal-body">
               {% if info['advanced_class'] %}
                   <h4>Advanced tentacle: {{info['advanced_class']['name']}}</h4>
-                  <p>"{{info['advanced_class']['description']}}"</p>
+                  {{m_text.text_split_lines(info['advanced_class']['description'])}}
                   <h5>{{info['advanced_class']['name']}} is based on {{evaluator_name}}</h5>
                   {% if info['advanced_class']['requirements'] %}
                       <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
@@ -47,7 +48,7 @@
                       <p>{{info['advanced_class']['default-config']|join(', ')}}</p>
                   {% endif %}
               {% else %}
-                  <p>{{info['description']}}</p>
+                  {{m_text.text_split_lines(info['description'])}}
                   {% if info['requirements'] %}
                       <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
                       <p>{{info['requirements']|join(', ')}}</p>
