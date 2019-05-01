@@ -7,13 +7,17 @@
             {{m_text.text_split_lines(info['advanced_class']['description'])}}
           </p>
           <h5>{{info['advanced_class']['name']}} is based on {{ tentacle_with_link_list(info['advanced_class']['base_classes']) }}</h5>
-          {% if info['advanced_class']['requirements'] %}
-                {{ requirements_and_default_config(info['advanced_class']['requirements'], info['advanced_class']['default-config'], strategy, info['advanced_class']['name']) }}
+          {% if info['advanced_class']['default-config'] %}
+                <p>
+                    {{ default_config_with_apply(info['advanced_class']['default-config'], strategy, info['advanced_class']['name']) }}
+                </p>
           {% endif %}
       {% else %}
           {{m_text.text_split_lines(info['description'])}}
-          {% if info['requirements'] %}
-                {{ requirements_and_default_config(info['requirements'], info['default-config'], strategy, name) }}
+          {% if info['default-config'] %}
+                <p>
+                    {{ default_config_with_apply(info['default-config'], strategy, name) }}
+                </p>
           {% endif %}
       {% endif %}
 {% endmacro %}
@@ -60,10 +64,7 @@
     {% endif %}
 {% endmacro %}
 
-{% macro requirements_and_default_config(requirements, default_config, strategy, name) %}
-    <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
-        {{ tentacle_with_link_list(requirements) }}
-    <hr>
+{% macro default_config_with_apply(default_config, strategy, name) %}
     <div>
         <h5>Default configuration:
         {% if strategy %}
@@ -77,4 +78,11 @@
         </h5>
     </div>
     {{ tentacle_with_link_list(default_config) }}
+{% endmacro %}
+
+{% macro requirements_and_default_config(requirements, default_config, strategy, name) %}
+    <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
+        {{ tentacle_with_link_list(requirements) }}
+    <hr>
+    {{ default_config_with_apply(default_config, strategy, name) }}
 {% endmacro %}
