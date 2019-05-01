@@ -24,12 +24,12 @@ from interfaces.web.models.configuration import get_strategy_config, update_eval
     get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_all_symbol_list, \
     get_tested_exchange_list, get_simulated_exchange_list, get_other_exchange_list, get_edited_config, \
     update_trading_config, get_trading_startup_config, reset_trading_history, is_trading_persistence_activated, \
-    manage_metrics
+    manage_metrics, get_tentacle_from_string
+from interfaces.web.models.backtesting import get_data_files_with_description
 from interfaces.web.util.flask_util import get_rest_reply
 from backtesting import backtesting_enabled
 
 
-@server_instance.route("/config")
 @server_instance.route('/config', methods=['GET', 'POST'])
 def config():
     if request.method == 'POST':
@@ -107,6 +107,21 @@ def config():
                                is_trading_persistence_activated=is_trading_persistence_activated(),
                                in_backtesting=backtesting_enabled(display_config)
                                )
+
+
+@server_instance.route('/config_tentacle', methods=['GET', 'POST'])
+def config_tentacle():
+    if request.args:
+        tentacle_name = request.args.get("name")
+        tentacle_class, tentacle_type, tentacle_desc = get_tentacle_from_string(tentacle_name)
+        return render_template('config_tentacle.html',
+                               name=tentacle_name,
+                               tentacle_type=tentacle_type,
+                               tentacle_class=tentacle_class,
+                               tentacle_desc=tentacle_desc,
+                               data_files=get_data_files_with_description())
+    else:
+        return render_template('config_tentacle.html')
 
 
 @server_instance.route('/metrics_settings', methods=['POST'])

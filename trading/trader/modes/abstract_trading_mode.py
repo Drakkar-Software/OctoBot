@@ -57,7 +57,7 @@ class AbstractTradingMode:
                f"{cls.get_name() + CONFIG_FILE_EXT}"
 
     @classmethod
-    def get_trading_mode_config(cls):
+    def get_specific_config(cls):
         try:
             return load_config(cls.get_config_file_name())
         except Exception as e:
@@ -72,7 +72,7 @@ class AbstractTradingMode:
 
     @classmethod
     def get_required_strategies(cls, trading_mode_config=None):
-        config = trading_mode_config or cls.get_trading_mode_config()
+        config = trading_mode_config or cls.get_specific_config()
         if TRADING_MODE_REQUIRED_STRATEGIES in config:
             strategies_classes = []
             for class_string in config[TRADING_MODE_REQUIRED_STRATEGIES]:
@@ -90,7 +90,7 @@ class AbstractTradingMode:
 
     @classmethod
     def get_required_strategies_names_and_count(cls, trading_mode_config=None):
-        config = trading_mode_config or cls.get_trading_mode_config()
+        config = trading_mode_config or cls.get_specific_config()
         if TRADING_MODE_REQUIRED_STRATEGIES in config:
             return config[TRADING_MODE_REQUIRED_STRATEGIES], cls.get_required_strategies_count(config)
         else:
@@ -98,7 +98,7 @@ class AbstractTradingMode:
 
     @classmethod
     def get_default_strategies(cls):
-        config = cls.get_trading_mode_config()
+        config = cls.get_specific_config()
         if TENTACLE_DEFAULT_CONFIG in config:
             return config[TENTACLE_DEFAULT_CONFIG]
         else:

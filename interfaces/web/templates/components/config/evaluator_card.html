@@ -1,8 +1,9 @@
-{% import 'macros/text.html' as m_text %}
+{% import 'macros/tentacles.html' as m_tentacles %}
+
 {% macro config_evaluator_card(startup_config, evaluator_name, info, config_type, strategy=False) %}
     <a href="#" onclick="return false;"
        class="col-md-6 col-lg-4 list-group-item list-group-item-action waves-effect {{ 'd-none' if strategy }} {{'list-group-item-success' if info['activation'] else 'list-group-item-light'}} config-element evaluator-config-element"
-       id={{evaluator_name}}
+       id={{evaluator_name}} name={{ info['advanced_class']['name'] if info['advanced_class'] else evaluator_name }}
        config-type={{config_type}} config-key={{evaluator_name}} current-value={{info['activation']}} config-value={{info['activation']}} startup-config-value={{startup_config[evaluator_name]}}
        requirements="{{info['advanced_class']['requirements'] if info['advanced_class']['requirements'] else info['requirements']}}"
        default-elements="{{info['advanced_class']['default-config'] if info['advanced_class']['default-config'] else info['default-config']}}"
@@ -30,47 +31,20 @@
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content modal-text">
           <div class="modal-header primary-text">
-            <h5 class="modal-title" id="#{{evaluator_name}}ModalLabel">{{evaluator_name}}</h5>
+              <h5 class="modal-title" id="#{{evaluator_name}}ModalLabel">
+                  <a href="{{ url_for('config_tentacle', name=(info['advanced_class']['name'] if info['advanced_class'] else evaluator_name)) }}">{{info['advanced_class']['name'] if info['advanced_class'] else evaluator_name}}</a>
+              </h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
           <div class="modal-body">
-              {% if info['advanced_class'] %}
-                  <h4>Advanced tentacle: {{info['advanced_class']['name']}}</h4>
-                  {{m_text.text_split_lines(info['advanced_class']['description'])}}
-                  <h5>{{info['advanced_class']['name']}} is based on {{evaluator_name}}</h5>
-                  {% if info['advanced_class']['requirements'] %}
-                      <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
-                      <p>{{info['advanced_class']['requirements']|join(', ')}}</p>
-                      <hr>
-                      <h5>Default configuration:</h5>
-                      <p>{{info['advanced_class']['default-config']|join(', ')}}</p>
-                  {% endif %}
-              {% else %}
-                  {{m_text.text_split_lines(info['description'])}}
-                  {% if info['requirements'] %}
-                      <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
-                      <p>{{info['requirements']|join(', ')}}</p>
-                      <hr>
-                      <h5>Default configuration:</h5>
-                      <p>{{info['default-config']|join(', ')}}</p>
-                  {% endif %}
-              {% endif %}
-
-              {% if strategy %}
-                <div class="text-center">
-                   <button type="button"
-                           config-type="evaluator_list_config"
-                           strategy="{{ evaluator_name }}"
-                           class="btn btn-outline-green waves-effect config-element {{ 'disabled' if not (info['default-config'] or info['advanced_class']['default-config']) }}">
-                       <i class="fas fa-check"></i> Activate
-                   </button>
-                </div>
-              {% endif %}
+              {{ m_tentacles.tentacle_description(info, strategy, info['advanced_class']['name'] if info['advanced_class'] else evaluator_name ) }}
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            <a href="{{ url_for('config_tentacle', name=(info['advanced_class']['name'] if info['advanced_class'] else evaluator_name)) }}"
+               class="btn btn-outline-primary waves-effect" role="button">Configure</a>
+            <button class="btn btn-primary waves-effect" data-dismiss="modal">Close</button>
           </div>
         </div>
       </div>

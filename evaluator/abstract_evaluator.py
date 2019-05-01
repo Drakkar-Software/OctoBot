@@ -73,7 +73,7 @@ class AbstractEvaluator:
             f". (error: {error})"
 
     @classmethod
-    def get_evaluator_config(cls):
+    def get_specific_config(cls):
         try:
             return load_config(cls.get_config_file_name())
         except Exception as e:

@@ -57,7 +57,7 @@ class StrategiesEvaluator(AbstractEvaluator):
     def get_required_time_frames(cls, config):
         if CONFIG_FORCED_TIME_FRAME in config:
             return TimeFrameManager.parse_time_frames(config[CONFIG_FORCED_TIME_FRAME])
-        strategy_config = cls.get_evaluator_config()
+        strategy_config = cls.get_specific_config()
         if STRATEGIES_REQUIRED_TIME_FRAME in strategy_config:
             return TimeFrameManager.parse_time_frames(strategy_config[STRATEGIES_REQUIRED_TIME_FRAME])
         else:
@@ -67,7 +67,7 @@ class StrategiesEvaluator(AbstractEvaluator):
     def get_required_evaluators(cls, config, strategy_config=None):
         if CONFIG_FORCED_EVALUATOR in config:
             return config[CONFIG_FORCED_EVALUATOR]
-        strategy_config = strategy_config or cls.get_evaluator_config()
+        strategy_config = strategy_config or cls.get_specific_config()
         if STRATEGIES_REQUIRED_EVALUATORS in strategy_config:
             return strategy_config[STRATEGIES_REQUIRED_EVALUATORS]
         else:
@@ -75,7 +75,7 @@ class StrategiesEvaluator(AbstractEvaluator):
 
     @classmethod
     def get_default_evaluators(cls, config):
-        strategy_config = cls.get_evaluator_config()
+        strategy_config = cls.get_specific_config()
         if TENTACLE_DEFAULT_CONFIG in strategy_config:
             return strategy_config[TENTACLE_DEFAULT_CONFIG]
         else:
