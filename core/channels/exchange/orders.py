@@ -15,8 +15,6 @@
 #  License along with this library.
 from asyncio import CancelledError
 
-from typing import List
-
 from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
 from core.channels.exchange.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
@@ -24,9 +22,6 @@ from core.producer import Producer
 
 
 class OrdersProducer(Producer):
-    def __init__(self, channel: ExchangeChannel):
-        super().__init__(channel)
-
     async def receive(self, symbol, order):
         await self.perform(symbol, order)
 
@@ -35,6 +30,9 @@ class OrdersProducer(Producer):
             if symbol in self.channel.consumers:  # and personnal_data.orders_are_initialized()
                 self.channel.exchange_manager.get_personal_data().upsert_order(order.id, order)  # TODO check if exists
                 await self.send(symbol, order)
+
+            if CONFIG_WILDCARD in self.channel.consumers:
+                await self.send(CONFIG_WILDCARD, order)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
@@ -50,9 +48,6 @@ class OrdersProducer(Producer):
 
 
 class OrdersConsumer(Consumer):
-    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
-        super().__init__(callback)
-
     async def consume(self):
         while not self.should_stop:
             try:
@@ -63,17 +58,5 @@ class OrdersConsumer(Consumer):
 
 
 class OrdersChannel(ExchangeChannel):
-    def __init__(self, exchange_manager):
-        super().__init__(exchange_manager)
-
-    def get_consumers(self, symbol) -> List:
-        if symbol not in self.consumers:
-            self.consumers[symbol] = []
-
-        return self.consumers[symbol] + self.consumers[CONFIG_WILDCARD]
-
-    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, symbol=CONFIG_WILDCARD):
-        # create dict and list if required
-        consumer = OrdersConsumer(callback)
-        self.consumers[symbol].append(consumer)
-        consumer.run()
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size: int = 0, symbol: str = CONFIG_WILDCARD):
+        self._add_new_consumer_and_run(symbol, OrdersConsumer(callback, size=size))

@@ -24,10 +24,10 @@ from tools import get_logger
 class Consumer:
     __metaclass__ = ABCMeta
 
-    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
+    def __init__(self, callback: CONSUMER_CALLBACK_TYPE, size: int = 0):
         self.logger = get_logger(self.__class__.__name__)
 
-        self.queue: Queue = Queue()
+        self.queue: Queue = Queue(maxsize=size)
         self.callback: CONSUMER_CALLBACK_TYPE = callback
         self.consume_task: Task = None
         self.should_stop: bool = False
