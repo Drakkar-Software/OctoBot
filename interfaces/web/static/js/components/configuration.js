@@ -450,7 +450,7 @@ function handle_evaluator_configuration_editor(){
                 }
                 else if (element.attr(config_type_attr) === evaluator_list_config_type){
                     const strategy_name = element.attr("strategy");
-                    apply_evaluator_default_config($("#"+strategy_name));
+                    apply_evaluator_default_config($("a[name='"+strategy_name+"']"));
                 }
             }
         }
