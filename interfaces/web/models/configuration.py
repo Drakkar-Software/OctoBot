@@ -174,6 +174,7 @@ def get_tentacle_from_string(name):
         if klass:
             info = dict()
             info[DESCRIPTION_KEY] = klass.get_description()
+            info[NAME_KEY] = name
             for parent_class in klass.__bases__:
                 advanced_details = _get_advanced_class_details(parent_class.get_name(), parent_class,
                                                                is_strategy=(not is_trading_mode))

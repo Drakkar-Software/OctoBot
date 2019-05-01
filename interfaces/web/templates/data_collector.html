@@ -5,7 +5,7 @@
 <div class="card">
     <div class="card-header"><h1>
         <span class="float-left">
-            <a href="{{ url_for('backtesting') }}">
+            <a href="{{ origin_page if origin_page else url_for("backtesting")}}">
                 <i class="fas fa-arrow-left"></i>
             </a>
         </span>

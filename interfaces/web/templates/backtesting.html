@@ -97,7 +97,7 @@
 <div class="d-none">
     <!--Symbol graph template -->
     <div class="card result-graph" id="result-graph-Bitcoin">
-        <div class="card-body text-center" id="loadingSpinner">
+        <div class="card-body text-center" name="loadingSpinner">
             <h2>
                 <i class="fa fa-spinner fa-spin"></i>
             </h2>
@@ -114,5 +114,6 @@
 
 {% block additional_scripts %}
 <script src="{{ url_for('static', filename='js/common/candlesticks.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common/backtesting_util.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/backtesting.js') }}"></script>
 {% endblock additional_scripts %}
