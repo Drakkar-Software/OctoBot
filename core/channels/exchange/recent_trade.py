@@ -27,11 +27,9 @@ class RecentTradeProducer(Producer):
 
     async def perform(self, symbol, recent_trade):
         try:
-            if symbol in self.channel.consumers:  # and symbol_data.recent_trades_are_initialized()
+            if CONFIG_WILDCARD in self.channel.consumers or symbol in self.channel.consumers:  # and symbol_data.recent_trades_are_initialized()
                 self.channel.exchange_manager.get_symbol_data(symbol).add_new_recent_trades(recent_trade)
                 await self.send(symbol, recent_trade)
-
-            if CONFIG_WILDCARD in self.channel.consumers:
                 await self.send(CONFIG_WILDCARD, recent_trade)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")

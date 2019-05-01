@@ -28,6 +28,7 @@ class OHLCVProducer(Producer):
 
     async def perform(self, time_frame, symbol, candle):
         try:
+            # TODO manage wildcard
             if symbol in self.channel.consumers and time_frame in self.channel.consumers[symbol]:
                 self.channel.exchange_manager.uniformize_candles_if_necessary(candle)
                 self.channel.exchange_manager.get_symbol_data(symbol).update_symbol_candles(time_frame,
