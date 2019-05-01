@@ -27,11 +27,9 @@ class TickerProducer(Producer):
 
     async def perform(self, symbol, ticker):
         try:
-            if symbol in self.channel.consumers:  # and price_ticker_is_initialized
+            if CONFIG_WILDCARD in self.channel.consumers or symbol in self.channel.consumers:  # and price_ticker_is_initialized
                 self.channel.exchange_manager.get_symbol_data(symbol).update_symbol_price_ticker(ticker)
                 await self.send(symbol, ticker)
-
-            if CONFIG_WILDCARD in self.channel.consumers:
                 await self.send(CONFIG_WILDCARD, ticker)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")

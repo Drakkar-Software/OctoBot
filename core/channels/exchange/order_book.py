@@ -27,11 +27,9 @@ class OrderBookProducer(Producer):
 
     async def perform(self, symbol, order_book):
         try:
-            if symbol in self.channel.consumers:  # and symbol_data.order_book_is_initialized()
+            if CONFIG_WILDCARD in self.channel.consumers or symbol in self.channel.consumers:  # and symbol_data.order_book_is_initialized()
                 self.channel.exchange_manager.get_symbol_data(symbol).update_order_book(order_book)
                 await self.send(symbol, order_book)
-
-            if CONFIG_WILDCARD in self.channel.consumers:
                 await self.send(CONFIG_WILDCARD, order_book)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
