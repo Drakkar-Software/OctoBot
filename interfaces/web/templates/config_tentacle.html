@@ -7,7 +7,8 @@
 <br>
 <div class="card">
     <div class="card-header">
-        <h1 name="{{ name }}" default-elements="{{tentacle_desc['advanced_class']['default-config'] if tentacle_desc['advanced_class'] and tentacle_desc['advanced_class']['default-config'] else tentacle_desc['default-config']}}"
+        <h1 id='{{ name }}' config-type={{"trading_config" if tentacle_type == "trading mode" else "evaluator_config"}}
+            default-elements="{{tentacle_desc['advanced_class']['default-config'] if tentacle_desc['advanced_class'] and tentacle_desc['advanced_class']['default-config'] else tentacle_desc['default-config']}}"
         >{{ name }}
             <a href="{{ url_for('config') if tentacle_type in ["trading mode", "strategy"] else url_for('advanced.evaluator_config') }}">
                 {% if tentacle_desc["activation"] %}
@@ -25,13 +26,17 @@
 <br>
 <div class="card">
     <div class="card-header">
-        <h1>Configuration</h1>
+        <h1>Configuration
+            <a class="float-right text-danger" target="_blank" rel="noopener noreferrer" href="https://github.com/Drakkar-Software/OctoBot/wiki/Configuration#specific-evaluator-configuration">
+                <i class="fa fa-question"></i>
+            </a>
+        </h1>
     </div>
     <div class="card-body">
         {{ tentacle_class.get_specific_config() }}
     </div>
     <div class="card-footer">
-        <a class="btn btn-green waves-effect" id='save-config' href="#" role="tab" update-url="{{ url_for('config') }}">Save and restart later</a>
+        <button class="btn btn-outline-success waves-effect" id='save-config' href="#" role="tab" update-url="{{ url_for('config') }}">Save and restart later</button>
     </div>
 </div>
 <br>
@@ -61,7 +66,7 @@
                 <button type="button" id="startBacktesting" class="btn btn-primary waves-effect" start-url="{{ url_for('backtesting', action_type='start_backtesting') }}">Start backtesting</button>
             </div>
             <div class="col-2 offset-md-2">
-                <a href="{{ url_for('data_collector') }}" class="btn btn-outline-info waves-effect"> <i class="fa fa-cloud-download-alt"></i> Get historical data</a>
+                <a href="{{ url_for('data_collector', from=url_for(request.endpoint, name=name)) }}" class="btn btn-outline-info waves-effect"> <i class="fa fa-cloud-download-alt"></i> Get historical data</a>
             </div>
         </div>
 
@@ -122,7 +127,7 @@
 <div class="d-none">
     <!--Symbol graph template -->
     <div class="card result-graph" id="result-graph-Bitcoin">
-        <div class="card-body text-center" id="loadingSpinner">
+        <div class="card-body text-center" name="loadingSpinner">
             <h2>
                 <i class="fa fa-spinner fa-spin"></i>
             </h2>
@@ -136,5 +141,6 @@
 
 {% block additional_scripts %}
 <script src="{{ url_for('static', filename='js/common/candlesticks.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common/backtesting_util.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/config_tentacle.js') }}"></script>
 {% endblock additional_scripts %}

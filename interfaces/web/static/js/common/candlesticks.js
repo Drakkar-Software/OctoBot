@@ -36,9 +36,11 @@ function get_symbol_price_graph(element_id, exchange_name, symbol, time_frame, b
                     }, 3000);
                 }
             }else{
-                const loadingSelector = $("#loadingSpinner");
+                const loadingSelector = $("div[name='loadingSpinner']");
                 if (loadingSelector.length) {
-                    loadingSelector.addClass(disabled_item_class);
+                    $.each(loadingSelector, function () {
+                        $(this).addClass(disabled_item_class);
+                    });
                 }
             }
         },

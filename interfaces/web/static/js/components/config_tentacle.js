@@ -44,14 +44,32 @@ function handleButtons() {
             if (element[0].hasAttribute(config_type_attr)) {
                 if (element.attr(config_type_attr) === evaluator_list_config_type) {
                     const strategy_name = element.attr("strategy");
-                    apply_evaluator_default_config($("h1[name='" + strategy_name + "']"));
+                    apply_evaluator_default_config($("#" + strategy_name));
                 }
             }
         }
 
     });
+
+    $("#startBacktesting").click(function(){
+        $("#backtesting_progress_bar").show();
+        lock_interface();
+        const request = get_selected_files();
+        const update_url = $("#startBacktesting").attr("start-url");
+        start_backtesting(request, update_url);
+    });
+}
+
+function get_selected_files(){
+    return [$("#dataFileSelect").val()];
 }
 
 $(document).ready(function() {
     handleButtons();
+    lock_interface(false);
+
+    setInterval(function(){refresh_status();}, 300);
+    function refresh_status(){
+        check_backtesting_state();
+    }
 });

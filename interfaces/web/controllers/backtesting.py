@@ -93,11 +93,17 @@ def data_collector():
             return get_rest_reply(reply, 500)
 
     elif request.method == 'GET':
+        origin_page = None
         if request.args:
-            target = request.args["action_type"]
-            if target == "symbol_list":
-                exchange = request.args.get('exchange')
-                return jsonify(sorted(get_symbol_list([exchange])))
+            action_type_key = "action_type"
+            if action_type_key in request.args:
+                target = request.args[action_type_key]
+                if target == "symbol_list":
+                    exchange = request.args.get('exchange')
+                    return jsonify(sorted(get_symbol_list([exchange])))
+            from_key = "from"
+            if from_key in request.args:
+                origin_page = request.args[from_key]
 
         current_exchange = get_current_exchange()
         return render_template('data_collector.html',
@@ -105,4 +111,5 @@ def data_collector():
                                ccxt_exchanges=sorted(get_full_exchange_list()),
                                current_exchange=get_current_exchange(),
                                full_symbol_list=sorted(get_symbol_list([current_exchange])),
+                               origin_page=origin_page,
                                alert={})
