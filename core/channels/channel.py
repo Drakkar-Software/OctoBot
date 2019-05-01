@@ -20,6 +20,7 @@ from config import CONSUMER_CALLBACK_TYPE
 from core.channels.channel_instances import ChannelInstances
 from core.consumer import Consumer
 from core.producer import Producer
+from tools import get_logger
 
 """
 A Channel ****
@@ -34,6 +35,7 @@ class Channel:
     def __init__(self):
         self.producer: Producer = None
         self.consumers: Dict[Consumer] = {}
+        self.logger = get_logger(self.__class__.__name__)
 
     @classmethod
     def get_name(cls):

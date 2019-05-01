@@ -14,8 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from abc import ABCMeta, abstractmethod
+from typing import List
 
-from config import CONSUMER_CALLBACK_TYPE
+from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
 from core.channels.channel import Channel, Channels
 from core.channels.channel_instances import ChannelInstances
 
@@ -31,6 +32,25 @@ class ExchangeChannel(Channel):
     async def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, **kwargs):
         raise NotImplemented("new consumer is not implemented")
 
+    def get_consumers(self, symbol=CONFIG_WILDCARD) -> List:
+        try:
+            return self.consumers[symbol]
+        except KeyError:
+            self._init_consumer_if_necessary(self.consumers, symbol)
+            return self.consumers[symbol]
+
+    def _add_new_consumer_and_run(self, symbol, consumer):
+        # create dict and list if required
+        self._init_consumer_if_necessary(self.consumers, symbol)
+        self.consumers[symbol].append(consumer)
+        consumer.run()
+        self.logger.info(f"Consumer started for symbol {symbol}")
+
+    @staticmethod
+    def _init_consumer_if_necessary(consumer_list, key):
+        if key not in consumer_list:
+            consumer_list[key] = []
+
 
 class ExchangeChannels(Channels):
     @staticmethod
@@ -44,7 +64,7 @@ class ExchangeChannels(Channels):
             exchange_chan = ChannelInstances.instance().channels[chan.exchange_manager.exchange.get_name()]
 
         if chan_name not in exchange_chan:
-            ChannelInstances.instance().channels[chan.exchange_manager.exchange.get_name()][chan_name] = chan
+            exchange_chan[chan_name] = chan
         else:
             raise ValueError(f"Channel {chan_name} already exists.")
 

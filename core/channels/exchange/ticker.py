@@ -14,18 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from asyncio import CancelledError
-from typing import List
 
-from config import CONSUMER_CALLBACK_TYPE
+from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
 from core.channels.exchange.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
 from core.producer import Producer
 
 
 class TickerProducer(Producer):
-    def __init__(self, channel: ExchangeChannel):
-        super().__init__(channel)
-
     async def receive(self, symbol, ticker):
         await self.perform(symbol, ticker)
 
@@ -34,6 +30,9 @@ class TickerProducer(Producer):
             if symbol in self.channel.consumers:  # and price_ticker_is_initialized
                 self.channel.exchange_manager.get_symbol_data(symbol).update_symbol_price_ticker(ticker)
                 await self.send(symbol, ticker)
+
+            if CONFIG_WILDCARD in self.channel.consumers:
+                await self.send(CONFIG_WILDCARD, ticker)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
@@ -49,9 +48,6 @@ class TickerProducer(Producer):
 
 
 class TickerConsumer(Consumer):
-    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
-        super().__init__(callback)
-
     async def consume(self):
         while not self.should_stop:
             try:
@@ -62,19 +58,5 @@ class TickerConsumer(Consumer):
 
 
 class TickerChannel(ExchangeChannel):
-    def __init__(self, exchange_manager):
-        super().__init__(exchange_manager)
-
-    def get_consumers(self, symbol) -> List:
-        if symbol not in self.consumers:
-            self.consumers[symbol] = []
-
-        return self.consumers[symbol]
-
-    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, symbol=None):
-        # create dict and list if required
-        self.get_consumers(symbol=symbol)
-
-        consumer = TickerConsumer(callback)
-        self.consumers[symbol].append(consumer)
-        consumer.run()
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size: int = 0, symbol: str = CONFIG_WILDCARD):
+        self._add_new_consumer_and_run(symbol, TickerConsumer(callback, size=size))

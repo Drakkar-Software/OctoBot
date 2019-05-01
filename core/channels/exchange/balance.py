@@ -19,8 +19,6 @@ Handles balance changes
 """
 from asyncio import CancelledError
 
-from typing import List
-
 from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
 from core.channels.exchange.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
@@ -28,9 +26,6 @@ from core.producer import Producer
 
 
 class BalanceProducer(Producer):
-    def __init__(self, channel: ExchangeChannel):
-        super().__init__(channel)
-
     async def receive(self, balance):
         await self.perform(balance)
 
@@ -53,9 +48,6 @@ class BalanceProducer(Producer):
 
 
 class BalanceConsumer(Consumer):
-    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
-        super().__init__(callback)
-
     async def consume(self):
         while not self.should_stop:
             try:
@@ -66,17 +58,5 @@ class BalanceConsumer(Consumer):
 
 
 class BalanceChannel(ExchangeChannel):
-    def __init__(self, exchange_manager):
-        super().__init__(exchange_manager)
-
-    def get_consumers(self) -> List:
-        if CONFIG_WILDCARD not in self.consumers:
-            self.consumers[CONFIG_WILDCARD] = []
-
-        return self.consumers[CONFIG_WILDCARD]
-
-    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0):
-        # create dict and list if required
-        consumer = BalanceConsumer(callback)
-        self.consumers[CONFIG_WILDCARD].append(consumer)
-        consumer.run()
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size: int = 0):
+        self._add_new_consumer_and_run(CONFIG_WILDCARD, BalanceConsumer(callback, size=size))

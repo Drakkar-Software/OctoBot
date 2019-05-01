@@ -14,18 +14,15 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from asyncio import CancelledError
-from typing import List
+from typing import Set, List
 
-from config import CONSUMER_CALLBACK_TYPE
+from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
 from core.channels.exchange.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
 from core.producer import Producer
 
 
 class OHLCVProducer(Producer):
-    def __init__(self, channel):
-        super().__init__(channel)
-
     async def receive(self, time_frame, symbol, candle):
         await self.perform(symbol, time_frame, candle)
 
@@ -37,6 +34,9 @@ class OHLCVProducer(Producer):
                                                                                             candle,
                                                                                             replace_all=False)
                 await self.send(time_frame, symbol, candle)
+
+            if CONFIG_WILDCARD in self.channel.consumers and time_frame in self.channel.consumers[CONFIG_WILDCARD]:
+                await self.send(time_frame, CONFIG_WILDCARD, candle)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
@@ -44,7 +44,7 @@ class OHLCVProducer(Producer):
             self.logger.exception(e)
 
     async def send(self, time_frame, symbol, candle):
-        for consumer in self.channel.get_consumers(time_frame=time_frame, symbol=symbol):
+        for consumer in self.channel.get_consumers(symbol=symbol, time_frame=time_frame):
             await consumer.queue.put({
                 "symbol": symbol,
                 "time_frame": time_frame,
@@ -53,9 +53,6 @@ class OHLCVProducer(Producer):
 
 
 class OHLCVConsumer(Consumer):
-    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
-        super().__init__(callback)
-
     async def consume(self):
         while not self.should_stop:
             try:
@@ -66,22 +63,17 @@ class OHLCVConsumer(Consumer):
 
 
 class OHLCVChannel(ExchangeChannel):
-    def __init__(self, exchange_manager):
-        super().__init__(exchange_manager)
+    def get_consumers(self, symbol=CONFIG_WILDCARD, time_frame=None) -> List:
+        try:
+            return self.consumers[symbol][time_frame]
+        except KeyError:
+            self._init_consumer_if_necessary(self.consumers, symbol)
+            self._init_consumer_if_necessary(self.consumers[symbol], time_frame)
+            return self.consumers[symbol][time_frame]
 
-    def get_consumers(self, time_frame, symbol) -> List:
-        if symbol not in self.consumers:
-            self.consumers[symbol] = {}
-
-        if time_frame not in self.consumers[symbol]:
-            self.consumers[symbol][time_frame] = []
-
-        return self.consumers[symbol][time_frame]
-
-    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, time_frame=None, symbol=None):
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, time_frame=None, symbol=CONFIG_WILDCARD):
         # create dict and list if required
-        self.get_consumers(time_frame=time_frame, symbol=symbol)
-
+        self.get_consumers(symbol=symbol, time_frame=time_frame)
         consumer = OHLCVConsumer(callback)
-        self.consumers[symbol].append(consumer)
+        self.consumers[symbol][time_frame].append(consumer)
         consumer.run()
