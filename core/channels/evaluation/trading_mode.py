@@ -27,6 +27,7 @@ from core.producer import Producer
 
 class TradingModeProducer(Producer):
     async def push(self, strategy_evaluation):
+        # TODO replace queue content
         await self.perform(strategy_evaluation)
 
     async def perform(self, strategy_evaluation):
