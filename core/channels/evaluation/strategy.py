@@ -49,10 +49,11 @@ class StrategyConsumer(Consumer):
             try:
                 data = await self.queue.get()
                 await self.callback(evaluation=data["evaluation"])
+                # TODO watch for evaluation to trigger trading mode producer
             except Exception as e:
                 self.logger.exception(f"Exception when calling callback : {e}")
 
 
-class StrategyChannel(ExchangeChannel)
+class StrategyChannel(ExchangeChannel):
     def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0):
         self._add_new_consumer_and_run(StrategyConsumer(callback, size=size))
