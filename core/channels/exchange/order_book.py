@@ -16,13 +16,13 @@
 from asyncio import CancelledError
 
 from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
-from core.channels.exchange.exchange_channel import ExchangeChannel
+from core.channels.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
 from core.producer import Producer
 
 
 class OrderBookProducer(Producer):
-    async def receive(self, symbol, order_book):
+    async def push(self, symbol, order_book):
         await self.perform(symbol, order_book)
 
     async def perform(self, symbol, order_book):
@@ -57,4 +57,4 @@ class OrderBookConsumer(Consumer):
 
 class OrderBookChannel(ExchangeChannel):
     def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size: int = 0, symbol: str = CONFIG_WILDCARD):
-        self._add_new_consumer_and_run(symbol, OrderBookConsumer(callback, size=size))
+        self._add_new_consumer_and_run(OrderBookConsumer(callback, size=size), symbol=symbol)

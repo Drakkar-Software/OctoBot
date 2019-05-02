@@ -14,16 +14,15 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from asyncio import CancelledError
-from typing import Set, List
 
 from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
-from core.channels.exchange.exchange_channel import ExchangeChannel
+from core.channels.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
 from core.producer import Producer
 
 
 class OHLCVProducer(Producer):
-    async def receive(self, time_frame, symbol, candle):
+    async def push(self, time_frame, symbol, candle):
         await self.perform(symbol, time_frame, candle)
 
     async def perform(self, time_frame, symbol, candle):
@@ -45,7 +44,7 @@ class OHLCVProducer(Producer):
             self.logger.exception(e)
 
     async def send(self, time_frame, symbol, candle):
-        for consumer in self.channel.get_consumers(symbol=symbol, time_frame=time_frame):
+        for consumer in self.channel.get_consumers_by_timeframe(symbol=symbol, time_frame=time_frame):
             await consumer.queue.put({
                 "symbol": symbol,
                 "time_frame": time_frame,
@@ -64,17 +63,5 @@ class OHLCVConsumer(Consumer):
 
 
 class OHLCVChannel(ExchangeChannel):
-    def get_consumers(self, symbol=CONFIG_WILDCARD, time_frame=None) -> List:
-        try:
-            return self.consumers[symbol][time_frame]
-        except KeyError:
-            self._init_consumer_if_necessary(self.consumers, symbol)
-            self._init_consumer_if_necessary(self.consumers[symbol], time_frame)
-            return self.consumers[symbol][time_frame]
-
-    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, time_frame=None, symbol=CONFIG_WILDCARD):
-        # create dict and list if required
-        self.get_consumers(symbol=symbol, time_frame=time_frame)
-        consumer = OHLCVConsumer(callback)
-        self.consumers[symbol][time_frame].append(consumer)
-        consumer.run()
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0, symbol=CONFIG_WILDCARD, time_frame=None):
+        self._add_new_consumer_and_run(OHLCVConsumer(callback, size=size), symbol=symbol, time_frame=time_frame)

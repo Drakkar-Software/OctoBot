@@ -43,9 +43,9 @@ class Producer:
         for consumer in self.consumers:
             await consumer.queue.put(kwargs)
 
-    async def receive(self, **kwargs):
+    async def push(self, **kwargs):
         """
-        Receive notification that new data should be sent implementation
+        Push notification that new data should be sent implementation
         When nothing should be done on data : self.send()
         :return: None
         """

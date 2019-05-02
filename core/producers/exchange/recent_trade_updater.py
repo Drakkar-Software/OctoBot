@@ -15,7 +15,7 @@
 #  License along with this library.
 import asyncio
 
-from core.channels.exchange.exchange_channel import ExchangeChannel
+from core.channels.exchange_channel import ExchangeChannel
 from core.channels.exchange.recent_trade import RecentTradeProducer
 
 
@@ -28,5 +28,5 @@ class RecentTradeUpdater(RecentTradeProducer):
     async def start(self):
         while not self.should_stop:
             for pair in self.channel.exchange_manager.traded_pairs:
-                await self.receive(pair, await self.channel.exchange_manager.exchange_dispatcher.get_recent_trades(pair))
+                await self.push(pair, await self.channel.exchange_manager.exchange_dispatcher.get_recent_trades(pair))
             await asyncio.sleep(self.RECENT_TRADE_REFRESH_TIME)

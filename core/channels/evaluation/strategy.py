@@ -15,56 +15,44 @@
 #  License along with this library.
 
 """
-Handles balance changes
+Handles matrix changes
 """
 from asyncio import CancelledError
 
 from config import CONSUMER_CALLBACK_TYPE
-from core.channels.channel import Channel
-from core.channels.exchange.exchange_channel import ExchangeChannel
+from core.channels.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
 from core.producer import Producer
 
 
-class TradingModeProducer(Producer):
-    def __init__(self, channel: ExchangeChannel):
-        super().__init__(channel)
+class StrategyProducer(Producer):
+    async def push(self, evaluation):
+        await self.perform(evaluation)
 
-    async def receive(self, matrix):
-        await self.perform(matrix)
-
-    async def perform(self, matrix):
+    async def perform(self, evaluation):
         try:
-            await self.send(matrix)
+            await self.send(evaluation)
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
             self.logger.error(f"exception when triggering update: {e}")
             self.logger.exception(e)
 
-    async def send(self, matrix):
+    async def send(self, evaluation):
         if self.channel.consumer:
-            await self.channel.consumer.queue.put({"matrix": matrix})
+            await self.channel.consumer.queue.put({"evaluation": evaluation})
 
 
-class TradingModeConsumer(Consumer):
-    def __init__(self, callback: CONSUMER_CALLBACK_TYPE):
-        super().__init__(callback)
-
+class StrategyConsumer(Consumer):
     async def consume(self):
         while not self.should_stop:
             try:
                 data = await self.queue.get()
-                await self.callback(matrix=data["matrix"])
+                await self.callback(evaluation=data["evaluation"])
             except Exception as e:
                 self.logger.exception(f"Exception when calling callback : {e}")
 
 
-class TradingModeChannel(Channel):
-    def __init__(self):
-        super().__init__()
-        self.consumer: TradingModeConsumer = None
-
-    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=1):
-        self.consumer = TradingModeConsumer(callback)
-        self.consumer.run()
+class StrategyChannel(ExchangeChannel)
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size=0):
+        self._add_new_consumer_and_run(StrategyConsumer(callback, size=size))

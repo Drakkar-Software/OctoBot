@@ -15,7 +15,7 @@
 # #  License along with this library.
 import asyncio
 
-from core.channels.exchange.exchange_channel import ExchangeChannel
+from core.channels.exchange_channel import ExchangeChannel
 from core.channels.exchange.ohlcv import OHLCVProducer
 
 
@@ -29,8 +29,8 @@ class OHLCVUpdater(OHLCVProducer):
         while not self.should_stop:  # TODO TEMP
             for pair in self.channel.exchange_manager.traded_pairs:
                 for time_frame in self.channel.exchange_manager.time_frames:
-                    await self.receive(pair, time_frame,
-                                       await self.channel.exchange_manager.exchange_dispatcher.get_symbol_prices(pair,
+                    await self.push(pair, time_frame,
+                                    await self.channel.exchange_manager.exchange_dispatcher.get_symbol_prices(pair,
                                                                                                                  time_frame))
             await asyncio.sleep(self.OHLCV_REFRESH_TIME)
 
