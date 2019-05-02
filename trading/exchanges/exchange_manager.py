@@ -20,7 +20,7 @@ from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFI
     PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET, CONFIG_CRYPTO_QUOTE, CONFIG_CRYPTO_ADD
 from core.channels import RECENT_TRADES_CHANNEL, TICKER_CHANNEL, ORDER_BOOK_CHANNEL, OHLCV_CHANNEL, ORDERS_CHANNEL, \
     BALANCE_CHANNEL
-from core.channels.exchange.exchange_channel import ExchangeChannel, ExchangeChannels
+from core.channels.exchange_channel import ExchangeChannel, ExchangeChannels
 from core.producers.exchange.balance_updater import BalanceUpdater
 from core.producers.exchange.ohlcv_updater import OHLCVUpdater
 from core.producers.exchange.order_book_updater import OrderBookUpdater

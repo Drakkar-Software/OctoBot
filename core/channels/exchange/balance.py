@@ -20,13 +20,13 @@ Handles balance changes
 from asyncio import CancelledError
 
 from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
-from core.channels.exchange.exchange_channel import ExchangeChannel
+from core.channels.exchange_channel import ExchangeChannel
 from core.consumer import Consumer
 from core.producer import Producer
 
 
 class BalanceProducer(Producer):
-    async def receive(self, balance):
+    async def push(self, balance):
         await self.perform(balance)
 
     async def perform(self, balance):
@@ -59,4 +59,4 @@ class BalanceConsumer(Consumer):
 
 class BalanceChannel(ExchangeChannel):
     def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size: int = 0):
-        self._add_new_consumer_and_run(CONFIG_WILDCARD, BalanceConsumer(callback, size=size))
+        self._add_new_consumer_and_run(BalanceConsumer(callback, size=size))

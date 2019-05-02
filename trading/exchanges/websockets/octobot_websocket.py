@@ -16,7 +16,7 @@
 
 from config import TimeFrames, TimeFramesMinutes, MINUTE_TO_SECONDS
 from core.channels import TICKER_CHANNEL, ORDER_BOOK_CHANNEL, RECENT_TRADES_CHANNEL
-from core.channels.exchange.exchange_channel import ExchangeChannels
+from core.channels.exchange_channel import ExchangeChannels
 from octobot_websockets import ASK, BID, TICKER, L2_BOOK, TRADES, UNSUPPORTED
 from octobot_websockets.bitmex.bitmex import Bitmex
 from octobot_websockets.callback import TickerCallback, BookCallback, TradeCallback

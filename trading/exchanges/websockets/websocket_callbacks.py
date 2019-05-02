@@ -34,8 +34,8 @@ class OrderBookCallBack(WebsocketCallBack, OrderBookProducer):
         OrderBookProducer.__init__(self, channel)
 
     async def l2_order_book_callback(self, _, pair, book, timestamp):
-        await self.receive(symbol=pair,
-                           order_book=self.parent.convert_into_ccxt_full_order_book(
+        await self.push(symbol=pair,
+                        order_book=self.parent.convert_into_ccxt_full_order_book(
                                pair,
                                book,
                                timestamp))
@@ -47,8 +47,8 @@ class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
         RecentTradeProducer.__init__(self, channel)
 
     async def recent_trades_callback(self, _, pair, order_id, timestamp, side, amount, price):
-        await self.receive(symbol=pair,
-                           recent_trade=self.parent.convert_into_ccxt_recent_trade(
+        await self.push(symbol=pair,
+                        recent_trade=self.parent.convert_into_ccxt_recent_trade(
                                pair,
                                side,
                                amount,
@@ -62,8 +62,8 @@ class TickersCallBack(WebsocketCallBack, TickerProducer):
         TickerProducer.__init__(self, channel)
 
     async def tickers_callback(self, _, pair, bid, ask, timestamp):
-        await self.receive(symbol=pair,
-                           ticker=self.parent.convert_into_ccxt_price_ticker(
+        await self.push(symbol=pair,
+                        ticker=self.parent.convert_into_ccxt_price_ticker(
                                pair,
                                bid,
                                ask,
@@ -78,6 +78,6 @@ class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
 
     async def ohlcv_callback(self, data=None):
         for symbol in data:
-            await self.receive(symbol=symbol,
-                               time_frame=self.time_frame,
-                               candle=self.parent.convert_into_ccxt_ohlcv(data[symbol]))
+            await self.push(symbol=symbol,
+                            time_frame=self.time_frame,
+                            candle=self.parent.convert_into_ccxt_ohlcv(data[symbol]))

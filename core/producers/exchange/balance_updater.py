@@ -16,7 +16,7 @@
 import asyncio
 
 from core.channels.exchange.balance import BalanceProducer
-from core.channels.exchange.exchange_channel import ExchangeChannel
+from core.channels.exchange_channel import ExchangeChannel
 
 
 class BalanceUpdater(BalanceProducer):
@@ -27,5 +27,5 @@ class BalanceUpdater(BalanceProducer):
 
     async def start(self):
         while not self.should_stop:
-            await self.receive(await self.channel.exchange_manager.exchange_dispatcher.get_balance())
+            await self.push(await self.channel.exchange_manager.exchange_dispatcher.get_balance())
             await asyncio.sleep(self.BALANCE_REFRESH_TIME)
