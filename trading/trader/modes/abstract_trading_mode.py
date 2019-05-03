@@ -21,7 +21,7 @@ from abc import *
 from config.config import load_config
 from config import CONFIG_FILE_EXT, EVALUATOR_CONFIG_FOLDER, \
     TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH, \
-    TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT, TENTACLE_DEFAULT_CONFIG, OrderStatus
+    TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT, TENTACLE_DEFAULT_CONFIG, OrderStatus, SCHEMA
 from evaluator import Strategies
 from evaluator.Util.advanced_manager import AdvancedManager
 from tools.class_inspector import get_deep_class_from_string
@@ -57,11 +57,30 @@ class AbstractTradingMode:
                f"{cls.get_name() + CONFIG_FILE_EXT}"
 
     @classmethod
-    def get_specific_config(cls):
+    def get_config_file_schema_name(cls):
+        return f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{TENTACLES_TRADING_MODE_PATH}/{EVALUATOR_CONFIG_FOLDER}/" \
+               f"{cls.get_name()}_{SCHEMA}{CONFIG_FILE_EXT}"
+
+    @classmethod
+    def get_specific_config(cls, raise_exception=True, raw_file=False):
         try:
-            return load_config(cls.get_config_file_name())
+            if raw_file:
+                with open(cls.get_config_file_name()) as file:
+                    return file.read()
+            else:
+                return load_config(cls.get_config_file_name())
         except Exception as e:
-            raise e
+            if raise_exception:
+                raise e
+
+    @classmethod
+    def get_specific_config_schema(cls, raise_exception=True):
+        try:
+            with open(cls.get_config_file_schema_name()) as f:
+                return f.read()
+        except Exception as e:
+            if raise_exception:
+                raise e
 
     @classmethod
     def get_required_strategies_count(cls, config):

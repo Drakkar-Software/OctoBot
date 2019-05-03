@@ -21,7 +21,7 @@ from abc import *
 from config.config import load_config
 
 from config import START_PENDING_EVAL_NOTE, START_EVAL_PERTINENCE, TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, \
-    EVALUATOR_CONFIG_FOLDER, CONFIG_FILE_EXT, CONFIG_EVALUATOR, INIT_EVAL_NOTE, EVALUATOR_EVAL_DEFAULT_TYPE
+    EVALUATOR_CONFIG_FOLDER, CONFIG_FILE_EXT, CONFIG_EVALUATOR, INIT_EVAL_NOTE, EVALUATOR_EVAL_DEFAULT_TYPE, SCHEMA
 
 from tools.config_manager import ConfigManager
 
@@ -63,8 +63,15 @@ class AbstractEvaluator:
 
     @classmethod
     def get_config_file_name(cls, config_evaluator_type=None):
-        return f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{config_evaluator_type}/{EVALUATOR_CONFIG_FOLDER}" \
-            f"/{cls.get_name() + CONFIG_FILE_EXT}"
+        eval_type = config_evaluator_type or cls.get_config_evaluator_type()
+        return f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{eval_type}/{EVALUATOR_CONFIG_FOLDER}" \
+            f"/{cls.get_name()}{CONFIG_FILE_EXT}"
+
+    @classmethod
+    def get_config_file_schema_name(cls, config_evaluator_type=None):
+        eval_type = config_evaluator_type or cls.get_config_evaluator_type()
+        return f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{eval_type}/{EVALUATOR_CONFIG_FOLDER}" \
+            f"/{cls.get_name()}_{SCHEMA}{CONFIG_FILE_EXT}"
 
     @classmethod
     def get_config_file_error_message(cls, error):
@@ -73,11 +80,25 @@ class AbstractEvaluator:
             f". (error: {error})"
 
     @classmethod
-    def get_specific_config(cls):
+    def get_specific_config(cls, raise_exception=True, raw_file=False):
         try:
-            return load_config(cls.get_config_file_name())
+            if raw_file:
+                with open(cls.get_config_file_name()) as file:
+                    return file.read()
+            else:
+                return load_config(cls.get_config_file_name())
         except Exception as e:
-            raise e
+            if raise_exception:
+                raise e
+
+    @classmethod
+    def get_specific_config_schema(cls, raise_exception=True):
+        try:
+            with open(cls.get_config_file_schema_name()) as f:
+                return f.read()
+        except Exception as e:
+            if raise_exception:
+                raise e
 
     # Override this method when self.eval_note is other than : START_PENDING_EVAL_NOTE or float[-1:1]
     @staticmethod
@@ -247,3 +268,8 @@ class AbstractEvaluator:
     @abstractmethod
     async def start_task(self) -> None:
         raise NotImplementedError("start_task not implemented")
+
+    @classmethod
+    @abstractmethod
+    def get_config_evaluator_type(cls) -> str:
+        raise NotImplementedError("get_config_evaluator_type")

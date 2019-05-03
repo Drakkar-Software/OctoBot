@@ -42,8 +42,8 @@ class RealTimeEvaluator(AbstractEvaluator):
         self.load_config()
 
     @classmethod
-    def get_config_file_name(cls, config_evaluator_type=CONFIG_EVALUATOR_REALTIME):
-        return super().get_config_file_name(config_evaluator_type)
+    def get_config_evaluator_type(cls) -> str:
+        return CONFIG_EVALUATOR_REALTIME
 
     def stop(self):
         self.keep_running = False
