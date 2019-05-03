@@ -18,7 +18,7 @@
 
 function apply_evaluator_default_config(element) {
     const default_config = element.attr("default-elements").replace(new RegExp("'","g"),'"');
-    const update_url = $("#save-config").attr(update_url_attr);
+    const update_url = $("#saveConfig").attr(update_url_attr);
     const updated_config = {};
     const config_type = element.attr(config_type_attr);
     updated_config[config_type] = {};
@@ -36,7 +36,23 @@ function handle_apply_evaluator_default_config_success_callback(updated_data, up
 }
 
 
+function handleConfigDisplay(){
+
+    if(canEditConfig()){
+        $("#saveConfigFooter").show();
+        $("#saveConfig").click(function() {
+            log(configEditor.getValue());
+        });
+    }else{
+        $("#noConfigMessage").show();
+    }
+}
+
+
 function handleButtons() {
+
+    handleConfigDisplay();
+
     $(".config-element").click(function () {
         const element = $(this);
 
@@ -63,6 +79,27 @@ function handleButtons() {
 function get_selected_files(){
     return [$("#dataFileSelect").val()];
 }
+
+const configEditorBody = $("#configEditorBody");
+const configSchema = configEditorBody.attr("schema");
+const configValue = configEditorBody.attr("config");
+
+const parsedConfigSchema = configSchema !== "None" ? $.parseJSON(configSchema) : null;
+const parsedConfigValue = configValue !== "None" ? $.parseJSON(configValue) : null;
+
+function canEditConfig() {
+    return parsedConfigSchema && parsedConfigValue
+}
+
+const configEditor = canEditConfig() ? (new JSONEditor($("#configEditor")[0],{
+    schema: parsedConfigSchema,
+    startval: parsedConfigValue,
+    no_additional_properties: true,
+    prompt_before_delete: true,
+    disable_array_reorder: true,
+    disable_collapse: true,
+    disable_properties: true
+})) : null;
 
 $(document).ready(function() {
     handleButtons();

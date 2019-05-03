@@ -50,8 +50,8 @@ class StrategiesEvaluator(AbstractEvaluator):
         raise NotImplementedError("Eval_impl not implemented")
 
     @classmethod
-    def get_config_file_name(cls, config_evaluator_type=CONFIG_EVALUATOR_STRATEGIES):
-        return super().get_config_file_name(config_evaluator_type)
+    def get_config_evaluator_type(cls) -> str:
+        return CONFIG_EVALUATOR_STRATEGIES
 
     @classmethod
     def get_required_time_frames(cls, config):
