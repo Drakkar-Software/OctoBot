@@ -22,11 +22,11 @@ def _default_parent_inspection(element, parent):
 
 
 def evaluator_parent_inspection(element, parent):
-    return element.get_parent_evaluator_classes(parent)
+    return hasattr(element, "get_parent_evaluator_classes") and element.get_parent_evaluator_classes(parent)
 
 
 def trading_mode_parent_inspection(element, parent):
-    return element.get_parent_trading_mode_classes(parent)
+    return hasattr(element, "get_parent_trading_mode_classes") and element.get_parent_trading_mode_classes(parent)
 
 
 def get_class_from_string(class_string, parent, module, parent_inspection=_default_parent_inspection,

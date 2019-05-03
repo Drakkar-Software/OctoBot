@@ -69,3 +69,7 @@ const material_colors = ["#2962ff", "#00b8d4", "#00c853", "#aeea00", "#ffab00",
 
 const material_dark_colors = ["#0039cb", "#0088a3", "#009624", "#79b700", "#c67c00",
     "#a30000", "#9b0000", "#0a00b6"];
+
+// set bootstrap 4 theme for JSONEditor (https://github.com/json-editor/json-editor#css-integration)
+JSONEditor.defaults.options.theme = 'bootstrap4';
+JSONEditor.defaults.options.iconlib = 'fontawesome5';
