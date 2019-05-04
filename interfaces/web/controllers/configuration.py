@@ -24,7 +24,7 @@ from interfaces.web.models.configuration import get_strategy_config, update_eval
     get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_all_symbol_list, \
     get_tested_exchange_list, get_simulated_exchange_list, get_other_exchange_list, get_edited_config, \
     update_trading_config, get_trading_startup_config, reset_trading_history, is_trading_persistence_activated, \
-    manage_metrics, get_tentacle_from_string, update_tentacle_config
+    manage_metrics, get_tentacle_from_string, update_tentacle_config, reset_config_to_default
 from interfaces.web.models.backtesting import get_data_files_with_description
 from interfaces.web.util.flask_util import get_rest_reply
 from backtesting import backtesting_enabled
@@ -113,8 +113,14 @@ def config():
 def config_tentacle():
     if request.method == 'POST':
         tentacle_name = request.args.get("name")
-        request_data = request.get_json()
-        success, response = update_tentacle_config(tentacle_name, request_data)
+        action = request.args.get("action")
+        success = True
+        response = ""
+        if action == "update":
+            request_data = request.get_json()
+            success, response = update_tentacle_config(tentacle_name, request_data)
+        elif action == "factory_reset":
+            success, response = reset_config_to_default(tentacle_name)
         if success:
             return get_rest_reply(jsonify(response))
         else:

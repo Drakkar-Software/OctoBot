@@ -62,16 +62,17 @@ class AbstractEvaluator:
         return subclasses_list
 
     @classmethod
-    def get_config_file_name(cls, config_evaluator_type=None):
+    def get_config_folder(cls, config_evaluator_type=None):
         eval_type = config_evaluator_type or cls.get_config_evaluator_type()
-        return f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{eval_type}/{EVALUATOR_CONFIG_FOLDER}" \
-            f"/{cls.get_name()}{CONFIG_FILE_EXT}"
+        return f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{eval_type}/{EVALUATOR_CONFIG_FOLDER}"
+
+    @classmethod
+    def get_config_file_name(cls, config_evaluator_type=None):
+        return f"{cls.get_config_folder(config_evaluator_type)}/{cls.get_name()}{CONFIG_FILE_EXT}"
 
     @classmethod
     def get_config_file_schema_name(cls, config_evaluator_type=None):
-        eval_type = config_evaluator_type or cls.get_config_evaluator_type()
-        return f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{eval_type}/{EVALUATOR_CONFIG_FOLDER}" \
-            f"/{cls.get_name()}_{SCHEMA}{CONFIG_FILE_EXT}"
+        return f"{cls.get_config_folder(config_evaluator_type)}/{cls.get_name()}_{SCHEMA}{CONFIG_FILE_EXT}"
 
     @classmethod
     def get_config_file_error_message(cls, error):
