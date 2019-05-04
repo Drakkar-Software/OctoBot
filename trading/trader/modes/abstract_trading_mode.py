@@ -52,14 +52,16 @@ class AbstractTradingMode:
         return cls.__name__
 
     @classmethod
+    def get_config_folder(cls):
+        return f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{TENTACLES_TRADING_MODE_PATH}/{EVALUATOR_CONFIG_FOLDER}"
+
+    @classmethod
     def get_config_file_name(cls):
-        return f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{TENTACLES_TRADING_MODE_PATH}/{EVALUATOR_CONFIG_FOLDER}/" \
-               f"{cls.get_name() + CONFIG_FILE_EXT}"
+        return f"{cls.get_config_folder()}/{cls.get_name() + CONFIG_FILE_EXT}"
 
     @classmethod
     def get_config_file_schema_name(cls):
-        return f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{TENTACLES_TRADING_MODE_PATH}/{EVALUATOR_CONFIG_FOLDER}/" \
-               f"{cls.get_name()}_{SCHEMA}{CONFIG_FILE_EXT}"
+        return f"{cls.get_config_folder()}/{cls.get_name()}_{SCHEMA}{CONFIG_FILE_EXT}"
 
     @classmethod
     def get_specific_config(cls, raise_exception=True, raw_file=False):

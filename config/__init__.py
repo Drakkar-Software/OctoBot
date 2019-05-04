@@ -301,6 +301,7 @@ TRADING_MODE_REQUIRED_STRATEGIES = "required_strategies"
 TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT = "required_strategies_min_count"
 STRATEGIES_REQUIRED_EVALUATORS = "required_evaluators"
 TENTACLE_DEFAULT_CONFIG = "default_config"
+TENTACLE_DEFAULT_FOLDER = "Default"
 
 # Web interface
 UPDATED_CONFIG_SEPARATOR = "_"

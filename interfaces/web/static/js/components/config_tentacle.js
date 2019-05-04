@@ -40,6 +40,15 @@ function updateTentacleConfig(updatedConfig){
     send_and_interpret_bot_update(updatedConfig, update_url, null, handle_tentacle_config_update_success_callback, handle_tentacle_config_update_error_callback);
 }
 
+function factory_reset(update_url){
+    send_and_interpret_bot_update(null, update_url, null, handle_tentacle_config_reset_success_callback, handle_tentacle_config_update_error_callback);
+}
+
+function handle_tentacle_config_reset_success_callback(updated_data, update_url, dom_root_element, msg, status){
+    create_alert("success", "Configuration saved", msg);
+    location.reload();
+}
+
 function handle_tentacle_config_update_success_callback(updated_data, update_url, dom_root_element, msg, status){
     create_alert("success", "Configuration saved", msg);
 }
@@ -84,6 +93,12 @@ function handleButtons() {
         const request = get_selected_files();
         const update_url = $("#startBacktesting").attr("start-url");
         start_backtesting(request, update_url);
+    });
+
+    $("#factoryResetConfig").click(function(){
+        if (confirm("Reset this tentacle configuration to its default values ?") === true) {
+            factory_reset($("#factoryResetConfig").attr("update-url"));
+        }
     });
 }
 

@@ -39,7 +39,8 @@
         </div>
     </div>
     <div class="card-footer" id='saveConfigFooter' style='display: none;'>
-        <button class="btn btn-outline-success waves-effect" id='saveConfig' href="#" role="tab" update-url="{{ url_for('config_tentacle', name=name) }}">Save and restart later</button>
+        <button class="btn btn-outline-success waves-effect" id='saveConfig' update-url="{{ url_for('config_tentacle', name=name, action='update') }}">Save and restart later</button>
+        <button class="btn btn-outline-warning waves-effect float-right" id='factoryResetConfig' update-url="{{ url_for('config_tentacle', name=name, action='factory_reset') }}"><i class="fas fa-recycle"></i> Reset configuration to default values</button>
     </div>
 </div>
 <br>

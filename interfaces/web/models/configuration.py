@@ -194,13 +194,23 @@ def get_tentacle_from_string(name, with_info=True):
 
 
 def update_tentacle_config(tentacle_name, config_update):
-    klass, _, _ = get_tentacle_from_string(tentacle_name, with_info=False)
     try:
+        klass, _, _ = get_tentacle_from_string(tentacle_name, with_info=False)
         ConfigManager.update_tentacle_config(klass, config_update)
         return True, f"{tentacle_name} updated"
     except Exception as e:
         LOGGER.exception(e)
         return False, f"Error when updating tentacle config: {e}"
+
+
+def reset_config_to_default(tentacle_name):
+    try:
+        klass, _, _ = get_tentacle_from_string(tentacle_name, with_info=False)
+        ConfigManager.factory_reset_tentacle_config(klass)
+        return True, f"{tentacle_name} configuration reset to default values"
+    except Exception as e:
+        LOGGER.exception(e)
+        return False, f"Error when resetting factory tentacle config: {e}"
 
 
 def _get_required_element(elements_config):
