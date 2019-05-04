@@ -9,14 +9,14 @@
           <h5>{{info['advanced_class']['name']}} is based on {{ tentacle_with_link_list(info['advanced_class']['base_classes']) }}</h5>
           {% if info['advanced_class']['default-config'] %}
                 <p>
-                    {{ default_config_with_apply(info['advanced_class']['default-config'], strategy, info['advanced_class']['name']) }}
+                    {{ default_config_with_apply(info['advanced_class']['default-config'], strategy, info['advanced_class']['name'], info['advanced_class']['requirements']) }}
                 </p>
           {% endif %}
       {% else %}
           {{m_text.text_split_lines(info['description'])}}
           {% if info['default-config'] %}
                 <p>
-                    {{ default_config_with_apply(info['default-config'], strategy, name) }}
+                    {{ default_config_with_apply(info['default-config'], strategy, name, info['requirements']) }}
                 </p>
           {% endif %}
       {% endif %}
@@ -64,17 +64,18 @@
     {% endif %}
 {% endmacro %}
 
-{% macro default_config_with_apply(default_config, strategy, name) %}
+{% macro default_config_with_apply(default_config, strategy, name, requirements) %}
     <div>
         <h5>Default configuration:
-        {% if strategy %}
-           <button type="button"
+            {% if strategy or (not strategy and requirements|length > 1) %}
+             <button type="button"
                    config-type="evaluator_list_config"
-                   strategy="{{ name }}"
+                   id="applyDefaultConfig"
+                   tentacle="{{ name }}"
                    class="btn btn-sm btn-outline-green waves-effect config-element float-right">
                <i class="fas fa-check"></i> Activate
-           </button>
-        {% endif %}
+            </button>
+            {% endif %}
         </h5>
     </div>
     {{ tentacle_with_link_list(default_config) }}
@@ -84,5 +85,5 @@
     <h5>Compatible {{ 'evaluators' if strategy else 'strategies' }}:</h5>
         {{ tentacle_with_link_list(requirements) }}
     <hr>
-    {{ default_config_with_apply(default_config, strategy, name) }}
+    {{ default_config_with_apply(default_config, strategy, name, requirements) }}
 {% endmacro %}

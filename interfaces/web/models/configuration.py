@@ -21,7 +21,7 @@ import ccxt
 import requests
 
 from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, TESTED_EXCHANGES, \
-    UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, EVALUATOR_ACTIVATION, \
+    UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, EVALUATOR_ACTIVATION, EVALUATOR_EVAL_DEFAULT_TYPE, \
     SIMULATOR_TESTED_EXCHANGES, CONFIG_METRICS, CONFIG_ENABLED_OPTION
 from interfaces import get_bot
 from services import AbstractService
@@ -51,6 +51,7 @@ TA_KEY = "ta"
 RT_KEY = "real-time"
 ACTIVATED_STRATEGIES = "activated_strategies"
 BASE_CLASSES_KEY = "base_classes"
+EVALUATION_FORMAT_KEY = "evaluation_format"
 
 LOGGER = get_logger("WebConfigurationModel")
 
@@ -106,7 +107,7 @@ def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_str
     return details
 
 
-def _get_strategy_activation_state():
+def _get_strategy_activation_state(with_trading_modes):
     import trading.trader.modes as modes
     import evaluator.Strategies as strategies
     strategy_config = {
@@ -118,16 +119,17 @@ def _get_strategy_activation_state():
         STRATEGIES_KEY: {}
     }
 
-    trading_config = _get_trading_config()
-    for key, val in trading_config.items():
-        config_class = get_class_from_string(key, modes.AbstractTradingMode, modes, trading_mode_parent_inspection)
-        if config_class:
-            strategy_config[TRADING_MODES_KEY][key] = {}
-            strategy_config[TRADING_MODES_KEY][key][EVALUATOR_ACTIVATION] = val
-            strategy_config[TRADING_MODES_KEY][key][DESCRIPTION_KEY] = config_class.get_description()
-            strategy_config[TRADING_MODES_KEY][key][ADVANCED_CLASS_KEY] = \
-                _get_advanced_class_details(key, config_class, is_trading_mode=True)
-            strategy_config_classes[TRADING_MODES_KEY][key] = config_class
+    if with_trading_modes:
+        trading_config = _get_trading_config()
+        for key, val in trading_config.items():
+            config_class = get_class_from_string(key, modes.AbstractTradingMode, modes, trading_mode_parent_inspection)
+            if config_class:
+                strategy_config[TRADING_MODES_KEY][key] = {}
+                strategy_config[TRADING_MODES_KEY][key][EVALUATOR_ACTIVATION] = val
+                strategy_config[TRADING_MODES_KEY][key][DESCRIPTION_KEY] = config_class.get_description()
+                strategy_config[TRADING_MODES_KEY][key][ADVANCED_CLASS_KEY] = \
+                    _get_advanced_class_details(key, config_class, is_trading_mode=True)
+                strategy_config_classes[TRADING_MODES_KEY][key] = config_class
 
     evaluator_config = _get_evaluator_config()
     for key, val in evaluator_config.items():
@@ -263,9 +265,10 @@ def _add_trading_modes_requirements(trading_modes, strategy_config):
             LOGGER.exception(e)
 
 
-def get_strategy_config():
-    strategy_config, strategy_config_classes = _get_strategy_activation_state()
-    _add_trading_modes_requirements(strategy_config_classes[TRADING_MODES_KEY], strategy_config)
+def get_strategy_config(with_trading_modes=True):
+    strategy_config, strategy_config_classes = _get_strategy_activation_state(with_trading_modes)
+    if with_trading_modes:
+        _add_trading_modes_requirements(strategy_config_classes[TRADING_MODES_KEY], strategy_config)
     _add_strategies_requirements(strategy_config_classes[STRATEGIES_KEY], strategy_config)
     return strategy_config
 
@@ -289,6 +292,8 @@ def _fill_evaluator_config(evaluator_name, activated, eval_type_key,
         detailed_config[eval_type_key][evaluator_name] = {}
         detailed_config[eval_type_key][evaluator_name][EVALUATOR_ACTIVATION] = activated
         detailed_config[eval_type_key][evaluator_name][DESCRIPTION_KEY] = klass.get_description()
+        detailed_config[eval_type_key][evaluator_name][EVALUATION_FORMAT_KEY] = "float" \
+            if klass.get_eval_type() == EVALUATOR_EVAL_DEFAULT_TYPE else str(klass.get_eval_type())
         detailed_config[eval_type_key][evaluator_name][ADVANCED_CLASS_KEY] = \
             _get_advanced_class_details(evaluator_name, klass, is_strategy=is_strategy)
         return True, klass
@@ -333,10 +338,10 @@ def get_evaluator_detailed_config():
     return detailed_config
 
 
-def update_evaluator_config(new_config):
+def update_evaluator_config(new_config, deactivate_others=False):
     current_config = _get_evaluator_config()
     try:
-        ConfigManager.update_evaluator_config(new_config, current_config)
+        ConfigManager.update_evaluator_config(new_config, current_config, deactivate_others)
         return True
     except Exception:
         return False

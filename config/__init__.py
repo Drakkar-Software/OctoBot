@@ -307,6 +307,7 @@ TENTACLE_DEFAULT_FOLDER = "Default"
 UPDATED_CONFIG_SEPARATOR = "_"
 GLOBAL_CONFIG_KEY = "global_config"
 EVALUATOR_CONFIG_KEY = "evaluator_config"
+DEACTIVATE_OTHERS = "deactivate_others"
 TRADING_CONFIG_KEY = "trading_config"
 COIN_MARKET_CAP_CURRENCIES_LIST_URL = "https://api.coinmarketcap.com/v2/listings/"
 
