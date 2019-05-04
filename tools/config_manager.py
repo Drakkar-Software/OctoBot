@@ -30,7 +30,7 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, \
     CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET, \
     CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, CONFIG_METRICS, CONFIG_TRADER, \
-    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS
+    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS, TENTACLE_DEFAULT_FOLDER
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
@@ -293,6 +293,14 @@ class ConfigManager:
             current_config[key] = val
         with open(klass.get_config_file_name(), "w+") as config_file_w:
             config_file_w.write(json.dumps(current_config, indent=4, sort_keys=False))
+
+    @staticmethod
+    def factory_reset_tentacle_config(klass):
+        config_file = klass.get_config_file_name()
+        config_folder = klass.get_config_folder()
+        config_file_name = config_file.split(config_folder)[1]
+        factory_config = f"{config_folder}/{TENTACLE_DEFAULT_FOLDER}/{config_file_name}"
+        shutil.copy(factory_config, config_file)
 
     @staticmethod
     def has_invalid_default_config_value(*config_values):
