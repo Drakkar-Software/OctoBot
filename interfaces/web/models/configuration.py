@@ -176,10 +176,11 @@ def get_tentacle_from_string(name):
             info[DESCRIPTION_KEY] = klass.get_description()
             info[NAME_KEY] = name
             for parent_class in klass.__bases__:
-                advanced_details = _get_advanced_class_details(parent_class.get_name(), parent_class,
-                                                               is_strategy=(not is_trading_mode))
-                if advanced_details:
-                    info[ADVANCED_CLASS_KEY] = advanced_details
+                if hasattr(parent_class, "get_name"):
+                    advanced_details = _get_advanced_class_details(parent_class.get_name(), parent_class,
+                                                                   is_strategy=(not is_trading_mode))
+                    if advanced_details:
+                        info[ADVANCED_CLASS_KEY] = advanced_details
             info[EVALUATOR_ACTIVATION] = _get_activation_state(name, info, is_trading_mode)
             if is_trading_mode:
                 _add_trading_mode_requirements_and_default_config(info, klass)
