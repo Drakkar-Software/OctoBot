@@ -313,6 +313,8 @@ function apply_evaluator_default_config(element) {
         updated_config[config_type][config_key] = "true";
     });
 
+    updated_config["deactivate_others"] = true;
+
     // send update
     send_and_interpret_bot_update(updated_config, update_url, null, handle_apply_evaluator_default_config_success_callback);
 }
@@ -449,7 +451,7 @@ function handle_evaluator_configuration_editor(){
                     update_element_temporary_look(element);
                 }
                 else if (element.attr(config_type_attr) === evaluator_list_config_type){
-                    const strategy_name = element.attr("strategy");
+                    const strategy_name = element.attr("tentacle");
                     apply_evaluator_default_config($("a[name='"+strategy_name+"']"));
                 }
             }
