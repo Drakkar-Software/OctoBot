@@ -19,6 +19,7 @@
 // set bootstrap 4 theme for JSONEditor (https://github.com/json-editor/json-editor#css-integration)
 JSONEditor.defaults.options.iconlib = 'fontawesome5';
 
+// custom octobot theme
 JSONEditor.defaults.themes.octobot = JSONEditor.defaults.themes.bootstrap4.extend({
   getButton: function(text, icon, title) {
     var el = this._super(text, icon, title);
@@ -27,4 +28,17 @@ JSONEditor.defaults.themes.octobot = JSONEditor.defaults.themes.bootstrap4.exten
     return el;
   }
 });
+
+// custom delete confirm prompt
+JSONEditor.defaults.editors.array = JSONEditor.defaults.editors.array.extend({
+  askConfirmation: function() {
+    if (this.jsoneditor.options.prompt_before_delete === true) {
+      if (confirm("Remove this element ?") === false) {
+        return false;
+      }
+    }
+    return true;
+  }
+});
+
 JSONEditor.defaults.options.theme = 'octobot';

@@ -166,28 +166,41 @@ def _get_activation_state(name, details, is_trading_mode):
     return name in activation_states and activation_states[name]
 
 
-def get_tentacle_from_string(name):
+def get_tentacle_from_string(name, with_info=True):
     for package, abstract_class, tentacle_type in _get_tentacle_packages():
         is_trading_mode = tentacle_type == TRADING_MODE_KEY
         parent_inspector = trading_mode_parent_inspection if is_trading_mode else evaluator_parent_inspection
         klass = get_class_from_string(name, abstract_class, package, parent_inspector)
         if klass:
-            info = dict()
-            info[DESCRIPTION_KEY] = klass.get_description()
-            info[NAME_KEY] = name
-            for parent_class in klass.__bases__:
-                if hasattr(parent_class, "get_name"):
-                    advanced_details = _get_advanced_class_details(parent_class.get_name(), parent_class,
-                                                                   is_strategy=(not is_trading_mode))
-                    if advanced_details:
-                        info[ADVANCED_CLASS_KEY] = advanced_details
-            info[EVALUATOR_ACTIVATION] = _get_activation_state(name, info, is_trading_mode)
-            if is_trading_mode:
-                _add_trading_mode_requirements_and_default_config(info, klass)
-            elif tentacle_type == STRATEGY_KEY:
-                _add_strategy_requirements_and_default_config(info, klass, get_bot().get_config())
-            return klass, tentacle_type, info
+            if with_info:
+                info = dict()
+                info[DESCRIPTION_KEY] = klass.get_description()
+                info[NAME_KEY] = name
+                for parent_class in klass.__bases__:
+                    if hasattr(parent_class, "get_name"):
+                        advanced_details = _get_advanced_class_details(parent_class.get_name(), parent_class,
+                                                                       is_strategy=(tentacle_type == STRATEGY_KEY))
+                        if advanced_details:
+                            info[ADVANCED_CLASS_KEY] = advanced_details
+                info[EVALUATOR_ACTIVATION] = _get_activation_state(name, info, is_trading_mode)
+                if is_trading_mode:
+                    _add_trading_mode_requirements_and_default_config(info, klass)
+                elif tentacle_type == STRATEGY_KEY:
+                    _add_strategy_requirements_and_default_config(info, klass, get_bot().get_config())
+                return klass, tentacle_type, info
+            else:
+                return klass, tentacle_type, None
     return None, None, None
+
+
+def update_tentacle_config(tentacle_name, config_update):
+    klass, _, _ = get_tentacle_from_string(tentacle_name, with_info=False)
+    try:
+        ConfigManager.update_tentacle_config(klass, config_update)
+        return True, f"{tentacle_name} updated"
+    except Exception as e:
+        LOGGER.exception(e)
+        return False, f"Error when updating tentacle config: {e}"
 
 
 def _get_required_element(elements_config):
