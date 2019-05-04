@@ -18,7 +18,7 @@
 
 function apply_evaluator_default_config(element) {
     const default_config = element.attr("default-elements").replace(new RegExp("'","g"),'"');
-    const update_url = $("#saveConfig").attr(update_url_attr);
+    const update_url = $("#defaultConfigDiv").attr(update_url_attr);
     const updated_config = {};
     const config_type = element.attr(config_type_attr);
     updated_config[config_type] = {};
@@ -35,19 +35,30 @@ function handle_apply_evaluator_default_config_success_callback(updated_data, up
     create_alert("success", "Evaluators activated", "Restart OctoBot for changes to be applied");
 }
 
+function updateTentacleConfig(updatedConfig){
+    const update_url = $("#saveConfig").attr(update_url_attr);
+    send_and_interpret_bot_update(updatedConfig, update_url, null, handle_tentacle_config_update_success_callback, handle_tentacle_config_update_error_callback);
+}
+
+function handle_tentacle_config_update_success_callback(updated_data, update_url, dom_root_element, msg, status){
+    create_alert("success", "Configuration saved", msg);
+}
+
+function handle_tentacle_config_update_error_callback(updated_data, update_url, dom_root_element, msg, status){
+    create_alert("error", "Error when updating config", msg.responseText);
+}
 
 function handleConfigDisplay(){
 
     if(canEditConfig()){
         $("#saveConfigFooter").show();
         $("#saveConfig").click(function() {
-            log(configEditor.getValue());
+            updateTentacleConfig(configEditor.getValue());
         });
     }else{
         $("#noConfigMessage").show();
     }
 }
-
 
 function handleButtons() {
 

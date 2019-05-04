@@ -286,6 +286,15 @@ class ConfigManager:
                 config_file_w.write(json.dumps(current_config, indent=4, sort_keys=True))
 
     @staticmethod
+    def update_tentacle_config(klass, config_update):
+        current_config = klass.get_specific_config()
+        # only update values in config update not to erase values in root config (might not be editable)
+        for key, val in config_update.items():
+            current_config[key] = val
+        with open(klass.get_config_file_name(), "w+") as config_file_w:
+            config_file_w.write(json.dumps(current_config, indent=4, sort_keys=False))
+
+    @staticmethod
     def has_invalid_default_config_value(*config_values):
         return any(value in DEFAULT_CONFIG_VALUES for value in config_values)
 
