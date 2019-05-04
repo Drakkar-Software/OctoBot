@@ -18,13 +18,14 @@ from flask import render_template, request, jsonify
 
 from config import CONFIG_EXCHANGES, CONFIG_CATEGORY_SERVICES, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADING, \
     CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_CRYPTO_CURRENCIES, GLOBAL_CONFIG_KEY, EVALUATOR_CONFIG_KEY, \
-    CONFIG_TRADER_REFERENCE_MARKET, TRADING_CONFIG_KEY
+    CONFIG_TRADER_REFERENCE_MARKET, TRADING_CONFIG_KEY, DEACTIVATE_OTHERS
 from interfaces.web import server_instance
 from interfaces.web.models.configuration import get_strategy_config, update_evaluator_config, \
     get_evaluator_startup_config, get_services_list, get_symbol_list, update_global_config, get_all_symbol_list, \
     get_tested_exchange_list, get_simulated_exchange_list, get_other_exchange_list, get_edited_config, \
     update_trading_config, get_trading_startup_config, reset_trading_history, is_trading_persistence_activated, \
-    manage_metrics, get_tentacle_from_string, update_tentacle_config, reset_config_to_default
+    manage_metrics, get_tentacle_from_string, update_tentacle_config, reset_config_to_default, \
+    get_evaluator_detailed_config, REQUIREMENTS_KEY
 from interfaces.web.models.backtesting import get_data_files_with_description
 from interfaces.web.util.flask_util import get_rest_reply
 from backtesting import backtesting_enabled
@@ -47,7 +48,10 @@ def config():
 
             # update evaluator config if required
             if EVALUATOR_CONFIG_KEY in request_data and request_data[EVALUATOR_CONFIG_KEY]:
-                success = success and update_evaluator_config(request_data[EVALUATOR_CONFIG_KEY])
+                deactivate_others = False
+                if DEACTIVATE_OTHERS in request_data:
+                    deactivate_others = request_data[DEACTIVATE_OTHERS]
+                success = success and update_evaluator_config(request_data[EVALUATOR_CONFIG_KEY], deactivate_others)
             else:
                 request_data[EVALUATOR_CONFIG_KEY] = ""
 
@@ -129,11 +133,19 @@ def config_tentacle():
         if request.args:
             tentacle_name = request.args.get("name")
             tentacle_class, tentacle_type, tentacle_desc = get_tentacle_from_string(tentacle_name)
+            evaluator_config = get_evaluator_detailed_config() if tentacle_type == "strategy" and \
+                tentacle_desc[REQUIREMENTS_KEY] == ["*"] else None
+            strategy_config = get_strategy_config() if tentacle_type == "trading mode" and \
+                len(tentacle_desc[REQUIREMENTS_KEY]) > 1 else None
+            evaluator_startup_config = get_evaluator_startup_config() if evaluator_config or strategy_config else None
             return render_template('config_tentacle.html',
                                    name=tentacle_name,
                                    tentacle_type=tentacle_type,
                                    tentacle_class=tentacle_class,
                                    tentacle_desc=tentacle_desc,
+                                   evaluator_startup_config=evaluator_startup_config,
+                                   strategy_config=strategy_config,
+                                   evaluator_config=evaluator_config,
                                    data_files=get_data_files_with_description())
         else:
             return render_template('config_tentacle.html')

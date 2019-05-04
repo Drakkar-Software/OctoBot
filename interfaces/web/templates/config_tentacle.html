@@ -2,13 +2,14 @@
 {% set active_page = "config" %}
 
 {% import 'macros/tentacles.html' as m_tentacles %}
+{% import 'components/config/evaluator_card.html' as m_config_evaluator_card %}
 
 {% block body %}
 <br>
 {% if tentacle_desc %}
     <div class="card">
         <div class="card-header">
-            <h1 id='{{ name }}' config-type={{"trading_config" if tentacle_type == "trading mode" else "evaluator_config"}}
+            <h1 id='{{ name }}' config-type="evaluator_config"
                 default-elements="{{tentacle_desc['advanced_class']['default-config'] if tentacle_desc['advanced_class'] and tentacle_desc['advanced_class']['default-config'] else tentacle_desc['default-config']}}"
             >{{ name }}
                 <a href="{{ url_for('config') if tentacle_type in ["trading mode", "strategy"] else url_for('advanced.evaluator_config') }}">
@@ -40,11 +41,64 @@
             </div>
         </div>
         <div class="card-footer" id='saveConfigFooter' style='display: none;'>
-            <button class="btn btn-outline-success waves-effect" id='saveConfig' update-url="{{ url_for('config_tentacle', name=name, action='update') }}">Save and restart later</button>
+            <button class="btn btn-outline-success waves-effect" id='saveConfig' update-url="{{ url_for('config_tentacle', name=name, action='update') }}">Save configuration and restart later</button>
             <button class="btn btn-outline-warning waves-effect float-right" id='factoryResetConfig' update-url="{{ url_for('config_tentacle', name=name, action='factory_reset') }}"><i class="fas fa-recycle"></i> Reset configuration to default values</button>
         </div>
     </div>
     <br>
+    {% if (tentacle_type == "trading mode" and tentacle_desc['requirements']|length > 1) or tentacle_desc['requirements'] == ["*"] %}
+        <div class="card">
+            <div class="card-header">
+                <h1>Compatible {{"strategies" if tentacle_type == "trading mode" else "evaluators"}}</h1>
+            </div>
+            <div class="card-body" id="activatedElementsBody">
+                {% if tentacle_type == "trading mode" %}
+                    {% for evaluator_name, info in strategy_config["strategies"].items() %}
+                        {% if evaluator_name in tentacle_desc['requirements'] %}
+                            {{ m_config_evaluator_card.tentacle_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <h2>Technical analysis</h2>
+                    <div>
+                        <div class="row config-container" id="ta-evaluator-config-root">
+                            {% for evaluator_name, info in evaluator_config["ta"].items() %}
+                                {% if info["evaluation_format"] == "float" %}
+                                    {{ m_config_evaluator_card.tentacle_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <br>
+                    <h2>Social analysis</h2>
+                    <div>
+                        <div class="row config-container" id="social-evaluator-config-root">
+                            {% for evaluator_name, info in evaluator_config["social"].items() %}
+                                {% if info["evaluation_format"] == "float" %}
+                                    {{ m_config_evaluator_card.tentacle_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <br>
+                    <h2>Real time analysis</h2>
+                    <div>
+                        <div class="row config-container" id="rt-evaluator-config-root">
+                            {% for evaluator_name, info in evaluator_config["real-time"].items() %}
+                                {% if info["evaluation_format"] == "float" %}
+                                    {{ m_config_evaluator_card.tentacle_evaluator_card(evaluator_startup_config, evaluator_name, info, "evaluator_config") }}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer" id='saveConfigFooter'>
+                <button class="btn btn-outline-success waves-effect" id='saveActivationConfig' update-url="{{ url_for('advanced.evaluator_config' if tentacle_type == "strategy" else 'config') }}">Save activation and restart later</button>
+            </div>
+        </div>
+        <br>
+    {% endif %}
     <div class="card">
         <div class="card-header" id="backtestingPage" update-url="{{ url_for('backtesting', update_type='backtesting_status') }}">
             <h1>Test configuration

@@ -110,6 +110,7 @@ function handle_save_buttons(){
 function get_config_key(elem){
     return elem.attr(config_key_attr);
 }
+
 function get_config_value_changed(element, new_value, config_key) {
     let new_value_str = new_value.toString();
     if(new_value instanceof Array && new_value.length > 0){

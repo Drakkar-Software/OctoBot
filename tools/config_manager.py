@@ -34,6 +34,7 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
+from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
 
 
 def get_logger():
@@ -128,14 +129,16 @@ class ConfigManager:
         return CONFIG_DEBUG_OPTION in config and config[CONFIG_DEBUG_OPTION]
 
     @staticmethod
-    def update_evaluator_config(to_update_data, current_config):
+    def update_evaluator_config(to_update_data, current_config, deactivate_others):
         ConfigManager._update_activation_config(to_update_data, current_config,
-                                                CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR_FILE)
+                                                CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR_FILE,
+                                                deactivate_others)
 
     @staticmethod
     def update_trading_config(to_update_data, current_config):
         ConfigManager._update_activation_config(to_update_data, current_config,
-                                                CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_FILE)
+                                                CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_FILE,
+                                                False)
 
     @staticmethod
     def remove_loaded_only_element(config):
@@ -270,7 +273,7 @@ class ConfigManager:
         return dict_dest
 
     @staticmethod
-    def _update_activation_config(to_update_data, current_config, config_file_path, config_file):
+    def _update_activation_config(to_update_data, current_config, config_file_path, config_file, deactivate_others):
         something_changed = False
         for element_name, activated in to_update_data.items():
             if element_name in current_config:
@@ -281,6 +284,19 @@ class ConfigManager:
                                       f"{'activated' if active else 'deactivated'}")
                     current_config[element_name] = active
                     something_changed = True
+        if deactivate_others:
+            import evaluator.Strategies as strategies
+            for element_name, activated in current_config.items():
+                if element_name not in to_update_data:
+                    if current_config[element_name]:
+                        # do not deactivate strategies
+                        config_class = get_class_from_string(element_name, strategies.StrategiesEvaluator,
+                                                             strategies, evaluator_parent_inspection)
+                        if config_class is None:
+                            get_logger().info(f"{config_file} updated: {element_name} "
+                                              f"{'deactivated'}")
+                            current_config[element_name] = False
+                            something_changed = True
         if something_changed:
             with open(config_file_path, "w+") as config_file_w:
                 config_file_w.write(json.dumps(current_config, indent=4, sort_keys=True))
