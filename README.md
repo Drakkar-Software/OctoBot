@@ -8,7 +8,7 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/jr9o8sghywnued9x?svg=true)](https://ci.appveyor.com/project/Herklos/octobot)
 
 #### Octobot Community
-[![Active OctoBot](https://img.shields.io/badge/OctoBots%20online%20this%20month-90-green.svg)]()
+[![Active OctoBot](https://img.shields.io/badge/dynamic/json.svg?&url=https://octobotmetrics.herokuapp.com/metrics/community/count/0/-1/0&query=$.total&color=green&label=OctoBots%20online%20this%20month)]()
 [![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg)](https://t.me/joinchat/F9cyfxV97ZOaXQ47H5dRWw)
 [![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord)](https://discord.gg/vHkcb8W)
 [![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg)](https://t.me/OctoBot_Project)
