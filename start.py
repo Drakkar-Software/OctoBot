@@ -29,9 +29,9 @@ from logging.config import fileConfig
 from threading import Thread
 from time import sleep
 
-from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_EVALUATOR, CONFIG_ENABLED_OPTION, LONG_VERSION, \
+from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
-    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH, \
+    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_FILE_PATH, \
     CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, \
     CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT, DEFAULT_CONFIG_FILE
 from config.config import load_config, init_config, is_config_empty_or_missing
@@ -152,13 +152,7 @@ def start_octobot(starting_args):
                     logger.info("No tentacles found. Installing default tentacles ...")
                     Commands.package_manager(config, ["install", "all"], force=True)
 
-                config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
-                if config[CONFIG_EVALUATOR] is None:
-                    raise ConfigEvaluatorError
-
-                config[CONFIG_TRADING_TENTACLES] = load_config(CONFIG_TRADING_FILE_PATH, False)
-                if config[CONFIG_TRADING_TENTACLES] is None:
-                    raise ConfigTradingError
+                ConfigManager.reload_tentacle_config(config)
 
                 if starting_args.data_collector:
                     Commands.data_collector(config)

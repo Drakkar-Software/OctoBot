@@ -48,11 +48,11 @@
               <div id='progess_bar_anim'  class='progress-bar progress-bar-striped bg-danger progress-bar-animated' role='progressbar' aria-valuenow='100' aria-valuemin='0' aria-valuemax='100' style='width: 100%;'></div>
             </div>
         </span>
-        <button type="button" id="startBacktesting" class="btn btn-primary waves-effect" start-url="{{ url_for('backtesting', action_type='start_backtesting') }}">Start backtesting</button>
+        <button type="button" id="startBacktesting" class="btn btn-primary waves-effect" start-url="{{ url_for('backtesting', action_type='start_backtesting', source='backtesting') }}">Start backtesting</button>
     </div>
 </div>
 
-<span  id="backtestingReport" update-url="{{ url_for('backtesting', update_type='backtesting_report') }}" style='display: none;'>
+<span  id="backtestingReport" update-url="{{ url_for('backtesting', update_type='backtesting_report', source='backtesting') }}" loading="false" style='display: none;'>
     <br>
     <div class="card">
         <div class="card-header">

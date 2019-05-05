@@ -34,7 +34,10 @@ def backtesting():
         reply = "Action failed"
         if action_type == "start_backtesting":
             files = request.get_json()
-            success, reply = start_backtesting_using_specific_files(files)
+            source = request.args["source"]
+            reset_tentacle_config = request.args["reset_tentacle_config"] if "reset_tentacle_config" in request.args \
+                else False
+            success, reply = start_backtesting_using_specific_files(files, source, reset_tentacle_config)
 
         if success:
             return get_rest_reply(jsonify(reply))
@@ -45,7 +48,8 @@ def backtesting():
         if request.args:
             target = request.args["update_type"]
             if target == "backtesting_report":
-                backtesting_report = get_backtesting_report()
+                source = request.args["source"]
+                backtesting_report = get_backtesting_report(source)
                 return jsonify(backtesting_report)
             elif target == "backtesting_status":
                 backtesting_status, progress = get_backtesting_status()

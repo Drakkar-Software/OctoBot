@@ -36,7 +36,7 @@ def get_data_files_with_description():
     return files_with_description
 
 
-def start_backtesting_using_specific_files(files):
+def start_backtesting_using_specific_files(files, source, reset_tentacle_config=False):
     try:
         tools = get_bot().get_tools()
         if tools[BOT_TOOLS_STRATEGY_OPTIMIZER] and tools[BOT_TOOLS_STRATEGY_OPTIMIZER].get_is_computing():
@@ -44,7 +44,7 @@ def start_backtesting_using_specific_files(files):
         elif tools[BOT_TOOLS_BACKTESTING] and tools[BOT_TOOLS_BACKTESTING].get_is_computing():
             return False, "A backtesting is already running"
         else:
-            backtester = Backtester(get_bot().get_config(), files)
+            backtester = Backtester(get_bot().get_config(), source, files, reset_tentacle_config=reset_tentacle_config)
             tools[BOT_TOOLS_BACKTESTING] = backtester
             if get_bot().run_in_main_asyncio_loop(backtester.start_backtesting(in_thread=True)):
                 ignored_files = backtester.get_ignored_files()
@@ -68,11 +68,12 @@ def get_backtesting_status():
         return "not started", 0
 
 
-def get_backtesting_report():
+def get_backtesting_report(source):
     tools = get_bot().get_tools()
     if tools[BOT_TOOLS_BACKTESTING]:
         backtester = tools[BOT_TOOLS_BACKTESTING]
-        return get_bot().run_in_main_asyncio_loop(backtester.get_report())
+        if backtester.get_finished_source() == source:
+            return get_bot().run_in_main_asyncio_loop(backtester.get_report())
     return {}
 
 

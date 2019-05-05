@@ -14,17 +14,28 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from copy import copy
+
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from backtesting.backtesting_util import start_backtesting_bot, get_standalone_backtesting_bot
+from tools.config_manager import ConfigManager
 
 
 class Backtester:
 
-    def __init__(self, config, files=None):
+    def __init__(self, config, source, files=None, reset_tentacle_config=False):
         if files is None:
             files = []
-        self.octobot, self.ignored_files = get_standalone_backtesting_bot(config, files)
+        backtester_config = config
+        if reset_tentacle_config:
+            backtester_config = ConfigManager.reload_tentacle_config(copy(config))
+        self.octobot, self.ignored_files = get_standalone_backtesting_bot(backtester_config, files)
         self.error = None
+        self._source = source
+        self.finished_source = None
+
+    def get_finished_source(self):
+        return self.finished_source
 
     def get_ignored_files(self):
         return self.ignored_files
@@ -60,9 +71,12 @@ class Backtester:
     async def start_backtesting(self, in_thread=False):
         self.error = None
         try:
-            return await start_backtesting_bot(self.octobot, in_thread=in_thread, watcher=self)
+            result = await start_backtesting_bot(self.octobot, in_thread=in_thread, watcher=self)
+            self.finished_source = self._source
+            return result
         except Exception as e:
             self.error = e
+            self.finished_source = self._source
             raise e
 
     def get_bot(self):
