@@ -16,7 +16,7 @@
                     {% if tentacle_desc["activation"] %}
                         <span class="badge badge-primary float-right waves-effect">Activated</span>
                     {% else %}
-                        <span class="badge badge-warning float-right">Deactivated</span>
+                        <span class="badge badge-warning float-right waves-effect">Deactivated</span>
                     {% endif %}
                 </a>
             </h1>
@@ -99,9 +99,16 @@
         </div>
         <br>
     {% endif %}
-    <div class="card">
+    <div class="card" id="backtestingInputPart">
         <div class="card-header" id="backtestingPage" update-url="{{ url_for('backtesting', update_type='backtesting_status') }}">
             <h1>Test configuration
+                {% if tentacle_desc["activation"] %}
+                    <span class="badge badge-primary text-center waves-effect">Ready to test</span>
+                {% else %}
+                    <a id="reloadBacktestingPart">
+                        <span class="badge badge-warning text-center waves-effect">Activation required <i class="fas fa-sync-alt"></i></span>
+                    </a>
+                {% endif %}
                 <a class="float-right text-danger" target="_blank" rel="noopener noreferrer" href="https://github.com/Drakkar-Software/OctoBot/wiki/Backtesting-and-strategy-optimization#backtesting">
                     <i class="fa fa-question"></i>
                 </a>
@@ -110,7 +117,8 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-6">
-                   <select class="selectpicker w-100" data-live-search="true" data-width="auto" data-window-padding="25" id="dataFileSelect">
+                   <select class="selectpicker w-100" data-live-search="true" data-width="auto" data-window-padding="25" id="dataFileSelect"
+                           {{ "disabled" if not tentacle_desc["activation"] }}>
                     {% for file, description in data_files.items() %}
                      <option value={{file}}
                         {% if loop.first %}
@@ -122,7 +130,17 @@
                    </select>
                 </div>
                 <div class="col-2">
-                    <button type="button" id="startBacktesting" class="btn btn-primary waves-effect" start-url="{{ url_for('backtesting', action_type='start_backtesting') }}">Start backtesting</button>
+                    {% if tentacle_desc["activation"] %}
+                        <button type="button" id="startBacktesting" class="btn btn-primary waves-effect"
+                                start-url="{{ url_for('backtesting', action_type='start_backtesting') }}">
+                            Start backtesting
+                        </button>
+                    {% else %}
+                        <a href="{{ url_for('config') if tentacle_type in ["trading mode", "strategy"] else url_for('advanced.evaluator_config') }}"
+                            role="button" id="startBacktesting" class="btn btn-outline-primary waves-effect">
+                            Activate this {{ tentacle_type }} to test it
+                        </a>
+                    {% endif %}
                 </div>
                 <div class="col-2 offset-md-2">
                     <a href="{{ url_for('data_collector', from=url_for(request.endpoint, name=name)) }}" class="btn btn-outline-info waves-effect"> <i class="fa fa-cloud-download-alt"></i> Get historical data</a>

@@ -131,6 +131,11 @@ function handleButtons() {
             factory_reset($("#factoryResetConfig").attr("update-url"));
         }
     });
+    
+    $("#reloadBacktestingPart").click(function () {
+        window.location.hash = "backtestingInputPart";
+        location.reload();
+    })
 }
 
 function get_config_key(elem){
