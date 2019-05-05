@@ -58,6 +58,7 @@ class GlobalPriceUpdater:
 
     async def start_update_loop(self):
         error = None
+        force_backtesting_exit = False
         try:
             time_frames = self.evaluator_task_manager_by_time_frame_by_symbol.keys()
 
@@ -83,8 +84,11 @@ class GlobalPriceUpdater:
                         self.logger.error(f"exception when triggering update: {e}")
                         self.logger.exception(e)
             else:
-                self.logger.warning("No time frames to monitor, going to sleep. "
-                                    "This is normal if you did not activate any technical analysis evaluator.")
+                if backtesting_enabled(self.exchange.config):
+                    force_backtesting_exit = True
+                else:
+                    self.logger.warning("No time frames to monitor, going to sleep. "
+                                        "This is normal if you did not activate any technical analysis evaluator.")
 
         except Exception as e:
             self.logger.exception(e)
@@ -92,9 +96,10 @@ class GlobalPriceUpdater:
                 error = e
 
         finally:
-            if self.in_backtesting \
-                    and self.symbols is not None \
-                    and not self.exchange.get_exchange().get_backtesting().get_is_finished(self.symbols):
+            if force_backtesting_exit \
+                    or (self.in_backtesting
+                        and self.symbols is not None
+                        and not self.exchange.get_exchange().get_backtesting().get_is_finished(self.symbols)):
                 if error is None:
                     error = "backtesting did not finish properly."
                 if self.watcher is not None:

@@ -93,6 +93,8 @@ class Trader(Initializable):
                 self.logger.error(f"Error when initializing portfolio: {e}. "
                                   f"{self.exchange.get_name()} trader disabled.")
                 self.logger.exception(e)
+                if backtesting_enabled(self.config):
+                    raise e
 
     def load_previous_state_if_any(self):
         # unused for real trader yet

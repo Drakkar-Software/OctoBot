@@ -93,6 +93,9 @@ function load_report(report, should_alert=False){
 
             add_graphs(data["symbols_with_time_frames_frames"]);
         }
+    }).fail(function () {
+        report.hide();
+    }).always(function () {
         report.attr("loading", "false");
     });
 }
