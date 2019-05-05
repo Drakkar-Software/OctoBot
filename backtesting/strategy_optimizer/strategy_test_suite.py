@@ -19,7 +19,7 @@ import copy
 from tools.logging.logging_util import get_logger
 from backtesting.abstract_backtesting_test import AbstractBacktestingTest, SYMBOLS, DATA_FILES, DATA_FILE_PATH
 from config import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
-    CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_CRYPTO_CURRENCIES
+    CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
 from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 from backtesting.backtesting_util import create_backtesting_bot, start_backtesting_bot, filter_wanted_symbols
@@ -110,7 +110,12 @@ class StrategyTestSuite(AbstractBacktestingTest):
     async def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
         config_to_use = copy.deepcopy(self.config)
         config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = copy.copy(DATA_FILES)
-        config_to_use[CONFIG_CRYPTO_CURRENCIES] = copy.deepcopy(SYMBOLS)
+        # remove unused symbols
+        symbols = {}
+        for currency, details in copy.deepcopy(SYMBOLS).items():
+            if symbol in details[CONFIG_CRYPTO_PAIRS]:
+                symbols[currency] = details
+        config_to_use[CONFIG_CRYPTO_CURRENCIES] = symbols
         if data_file_to_use is not None:
             for index, datafile in enumerate(DATA_FILES):
                 _, file_symbol, _, _ = interpret_file_name(datafile)
