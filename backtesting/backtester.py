@@ -16,6 +16,7 @@
 
 from copy import copy
 
+from tools.logging.logging_util import BotLogger
 from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from backtesting.backtesting_util import start_backtesting_bot, get_standalone_backtesting_bot
 from tools.config_manager import ConfigManager
@@ -33,6 +34,7 @@ class Backtester:
         self.error = None
         self._source = source
         self.finished_source = None
+        self.errors_count = None
 
     def get_finished_source(self):
         return self.finished_source
@@ -58,6 +60,9 @@ class Backtester:
         simulator = self._get_exchange_simulator()
         if simulator:
             report = await simulator.get_backtesting().get_dict_formatted_report()
+            if self.errors_count is None:
+                self.errors_count = BotLogger.get_backtesting_errors()
+            report["errors_count"] = self.errors_count
             if self.error is not None:
                 report["error"] = str(self.error)
             return report
