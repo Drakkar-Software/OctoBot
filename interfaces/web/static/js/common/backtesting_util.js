@@ -44,41 +44,45 @@ function lock_interface(lock=true){
     $('#startBacktesting').prop('disabled', should_lock);
 }
 
-function load_report(should_alert=False){
+function load_report(report, should_alert=False){
     const url = $("#backtestingReport").attr(update_url_attr);
     $.get(url,function(data){
-        let profitability = data["bot_report"]["profitability"];
-        if ("error" in data) {
-            const error_message = "Warning: error during backtesting (" + data["error"] + "), more details in logs.";
-            profitability = profitability + " " + error_message;
-            if (should_alert) {
-                create_alert("error", error_message, "");
+        if ("bot_report" in data){
+            report.show();
+            let profitability = data["bot_report"]["profitability"];
+            if ("error" in data) {
+                const error_message = "Warning: error during backtesting (" + data["error"] + "), more details in logs.";
+                profitability = profitability + " " + error_message;
+                if (should_alert) {
+                    create_alert("error", error_message, "");
+                }
             }
+
+            const symbol_reports = [];
+            $.each( data["symbol_report"], function( index, value ) {
+                $.each( value, function( symbol, profitability ) {
+                    symbol_reports.push(symbol+": "+profitability);
+                });
+            });
+            const all_profitability = symbol_reports.join(", ");
+            $("#bProf").html(profitability);
+            $("#maProf").html(data["bot_report"]["market_average_profitability"]);
+            $("#refM").html(data["bot_report"]["reference_market"]);
+            $("#sProf").html(all_profitability);
+            const end_portfolio_reports = [];
+                $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
+                    end_portfolio_reports.push(symbol+": "+holdings["total"]);
+                });
+            $("#ePort").html(end_portfolio_reports.join(", "));
+            const starting_portfolio_reports = [];
+                $.each( data["bot_report"]["starting_portfolio"], function( symbol, holdings ) {
+                    starting_portfolio_reports.push(symbol+": "+holdings["total"]);
+                });
+            $("#sPort").html(starting_portfolio_reports.join(", "));
+
+            add_graphs(data["symbols_with_time_frames_frames"]);
         }
-
-        const symbol_reports = [];
-        $.each( data["symbol_report"], function( index, value ) {
-            $.each( value, function( symbol, profitability ) {
-                symbol_reports.push(symbol+": "+profitability);
-            });
-        });
-        const all_profitability = symbol_reports.join(", ");
-        $("#bProf").html(profitability);
-        $("#maProf").html(data["bot_report"]["market_average_profitability"]);
-        $("#refM").html(data["bot_report"]["reference_market"]);
-        $("#sProf").html(all_profitability);
-        const end_portfolio_reports = [];
-            $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
-                end_portfolio_reports.push(symbol+": "+holdings["total"]);
-            });
-        $("#ePort").html(end_portfolio_reports.join(", "));
-        const starting_portfolio_reports = [];
-            $.each( data["bot_report"]["starting_portfolio"], function( symbol, holdings ) {
-                starting_portfolio_reports.push(symbol+": "+holdings["total"]);
-            });
-        $("#sPort").html(starting_portfolio_reports.join(", "));
-
-        add_graphs(data["symbols_with_time_frames_frames"]);
+        report.attr("loading", "false");
     });
 }
 
@@ -127,9 +131,9 @@ function check_backtesting_state(){
                     create_alert("success", "Backtesting finished.", "");
                     first_refresh_state="finished";
                 }
-                if(!report.is(":visible")){
-                    report.show();
-                    load_report(should_alert);
+                if(!report.is(":visible") && report.attr("loading") === "false"){
+                    report.attr("loading", "true");
+                    load_report(report, should_alert);
                 }
             }
         }
