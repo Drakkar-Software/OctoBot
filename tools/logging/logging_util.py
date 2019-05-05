@@ -16,8 +16,8 @@
 
 import logging
 
-from config import STORED_LOG_MIN_LEVEL
-from tools.logging import add_log
+from config import STORED_LOG_MIN_LEVEL, BACKTESTING_NEW_ERRORS_COUNT
+from tools.logging import add_log, reset_errors_count, get_errors_count
 
 
 def set_global_logger_level(level):
@@ -81,3 +81,11 @@ class BotLogger:
 
     def _web_interface_publish_log(self, message, level):
         add_log(level, self.logger_name, message)
+
+    @staticmethod
+    def get_backtesting_errors():
+        return get_errors_count(BACKTESTING_NEW_ERRORS_COUNT)
+
+    @staticmethod
+    def reset_backtesting_errors():
+        reset_errors_count(BACKTESTING_NEW_ERRORS_COUNT)
