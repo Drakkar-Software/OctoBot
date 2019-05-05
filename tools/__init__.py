@@ -15,10 +15,12 @@
 #  License along with this library.
 
 from __future__ import print_function
+from distutils.version import LooseVersion
 import os
 import sys
 
 MIN_PYTHON_VERSION = (3, 7)
+MIN_TENTACLE_MANAGER_VERSION = "1.0.9"
 
 # check python version
 current_version = sys.version_info
@@ -29,6 +31,19 @@ if not current_version >= MIN_PYTHON_VERSION:
           + "You can download Python last versions on: https://www.python.org/downloads/", file=sys.stderr)
     sys.exit(-1)
 else:
+    # check compatible tentacle manager
+    try:
+        from tentacles_manager import VERSION
+        if LooseVersion(VERSION) < MIN_TENTACLE_MANAGER_VERSION:
+            print("OctoBot requires OctoBot-Tentacles-Manager in a minimum version of " + MIN_TENTACLE_MANAGER_VERSION +
+                  " you can install and update OctoBot-Tentacles-Manager using the following command: "
+                  "python3 -m pip install -U OctoBot-Tentacles-Manager", file=sys.stderr)
+            sys.exit(-1)
+    except ImportError:
+        print("OctoBot requires OctoBot-Tentacles-Manager, you can install it using "
+              "python3 -m pip install -U OctoBot-Tentacles-Manager", file=sys.stderr)
+        sys.exit(-1)
+
     # binary tentacle importation
     sys.path.append(os.path.dirname(sys.executable))
 
