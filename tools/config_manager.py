@@ -35,6 +35,7 @@ from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
 from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
+from tools.errors import ConfigEvaluatorError, ConfigTradingError
 
 
 def get_logger():
@@ -317,6 +318,18 @@ class ConfigManager:
         config_file_name = config_file.split(config_folder)[1]
         factory_config = f"{config_folder}/{TENTACLE_DEFAULT_FOLDER}/{config_file_name}"
         shutil.copy(factory_config, config_file)
+
+    @staticmethod
+    def reload_tentacle_config(config):
+        config[CONFIG_EVALUATOR] = load_config(CONFIG_EVALUATOR_FILE_PATH, False)
+        if config[CONFIG_EVALUATOR] is None:
+            raise ConfigEvaluatorError
+
+        config[CONFIG_TRADING_TENTACLES] = load_config(CONFIG_TRADING_FILE_PATH, False)
+        if config[CONFIG_TRADING_TENTACLES] is None:
+            raise ConfigTradingError
+
+        return config
 
     @staticmethod
     def has_invalid_default_config_value(*config_values):
