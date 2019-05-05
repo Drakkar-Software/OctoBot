@@ -25,7 +25,7 @@ from config import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRAD
 from config.config import load_config
 from core.octobot import OctoBot
 from services.web_service import WebService
-from tools.logging.logging_util import get_logger
+from tools.logging.logging_util import get_logger, BotLogger
 from tools.symbol_util import split_symbol
 
 
@@ -118,6 +118,7 @@ def create_backtesting_bot(config) -> OctoBot:
 
 
 async def start_backtesting_bot(bot, in_thread=False, watcher=None):
+    BotLogger.reset_backtesting_errors()
     await initialize_bot(bot)
 
     # fix backtesting exit

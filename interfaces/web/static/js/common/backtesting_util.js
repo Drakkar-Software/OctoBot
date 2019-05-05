@@ -50,12 +50,23 @@ function load_report(report, should_alert=False){
         if ("bot_report" in data){
             report.show();
             let profitability = data["bot_report"]["profitability"];
-            if ("error" in data) {
-                const error_message = "Warning: error during backtesting (" + data["error"] + "), more details in logs.";
+            const errors_count = data["errors_count"];
+            if ("error" in data || errors_count > 0) {
+                let error_message = "Warning: error(s) during backtesting [";
+                if ("error" in data){
+                     error_message += " " + data["error"] ;
+                }
+                if (errors_count > 0){
+                     error_message += " " + errors_count + " error(s)" ;
+                }
+                error_message += " ], more details in logs.";
                 profitability = profitability + " " + error_message;
                 if (should_alert) {
                     create_alert("error", error_message, "");
                 }
+                $("#backtestingErrorsAlert").show()
+            }else{
+                $("#backtestingErrorsAlert").hide()
             }
 
             const symbol_reports = [];
