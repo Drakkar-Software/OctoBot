@@ -80,6 +80,8 @@ function load_report(report, should_alert=False){
             $("#maProf").html(data["bot_report"]["market_average_profitability"]);
             $("#refM").html(data["bot_report"]["reference_market"]);
             $("#sProf").html(all_profitability);
+            $("#reportTradingModeName").html(data["bot_report"]["trading_mode"]);
+            $("#reportTradingModeNameLink").attr("href", $("#reportTradingModeNameLink").attr("base_href") + data["bot_report"]["trading_mode"]);
             const end_portfolio_reports = [];
                 $.each( data["bot_report"]["end_portfolio"], function( symbol, holdings ) {
                     end_portfolio_reports.push(symbol+": "+holdings["total"]);
