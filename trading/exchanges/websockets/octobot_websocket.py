@@ -13,14 +13,18 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
+from concurrent.futures.thread import ThreadPoolExecutor
+from threading import Thread
+from typing import List, Dict
 
 from config import TimeFrames, TimeFramesMinutes, MINUTE_TO_SECONDS
 from core.channels import TICKER_CHANNEL, ORDER_BOOK_CHANNEL, RECENT_TRADES_CHANNEL
 from core.channels.exchange_channel import ExchangeChannels
-from octobot_websockets import ASK, BID, TICKER, L2_BOOK, TRADES, UNSUPPORTED
+from octobot_websockets import TICKER, L2_BOOK, TRADES, UNSUPPORTED
 from octobot_websockets.bitmex.bitmex import Bitmex
 from octobot_websockets.callback import TickerCallback, BookCallback, TradeCallback
-from octobot_websockets.feedhandler import FeedHandler
+from octobot_websockets.feed import Feed
 from trading.exchanges.websockets.abstract_websocket import AbstractWebSocket
 from trading.exchanges.websockets.websocket_callbacks import OrderBookCallBack, \
     RecentTradesCallBack, TickersCallBack
@@ -46,26 +50,27 @@ class OctoBotWebSocketClient(AbstractWebSocket):
     def __init__(self, config, exchange_manager):
         super().__init__(config, exchange_manager)
         self.exchange_manager = exchange_manager
-        self.exchange_name = exchange_manager.exchange.get_name()
-        self.octobot_feed_handler = None
+        self.exchange_name: str = exchange_manager.exchange.get_name()
+        self.octobot_websockets: List[Feed] = []
+        self.octobot_websockets_t: List[Thread] = []
+        self.octobot_websockets_executors: ThreadPoolExecutor = None
 
-        self.open_sockets_keys = {}
-        self.exchange_class = None
+        self.open_sockets_keys: Dict = {}
+        self.exchange_class: Feed.__class__ = None
 
-        self.trader_pairs = []
-        self.time_frames = []
+        self.trader_pairs: List = []
+        self.time_frames: List = []
 
-        self.is_handling_ohlcv = False
-        self.is_handling_price_ticker = False
-        self.is_handling_order_book = False
-        self.is_handling_recent_trades = False
-        self.is_handling_funding = False
+        self.is_handling_ohlcv: bool = False
+        self.is_handling_price_ticker: bool = False
+        self.is_handling_order_book: bool = False
+        self.is_handling_recent_trades: bool = False
+        self.is_handling_funding: bool = False
 
-        self.channels = []
-        self.callbacks = {}
+        self.channels: List = []
+        self.callbacks: Dict = {}
 
-    def init_web_sockets(self, time_frames, trader_pairs):
-        self.octobot_feed_handler = FeedHandler()
+    def init_web_sockets(self, time_frames: List, trader_pairs: List):
         self.exchange_class = self._get_octobot_feed_class(self.exchange_manager.exchange.get_name())
         self.trader_pairs = trader_pairs
         self.time_frames = time_frames
@@ -116,14 +121,14 @@ class OctoBotWebSocketClient(AbstractWebSocket):
             self.logger.warning(f"{self.exchange_manager.exchange.get_name()}'s "
                                 f"websocket is not handling tickers")
 
-    def _is_feed_available(self, feed):
+    def _is_feed_available(self, feed: Feed) -> bool:
         try:
             feed_available = self.exchange_class.get_feeds()[feed]
             return feed_available is not UNSUPPORTED
         except (KeyError, ValueError):
             return False
 
-    def _add_feed_and_run_if_required(self, feed, callback):
+    def _add_feed_and_run_if_required(self, feed: List, callback):
         # should run and reset channels (duplicate)
         if feed in self.channels:
             self._create_octobot_feed_feeds()
@@ -135,7 +140,7 @@ class OctoBotWebSocketClient(AbstractWebSocket):
 
     def _create_octobot_feed_feeds(self):
         try:
-            self.octobot_feed_handler.add_feed(
+            self.octobot_websockets.append(
                 self.exchange_class(pairs=self.trader_pairs,
                                     channels=self.channels,
                                     callbacks=self.callbacks))
@@ -169,7 +174,9 @@ class OctoBotWebSocketClient(AbstractWebSocket):
                 self.is_handling_funding or \
                 self.is_handling_ohlcv or \
                 self.is_handling_recent_trades:
-            self.octobot_feed_handler.run()
+            self.octobot_websockets_executors = ThreadPoolExecutor(max_workers=len(self.octobot_websockets))
+            for websocket in self.octobot_websockets:
+                asyncio.get_event_loop().run_in_executor(self.octobot_websockets_executors, websocket.start)
             is_websocket_running = True
 
         if not is_websocket_running:
@@ -190,13 +197,13 @@ class OctoBotWebSocketClient(AbstractWebSocket):
             return symbol_data
         return None
 
-    def handles_recent_trades(self):
+    def handles_recent_trades(self) -> bool:
         return self.is_handling_recent_trades  # TODO implement dynamicaly
 
-    def handles_order_book(self):
+    def handles_order_book(self) -> bool:
         return self.is_handling_order_book  # TODO implement dynamicaly
 
-    def handles_price_ticker(self):
+    def handles_price_ticker(self) -> bool:
         return self.is_handling_price_ticker  # TODO implement dynamicaly
 
     def handles_funding(self) -> bool:
@@ -210,65 +217,6 @@ class OctoBotWebSocketClient(AbstractWebSocket):
 
     def handles_orders(self) -> bool:
         return False
-
-    # Converters
-    def convert_into_ccxt_ticker(self, symbol, data, timestamp):
-        iso8601 = None if (timestamp is None) else self.iso8601(timestamp)
-        return {
-            'symbol': symbol,
-            'timestamp': timestamp,
-            'datetime': iso8601,
-            'high': self.safe_float(data, 'high'),
-            'low': self.safe_float(data, 'low'),
-            'volume': self.safe_float(data, 'volume'),
-            'vwap': self.safe_float(data, 'vwap'),
-            'open': self.safe_float(data, 'open'),
-            'close': self.safe_float(data, 'close'),
-            'last': self.safe_float(data, 'close')
-        }
-
-    def convert_into_ccxt_price_ticker(self, symbol, bid, ask, timestamp):
-        return {
-            'symbol': symbol,
-            'timestamp': timestamp,
-            'bid': bid,
-            'ask': ask
-        }
-
-    def convert_into_ccxt_full_order_book(self, symbol, book, timestamp):
-        return {
-            'bids': book[BID],
-            'asks': book[ASK],
-            'timestamp': timestamp,
-        }
-
-    def convert_into_ccxt_updated_order_book(self, symbol, update, timestamp):
-        pass
-
-    def convert_into_ccxt_recent_trade(self, symbol, side, amount, price, timestamp):
-        return {
-            'timestamp': timestamp,
-            'symbol': symbol,
-            'side': side,
-            'price': price,
-            'amount': amount
-        }
-
-    def convert_into_ccxt_ohlcv(self, data):
-        return [
-            data["timestamp"],
-            AbstractWebSocket.safe_float(data, "open"),
-            AbstractWebSocket.safe_float(data, "high"),
-            AbstractWebSocket.safe_float(data, "low"),
-            AbstractWebSocket.safe_float(data, "close"),
-            AbstractWebSocket.safe_float(data, "volume"),
-        ]
-
-    def convert_into_ccxt_order(self, order):
-        pass
-
-    def convert_into_ccxt_funding(self, funding):
-        pass
 
     @staticmethod
     def _convert_seconds_to_time_frame(time_frame_seconds) -> TimeFrames:
