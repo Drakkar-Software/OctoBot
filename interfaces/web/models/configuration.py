@@ -16,13 +16,14 @@
 
 import json
 from tools.logging.logging_util import get_logger
+from copy import copy
 
 import ccxt
 import requests
 
 from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, TESTED_EXCHANGES, \
     UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, EVALUATOR_ACTIVATION, EVALUATOR_EVAL_DEFAULT_TYPE, \
-    SIMULATOR_TESTED_EXCHANGES, CONFIG_METRICS, CONFIG_ENABLED_OPTION
+    SIMULATOR_TESTED_EXCHANGES, CONFIG_METRICS, CONFIG_ENABLED_OPTION, CONFIG_ADVANCED_CLASSES
 from interfaces import get_bot
 from services import AbstractService
 from tools.config_manager import ConfigManager
@@ -336,6 +337,16 @@ def get_evaluator_detailed_config():
     detailed_config[ACTIVATED_STRATEGIES] = [s for s, details in strategy_config[STRATEGIES_KEY].items()
                                              if details[EVALUATOR_ACTIVATION]]
     return detailed_config
+
+
+def get_config_activated_trading_mode(edited_config=False):
+    from trading.util.trading_config_util import get_activated_trading_mode
+    config = get_bot().get_config()
+    if edited_config:
+        config = copy(get_edited_config())
+        # rebind advanced classes to use in get_activated_trading_mode
+        config[CONFIG_ADVANCED_CLASSES] = get_bot().get_config()[CONFIG_ADVANCED_CLASSES]
+    return get_activated_trading_mode(config)
 
 
 def update_evaluator_config(new_config, deactivate_others=False):
