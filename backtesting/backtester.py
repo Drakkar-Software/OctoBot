@@ -17,9 +17,9 @@
 from copy import copy
 
 from tools.logging.logging_util import BotLogger
-from trading.exchanges.exchange_simulator.exchange_simulator import ExchangeSimulator
 from backtesting.backtesting_util import start_backtesting_bot, get_standalone_backtesting_bot
 from tools.config_manager import ConfigManager
+from trading.exchanges.exchange_simulator import ExchangeSimulator
 
 
 class Backtester:

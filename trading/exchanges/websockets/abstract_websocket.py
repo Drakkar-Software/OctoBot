@@ -81,40 +81,6 @@ class AbstractWebSocket:
     def handles_funding(self) -> bool:
         raise NotImplementedError("handles_funding not implemented")
 
-    # Converters
-    @abstractmethod
-    def convert_into_ccxt_ticker(self, **kwargs):
-        raise NotImplementedError("convert_into_ccxt_ticker not implemented")
-
-    @abstractmethod
-    def convert_into_ccxt_price_ticker(self, **kwargs):
-        raise NotImplementedError("convert_into_ccxtconvert_into_ccxt_price_ticker_ticker not implemented")
-
-    @abstractmethod
-    def convert_into_ccxt_full_order_book(self, **kwargs):
-        raise NotImplementedError("convert_into_ccxt_full_order_book not implemented")
-
-    @abstractmethod
-    def convert_into_ccxt_updated_order_book(self, **kwargs):
-        raise NotImplementedError("convert_into_ccxt_updated_order_book not implemented")
-
-    @abstractmethod
-    def convert_into_ccxt_recent_trade(self, **kwargs):
-        raise NotImplementedError("convert_into_ccxt_recent_trades not implemented")
-
-    @abstractmethod
-    def convert_into_ccxt_ohlcv(self, **kwargs):
-        raise NotImplementedError("convert_into_ccxt_ohlcv not implemented")
-
-    @abstractmethod
-    def convert_into_ccxt_funding(self, **kwargs):
-        raise NotImplementedError("convert_into_ccxt_funding not implemented")
-
-    # User data
-    @abstractmethod
-    def convert_into_ccxt_order(self, order):
-        raise NotImplementedError("convert_into_ccxt_order not implemented")
-
     @staticmethod
     @abstractmethod
     def parse_order_status(status):
@@ -167,10 +133,6 @@ class AbstractWebSocket:
     @staticmethod
     def safe_value(dictionary, key, default_value=None):
         return ccxtExchange.safe_value(dictionary, key, default_value)
-
-    @staticmethod
-    def iso8601(value):
-        return ccxtExchange.iso8601(value)
 
     def _adapt_symbol(self, symbol):
         return symbol
