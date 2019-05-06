@@ -135,7 +135,8 @@ class Backtesting:
             "market_average_profitability": market_average_profitability,
             "reference_market": self.get_reference_market(trader),
             "end_portfolio": self.get_portfolio(trader),
-            "starting_portfolio": self.get_origin_portfolio(trader)
+            "starting_portfolio": self.get_origin_portfolio(trader),
+            "trading_mode": ",".join([t.get_name() for t in trader.trading_modes])
         }
         return report
 
