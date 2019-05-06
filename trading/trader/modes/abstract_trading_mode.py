@@ -47,6 +47,10 @@ class AbstractTradingMode:
     async def order_filled_callback(self, order):
         pass
 
+    @staticmethod
+    def is_backtestable():
+        return True
+
     @classmethod
     def get_name(cls):
         return cls.__name__

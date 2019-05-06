@@ -25,7 +25,7 @@ from interfaces.web.models.configuration import get_strategy_config, update_eval
     get_tested_exchange_list, get_simulated_exchange_list, get_other_exchange_list, get_edited_config, \
     update_trading_config, get_trading_startup_config, reset_trading_history, is_trading_persistence_activated, \
     manage_metrics, get_tentacle_from_string, update_tentacle_config, reset_config_to_default, \
-    get_evaluator_detailed_config, REQUIREMENTS_KEY
+    get_evaluator_detailed_config, REQUIREMENTS_KEY, get_config_activated_trading_mode
 from interfaces.web.models.backtesting import get_data_files_with_description
 from interfaces.web.util.flask_util import get_rest_reply
 from backtesting import backtesting_enabled
@@ -146,6 +146,7 @@ def config_tentacle():
                                    evaluator_startup_config=evaluator_startup_config,
                                    strategy_config=strategy_config,
                                    evaluator_config=evaluator_config,
+                                   activated_trading_mode=get_config_activated_trading_mode(edited_config=True),
                                    data_files=get_data_files_with_description())
         else:
             return render_template('config_tentacle.html')

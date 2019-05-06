@@ -21,7 +21,8 @@ from interfaces.web import server_instance
 from interfaces.web.models.backtesting import get_data_files_with_description, start_backtesting_using_specific_files, \
     get_backtesting_report, get_backtesting_status, get_delete_data_file, collect_data_file, save_data_file
 
-from interfaces.web.models.configuration import get_symbol_list, get_full_exchange_list, get_current_exchange
+from interfaces.web.models.configuration import get_symbol_list, get_full_exchange_list, get_current_exchange, \
+    get_config_activated_trading_mode
 from interfaces.web.util.flask_util import get_rest_reply
 
 
@@ -58,6 +59,7 @@ def backtesting():
 
         else:
             return render_template('backtesting.html',
+                                   activated_trading_mode=get_config_activated_trading_mode(),
                                    data_files=get_data_files_with_description())
 
 
