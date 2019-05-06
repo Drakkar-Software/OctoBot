@@ -65,7 +65,12 @@
     <br>
     <div class="card">
         <div class="card-header">
-            <h2>Backtesting results</h2>
+            <h2>
+                Backtesting results
+                <a class="float-right badge badge-dark waves-effect" id="reportTradingModeNameLink" href="" base_href="{{ url_for('config_tentacle', name='') }}">
+                    Trading mode: <span id="reportTradingModeName"></span>
+                </a>
+            </h2>
         </div>
         <div class="card-body">
             <div class="alert alert-danger" id="backtestingErrorsAlert" role="alert" style="display: none;">
