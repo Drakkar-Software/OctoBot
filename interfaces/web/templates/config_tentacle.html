@@ -110,38 +110,47 @@
                     </a>
                 {% endif %}
                 <a class="float-right text-danger" target="_blank" rel="noopener noreferrer" href="https://github.com/Drakkar-Software/OctoBot/wiki/Backtesting-and-strategy-optimization#backtesting">
-                    <i class="fa fa-question"></i>
+                    &nbsp <i class="fa fa-question"></i>
+                </a>
+                <a class="float-right badge badge-dark waves-effect" href="{{ url_for('config_tentacle', name=activated_trading_mode.get_name()) }}">
+                    Current trading mode: {{ activated_trading_mode.get_name() }}
                 </a>
             </h1>
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-6">
-                   <select class="selectpicker w-100" data-live-search="true" data-width="auto" data-window-padding="25" id="dataFileSelect"
-                           {{ "disabled" if not tentacle_desc["activation"] }}>
-                    {% for file, description in data_files.items() %}
-                     <option value={{file}}
-                        {% if loop.first %}
-                            selected="selected"
-                        {% endif %}>
-                       {{file}} : {{description.candles}}
-                     </option>
-                     {% endfor %}
-                   </select>
-                </div>
-                <div class="col-2">
-                    {% if tentacle_desc["activation"] %}
-                        <button type="button" id="startBacktesting" class="btn btn-primary waves-effect"
-                                start-url="{{ url_for('backtesting', action_type='start_backtesting', source='config_tentacle', reset_tentacle_config=True) }}">
-                            Start backtesting
-                        </button>
-                    {% else %}
-                        <a href="{{ url_for('config') if tentacle_type in ["trading mode", "strategy"] else url_for('advanced.evaluator_config') }}"
-                            role="button" id="startBacktesting" class="btn btn-outline-primary waves-effect">
-                            Activate this {{ tentacle_type }} to test it
-                        </a>
-                    {% endif %}
-                </div>
+                {% if activated_trading_mode.is_backtestable() %}
+                    <div class="col-6">
+                       <select class="selectpicker w-100" data-live-search="true" data-width="auto" data-window-padding="25" id="dataFileSelect"
+                               {{ "disabled" if not tentacle_desc["activation"] }}>
+                        {% for file, description in data_files.items() %}
+                         <option value={{file}}
+                            {% if loop.first %}
+                                selected="selected"
+                            {% endif %}>
+                           {{file}} : {{description.candles}}
+                         </option>
+                         {% endfor %}
+                       </select>
+                    </div>
+                    <div class="col-2">
+                        {% if tentacle_desc["activation"] %}
+                            <button type="button" id="startBacktesting" class="btn btn-primary waves-effect"
+                                    start-url="{{ url_for('backtesting', action_type='start_backtesting', source='config_tentacle', reset_tentacle_config=True) }}">
+                                Start backtesting
+                            </button>
+                        {% else %}
+                            <a href="{{ url_for('config') if tentacle_type in ["trading mode", "strategy"] else url_for('advanced.evaluator_config') }}"
+                                role="button" id="startBacktesting" class="btn btn-outline-primary waves-effect">
+                                Activate this {{ tentacle_type }} to test it
+                            </a>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="col-8 alert alert-warning mt-1 text-center" role="alert">
+                        <a class="alert-link" href="{{ url_for('config_tentacle', name=activated_trading_mode.get_name()) }}">{{ activated_trading_mode.get_name() }}</a> is not compatible with the current backtesting engine.
+                    </div>
+                {% endif %}
                 <div class="col-2 offset-md-2">
                     <a href="{{ url_for('data_collector', from=url_for(request.endpoint, name=name)) }}" class="btn btn-outline-info waves-effect"> <i class="fa fa-cloud-download-alt"></i> Get historical data</a>
                 </div>
