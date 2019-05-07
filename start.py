@@ -133,6 +133,7 @@ def start_octobot(starting_args):
                 if not is_valid:
                     logger.error("OctoBot can't repair your config.json file: invalid format: " + str(e))
                     raise ConfigError
+                ConfigManager.config_health_check(config)
 
             if config is None:
                 raise ConfigError
