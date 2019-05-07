@@ -14,22 +14,18 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import copy
 import time
-from abc import *
+from abc import ABCMeta, abstractmethod
 
-from config.config import load_config
-
-from config import START_PENDING_EVAL_NOTE, START_EVAL_PERTINENCE, TENTACLES_PATH, TENTACLES_EVALUATOR_PATH, \
-    EVALUATOR_CONFIG_FOLDER, CONFIG_FILE_EXT, CONFIG_EVALUATOR, INIT_EVAL_NOTE, EVALUATOR_EVAL_DEFAULT_TYPE, SCHEMA
+from tentacles_management.abstract_tentacle import AbstractTentacle
+from config import START_PENDING_EVAL_NOTE, START_EVAL_PERTINENCE, TENTACLES_EVALUATOR_PATH, CONFIG_EVALUATOR, \
+    INIT_EVAL_NOTE, EVALUATOR_EVAL_DEFAULT_TYPE
 
 from tools.config_manager import ConfigManager
 
 
-class AbstractEvaluator:
+class AbstractEvaluator(AbstractTentacle):
     __metaclass__ = ABCMeta
-
-    DESCRIPTION = "No description set."
 
     def __init__(self):
         super().__init__()
@@ -50,65 +46,13 @@ class AbstractEvaluator:
         self.is_to_be_started_as_task = False
 
     @classmethod
-    def get_name(cls):
-        return cls.__name__
-
-    @classmethod
-    def get_all_subclasses(cls):
-        subclasses_list = cls.__subclasses__()
-        if subclasses_list:
-            for subclass in copy.deepcopy(subclasses_list):
-                subclasses_list += subclass.get_all_subclasses()
-        return subclasses_list
-
-    @classmethod
-    def get_config_folder(cls, config_evaluator_type=None):
-        eval_type = config_evaluator_type or cls.get_config_evaluator_type()
-        return f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{eval_type}/{EVALUATOR_CONFIG_FOLDER}"
-
-    @classmethod
-    def get_config_file_name(cls, config_evaluator_type=None):
-        return f"{cls.get_config_folder(config_evaluator_type)}/{cls.get_name()}{CONFIG_FILE_EXT}"
-
-    @classmethod
-    def get_config_file_schema_name(cls, config_evaluator_type=None):
-        return f"{cls.get_config_folder(config_evaluator_type)}/{cls.get_name()}_{SCHEMA}{CONFIG_FILE_EXT}"
-
-    @classmethod
-    def get_config_file_error_message(cls, error):
-        return f"Key Error when computing {cls.get_name()} this probably means an error in " \
-            f"{cls.get_config_file_name()} config file" \
-            f". (error: {error})"
-
-    @classmethod
-    def get_specific_config(cls, raise_exception=True, raw_file=False):
-        try:
-            if raw_file:
-                with open(cls.get_config_file_name()) as file:
-                    return file.read()
-            else:
-                return load_config(cls.get_config_file_name())
-        except Exception as e:
-            if raise_exception:
-                raise e
-
-    @classmethod
-    def get_specific_config_schema(cls, raise_exception=True):
-        try:
-            with open(cls.get_config_file_schema_name()) as f:
-                return f.read()
-        except Exception as e:
-            if raise_exception:
-                raise e
+    def get_tentacle_folder(cls) -> str:
+        return TENTACLES_EVALUATOR_PATH
 
     # Override this method when self.eval_note is other than : START_PENDING_EVAL_NOTE or float[-1:1]
     @staticmethod
     def get_eval_type():
         return EVALUATOR_EVAL_DEFAULT_TYPE
-
-    # Used to provide a new logger for this particular indicator
-    def set_logger(self, logger):
-        self.logger = logger
 
     # Used to provide the global config
     def set_config(self, config):
@@ -138,11 +82,6 @@ class AbstractEvaluator:
     # Pertinence of indicator will be used with the eval_note to provide a relevancy
     def get_pertinence(self):
         return self.pertinence
-
-    @classmethod
-    # Description of the evaluator, used as documentation
-    def get_description(cls):
-        return cls.DESCRIPTION
 
     # If this indicator is enabled
     def get_is_enabled(self):
@@ -269,8 +208,3 @@ class AbstractEvaluator:
     @abstractmethod
     async def start_task(self) -> None:
         raise NotImplementedError("start_task not implemented")
-
-    @classmethod
-    @abstractmethod
-    def get_config_evaluator_type(cls) -> str:
-        raise NotImplementedError("get_config_evaluator_type")

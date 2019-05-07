@@ -14,10 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from abc import *
+import os
+from abc import abstractmethod
 
 from config.config import load_config
-from config import *
+from config import CONFIG_EVALUATOR_SOCIAL
 from evaluator.abstract_evaluator import AbstractEvaluator
 
 
@@ -35,7 +36,7 @@ class SocialEvaluator(AbstractEvaluator):
         self.load_config()
 
     @classmethod
-    def get_config_evaluator_type(cls) -> str:
+    def get_config_tentacle_type(cls) -> str:
         return CONFIG_EVALUATOR_SOCIAL
 
     def stop(self):

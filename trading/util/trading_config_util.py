@@ -16,11 +16,11 @@
 
 from config import CONFIG_TRADING_TENTACLES, CONFIG_TRADING_FILE_PATH
 from trading.trader import modes
-from tools.class_inspector import get_deep_class_from_string, get_class_from_string
+from tentacles_management.class_inspector import get_deep_class_from_string, get_class_from_string
 from trading.trader.modes.abstract_trading_mode import AbstractTradingMode
 from tools.errors import ConfigTradingError
 from tools.logging.logging_util import get_logger
-from evaluator.Util.advanced_manager import AdvancedManager
+from tentacles_management.advanced_manager import AdvancedManager
 
 
 def get_activated_trading_mode(config):
