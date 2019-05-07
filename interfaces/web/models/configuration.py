@@ -27,7 +27,8 @@ from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG
 from interfaces import get_bot
 from services import AbstractService
 from tools.config_manager import ConfigManager
-from tools.class_inspector import get_class_from_string, evaluator_parent_inspection, trading_mode_parent_inspection
+from tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection, \
+    trading_mode_parent_inspection
 from evaluator.abstract_evaluator import AbstractEvaluator
 from backtesting import backtesting_enabled
 from tools.metrics.metrics_manager import MetricsManager
@@ -90,7 +91,7 @@ def is_trading_persistence_activated():
 
 
 def _get_advanced_class_details(class_name, klass, is_trading_mode=False, is_strategy=False):
-    from evaluator.Util.advanced_manager import AdvancedManager
+    from tentacles_management.advanced_manager import AdvancedManager
     details = {}
     config = get_bot().get_config()
     advanced_class = AdvancedManager.get_class(config, klass)

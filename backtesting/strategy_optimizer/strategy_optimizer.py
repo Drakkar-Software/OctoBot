@@ -28,8 +28,8 @@ from evaluator import Strategies
 from evaluator import TA
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from evaluator.TA.TA_evaluator import TAEvaluator
-from evaluator.Util.advanced_manager import AdvancedManager
-from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
+from tentacles_management.advanced_manager import AdvancedManager
+from tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection
 from tools.data_util import DataUtil
 from tools.logging.logging_util import get_logger
 from tools.logging.logging_util import set_global_logger_level, get_global_logger_level
