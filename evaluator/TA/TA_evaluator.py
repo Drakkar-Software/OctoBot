@@ -15,7 +15,7 @@
 #  License along with this library.
 
 import time
-from abc import *
+from abc import abstractmethod
 
 from config import MAX_TA_EVAL_TIME_SECONDS, CONFIG_EVALUATOR_TA
 from evaluator.abstract_evaluator import AbstractEvaluator
@@ -41,7 +41,7 @@ class TAEvaluator(AbstractEvaluator):
         raise NotImplementedError("Eval_impl not implemented")
 
     @classmethod
-    def get_config_evaluator_type(cls) -> str:
+    def get_config_tentacle_type(cls) -> str:
         return CONFIG_EVALUATOR_TA
 
     async def eval(self) -> None:

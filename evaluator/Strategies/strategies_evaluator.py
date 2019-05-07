@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from abc import *
+from abc import abstractmethod
 
 from config import CONFIG_EVALUATOR_STRATEGIES, STRATEGIES_REQUIRED_TIME_FRAME, STRATEGIES_REQUIRED_EVALUATORS, \
     CONFIG_FORCED_TIME_FRAME, CONFIG_FORCED_EVALUATOR, TENTACLE_DEFAULT_CONFIG, CONFIG_EVALUATORS_WILDCARD
@@ -50,7 +50,7 @@ class StrategiesEvaluator(AbstractEvaluator):
         raise NotImplementedError("Eval_impl not implemented")
 
     @classmethod
-    def get_config_evaluator_type(cls) -> str:
+    def get_config_tentacle_type(cls) -> str:
         return CONFIG_EVALUATOR_STRATEGIES
 
     @classmethod

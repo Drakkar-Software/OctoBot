@@ -188,7 +188,7 @@ def start_octobot(starting_args):
                     debug_mode = ConfigManager.is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
                     asyncio.run(Commands.start_bot(bot, logger), debug=debug_mode)
     except ConfigError:
-        logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file."  + "\nYou can use " +
+        logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file." + "\nYou can use " +
                      DEFAULT_CONFIG_FILE + " as an example to fix it.")
         os._exit(-1)
 

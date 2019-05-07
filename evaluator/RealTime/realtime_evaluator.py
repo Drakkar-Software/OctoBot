@@ -17,7 +17,7 @@
 import asyncio
 import time
 import os
-from abc import *
+from abc import abstractmethod
 
 from backtesting import backtesting_enabled
 from config.config import load_config
@@ -42,7 +42,7 @@ class RealTimeEvaluator(AbstractEvaluator):
         self.load_config()
 
     @classmethod
-    def get_config_evaluator_type(cls) -> str:
+    def get_config_tentacle_type(cls) -> str:
         return CONFIG_EVALUATOR_REALTIME
 
     def stop(self):

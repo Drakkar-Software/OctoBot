@@ -13,25 +13,26 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from tools.errors import TentacleNotFound
-from tools.logging.logging_util import get_logger
+
 import os
-from abc import *
+from abc import ABCMeta, abstractmethod
 
+from tools.logging.logging_util import get_logger
 from config.config import load_config
-from config import CONFIG_FILE_EXT, EVALUATOR_CONFIG_FOLDER, \
-    TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_PATH, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH, \
-    TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT, TENTACLE_DEFAULT_CONFIG, OrderStatus, SCHEMA
+from tentacles_management.abstract_tentacle import AbstractTentacle
+from config import TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH, \
+    TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT, TENTACLE_DEFAULT_CONFIG, OrderStatus
 from evaluator import Strategies
-from evaluator.Util.advanced_manager import AdvancedManager
-from tools.class_inspector import get_deep_class_from_string
+from tentacles_management.advanced_manager import AdvancedManager
+from tentacles_management.class_inspector import get_deep_class_from_string
+from tools.errors import TentacleNotFound
 
 
-class AbstractTradingMode:
+class AbstractTradingMode(AbstractTentacle):
     __metaclass__ = ABCMeta
-    DESCRIPTION = "No description set."
 
     def __init__(self, config, exchange):
+        super().__init__()
         self.config = config
         self.exchange = exchange
         self.logger = get_logger(self.get_name())
@@ -43,6 +44,14 @@ class AbstractTradingMode:
         self.strategy_instances_by_classes = {}
         self.symbol_evaluators = {}
 
+    @classmethod
+    def get_tentacle_folder(cls) -> str:
+        return TENTACLES_TRADING_PATH
+
+    @classmethod
+    def get_config_tentacle_type(cls) -> str:
+        return TENTACLES_TRADING_MODE_PATH
+
     # method automatically called when an order is filled, override in subclasses if useful
     async def order_filled_callback(self, order):
         pass
@@ -50,43 +59,6 @@ class AbstractTradingMode:
     @staticmethod
     def is_backtestable():
         return True
-
-    @classmethod
-    def get_name(cls):
-        return cls.__name__
-
-    @classmethod
-    def get_config_folder(cls):
-        return f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{TENTACLES_TRADING_MODE_PATH}/{EVALUATOR_CONFIG_FOLDER}"
-
-    @classmethod
-    def get_config_file_name(cls):
-        return f"{cls.get_config_folder()}/{cls.get_name() + CONFIG_FILE_EXT}"
-
-    @classmethod
-    def get_config_file_schema_name(cls):
-        return f"{cls.get_config_folder()}/{cls.get_name()}_{SCHEMA}{CONFIG_FILE_EXT}"
-
-    @classmethod
-    def get_specific_config(cls, raise_exception=True, raw_file=False):
-        try:
-            if raw_file:
-                with open(cls.get_config_file_name()) as file:
-                    return file.read()
-            else:
-                return load_config(cls.get_config_file_name())
-        except Exception as e:
-            if raise_exception:
-                raise e
-
-    @classmethod
-    def get_specific_config_schema(cls, raise_exception=True):
-        try:
-            with open(cls.get_config_file_schema_name()) as f:
-                return f.read()
-        except Exception as e:
-            if raise_exception:
-                raise e
 
     @classmethod
     def get_required_strategies_count(cls, config):
@@ -141,11 +113,6 @@ class AbstractTradingMode:
     async def order_update_callback(self, order):
         if order.get_status() == OrderStatus.FILLED:
             await self.order_filled_callback(order)
-
-    @classmethod
-    # Description of the trading mode, used as documentation
-    def get_description(cls):
-        return cls.DESCRIPTION
 
     def add_symbol_evaluator(self, symbol_evaluator):
         new_symbol = symbol_evaluator.get_symbol()

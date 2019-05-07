@@ -34,7 +34,6 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
-from tools.class_inspector import get_class_from_string, evaluator_parent_inspection
 from tools.errors import ConfigEvaluatorError, ConfigTradingError
 
 
@@ -250,7 +249,7 @@ class ConfigManager:
                     # simple type: update value
                     dict_dest[key] = src_val
                 elif isinstance(dest_val, list) and isinstance(src_val, list):
-                        dict_dest[key] = src_val
+                    dict_dest[key] = src_val
                 else:
                     get_logger().error(f"Conflict when merging dict with key : {key}")
             else:
@@ -275,6 +274,7 @@ class ConfigManager:
 
     @staticmethod
     def _update_activation_config(to_update_data, current_config, config_file_path, config_file, deactivate_others):
+        from tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection
         something_changed = False
         for element_name, activated in to_update_data.items():
             if element_name in current_config:

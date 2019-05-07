@@ -17,9 +17,9 @@
 from copy import copy
 
 from config import CONFIG_ADVANCED_CLASSES, CONFIG_ADVANCED_INSTANCES
+from tools.logging.logging_util import get_logger
 from evaluator.Util.abstract_util import AbstractUtil
 from evaluator.abstract_evaluator import AbstractEvaluator
-from tools.logging.logging_util import get_logger
 
 
 class AdvancedManager:
@@ -79,7 +79,6 @@ class AdvancedManager:
     """
     @staticmethod
     def create_class_list(config):
-
         from trading.trader.modes.abstract_trading_mode import AbstractTradingMode
 
         config[CONFIG_ADVANCED_CLASSES] = {}

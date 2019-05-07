@@ -21,7 +21,7 @@ from evaluator.RealTime import RealTimeEvaluator, RealTimeExchangeEvaluator
 from evaluator.Social import SocialEvaluator
 from evaluator.Strategies import StrategiesEvaluator
 from evaluator.TA import TAEvaluator
-from evaluator.Util.advanced_manager import AdvancedManager
+from tentacles_management.advanced_manager import AdvancedManager
 from tools.time_frame_manager import TimeFrameManager
 from services.Dispatchers.dispatcher_creator import DispatcherCreator
 

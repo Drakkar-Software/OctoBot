@@ -15,7 +15,7 @@
 #  License along with this library.
 
 from dataclasses import dataclass, field
-from typing import Dict, Union, Any
+from typing import Dict, Any
 
 from config import CONFIG_DICT_TYPE, EvaluatorMatrixTypes, TimeFrames
 from evaluator import default_matrix_value, MatrixType, MatrixValueType

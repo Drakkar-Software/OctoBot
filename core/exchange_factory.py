@@ -62,9 +62,11 @@ class ExchangeFactory:
         if not backtesting_enabled(self.octobot.get_config()) and \
                 PreviousTradingStateManager.enabled(self.octobot.get_config()):
 
-            self.previous_trading_state_manager = PreviousTradingStateManager(self.octobot.get_config()[CONFIG_EXCHANGES],
-                                                                              self.octobot.reset_trading_history,
-                                                                              self.octobot.get_config())
+            self.previous_trading_state_manager = PreviousTradingStateManager(
+                self.octobot.get_config()[CONFIG_EXCHANGES],
+                self.octobot.reset_trading_history,
+                self.octobot.get_config()
+            )
 
     async def _create_exchange_traders(self, exchange_class_string):
         # create exchange manager (can be a backtesting or a real one)
@@ -120,7 +122,8 @@ class ExchangeFactory:
 
     def _create_trading_mode(self, exchange_inst) -> None:
         try:
-            self.trading_mode = get_activated_trading_mode(self.octobot.get_config())(self.octobot.get_config(), exchange_inst)
+            self.trading_mode = get_activated_trading_mode(self.octobot.get_config())(self.octobot.get_config(),
+                                                                                      exchange_inst)
             self.exchange_trading_modes[exchange_inst.get_name()] = self.trading_mode
             self.logger.debug(f"Using {self.trading_mode.get_name()} trading mode")
         except RuntimeError as e:

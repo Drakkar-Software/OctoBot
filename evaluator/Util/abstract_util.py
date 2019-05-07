@@ -16,10 +16,20 @@
 
 from abc import ABCMeta
 
+from config import TENTACLE_UTIL_FOLDER, TENTACLES_EVALUATOR_PATH
+from tentacles_management.abstract_tentacle import AbstractTentacle
 
-class AbstractUtil:
+
+class AbstractUtil(AbstractTentacle):
     __metaclass__ = ABCMeta
 
+    def __init__(self):
+        super().__init__()
+
     @classmethod
-    def get_name(cls):
-        return cls.__name__
+    def get_tentacle_folder(cls) -> str:
+        return TENTACLES_EVALUATOR_PATH
+
+    @classmethod
+    def get_config_tentacle_type(cls) -> str:
+        return TENTACLE_UTIL_FOLDER

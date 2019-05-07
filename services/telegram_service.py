@@ -166,7 +166,7 @@ class TelegramService(AbstractService):
             except telegram.error.TimedOut as e:
                 self.logger.error(f"Failed to send message : {e}")
         except telegram.error.Unauthorized as e:
-                self.logger.error(f"Failed to send message ({e}): invalid telegram configuration.")
+            self.logger.error(f"Failed to send message ({e}): invalid telegram configuration.")
 
     def _get_bot_url(self):
         return f"https://web.telegram.org/#/im?p={self.telegram_api.get_me().name}"

@@ -253,10 +253,10 @@ def get_global_profitability():
         if real_full_origin_value > 0 else 0
 
     return has_real_trader, has_simulated_trader, \
-           real_global_profitability, simulated_global_profitability, \
-           real_percent_profitability, simulated_percent_profitability, \
-           real_no_trade_profitability, simulated_no_trade_profitability, \
-           market_average_profitability
+        real_global_profitability, simulated_global_profitability, \
+        real_percent_profitability, simulated_percent_profitability, \
+        real_no_trade_profitability, simulated_no_trade_profitability, \
+        market_average_profitability
 
 
 def get_portfolios():
