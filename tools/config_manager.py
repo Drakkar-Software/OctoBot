@@ -30,7 +30,8 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, \
     CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET, \
     CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, CONFIG_METRICS, CONFIG_TRADER, \
-    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS, TENTACLE_DEFAULT_FOLDER
+    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS, TENTACLE_DEFAULT_FOLDER, \
+    CONFIG_EXCHANGE_ENCRYPTED_VALUES
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
@@ -82,6 +83,30 @@ class ConfigManager:
         return True, None
 
     @staticmethod
+    def config_health_check(config):
+        # ensure api key encryption
+        should_replace_config = False
+        if CONFIG_EXCHANGES in config:
+            for exchange, exchange_config in config[CONFIG_EXCHANGES].items():
+                for key in CONFIG_EXCHANGE_ENCRYPTED_VALUES:
+                    try:
+                        if not ConfigManager._handle_encrypted_value(key, exchange_config, verbose=True):
+                            should_replace_config = True
+                    except Exception as e:
+                        get_logger().error(f"Exception when checking exchange config encryption: {e}")
+                        get_logger().exception(e)
+        if should_replace_config:
+            try:
+                ConfigManager.save_config(CONFIG_FILE,
+                                          config,
+                                          TEMP_RESTORE_CONFIG_FILE,
+                                          json_data=ConfigManager.dump_json(config))
+                return config
+            except Exception as e:
+                get_logger().error(f"Save of the health checked config failed : {e}, will use the initial config")
+                return load_config(error=False, fill_missing_fields=True)
+
+    @staticmethod
     def restore_config(restore_file, target_file):
         shutil.copy(restore_file, target_file)
 
@@ -94,33 +119,43 @@ class ConfigManager:
         os.remove(restore_file)
 
     @staticmethod
-    def _handle_encrypted_value(value_key, config_element):
+    def _handle_encrypted_value(value_key, config_element, verbose=False):
         if value_key in config_element:
             key = config_element[value_key]
             if not ConfigManager.has_invalid_default_config_value(key):
                 try:
                     decrypt(key, silent_on_invalid_token=True)
+                    return True
                 except Exception:
                     config_element[value_key] = encrypt(key).decode()
+                    if verbose:
+                        get_logger().warning(f"Non encrypted secret info found in config ({value_key}): replaced "
+                                             f"value with encrypted equivalent.")
+                    return False
+        return True
 
     @staticmethod
     def jsonify_config(config):
         # check exchange keys encryption
-        exchange_encrypted_keys = [CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_PASSWORD]
-        for exchange in config[CONFIG_EXCHANGES]:
+        for exchange, exchange_config in config[CONFIG_EXCHANGES].items():
             try:
-                exchange_config = config[CONFIG_EXCHANGES][exchange]
-                for key in exchange_encrypted_keys:
+                for key in CONFIG_EXCHANGE_ENCRYPTED_VALUES:
                     ConfigManager._handle_encrypted_value(key, exchange_config)
             except Exception:
-                config[CONFIG_EXCHANGES][exchange] = {key: "" for key in exchange_encrypted_keys}
+                config[CONFIG_EXCHANGES][exchange] = {key: "" for key in CONFIG_EXCHANGE_ENCRYPTED_VALUES}
 
-        return json.dumps(config, indent=4, sort_keys=True)
+        return ConfigManager.dump_json(config)
+
+    @staticmethod
+    def dump_json(json_data):
+        return json.dumps(json_data, indent=4, sort_keys=True)
 
     @staticmethod
     def check_config(config_file):
         try:
-            load_config(config_file=config_file, error=True)
+            valid, e = ConfigManager.validate_config_file(load_config(config_file=config_file, error=True))
+            if not valid:
+                raise e
         except Exception as e:
             raise e
 
@@ -300,7 +335,7 @@ class ConfigManager:
                             something_changed = True
         if something_changed:
             with open(config_file_path, "w+") as config_file_w:
-                config_file_w.write(json.dumps(current_config, indent=4, sort_keys=True))
+                config_file_w.write(ConfigManager.dump_json(current_config))
 
     @staticmethod
     def update_tentacle_config(klass, config_update):
@@ -309,7 +344,7 @@ class ConfigManager:
         for key, val in config_update.items():
             current_config[key] = val
         with open(klass.get_config_file_name(), "w+") as config_file_w:
-            config_file_w.write(json.dumps(current_config, indent=4, sort_keys=False))
+            config_file_w.write(ConfigManager.dump_json(current_config))
 
     @staticmethod
     def factory_reset_tentacle_config(klass):
