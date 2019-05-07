@@ -108,6 +108,7 @@ class AbstractEvaluator(AbstractTentacle):
                 raise e
             else:
                 self.logger.error("Exception in eval_impl(): " + str(e))
+                self.logger.exception(e)
         finally:
             if self.eval_note == "nan":
                 self.eval_note = START_PENDING_EVAL_NOTE
