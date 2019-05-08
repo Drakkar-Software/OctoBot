@@ -14,27 +14,31 @@
 
             <p class="card-text api">
                 API Key : <a href="#"
-                            id="exchange_api-key"
-                            config-key="exchanges_{{exchange}}_api-key"
-                            config-type="global_config"
-                            config-value="{{keys_value}}"
-                            startup-config-value="{{keys_value}}"
-                            data-type="text"
-                            data-pk="1"
-                            data-title="Enter api key"
-                            class="editable editable-click config-element">
+                             id="exchange_api-key"
+                             config-key="exchanges_{{exchange}}_api-key"
+                             config-type="global_config"
+                             config-value="{{keys_value}}"
+                             startup-config-value="{{keys_value}}"
+                             data-type="text"
+                             data-pk="1"
+                             data-title="Enter api key"
+                             data-onblur="submit"
+                             data-highlight=true
+                             class="editable editable-click config-element">
                 {{keys_value}}</a><br>
 
                 API Secret : <a href="#"
-                            id="exchange_api-secret"
-                            config-key="exchanges_{{exchange}}_api-secret"
-                            config-type="global_config"
-                            config-value="{{keys_value}}"
-                            startup-config-value="{{keys_value}}"
-                            data-type="text"
-                            data-pk="1"
-                            data-title="Enter exchange api secret"
-                            class="editable editable-click config-element">
+                                id="exchange_api-secret"
+                                config-key="exchanges_{{exchange}}_api-secret"
+                                config-type="global_config"
+                                config-value="{{keys_value}}"
+                                startup-config-value="{{keys_value}}"
+                                data-type="text"
+                                data-pk="1"
+                                data-title="Enter exchange api secret"
+                                 data-onblur="submit"
+                                 data-highlight=true
+                                class="editable editable-click config-element">
                 {{keys_value}}</a><br>
 
                 API Password
@@ -42,15 +46,17 @@
                    data-toggle="tooltip" data-placement="top"
                    title="An API password is required by some exchanges, leave as is otherwise.">
                 </i> : <a href="#"
-                            id="exchange_api-secret"
-                            config-key="exchanges_{{exchange}}_api-password"
-                            config-type="global_config"
-                            config-value="{{keys_value}}"
-                            startup-config-value="{{keys_value}}"
-                            data-type="text"
-                            data-pk="1"
-                            data-title="Enter exchange api password"
-                            class="editable editable-click config-element">
+                          id="exchange_api-secret"
+                          config-key="exchanges_{{exchange}}_api-password"
+                          config-type="global_config"
+                          config-value="{{keys_value}}"
+                          startup-config-value="{{keys_value}}"
+                          data-type="text"
+                          data-pk="1"
+                          data-title="Enter exchange api password"
+                          data-onblur="submit"
+                          data-highlight=true
+                          class="editable editable-click config-element">
                 {{keys_value}}</a><br>
             </p>
 

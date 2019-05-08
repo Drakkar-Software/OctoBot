@@ -22,15 +22,17 @@
 
 {% macro editable_key_string(config, key, config_key, config_type, config_value, startup_config_value, suggestions, placeholder_str="") -%}
     {{ key }} : <a href="#"
-            config-key="{{config_key}}"
-            config-type="global_config"
-            config-value="{{config[key]}}"
-            startup-config-value="{{config[key]}}"
-            data-type="text"
-            data-pk="1"
-            data-clear=false
-            placeholder="{{ placeholder_str }}"
-            class="editable editable-click config-element">
+                   config-key="{{config_key}}"
+                   config-type="global_config"
+                   config-value="{{config[key]}}"
+                   startup-config-value="{{config[key]}}"
+                   data-type="text"
+                   data-pk="1"
+                   data-clear=false
+                   data-onblur="submit"
+                   data-highlight=true
+                   placeholder="{{ placeholder_str }}"
+                   class="editable editable-click config-element">
     {{ config[key] }}</a><br>
 {%- endmacro %}
 
@@ -68,13 +70,15 @@
 
 {% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, number_step) -%}
     {{ key }} : <a href="#"
-                config-key="{{config_key}}"
-                config-type="global_config"
-                config-value="{{config[key]}}"
-                startup-config-value="{{config[key]}}"
-                data-type="number"
-                data-step="{{number_step}}"
-                data-pk="1"
+                   config-key="{{config_key}}"
+                   config-type="global_config"
+                   config-value="{{config[key]}}"
+                   startup-config-value="{{config[key]}}"
+                   data-type="number"
+                   data-step="{{number_step}}"
+                   data-pk="1"
+                   data-onblur="submit"
+                   data-highlight=true
                 class="editable editable-click config-element">
     {{ config[key] }}</a><br>
 {%- endmacro %}
