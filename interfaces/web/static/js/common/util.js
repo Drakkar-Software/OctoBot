@@ -95,3 +95,25 @@ function generic_request_success_callback(updated_data, update_url, dom_root_ele
 function generic_request_failure_callback(updated_data, update_url, dom_root_element, msg, status) {
     create_alert("error", msg.responseText, "");
 }
+
+function getValueChangedFromRef(newObject, refObject) {
+    let changes = false;
+    if (newObject instanceof Array && newObject.length !== refObject.length){
+        changes = true;
+    }
+    else{
+        $.each(newObject, function (key, val) {
+            if (val instanceof Array || val instanceof Object){
+                changes = getValueChangedFromRef(val, refObject[key])
+            }
+            else if (refObject[key] !== val){
+                changes = true;
+            }
+            if (changes){
+                log(refObject[key] + " != " + val);
+                return false
+            }
+        });
+    }
+    return changes;
+}

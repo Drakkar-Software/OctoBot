@@ -178,6 +178,14 @@ function handle_evaluator_configuration_editor(){
     });
 }
 
+function something_is_unsaved(){
+    let edited_config = canEditConfig() ? getValueChangedFromRef(configEditor.getValue(), parsedConfigValue) : false;
+    return (
+        edited_config
+        || $("#super-container").find("."+modified_badge).length > 0
+    )
+}
+
 function get_selected_files(){
     return [$("#dataFileSelect").val()];
 }
@@ -213,4 +221,6 @@ $(document).ready(function() {
     function refresh_status(){
         check_backtesting_state();
     }
+
+    register_exit_confirm_function(something_is_unsaved);
 });
