@@ -96,6 +96,27 @@ function generic_request_failure_callback(updated_data, update_url, dom_root_ele
     create_alert("error", msg.responseText, "");
 }
 
+function handle_numbers(number) {
+    let regEx2 = /[0]+$/;
+    let regEx3 = /[.]$/;
+    let numb = Number(number).toFixed(toString(number).length);
+
+    if (numb.indexOf('.')>-1){
+        numb = numb.replace(regEx2,'');  // Remove trailing 0's
+    }
+    return numb.replace(regEx3,'');  // Remove trailing decimal
+}
+
+function fix_config_values(config){
+    $.each(config, function (key, val) {
+        if(typeof val === "number"){
+            config[key] = handle_numbers(val);
+        }else if (val instanceof Object){
+            fix_config_values(config[key]);
+        }
+    })
+}
+
 function getValueChangedFromRef(newObject, refObject) {
     let changes = false;
     if (newObject instanceof Array && newObject.length !== refObject.length){
@@ -107,10 +128,13 @@ function getValueChangedFromRef(newObject, refObject) {
                 changes = getValueChangedFromRef(val, refObject[key])
             }
             else if (refObject[key] !== val){
-                changes = true;
+                if (typeof val === "number"){
+                    changes = Number(refObject[key]) !== val
+                }else{
+                    changes = true;
+                }
             }
             if (changes){
-                log(refObject[key] + " != " + val);
                 return false
             }
         });
