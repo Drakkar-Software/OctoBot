@@ -57,15 +57,18 @@
 {%- endmacro %}
 
 {% macro editable_key_bool(config, key, config_key, config_type, config_value, startup_config_value, suggestions) -%}
-    {{ key }} :
-     <input     type="checkbox"
-                class="config-element"
-                config-key="{{config_key}}"
-                config-type="global_config"
-                config-value="{{config[key]}}"
-                startup-config-value="{{config[key]}}"
-                data-type="bool"
-     {% if config[key] == True %}checked{% endif %}><br>
+    <div class="custom-control custom-switch">
+      <input type="checkbox"
+             class="custom-control-input config-element"
+             config-key="{{config_key}}"
+             config-type="global_config"
+             config-value="{{config[key]}}"
+             startup-config-value="{{config[key]}}"
+             data-type="bool"
+             id="{{config_key}}"
+      {% if config[key] == True %}checked{% endif %}>
+      <label class="custom-control-label" for="{{config_key}}">{{ key }}</label>
+    </div>
 {%- endmacro %}
 
 {% macro editable_key_number(config, key, config_key, config_type, config_value, startup_config_value, suggestions, number_step) -%}

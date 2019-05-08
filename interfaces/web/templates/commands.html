@@ -19,9 +19,9 @@
         <h1>Help us to improve OctoBot</h1>
     </div>
     <div class="card-body">
-        <div class="custom-control custom-checkbox">
+        <div class="custom-control custom-switch">
             <input type="checkbox" class="custom-control-input" id="metricsCheckbox" update-url="{{ url_for('metrics_settings') }}" {{ 'checked' if metrics_enabled else ''}}>
-            <label class="custom-control-label" for="metricsCheckbox">Send anonymous data to help the OctoBot Community</label>
+            <label class="custom-control-label" for="metricsCheckbox">Send</label> anonymous data to help the OctoBot Community
             <p>This will grant you access to the <a href="{{ url_for('community') }}"> OctoBot Community</a> and greatly help the OctoBot team to figure out the best ways to improve OctoBot.
                 <i class="fa fa-question" data-toggle="tooltip" data-placement="top"
                     title="Sent data are: bot running time, whether simulator or real trader are activated and the name of used exchanges, tentacles, traded pairs and notification systems. Nothing else, no personal data.">
