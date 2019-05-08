@@ -86,7 +86,7 @@ METRICS_ROUTE = "metrics"
 METRICS_ROUTE_COMMUNITY = f"{METRICS_ROUTE}/community"
 METRICS_ROUTE_UPTIME = f"{METRICS_ROUTE}/uptime"
 METRICS_ROUTE_REGISTER = f"{METRICS_ROUTE}/register"
-COMMUNITY_TOPS_COUNT = 20
+COMMUNITY_TOPS_COUNT = 1000
 
 # default values in config files and interfaces
 DEFAULT_CONFIG_VALUES = {"your-api-key-here", "your-api-secret-here", "your-api-password-here", "NOKEY", "Empty"}
