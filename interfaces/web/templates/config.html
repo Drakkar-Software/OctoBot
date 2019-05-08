@@ -238,7 +238,7 @@
                 <!-- Card deck -->
                 <div class="card-deck config-container" update-url="{{ url_for('config') }}">
                     {% for crypto_currency in config_symbols %}
-                       {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list, symbol=config_symbols[crypto_currency]['pairs'][0].split('/')[0].lower() if crypto_currency in config_symbols and config_symbols[crypto_currency]['pairs']) }}
+                       {{ m_config_currency_card.config_currency_card(config_symbols, crypto_currency, symbol_list, full_symbol_list, symbol=config_symbols[crypto_currency]['pairs'][0].split('/')[0].lower() if config_symbols[crypto_currency]['pairs']) }}
                     {% endfor %}
                 </div>
             </div>
