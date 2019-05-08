@@ -26,12 +26,11 @@ from config.config import load_config, decrypt, encrypt
 from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
     TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_TRADING_FILE, \
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
-    CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_PASSWORD, CONFIG_EVALUATOR_FILE, \
-    CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, DEFAULT_CONFIG_VALUES, \
-    CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, DEFAULT_REFERENCE_MARKET, \
-    CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, CONFIG_METRICS, CONFIG_TRADER, \
-    CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS, TENTACLE_DEFAULT_FOLDER, \
-    CONFIG_EXCHANGE_ENCRYPTED_VALUES
+    CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, \
+    DEFAULT_CONFIG_VALUES, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, \
+    DEFAULT_REFERENCE_MARKET, CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, \
+    CONFIG_METRICS, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS, \
+    TENTACLE_DEFAULT_FOLDER, CONFIG_EXCHANGE_ENCRYPTED_VALUES
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
@@ -83,7 +82,7 @@ class ConfigManager:
 
     @staticmethod
     def config_health_check(config):
-        # ensure api key encryption
+        # 1 ensure api key encryption
         should_replace_config = False
         if CONFIG_EXCHANGES in config:
             for exchange, exchange_config in config[CONFIG_EXCHANGES].items():
@@ -94,6 +93,25 @@ class ConfigManager:
                     except Exception as e:
                         get_logger().error(f"Exception when checking exchange config encryption: {e}")
                         get_logger().exception(e)
+
+        # 2 ensure single trader activated
+        try:
+            trader_enabled = ConfigManager.get_trader_enabled(config)
+            if trader_enabled:
+                simulator_enabled = ConfigManager.get_trader_simulator_enabled(config)
+                if simulator_enabled:
+                    get_logger().error(f"Impossible to activate a trader simulator additionally to a real trader, "
+                                       f"simulator deactivated.")
+                    config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = False
+                    should_replace_config = True
+        except KeyError as e:
+            get_logger().error(f"KeyError when checking traders activation: {e}. Activating trader simulator.")
+            get_logger().exception(e)
+            config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+            config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
+            should_replace_config = True
+
+        # 3 save fixed config if necessary
         if should_replace_config:
             try:
                 ConfigManager.save_config(CONFIG_FILE,
