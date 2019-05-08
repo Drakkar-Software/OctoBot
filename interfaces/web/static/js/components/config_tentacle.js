@@ -54,6 +54,7 @@ function handle_tentacle_config_reset_success_callback(updated_data, update_url,
 
 function handle_tentacle_config_update_success_callback(updated_data, update_url, dom_root_element, msg, status){
     create_alert("success", "Configuration saved", msg);
+    savedConfig = configEditor.getValue();
 }
 
 function handle_tentacle_config_update_error_callback(updated_data, update_url, dom_root_element, msg, status){
@@ -179,7 +180,7 @@ function handle_evaluator_configuration_editor(){
 }
 
 function something_is_unsaved(){
-    let edited_config = canEditConfig() ? getValueChangedFromRef(configEditor.getValue(), parsedConfigValue) : false;
+    let edited_config = canEditConfig() ? getValueChangedFromRef(configEditor.getValue(), savedConfig) : false;
     return (
         edited_config
         || $("#super-container").find("."+modified_badge).length > 0
@@ -196,6 +197,8 @@ const configValue = configEditorBody.attr("config");
 
 const parsedConfigSchema = configSchema !== "None" ? $.parseJSON(configSchema) : null;
 const parsedConfigValue = configValue !== "None" ? $.parseJSON(configValue) : null;
+
+let savedConfig = parsedConfigValue;
 
 function canEditConfig() {
     return parsedConfigSchema && parsedConfigValue
