@@ -13,10 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
+
 from core.channels.exchange.ohlcv import OHLCVProducer
 from core.channels.exchange.order_book import OrderBookProducer
 from core.channels.exchange.recent_trade import RecentTradeProducer
 from core.channels.exchange.ticker import TickerProducer
+from interfaces import get_bot
 from tools import get_logger
 
 
@@ -34,10 +37,10 @@ class OrderBookCallBack(WebsocketCallBack, OrderBookProducer):
         OrderBookProducer.__init__(self, channel)
 
     async def l2_order_book_callback(self, _, pair, book, timestamp):
-        await self.push(symbol=pair,
-                        order_book=(pair,
-                                    book,
-                                    timestamp))
+        asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
+                                                   order_book=(pair,
+                                                               book,
+                                                               timestamp)), get_bot().get_async_loop())
 
 
 class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
@@ -46,12 +49,12 @@ class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
         RecentTradeProducer.__init__(self, channel)
 
     async def recent_trades_callback(self, _, pair, timestamp, side, amount, price):
-        await self.push(symbol=pair,
-                        recent_trade=(pair,
-                                      side,
-                                      amount,
-                                      price,
-                                      timestamp))
+        asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
+                                                   recent_trade=(pair,
+                                                                 side,
+                                                                 amount,
+                                                                 price,
+                                                                 timestamp)), get_bot().get_async_loop())
 
 
 class TickersCallBack(WebsocketCallBack, TickerProducer):
@@ -59,12 +62,12 @@ class TickersCallBack(WebsocketCallBack, TickerProducer):
         WebsocketCallBack.__init__(self, parent)
         TickerProducer.__init__(self, channel)
 
-    async def tickers_callback(self, _, pair, bid, ask, timestamp):
-        await self.push(symbol=pair,
-                        ticker=(pair,
-                                bid,
-                                ask,
-                                timestamp))
+    async def tickers_callback(self, _, pair, bid, ask, last):
+        asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
+                                                   ticker=(pair,
+                                                           bid,
+                                                           ask,
+                                                           last)), get_bot().get_async_loop())
 
 
 class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
@@ -75,6 +78,6 @@ class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
 
     async def ohlcv_callback(self, data=None):
         for symbol in data:
-            await self.push(symbol=symbol,
-                            time_frame=self.time_frame,
-                            candle=data[symbol])
+            asyncio.run_coroutine_threadsafe(self.push(symbol=symbol,
+                                                       time_frame=self.time_frame,
+                                                       candle=data[symbol]), get_bot().get_async_loop())
