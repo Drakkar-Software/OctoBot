@@ -144,7 +144,14 @@
     <!--Panel Trading-->
     <div class="tab-pane fade config-root" id="panelTrading" role="tabpanel"><br>
         <div class="card">
-            <div class="card-header"><h2>Trading</h2></div>
+            <div class="card-header">
+                <h2>
+                    Trading
+                    <span class="float-right badge {{ 'badge-dark' if real_trader_activated else 'badge-primary' }} waves-effect">
+                        {{ 'Real trader currently activated' if real_trader_activated else 'Trader simulator currently activated' }}
+                    </span>
+                </h2>
+            </div>
             <div class="card-body deck-container">
                  <!-- Card deck -->
                 <div class="card-deck config-container">
