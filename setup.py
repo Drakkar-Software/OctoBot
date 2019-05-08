@@ -46,7 +46,7 @@ setup(
     url='https://github.com/Drakkar-Software/OctoBot',
     license='LGPL-3.0',
     author='Drakkar-Software',
-    author_email='drakkar.software@protonmail.com',
+    author_email='drakkar-software@protonmail.com',
     description='Cryptocurrencies alert / trading bot',
     py_modules=['start', 'octobot'],
     packages=PACKAGES,
