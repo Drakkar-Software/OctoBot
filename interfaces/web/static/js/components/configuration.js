@@ -134,6 +134,16 @@ function handle_add_buttons(){
     });
 }
 
+function handle_special_values(currentElem){
+    if (currentElem.is(traderSimulatorCheckbox) || currentElem.is(traderCheckbox)){
+        if (currentElem.is(":checked")){
+            const otherElem = currentElem.is(traderCheckbox) ? traderSimulatorCheckbox : traderCheckbox;
+            otherElem.prop('checked', false);
+            otherElem.trigger("change");
+        }
+    }
+}
+
 function register_edit_events(){
     $('.config-element').each(function () {
         add_event_if_not_already_added($(this), 'save', card_edit_handler);
@@ -143,6 +153,9 @@ function register_edit_events(){
 
 function card_edit_handler(e, params){
     const current_elem = $(this);
+
+    handle_special_values(current_elem);
+
     let new_value = parse_new_value(current_elem);
     if(isDefined(params) && isDefined(params["newValue"])){
         new_value = params["newValue"];
@@ -480,6 +493,9 @@ function check_url_required_tab(){
 
 let validated_updated_global_config = {};
 let deleted_global_config_elements = [];
+
+const traderSimulatorCheckbox = $("#trader-simulator_enabled");
+const traderCheckbox = $("#trader_enabled");
 
 $(document).ready(function() {
     check_url_required_tab();
