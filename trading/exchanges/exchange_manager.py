@@ -176,27 +176,34 @@ class ExchangeManager(Initializable):
     def _set_config_traded_pairs(self):
         self.cryptocurrencies_traded_pairs = {}
         for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
-            if self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS] != CONFIG_WILDCARD:
-                self.cryptocurrencies_traded_pairs[cryptocurrency] = []
-                for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]:
-                    if self.symbol_exists(symbol):
-                        self.cryptocurrencies_traded_pairs[cryptocurrency].append(symbol)
-                    else:
-                        self.logger.error(f"{self.exchange.get_name()} is not supporting the {symbol} trading pair.")
+            if self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]:
+                if self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS] != CONFIG_WILDCARD:
+                    self.cryptocurrencies_traded_pairs[cryptocurrency] = []
+                    for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]:
+                        if self.symbol_exists(symbol):
+                            self.cryptocurrencies_traded_pairs[cryptocurrency].append(symbol)
+                        else:
+                            self.logger.error(f"{self.exchange.get_name()} is not supporting the "
+                                              f"{symbol} trading pair.")
 
+                else:
+                    self.cryptocurrencies_traded_pairs[cryptocurrency] = self._create_wildcard_symbol_list(
+                        self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_QUOTE])
+
+                    # additionnal pairs
+                    if CONFIG_CRYPTO_ADD in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency]:
+                        self.cryptocurrencies_traded_pairs[cryptocurrency] += self._add_tradable_symbols(cryptocurrency)
+
+                # add to global traded pairs
+                if not self.cryptocurrencies_traded_pairs[cryptocurrency]:
+                    self.logger.error(f"{self.exchange.get_name()} is not supporting any {cryptocurrency} trading pair "
+                                      f"from current configuration.")
+                self.traded_pairs += self.cryptocurrencies_traded_pairs[cryptocurrency]
             else:
-                self.cryptocurrencies_traded_pairs[cryptocurrency] = self._create_wildcard_symbol_list(
-                    self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_QUOTE])
-
-                # additionnal pairs
-                if CONFIG_CRYPTO_ADD in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency]:
-                    self.cryptocurrencies_traded_pairs[cryptocurrency] += self._add_tradable_symbols(cryptocurrency)
-
-            # add to global traded pairs
-            if not self.cryptocurrencies_traded_pairs[cryptocurrency]:
-                self.logger.error(f"{self.exchange.get_name()} is not supporting any {cryptocurrency} trading pair "
-                                  f"from current configuration.")
-            self.traded_pairs += self.cryptocurrencies_traded_pairs[cryptocurrency]
+                self.logger.error(f"Current configuration for {cryptocurrency} is not including any trading pair, "
+                                  f"this asset can't be traded and related orders won't be loaded. "
+                                  f"OctoBot requires at least one trading pair in configuration to handle an asset. "
+                                  f"You can add trading pair(s) for each asset in the configuration section.")
 
     def get_traded_pairs(self, cryptocurrency=None):
         if cryptocurrency:

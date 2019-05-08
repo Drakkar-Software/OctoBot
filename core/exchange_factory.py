@@ -52,11 +52,15 @@ class ExchangeFactory:
     async def create(self):
         self.create_previous_state_manager()
 
-        for exchange_class_string in self.octobot.get_config()[CONFIG_EXCHANGES]:
-            if exchange_class_string in self.available_exchanges:
-                await self._create_exchange_traders(exchange_class_string)
-            else:
-                self.logger.error(f"{exchange_class_string} exchange not found")
+        if self.octobot.get_config()[CONFIG_EXCHANGES]:
+            for exchange_class_string in self.octobot.get_config()[CONFIG_EXCHANGES]:
+                if exchange_class_string in self.available_exchanges:
+                    await self._create_exchange_traders(exchange_class_string)
+                else:
+                    self.logger.error(f"{exchange_class_string} exchange not found")
+        else:
+            self.logger.error("No exchange in configuration. OctoBot requires at least one exchange "
+                              "to read trading data from. You can add exchanges in the configuration section.")
 
     def create_previous_state_manager(self):
         if not backtesting_enabled(self.octobot.get_config()) and \
