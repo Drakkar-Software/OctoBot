@@ -175,7 +175,7 @@ function something_is_unsaved(){
     return (
         config_root.find("."+card_class_modified).length > 0
             || config_root.find("."+deck_container_modified_class).length > 0
-            || config_root.find("."+primary_badge).length > 0
+            || config_root.find("."+modified_badge).length > 0
     )
 }
 

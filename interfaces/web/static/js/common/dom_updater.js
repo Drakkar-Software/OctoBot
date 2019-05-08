@@ -21,7 +21,11 @@ function update_badge(badge, new_text, new_class){
     badge.removeClass(warning_badge);
     badge.removeClass(success_badge);
     badge.removeClass(primary_badge);
+    badge.removeClass(modified_badge);
     badge.addClass(new_class);
+    if (new_class === primary_badge){
+        badge.addClass(modified_badge);
+    }
     badge.html(new_text);
 }
 
