@@ -28,6 +28,7 @@ from interfaces.web.models.configuration import get_strategy_config, update_eval
     get_evaluator_detailed_config, REQUIREMENTS_KEY, get_config_activated_trading_mode
 from interfaces.web.models.backtesting import get_data_files_with_description
 from interfaces.web.util.flask_util import get_rest_reply
+from interfaces.trading_util import has_real_and_or_simulated_traders
 from backtesting import backtesting_enabled
 
 
@@ -95,6 +96,8 @@ def config():
                                config_services=display_config[CONFIG_CATEGORY_SERVICES],
                                config_symbols=display_config[CONFIG_CRYPTO_CURRENCIES],
                                config_reference_market=display_config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET],
+
+                               real_trader_activated=has_real_and_or_simulated_traders()[0],
 
                                ccxt_tested_exchanges=get_tested_exchange_list(),
                                ccxt_simulated_tested_exchanges=get_simulated_exchange_list(),
