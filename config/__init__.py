@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import os
+
 from logging import WARNING
 from enum import Enum
 from typing import NewType, Any, Dict
@@ -87,6 +87,7 @@ METRICS_ROUTE_COMMUNITY = f"{METRICS_ROUTE}/community"
 METRICS_ROUTE_UPTIME = f"{METRICS_ROUTE}/uptime"
 METRICS_ROUTE_REGISTER = f"{METRICS_ROUTE}/register"
 COMMUNITY_TOPS_COUNT = 1000
+PLATFORM_DATA_SEPARATOR = ":"
 
 # default values in config files and interfaces
 DEFAULT_CONFIG_VALUES = {"your-api-key-here", "your-api-secret-here", "your-api-password-here", "NOKEY", "Empty"}
@@ -593,6 +594,12 @@ class BacktestingDataFormats(Enum):
     KAIKO_DATA = 1
 
 
+class OctoBotTypes(Enum):
+    BINARY = "binary"
+    PYTHON = "python"
+    DOCKER = "docker"
+
+
 class MetricsFields(Enum):
     ID = "_id"
     CURRENT_SESSION = "currentsession"
@@ -604,6 +611,8 @@ class MetricsFields(Enum):
     PAIRS = "pairs"
     EXCHANGES = "exchanges"
     NOTIFICATIONS = "notifications"
+    TYPE = "type"
+    PLATFORM = "platform"
 
 
 # web user settings
@@ -611,7 +620,3 @@ DEFAULT_DISPLAY_TIME_FRAME = TimeFrames.ONE_HOUR
 CONFIG_WATCHED_SYMBOLS = "watched_symbols"
 
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='
-
-
-def get_os():
-    return PlatformsName(os.name)
