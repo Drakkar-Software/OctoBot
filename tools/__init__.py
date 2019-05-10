@@ -48,7 +48,8 @@ else:
     sys.path.append(os.path.dirname(sys.executable))
 
     # if compatible version, can proceed with imports
-    from config import PlatformsName, get_os
+    from config import PlatformsName
+    from tools.os_util import get_os
     from tools.logging.logging_util import get_logger
 
     # check sudo rights

@@ -13,19 +13,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-#
-#  This library is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU Lesser General Public
-#  License as published by the Free Software Foundation; either
-#  version 3.0 of the License, or (at your option) any later version.
-#
-#  This library is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public
-#  License along with this library.
 
 
 import time
@@ -42,6 +29,7 @@ from config import CONFIG_METRICS_BOT_ID, METRICS_URL, METRICS_ROUTE_GEN_BOT_ID,
     CONFIG_ENABLED_OPTION, MetricsFields
 from tools.logging.logging_util import get_logger
 from tools.config_manager import ConfigManager
+from tools.os_util import get_current_platform, get_octobot_type
 
 
 class MetricsManager:
@@ -140,7 +128,9 @@ class MetricsManager:
                 MetricsFields.EVAL_CONFIG.value: self._get_eval_config(),
                 MetricsFields.PAIRS.value: self._get_traded_pairs(),
                 MetricsFields.EXCHANGES.value: list(self.octobot.get_exchanges_list().keys()),
-                MetricsFields.NOTIFICATIONS.value: self._get_notification_types()
+                MetricsFields.NOTIFICATIONS.value: self._get_notification_types(),
+                MetricsFields.TYPE.value: get_octobot_type(),
+                MetricsFields.PLATFORM.value: get_current_platform()
             }
         }
 
