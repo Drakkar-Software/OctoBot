@@ -36,11 +36,12 @@ class OrderBookCallBack(WebsocketCallBack, OrderBookProducer):
         WebsocketCallBack.__init__(self, parent)
         OrderBookProducer.__init__(self, channel)
 
-    async def l2_order_book_callback(self, _, pair, book, timestamp):
+    async def l2_order_book_callback(self, _, pair, asks, bids, timestamp):
         asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
                                                    order_book=(pair,
-                                                               book,
-                                                               timestamp)), get_bot().get_async_loop())
+                                                               asks,
+                                                               bids,
+                                                               timestamp)), asyncio.get_event_loop())
 
 
 class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
@@ -48,13 +49,13 @@ class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
         WebsocketCallBack.__init__(self, parent)
         RecentTradeProducer.__init__(self, channel)
 
-    async def recent_trades_callback(self, _, pair, timestamp, side, amount, price):
+    async def recent_trades_callback(self, _, pair, side, amount, price, timestamp):
         asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
                                                    recent_trade=(pair,
                                                                  side,
                                                                  amount,
                                                                  price,
-                                                                 timestamp)), get_bot().get_async_loop())
+                                                                 timestamp)), asyncio.get_event_loop())
 
 
 class TickersCallBack(WebsocketCallBack, TickerProducer):
@@ -62,12 +63,13 @@ class TickersCallBack(WebsocketCallBack, TickerProducer):
         WebsocketCallBack.__init__(self, parent)
         TickerProducer.__init__(self, channel)
 
-    async def tickers_callback(self, _, pair, bid, ask, last):
+    async def tickers_callback(self, _, pair, bid, ask, last, timestamp):
         asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
                                                    ticker=(pair,
                                                            bid,
                                                            ask,
-                                                           last)), get_bot().get_async_loop())
+                                                           last,
+                                                           timestamp)), asyncio.get_event_loop())
 
 
 class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
@@ -80,4 +82,4 @@ class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
         for symbol in data:
             asyncio.run_coroutine_threadsafe(self.push(symbol=symbol,
                                                        time_frame=self.time_frame,
-                                                       candle=data[symbol]), get_bot().get_async_loop())
+                                                       candle=data[symbol]), asyncio.get_event_loop())
