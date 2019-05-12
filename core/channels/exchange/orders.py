@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
 from asyncio import CancelledError
 
 from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
@@ -39,10 +40,10 @@ class OrdersProducer(Producer):
 
     async def send(self, symbol, order):
         for consumer in self.channel.get_consumers(symbol=symbol):
-            await consumer.queue.put({
+            asyncio.run_coroutine_threadsafe(consumer.queue.put({
                 "symbol": symbol,
                 "order": order
-            })
+            }), loop=asyncio.get_event_loop())
 
 
 class OrdersConsumer(Consumer):

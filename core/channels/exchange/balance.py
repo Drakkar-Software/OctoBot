@@ -17,6 +17,7 @@
 """
 Handles balance changes
 """
+import asyncio
 from asyncio import CancelledError
 
 from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
@@ -42,9 +43,9 @@ class BalanceProducer(Producer):
 
     async def send(self, balance):
         for consumer in self.channel.get_consumers():
-            await consumer.queue.put({
+            asyncio.run_coroutine_threadsafe(consumer.queue.put({
                 "balance": balance
-            })
+            }), loop=asyncio.get_event_loop())
 
 
 class BalanceConsumer(Consumer):
