@@ -290,9 +290,6 @@ class BinanceWebSocketClient(AbstractWebSocket):
         pass
 
     def _adapt_symbol(self, symbol):
-        if "USD" in symbol and "USDT" not in symbol:
-            symbol += "T"
-
         if "/" in symbol:
             symbol = merge_symbol(symbol)
 
