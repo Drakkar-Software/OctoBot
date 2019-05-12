@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
 from asyncio import CancelledError
 
 from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
@@ -45,11 +46,11 @@ class OHLCVProducer(Producer):
 
     async def send(self, time_frame, symbol, candle):
         for consumer in self.channel.get_consumers_by_timeframe(symbol=symbol, time_frame=time_frame):
-            await consumer.queue.put({
+            asyncio.run_coroutine_threadsafe(consumer.queue.put({
                 "symbol": symbol,
                 "time_frame": time_frame,
                 "candle": candle
-            })
+            }), loop=asyncio.get_event_loop())
 
 
 class OHLCVConsumer(Consumer):
