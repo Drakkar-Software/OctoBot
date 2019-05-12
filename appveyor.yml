@@ -4,6 +4,7 @@ environment:
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
 install:
+  - "%PYTHON%\\python.exe -m pip install pypiwin32" # dependency removed from appveyor python default install
   - "%PYTHON%\\python.exe -m pip install -r pre_requirements.txt"
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt -r dev_requirements.txt"
   - copy config\default_config.json config.json
