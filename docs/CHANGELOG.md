@@ -1,5 +1,68 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+Changelog for 0.3.4-beta
+====================
+*Released date : Mai 12 2019*
+
+# Concerned issues / pull request:
+    #191 [Kucoin] Test OctoBot on different exchanges
+    #696 [Tentacles config] add tentacle configuration edition on web interface
+    #782 [Notifiers] Removed unused notification systems
+    #792 [Web interface][Configuration] force display of parameters that are not in config.json
+    #804 [Web interface] Cancel orders according to table filter
+    #813 [Docker] Add raspberry docker image
+    #810 [WebInterface] add cancel orders progress bar 
+    #811 [Telegram interface] Start telegram interface more easily
+    #817 [WebInterface] Navbar current selection UX improvement
+    #818 [Exchanges] Handle api passwords
+    #820 [Exchanges] handle order creation when result order is not complete
+    #821 [Exchange traded pairs] no message when unavailable traded pair
+    #823 [Coinbase Pro] Test OctoBot on different exchanges
+    #824 [RealTrader] impossible to start OctoBot with error in real trader login
+    #826 [Web interface] price graph update
+    #830 [0.3.4][Exchange][REST] Officialize Kucoin and CoinBasePro support
+    #832 [TradingModes] can't start when error in trading mode init 
+    #834 [StrategyTestFramework] handle different reference market
+    #837 [EvaluatorCreator] crash on evaluator __init__ exception
+    #839 [WebInterface] refresh backtesting interface
+    #847 [WebInterface] add terms of service
+    #854 [TentacleManager] ModuleNotFoundError: No module named 'tentacles_manager'
+    #865 [Exchange config] simplify exchange token config
+    #869 [Factorize] new "Tentacle" abstract class
+    #870 [Traders] do not athorize simulator and real trader during the same execution
+    #873 [WebInterface] do not delete symbol config when no exchange
+    #875 Email Contact is Invalid
+    #876 [TentacleManager]No module named 'evaluator.Util.advanced_manager'
+    #887 [Metrics] add exec environment type to metrics (code, binary, etc)
+    #889 fixed usdX bug in ws
+    
+
+# New features :
+    - Added tentacles configuration interface: 
+        - Generated using on json schema of tentacle config file
+        - Allowing to backtest strategies/evaluators directly from web interface
+    - Added Kucoin and CoinbasePro support
+    - Improved web interface UI and UX
+    - Telegram insterface now automatically started when setup
+    - Can now copy/paste exchange tokens in config.json: OctoBot will later encrypt those
+    - Can't have simultaneously a real trader and trader simulator in order to avoid side effects
+    - RaspberryPie OctoBot docker image
+    - Now handle exchanges with API passwords
+    - Added disclaimer
+    
+
+# Bug fixes :
+    - Fixed several bugs related to OctoBot start with config error: now start and display errors in interface logs
+    - Fixed crashes on error in Tentacles: now display error message instead
+    - Fixed price graph update in web inteface
+    - Fixed a profitability bug in strategy tests suite
+    - Fixed refresh bugs with backtesting web interface
+    - Fixed tentacle manager import error
+    - Fixed traded pairs config deletion when no available exchange
+    - Fixed email contact
+    - Fixed bug with USD stable coins on websocket
+    
+
 Changelog for 0.3.3-beta
 ====================
 *Released date : April 18 2019*
