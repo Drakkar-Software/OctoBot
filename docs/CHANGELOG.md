@@ -2,7 +2,7 @@
 
 Changelog for 0.3.4-beta
 ====================
-*Released date : Mai 12 2019*
+*Released date : May 12 2019*
 
 # Concerned issues / pull request:
     #191 [Kucoin] Test OctoBot on different exchanges
