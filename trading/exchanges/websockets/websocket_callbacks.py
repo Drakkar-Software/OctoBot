@@ -21,6 +21,7 @@ from core.channels.exchange.recent_trade import RecentTradeProducer
 from core.channels.exchange.ticker import TickerProducer
 from interfaces import get_bot
 from tools import get_logger
+from config import ExchangeConstantsOrderColumns as ECOC
 
 
 class WebsocketCallBack:
@@ -37,11 +38,14 @@ class OrderBookCallBack(WebsocketCallBack, OrderBookProducer):
         OrderBookProducer.__init__(self, channel)
 
     async def l2_order_book_callback(self, _, pair, asks, bids, timestamp):
-        asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
-                                                   order_book=(pair,
-                                                               asks,
-                                                               bids,
-                                                               timestamp)), asyncio.get_event_loop())
+        try:
+            asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
+                                                       order_book=(pair,
+                                                                   asks,
+                                                                   bids,
+                                                                   timestamp)), get_bot().get_async_loop())
+        except Exception as e:
+            self.logger.exception(f"Callaback failed : {e}")
 
 
 class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
@@ -50,12 +54,15 @@ class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
         RecentTradeProducer.__init__(self, channel)
 
     async def recent_trades_callback(self, _, pair, side, amount, price, timestamp):
-        asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
-                                                   recent_trade=(pair,
-                                                                 side,
-                                                                 amount,
-                                                                 price,
-                                                                 timestamp)), asyncio.get_event_loop())
+        try:
+            asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
+                                                       recent_trade={ECOC.SYMBOL.value: pair,
+                                                                     ECOC.SIDE.value: side,
+                                                                     ECOC.AMOUNT.value: amount,
+                                                                     ECOC.PRICE.value: price,
+                                                                     ECOC.TIMESTAMP.value: timestamp}), get_bot().get_async_loop())
+        except Exception as e:
+            self.logger.exception(f"Callaback failed : {e}")
 
 
 class TickersCallBack(WebsocketCallBack, TickerProducer):
@@ -64,12 +71,15 @@ class TickersCallBack(WebsocketCallBack, TickerProducer):
         TickerProducer.__init__(self, channel)
 
     async def tickers_callback(self, _, pair, bid, ask, last, timestamp):
-        asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
-                                                   ticker=(pair,
-                                                           bid,
-                                                           ask,
-                                                           last,
-                                                           timestamp)), asyncio.get_event_loop())
+        try:
+            asyncio.run_coroutine_threadsafe(self.push(symbol=pair,
+                                                       ticker=(pair,
+                                                               bid,
+                                                               ask,
+                                                               last,
+                                                               timestamp)), get_bot().get_async_loop())
+        except Exception as e:
+            self.logger.exception(f"Callaback failed : {e}")
 
 
 class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
@@ -79,7 +89,10 @@ class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
         self.time_frame = time_frame
 
     async def ohlcv_callback(self, data=None):
-        for symbol in data:
-            asyncio.run_coroutine_threadsafe(self.push(symbol=symbol,
-                                                       time_frame=self.time_frame,
-                                                       candle=data[symbol]), asyncio.get_event_loop())
+        try:
+            for symbol in data:
+                asyncio.run_coroutine_threadsafe(self.push(symbol=symbol,
+                                                           time_frame=self.time_frame,
+                                                           candle=data[symbol]), get_bot().get_async_loop())
+        except Exception as e:
+            self.logger.exception(f"Callaback failed : {e}")

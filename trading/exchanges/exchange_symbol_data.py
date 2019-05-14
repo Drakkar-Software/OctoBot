@@ -94,10 +94,13 @@ class SymbolData:
     def update_recent_trades(self, new_recent_trades_data):
         self.recent_trades = new_recent_trades_data
 
-    def add_new_recent_trades(self, recent_trade_data):
-        self.recent_trades.append(recent_trade_data)
-        if len(self.recent_trades) >= SymbolData.MAX_RECENT_TRADES_COUNT:
-            self.recent_trades.pop(0)
+    def add_new_recent_trades(self, recent_trade_data, forced=False):
+        if not forced:
+            self.recent_trades.append(recent_trade_data)
+            if len(self.recent_trades) >= SymbolData.MAX_RECENT_TRADES_COUNT:
+                self.recent_trades.pop(0)
+        else:
+            self.recent_trades = recent_trade_data
 
     '''
     Called by non-trade classes
@@ -127,8 +130,11 @@ class SymbolData:
         return self.order_book
 
     # recent trade functions
-    def get_symbol_recent_trades(self):
-        return self.recent_trades
+    def get_symbol_recent_trades(self, limit=None):
+        if limit:
+            return self.recent_trades[-limit:]
+        else:
+            return self.recent_trades
 
     # private functions
     @staticmethod

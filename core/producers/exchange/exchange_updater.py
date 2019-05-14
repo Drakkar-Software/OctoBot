@@ -13,4 +13,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from abc import ABCMeta
 
+
+class ExchangeUpdater:
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        # TODO
+        pass

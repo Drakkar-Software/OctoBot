@@ -43,9 +43,9 @@ class BalanceProducer(Producer):
 
     async def send(self, balance):
         for consumer in self.channel.get_consumers():
-            asyncio.run_coroutine_threadsafe(consumer.queue.put({
+            consumer.queue.put({
                 "balance": balance
-            }), loop=asyncio.get_event_loop())
+            })
 
 
 class BalanceConsumer(Consumer):

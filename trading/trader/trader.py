@@ -21,8 +21,9 @@ from config import CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType, \
     ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns
 from tools.pretty_printer import PrettyPrinter
-from trading.trader.order import OrderConstants, Order
+from trading.trader.order import Order
 from trading.trader.order_notifier import OrderNotifier
+from trading.trader.orders import OrderConstants
 from trading.trader.orders_manager import OrdersManager
 from trading.trader.portfolio import Portfolio
 from trading.trader.trade import Trade
@@ -72,14 +73,14 @@ class Trader(Initializable):
 
         self.trades_manager = TradesManager(self.config, self)
 
-        self.order_manager = OrdersManager(self.config, self)
+        # self.order_manager = OrdersManager(self.config, self)
 
         self.exchange.get_exchange_manager().register_trader(self)
 
         self.notifier = EvaluatorNotification(self.config)
 
-        if self.order_refresh_time is not None:
-            self.order_manager.set_order_refresh_time(self.order_refresh_time)
+        # if self.order_refresh_time is not None:
+        #     self.order_manager.set_order_refresh_time(self.order_refresh_time)
 
     async def initialize_impl(self):
         if self.enable:
@@ -209,7 +210,7 @@ class Trader(Initializable):
 
         if is_to_keep:
             # notify order manager of a new open order
-            self.order_manager.add_order_to_list(new_order)
+            self.exchange.get_exchange_personal_data().add_order_to_list(new_order)
         elif not is_already_in_history:
             self.trades_manager.add_new_trade_in_history(Trade(self.exchange, new_order))
 
@@ -260,7 +261,7 @@ class Trader(Initializable):
                 self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} at {odr.get_origin_price()}"
                                  f" (ID : {odr.get_id()}) cancelled on {self.get_exchange().get_name()}")
 
-                self.order_manager.remove_order_from_list(order)
+                self.exchange.get_exchange_personal_data().remove_order_from_list(order)
 
     async def cancel_orders_using_description(self, order_descriptions):
         # use a copy of the list (not the reference)
@@ -382,7 +383,7 @@ class Trader(Initializable):
             self.trades_manager.add_new_trade_in_history(Trade(self.exchange, order))
 
             # remove order to open_orders
-            self.order_manager.remove_order_from_list(order)
+            self.exchange.get_exchange_personal_data().remove_order_from_list(order)
 
         profitability_activated = order_closed is not None
 
@@ -403,9 +404,9 @@ class Trader(Initializable):
 
     def get_open_orders(self, symbol=None):
         if symbol is None:
-            return self.order_manager.get_open_orders()
+            return self.exchange.get_exchange_personal_data().get_open_orders()
         else:
-            return [o for o in self.order_manager.get_open_orders() if o.get_order_symbol() == symbol]
+            return [o for o in self.exchange.get_exchange_personal_data().get_open_orders() if o.get_order_symbol() == symbol]
 
     def get_recently_closed_orders(self, symbol):
         return [o for o in self.order_manager.get_recently_closed_orders() if o.get_order_symbol() == symbol]
@@ -426,7 +427,7 @@ class Trader(Initializable):
             orders = await self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
             for open_order in orders:
                 order = self.parse_exchange_order_to_order_instance(open_order)
-                if self.order_manager.should_add_order(order):
+                if self.exchange.get_exchange_personal_data().should_add_order(order):
                     async with self.portfolio.get_lock():
                         await self.create_order(order, self.portfolio, True)
 
@@ -459,7 +460,7 @@ class Trader(Initializable):
                 # create missing orders
                 for open_order in orders:
                     # do something only if order not already in list
-                    if not self.order_manager.has_order_id_in_list(open_order["id"]):
+                    if not self.exchange.get_exchange_personal_data().has_order(open_order["id"]):
                         order = self.parse_exchange_order_to_order_instance(open_order)
                         if portfolio:
                             await self.create_order(order, portfolio, True)
@@ -471,10 +472,10 @@ class Trader(Initializable):
                 if delete_desync_orders:
                     # remove orders that are not online anymore
                     order_ids = [o["id"] for o in orders]
-                    for symbol_order in self.order_manager.get_orders_with_symbol(symbol_traded):
+                    for symbol_order in self.exchange.get_exchange_personal_data().get_orders_with_symbol(symbol_traded):
                         if symbol_order.get_id() not in order_ids:
                             # remove order from order manager
-                            self.order_manager.remove_order_from_list(symbol_order)
+                            self.exchange.get_exchange_personal_data().remove_order_from_list(symbol_order)
                             removed_orders += 1
             self.logger.info(f"Orders refreshed: added {added_orders} order(s) and removed {removed_orders} order(s)")
 
@@ -545,17 +546,20 @@ class Trader(Initializable):
             await trading_mode.order_update_callback(order)
 
     def get_order_manager(self):
-        return self.order_manager
+        # return self.order_manager
+        pass
 
     def get_trades_manager(self):
         return self.trades_manager
 
     def stop_order_manager(self):
-        self.order_manager.stop()
+        # self.order_manager.stop()
+        pass
 
     async def start_order_manager(self):
-        if not backtesting_enabled(self.config):
-            await self.order_manager.poll_update()
+        # if not backtesting_enabled(self.config):
+        #     await self.order_manager.poll_update()
+        pass
 
     def get_simulate(self):
         return self.simulate

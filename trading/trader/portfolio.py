@@ -14,13 +14,13 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
 from asyncio import Lock
 
 from config import CONFIG_SIMULATOR, CONFIG_STARTING_PORTFOLIO, CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_TOTAL, \
     TradeOrderSide, TraderOrderType, SIMULATOR_CURRENT_PORTFOLIO, CURRENT_PORTFOLIO_STRING
-from trading.trader.order import OrderConstants
 from tools.initializable import Initializable
+from tools.logging.logging_util import get_logger
+from trading.trader.orders import OrderConstants
 
 """ The Portfolio class manage an exchange portfolio
 This will begin by loading current exchange portfolio (by pulling user data)
@@ -183,9 +183,7 @@ class Portfolio(Initializable):
     @staticmethod
     def _check_available_should_update(order):
         # stop losses and take profits aren't using available portfolio
-        return order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT],
-                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.TAKE_PROFIT_LIMIT],
-                                       OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
+        return order.__class__ not in [OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS],
                                        OrderConstants.TraderOrderTypeClasses[TraderOrderType.STOP_LOSS_LIMIT]]
 
     # Realise portfolio availability update

@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
+import asyncio
 from abc import *
 from copy import deepcopy
 import math
@@ -291,11 +291,11 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     async def get_pre_order_data(exchange, symbol, portfolio):
-        last_prices = await exchange.execute_request_with_retry(exchange.get_recent_trades(symbol))
+        last_prices = exchange.get_symbol_data(symbol=symbol).get_symbol_recent_trades()
 
         used_last_prices = last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]
 
-        reference_sum = sum([float(last_price["price"]) for last_price in used_last_prices])
+        reference_sum = sum(float(last_price["price"]) for last_price in used_last_prices)
 
         reference = reference_sum / len(used_last_prices)
 

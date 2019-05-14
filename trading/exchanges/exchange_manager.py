@@ -26,6 +26,7 @@ from core.producers.exchange.ohlcv_updater import OHLCVUpdater
 from core.producers.exchange.order_book_updater import OrderBookUpdater
 from core.producers.exchange.orders_updater import OrdersUpdater
 from core.producers.exchange.recent_trade_updater import RecentTradeUpdater
+from core.producers.exchange.simulator.orders_updater_simulator import OrdersUpdaterSimulator
 from core.producers.exchange.ticker_updater import TickerUpdater
 from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
@@ -34,6 +35,7 @@ from tools.symbol_util import split_symbol
 from tools.time_frame_manager import TimeFrameManager
 from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
+from trading.exchanges.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_simulator import ExchangeSimulator
 from trading.exchanges.rest_exchange import RESTExchange
 from trading.exchanges.websockets.abstract_websocket import AbstractWebSocket
@@ -52,12 +54,14 @@ class ExchangeManager(Initializable):
 
         self.is_ready = False
         self.is_simulated = is_simulated
+        self.is_trader_simulated = ConfigManager.get_trader_simulator_enabled(self.config)
 
         self.exchange = None
         self.exchange_type = None
         self.exchange_web_socket = None
         self.exchange_dispatcher = None
         self.exchange_consumers_manager = None
+        self.exchange_personal_data = ExchangePersonalData(self)
 
         self.trader = None
 
@@ -89,6 +93,9 @@ class ExchangeManager(Initializable):
 
     def need_user_stream(self):
         return self.config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]
+
+    def reset_exchange_personal_data(self):
+        self.exchange_personal_data = ExchangePersonalData(self)
 
     async def create_exchanges(self):
         self.exchange_type = RESTExchange.create_exchange_type(self.exchange_class_string)
@@ -130,9 +137,13 @@ class ExchangeManager(Initializable):
         await BalanceUpdater(ExchangeChannels.get_chan(BALANCE_CHANNEL, self.exchange.get_name())).run()
         await OHLCVUpdater(ExchangeChannels.get_chan(OHLCV_CHANNEL, self.exchange.get_name())).run()
         await OrderBookUpdater(ExchangeChannels.get_chan(ORDER_BOOK_CHANNEL, self.exchange.get_name())).run()
-        await OrdersUpdater(ExchangeChannels.get_chan(ORDERS_CHANNEL, self.exchange.get_name())).run()
         await RecentTradeUpdater(ExchangeChannels.get_chan(RECENT_TRADES_CHANNEL, self.exchange.get_name())).run()
         await TickerUpdater(ExchangeChannels.get_chan(TICKER_CHANNEL, self.exchange.get_name())).run()
+
+        if self.is_trader_simulated:
+            await OrdersUpdaterSimulator(ExchangeChannels.get_chan(ORDERS_CHANNEL, self.exchange.get_name())).run()
+        else:
+            await OrdersUpdater(ExchangeChannels.get_chan(ORDERS_CHANNEL, self.exchange.get_name())).run()
 
     def _search_and_create_websocket(self, websocket_class):
         for socket_manager in websocket_class.__subclasses__():
@@ -166,7 +177,7 @@ class ExchangeManager(Initializable):
 
             # clear databases
             self.exchange_dispatcher.reset_symbols_data()
-            self.exchange_dispatcher.reset_exchange_personal_data()
+            self.reset_exchange_personal_data()
 
             # close and restart websockets
             if self.websocket_available():

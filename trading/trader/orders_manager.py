@@ -23,7 +23,8 @@ from backtesting import backtesting_enabled
 from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
 from tools.logging.logging_util import get_logger
 from trading.exchanges import MissingOrderException
-from trading.trader.order import Order, StopLossLimitOrder, StopLossOrder
+from trading.trader.order import Order
+from trading.trader.orders import StopLossLimitOrder, StopLossOrder
 
 
 class OrdersManager:

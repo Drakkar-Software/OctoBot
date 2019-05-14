@@ -40,10 +40,10 @@ class OrderBookProducer(Producer):
 
     async def send(self, symbol, order_book):
         for consumer in self.channel.get_consumers(symbol=symbol):
-            asyncio.run_coroutine_threadsafe(consumer.queue.put({
+            consumer.queue.put({
                 "symbol": symbol,
                 "order_book": order_book
-            }), loop=asyncio.get_event_loop())
+            })
 
 
 class OrderBookConsumer(Consumer):

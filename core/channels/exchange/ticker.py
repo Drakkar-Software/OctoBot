@@ -40,10 +40,10 @@ class TickerProducer(Producer):
 
     async def send(self, symbol, ticker):
         for consumer in self.channel.get_consumers(symbol=symbol):
-            asyncio.run_coroutine_threadsafe(consumer.queue.put({
+            await consumer.queue.put({
                 "symbol": symbol,
                 "ticker": ticker
-            }), loop=asyncio.get_event_loop())
+            })
 
 
 class TickerConsumer(Consumer):

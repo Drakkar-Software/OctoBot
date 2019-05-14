@@ -13,17 +13,15 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from abc import ABCMeta
-
-from core.channels.exchange_channel import ExchangeChannel
-from core.producers.exchange.exchange_updater import ExchangeUpdater
+from config import TradeOrderSide
+from trading.trader.order import Order
 
 
-class ExchangeUpdaterSimulator(ExchangeUpdater):
-    __metaclass__ = ABCMeta
+# TODO
+class StopLossLimitOrder(Order):
+    def __post_init__(self):
+        super().__post_init__()
+        self.side = TradeOrderSide.SELL
 
-    def __init__(self, channel: ExchangeChannel):
-        super().__init__()
-        self.channel = channel
-        self.exchange_manager = channel.exchange_manager
-        self.exchange = channel.exchange_manager.exchange
+    async def update_order_status(self, last_prices: list, simulated_time=False):
+        pass
