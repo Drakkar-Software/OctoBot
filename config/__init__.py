@@ -443,12 +443,11 @@ class OrderStatus(Enum):
 class TraderOrderType(Enum):
     BUY_MARKET = 1
     BUY_LIMIT = 2
-    TAKE_PROFIT = 3
-    TAKE_PROFIT_LIMIT = 4
-    STOP_LOSS = 5
-    STOP_LOSS_LIMIT = 6
-    SELL_MARKET = 7
-    SELL_LIMIT = 8
+    STOP_LOSS = 3
+    STOP_LOSS_LIMIT = 4
+    SELL_MARKET = 5
+    SELL_LIMIT = 6
+    TRAILING_STOP = 7
 
 
 class ExchangeConstantsTickersColumns(Enum):

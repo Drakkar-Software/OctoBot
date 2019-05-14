@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import asyncio
 from asyncio import CancelledError
 
 from config import CONSUMER_CALLBACK_TYPE, CONFIG_WILDCARD
@@ -23,15 +22,17 @@ from core.producer import Producer
 
 
 class RecentTradeProducer(Producer):
-    async def push(self, symbol, recent_trade):
-        await self.perform(symbol, recent_trade)
+    async def push(self, symbol, recent_trade, forced=False):
+        await self.perform(symbol, recent_trade, forced=forced)
 
-    async def perform(self, symbol, recent_trade):
+    async def perform(self, symbol, recent_trade, forced=False):
         try:
             if CONFIG_WILDCARD in self.channel.consumers or symbol in self.channel.consumers:  # and symbol_data.recent_trades_are_initialized()
-                self.channel.exchange_manager.get_symbol_data(symbol).add_new_recent_trades(recent_trade)
+                self.channel.exchange_manager.get_symbol_data(symbol).add_new_recent_trades(recent_trade, forced=forced)
+                self.channel.will_send()
                 await self.send(symbol, recent_trade)
                 await self.send(CONFIG_WILDCARD, recent_trade)
+                self.channel.has_send()
         except CancelledError:
             self.logger.info("Update tasks cancelled.")
         except Exception as e:
@@ -40,10 +41,10 @@ class RecentTradeProducer(Producer):
 
     async def send(self, symbol, recent_trade):
         for consumer in self.channel.get_consumers(symbol=symbol):
-            asyncio.run_coroutine_threadsafe(consumer.queue.put({
+            await consumer.queue.put({
                 "symbol": symbol,
                 "recent_trade": recent_trade
-            }), loop=asyncio.get_event_loop())
+            })
 
 
 class RecentTradeConsumer(Consumer):
@@ -57,5 +58,10 @@ class RecentTradeConsumer(Consumer):
 
 
 class RecentTradeChannel(ExchangeChannel):
-    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, size: int = 0, symbol: str = CONFIG_WILDCARD):
-        self._add_new_consumer_and_run(RecentTradeConsumer(callback, size=size), symbol=symbol)
+    FILTER_SIZE = 10
+
+    def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE,
+                     size: int = 0,
+                     symbol: str = CONFIG_WILDCARD,
+                     filter_size: bool = False):
+        self._add_new_consumer_and_run(RecentTradeConsumer(callback, size=size, filter_size=filter_size), symbol=symbol)

@@ -15,18 +15,18 @@
 #  License along with this library.
 
 import time
-import math
 from abc import *
 from asyncio import Lock
 from dataclasses import dataclass, field
 from typing import List, Any, Dict, Union
 
-from tools.logging.logging_util import get_logger
+import math
 
+from config import TradeOrderSide, OrderStatus, TraderOrderType, \
+    FeePropertyColumns, ExchangeConstantsMarketPropertyColumns, \
+    ExchangeConstantsOrderColumns as ECOC
+from tools.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
-from config import TradeOrderSide, OrderStatus, TraderOrderType, SIMULATOR_LAST_PRICES_TO_CHECK, \
-    ExchangeConstantsTickersColumns as eC, FeePropertyColumns, ExchangeConstantsMarketPropertyColumns
-from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 
 """ Order class will represent an open order in the specified exchange
 In simulation it will also define rules to be filled / canceled
@@ -37,8 +37,8 @@ It is also use to store creation & fill values of the order """
 class Order:
     __metaclass__ = ABCMeta
 
-    trader: Any = field(init=True, repr=False)
-    exchange: ExchangeDispatcher = field(init=False, repr=False)
+    trader: Any = field(repr=False)
+    exchange: Any = field(init=False, repr=False)
     is_simulated: bool = field(init=False, repr=False)
     side: TradeOrderSide = None
     symbol: str = None
@@ -55,10 +55,10 @@ class Order:
     order_id: str = None
     status: OrderStatus = OrderStatus.OPEN
     order_type: TraderOrderType = None
-    timestamp: int = None
-    creation_time: int = time.time()
-    canceled_time: int = 0
-    executed_time: int = 0
+    timestamp: float = None
+    creation_time: float = time.time()
+    canceled_time: float = 0
+    executed_time: float = 0
     last_prices: List[Any] = None
     created_last_price: float = 0
     order_profitability: float = 0
@@ -122,31 +122,31 @@ class Order:
             self.filled_quantity = quantity
 
     @abstractmethod
-    async def update_order_status(self, simulated_time=False):
+    async def update_order_status(self, last_prices: list, simulated_time=False):
         """
         Update_order_status will define the rules for a simulated order to be filled / canceled
         """
         raise NotImplementedError("Update_order_status not implemented")
 
     # check_last_prices is used to collect data to perform the order update_order_status process
-    def check_last_prices(self, price, inferior, simulated_time=False):
-        if self.last_prices is not None:
-            prices = [p["price"]
-                      for p in self.last_prices[-SIMULATOR_LAST_PRICES_TO_CHECK:]
-                      if not math.isnan(p["price"]) and (p[eC.TIMESTAMP.value] >= self.creation_time or simulated_time)]
+    def check_last_prices(self, last_prices: list, price_to_check: float, inferior: bool, simulated_time=False):
+        if last_prices:
+            prices = [p[ECOC.PRICE.value]
+                      for p in last_prices
+                      if not math.isnan(p[ECOC.PRICE.value]) and (p[ECOC.TIMESTAMP.value] >= self.creation_time or simulated_time)]
 
             if prices:
                 if inferior:
-                    if float(min(prices)) < price:
+                    if float(min(prices)) < price_to_check:
                         get_logger(self.get_name()).debug(f"{self.symbol} last prices: {prices}, "
                                                           f"ask for {'inferior' if inferior else 'superior'} "
-                                                          f"to {price}")
+                                                          f"to {price_to_check}")
                         return True
                 else:
-                    if float(max(prices)) > price:
+                    if float(max(prices)) > price_to_check:
                         get_logger(self.get_name()).debug(f"{self.symbol} last prices: {prices}, "
                                                           f"ask for {'inferior' if inferior else 'superior'} "
-                                                          f"to {price}")
+                                                          f"to {price_to_check}")
                         return True
         return False
 
@@ -305,148 +305,4 @@ class Order:
         if not simulated_time or not self.last_prices:
             return time.time()
         else:
-            return self.last_prices[-1][eC.TIMESTAMP.value]
-
-
-class BuyMarketOrder(Order):
-    def __post_init__(self):
-        super().__post_init__()
-        self.side = TradeOrderSide.BUY
-
-    async def update_order_status(self, simulated_time=False):
-        if not self.trader.simulate:
-            await self.default_exchange_update_order_status()
-        else:
-            # ONLY FOR SIMULATION
-            self.status = OrderStatus.FILLED
-            self.origin_price = self.created_last_price
-            self.filled_price = self.created_last_price
-            self.filled_quantity = self.origin_quantity
-            self.total_cost = self.filled_price*self.filled_quantity
-            self.fee = self.get_computed_fee()
-            self.executed_time = self.generate_executed_time(simulated_time)
-
-
-class BuyLimitOrder(Order):
-    def __post_init__(self):
-        super().__post_init__()
-        self.side = TradeOrderSide.BUY
-
-    async def update_order_status(self, simulated_time=False):
-        if not self.trader.simulate:
-            await self.default_exchange_update_order_status()
-        else:
-            # ONLY FOR SIMULATION
-            if self.check_last_prices(self.origin_price, True, simulated_time):
-                self.status = OrderStatus.FILLED
-                self.filled_price = self.origin_price
-                self.filled_quantity = self.origin_quantity
-                self.total_cost = self.filled_price*self.filled_quantity
-                self.fee = self.get_computed_fee()
-                self.executed_time = self.generate_executed_time(simulated_time)
-
-
-class SellMarketOrder(Order):
-    def __post_init__(self):
-        super().__post_init__()
-        self.side = TradeOrderSide.SELL
-
-    async def update_order_status(self, simulated_time=False):
-        if not self.trader.simulate:
-            await self.default_exchange_update_order_status()
-        else:
-            # ONLY FOR SIMULATION
-            self.status = OrderStatus.FILLED
-            self.origin_price = self.created_last_price
-            self.filled_price = self.created_last_price
-            self.filled_quantity = self.origin_quantity
-            self.total_cost = self.filled_price*self.filled_quantity
-            self.fee = self.get_computed_fee()
-            self.executed_time = self.generate_executed_time(simulated_time)
-
-
-class SellLimitOrder(Order):
-    def __post_init__(self):
-        super().__post_init__()
-        self.side = TradeOrderSide.SELL
-
-    async def update_order_status(self, simulated_time=False):
-        if not self.trader.simulate:
-            await self.default_exchange_update_order_status()
-        else:
-            # ONLY FOR SIMULATION
-            if self.check_last_prices(self.origin_price, False, simulated_time):
-                self.status = OrderStatus.FILLED
-                self.filled_price = self.origin_price
-                self.filled_quantity = self.origin_quantity
-                self.total_cost = self.filled_price*self.filled_quantity
-                self.fee = self.get_computed_fee()
-                self.executed_time = self.generate_executed_time(simulated_time)
-
-
-class StopLossOrder(Order):
-    def __post_init__(self):
-        super().__post_init__()
-        self.side = TradeOrderSide.SELL
-
-    async def update_order_status(self, simulated_time=False):
-        if self.check_last_prices(self.origin_price, True, simulated_time):
-            self.status = OrderStatus.FILLED
-            self.filled_price = self.origin_price
-            self.filled_quantity = self.origin_quantity
-            self.total_cost = self.filled_price*self.filled_quantity
-            self.executed_time = self.generate_executed_time(simulated_time)
-            if self.trader.simulate:
-                # compute normal fees
-                self.fee = self.get_computed_fee()
-            else:
-                # force 0 fee: not a real order: only used as a trigger
-                self.fee = self.get_computed_fee(forced_value=0)
-                for order in self.linked_orders:
-                    await self.trader.cancel_order(order)
-                await self.trader.create_artificial_order(TraderOrderType.SELL_MARKET, self.symbol, self.origin_price,
-                                                          self.origin_quantity, self.origin_price,
-                                                          self.linked_portfolio)
-
-
-# TODO
-class StopLossLimitOrder(Order):
-    def __post_init__(self):
-        super().__post_init__()
-        self.side = TradeOrderSide.SELL
-
-    async def update_order_status(self, simulated_time=False):
-        pass
-
-
-# TODO
-class TakeProfitOrder(Order):
-    def __post_init__(self):
-        super().__post_init__()
-        self.side = TradeOrderSide.SELL
-
-    async def update_order_status(self, simulated_time=False):
-        pass
-
-
-# TODO
-class TakeProfitLimitOrder(Order):
-    def __post_init__(self):
-        super().__post_init__()
-        self.side = TradeOrderSide.SELL
-
-    async def update_order_status(self, simulated_time=False):
-        pass
-
-
-class OrderConstants:
-    TraderOrderTypeClasses = {
-        TraderOrderType.BUY_MARKET: BuyMarketOrder,
-        TraderOrderType.BUY_LIMIT: BuyLimitOrder,
-        TraderOrderType.TAKE_PROFIT: TakeProfitOrder,
-        TraderOrderType.TAKE_PROFIT_LIMIT: TakeProfitLimitOrder,
-        TraderOrderType.STOP_LOSS: StopLossOrder,
-        TraderOrderType.STOP_LOSS_LIMIT: StopLossLimitOrder,
-        TraderOrderType.SELL_MARKET: SellMarketOrder,
-        TraderOrderType.SELL_LIMIT: SellLimitOrder,
-    }
+            return self.last_prices[-1][ECOC.TIMESTAMP.value]

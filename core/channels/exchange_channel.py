@@ -24,24 +24,46 @@ from core.channels.channel_instances import ChannelInstances
 class ExchangeChannel(Channel):
     __metaclass__ = ABCMeta
 
+    FILTER_SIZE = 1
+
     def __init__(self, exchange_manager):
         super().__init__()
         self.exchange_manager = exchange_manager
+        self.exchange = exchange_manager.exchange
+
+        self.filter_send_counter: int = 0
+        self.should_send_filter: bool = False
 
     @abstractmethod
     async def new_consumer(self, callback: CONSUMER_CALLBACK_TYPE, **kwargs):
         raise NotImplemented("new consumer is not implemented")
 
+    def will_send(self):
+        self.filter_send_counter += 1
+
+    def has_send(self):
+        if self.should_send_filter:
+            self.filter_send_counter = 0
+            self.should_send_filter = False
+
     def get_consumers(self, symbol=CONFIG_WILDCARD) -> List:
         try:
-            return self.consumers[symbol]
+            self.should_send_filter: bool = self.filter_send_counter >= self.FILTER_SIZE
+            return [consumer
+                    for consumer in self.consumers[symbol]
+                    if not consumer.filter_size or self.should_send_filter]
         except KeyError:
             self._init_consumer_if_necessary(self.consumers, symbol)
             return self.consumers[symbol]
 
     def get_consumers_by_timeframe(self, time_frame, symbol=CONFIG_WILDCARD) -> List:
         try:
-            return self.consumers[symbol][time_frame]
+            should_send_filter: bool = self.filter_send_counter >= self.FILTER_SIZE
+            if should_send_filter:
+                self.filter_send_counter = 0
+            return [consumer
+                    for consumer in self.consumers[symbol][time_frame]
+                    if not consumer.filter_size or should_send_filter]
         except KeyError:
             self._init_consumer_if_necessary(self.consumers, symbol)
             self._init_consumer_if_necessary(self.consumers[symbol], time_frame)

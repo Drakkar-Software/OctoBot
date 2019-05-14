@@ -37,21 +37,18 @@ class ExchangeDispatcher(AbstractExchange):
 
         self.exchange = exchange_manager.exchange
         self.exchange_web_socket = exchange_manager.exchange_web_socket
+        self.exchange_personal_data = exchange_manager.exchange_personal_data
         self.symbols_data = None
 
         self.resetting_web_socket = False
 
         self.reset_symbols_data()
-        self.exchange_personal_data = ExchangePersonalData()
 
         self.logger.info(f"online with REST api"
                          f"{' and web socket api' if self.exchange_web_socket else ''}")
 
     def reset_symbols_data(self):
         self.symbols_data = {}
-
-    def reset_exchange_personal_data(self):
-        self.exchange_personal_data = ExchangePersonalData()
 
     def _web_socket_available(self):
         return self.exchange_web_socket
@@ -127,10 +124,12 @@ class ExchangeDispatcher(AbstractExchange):
             finally:
                 self.resetting_web_socket = False
 
-    def get_symbol_data(self, symbol):
-        if symbol not in self.symbols_data:
+    def get_symbol_data(self, symbol: str) -> SymbolData:
+        try:
+            return self.symbols_data[symbol]
+        except KeyError:
             self.symbols_data[symbol] = SymbolData(symbol)
-        return self.symbols_data[symbol]
+            return self.symbols_data[symbol]
 
     async def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         symbol_data = self.get_symbol_data(symbol)
