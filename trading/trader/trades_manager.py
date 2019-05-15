@@ -34,12 +34,13 @@ by subtracting portfolio_current_value and portfolio_origin_value """
 
 class TradesManager(Initializable):
 
-    def __init__(self, config, trader):
+    def __init__(self, config, trader, exchange_manager):
         super().__init__()
         self.config = config
+        self.exchange_manager = exchange_manager
         self.trader = trader
-        self.portfolio = trader.get_portfolio()
-        self.exchange = trader.get_exchange()
+        self.portfolio = None
+        self.exchange = exchange_manager.exchange
         self.logger = get_logger(f"{self.__class__.__name__}[{self.exchange.get_name()}]")
 
         self.trade_history = []
@@ -67,6 +68,7 @@ class TradesManager(Initializable):
         self.reference_market = ConfigManager.get_reference_market(self.config)
 
     async def initialize_impl(self):
+        self.portfolio = self.exchange_manager.portfolio.get_portfolio()
         await self._init_origin_portfolio_and_currencies_value()
 
     def is_in_history(self, order):

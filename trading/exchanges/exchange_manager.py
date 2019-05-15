@@ -35,7 +35,7 @@ from tools.symbol_util import split_symbol
 from tools.time_frame_manager import TimeFrameManager
 from tools.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
-from trading.exchanges.exchange_personal_data import ExchangePersonalData
+from trading.exchanges.data.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_simulator import ExchangeSimulator
 from trading.exchanges.rest_exchange import RESTExchange
 from trading.exchanges.websockets.abstract_websocket import AbstractWebSocket
@@ -79,6 +79,7 @@ class ExchangeManager(Initializable):
 
     def register_trader(self, trader):
         self.trader = trader
+        self.exchange_personal_data.initialize()
 
     def get_trader(self):
         return self.trader

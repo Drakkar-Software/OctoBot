@@ -14,20 +14,13 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import asyncio
-from concurrent.futures import CancelledError
-import copy
-from ccxt.async_support import BaseError, InsufficientFunds
-
-from backtesting import backtesting_enabled
-from config import ORDER_REFRESHER_TIME, OrderStatus, ORDER_REFRESHER_TIME_WS, ExchangeConstantsTickersColumns as eC
+from config import OrderStatus, ExchangeConstantsOrderColumns
 from tools.logging.logging_util import get_logger
-from trading.exchanges import MissingOrderException
-from trading.trader.order import Order
 from trading.trader.orders import StopLossLimitOrder, StopLossOrder
 
 
 class OrdersManager:
+    _MAX_ORDERS_COUNT = 20000
     """ OrdersManager class will perform the supervision of each open order of the exchange trader
     Data updating process is generic but a specific implementation is called for each type of order
     (TraderOrderTypeClasses)
@@ -35,116 +28,118 @@ class OrdersManager:
     This class is particularly needed when exchanges doesn't offer stop loss orders
     This class has an essential role for the trader simulator """
 
-    def __init__(self, config, trader):
-        self.config = config
-        self.keep_running = True
+    def __init__(self, config, trader, exchange_manager):
+        self.config: dict = config
+        self.exchange_manager = exchange_manager
+        self.exchange = exchange_manager.exchange
         self.trader = trader
-        self.order_list = []
-        self.last_symbol_prices = {}
-        self.recently_closed_orders = []
-        self.logger = get_logger(f"{self.__class__.__name__}{'Simulator' if self.trader.simulate else ''}"
-                                 f"[{self.trader.exchange.get_name()}]")
+        self.orders: dict = {}
+        self.logger = get_logger(f"{self.__class__.__name__} [{self.exchange.get_name()}]")
 
-        if self.trader.get_exchange().is_web_socket_available():
-            self.order_refresh_time = ORDER_REFRESHER_TIME_WS
-        else:
-            self.order_refresh_time = ORDER_REFRESHER_TIME
+    async def initialize(self):
+        pass
+
+    def has_order(self, order):
+        return order.order_id in self.orders
+
+    def upsert_orders(self, orders):
+        for order in orders:
+            self.upsert_order(order[ExchangeConstantsOrderColumns.ID.value], order)
+
+    def upsert_order(self, order_id, ccxt_order):
+        self.orders[order_id] = ccxt_order
+        if len(self.orders) > self._MAX_ORDERS_COUNT:
+            self.remove_oldest_orders(int(self._MAX_ORDERS_COUNT / 2))
+
+    def update_order_attribute(self, order_id, key, value):
+        self.orders[order_id][key] = value
+
+    def remove_oldest_orders(self, nb_to_remove):
+        time_sorted_orders = sorted(self.orders.values(),
+                                    key=lambda x: x[ExchangeConstantsOrderColumns.TIMESTAMP.value])
+        shrinked_list = [time_sorted_orders[i]
+                         for i in range(0, nb_to_remove)
+                         if (time_sorted_orders[i][ExchangeConstantsOrderColumns.STATUS.value] ==
+                             OrderStatus.OPEN.value
+                             or time_sorted_orders[i][ExchangeConstantsOrderColumns.STATUS.value]
+                             == OrderStatus.PARTIALLY_FILLED.value)]
+
+        shrinked_list += [time_sorted_orders[i] for i in range(nb_to_remove, len(time_sorted_orders))]
+        self.orders = {order[ExchangeConstantsOrderColumns.ID.value]: order for order in shrinked_list}
+
+    def get_all_orders(self, symbol=None, since=None, limit=None) -> list:
+        return self._select_orders(None, symbol, since, limit)
+
+    def get_open_orders(self, symbol=None, since=None, limit=None) -> list:
+        return self._select_orders(OrderStatus.OPEN.value, symbol, since, limit)
+
+    def get_closed_orders(self, symbol=None, since=None, limit=None) -> list:
+        return self._select_orders(OrderStatus.CLOSED.value, symbol, since, limit)
+
+    def get_order(self, order_id):
+        return self.orders[order_id]
 
     def add_order_to_list(self, order):
         if self.should_add_order(order):
-            self.order_list.append(order)
-            self.logger.debug(f"Order added to open orders (total: {len(self.order_list)} open order"
-                              f"{'s' if len(self.order_list) > 1 else ''})")
+            self.orders[order.order_id] = order
+            self.logger.debug(f"Order added to open orders (total: {len(self.orders)} open order"
+                              f"{'s' if len(self.orders) > 1 else ''})")
         else:
-            self.logger.debug(f"Order not added to open orders (already in open order: {self._order_in_list(order)}) "
-                              f"(total: {len(self.order_list)} open order{'s' if len(self.order_list) > 1 else ''})")
+            self.logger.debug(f"Order not added to open orders (already in open order: {self.has_order(order)}) "
+                              f"(total: {len(self.orders)} open order{'s' if len(self.orders) > 1 else ''})")
 
     def should_add_order(self, order):
-        return not self._order_in_list(order) and \
-               (self.trader.simulate or not self._already_has_real_or_linked_order(order))
-
-    def _order_in_list(self, order):
-        return order in self.order_list
+        return not self.has_order(order) and \
+               (self.exchange_manager.is_trader_simulated or not self._already_has_real_or_linked_order(order))
 
     def _already_has_real_or_linked_order(self, order):
-        if order.get_id() is not None:
-            return self.has_order_id_in_list(order.get_id())
+        if order.order_id is not None:
+            return self.has_order(order.order_id)
         else:
             return (isinstance(order, (StopLossLimitOrder, StopLossOrder)) and
-                    self._already_an_order_linked_to_these_real_orders(order.get_linked_orders())
-                    )
+                    self._already_an_order_linked_to_these_real_orders(order.get_linked_orders()))
 
     def _already_an_order_linked_to_these_real_orders(self, linked_orders):
         target_linked_ids = set(linked.get_id() for linked in linked_orders)
         return \
-            any(order for order in self.order_list
+            any(order for order in self.orders.values()
                 if order.linked_orders and set(linked.get_id() for linked in order.linked_orders) == target_linked_ids)
 
-    def has_order_id_in_list(self, order_id):
-        return any([order.get_id() == order_id for order in self.order_list])
-
     def get_orders_with_symbol(self, symbol):
-        return [order for order in self.order_list if order.symbol == symbol]
+        return [order for order in self.orders.values() if order.symbol == symbol]
 
     def remove_order_from_list(self, order):
         """
         Remove the specified order of the current open_order list (when the order is filled or canceled)
         """
         try:
-            if self._order_in_list(order):
-                self.order_list.remove(order)
+            if self.has_order(order):
+                self.orders.pop(order.order_id)
                 self.logger.debug(f"{order.get_order_symbol()} {order.get_name()} (ID : {order.get_id()}) "
-                                  f"removed on {self.trader.get_exchange().get_name()}")
+                                  f"removed on {self.exchange.get_name()}")
             else:
                 self.logger.warning(f"Trying to remove order from order manager which is not in order_manager list: "
                                     f"{order.get_order_symbol()} {order.get_name()} (ID : {order.get_id()} "
-                                    f"on {self.trader.get_exchange().get_name()}")
+                                    f"on {self.exchange.get_name()}")
         except Exception as e:
             self.logger.error(str(e))
             self.logger.exception(e)
 
-    def stop(self):
-        self.keep_running = False
-
-    async def _update_last_symbol_list(self, uniformize_timestamps=False):
-        """
-        Update each open order symbol with exchange data
-        """
-        updated = []
-        task_list = []
-        for order in self.order_list:
-            if isinstance(order, Order) and order.get_order_symbol() not in updated:
-                task_list.append(self._update_last_symbol_prices(order.get_order_symbol(), uniformize_timestamps))
-
-                updated.append(order.get_order_symbol())
-        try:
-            await asyncio.gather(*task_list)
-        except CancelledError:
-            self.logger.info("Update last symbol price tasks cancelled.")
-
-    async def _update_last_symbol_prices(self, symbol, uniformize_timestamps=False):
-        """
-        Ask to update a specific symbol with exchange data
-        """
-
-        exchange = self.trader.get_exchange()
-
-        if backtesting_enabled(self.config):
-            last_symbol_price = await self.trader.get_exchange().get_recent_trades(symbol)
-
-        # Exchange call when not backtesting
+    # private methods
+    def _select_orders(self, state, symbol, since, limit) -> list:
+        orders = [
+            order
+            for order in self.orders.values()
+            if (
+                    (state is None or order[ExchangeConstantsOrderColumns.STATUS.value] == state) and
+                    (symbol is None or (symbol and order[ExchangeConstantsOrderColumns.SYMBOL.value] == symbol)) and
+                    (since is None or (since and order[ExchangeConstantsOrderColumns.TIMESTAMP.value] < since))
+            )
+        ]
+        if limit is not None:
+            return orders[0:limit]
         else:
-            last_symbol_price = []
-            try:
-                last_symbol_price = await exchange.get_recent_trades(symbol)
-            except BaseError as e:
-                self.logger.warning(f"Failed to get recent trade: {e}, skipping simulated {symbol} order(s) update for "
-                                    f"this time. Next update in {self.order_refresh_time} second(s).")
-            if uniformize_timestamps and last_symbol_price:
-                timestamp_sample = last_symbol_price[0][eC.TIMESTAMP.value]
-                if exchange.get_exchange_manager().need_to_uniformize_timestamp(timestamp_sample):
-                    for order in last_symbol_price:
-                        order[eC.TIMESTAMP.value] = exchange.get_uniform_timestamp(order[eC.TIMESTAMP.value])
+            return orders
 
         # Check if exchange request failed
         if last_symbol_price:
@@ -152,9 +147,6 @@ class OrdersManager:
 
     def get_open_orders(self):
         return self.order_list
-
-    def get_recently_closed_orders(self):
-        return self.recently_closed_orders
 
     def set_order_refresh_time(self, seconds):
         self.order_refresh_time = seconds
@@ -179,7 +171,6 @@ class OrdersManager:
                                  f" filled on {self.trader.get_exchange().get_name()} "
                                  f"at {order.get_filled_price()}")
                 await order.close_order()
-                self.recently_closed_orders.append(order)
         except MissingOrderException as e:
             self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
                               f"Will force a real trader refresh. ({e})")
@@ -195,7 +186,6 @@ class OrdersManager:
         Finally ask cancellation and filling process if it is required
         """
 
-        self.recently_closed_orders = []
         failed_order_updates = []
         # update all prices
         await self._update_last_symbol_list(True)

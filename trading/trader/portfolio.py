@@ -34,11 +34,12 @@ class Portfolio(Initializable):
     AVAILABLE = "available"
     TOTAL = "total"
 
-    def __init__(self, config, trader):
+    def __init__(self, config, trader, exchange_manager):
         super().__init__()
         self.config = config
         self.trader = trader
-        self.is_simulated = trader.simulate
+        self.exchange_manager = exchange_manager
+        self.is_simulated = exchange_manager.is_simulated
         self.is_enabled = trader.enable
         self.portfolio = {}
         exchange = self.trader.get_exchange().get_name()

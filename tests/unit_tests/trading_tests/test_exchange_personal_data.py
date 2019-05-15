@@ -17,7 +17,7 @@
 import time
 
 from config import CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_USED, CONFIG_PORTFOLIO_TOTAL, OrderStatus
-from trading.exchanges.exchange_personal_data import ExchangePersonalData
+from trading.exchanges.data.exchange_personal_data import ExchangePersonalData
 
 
 class TestExchangePersonalData:

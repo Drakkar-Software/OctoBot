@@ -20,8 +20,7 @@ from ccxt.async_support import BaseError
 
 from config import ExchangeConstantsMarketPropertyColumns, DEFAULT_REST_RETRY_COUNT, EXCHANGE_ERROR_SLEEPING_TIME
 from trading.exchanges.abstract_exchange import AbstractExchange
-from trading.exchanges.exchange_personal_data import ExchangePersonalData
-from trading.exchanges.exchange_symbol_data import SymbolData
+from trading.exchanges.data.exchange_symbol_data import SymbolData
 from trading.exchanges import MissingOrderException
 
 """

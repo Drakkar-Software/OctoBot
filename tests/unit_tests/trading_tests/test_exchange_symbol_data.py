@@ -17,7 +17,7 @@
 from random import randint
 
 from config import TimeFrames, PriceIndexes
-from trading.exchanges.exchange_symbol_data import SymbolData
+from trading.exchanges.data.exchange_symbol_data import SymbolData
 
 
 class TestExchangeSymbolData:

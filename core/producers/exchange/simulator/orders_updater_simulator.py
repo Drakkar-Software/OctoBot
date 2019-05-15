@@ -22,7 +22,7 @@ from core.channels.exchange_channel import ExchangeChannel, ExchangeChannels
 from core.producers.exchange.orders_updater import OrdersUpdater
 from core.producers.exchange.simulator.exchange_updater_simulator import ExchangeUpdaterSimulator
 from trading.exchanges import MissingOrderException
-from trading.exchanges.exchange_personal_data import ExchangePersonalData
+from trading.exchanges.data.exchange_personal_data import ExchangePersonalData
 from config import OrderStatus, SIMULATOR_LAST_PRICES_TO_CHECK
 from trading.trader.order import Order
 
@@ -79,7 +79,7 @@ class OrdersUpdaterSimulator(OrdersUpdater, ExchangeUpdaterSimulator):
         Ask cancellation and filling process if it is required
         """
         failed_order_updates = []
-        for order in copy.copy(self.exchange_personal_data.get_open_orders(symbol=symbol, since=None, limit=None)):
+        for order in copy.copy(self.exchange_personal_data.orders.get_open_orders(symbol=symbol)):
             order_filled = False
             try:
                 # ask orders to update their status
