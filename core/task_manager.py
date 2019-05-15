@@ -52,16 +52,6 @@ class TaskManager:
         for crypto_currency_evaluator in self.octobot.get_crypto_currency_evaluator_list().values():
             task_list.append(crypto_currency_evaluator.get_social_evaluator_refresh_task())
 
-        for trader in self.octobot.get_exchange_traders().values():
-            if trader.is_enabled():
-                await trader.launch()
-                task_list.append(trader.start_order_manager())
-
-        for trader_simulator in self.octobot.get_exchange_trader_simulators().values():
-            if trader_simulator.is_enabled():
-                await trader_simulator.launch()
-                task_list.append(trader_simulator.start_order_manager())
-
         for updater in self.octobot.get_global_updaters_by_exchange().values():
             if self.watcher is not None:
                 updater.set_watcher(self.watcher)
