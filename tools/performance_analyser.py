@@ -18,7 +18,7 @@ import asyncio
 import os
 import psutil
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 
 from config import MINUTE_TO_SECONDS, CONFIG_DEBUG_OPTION_PERF_REFRESH_TIME_MIN
 

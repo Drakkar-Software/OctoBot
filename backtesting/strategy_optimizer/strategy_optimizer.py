@@ -31,8 +31,8 @@ from evaluator.TA.TA_evaluator import TAEvaluator
 from tentacles_management.advanced_manager import AdvancedManager
 from tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection
 from tools.data_util import DataUtil
-from tools.logging.logging_util import get_logger
-from tools.logging.logging_util import set_global_logger_level, get_global_logger_level
+from octobot_commons.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import set_global_logger_level, get_global_logger_level
 from trading.util.trading_config_util import get_activated_trading_mode
 
 CONFIG = 0

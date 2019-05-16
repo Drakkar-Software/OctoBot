@@ -19,7 +19,7 @@ import time
 
 from config import TimeFrames, CONFIG_DATA_COLLECTOR_PATH, DATA_COLLECTOR_REFRESHER_TIME, TimeFramesMinutes, \
     MINUTE_TO_SECONDS
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from backtesting.collector.data_file_manager import build_file_name, write_data_file
 
 

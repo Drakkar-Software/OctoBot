@@ -16,7 +16,7 @@
 
 from config import DICT_BULLET_TOKEN_STR
 from trading.trader.portfolio import Portfolio
-from tools.timestamp_util import convert_timestamp_to_datetime
+from octobot_commons.timestamp_util import convert_timestamp_to_datetime
 from tools.number_util import round_into_str_with_max_digits
 from telegram.utils.helpers import escape_markdown
 

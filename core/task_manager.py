@@ -21,7 +21,7 @@ from config import CONFIG_NOTIFICATION_INSTANCE, CONFIG_NOTIFICATION_GLOBAL_INFO
     NOTIFICATION_STOPPING_MESSAGE
 from services import ServiceCreator
 from tools.asyncio_tools import get_gather_wrapper, run_coroutine_in_asyncio_loop
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 
 
 class TaskManager:

@@ -20,7 +20,7 @@ from config import CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns
 from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from tools.notifications import EvaluatorNotification
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.modes.abstract_mode_creator import AbstractTradingModeCreator
@@ -455,8 +455,6 @@ class Trader(Initializable):
                                           symbol=order["symbol"],
                                           current_price=0,
                                           quantity=order["amount"],
-                                          stop_price=None,
-                                          linked_to=None,
                                           quantity_filled=order["filled"],
                                           order_id=order["id"],
                                           status=self.parse_status(order),

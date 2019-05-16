@@ -17,7 +17,7 @@
 import asyncio
 import time
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from config import *
 
 

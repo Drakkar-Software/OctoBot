@@ -1,4 +1,6 @@
 # Drakkar-Software requirements
+OctoBot-Commons
+OctoBot-Channels
 OctoBot-Tentacles-Manager>=1.0.10
 OctoBot-Websockets
 

@@ -18,7 +18,7 @@ from abc import *
 import threading
 
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from tools.asyncio_tools import run_coroutine_in_asyncio_loop
 
 

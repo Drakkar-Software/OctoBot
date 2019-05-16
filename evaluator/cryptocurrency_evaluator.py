@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 
 from backtesting import backtesting_enabled
 from evaluator.Updaters.social_evaluator_not_tasked_update_task import SocialEvaluatorNotTaskedUpdateTask

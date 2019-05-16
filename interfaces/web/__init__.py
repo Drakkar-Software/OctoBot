@@ -21,10 +21,9 @@ import time
 import flask
 import numpy
 
-from config import PriceIndexes, LOG_DATABASE, LOG_NEW_ERRORS_COUNT
+from config import PriceIndexes
 from interfaces.web.api import api
-from tools.logging import logs_database, reset_errors_count
-
+from octobot_commons.logging import logs_database, reset_errors_count, LOG_DATABASE, LOG_NEW_ERRORS_COUNT
 
 server_instance = flask.Flask(__name__)
 

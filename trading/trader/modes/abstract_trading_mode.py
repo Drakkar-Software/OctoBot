@@ -17,7 +17,7 @@
 import os
 from abc import ABCMeta, abstractmethod
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from config.config import load_config
 from tentacles_management.abstract_tentacle import AbstractTentacle
 from config import TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH, \

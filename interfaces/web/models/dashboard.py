@@ -19,7 +19,7 @@ from config import TimeFrames, PriceIndexes, PriceStrings, BOT_TOOLS_BACKTESTING
 from interfaces import get_bot, get_default_time_frame, get_global_config
 from interfaces.web import add_to_symbol_data_history, \
     get_symbol_data_history
-from tools.timestamp_util import convert_timestamps_to_datetime, convert_timestamp_to_datetime
+from octobot_commons.timestamp_util import convert_timestamps_to_datetime, convert_timestamp_to_datetime
 from tools.time_frame_manager import TimeFrameManager
 from interfaces.trading_util import get_trades_history
 from interfaces.web.models.trading import get_exchange_time_frames

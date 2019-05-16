@@ -15,7 +15,7 @@
 #  License along with this library.
 import asyncio
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 
 import ccxt.async_support as ccxt
 

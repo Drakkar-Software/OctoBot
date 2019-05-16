@@ -19,7 +19,7 @@ from trading.trader import modes
 from tentacles_management.class_inspector import get_deep_class_from_string, get_class_from_string
 from trading.trader.modes.abstract_trading_mode import AbstractTradingMode
 from tools.errors import ConfigTradingError
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from tentacles_management.advanced_manager import AdvancedManager
 
 

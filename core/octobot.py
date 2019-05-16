@@ -22,7 +22,7 @@ from core.evaluator_factory import EvaluatorFactory
 from core.exchange_factory import ExchangeFactory
 from core.initializer import Initializer
 from core.task_manager import TaskManager
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """

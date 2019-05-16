@@ -24,9 +24,9 @@ from interfaces.trading_util import has_real_and_or_simulated_traders, get_curre
     force_real_traders_refresh, get_trades_history, get_global_portfolio_currencies_amounts, get_global_profitability, \
     set_risk, set_enable_trading, cancel_all_open_orders, get_portfolio_current_value, get_open_orders, \
     get_total_paid_fees, sell_all_currencies, sell_all
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from tools.pretty_printer import PrettyPrinter
-from tools.timestamp_util import convert_timestamp_to_datetime
+from octobot_commons.timestamp_util import convert_timestamp_to_datetime
 
 
 class InterfaceBot:

@@ -16,7 +16,6 @@
 
 from interfaces import get_bot
 from trading.trader.portfolio import Portfolio
-from tools.timestamp_util import convert_timestamps_to_datetime
 
 
 def get_traders(bot=None):

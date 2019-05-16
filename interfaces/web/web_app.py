@@ -15,7 +15,7 @@
 #  License along with this library.
 from werkzeug.serving import make_server
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 import threading
 from time import sleep
 
