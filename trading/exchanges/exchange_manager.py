@@ -18,22 +18,22 @@ import time
 from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, \
     CONFIG_EXCHANGE_SECRET, CONFIG_CRYPTO_CURRENCIES, MIN_EVAL_TIME_FRAME, CONFIG_CRYPTO_PAIRS, \
     PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET, CONFIG_CRYPTO_QUOTE, CONFIG_CRYPTO_ADD
-from core.channels import RECENT_TRADES_CHANNEL, TICKER_CHANNEL, ORDER_BOOK_CHANNEL, OHLCV_CHANNEL, ORDERS_CHANNEL, \
+from octobot_channels.channels import RECENT_TRADES_CHANNEL, TICKER_CHANNEL, ORDER_BOOK_CHANNEL, OHLCV_CHANNEL, ORDERS_CHANNEL, \
     BALANCE_CHANNEL
-from core.channels.exchange_channel import ExchangeChannel, ExchangeChannels
-from core.producers.exchange.balance_updater import BalanceUpdater
-from core.producers.exchange.ohlcv_updater import OHLCVUpdater
-from core.producers.exchange.order_book_updater import OrderBookUpdater
-from core.producers.exchange.orders_updater import OrdersUpdater
-from core.producers.exchange.recent_trade_updater import RecentTradeUpdater
-from core.producers.exchange.simulator.orders_updater_simulator import OrdersUpdaterSimulator
-from core.producers.exchange.ticker_updater import TickerUpdater
+from octobot_channels.channels.exchange_channel import ExchangeChannel, ExchangeChannels
+from octobot_channels.producers.exchange.balance_updater import BalanceUpdater
+from octobot_channels.producers.exchange.ohlcv_updater import OHLCVUpdater
+from octobot_channels.producers.exchange.order_book_updater import OrderBookUpdater
+from octobot_channels.producers.exchange.orders_updater import OrdersUpdater
+from octobot_channels.producers.exchange.recent_trade_updater import RecentTradeUpdater
+from octobot_channels.producers.exchange.simulator.orders_updater_simulator import OrdersUpdaterSimulator
+from octobot_channels.producers.exchange.ticker_updater import TickerUpdater
 from tools.config_manager import ConfigManager
 from tools.initializable import Initializable
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
 from tools.time_frame_manager import TimeFrameManager
-from tools.timestamp_util import is_valid_timestamp
+from octobot_commons.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
 from trading.exchanges.data.exchange_personal_data import ExchangePersonalData
 from trading.exchanges.exchange_simulator import ExchangeSimulator

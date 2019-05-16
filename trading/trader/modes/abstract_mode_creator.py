@@ -13,14 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import asyncio
 from abc import *
 from copy import deepcopy
 import math
 
 from config import CURRENCY_DEFAULT_MAX_PRICE_DIGITS, ORDER_CREATION_LAST_TRADES_TO_USE, EvaluatorStates
 from config import ExchangeConstantsMarketStatusColumns as Ecmsc
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from tools.initializable import Initializable

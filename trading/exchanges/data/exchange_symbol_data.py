@@ -19,7 +19,7 @@ import time
 import numpy as np
 
 from config import PriceIndexes, TimeFramesMinutes, MINUTE_TO_SECONDS
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 
 
 class SymbolData:

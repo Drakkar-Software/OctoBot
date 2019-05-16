@@ -15,7 +15,7 @@
 #  License along with this library.
 
 from config import OrderStatus, ExchangeConstantsOrderColumns
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from trading.trader.orders import StopLossLimitOrder, StopLossOrder
 
 

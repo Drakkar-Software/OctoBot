@@ -24,7 +24,7 @@ from config import SIMULATOR_STATE_SAVE_FILE, SIMULATOR_INITIAL_STARTUP_PORTFOLI
     CURRENT_PORTFOLIO_STRING, CONFIG_TRADING, CONFIG_ENABLED_PERSISTENCE, CONFIG_TRADER_REFERENCE_MARKET
 from config.config import load_config
 from tools.config_manager import ConfigManager
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from trading.trader.portfolio import Portfolio
 
 

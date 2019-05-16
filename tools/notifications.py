@@ -22,7 +22,7 @@ from config import CONFIG_CATEGORY_NOTIFICATION, CONFIG_CATEGORY_SERVICES, \
     CONFIG_NOTIFICATION_TRADES, CONFIG_NOTIFICATION_TYPE, CONFIG_WEB
 from interfaces.web import add_notification
 from services import TwitterService, TelegramService, WebService
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from tools.pretty_printer import PrettyPrinter
 
 

@@ -16,7 +16,7 @@
 
 from config import CONFIG_CATEGORY_SERVICES, CONFIG_SERVICE_INSTANCE
 from services.abstract_service import AbstractService
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 
 
 class ServiceCreator:

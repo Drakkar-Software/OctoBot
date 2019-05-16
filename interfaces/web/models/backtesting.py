@@ -17,7 +17,7 @@
 from copy import copy
 
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from backtesting.collector.data_file_manager import get_all_available_data_files, get_file_description, delete_data_file
 from backtesting.backtester import Backtester
 from backtesting.collector.data_collector import DataCollector

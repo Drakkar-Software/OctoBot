@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 
 LOGGER = get_logger(__name__)
 EOL = "\n"

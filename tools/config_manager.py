@@ -15,7 +15,7 @@
 #  License along with this library.
 
 import json
-from tools.logging.logging_util import get_logger as get_util_logger
+from octobot_commons.logging.logging_util import get_logger as get_util_logger
 import os
 import shutil
 from copy import copy, deepcopy

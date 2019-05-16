@@ -50,7 +50,7 @@ else:
     # if compatible version, can proceed with imports
     from config import PlatformsName
     from tools.os_util import get_os
-    from tools.logging.logging_util import get_logger
+    from octobot_commons.logging.logging_util import get_logger
 
     # check sudo rights
     if get_os() is not PlatformsName.WINDOWS and os.getuid() == 0:

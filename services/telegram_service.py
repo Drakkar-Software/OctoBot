@@ -22,7 +22,7 @@ from config import CONFIG_TOKEN, CONFIG_USERNAMES_WHITELIST, CONFIG_CATEGORY_SER
     CONFIG_SERVICE_INSTANCE, MESSAGE_PARSE_MODE, CONFIG_INTERFACES_TELEGRAM, CONFIG_INTERFACES, CONFIG_ENABLED_OPTION
 from interfaces.bots.telegram.bot import TelegramApp
 from services.abstract_service import AbstractService
-from tools.logging.logging_util import set_logging_level
+from octobot_commons.logging.logging_util import set_logging_level
 
 
 class TelegramService(AbstractService):

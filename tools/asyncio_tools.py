@@ -17,7 +17,7 @@
 import asyncio
 
 from config import DEFAULT_FUTURE_TIMEOUT
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 
 
 LOGGER = get_logger("asyncio_tools")

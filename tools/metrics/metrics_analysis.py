@@ -18,7 +18,7 @@ import requests
 import json
 from datetime import datetime, timedelta
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from config import METRICS_URL, MetricsFields, COMMUNITY_TOPS_COUNT, METRICS_ROUTE_COMMUNITY
 from tools.config_manager import ConfigManager
 

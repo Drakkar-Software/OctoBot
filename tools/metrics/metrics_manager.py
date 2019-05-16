@@ -27,7 +27,7 @@ from config import CONFIG_METRICS_BOT_ID, METRICS_URL, METRICS_ROUTE_GEN_BOT_ID,
     METRICS_ROUTE_UPTIME, METRICS_ROUTE_REGISTER, TIMER_BEFORE_METRICS_REGISTRATION_SECONDS, \
     TIMER_BETWEEN_METRICS_UPTIME_UPDATE, CONFIG_CATEGORY_NOTIFICATION, CONFIG_NOTIFICATION_TYPE, CONFIG_METRICS, \
     CONFIG_ENABLED_OPTION, MetricsFields
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from tools.config_manager import ConfigManager
 from tools.os_util import get_current_platform, get_octobot_type
 

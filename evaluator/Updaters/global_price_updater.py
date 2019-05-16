@@ -19,7 +19,7 @@ import time
 import copy
 from concurrent.futures import CancelledError
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from backtesting import BacktestingEndedException, backtesting_enabled
 from config import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPING_TIME
 from tools.time_frame_manager import TimeFrameManager
@@ -196,7 +196,7 @@ class GlobalPriceUpdater:
             # ex: target_candle_date = "8/04/19 06"
             target_candle_date = ""
             if target_candle_date:
-                from tools.timestamp_util import convert_timestamp_to_datetime
+                from octobot_commons.timestamp_util import convert_timestamp_to_datetime
                 if target_candle_date in convert_timestamp_to_datetime(numpy_candle_data[0][-1]):
                     print("found candle")
 

@@ -27,7 +27,7 @@ from backtesting.collector.data_collector import DataCollector
 from config import TENTACLES_DEFAULT_BRANCH, TENTACLES_FORCE_CONFIRM_PARAM
 from config.config import encrypt
 from interfaces import get_bot
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from tentacles_manager.tentacle_manager import TentacleManager
 
 

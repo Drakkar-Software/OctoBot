@@ -17,7 +17,7 @@
 import json
 import requests
 
-from tools.logging.logging_util import get_logger
+from octobot_commons.logging.logging_util import get_logger
 from config import GITHUB_RAW_CONTENT_URL, ASSETS_BRANCH, GITHUB_REPOSITORY, EXTERNAL_RESOURCES_FILE
 
 
