@@ -140,9 +140,10 @@ class GlobalPriceUpdater:
         for symbol_evaluator in sort_symbol_evaluators:
             await symbol_evaluator.finalize(self.exchange)
 
-    async def force_refresh_data(self, time_frame, symbol):
+    async def force_refresh_data(self, time_frame, symbol, update_last_update_time=False):
         if not self.in_backtesting:
-            await self._refresh_time_frame_data(time_frame, symbol, notify=False)
+            await self._refresh_time_frame_data(time_frame, symbol, notify=False,
+                                                update_last_update_time=update_last_update_time)
 
     # calculate task sleep time between each refresh
     async def _update_pause(self, now):
@@ -166,10 +167,11 @@ class GlobalPriceUpdater:
         order_manager = self.exchange.get_exchange_manager().get_trader().get_order_manager()
         await order_manager.force_update_order_status(simulated_time=True)
 
-    async def _refresh_time_frame_data(self, time_frame, symbol, notify=True):
+    async def _refresh_time_frame_data(self, time_frame, symbol, notify=True, update_last_update_time=True):
         try:
             await self._refresh_data(time_frame, symbol, notify=notify)
-            self.time_frame_last_update[time_frame][symbol] = time.time()
+            if update_last_update_time:
+                self.time_frame_last_update[time_frame][symbol] = time.time()
         except CancelledError as e:
             raise e
         except Exception as e:
