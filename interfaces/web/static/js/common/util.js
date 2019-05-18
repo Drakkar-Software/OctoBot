@@ -102,8 +102,13 @@ function handle_numbers(number) {
     const numb_repr = Number(number);
     const numb_str = numb_repr.toString();
     let numb_digits = numb_str.length;
-    if (numb_str.indexOf('e-') > -1){
-        numb_digits = Number(numb_str.split("e-")[1]) + 1;
+    const exp_index = numb_str.indexOf('e-');
+    if (exp_index > -1){
+        let decimals = 0;
+        if (numb_str.indexOf('.') > -1) {
+            decimals = numb_str.substr(0, exp_index).split(".")[1].length;
+        }
+        numb_digits = Number(numb_str.split("e-")[1]) + decimals;
     }
     let numb = numb_repr.toFixed(numb_digits);
 
