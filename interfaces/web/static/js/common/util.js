@@ -99,7 +99,13 @@ function generic_request_failure_callback(updated_data, update_url, dom_root_ele
 function handle_numbers(number) {
     let regEx2 = /[0]+$/;
     let regEx3 = /[.]$/;
-    let numb = Number(number).toFixed(toString(number).length);
+    const numb_repr = Number(number);
+    const numb_str = numb_repr.toString();
+    let numb_digits = numb_str.length;
+    if (numb_str.indexOf('e-') > -1){
+        numb_digits = Number(numb_str.split("e-")[1]) + 1;
+    }
+    let numb = numb_repr.toFixed(numb_digits);
 
     if (numb.indexOf('.')>-1){
         numb = numb.replace(regEx2,'');  // Remove trailing 0's
