@@ -18,11 +18,11 @@ import threading
 
 
 from interfaces import get_bot
-from tentacles_management.advanced_manager import AdvancedManager
+from octobot_commons.tentacles_management import AdvancedManager
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator import Strategies
-from tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection
+from octobot_commons.tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection
 from tools.time_frame_manager import TimeFrameManager
 from config import BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
 from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer

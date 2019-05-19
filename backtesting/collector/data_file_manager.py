@@ -20,7 +20,7 @@ import gzip
 from os.path import basename, isfile, join, splitext
 from os import listdir, remove
 
-from tools.symbol_util import merge_currencies
+from octobot_commons.symbol_util import merge_currencies
 from tools.time_frame_manager import TimeFrameManager
 from config import CONFIG_DATA_COLLECTOR_PATH, TimeFrames, BacktestingDataFormats
 

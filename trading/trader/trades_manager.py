@@ -21,9 +21,9 @@ from config import CONFIG_CRYPTO_CURRENCIES, FeePropertyColumns, ExchangeConstan
     WATCHED_MARKETS_INITIAL_STARTUP_VALUES, SIMULATOR_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO, \
     SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE, REAL_INITIAL_STARTUP_PORTFOLIO_VALUE
 from tools.config_manager import ConfigManager
-from tools.initializable import Initializable
+from octobot_commons.initializable import Initializable
 from octobot_commons.logging.logging_util import get_logger
-from tools.symbol_util import merge_currencies, split_symbol
+from octobot_commons.symbol_util import merge_currencies, split_symbol
 from trading.exchanges.exchange_simulator import ExchangeSimulator
 from trading.trader.portfolio import Portfolio
 

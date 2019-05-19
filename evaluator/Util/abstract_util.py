@@ -17,7 +17,7 @@
 from abc import ABCMeta
 
 from config import TENTACLE_UTIL_FOLDER, TENTACLES_EVALUATOR_PATH
-from tentacles_management.abstract_tentacle import AbstractTentacle
+from octobot_commons.tentacles_management.abstract_tentacle import AbstractTentacle
 
 
 class AbstractUtil(AbstractTentacle):

@@ -17,9 +17,9 @@
 import time
 from abc import ABCMeta, abstractmethod
 
-from tentacles_management.abstract_tentacle import AbstractTentacle
 from config import START_PENDING_EVAL_NOTE, START_EVAL_PERTINENCE, TENTACLES_EVALUATOR_PATH, CONFIG_EVALUATOR, \
     INIT_EVAL_NOTE, EVALUATOR_EVAL_DEFAULT_TYPE
+from octobot_commons.tentacles_management.abstract_tentacle import AbstractTentacle
 
 from tools.config_manager import ConfigManager
 

@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
+from octobot_commons.tentacles_management.advanced_manager import AdvancedManager
 from octobot_commons.logging.logging_util import get_logger
 
 from config import CONFIG_TIME_FRAME, CONFIG_EVALUATORS_WILDCARD
@@ -21,7 +21,6 @@ from evaluator.RealTime import RealTimeEvaluator, RealTimeExchangeEvaluator
 from evaluator.Social import SocialEvaluator
 from evaluator.Strategies import StrategiesEvaluator
 from evaluator.TA import TAEvaluator
-from tentacles_management.advanced_manager import AdvancedManager
 from tools.time_frame_manager import TimeFrameManager
 from services.Dispatchers.dispatcher_creator import DispatcherCreator
 

@@ -26,7 +26,7 @@ from config.config import load_config
 from core.octobot import OctoBot
 from services.web_service import WebService
 from octobot_commons.logging.logging_util import get_logger, BotLogger
-from tools.symbol_util import split_symbol
+from octobot_commons.symbol_util import split_symbol
 
 
 def create_blank_config_using_loaded_one(loaded_config, other_config=None):

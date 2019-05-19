@@ -19,7 +19,7 @@ from config import CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType, \
     ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns
 from tools.config_manager import ConfigManager
-from tools.initializable import Initializable
+from octobot_commons.initializable import Initializable
 from octobot_commons.logging.logging_util import get_logger
 from tools.notifications import EvaluatorNotification
 from tools.pretty_printer import PrettyPrinter

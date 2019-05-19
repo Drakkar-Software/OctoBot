@@ -19,7 +19,7 @@ import numpy as np
 
 from config import TimeFrames, PriceIndexes
 from trading.exchanges.exchange_manager import ExchangeManager
-from tools.initializable import Initializable
+from octobot_commons.initializable import Initializable
 
 """
 Class containing data with known moves

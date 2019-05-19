@@ -18,7 +18,7 @@
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.Strategies import StrategiesEvaluator
 from tests.test_utils.config import load_test_config
-from tentacles_management.advanced_manager import AdvancedManager
+from octobot_commons.tentacles_management import AdvancedManager
 from config import TimeFrames, CONFIG_EVALUATORS_WILDCARD
 from evaluator.evaluator import Evaluator
 from evaluator.TA import TAEvaluator

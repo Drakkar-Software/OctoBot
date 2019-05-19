@@ -24,7 +24,7 @@ from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator
 from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator import Evaluator
 from tests.test_utils.config import load_test_config
-from tentacles_management.advanced_manager import AdvancedManager
+from octobot_commons.tentacles_management import AdvancedManager
 from trading.trader.portfolio import Portfolio
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from evaluator.evaluator_task_manager import EvaluatorTaskManager

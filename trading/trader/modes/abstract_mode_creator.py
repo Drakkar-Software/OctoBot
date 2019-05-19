@@ -20,9 +20,9 @@ import math
 from config import CURRENCY_DEFAULT_MAX_PRICE_DIGITS, ORDER_CREATION_LAST_TRADES_TO_USE, EvaluatorStates
 from config import ExchangeConstantsMarketStatusColumns as Ecmsc
 from octobot_commons.logging.logging_util import get_logger
-from tools.symbol_util import split_symbol
+from octobot_commons.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
-from tools.initializable import Initializable
+from octobot_commons.initializable import Initializable
 from trading.trader.portfolio import Portfolio
 from trading.trader.sub_portfolio import SubPortfolio
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
