@@ -26,7 +26,7 @@ from config import CONFIG_EXCHANGES, CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET
     ExchangeConstantsMarketPropertyColumns, CONFIG_DEFAULT_FEES, ExchangeConstantsOrderColumns as ecoc, OrderStatus
 from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
-from tools.initializable import Initializable
+from octobot_commons.initializable import Initializable
 from tools.dict_util import get_value_or_default
 
 

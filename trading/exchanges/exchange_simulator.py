@@ -28,7 +28,7 @@ from config import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACK
     ExchangeConstantsMarketPropertyColumns, CONFIG_SIMULATOR_FEES_TAKER, CONFIG_SIMULATOR_FEES_WITHDRAW, \
     BACKTESTING_DATA_OHLCV, BACKTESTING_DATA_TRADES, ExchangeConstantsOrderColumns
 from tools.time_frame_manager import TimeFrameManager
-from tools.symbol_util import split_symbol
+from octobot_commons.symbol_util import split_symbol
 from tools.data_util import DataUtil
 from tools.number_util import round_into_str_with_max_digits
 from tools.config_manager import ConfigManager

@@ -30,7 +30,7 @@
 from config import DEFAULT_REFERENCE_MARKET, CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET
 from config.config import load_config
 from tools.config_manager import ConfigManager
-from tools.symbol_util import split_symbol
+from octobot_commons.symbol_util import split_symbol
 
 
 def test_get_market_pair():

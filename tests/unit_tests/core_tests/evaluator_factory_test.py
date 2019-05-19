@@ -22,7 +22,7 @@ from evaluator.symbol_evaluator import SymbolEvaluator
 from tests.test_utils.config import load_test_config
 
 # All test coroutines will be treated as marked.
-from tools.symbol_util import split_symbol
+from octobot_commons.symbol_util import split_symbol
 
 pytestmark = pytest.mark.asyncio
 

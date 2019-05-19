@@ -26,7 +26,7 @@ from config import TradeOrderSide, OrderStatus, TraderOrderType, \
     FeePropertyColumns, ExchangeConstantsMarketPropertyColumns, \
     ExchangeConstantsOrderColumns as ECOC
 from octobot_commons.logging.logging_util import get_logger
-from tools.symbol_util import split_symbol
+from octobot_commons.symbol_util import split_symbol
 
 """ Order class will represent an open order in the specified exchange
 In simulation it will also define rules to be filled / canceled

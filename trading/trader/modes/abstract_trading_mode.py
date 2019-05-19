@@ -19,12 +19,12 @@ from abc import ABCMeta, abstractmethod
 
 from octobot_commons.logging.logging_util import get_logger
 from config.config import load_config
-from tentacles_management.abstract_tentacle import AbstractTentacle
 from config import TRADING_MODE_REQUIRED_STRATEGIES, TENTACLES_TRADING_PATH, TENTACLES_TRADING_MODE_PATH, \
     TRADING_MODE_REQUIRED_STRATEGIES_MIN_COUNT, TENTACLE_DEFAULT_CONFIG, OrderStatus
 from evaluator import Strategies
-from tentacles_management.advanced_manager import AdvancedManager
-from tentacles_management.class_inspector import get_deep_class_from_string
+from octobot_commons.tentacles_management.abstract_tentacle import AbstractTentacle
+from octobot_commons.tentacles_management.advanced_manager import AdvancedManager
+from octobot_commons.tentacles_management.class_inspector import get_deep_class_from_string
 from tools.errors import TentacleNotFound
 
 

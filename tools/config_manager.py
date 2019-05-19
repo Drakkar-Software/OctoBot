@@ -31,7 +31,7 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     DEFAULT_REFERENCE_MARKET, CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, \
     CONFIG_METRICS, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS, \
     TENTACLE_DEFAULT_FOLDER, CONFIG_EXCHANGE_ENCRYPTED_VALUES
-from tools.symbol_util import split_symbol
+from octobot_commons.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
 from tools.errors import ConfigEvaluatorError, ConfigTradingError
@@ -327,7 +327,7 @@ class ConfigManager:
 
     @staticmethod
     def _update_activation_config(to_update_data, current_config, config_file_path, config_file, deactivate_others):
-        from tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection
+        from octobot_commons.tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection
         something_changed = False
         for element_name, activated in to_update_data.items():
             if element_name in current_config:

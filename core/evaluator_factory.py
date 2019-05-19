@@ -23,7 +23,7 @@ from evaluator.evaluator_creator import EvaluatorCreator
 from evaluator.evaluator_task_manager import EvaluatorTaskManager
 from evaluator.symbol_evaluator import SymbolEvaluator
 from services.Dispatchers.dispatcher_creator import DispatcherCreator
-from tentacles_management.class_inspector import evaluator_parent_inspection, get_class_from_string
+from octobot_commons.tentacles_management.class_inspector import evaluator_parent_inspection, get_class_from_string
 from octobot_commons.logging.logging_util import get_logger
 
 

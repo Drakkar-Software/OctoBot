@@ -21,17 +21,17 @@ from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFI
 from octobot_channels.channels import RECENT_TRADES_CHANNEL, TICKER_CHANNEL, ORDER_BOOK_CHANNEL, OHLCV_CHANNEL, ORDERS_CHANNEL, \
     BALANCE_CHANNEL
 from octobot_channels.channels.exchange_channel import ExchangeChannel, ExchangeChannels
-from octobot_channels.producers.exchange.balance_updater import BalanceUpdater
-from octobot_channels.producers.exchange.ohlcv_updater import OHLCVUpdater
-from octobot_channels.producers.exchange.order_book_updater import OrderBookUpdater
-from octobot_channels.producers.exchange.orders_updater import OrdersUpdater
-from octobot_channels.producers.exchange.recent_trade_updater import RecentTradeUpdater
-from octobot_channels.producers.exchange.simulator.orders_updater_simulator import OrdersUpdaterSimulator
-from octobot_channels.producers.exchange.ticker_updater import TickerUpdater
+from octobot_trading.producers.exchange.balance_updater import BalanceUpdater
+from octobot_trading.producers.exchange.ohlcv_updater import OHLCVUpdater
+from octobot_trading.producers.exchange.order_book_updater import OrderBookUpdater
+from octobot_trading.producers.exchange.orders_updater import OrdersUpdater
+from octobot_trading.producers.exchange.recent_trade_updater import RecentTradeUpdater
+from octobot_trading.producers.exchange.simulator.orders_updater_simulator import OrdersUpdaterSimulator
+from octobot_trading.producers.exchange.ticker_updater import TickerUpdater
 from tools.config_manager import ConfigManager
-from tools.initializable import Initializable
+from octobot_commons.initializable import Initializable
 from octobot_commons.logging.logging_util import get_logger
-from tools.symbol_util import split_symbol
+from octobot_commons.symbol_util import split_symbol
 from tools.time_frame_manager import TimeFrameManager
 from octobot_commons.timestamp_util import is_valid_timestamp
 from trading.exchanges.exchange_dispatcher import ExchangeDispatcher
