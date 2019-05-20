@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot
+#  Drakkar-Software OctoBot-Trading
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -13,3 +13,17 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from abc import ABCMeta
+
+from octobot_channels.channels.exchange.exchange_channel import ExchangeChannel
+from octobot_trading.producers.exchange.exchange_updater import ExchangeUpdater
+
+
+class ExchangeUpdaterSimulator(ExchangeUpdater):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, channel: ExchangeChannel):
+        super().__init__()
+        self.channel = channel
+        self.exchange_manager = channel.exchange_manager
+        self.exchange = channel.exchange_manager.exchange

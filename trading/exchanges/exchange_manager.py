@@ -20,14 +20,14 @@ from config import CONFIG_TRADER, CONFIG_ENABLED_OPTION, CONFIG_EXCHANGES, CONFI
     PriceIndexes, CONFIG_WILDCARD, CONFIG_EXCHANGE_WEB_SOCKET, CONFIG_CRYPTO_QUOTE, CONFIG_CRYPTO_ADD
 from octobot_channels.channels import RECENT_TRADES_CHANNEL, TICKER_CHANNEL, ORDER_BOOK_CHANNEL, OHLCV_CHANNEL, ORDERS_CHANNEL, \
     BALANCE_CHANNEL
-from octobot_channels.channels.exchange_channel import ExchangeChannel, ExchangeChannels
-from octobot_trading.producers.exchange.balance_updater import BalanceUpdater
-from octobot_trading.producers.exchange.ohlcv_updater import OHLCVUpdater
-from octobot_trading.producers.exchange.order_book_updater import OrderBookUpdater
-from octobot_trading.producers.exchange.orders_updater import OrdersUpdater
-from octobot_trading.producers.exchange.recent_trade_updater import RecentTradeUpdater
-from octobot_trading.producers.exchange.simulator.orders_updater_simulator import OrdersUpdaterSimulator
-from octobot_trading.producers.exchange.ticker_updater import TickerUpdater
+from octobot_channels.channels.exchange.exchange_channel import ExchangeChannel, ExchangeChannels
+from octobot_trading.producers.balance_updater import BalanceUpdater
+from octobot_trading.producers.ohlcv_updater import OHLCVUpdater
+from octobot_trading.producers.order_book_updater import OrderBookUpdater
+from octobot_trading.producers.orders_updater import OrdersUpdater
+from octobot_trading.producers.recent_trade_updater import RecentTradeUpdater
+from octobot_trading.producers.simulator.orders_updater_simulator import OrdersUpdaterSimulator
+from octobot_trading.producers.ticker_updater import TickerUpdater
 from tools.config_manager import ConfigManager
 from octobot_commons.initializable import Initializable
 from octobot_commons.logging.logging_util import get_logger

@@ -20,7 +20,7 @@ from typing import List, Dict
 
 from config import TimeFrames, TimeFramesMinutes, MINUTE_TO_SECONDS
 from octobot_channels.channels import TICKER_CHANNEL, ORDER_BOOK_CHANNEL, RECENT_TRADES_CHANNEL
-from octobot_channels.channels.exchange_channel import ExchangeChannels
+from octobot_channels.channels.exchange.exchange_channel import ExchangeChannels
 from octobot_websockets.callback import TradeCallback, BookCallback, TickerCallback
 from octobot_websockets.constants import TICKER, L2_BOOK, TRADES, UNSUPPORTED
 from octobot_websockets.feeds.bitmex import Bitmex

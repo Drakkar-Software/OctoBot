@@ -19,9 +19,9 @@ from copy import copy
 from ccxt.async_support import BaseError
 
 from config import ExchangeConstantsMarketPropertyColumns, DEFAULT_REST_RETRY_COUNT, EXCHANGE_ERROR_SLEEPING_TIME
+from octobot_trading.producers import MissingOrderException
 from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.data.exchange_symbol_data import SymbolData
-from trading.exchanges import MissingOrderException
 
 """
 This class supervise exchange call by :
