@@ -45,7 +45,7 @@ class OrderBookCallBack(WebsocketCallBack, OrderBookProducer):
                                                                    bids,
                                                                    timestamp)), get_bot().get_async_loop())
         except Exception as e:
-            self.logger.exception(f"Callaback failed : {e}")
+            self.logger.error(f"Callaback failed : {e}")
 
 
 class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
@@ -62,7 +62,7 @@ class RecentTradesCallBack(WebsocketCallBack, RecentTradeProducer):
                                                                      ECOC.PRICE.value: price,
                                                                      ECOC.TIMESTAMP.value: timestamp}), get_bot().get_async_loop())
         except Exception as e:
-            self.logger.exception(f"Callaback failed : {e}")
+            self.logger.error(f"Callaback failed : {e}")
 
 
 class TickersCallBack(WebsocketCallBack, TickerProducer):
@@ -79,7 +79,7 @@ class TickersCallBack(WebsocketCallBack, TickerProducer):
                                                                last,
                                                                timestamp)), get_bot().get_async_loop())
         except Exception as e:
-            self.logger.exception(f"Callaback failed : {e}")
+            self.logger.error(f"Callaback failed : {e}")
 
 
 class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
@@ -95,4 +95,4 @@ class OHLCVCallBack(WebsocketCallBack, OHLCVProducer):
                                                            time_frame=self.time_frame,
                                                            candle=data[symbol]), get_bot().get_async_loop())
         except Exception as e:
-            self.logger.exception(f"Callaback failed : {e}")
+            self.logger.error(f"Callaback failed : {e}")
