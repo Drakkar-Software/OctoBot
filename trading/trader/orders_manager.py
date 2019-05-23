@@ -13,10 +13,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from octobot_trading.orders.stop_loss_limit_order import StopLossLimitOrder
+from octobot_trading.orders.stop_loss_order import StopLossOrder
 
 from config import OrderStatus, ExchangeConstantsOrderColumns
 from octobot_commons.logging.logging_util import get_logger
-from trading.trader.orders import StopLossLimitOrder, StopLossOrder
 
 
 class OrdersManager:
