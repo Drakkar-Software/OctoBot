@@ -96,9 +96,8 @@ class OrdersManager:
     def _already_has_real_or_linked_order(self, order):
         if order.order_id is not None:
             return self.has_order(order.order_id)
-        else:
-            return (isinstance(order, (StopLossLimitOrder, StopLossOrder)) and
-                    self._already_an_order_linked_to_these_real_orders(order.get_linked_orders()))
+        return (isinstance(order, (StopLossLimitOrder, StopLossOrder)) and
+                self._already_an_order_linked_to_these_real_orders(order.linked_orders))
 
     def _already_an_order_linked_to_these_real_orders(self, linked_orders):
         target_linked_ids = set(linked.get_id() for linked in linked_orders)
@@ -139,8 +138,7 @@ class OrdersManager:
         ]
         if limit is not None:
             return orders[0:limit]
-        else:
-            return orders
+        return orders
 
         # Check if exchange request failed
         if last_symbol_price:

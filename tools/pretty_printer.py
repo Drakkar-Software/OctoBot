@@ -87,8 +87,7 @@ class PrettyPrinter:
             result_str = DICT_BULLET_TOKEN_STR
             return f"{result_str}{c}" \
                 f"{DICT_BULLET_TOKEN_STR.join(f'{value} {key}' for key, value in dict_content.items())}{c}"
-        else:
-            return default
+        return default
 
     @staticmethod
     def round_with_decimal_count(number, max_digits=8):
@@ -106,13 +105,11 @@ class PrettyPrinter:
                 if "." in number_str:
                     number_str = number_str.rstrip("0.")
                 return number_str
-            else:
-                return "{:f}".format(number).split(".")[0]
+            return "{:f}".format(number).split(".")[0]
 
     # return markers for italic, bold and code
     @staticmethod
     def get_markets(markdown=False):
         if markdown:
             return "_", "*", "`"
-        else:
-            return "", "", ""
+        return "", "", ""

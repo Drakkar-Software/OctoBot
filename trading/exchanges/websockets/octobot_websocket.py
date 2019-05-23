@@ -228,6 +228,8 @@ class OctoBotWebSocketClient(AbstractWebSocket):
             return time_frame.value * MINUTE_TO_SECONDS
         elif isinstance(time_frame, int):
             return time_frame * MINUTE_TO_SECONDS
+        else:
+            return time_frame
 
     @staticmethod
     def parse_order_status(status):

@@ -126,10 +126,8 @@ class PreviousTradingStateManager:
         if self._load_previous_state_metadata(target_exchanges, config):
             if ConfigManager.get_trader_simulator_enabled(config):
                 return self._load_previous_state_portfolios(target_exchanges)
-            else:
-                return True
-        else:
-            return False
+            return True
+        return False
 
     def _load_previous_state_metadata(self, target_exchanges, config):
         if path.isfile(self.save_file):
@@ -241,13 +239,12 @@ class PreviousTradingStateManager:
             left_split_line = line.split("PortfolioSimulator[")
             right_split_line = left_split_line[1].split("]]")
             return f"{right_split_line[0]}]", True
-        else:
-            split_pattern = regex.compile(r"\[|]")
-            split_line = split_pattern.split(line)
-            if len(split_line) == 3:
-                is_simulator = "Simulator" in split_line[0]
-                return split_line[1], is_simulator
-            return None, None
+        split_pattern = regex.compile(r"\[|]")
+        split_line = split_pattern.split(line)
+        if len(split_line) == 3:
+            is_simulator = "Simulator" in split_line[0]
+            return split_line[1], is_simulator
+        return None, None
 
     def _extract_portfolio(self, line):
         split_line = line.split(CURRENT_PORTFOLIO_STRING)
@@ -266,6 +263,5 @@ class PreviousTradingStateManager:
         for key, val in read_portfolio.items():
             if not (Portfolio.AVAILABLE in val and Portfolio.TOTAL in val):
                 return None
-            else:
-                portfolio[key] = val[Portfolio.TOTAL]
+            portfolio[key] = val[Portfolio.TOTAL]
         return portfolio

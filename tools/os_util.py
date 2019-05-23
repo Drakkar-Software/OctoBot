@@ -38,8 +38,7 @@ def get_octobot_type():
         if execution_arg.endswith(".py"):
             if _is_on_docker():
                 return OctoBotTypes.DOCKER.value
-            else:
-                return OctoBotTypes.PYTHON.value
+            return OctoBotTypes.PYTHON.value
         # sys.argv[0] is the name of the binary when using a binary version: ends with nothing or .exe"
         return OctoBotTypes.BINARY.value
     except IndexError:
