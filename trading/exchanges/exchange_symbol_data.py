@@ -136,7 +136,12 @@ class SymbolData:
         return True if self.symbol_ticker is not None else False
 
     def get_symbol_prices(self, time_frame, limit=None, return_list=False):
-        return self.get_candle_data(time_frame).get_symbol_prices(limit, return_list)
+        try:
+            return self.get_candle_data(time_frame).get_symbol_prices(limit, return_list)
+        except AttributeError:
+            # if get_candle_data returned None: no candles on this timeframe
+            self.logger.error(f"Trying retrieve candle data on {time_frame}: no candle for this time frame.")
+            return None
 
     def recent_trades_are_initialized(self):
         return self.are_recent_trades_initialized
