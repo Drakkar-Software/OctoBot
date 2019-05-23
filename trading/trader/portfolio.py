@@ -16,11 +16,12 @@
 
 from asyncio import Lock
 
+from octobot_trading.orders import OrderConstants
+
 from config import CONFIG_SIMULATOR, CONFIG_STARTING_PORTFOLIO, CONFIG_PORTFOLIO_FREE, CONFIG_PORTFOLIO_TOTAL, \
     TradeOrderSide, TraderOrderType, SIMULATOR_CURRENT_PORTFOLIO, CURRENT_PORTFOLIO_STRING
 from octobot_commons.initializable import Initializable
 from octobot_commons.logging.logging_util import get_logger
-from trading.trader.orders import OrderConstants
 
 """ The Portfolio class manage an exchange portfolio
 This will begin by loading current exchange portfolio (by pulling user data)

@@ -15,6 +15,10 @@
 #  License along with this library.
 import copy
 
+from octobot_trading.data.order import Order
+
+from octobot_trading.orders import OrderConstants
+
 from config import CONFIG_TRADING, CONFIG_TRADER_RISK, CONFIG_TRADER_RISK_MIN, \
     CONFIG_TRADER_RISK_MAX, OrderStatus, TradeOrderSide, TraderOrderType, REAL_TRADER_STR, TradeOrderType, \
     ExchangeConstantsOrderColumns, ExchangeConstantsMarketPropertyColumns
@@ -25,9 +29,7 @@ from tools.notifications import EvaluatorNotification
 from tools.pretty_printer import PrettyPrinter
 from trading.trader.modes.abstract_mode_creator import AbstractTradingModeCreator
 from trading.trader.modes.abstract_mode_decider import AbstractTradingModeDecider
-from trading.trader.order import Order
 from trading.trader.order_notifier import OrderNotifier
-from trading.trader.orders import OrderConstants
 from trading.trader.trade import Trade
 
 
@@ -164,7 +166,7 @@ class Trader(Initializable):
             new_order = await self._create_not_loaded_order(order, new_order, portfolio)
             title = "Order creation"
         else:
-            new_order.set_is_from_this_octobot(False)
+            new_order.is_from_this_octobot = False
             title = "Order loaded"
             is_already_in_history = self.exchange_personal_data.trades.is_in_history(new_order)
             if is_already_in_history or \
@@ -183,7 +185,7 @@ class Trader(Initializable):
 
         # if this order is linked to another
         if linked_order is not None:
-            new_order.add_linked_order(linked_order)
+            new_order.linked_orders.append(linked_order)
 
         return new_order
 
@@ -197,12 +199,12 @@ class Trader(Initializable):
         async with self.exchange_personal_data.portfolio.get_lock():
             await self.create_order(order, self.exchange_personal_data.portfolio)
 
-    async def _create_not_loaded_order(self, order, new_order, portfolio) -> Order:
-        if not self.simulate and not self.check_if_self_managed(new_order.get_order_type()):
-            created_order = await self.exchange.create_order(new_order.get_order_type(),
-                                                             new_order.get_order_symbol(),
-                                                             new_order.get_origin_quantity(),
-                                                             new_order.get_origin_price(),
+    async def _create_not_loaded_order(self, order: Order, new_order: Order, portfolio) -> Order:
+        if not self.simulate and not self.check_if_self_managed(new_order.order_type):
+            created_order = await self.exchange.create_order(new_order.order_type,
+                                                             new_order.symbol,
+                                                             new_order.origin_quantity,
+                                                             new_order.origin_price,
                                                              new_order.origin_stop_price)
 
             self.logger.info(f"Created order on {self.exchange.get_name()}: {created_order}")
@@ -211,8 +213,8 @@ class Trader(Initializable):
             new_order = self.parse_exchange_order_to_order_instance(created_order)
 
             # rebind order notifier and linked portfolio to new order instance
-            new_order.order_notifier = order.get_order_notifier()
-            new_order.get_order_notifier().set_order(new_order)
+            new_order.order_notifier = order.get_order_notifier
+            new_order.order_notifier.set_order(new_order)
             new_order.linked_portfolio = portfolio
 
         # update the availability of the currency in the portfolio
@@ -220,13 +222,13 @@ class Trader(Initializable):
 
         return new_order
 
-    async def cancel_order(self, order):
+    async def cancel_order(self, order: Order):
         if not order.is_cancelled() and not order.is_filled():
             async with order.get_lock():
                 odr = order
                 await odr.cancel_order()
-                self.logger.info(f"{odr.get_order_symbol()} {odr.get_name()} at {odr.get_origin_price()}"
-                                 f" (ID : {odr.get_id()}) cancelled on {self.get_exchange().get_name()}")
+                self.logger.info(f"{odr.symbol} {odr.get_name()} at {odr.origin_price}"
+                                 f" (ID : {odr.order_id}) cancelled on {self.get_exchange().get_name()}")
 
                 self.exchange.get_exchange_personal_data().orders.remove_order_from_list(order)
 
@@ -245,8 +247,8 @@ class Trader(Initializable):
     async def cancel_open_orders(self, symbol, cancel_loaded_orders=True):
         # use a copy of the list (not the reference)
         for order in copy.copy(self.get_open_orders()):
-            if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
-                if cancel_loaded_orders or order.get_is_from_this_octobot():
+            if order.symbol == symbol and order.status is not OrderStatus.CANCELED:
+                if cancel_loaded_orders or order.is_from_this_octobot:
                     await self.notify_order_close(order, True)
 
     async def cancel_all_open_orders_with_currency(self, currency):
@@ -258,7 +260,7 @@ class Trader(Initializable):
     async def cancel_all_open_orders(self):
         # use a copy of the list (not the reference)
         for order in copy.copy(self.get_open_orders()):
-            if order.get_status() is not OrderStatus.CANCELED:
+            if order.status is not OrderStatus.CANCELED:
                 await self.notify_order_close(order, True)
 
     async def sell_everything(self, symbol, inverted):
@@ -313,26 +315,26 @@ class Trader(Initializable):
 
     async def notify_order_close(self, order, cancel=False, cancel_linked_only=False):
         # Cancel linked orders
-        for linked_order in order.get_linked_orders():
+        for linked_order in order.linked_orders:
             await self.cancel_order(linked_order)
 
         # If need to cancel the order call the method and no need to update the portfolio (only availability)
         if cancel:
             order_closed = None
-            orders_canceled = order.get_linked_orders() + [order]
+            orders_canceled = order.linked_orders + [order]
 
             await self.cancel_order(order)
             _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
 
         elif cancel_linked_only:
             order_closed = None
-            orders_canceled = order.get_linked_orders()
+            orders_canceled = order.linked_orders
 
             _, profitability_percent, profitability_diff = self.get_trades_manager().get_profitability_without_update()
 
         else:
             order_closed = order
-            orders_canceled = order.get_linked_orders()
+            orders_canceled = order.linked_orders
 
             # update portfolio with ended order
             async with self.exchange_personal_data.get_order_portfolio(order).get_lock():
@@ -358,15 +360,15 @@ class Trader(Initializable):
 
         # update current order list with exchange
         if not self.simulate:
-            await self.update_open_orders(order.get_order_symbol())
+            await self.update_open_orders(order.symbol)
 
         # notification
-        await order.get_order_notifier().end(order_closed,
-                                             orders_canceled,
-                                             order.get_profitability(),
-                                             profitability_percent,
-                                             profitability_diff,
-                                             profitability_activated)
+        await order.order_notifier.end(order_closed,
+                                       orders_canceled,
+                                       order.get_profitability(),
+                                       profitability_percent,
+                                       profitability_diff,
+                                       profitability_activated)
 
     def get_reference_market(self):
         return self.get_trades_manager().get_reference()
@@ -444,7 +446,7 @@ class Trader(Initializable):
                     order_ids = [o["id"] for o in orders]
                     for symbol_order in self.exchange.get_exchange_personal_data().orders.get_orders_with_symbol(
                             symbol_traded):
-                        if symbol_order.get_id() not in order_ids:
+                        if symbol_order.order_id not in order_ids:
                             # remove order from order manager
                             self.exchange.get_exchange_personal_data().orders.remove_order_from_list(symbol_order)
                             removed_orders += 1
