@@ -16,7 +16,6 @@
 
 
 from config import OctoBotTypes
-from tools.logging.logging_util import get_logger
 from .abstract_websocket import AbstractWebSocket
 from tools.os_util import get_octobot_type
 from octobot_commons.logging.logging_util import get_logger

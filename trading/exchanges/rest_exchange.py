@@ -317,4 +317,4 @@ class RESTExchange(AbstractExchange, Initializable):
 
     @staticmethod
     def _get_side(order_type):
-        return "buy" if order_type == TraderOrderType.BUY_LIMIT or order_type == TraderOrderType.BUY_MARKET else "sell"
+        return "buy" if order_type in (TraderOrderType.BUY_LIMIT, TraderOrderType.BUY_MARKET) else "sell"

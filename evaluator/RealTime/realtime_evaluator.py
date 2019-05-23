@@ -123,8 +123,7 @@ class RealTimeExchangeEvaluator(RealTimeEvaluator):
         if config_refresh_time > self.exchange.get_exchange_manager().get_rate_limit() or \
                 self.exchange.get_exchange_manager().websocket_available():
             return config_refresh_time
-        else:
-            return self.exchange.get_exchange_manager().get_rate_limit()
+        return self.exchange.get_exchange_manager().get_rate_limit()
 
     def _define_refresh_time(self):
         self.refresh_time = self.valid_refresh_time(self.specific_config[CONFIG_REFRESH_RATE])
