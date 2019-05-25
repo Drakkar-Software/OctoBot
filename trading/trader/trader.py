@@ -407,6 +407,9 @@ class Trader(Initializable):
         else:
             return [o for o in self.order_manager.get_open_orders() if o.get_order_symbol() == symbol]
 
+    def get_recently_closed_orders(self, symbol):
+        return [o for o in self.order_manager.get_recently_closed_orders() if o.get_order_symbol() == symbol]
+
     def update_close_orders(self):
         for symbol in self.exchange.get_exchange_manager().get_traded_pairs():
             for close_order in self.exchange.get_closed_orders(symbol):

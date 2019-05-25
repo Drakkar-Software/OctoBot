@@ -21,7 +21,6 @@ from config import CONFIG_SIMULATOR, CONFIG_STARTING_PORTFOLIO, CONFIG_PORTFOLIO
     TradeOrderSide, TraderOrderType, SIMULATOR_CURRENT_PORTFOLIO, CURRENT_PORTFOLIO_STRING
 from trading.trader.order import OrderConstants
 from tools.initializable import Initializable
-from backtesting import backtesting_enabled
 
 """ The Portfolio class manage an exchange portfolio
 This will begin by loading current exchange portfolio (by pulling user data)
