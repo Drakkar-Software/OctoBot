@@ -40,6 +40,7 @@ class OrdersManager:
         self.trader = trader
         self.order_list = []
         self.last_symbol_prices = {}
+        self.recently_closed_orders = []
         self.logger = get_logger(f"{self.__class__.__name__}{'Simulator' if self.trader.simulate else ''}"
                                  f"[{self.trader.exchange.get_name()}]")
 
@@ -151,6 +152,9 @@ class OrdersManager:
     def get_open_orders(self):
         return self.order_list
 
+    def get_recently_closed_orders(self):
+        return self.recently_closed_orders
+
     def set_order_refresh_time(self, seconds):
         self.order_refresh_time = seconds
 
@@ -174,6 +178,7 @@ class OrdersManager:
                                  f" filled on {self.trader.get_exchange().get_name()} "
                                  f"at {order.get_filled_price()}")
                 await order.close_order()
+                self.recently_closed_orders.append(order)
         except MissingOrderException as e:
             self.logger.error(f"Missing exchange order when updating order with id: {e.order_id}. "
                               f"Will force a real trader refresh. ({e})")
@@ -189,6 +194,7 @@ class OrdersManager:
         Finally ask cancellation and filling process if it is required
         """
 
+        self.recently_closed_orders = []
         failed_order_updates = []
         # update all prices
         await self._update_last_symbol_list(True)
