@@ -170,9 +170,7 @@ class TradesManager(Initializable):
     async def get_current_holdings_values(self):
         holdings = await self.get_current_crypto_currencies_values()
 
-        async with self.portfolio.get_lock():
-            current_portfolio = deepcopy(self.portfolio.get_portfolio())
-
+        current_portfolio = deepcopy(self.portfolio.get_portfolio())
         return {currency: await self._get_currency_value(current_portfolio, currency, holdings)
                 for currency in holdings.keys()}
 
@@ -199,9 +197,7 @@ class TradesManager(Initializable):
                     self.traded_currencies_without_market_specific.add(symbol)
 
     async def update_portfolio_and_currencies_current_value(self):
-        async with self.portfolio.get_lock():
-            current_portfolio = deepcopy(self.portfolio.get_portfolio())
-
+        current_portfolio = deepcopy(self.portfolio.get_portfolio())
         self.portfolio_current_value = await self.update_portfolio_current_value(current_portfolio)
 
     async def _init_origin_portfolio_and_currencies_value(self, force_ignore_history=False):
@@ -214,8 +210,7 @@ class TradesManager(Initializable):
 
     async def _init_origin_portfolio_and_currencies_value_from_scratch(self, previous_state_manager):
         self.origin_crypto_currencies_values = await self._evaluate_config_crypto_currencies_values()
-        async with self.portfolio.get_lock():
-            self.origin_portfolio = deepcopy(self.portfolio.get_portfolio())
+        self.origin_portfolio = deepcopy(self.portfolio.get_portfolio())
 
         self.portfolio_origin_value = \
             await self.update_portfolio_current_value(self.origin_portfolio,
