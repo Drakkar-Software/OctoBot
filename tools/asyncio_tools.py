@@ -20,14 +20,23 @@ from config import DEFAULT_FUTURE_TIMEOUT
 from tools.logging.logging_util import get_logger
 
 
+LOGGER = get_logger("asyncio_tools")
+
+
 def run_coroutine_in_asyncio_loop(coroutine, async_loop):
+    current_task_before_start = asyncio.current_task(async_loop)
     future = asyncio.run_coroutine_threadsafe(coroutine, async_loop)
     try:
         return future.result(DEFAULT_FUTURE_TIMEOUT)
     except asyncio.TimeoutError as e:
-        get_logger("run_coroutine_in_asyncio_loop")\
-            .error(f'{coroutine} coroutine coroutine too long, cancelling the task.')
+        LOGGER.error(f'{coroutine} coroutine took too long to execute, cancelling the task. '
+                     f'(current task before starting this one: {current_task_before_start}, actual current '
+                     f'task before cancel: {asyncio.current_task(async_loop)})')
         future.cancel()
+        raise e
+    except Exception as e:
+        LOGGER.error(f'{coroutine} coroutine raised an exception: {e}')
+        LOGGER.exception(e)
         raise e
 
 
