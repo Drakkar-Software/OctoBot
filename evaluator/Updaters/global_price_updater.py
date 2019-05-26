@@ -120,7 +120,7 @@ class GlobalPriceUpdater:
                 # if data from this time frame needs an update
                 elif now - self.time_frame_last_update[time_frame][symbol] \
                         >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                    update_tasks.append(self._refresh_time_frame_data(time_frame, symbol))
+                    update_tasks.append(self._refresh_time_frame_data(time_frame, symbol, update_time=now))
 
         await asyncio.gather(*update_tasks)
 
@@ -167,11 +167,12 @@ class GlobalPriceUpdater:
         order_manager = self.exchange.get_exchange_manager().get_trader().get_order_manager()
         await order_manager.force_update_order_status(simulated_time=True)
 
-    async def _refresh_time_frame_data(self, time_frame, symbol, notify=True, update_last_update_time=True):
+    async def _refresh_time_frame_data(self, time_frame, symbol, notify=True,
+                                       update_last_update_time=True, update_time=None):
         try:
             await self._refresh_data(time_frame, symbol, notify=notify)
             if update_last_update_time:
-                self.time_frame_last_update[time_frame][symbol] = time.time()
+                self.time_frame_last_update[time_frame][symbol] = update_time or time.time()
         except CancelledError as e:
             raise e
         except Exception as e:
