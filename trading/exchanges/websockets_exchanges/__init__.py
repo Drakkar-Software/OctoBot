@@ -15,10 +15,13 @@
 #  License along with this library.
 
 
+from config import OctoBotTypes
 from tools.logging.logging_util import get_logger
 from .abstract_websocket import AbstractWebSocket
+from tools.os_util import get_octobot_type
 
 try:
     from trading.exchanges.websockets_exchanges.implementations.binance_websocket import BinanceWebSocketClient
 except ImportError as e:
-    get_logger("websocket_exchanges").warning(f"Error when importing BinanceWebSocketClient: {e}")
+    if get_octobot_type() != OctoBotTypes.BINARY.value:
+        get_logger("websocket_exchanges").warning(f"Error when importing BinanceWebSocketClient: {e}")
