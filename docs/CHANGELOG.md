@@ -1,5 +1,21 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+Changelog for 0.3.5-beta
+====================
+*Released date : May 27 2019*
+
+# Concerned issues / pull request:
+    #894 [GlobalUpdater] does not update timeframes normally when notified by RT
+    #896 [Web interface] display of very small numbers digits
+    #899 [Simulator] freeze on staggered orders simulation
+    #901 [Bug] Candle lost with websocket
+    #904 [asyncio] optimize async handling
+    #908 [Time frame updater] desync between symbols update time
+
+# Bug fixes :
+    - Fixed digit display in web interface configuration
+    - Fixed timeframe refresh timings
+
 Changelog for 0.3.4-beta
 ====================
 *Released date : May 12 2019*
