@@ -224,7 +224,7 @@ class TelegramApp(InterfaceBot):
     @staticmethod
     def command_error(_, update, error):
         TelegramApp.get_logger().exception(error)
-        if TelegramApp._is_valid_user(update):
+        if update and TelegramApp._is_valid_user(update):
             TelegramApp._send_message(update,
                                       f"Failed to perform this command {update.message.text} : `{error}`")
 
