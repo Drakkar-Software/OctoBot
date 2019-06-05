@@ -1,31 +1,15 @@
 # Drakkar-Software requirements
 OctoBot-Commons
-OctoBot-Channels
 OctoBot-Tentacles-Manager>=1.0.10
-OctoBot-Websockets
+OctoBot-Trading
+OctoBot-Evaluators
+OctoBot-Services
 
 # Cryptocurrency trading
-python-binance
-ccxt
 tulipy
-
-# Reddit
-praw
-
-# Telegram
-python-telegram-bot
-
-# Twitter
-Python-Twitter
-
-# Web
-flask
 
 ## Tools
 # Analysis tools
-newspaper3k
-simplifiedpytrends
-vaderSentiment
 aiohttp
 jsonschema
 

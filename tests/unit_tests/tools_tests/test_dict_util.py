@@ -42,7 +42,7 @@
 
 from math import nan
 
-from tools.dict_util import get_value_or_default
+from octobot_commons.dict_util import get_value_or_default
 
 
 def test_get_value_or_default():

@@ -23,7 +23,7 @@ from cryptography.fernet import Fernet, InvalidToken
 
 from config import CONFIG_FILE, OCTOBOT_KEY, DEFAULT_CONFIG_FILE, CONFIG_CRYPTO_CURRENCIES, CONFIG_CATEGORY_SERVICES, \
     CONFIG_STARTING_PORTFOLIO, CONFIG_EXCHANGES
-from tools.dict_util import check_and_merge_values_from_reference
+from octobot_commons.dict_util import check_and_merge_values_from_reference
 
 
 def load_config(config_file=CONFIG_FILE, error=True, fill_missing_fields=False):

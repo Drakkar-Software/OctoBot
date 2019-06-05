@@ -17,7 +17,7 @@
 import ccxt
 import pytest
 
-from trading.exchanges.exchange_manager import ExchangeManager
+from octobot_trading.exchanges import ExchangeManager
 from evaluator.symbol_evaluator import SymbolEvaluator
 from trading.trader.trader_simulator import TraderSimulator
 from evaluator.cryptocurrency_evaluator import CryptocurrencyEvaluator

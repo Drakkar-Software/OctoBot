@@ -15,7 +15,7 @@
 #  License along with this library.
 from copy import deepcopy
 
-from backtesting.backtesting import Backtesting
+from octobot_trading.exchanges.backtesting.backtesting import Backtesting
 from backtesting.collector.data_file_manager import interpret_file_name, is_valid_ending
 from config import CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, \
     CONFIG_SIMULATOR, CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, \

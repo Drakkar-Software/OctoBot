@@ -21,7 +21,7 @@ from config import TraderOrderType, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, CON
     CONFIG_SIMULATOR_FEES_TAKER
 from tests.test_utils.config import load_test_config
 from tests.test_utils.order_util import fill_limit_or_stop_order, fill_market_order
-from trading.exchanges.exchange_manager import ExchangeManager
+from octobot_trading.exchanges import ExchangeManager
 from trading.trader.order import BuyMarketOrder, SellLimitOrder, BuyLimitOrder, SellMarketOrder, \
     StopLossOrder
 from trading.trader.portfolio import Portfolio

@@ -17,7 +17,7 @@
 from random import randint
 
 from config import TimeFrames, PriceIndexes
-from trading.exchanges.data.exchange_symbol_data import SymbolData
+from octobot_trading.exchanges import SymbolData
 
 
 class TestExchangeSymbolData:

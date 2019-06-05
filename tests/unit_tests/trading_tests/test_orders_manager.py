@@ -18,7 +18,7 @@ import ccxt
 import pytest
 
 from config import CONFIG_ENABLED_OPTION, CONFIG_TRADER
-from trading.exchanges.exchange_manager import ExchangeManager
+from octobot_trading.exchanges.exchange_manager import ExchangeManager
 from tests.test_utils.config import load_test_config
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator

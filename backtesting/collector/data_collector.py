@@ -21,7 +21,7 @@ import ccxt.async_support as ccxt
 
 from backtesting.collector.exchange_collector import ExchangeDataCollector
 from config import CONFIG_TIME_FRAME, CONFIG_EXCHANGES
-from trading.exchanges.exchange_manager import ExchangeManager
+from octobot_trading.exchanges import ExchangeManager
 
 
 class DataCollector:

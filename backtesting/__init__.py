@@ -13,23 +13,3 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-
-from config import CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION
-
-
-def backtesting_enabled(config):
-    return CONFIG_BACKTESTING in config and CONFIG_ENABLED_OPTION in config[CONFIG_BACKTESTING] \
-           and config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION]
-
-
-class BacktestingEndedException(Exception):
-    def __init__(self, symbol=""):
-        self.msg = f"Backtesting finished for {symbol}."
-        super().__init__(self.msg)
-
-
-class BacktestingDataFileException(Exception):
-    def __init__(self, file_name):
-        self.msg = f"Unhandled backtesting data for: {file_name}."
-        super().__init__(self.msg)

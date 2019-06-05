@@ -24,9 +24,9 @@ from config import CONFIG_EVALUATOR, CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA
     CONFIG_EVALUATORS_WILDCARD
 from evaluator import Strategies
 from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
-from trading.trader import modes
-from trading.trader.modes.abstract_trading_mode import AbstractTradingMode
-from trading.trader.modes import DailyTradingMode
+from trading import modes
+from trading.modes.abstract_trading_mode import AbstractTradingMode
+from trading.modes import DailyTradingMode
 from octobot_commons.tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection, \
     trading_mode_parent_inspection
 from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT

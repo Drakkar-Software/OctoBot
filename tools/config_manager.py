@@ -15,25 +15,24 @@
 #  License along with this library.
 
 import json
-from octobot_commons.logging.logging_util import get_logger as get_util_logger
 import os
 import shutil
 from copy import copy, deepcopy
 from functools import reduce
+
 import jsonschema
 
-from config.config import load_config, decrypt, encrypt
+from backtesting import backtesting_enabled
 from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
     TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_TRADING_FILE, \
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
     CONFIG_EVALUATOR_FILE, CONFIG_TRADING_FILE_PATH, CONFIG_TRADING_TENTACLES, CONFIG_ADVANCED_CLASSES, \
-    DEFAULT_CONFIG_VALUES, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, \
-    DEFAULT_REFERENCE_MARKET, CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, \
-    CONFIG_METRICS, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS, \
+    DEFAULT_CONFIG_VALUES, CONFIG_CRYPTO_CURRENCIES, CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, \
+    CONFIG_ENABLED_OPTION, \
+    CONFIG_METRICS, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_ACCEPTED_TERMS, \
     TENTACLE_DEFAULT_FOLDER, CONFIG_EXCHANGE_ENCRYPTED_VALUES
-from octobot_commons.symbol_util import split_symbol
-from tools.dict_util import get_value_or_default
-from backtesting import backtesting_enabled
+from config.config import load_config, decrypt, encrypt
+from octobot_commons.logging.logging_util import get_logger as get_util_logger
 from tools.errors import ConfigEvaluatorError, ConfigTradingError
 
 
@@ -389,61 +388,12 @@ class ConfigManager:
         return any(value in DEFAULT_CONFIG_VALUES for value in config_values)
 
     @staticmethod
-    def get_symbols(config):
-        if CONFIG_CRYPTO_CURRENCIES in config and isinstance(config[CONFIG_CRYPTO_CURRENCIES], dict):
-            for crypto_currency_data in config[CONFIG_CRYPTO_CURRENCIES].values():
-                for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
-                    yield symbol
-
-    @staticmethod
-    def get_all_currencies(config):
-        currencies = set()
-        for symbol in ConfigManager.get_symbols(config):
-            quote, base = split_symbol(symbol)
-            currencies.add(quote)
-            currencies.add(base)
-        return currencies
-
-    @staticmethod
-    def get_pairs(config, currency) -> []:
-        pairs = []
-        for symbol in ConfigManager.get_symbols(config):
-            if currency in split_symbol(symbol):
-                pairs.append(symbol)
-        return pairs
-
-    @staticmethod
-    def get_market_pair(config, currency) -> (str, bool):
-        if CONFIG_TRADING in config:
-            reference_market = ConfigManager.get_reference_market(config)
-            for symbol in ConfigManager.get_symbols(config):
-                symbol_currency, symbol_market = split_symbol(symbol)
-                if currency == symbol_currency and reference_market == symbol_market:
-                    return symbol, False
-                elif reference_market == symbol_currency and currency == symbol_market:
-                    return symbol, True
-        return "", False
-
-    @staticmethod
-    def get_reference_market(config) -> str:
-        # The reference market is the currency unit of the calculated quantity value
-        return get_value_or_default(config[CONFIG_TRADING], CONFIG_TRADER_REFERENCE_MARKET, DEFAULT_REFERENCE_MARKET)
-
-    @staticmethod
     def get_metrics_enabled(config):
         if CONFIG_METRICS in config and config[CONFIG_METRICS] and \
                 CONFIG_ENABLED_OPTION in config[CONFIG_METRICS]:
             return bool(config[CONFIG_METRICS][CONFIG_ENABLED_OPTION])
         else:
             return True
-
-    @staticmethod
-    def get_trader_enabled(config):
-        return config[CONFIG_TRADER][CONFIG_ENABLED_OPTION]
-
-    @staticmethod
-    def get_trader_simulator_enabled(config):
-        return config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION]
 
     @staticmethod
     def accepted_terms(config):
