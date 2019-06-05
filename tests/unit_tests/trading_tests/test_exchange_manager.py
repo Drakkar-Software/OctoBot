@@ -16,11 +16,10 @@
 
 import ccxt
 import pytest
-from trading.exchanges.exchange_simulator import ExchangeSimulator
+from octobot_trading.exchanges import ExchangeSimulator
 
-from config import *
 from tests.test_utils.config import load_test_config
-from trading.exchanges.exchange_manager import ExchangeManager
+from octobot_trading.exchanges import ExchangeManager
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio

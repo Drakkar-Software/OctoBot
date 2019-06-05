@@ -20,7 +20,7 @@ from octobot_commons.logging.logging_util import get_logger
 from backtesting.abstract_backtesting_test import AbstractBacktestingTest, SYMBOLS, DATA_FILES, DATA_FILE_PATH
 from config import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_FORCED_EVALUATOR, CONFIG_FORCED_TIME_FRAME, \
     CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
-from trading.exchanges.exchange_simulator.exchange_simulator import NoCandleDataForThisTimeFrameException
+from octobot_trading.exchanges import NoCandleDataForThisTimeFrameException
 from backtesting.strategy_optimizer.test_suite_result import TestSuiteResult
 from backtesting.backtesting_util import create_backtesting_bot, start_backtesting_bot, filter_wanted_symbols
 from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT

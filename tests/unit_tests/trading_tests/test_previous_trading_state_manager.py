@@ -25,7 +25,7 @@ from config import SIMULATOR_INITIAL_STARTUP_PORTFOLIO, SIMULATOR_INITIAL_STARTU
     REAL_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO_VALUE, WATCHED_MARKETS_INITIAL_STARTUP_VALUES, \
     REFERENCE_MARKET, SIMULATOR_CURRENT_PORTFOLIO, CONFIG_TRADING, CONFIG_ENABLED_PERSISTENCE, CONFIG_TRADER, \
     CONFIG_ENABLED_OPTION
-from trading.exchanges.exchange_manager import ExchangeManager
+from octobot_trading.exchanges import ExchangeManager
 from trading.trader.previous_trading_state_manager import PreviousTradingStateManager
 from tests.test_utils.config import load_test_config
 from tests.test_utils.config import TEST_CONFIG_FOLDER

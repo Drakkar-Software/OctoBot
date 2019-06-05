@@ -20,7 +20,7 @@ import pytest
 from config import TraderOrderType
 from tests.test_utils.config import load_test_config
 from tests.test_utils.order_util import fill_market_order, fill_limit_or_stop_order
-from trading.exchanges.exchange_manager import ExchangeManager
+from octobot_trading.exchanges import ExchangeManager
 from trading.trader.order import BuyMarketOrder, SellLimitOrder, BuyLimitOrder, SellMarketOrder
 from trading.trader.portfolio import Portfolio
 from trading.trader.sub_portfolio import SubPortfolio

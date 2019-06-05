@@ -20,7 +20,7 @@ from backtesting import backtesting_enabled
 from config import CONFIG_EXCHANGES
 from evaluator.Updaters.global_price_updater import GlobalPriceUpdater
 from octobot_commons.logging.logging_util import get_logger
-from trading.exchanges.exchange_manager import ExchangeManager
+from octobot_trading.exchanges import ExchangeManager
 from trading.trader.previous_trading_state_manager import PreviousTradingStateManager
 from trading.trader.trader import Trader
 from trading.trader.trader_simulator import TraderSimulator

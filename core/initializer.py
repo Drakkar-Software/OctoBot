@@ -22,9 +22,9 @@ from octobot_commons.tentacles_management.advanced_manager import AdvancedManage
 from evaluator.evaluator_creator import EvaluatorCreator
 from services import ServiceCreator
 from tools import get_logger
-from tools.notifications import Notification
+from octobot_commons.notifications.notifications import Notification
 from tools.performance_analyser import PerformanceAnalyser
-from tools.time_frame_manager import TimeFrameManager
+from octobot_commons.time_frame_manager import TimeFrameManager
 from tools.metrics.metrics_manager import MetricsManager
 
 

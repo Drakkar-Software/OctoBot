@@ -18,6 +18,9 @@ from logging import WARNING
 from enum import Enum
 from typing import NewType, Any, Dict, Callable
 
+from octobot_commons.constants import CONFIG_WILDCARD
+from octobot_commons.enums import TimeFrames
+
 PROJECT_NAME = "OctoBot"
 SHORT_VERSION = "0.4.0"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
@@ -59,9 +62,7 @@ HOURS_TO_MSECONDS = MSECONDS_TO_SECONDS * MINUTE_TO_SECONDS * MINUTE_TO_SECONDS
 DAYS_TO_SECONDS = HOURS_TO_SECONDS * 24
 
 CONFIG_GLOBAL_UTILS = "global_utils"
-CONFIG_ENABLED_OPTION = "enabled"
 CONFIG_SYMBOL = "symbol"
-CONFIG_WILDCARD = "*"
 CONFIG_SAVE_EVALUATION = "SAVE_EVALUATIONS"
 EVALUATION_SAVING_FILE_ENDING = "_evaluations.csv"
 EVALUATION_SAVING_COLUMN_SEPARATOR = ";"
@@ -96,12 +97,8 @@ CONFIG_ADVANCED_CLASSES = "advanced_classes"
 CONFIG_ADVANCED_INSTANCES = "advanced_instances"
 
 # Backtesting
-CONFIG_BACKTESTING = "backtesting"
-CONFIG_ANALYSIS_ENABLED_OPTION = "post_analysis_enabled"
 CONFIG_BACKTESTING_DATA_FILES = "files"
 CONFIG_BACKTESTING_OTHER_MARKETS_STARTING_PORTFOLIO = 10000
-BACKTESTING_DATA_OHLCV = "ohlcv"
-BACKTESTING_DATA_TRADES = "trades"
 
 # Data collector
 CONFIG_DATA_COLLECTOR = "data_collector"
@@ -110,44 +107,26 @@ DATA_COLLECTOR_REFRESHER_TIME = MINUTE_TO_SECONDS
 CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
 
 # Trading
-CONFIG_EXCHANGES = "exchanges"
-CONFIG_EXCHANGE_KEY = "api-key"
-CONFIG_EXCHANGE_SECRET = "api-secret"
-CONFIG_EXCHANGE_PASSWORD = "api-password"
-CONFIG_EXCHANGE_WEB_SOCKET = "web-socket"
 DEFAULT_REST_RETRY_COUNT = 3
-CONFIG_TRADING = "trading"
 CONFIG_TRADING_TENTACLES = "trading-tentacles"
-CONFIG_TRADER = "trader"
-CONFIG_SIMULATOR = "trader-simulator"
-CONFIG_STARTING_PORTFOLIO = "starting-portfolio"
-CONFIG_TRADER_RISK = "risk"
-CONFIG_TRADER_RISK_MIN = 0.05
-CONFIG_TRADER_RISK_MAX = 1
 ORDER_REFRESHER_TIME = 15
 ORDER_REFRESHER_TIME_WS = 1
 UPDATER_MAX_SLEEPING_TIME = 2
 SIMULATOR_LAST_PRICES_TO_CHECK = 50
 ORDER_CREATION_LAST_TRADES_TO_USE = 10
-CONFIG_TRADER_REFERENCE_MARKET = "reference-market"
-DEFAULT_REFERENCE_MARKET = "BTC"
 MARKET_SEPARATOR = "/"
 CURRENCY_DEFAULT_MAX_PRICE_DIGITS = 8
 EXCHANGE_ERROR_SLEEPING_TIME = 10
-CONFIG_EXCHANGE_ENCRYPTED_VALUES = [CONFIG_EXCHANGE_KEY, CONFIG_EXCHANGE_SECRET, CONFIG_EXCHANGE_PASSWORD]
 
 # Trader persistence
 HISTORY_EXCHANGE_KEY = "exchange"
 SIMULATOR_INITIAL_STARTUP_PORTFOLIO = "simulator_initial_portfolio"
 REAL_INITIAL_STARTUP_PORTFOLIO = "real_initial_portfolio"
-SIMULATOR_CURRENT_PORTFOLIO = "simulator_current_portfolio"
 SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE = "simulator_initial_portfolio_value"
 REAL_INITIAL_STARTUP_PORTFOLIO_VALUE = "real_initial_portfolio_value"
 WATCHED_MARKETS_INITIAL_STARTUP_VALUES = "initial_watched_markets_value"
 REFERENCE_MARKET = "reference_market"
-CURRENT_PORTFOLIO_STRING = "Current Portfolio :"
 CONFIG_ENABLED_PERSISTENCE = "multi-session-profitability"
-
 
 # Exchanges
 TESTED_EXCHANGES = ["binance", "coinbasepro", "kucoin2"]
@@ -161,11 +140,6 @@ CONFIG_SIMULATOR_FEES_WITHDRAW = "withdraw"
 CONFIG_DEFAULT_FEES = 0.1
 CONFIG_DEFAULT_SIMULATOR_FEES = 0
 
-CONFIG_PORTFOLIO_INFO = "info"
-CONFIG_PORTFOLIO_FREE = "free"
-CONFIG_PORTFOLIO_USED = "used"
-CONFIG_PORTFOLIO_TOTAL = "total"
-
 # Notification
 CONFIG_NOTIFICATION_TYPE = "notification-type"
 CONFIG_NOTIFICATION_INSTANCE = "notifier"
@@ -176,10 +150,7 @@ CONFIG_NOTIFICATION_PRICE_ALERTS = "price-alerts"
 CONFIG_NOTIFICATION_TRADES = "trades"
 NOTIFICATION_STARTING_MESSAGE = f"OctoBot v{LONG_VERSION} starting..."
 NOTIFICATION_STOPPING_MESSAGE = f"OctoBot v{LONG_VERSION} stopping..."
-REAL_TRADER_STR = "[Real Trader] "
-SIMULATOR_TRADER_STR = "[Simulator] "
 PAID_FEES_STR = "Paid fees"
-DICT_BULLET_TOKEN_STR = "\n "
 
 # DEBUG options
 CONFIG_DEBUG_OPTION_PERF = "performance-analyser"
@@ -235,14 +206,8 @@ MAX_TA_EVAL_TIME_SECONDS = 0.1
 DEFAULT_WEBSOCKET_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS = 1
 DEFAULT_REST_REAL_TIME_EVALUATOR_REFRESH_RATE_SECONDS = 60
 CONFIG_REFRESH_RATE = "refresh_rate_seconds"
-CONFIG_TIME_FRAME = "time_frame"
 CONFIG_FORCED_TIME_FRAME = "forced_time_frame"
 CONFIG_FILE_EXT = ".json"
-CONFIG_CRYPTO_CURRENCIES = "crypto-currencies"
-CONFIG_CRYPTO_CURRENCY = "crypto-currency"
-CONFIG_CRYPTO_PAIRS = "pairs"
-CONFIG_CRYPTO_QUOTE = "quote"
-CONFIG_CRYPTO_ADD = "add"
 CONFIG_EVALUATORS_WILDCARD = [CONFIG_WILDCARD]
 EVALUATOR_ACTIVATION = "activation"
 EVALUATOR_EVAL_DEFAULT_TYPE = float
@@ -348,53 +313,6 @@ class OHLCVStrings(Enum):
     CLOSE = "close"
     VOLUME = "volume"
 
-
-class PriceIndexes(Enum):
-    IND_PRICE_TIME = 0
-    IND_PRICE_OPEN = 1
-    IND_PRICE_HIGH = 2
-    IND_PRICE_LOW = 3
-    IND_PRICE_CLOSE = 4
-    IND_PRICE_VOL = 5
-
-
-class TimeFrames(Enum):
-    ONE_MINUTE = "1m"
-    THREE_MINUTES = "3m"
-    FIVE_MINUTES = "5m"
-    FIFTEEN_MINUTES = "15m"
-    THIRTY_MINUTES = "30m"
-    ONE_HOUR = "1h"
-    TWO_HOURS = "2h"
-    THREE_HOURS = "3h"
-    FOUR_HOURS = "4h"
-    HEIGHT_HOURS = "8h"
-    TWELVE_HOURS = "12h"
-    ONE_DAY = "1d"
-    THREE_DAYS = "3d"
-    ONE_WEEK = "1w"
-    ONE_MONTH = "1M"
-
-
-MIN_EVAL_TIME_FRAME = TimeFrames.FIVE_MINUTES
-
-TimeFramesMinutes = {
-    TimeFrames.ONE_MINUTE: 1,
-    TimeFrames.THREE_MINUTES: 3,
-    TimeFrames.FIVE_MINUTES: 5,
-    TimeFrames.FIFTEEN_MINUTES: 15,
-    TimeFrames.THIRTY_MINUTES: 30,
-    TimeFrames.ONE_HOUR: 60,
-    TimeFrames.TWO_HOURS: 120,
-    TimeFrames.THREE_HOURS: 180,
-    TimeFrames.FOUR_HOURS: 240,
-    TimeFrames.HEIGHT_HOURS: 480,
-    TimeFrames.TWELVE_HOURS: 720,
-    TimeFrames.ONE_DAY: 1440,
-    TimeFrames.THREE_DAYS: 4320,
-    TimeFrames.ONE_WEEK: 10080,
-    TimeFrames.ONE_MONTH: 43200,
-}
 
 # ladder : 1-100
 TimeFramesRelevance = {
@@ -583,12 +501,6 @@ class PlatformsName(Enum):
     WINDOWS = "nt"
     LINUX = "posix"
     MAC = "mac"
-
-
-class BacktestingDataFormats(Enum):
-    REGULAR_COLLECTOR_DATA = 0
-    KAIKO_DATA = 1
-
 
 class OctoBotTypes(Enum):
     BINARY = "binary"

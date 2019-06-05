@@ -16,7 +16,7 @@
 
 import copy
 
-from tools.time_frame_manager import TimeFrameManager
+from octobot_commons.time_frame_manager import TimeFrameManager
 from tools.data_util import DataUtil
 
 

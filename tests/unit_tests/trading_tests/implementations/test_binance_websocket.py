@@ -20,8 +20,8 @@ import pytest
 import ccxt
 
 from tests.test_utils.config import load_test_config
-from trading.exchanges.exchange_manager import ExchangeManager
-from trading.exchanges.websockets.binance_websocket import BinanceWebSocketClient
+from octobot_trading.exchanges import ExchangeManager
+from octobot_trading.exchanges.websockets.binance_websocket import BinanceWebSocketClient
 
 
 # All test coroutines will be treated as marked.

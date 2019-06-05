@@ -22,7 +22,7 @@ from config import CONFIG_ENABLED_OPTION, CONFIG_BACKTESTING, TimeFrames, HOURS_
     CONFIG_SIMULATOR_FEES, CONFIG_SIMULATOR_FEES_MAKER, CONFIG_SIMULATOR_FEES_TAKER, BACKTESTING_DATA_OHLCV, \
     BACKTESTING_DATA_TRADES, ExchangeConstantsOrderColumns
 from tests.test_utils.config import load_test_config
-from trading.exchanges.exchange_manager import ExchangeManager
+from octobot_trading.exchanges import ExchangeManager
 from trading.trader.trader_simulator import TraderSimulator
 
 
