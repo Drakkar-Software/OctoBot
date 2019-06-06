@@ -166,21 +166,25 @@ class EvaluatorNotification(Notification):
 
     async def notify_alert(self, final_eval, crypto_currency_evaluator, symbol, trader, result, matrix):
         title = f"OCTOBOT ALERT : {crypto_currency_evaluator.crypto_currency} / {result}"
+        try:
 
-        alert_content, alert_content_markdown = PrettyPrinter.cryptocurrency_alert(
-            crypto_currency_evaluator.crypto_currency,
-            symbol,
-            result,
-            final_eval)
+            alert_content, alert_content_markdown = PrettyPrinter.cryptocurrency_alert(
+                crypto_currency_evaluator.crypto_currency,
+                symbol,
+                result,
+                final_eval)
 
-        self.tweet_instance = await self.send_twitter_notification_if_necessary(alert_content,
-                                                                                CONFIG_NOTIFICATION_PRICE_ALERTS)
+            self.tweet_instance = await self.send_twitter_notification_if_necessary(alert_content,
+                                                                                    CONFIG_NOTIFICATION_PRICE_ALERTS)
 
-        await self.send_telegram_notification_if_necessary(alert_content_markdown, CONFIG_NOTIFICATION_PRICE_ALERTS,
-                                                           markdown=True)
+            await self.send_telegram_notification_if_necessary(alert_content_markdown, CONFIG_NOTIFICATION_PRICE_ALERTS,
+                                                               markdown=True)
 
-        await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
-                                                      CONFIG_NOTIFICATION_PRICE_ALERTS)
+            await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, alert_content,
+                                                          CONFIG_NOTIFICATION_PRICE_ALERTS)
+        except Exception as e:
+            self.logger.error(f"Error when sending alert [{title}] error: {e}")
+            self.logger.exception(e)
 
         return self
 
@@ -196,24 +200,29 @@ class OrdersNotification(Notification):
     async def notify_create(self, evaluator_notification, orders):
         if orders:
             content = orders[0].trader.trader_type_str
-            content_markdown = f"*{orders[0].trader.trader_type_str}*"
-            if evaluator_notification is not None:
-                self.evaluator_notification = evaluator_notification
+            try:
+                content_markdown = f"*{orders[0].trader.trader_type_str}*"
+                if evaluator_notification is not None:
+                    self.evaluator_notification = evaluator_notification
 
-            title = "Order(s) creation "
-            content += title
-            content_markdown += title
-            for order in orders:
-                content += f"\n- {PrettyPrinter.open_order_pretty_printer(order)}"
-                content_markdown += f"\n- {PrettyPrinter.open_order_pretty_printer(order, markdown=True)}"
+                title = "Order(s) creation "
+                content += title
+                content_markdown += title
+                for order in orders:
+                    content += f"\n- {PrettyPrinter.open_order_pretty_printer(order)}"
+                    content_markdown += f"\n- {PrettyPrinter.open_order_pretty_printer(order, markdown=True)}"
 
-            await self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
+                await self.sent_twitter_reply_if_necessary(self.evaluator_notification, content,
+                                                           CONFIG_NOTIFICATION_TRADES)
 
-            await self.send_telegram_notification_if_necessary(content_markdown, CONFIG_NOTIFICATION_TRADES,
-                                                               markdown=True)
+                await self.send_telegram_notification_if_necessary(content_markdown, CONFIG_NOTIFICATION_TRADES,
+                                                                   markdown=True)
 
-            await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
-                                                          CONFIG_NOTIFICATION_TRADES)
+                await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
+                                                              CONFIG_NOTIFICATION_TRADES)
+            except Exception as e:
+                self.logger.error(f"Error when sending orders notification [{content}] error: {e}")
+                self.logger.exception(e)
 
     async def notify_end(self,
                          order_filled,
@@ -224,16 +233,23 @@ class OrdersNotification(Notification):
                          profitability=False):
 
         title = "Order status updated"
+        try:
+            content, content_markdown = self._build_notification_content(order_filled, orders_canceled,
+                                                                         trade_profitability,
+                                                                         portfolio_profitability, portfolio_diff,
+                                                                         profitability)
 
-        content, content_markdown = self._build_notification_content(order_filled, orders_canceled, trade_profitability,
-                                                                     portfolio_profitability, portfolio_diff,
-                                                                     profitability)
+            await self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
 
-        await self.sent_twitter_reply_if_necessary(self.evaluator_notification, content, CONFIG_NOTIFICATION_TRADES)
+            await self.send_telegram_notification_if_necessary(content_markdown, CONFIG_NOTIFICATION_TRADES,
+                                                               markdown=True)
 
-        await self.send_telegram_notification_if_necessary(content_markdown, CONFIG_NOTIFICATION_TRADES, markdown=True)
+            await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content,
+                                                          CONFIG_NOTIFICATION_TRADES)
 
-        await self.send_web_notification_if_necessary(InterfaceLevel.INFO, title, content, CONFIG_NOTIFICATION_TRADES)
+        except Exception as e:
+            self.logger.error(f"Error when sending orders end notification [{title}] error: {e}")
+            self.logger.exception(e)
 
     @staticmethod
     def _build_notification_content(order_filled,
