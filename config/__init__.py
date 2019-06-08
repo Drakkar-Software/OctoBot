@@ -613,6 +613,9 @@ class MetricsFields(Enum):
     NOTIFICATIONS = "notifications"
     TYPE = "type"
     PLATFORM = "platform"
+    REFERENCE_MARKET = "referencemarket"
+    PORTFOLIO_VALUE = "portfoliovalue"
+    PROFITABILITY = "profitability"
 
 
 # web user settings

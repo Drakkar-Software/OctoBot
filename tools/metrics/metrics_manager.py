@@ -40,10 +40,12 @@ class MetricsManager:
         self.edited_config = octobot.edited_config
         self.enabled = ConfigManager.get_metrics_enabled(self.edited_config)
         self.bot_id = self._init_config_bot_id(self.edited_config)
+        self.reference_market = ConfigManager.get_reference_market(self.edited_config)
         self.logger = get_logger(self.__class__.__name__)
         self.current_config = None
         self.keep_running = True
         self.session = octobot.get_aiohttp_session()
+        self.has_real_trader = ConfigManager.get_trader_enabled(self.edited_config)
 
     def is_enabled(self):
         return self.enabled
@@ -58,7 +60,7 @@ class MetricsManager:
                     # send a keepalive at periodic intervals
                     await asyncio.sleep(TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
                     try:
-                        await self._update_uptime()
+                        await self._update_uptime_and_profitability()
                     except Exception as e:
                         self.logger.debug(f"Exception when handling metrics: {e}")
             except CancelledError:
@@ -106,9 +108,11 @@ class MetricsManager:
         self.current_config = await self._get_current_metrics_config()
         await self._post_metrics(METRICS_ROUTE_REGISTER, self.current_config, retry_on_error)
 
-    async def _update_uptime(self, retry_on_error=True):
+    async def _update_uptime_and_profitability(self, retry_on_error=True):
         self.current_config[MetricsFields.CURRENT_SESSION.value][MetricsFields.UP_TIME.value] = \
             int(time.time() - self.octobot.start_time)
+        self.current_config[MetricsFields.CURRENT_SESSION.value][MetricsFields.PROFITABILITY.value] = \
+            self._get_profitability()
         await self._post_metrics(METRICS_ROUTE_UPTIME, self.current_config, retry_on_error)
 
     async def _get_current_metrics_config(self):
@@ -124,15 +128,47 @@ class MetricsManager:
                 MetricsFields.STARTED_AT.value: int(self.octobot.start_time),
                 MetricsFields.UP_TIME.value: int(time.time() - self.octobot.start_time),
                 MetricsFields.SIMULATOR.value: ConfigManager.get_trader_simulator_enabled(self.edited_config),
-                MetricsFields.TRADER.value: ConfigManager.get_trader_enabled(self.edited_config),
+                MetricsFields.TRADER.value: self.has_real_trader,
                 MetricsFields.EVAL_CONFIG.value: self._get_eval_config(),
                 MetricsFields.PAIRS.value: self._get_traded_pairs(),
                 MetricsFields.EXCHANGES.value: list(self.octobot.get_exchanges_list().keys()),
                 MetricsFields.NOTIFICATIONS.value: self._get_notification_types(),
                 MetricsFields.TYPE.value: get_octobot_type(),
-                MetricsFields.PLATFORM.value: get_current_platform()
+                MetricsFields.PLATFORM.value: get_current_platform(),
+                MetricsFields.REFERENCE_MARKET.value: self.reference_market,
+                MetricsFields.PORTFOLIO_VALUE.value: self._get_real_portfolio_value(),
+                MetricsFields.PROFITABILITY.value: self._get_profitability()
             }
         }
+
+    def _get_profitability(self):
+        total_origin_values = 0
+        total_profitability = 0
+
+        for trader in self._get_traders(self.has_real_trader):
+            trade_manager = trader.get_trades_manager()
+            profitability, _, _ = trade_manager.get_profitability_without_update()
+            total_profitability += profitability
+            total_origin_values += trade_manager.get_portfolio_origin_value()
+
+        return total_profitability * 100 / total_origin_values if total_origin_values > 0 else 0
+
+    def _get_real_portfolio_value(self):
+        if self.has_real_trader:
+            total_value = 0
+
+            for trader in self._get_traders(self.has_real_trader):
+                trade_manager = trader.get_trades_manager()
+                current_value = trade_manager.get_portfolio_current_value()
+
+                # current_value might be 0 if no trades have been made / canceled => use origin value
+                if current_value == 0:
+                    current_value = trade_manager.get_portfolio_origin_value()
+
+                total_value += current_value
+            return total_value
+        else:
+            return 0
 
     def _get_traded_pairs(self):
         return list(set(evaluator.get_symbol() for evaluator in self.octobot.get_symbol_evaluator_list().values()))
@@ -160,6 +196,12 @@ class MetricsManager:
         for evaluator in evaluators:
             config_eval.append(evaluator.get_name())
         return config_eval
+
+    def _get_traders(self, real_traders):
+        if real_traders:
+            return [trader for trader in self.octobot.get_exchange_traders().values() if trader.is_enabled()]
+        else:
+            return [trader for trader in self.octobot.get_exchange_trader_simulators().values() if trader.is_enabled()]
 
     async def _init_bot_id(self):
         try:
