@@ -21,10 +21,14 @@
     <div class="card-body">
         <div class="custom-control custom-switch">
             <input type="checkbox" class="custom-control-input" id="metricsCheckbox" update-url="{{ url_for('metrics_settings') }}" {{ 'checked' if metrics_enabled else ''}}>
-            <label class="custom-control-label" for="metricsCheckbox">Send</label> anonymous data to help the OctoBot Community
+            <label class="custom-control-label" for="metricsCheckbox">Share</label> anonymous data to help the OctoBot Community
             <p>This will grant you access to the <a href="{{ url_for('community') }}"> OctoBot Community</a> and greatly help the OctoBot team to figure out the best ways to improve OctoBot.
                 <i class="fa fa-question" data-toggle="tooltip" data-placement="top"
-                    title="Sent data are: bot running time, whether simulator or real trader are activated and the name of used exchanges, tentacles, traded pairs, notification systems and finally if the current bot is running using python or the binary version and current platform type. Nothing else, no personal data.">
+                    title="Shared data are:
+Bot running time, trader type, the name of used exchanges, tentacles, traded pairs and notification systems.
+Overall portfolio value in reference market and profitability are shared to evaluate strategies performances.
+Finally the current environment details OctoBot is running on are also shared.
+Nothing else is ever shared: no personal data, zero identification enabling data.">
                 </i>
                 It won't slow your OctoBot down.
             </p>
@@ -35,7 +39,7 @@
                 In order to improve OctoBot, your user feedback is extremely helpful. The best way to make this project better and better is by telling us about your experience
                 (positive and negative) when using OctoBot.
             </p>
-            <a update-url="{{ url_for('api.user_feedback') }}" href="" id=feedbackButton class="button btn btn-primary waves-effect disabled" target="_blank" rel="noopener noreferrer">
+            <a update-url="{{ url_for('api.user_feedback') }}" href="" id=feedbackButton class="btn btn-primary waves-effect disabled" target="_blank" rel="noopener noreferrer">
                 Tell us what you think about OctoBot
             </a>
         </div>
