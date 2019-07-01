@@ -105,7 +105,7 @@ def _find_symbol_evaluator_with_data(evaluators, exchange):
     exchange_traded_pairs = exchange.get_exchange_manager().get_traded_pairs()
     if first_symbol in exchange_traded_pairs:
         return symbol_evaluator
-    elif first_symbol == CONFIG_WILDCARD:
+    elif first_symbol == [CONFIG_WILDCARD]:
         return evaluators[exchange_traded_pairs[0]]
     else:
         for symbol in evaluators.keys():

@@ -177,7 +177,7 @@ class ExchangeManager(Initializable):
         self.cryptocurrencies_traded_pairs = {}
         for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
             if self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]:
-                if self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS] != CONFIG_WILDCARD:
+                if self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS] != [CONFIG_WILDCARD]:
                     self.cryptocurrencies_traded_pairs[cryptocurrency] = []
                     for symbol in self.config[CONFIG_CRYPTO_CURRENCIES][cryptocurrency][CONFIG_CRYPTO_PAIRS]:
                         if self.symbol_exists(symbol):
