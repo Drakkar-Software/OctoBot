@@ -139,7 +139,7 @@ async def test_evaluator_factory_with_wildcard():
     config[CONFIG_CRYPTO_CURRENCIES] = {
         btc_crypto_currency:
             {
-                CONFIG_CRYPTO_PAIRS: CONFIG_WILDCARD,
+                CONFIG_CRYPTO_PAIRS: [CONFIG_WILDCARD],
                 CONFIG_CRYPTO_QUOTE: btc_quote
             }
     }
