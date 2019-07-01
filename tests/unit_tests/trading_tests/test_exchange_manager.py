@@ -85,7 +85,7 @@ class TestExchangeManager:
         _, exchange_manager = await self.init_default()
         exchange_manager.config[CONFIG_CRYPTO_CURRENCIES] = {
             "Bitcoin": {
-                "pairs": "*",
+                "pairs": ["*"],
                 "quote": "BTC"
             }
         }
@@ -105,7 +105,7 @@ class TestExchangeManager:
         _, exchange_manager = await self.init_default()
         exchange_manager.config[CONFIG_CRYPTO_CURRENCIES] = {
             "Bitcoin": {
-                "pairs": "*",
+                "pairs": ["*"],
                 "quote": "BTC",
                 "add": ["BTC/USDT"]
             }
