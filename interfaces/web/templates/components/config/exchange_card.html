@@ -40,24 +40,25 @@
                                  data-highlight=true
                                 class="editable editable-click config-element">
                 {{keys_value}}</a><br>
-
-                API Password
-                <i class="fa fa-question"
-                   data-toggle="tooltip" data-placement="top"
-                   title="An API password is required by some exchanges, leave as is otherwise.">
-                </i> : <a href="#"
-                          id="exchange_api-secret"
-                          config-key="exchanges_{{exchange}}_api-password"
-                          config-type="global_config"
-                          config-value="{{keys_value}}"
-                          startup-config-value="{{keys_value}}"
-                          data-type="text"
-                          data-pk="1"
-                          data-title="Enter exchange api password"
-                          data-onblur="submit"
-                          data-highlight=true
-                          class="editable editable-click config-element">
-                {{keys_value}}</a><br>
+                 <div class="card-text api font-weight-light">
+                    API Password
+                    <i class="fa fa-question"
+                       data-toggle="tooltip" data-placement="top"
+                       title="An API password is required by some exchanges, leave empty if this exchange doesn't require any.">
+                    </i> : <a href="#"
+                              id="exchange_api-secret"
+                              config-key="exchanges_{{exchange}}_api-password"
+                              config-type="global_config"
+                              config-value="{{keys_value}}"
+                              startup-config-value="{{keys_value}}"
+                              data-type="text"
+                              data-pk="1"
+                              data-title="Enter exchange api password"
+                              data-onblur="submit"
+                              data-highlight=true
+                              class="editable editable-click config-element">
+                    {{keys_value}}</a>
+                </div>
             </p>
 
             <button type="button" class="btn btn-danger remove-btn px-3 waves-effect"><i class="fa fa-ban" aria-hidden="true"></i> Remove</button>
