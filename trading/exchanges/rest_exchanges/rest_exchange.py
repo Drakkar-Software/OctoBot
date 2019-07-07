@@ -27,6 +27,7 @@ from trading.exchanges.abstract_exchange import AbstractExchange
 from trading.exchanges.exchange_market_status_fixer import ExchangeMarketStatusFixer
 from tools.initializable import Initializable
 from tools.dict_util import get_value_or_default
+from tools.config_manager import ConfigManager
 
 
 class RESTExchange(AbstractExchange, Initializable):
@@ -78,7 +79,9 @@ class RESTExchange(AbstractExchange, Initializable):
                     key = decrypt(config_exchange[CONFIG_EXCHANGE_KEY])
                     secret = decrypt(config_exchange[CONFIG_EXCHANGE_SECRET])
                     password = decrypt(config_exchange[CONFIG_EXCHANGE_PASSWORD]) \
-                        if CONFIG_EXCHANGE_PASSWORD in config_exchange else None
+                        if CONFIG_EXCHANGE_PASSWORD in config_exchange and \
+                        not ConfigManager.has_invalid_default_config_value(config_exchange[CONFIG_EXCHANGE_PASSWORD]) \
+                        else None
 
                 self.client = self.exchange_type({
                     'apiKey': key,
