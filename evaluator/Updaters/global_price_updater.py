@@ -21,7 +21,7 @@ from concurrent.futures import CancelledError
 
 from tools.logging.logging_util import get_logger
 from backtesting import BacktestingEndedException, backtesting_enabled
-from config import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPING_TIME
+from config import TimeFramesMinutes, MINUTE_TO_SECONDS, UPDATER_MAX_SLEEPING_TIME, PriceIndexes
 from tools.time_frame_manager import TimeFrameManager
 
 
@@ -34,6 +34,7 @@ class GlobalPriceUpdater:
         self.evaluator_task_manager_by_time_frame_by_symbol = {}
         self.refreshed_times = {}
         self.time_frame_last_update = {}
+        self.time_frame_next_update = {}
         self.symbols = []
         self.symbol_evaluators = []
         self.watcher = None
@@ -118,9 +119,10 @@ class GlobalPriceUpdater:
                     update_tasks.append(self._refresh_backtesting_time_frame_data(time_frame, symbol))
 
                 # if data from this time frame needs an update
-                elif now - self.time_frame_last_update[time_frame][symbol] \
-                        >= TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS:
-                    update_tasks.append(self._refresh_time_frame_data(time_frame, symbol, update_time=now))
+                else:
+                    next_update_time = self._get_symbol_time_frame_next_update_time(symbol, time_frame)
+                    if not next_update_time or now >= next_update_time:
+                        update_tasks.append(self._refresh_time_frame_data(time_frame, symbol, update_time=now))
 
         await asyncio.gather(*update_tasks)
 
@@ -132,6 +134,24 @@ class GlobalPriceUpdater:
 
         if self.keep_running:
             await self._update_pause(now)
+
+    def _get_symbol_time_frame_next_update_time(self, symbol, time_frame):
+        if time_frame in self.time_frame_next_update:
+            if symbol in self.time_frame_next_update[time_frame]:
+                return self.time_frame_next_update[time_frame][symbol]
+        return None
+
+    def _set_symbol_time_frame_next_update_time(self, symbol, time_frame, candle_time):
+        if time_frame not in self.time_frame_next_update:
+            self.time_frame_next_update[time_frame] = {}
+
+        if symbol not in self.time_frame_next_update[time_frame] or not self.time_frame_next_update[time_frame][symbol]:
+            if candle_time:
+                self.time_frame_next_update[time_frame][symbol] = candle_time
+            else:
+                self.time_frame_next_update[time_frame][symbol] = time.time()
+
+        self.time_frame_next_update[time_frame][symbol] += TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS
 
     async def trigger_symbols_finalize(self):
         sort_symbol_evaluators = sorted(self.symbol_evaluators,
@@ -199,6 +219,10 @@ class GlobalPriceUpdater:
                 from tools.timestamp_util import convert_timestamp_to_datetime
                 if target_candle_date in convert_timestamp_to_datetime(numpy_candle_data[0][-1]):
                     print("found candle")
+        else:
+            self._set_symbol_time_frame_next_update_time(symbol,
+                                                         time_frame,
+                                                         numpy_candle_data[PriceIndexes.IND_PRICE_TIME.value][-1])
 
         evaluator_task_manager_to_notify.evaluator.set_data(numpy_candle_data)
         self.refreshed_times[time_frame][symbol] += 1
