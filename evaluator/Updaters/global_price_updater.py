@@ -145,13 +145,12 @@ class GlobalPriceUpdater:
         if time_frame not in self.time_frame_next_update:
             self.time_frame_next_update[time_frame] = {}
 
-        if symbol not in self.time_frame_next_update[time_frame] or not self.time_frame_next_update[time_frame][symbol]:
-            if candle_time:
-                self.time_frame_next_update[time_frame][symbol] = candle_time
-            else:
-                self.time_frame_next_update[time_frame][symbol] = time.time()
+        if candle_time:
+            self.time_frame_next_update[time_frame][symbol] = candle_time
+        elif symbol not in self.time_frame_next_update[time_frame]:
+            self.time_frame_next_update[time_frame][symbol] = time.time()
 
-        self.time_frame_next_update[time_frame][symbol] += TimeFramesMinutes[time_frame] * MINUTE_TO_SECONDS
+        self.time_frame_next_update[time_frame][symbol] += TimeFramesMinutes[time_frame] * 2 * MINUTE_TO_SECONDS
 
     async def trigger_symbols_finalize(self):
         sort_symbol_evaluators = sorted(self.symbol_evaluators,
