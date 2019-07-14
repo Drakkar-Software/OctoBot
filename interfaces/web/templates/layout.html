@@ -79,8 +79,8 @@
                         <li class="nav-item mx-1 px-0 {% if 'portfolio' == active_page %} active{% endif %}">
                             <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
                         </li>
-                        <li class="nav-item mx-1 px-0 {% if 'backtesting' == active_page %} active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('backtesting') }}">Backtesting</a>
+                        <li class="nav-item mx-1 px-0 {% if 'config' == active_page %} active{% endif %}">
+                            <a class="nav-link" href="{{ url_for('config') }}">Configuration</a>
                         </li>
                     </ul>
                 </div>
@@ -92,14 +92,14 @@
                 </div>
                 <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
                     <ul class="navbar-nav ml-auto">
+                        <li class="nav-item mx-1 px-0 {% if 'backtesting' == active_page %} active{% endif %}">
+                            <a class="nav-link" href="{{ url_for('backtesting') }}">Backtesting</a>
+                        </li>
                         <li class="nav-item mx-1 px-0 {% if 'community' == active_page %} active{% endif %}">
                             <a class="nav-link" href="{{ url_for('community') }}">Community</a>
                         </li>
                         <li class="nav-item mx-1 px-0 {% if 'tentacles' == active_page %} active{% endif %}">
                             <a class="nav-link" href="{{ url_for('tentacles') }}">Tentacles</a>
-                        </li>
-                        <li class="nav-item mx-1 px-0 {% if 'config' == active_page %} active{% endif %}">
-                            <a class="nav-link" href="{{ url_for('config') }}">Configuration</a>
                         </li>
                         <li class="nav-item mx-1 px-0 {% if 'logs' == active_page %} active{% endif %}">
                             <a class="nav-link" href="{{ url_for('logs') }}"><i class="fa fa-bell" data-toggle="tooltip" data-placement="top" title="Event logs">
