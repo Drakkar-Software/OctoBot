@@ -22,10 +22,43 @@ JSONEditor.defaults.options.iconlib = 'fontawesome5';
 // custom octobot theme
 JSONEditor.defaults.themes.octobot = JSONEditor.defaults.themes.bootstrap4.extend({
   getButton: function(text, icon, title) {
-    var el = this._super(text, icon, title);
+    const el = this._super(text, icon, title);
     el.classList.remove("btn-secondary");
     el.classList.add("btn-sm", "btn-primary", "waves-effect");
     return el;
+  },
+  getCheckbox: function() {
+    const el = this.getFormInputField('checkbox');
+    el.classList.add("custom-control-input");
+    return el;
+  },
+  getCheckboxLabel: function(text) {
+    const el = this.getFormInputLabel(text);
+    el.classList.add("custom-control-label");
+    return el;
+  },
+  getFormControl: function(label, input, description) {
+    const group = document.createElement("div");
+
+    if (label && input.type === "checkbox") {
+      group.classList.add("checkbox", "custom-control", "custom-switch");
+      const id = $(label).text();
+      input.id=id;
+      label.setAttribute("for", id);
+      group.appendChild(input);
+      group.appendChild(label);
+    } else {
+      group.classList.add("form-group");
+      if (label) {
+        label.classList.add("form-control-label");
+        group.appendChild(label);
+      }
+      group.appendChild(input);
+    }
+
+    if (description) group.appendChild(description);
+
+    return group;
   }
 });
 
