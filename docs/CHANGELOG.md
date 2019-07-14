@@ -1,5 +1,28 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+Changelog for 0.3.6-beta
+====================
+*Released date : July 15 2019*
+
+# Concerned issues / pull request:
+    #922 [Notifications] Uncaught exception when error on notifications publish bug
+    #937 [Exchanges] API token fail when api-password is provided but not necessary bug
+    #940 [Bug][High] Fix updater candle time synchronization
+    #927 [Docker] expose web interface for inter-container communications
+    #900 Fix Config checker failed when using wildcard on pairs
+    #931 Improved navbar UI
+    #944 Added switch design for tentacle config checkboxes
+
+# Bug fixes :
+    - Fixed exchange API token error during first installation
+    - Fixed timeframes update rate to fit timeframes time
+    - Fixed uncaught notification exception
+    - Fixed wildcard configuration validation error
+    
+# New features :
+    - Added configuration for Daily and Signal trading modes
+    - Improved web interface UI 
+
 Changelog for 0.3.5-beta
 ====================
 *Released date : May 27 2019*
