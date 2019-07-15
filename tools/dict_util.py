@@ -33,10 +33,10 @@ def find_nested_value(dict_, field):
     return False, field
 
 
-def get_value_or_default(dictionary, key, default=None):
+def get_value_or_default(dictionary, key, default=None, strict=False):
     if dictionary and key in dictionary:
         value = dictionary[key]
-        return value or default
+        return value if strict else value or default
     return default
 
 
