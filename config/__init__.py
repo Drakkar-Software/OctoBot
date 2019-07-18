@@ -371,6 +371,7 @@ class TimeFrames(Enum):
     TWO_HOURS = "2h"
     THREE_HOURS = "3h"
     FOUR_HOURS = "4h"
+    SIX_HOURS = "6h"
     HEIGHT_HOURS = "8h"
     TWELVE_HOURS = "12h"
     ONE_DAY = "1d"
@@ -391,6 +392,7 @@ TimeFramesMinutes = {
     TimeFrames.TWO_HOURS: 120,
     TimeFrames.THREE_HOURS: 180,
     TimeFrames.FOUR_HOURS: 240,
+    TimeFrames.SIX_HOURS: 360,
     TimeFrames.HEIGHT_HOURS: 480,
     TimeFrames.TWELVE_HOURS: 720,
     TimeFrames.ONE_DAY: 1440,
