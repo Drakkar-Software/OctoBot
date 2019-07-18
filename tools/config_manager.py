@@ -22,7 +22,7 @@ from copy import copy, deepcopy
 from functools import reduce
 import jsonschema
 
-from config.config import load_config, decrypt, encrypt
+from config.config import load_config, decrypt, encrypt, get_user_config
 from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONFIG_SEPARATOR, CONFIG_FILE, \
     TEMP_RESTORE_CONFIG_FILE, CONFIG_NOTIFICATION_INSTANCE, CONFIG_EVALUATOR, CONFIG_INTERFACES, CONFIG_TRADING_FILE, \
     CONFIG_ADVANCED_INSTANCES, CONFIG_TIME_FRAME, CONFIG_SERVICE_INSTANCE, CONFIG_CATEGORY_SERVICES, CONFIG_EXCHANGES, \
@@ -30,7 +30,7 @@ from config import CONFIG_DEBUG_OPTION, CONFIG_EVALUATOR_FILE_PATH, UPDATED_CONF
     DEFAULT_CONFIG_VALUES, CONFIG_TRADER_REFERENCE_MARKET, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS, \
     DEFAULT_REFERENCE_MARKET, CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_ENABLED_OPTION, \
     CONFIG_METRICS, CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_FILE_SCHEMA, CONFIG_TRADING, CONFIG_ACCEPTED_TERMS, \
-    TENTACLE_DEFAULT_FOLDER, CONFIG_EXCHANGE_ENCRYPTED_VALUES
+    TENTACLE_DEFAULT_FOLDER, CONFIG_EXCHANGE_ENCRYPTED_VALUES, USER_FOLDER
 from tools.symbol_util import split_symbol
 from tools.dict_util import get_value_or_default
 from backtesting import backtesting_enabled
@@ -114,7 +114,7 @@ class ConfigManager:
         # 3 save fixed config if necessary
         if should_replace_config:
             try:
-                ConfigManager.save_config(CONFIG_FILE,
+                ConfigManager.save_config(get_user_config(),
                                           config,
                                           TEMP_RESTORE_CONFIG_FILE,
                                           json_data=ConfigManager.dump_json(config))
@@ -251,13 +251,13 @@ class ConfigManager:
                 reduce(ConfigManager.merge_dictionaries_by_appending_keys, [current_config] + updated_configs)
 
         # save config
-        ConfigManager.save_config(CONFIG_FILE, new_current_config, TEMP_RESTORE_CONFIG_FILE)
+        ConfigManager.save_config(get_user_config(), new_current_config, TEMP_RESTORE_CONFIG_FILE)
 
     @staticmethod
     def simple_save_config_update(updated_config):
         to_save_config = copy(updated_config)
         ConfigManager.remove_loaded_only_element(to_save_config)
-        ConfigManager.save_config(CONFIG_FILE, to_save_config, TEMP_RESTORE_CONFIG_FILE)
+        ConfigManager.save_config(get_user_config(), to_save_config, TEMP_RESTORE_CONFIG_FILE)
         return True
 
     @staticmethod
