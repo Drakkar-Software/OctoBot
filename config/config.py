@@ -21,12 +21,16 @@ from shutil import copyfile
 
 from cryptography.fernet import Fernet, InvalidToken
 
-from config import CONFIG_FILE, OCTOBOT_KEY, DEFAULT_CONFIG_FILE, CONFIG_CRYPTO_CURRENCIES, CONFIG_CATEGORY_SERVICES, \
-    CONFIG_STARTING_PORTFOLIO, CONFIG_EXCHANGES
+from config import OCTOBOT_KEY, DEFAULT_CONFIG_FILE, CONFIG_CRYPTO_CURRENCIES, CONFIG_CATEGORY_SERVICES, \
+    CONFIG_STARTING_PORTFOLIO, CONFIG_EXCHANGES, USER_FOLDER, CONFIG_FILE
 from tools.dict_util import check_and_merge_values_from_reference
 
 
-def load_config(config_file=CONFIG_FILE, error=True, fill_missing_fields=False):
+def get_user_config():
+    return os.path.join(USER_FOLDER, CONFIG_FILE)
+
+
+def load_config(config_file=get_user_config(), error=True, fill_missing_fields=False):
     logger = logging.getLogger("CONFIG LOADER")
     basic_error = "Error when load config file {0}".format(config_file)
     try:
@@ -56,14 +60,17 @@ def load_config(config_file=CONFIG_FILE, error=True, fill_missing_fields=False):
     return None
 
 
-def init_config(config_file=CONFIG_FILE, from_config_file=DEFAULT_CONFIG_FILE):
+def init_config(config_file=get_user_config(), from_config_file=DEFAULT_CONFIG_FILE):
     try:
+        if not os.path.exists(USER_FOLDER):
+            os.makedirs(USER_FOLDER)
+
         copyfile(from_config_file, config_file)
     except Exception as e:
         raise Exception(f"Can't init config file {e}")
 
 
-def is_config_empty_or_missing(config_file=CONFIG_FILE):
+def is_config_empty_or_missing(config_file=get_user_config()):
     return (not os.path.isfile(config_file)) or os.stat(config_file).st_size == 0
 
 

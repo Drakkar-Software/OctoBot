@@ -281,6 +281,7 @@ TENTACLES_DEFAULT_BRANCH = SHORT_VERSION
 TENTACLES_FORCE_CONFIRM_PARAM = "force"
 
 # Files
+USER_FOLDER = "user"
 CONFIG_FILE = "config.json"
 TEMP_RESTORE_CONFIG_FILE = "temp_config.json"
 CONFIG_EVALUATOR_FILE = "evaluator_config.json"
