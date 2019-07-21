@@ -264,7 +264,8 @@ class RESTExchange(AbstractExchange, Initializable):
     def _ensure_order_details_completeness(order, order_required_fields=None):
         if order_required_fields is None:
             order_required_fields = [ecoc.ID.value, ecoc.TIMESTAMP.value, ecoc.SYMBOL.value, ecoc.TYPE.value,
-                                     ecoc.SIDE.value, ecoc.PRICE.value, ecoc.AMOUNT.value, ecoc.REMAINING.value]
+                                     ecoc.SIDE.value, ecoc.PRICE.value, ecoc.AMOUNT.value, ecoc.REMAINING.value,
+                                     ecoc.STATUS.value]
         return all(key in order for key in order_required_fields)
 
     def _log_error(self, error, order_type, symbol, quantity, price, stop_price):
