@@ -225,9 +225,16 @@ class RESTExchange(AbstractExchange, Initializable):
                     created_order = await self.exchange_manager.get_exchange().get_order(created_order[ecoc.ID.value],
                                                                                          order_symbol)
 
-            # on some exchange, market order are not not including price, add it manually to ensure uniformity
+            # Missing order fields after retry handling
+
+            # on some exchange, market orders are not not including price, add it manually to ensure uniformity
             if created_order[ecoc.PRICE.value] is None and price is not None:
                 created_order[ecoc.PRICE.value] = price
+
+            # on some exchange (ex: Kraken), orders are not not including status, add it manually to ensure uniformity
+            # since order status is required and this order just got created, consider it open
+            if created_order[ecoc.STATUS.value] is None:
+                created_order[ecoc.STATUS.value] = OrderStatus.OPEN.value
 
             return created_order
 
