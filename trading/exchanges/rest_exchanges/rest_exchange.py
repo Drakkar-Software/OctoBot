@@ -231,11 +231,6 @@ class RESTExchange(AbstractExchange, Initializable):
             if created_order[ecoc.PRICE.value] is None and price is not None:
                 created_order[ecoc.PRICE.value] = price
 
-            # on some exchange (ex: Kraken), orders are not not including status, add it manually to ensure uniformity
-            # since order status is required and this order just got created, consider it open
-            if created_order[ecoc.STATUS.value] is None:
-                created_order[ecoc.STATUS.value] = OrderStatus.OPEN.value
-
             return created_order
 
         except InsufficientFunds as e:
