@@ -221,27 +221,12 @@ class ExchangeSimulator(AbstractExchange):
                 } for trade_dict in current_trades]
 
     def generate_trades(self, time_frame, timestamp):
-        trades = []
-        created_trades = []
-        max_price = time_frame[PriceIndexes.IND_PRICE_HIGH.value]
-        min_price = time_frame[PriceIndexes.IND_PRICE_LOW.value]
-        # TODO generate trades with different patterns (linear, waves, random, etc)
-        for _ in range(0, self.RECENT_TRADES_TO_CREATE - 2):
-            trades.append((max_price + min_price) / 2)
-
-        # add very max and very min
-        trades.append(max_price)
-        trades.append(min_price)
-
-        for trade in trades:
-            created_trades.append(
-                {
-                    "price": trade * self.recent_trades_multiplier_factor,
-                    "timestamp": timestamp
-                }
-            )
-
-        return created_trades
+        return [
+            {
+                "price": time_frame[PriceIndexes.IND_PRICE_CLOSE.value],
+                "timestamp": timestamp
+            }
+            for _ in range(0, self.RECENT_TRADES_TO_CREATE - 1)]
 
     @staticmethod
     def _extract_from_indexes(array, max_index, symbol, factor=1):
