@@ -491,9 +491,8 @@ class Trader(Initializable):
                                           price=order["price"],
                                           timestamp=order["timestamp"])
 
-    @staticmethod
-    def update_order_with_exchange_order(exchange_order, order):
-        order.status = Trader.parse_status(exchange_order)
+    def update_order_with_exchange_order(self, exchange_order, order):
+        order.status = self.parse_status(exchange_order)
         order.total_cost = exchange_order[ExchangeConstantsOrderColumns.COST.value]
         order.filled_quantity = exchange_order[ExchangeConstantsOrderColumns.FILLED.value]
         order.filled_price = exchange_order[ExchangeConstantsOrderColumns.PRICE.value]
@@ -518,9 +517,16 @@ class Trader(Initializable):
     def parse_exchange_order_to_trade_instance(self, exchange_order, order):
         self.update_order_with_exchange_order(exchange_order, order)
 
-    @staticmethod
-    def parse_status(order):
-        return OrderStatus(order["status"])
+    def parse_status(self, order):
+        try:
+            return OrderStatus(order["status"])
+        except ValueError:
+            status = order["status"]
+            if status is None:
+                self.logger.debug(f"Received order status is {status}: using default value")
+            else:
+                self.logger.error(f"Incompatible received order status {status}: using default value")
+            return None
 
     @staticmethod
     def parse_order_type(order):
