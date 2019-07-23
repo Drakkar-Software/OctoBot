@@ -17,7 +17,7 @@
 import copy
 import time
 
-from backtesting import BacktestingEndedException, backtesting_enabled
+from backtesting import BacktestingEndedException, backtesting_enabled, BacktestingRecentTradeGeneration
 from backtesting.backtesting import Backtesting
 from backtesting.collector.data_file_manager import interpret_file_name
 from backtesting.collector.data_parser import DataCollectorParser
@@ -26,7 +26,9 @@ from config import TimeFrames, ExchangeConstantsMarketStatusColumns, CONFIG_BACK
     TimeFramesMinutes, ExchangeConstantsTickersColumns, CONFIG_SIMULATOR, CONFIG_SIMULATOR_FEES, \
     CONFIG_SIMULATOR_FEES_MAKER, CONFIG_DEFAULT_SIMULATOR_FEES, TraderOrderType, FeePropertyColumns, \
     ExchangeConstantsMarketPropertyColumns, CONFIG_SIMULATOR_FEES_TAKER, CONFIG_SIMULATOR_FEES_WITHDRAW, \
-    BACKTESTING_DATA_OHLCV, BACKTESTING_DATA_TRADES, ExchangeConstantsOrderColumns, OHLCVStrings
+    BACKTESTING_DATA_OHLCV, BACKTESTING_DATA_TRADES, ExchangeConstantsOrderColumns, OHLCVStrings, \
+    CONFIG_BACKTESTING_TRADES_GENERATION
+from tools.dict_util import get_value_or_default
 from tools.time_frame_manager import TimeFrameManager
 from tools.symbol_util import split_symbol
 from tools.data_util import DataUtil
@@ -200,10 +202,14 @@ class ExchangeSimulator(AbstractExchange):
             if backtesting_enabled(self.config) else time.time()
 
         if not self.handles_trades_history(symbol) or not backtesting_enabled(self.config):
-            return self.generate_trades(time_frame, start_timestamp)
+            return self.generate_trades(time_frame, start_timestamp,
+                                        BacktestingRecentTradeGeneration(
+                                            get_value_or_default(self.config[CONFIG_BACKTESTING],
+                                                                 CONFIG_BACKTESTING_TRADES_GENERATION,
+                                                                 default=BacktestingRecentTradeGeneration.AVERAGE.value)))
         else:
-            end_timestamp = self.get_ohlcv(symbol)[timeframe.value][index+1][PriceIndexes.IND_PRICE_TIME.value] \
-                if len(self.get_ohlcv(symbol)[timeframe.value]) > index+1 else -1
+            end_timestamp = self.get_ohlcv(symbol)[timeframe.value][index + 1][PriceIndexes.IND_PRICE_TIME.value] \
+                if len(self.get_ohlcv(symbol)[timeframe.value]) > index + 1 else -1
             return self.select_trades(start_timestamp, end_timestamp, symbol)
 
     def select_trades(self, start_timestamp, end_timestamp, symbol):
@@ -216,17 +222,27 @@ class ExchangeSimulator(AbstractExchange):
                                    or end_timestamp == -1))
                           ]
         return [{
-                    "price": float(trade_dict[ExchangeConstantsOrderColumns.PRICE.value]),
-                    "timestamp": self.get_uniform_timestamp(trade_dict[ExchangeConstantsOrderColumns.TIMESTAMP.value])
-                } for trade_dict in current_trades]
+            "price": float(trade_dict[ExchangeConstantsOrderColumns.PRICE.value]),
+            "timestamp": self.get_uniform_timestamp(trade_dict[ExchangeConstantsOrderColumns.TIMESTAMP.value])
+        } for trade_dict in current_trades]
 
-    def generate_trades(self, time_frame, timestamp):
-        return [
-            {
-                "price": time_frame[PriceIndexes.IND_PRICE_CLOSE.value],
-                "timestamp": timestamp
-            }
-            for _ in range(0, self.RECENT_TRADES_TO_CREATE - 1)]
+    def generate_trades(self, time_frame, timestamp, trades_generation):
+        if trades_generation is BacktestingRecentTradeGeneration.CLOSE_ONLY:
+            close_only_trade = self._generate_trade(time_frame[PriceIndexes.IND_PRICE_CLOSE.value], timestamp)
+            return [close_only_trade for _ in range(0, self.RECENT_TRADES_TO_CREATE - 1)]
+
+        if trades_generation is BacktestingRecentTradeGeneration.AVERAGE:
+            max_price = time_frame[PriceIndexes.IND_PRICE_HIGH.value]
+            min_price = time_frame[PriceIndexes.IND_PRICE_LOW.value]
+            average_trade = self._generate_trade((max_price + min_price) / 2, timestamp)
+            return [average_trade for _ in range(0, self.RECENT_TRADES_TO_CREATE - 1)] + \
+                   [self._generate_trade(max_price, timestamp), self._generate_trade(min_price, timestamp)]
+
+    def _generate_trade(self, price, timestamp):
+        return {
+            "price": price * self.recent_trades_multiplier_factor,
+            "timestamp": timestamp
+        }
 
     @staticmethod
     def _extract_from_indexes(array, max_index, symbol, factor=1):

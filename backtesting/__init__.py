@@ -14,13 +14,18 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-
+from enum import Enum
 from config import CONFIG_BACKTESTING, CONFIG_ENABLED_OPTION
 
 
 def backtesting_enabled(config):
     return CONFIG_BACKTESTING in config and CONFIG_ENABLED_OPTION in config[CONFIG_BACKTESTING] \
            and config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION]
+
+
+class BacktestingRecentTradeGeneration(Enum):
+    AVERAGE = "average"
+    CLOSE_ONLY = "close_only"
 
 
 class BacktestingEndedException(Exception):
