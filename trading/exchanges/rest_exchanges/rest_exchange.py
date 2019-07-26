@@ -150,7 +150,7 @@ class RESTExchange(AbstractExchange, Initializable):
         order_book = await self.client.fetch_order_book(symbol, limit)
         self.get_symbol_data(symbol).update_order_book(order_book)
 
-    async def get_recent_trades(self, symbol, limit=50):
+    async def get_recent_trades(self, symbol, limit=50, candle_range=True):
         trades = await self.client.fetch_trades(symbol, limit=limit)
         self.get_symbol_data(symbol).update_recent_trades(trades)
 

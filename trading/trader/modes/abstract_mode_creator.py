@@ -291,7 +291,7 @@ class AbstractTradingModeCreator:
 
     @staticmethod
     async def get_pre_order_data(exchange, symbol, portfolio):
-        last_prices = await exchange.execute_request_with_retry(exchange.get_recent_trades(symbol))
+        last_prices = await exchange.execute_request_with_retry(exchange.get_recent_trades(symbol, candle_range=False))
 
         used_last_prices = last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]
 

@@ -173,14 +173,14 @@ class ExchangeDispatcher(AbstractExchange):
 
         return symbol_data.get_symbol_order_book()
 
-    async def get_recent_trades(self, symbol, limit=50):
+    async def get_recent_trades(self, symbol, limit=50, candle_range=True):
         symbol_data = self.get_symbol_data(symbol)
 
         if not self._web_socket_available() or not symbol_data.recent_trades_are_initialized():
             if not self._web_socket_available() or \
                     (self._web_socket_available() and self.exchange_web_socket.handles_recent_trades()):
                 symbol_data.init_recent_trades()
-            await self.exchange.get_recent_trades(symbol=symbol, limit=limit)
+            await self.exchange.get_recent_trades(symbol=symbol, limit=limit, candle_range=candle_range)
 
         return symbol_data.get_symbol_recent_trades()
 

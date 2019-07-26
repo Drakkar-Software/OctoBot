@@ -56,7 +56,7 @@ class AbstractExchange:
         pass
 
     @abstractmethod
-    async def get_recent_trades(self, symbol, limit=50):
+    async def get_recent_trades(self, symbol, limit=50, candle_range=True):
         pass
 
     @abstractmethod
