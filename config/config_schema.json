@@ -28,6 +28,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "trades_generation": {
+          "type": "string"
         }
       }
     },
