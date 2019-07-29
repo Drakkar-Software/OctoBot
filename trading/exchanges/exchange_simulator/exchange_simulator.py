@@ -59,6 +59,7 @@ class ExchangeSimulator(AbstractExchange):
         self.time_frame_get_times = {}
         self.time_frames_offset = {}
         self.min_time_frame_to_consider = {}
+        self.min_time_frames_offset = None
 
         self.DEFAULT_LIMIT = 100
         self.MIN_LIMIT = 30
@@ -158,7 +159,7 @@ class ExchangeSimulator(AbstractExchange):
                 self.time_frames_offset = {}
 
     def should_update_data(self, time_frame, symbol):
-        smallest_time_frame = TimeFrameManager.find_min_time_frame(self.config_time_frames)
+        smallest_time_frame = self.MIN_ENABLED_TIME_FRAME
         if smallest_time_frame == time_frame:
             # always True: refresh smallest timeframe systematically when possible
             return True
@@ -195,12 +196,13 @@ class ExchangeSimulator(AbstractExchange):
                 f"No candle data for {self.DEFAULT_TIME_FRAME_TICKERS_CREATOR.value} time frame for {symbol}.")
 
     def _fetch_recent_trades(self, symbol, timeframe, index):
-        time_frame = self.get_ohlcv(symbol)[timeframe.value][index]
-        start_timestamp = time_frame[PriceIndexes.IND_PRICE_TIME.value] \
+        # Use index + 1 to use prices from the current candle. Currently evaluated candle (previous candle) is closed.
+        current_candle = self.get_ohlcv(symbol)[timeframe.value][index + 1]
+        start_timestamp = current_candle[PriceIndexes.IND_PRICE_TIME.value] \
             if backtesting_enabled(self.config) else time.time()
 
         if not self.handles_trades_history(symbol) or not backtesting_enabled(self.config):
-            return self.generate_trades(time_frame, start_timestamp)
+            return self._generate_trades(current_candle, start_timestamp)
         else:
             end_timestamp = self.get_ohlcv(symbol)[timeframe.value][index+1][PriceIndexes.IND_PRICE_TIME.value] \
                 if len(self.get_ohlcv(symbol)[timeframe.value]) > index+1 else -1
@@ -215,37 +217,32 @@ class ExchangeSimulator(AbstractExchange):
                                    <= end_timestamp
                                    or end_timestamp == -1))
                           ]
-        return [{
-                    "price": float(trade_dict[ExchangeConstantsOrderColumns.PRICE.value]),
-                    "timestamp": self.get_uniform_timestamp(trade_dict[ExchangeConstantsOrderColumns.TIMESTAMP.value])
-                } for trade_dict in current_trades]
+        return [self._create_trade_using_price(
+                    float(trade_dict[ExchangeConstantsOrderColumns.PRICE.value]),
+                    self.get_uniform_timestamp(trade_dict[ExchangeConstantsOrderColumns.TIMESTAMP.value]))
+                for trade_dict in current_trades]
 
-    def generate_trades(self, time_frame, timestamp):
-        trades = []
-        created_trades = []
-        max_price = time_frame[PriceIndexes.IND_PRICE_HIGH.value]
-        min_price = time_frame[PriceIndexes.IND_PRICE_LOW.value]
-        # TODO generate trades with different patterns (linear, waves, random, etc)
-        for _ in range(0, self.RECENT_TRADES_TO_CREATE - 2):
-            trades.append((max_price + min_price) / 2)
+    def _generate_trades(self, current_candle, timestamp):
+        # return
+        # - self.RECENT_TRADES_TO_CREATE - 2 open price trades
+        # - 1 highest price trade
+        # - 1 lowest price trade
+        # high and low trades are use for order fill checks and open are use for order creation (with price average)
+        open_trade = self._create_trade_using_price(current_candle[PriceIndexes.IND_PRICE_OPEN.value], timestamp)
+        return [open_trade] * (self.RECENT_TRADES_TO_CREATE - 2) + \
+               [self._create_trade_using_price(current_candle[PriceIndexes.IND_PRICE_HIGH.value], timestamp),
+                self._create_trade_using_price(current_candle[PriceIndexes.IND_PRICE_LOW.value], timestamp)]
 
-        # add very max and very min
-        trades.append(max_price)
-        trades.append(min_price)
-
-        for trade in trades:
-            created_trades.append(
-                {
-                    "price": trade * self.recent_trades_multiplier_factor,
+    def _create_trade_using_price(self, price, timestamp):
+        return {
+                    "price": price * self.recent_trades_multiplier_factor,
                     "timestamp": timestamp
                 }
-            )
-
-        return created_trades
 
     @staticmethod
     def _extract_from_indexes(array, max_index, symbol, factor=1):
-        max_limit = len(array)
+        # always stop before the last candle to be able to read data from it during the n-1 evaluation
+        max_limit = len(array) - 1
         max_index *= factor
 
         if max_index > max_limit:
@@ -264,8 +261,9 @@ class ExchangeSimulator(AbstractExchange):
         return self.time_frames_offset[symbol][time_frame] + self.time_frame_get_times[symbol][time_frame]
 
     def _extract_data_with_limit(self, symbol, time_frame):
-        to_use_time_frame = time_frame.value or \
-                            TimeFrameManager.find_min_time_frame(self.time_frames_offset[symbol].keys()).value
+        if not self.min_time_frames_offset:
+            self.min_time_frames_offset = TimeFrameManager.find_min_time_frame(self.time_frames_offset[symbol].keys())
+        to_use_time_frame = time_frame.value or self.min_time_frames_offset.value
         return self._extract_from_indexes(self.get_ohlcv(symbol)[to_use_time_frame],
                                           self._get_candle_index(to_use_time_frame, symbol),
                                           symbol)
@@ -304,7 +302,7 @@ class ExchangeSimulator(AbstractExchange):
 
     async def get_recent_trades(self, symbol, limit=50):
         self._ensure_available_data(symbol)
-        time_frame_to_use = TimeFrameManager.find_min_time_frame(self._get_used_time_frames(symbol))
+        time_frame_to_use = self.min_time_frames_offset or self.DEFAULT_TIME_FRAME_RECENT_TRADE_CREATOR
         index = 0
         if symbol in self.time_frames_offset and time_frame_to_use.value in self.time_frames_offset[symbol] \
                 and time_frame_to_use.value in self.time_frame_get_times[symbol]:
