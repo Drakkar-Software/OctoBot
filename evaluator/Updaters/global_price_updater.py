@@ -129,7 +129,9 @@ class GlobalPriceUpdater:
         if update_tasks:
             await self.trigger_symbols_finalize()
 
-        if self.in_backtesting:
+        if self.in_backtesting and self.keep_running:
+            # force update orders in backtesting but can't update on the very last candle (no next candle
+            # to create recent trades from)
             await self.update_backtesting_order_status()
 
         if self.keep_running:
