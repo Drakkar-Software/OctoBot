@@ -280,13 +280,18 @@ class ExchangeSimulator(AbstractExchange):
 
     async def get_symbol_prices(self, symbol, time_frame, limit=None, return_list=True):
         self._ensure_available_data(symbol)
-        candles = self._extract_data_with_limit(symbol, time_frame)
-        if time_frame is not None:
+        try:
+            candles = self._extract_data_with_limit(symbol, time_frame)
+            if time_frame is not None:
+                self.time_frame_get_times[symbol][time_frame.value] += 1
+                # if it's at least the second iteration: only use the last candle, otherwise use all
+                if self.time_frame_get_times[symbol][time_frame.value] > 1:
+                    candles = candles[-1]
+                self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles)
+        except BacktestingEndedException as e:
+            # increment candles to compute profitability on the last one at the end of the simulation
             self.time_frame_get_times[symbol][time_frame.value] += 1
-            # if it's at least the second iteration: only use the last candle, otherwise use all
-            if self.time_frame_get_times[symbol][time_frame.value] > 1:
-                candles = candles[-1]
-            self.get_symbol_data(symbol).update_symbol_candles(time_frame, candles)
+            raise e
 
     def get_full_candles_data(self, symbol, time_frame):
         full_data = self.get_ohlcv(symbol)[time_frame.value]
