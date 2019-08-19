@@ -110,6 +110,7 @@ class TradesManager(Initializable):
     async def _update_currencies_prices(self, symbol):
         ticker = await self.exchange.get_price_ticker(symbol)
         self.currencies_last_prices[symbol] = ticker[ExchangeConstantsTickersColumns.LAST.value]
+        return ticker[ExchangeConstantsTickersColumns.LAST.value] != 0
 
     """ Get profitability calls get_currencies_prices to update required data
     Then calls get_portfolio_current_value to set the current value of portfolio_current_value attribute
@@ -279,16 +280,15 @@ class TradesManager(Initializable):
         symbol_inverted = merge_currencies(self.reference_market, currency)
 
         if self.exchange.get_exchange_manager().symbol_exists(symbol):
-            await self._update_currencies_prices(symbol)
-            return self.currencies_last_prices[symbol] * quantity
+            if await self._update_currencies_prices(symbol):
+                return self.currencies_last_prices[symbol] * quantity
 
-        elif self.exchange.get_exchange_manager().symbol_exists(symbol_inverted):
-            await self._update_currencies_prices(symbol_inverted)
-            return quantity / self.currencies_last_prices[symbol_inverted]
+        if self.exchange.get_exchange_manager().symbol_exists(symbol_inverted):
+            if await self._update_currencies_prices(symbol_inverted):
+                return quantity / self.currencies_last_prices[symbol_inverted]
 
-        else:
-            self._inform_no_matching_symbol(currency)
-            return 0
+        self._inform_no_matching_symbol(currency)
+        return 0
 
     def _inform_no_matching_symbol(self, currency, force=False):
         if force or currency not in self.already_informed_no_matching_symbol_currency:
@@ -305,13 +305,14 @@ class TradesManager(Initializable):
         for cryptocurrency in self.config[CONFIG_CRYPTO_CURRENCIES]:
             pairs = self.exchange.get_exchange_manager().get_traded_pairs(cryptocurrency)
             if pairs:
-                currency, market = split_symbol(pairs[0])
-                if currency not in evaluated_currencies:
-                    values_dict[currency] = await self.evaluate_value(currency, 1)
-                    evaluated_currencies.add(currency)
-                if market not in evaluated_currencies:
-                    values_dict[market] = await self.evaluate_value(market, 1)
-                    evaluated_currencies.add(market)
+                for pair in pairs:
+                    currency, market = split_symbol(pair)
+                    if currency not in evaluated_currencies:
+                        values_dict[currency] = await self.evaluate_value(currency, 1)
+                        evaluated_currencies.add(currency)
+                    if market not in evaluated_currencies:
+                        values_dict[market] = await self.evaluate_value(market, 1)
+                        evaluated_currencies.add(market)
         return values_dict
 
     """ evaluate_portfolio_value performs evaluate_value with a portfolio configuration
