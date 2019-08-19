@@ -31,9 +31,8 @@ matrix:
       script:
         - pytest -n 3 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests
 
-    - name: "Linux - Python 3 nightly"
+    - name: "Linux - Python 3.7"
       os: linux
-      python: nightly
       language: python
       before_install:
         - sudo bash ./docs/install/linux_dependencies.sh
