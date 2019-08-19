@@ -424,7 +424,7 @@ class ExchangeSimulator(AbstractExchange):
                     ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT_MAX.value: 1000000000000,
                 },
                 ExchangeConstantsMarketStatusColumns.LIMITS_PRICE.value: {
-                    ExchangeConstantsMarketStatusColumns.LIMITS_PRICE_MIN.value: 0.00001,
+                    ExchangeConstantsMarketStatusColumns.LIMITS_PRICE_MIN.value: 0.000001,
                     ExchangeConstantsMarketStatusColumns.LIMITS_PRICE_MAX.value: 1000000000000,
                 },
                 ExchangeConstantsMarketStatusColumns.LIMITS_COST.value: {
