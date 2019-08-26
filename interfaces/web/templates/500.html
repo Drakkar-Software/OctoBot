@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block body %}
+<br>
+<div class="card">
+    <div class="card-header">
+        <h1>We are sorry, but an unexpected error occurred.</h1>
+    </div>
+    <div class="card-body">
+        To fix this, please open an issue describing what happened on the
+        <a target="_blank" rel="noopener noreferrer" href="https://github.com/Drakkar-Software/OctoBot/issues"
+           class="btn btn-outline-white btn-md waves-effect">OctoBot issues report system.</a>
+    </div>
+    <div class="card-footer">
+        <button type="button" id="back-button" class="btn btn-lg btn-primary waves-effect">Go back</button>
+    </div>
+</div>
+{% endblock %}
+{% block additional_scripts %}
+<script src="{{ url_for('static', filename='js/common/common_handlers.js') }}"></script>
+{% endblock additional_scripts %}

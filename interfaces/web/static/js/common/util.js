@@ -152,3 +152,7 @@ function getValueChangedFromRef(newObject, refObject) {
     }
     return changes;
 }
+
+function historyGoBack() {
+    window.history.back();
+}
