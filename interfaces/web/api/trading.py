@@ -17,7 +17,7 @@
 import json
 from flask import request, jsonify
 
-from interfaces.trading_util import get_open_orders, cancel_orders
+from interfaces.trading_util import get_open_orders, cancel_orders, force_real_traders_refresh
 from . import api
 from interfaces.web.util.flask_util import get_rest_reply
 
@@ -41,3 +41,12 @@ def orders():
             removed_count = cancel_orders(request_data)
             result = f"{removed_count} orders cancelled"
         return jsonify(result)
+
+
+@api.route("/refresh_real_trader", methods=['POST'])
+def refresh_real_trader():
+    try:
+        force_real_traders_refresh()
+        return jsonify("Trader(s) refreshed")
+    except RuntimeError:
+        return get_rest_reply("No trader to refresh", 500)
