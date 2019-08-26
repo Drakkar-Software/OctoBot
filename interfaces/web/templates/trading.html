@@ -84,8 +84,18 @@
     </div>
 </div>
 
-<div class="card-footer text-center">
-    <a href="{{ url_for('trades') }}" class="btn btn-outline-info btn-lg waves-effect"><i class="fa fa-tasks"></i> Trades history</a>
+<div class="card-footer {{ "d-flex justify-content-between" if has_real_trader else "text-right" }}">
+    {% if has_real_trader %}
+        <div>
+            <button id="refresh-real-trader" update-url="{{ url_for('api.refresh_real_trader') }}" class="btn btn-outline-danger btn-lg waves-effect"
+            data-toggle="tooltip" data-placement="top" title="Triggers a total re-synchronization of orders and portfolios using exchanges as a reference.">
+                <i class="fa fa-sync"></i> Force refresh
+            </button>
+        </div>
+    {% endif %}
+    <div>
+        <a href="{{ url_for('trades') }}" class="btn btn-outline-info btn-lg waves-effect text-center"><i class="fa fa-tasks"></i> Trades history</a>
+    </div>
 </div>
 
 <div class="modal" id="CancelAllOrdersModal" tabindex="-1" role="dialog" aria-labelledby="#CancelAllOrdersModalLabel" aria-hidden="true">

@@ -84,11 +84,13 @@ def symbol_market_status():
 @server_instance.route("/trading")
 def trading():
     real_open_orders, simulated_open_orders = get_open_orders()
+    has_real_trader, _ = has_real_and_or_simulated_traders()
     return render_template('trading.html',
                            real_open_orders=real_open_orders,
                            simulated_open_orders=simulated_open_orders,
                            watched_symbols=get_watched_symbols(),
-                           pairs_with_status=get_currencies_with_status())
+                           pairs_with_status=get_currencies_with_status(),
+                           has_real_trader=has_real_trader)
 
 
 @server_instance.route("/trades")

@@ -65,6 +65,16 @@ function get_displayed_orders_desc(){
     return orders_desc;
 }
 
+function handle_refresh_real_trader_button(){
+    const refreshButton = $("#refresh-real-trader");
+    if(refreshButton){
+        refreshButton.click(function () {
+            const update_url = refreshButton.attr(update_url_attr);
+            send_and_interpret_bot_update({}, update_url, null, generic_request_success_callback, generic_request_failure_callback)
+        });
+    }
+}
+
 function handle_cancel_buttons() {
     $("#cancel_all_orders").click(function () {
         $("#ordersCount").text(ordersDataTable.rows({filter: 'applied'}).data().length);
@@ -162,4 +172,5 @@ $(document).ready(function() {
         "paging":   false,
     });
     handle_cancel_buttons();
+    handle_refresh_real_trader_button();
 });
