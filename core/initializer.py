@@ -13,19 +13,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import copy
 
-from backtesting import backtesting_enabled
-from config import CONFIG_DEBUG_OPTION_PERF, TimeFrames, CONFIG_NOTIFICATION_GLOBAL_INFO, \
-    NOTIFICATION_STARTING_MESSAGE, CONFIG_NOTIFICATION_INSTANCE
-from octobot_commons.tentacles_management.advanced_manager import AdvancedManager
-from evaluator.evaluator_creator import EvaluatorCreator
-from services import ServiceCreator
+from config import CONFIG_DEBUG_OPTION_PERF
+from octobot_trading.exchanges.backtesting.collector import backtesting_enabled
 from tools import get_logger
-from octobot_commons.notifications.notifications import Notification
-from tools.performance_analyser import PerformanceAnalyser
-from octobot_commons.time_frame_manager import TimeFrameManager
 from tools.metrics.metrics_manager import MetricsManager
+from tools.performance_analyser import PerformanceAnalyser
 
 
 class Initializer:
@@ -40,63 +33,17 @@ class Initializer:
         self.logger = get_logger(self.__class__.__name__)
 
         self.performance_analyser = None
-        self.time_frames = None
-        self.relevant_evaluators = []
 
     async def create(self):
-        # prepare advanced classes if any
-        self._manage_advanced_classes()
-
-        # manage time frames
-        self._init_time_frames()
-
-        # initialize evaluators
-        self._init_relevant_evaluators()
-
         # initialize tools
-        self._create_performance_analyser()
-
-        # initialize notifications and services
-        self._create_notifier()
-        await self._create_services()
+        self.performance_analyser = self._create_performance_analyser()
 
         self._init_metrics()
 
-    def _manage_advanced_classes(self):
-        AdvancedManager.init_advanced_classes_if_necessary(self.octobot.get_config())
-
-    def _init_relevant_evaluators(self):
-        # Init relevant evaluator names list using enabled strategies
-        self.relevant_evaluators = EvaluatorCreator.get_relevant_evaluators_from_strategies(self.octobot.get_config())
-
     def _create_performance_analyser(self):
-        if CONFIG_DEBUG_OPTION_PERF in self.octobot.get_config() \
-                and self.octobot.get_config()[CONFIG_DEBUG_OPTION_PERF]:
+        if CONFIG_DEBUG_OPTION_PERF in self.octobot.config and self.octobot.config[CONFIG_DEBUG_OPTION_PERF]:
             return PerformanceAnalyser()
 
-    def _create_notifier(self):
-        self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE] = Notification(self.octobot.get_config())
-
-    def _init_time_frames(self):
-        # Init time frames using enabled strategies
-        EvaluatorCreator.init_time_frames_from_strategies(self.octobot.get_config())
-        self.time_frames = copy.copy(TimeFrameManager.get_config_time_frame(self.octobot.get_config()))
-
-        # Init display time frame
-        config_time_frames = TimeFrameManager.get_config_time_frame(self.octobot.get_config())
-        if TimeFrames.ONE_HOUR not in config_time_frames and not backtesting_enabled(self.octobot.get_config()):
-            config_time_frames.append(TimeFrames.ONE_HOUR)
-            TimeFrameManager.sort_config_time_frames(self.octobot.get_config())
-
-    async def _create_services(self):
-        # Add services to self.octobot.get_config()[CONFIG_CATEGORY_SERVICES]
-        await ServiceCreator.create_services(self.octobot.get_config(), backtesting_enabled(self.octobot.get_config()))
-
-        # Notify starting
-        if self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
-            await self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE].notify_with_all(NOTIFICATION_STARTING_MESSAGE,
-                                                                                          False)
-
     def _init_metrics(self):
-        if not backtesting_enabled(self.octobot.get_config()):
+        if not backtesting_enabled(self.octobot.config):
             self.octobot.metrics_handler = MetricsManager(self.octobot)

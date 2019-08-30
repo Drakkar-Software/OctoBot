@@ -15,7 +15,7 @@
 #  License along with this library.
 
 # tools is checking the current python version
-from core.config import config_health_check
+from tools.config_manager import config_health_check
 from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
 
 from config import CONFIG_CATEGORY_NOTIFICATION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, CONFIG_CATEGORY_SERVICES, \

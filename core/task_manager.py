@@ -66,11 +66,11 @@ class TaskManager:
     async def stop_tasks(self):
         stop_coroutines = []
         # Notify stopping
-        if self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
+        if self.octobot.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
             # To be improved with a full async implementation
             # To be done : "asyncio.run" --> replaced by a simple await
             # PR discussion : https://github.com/Drakkar-Software/OctoBot/pull/563#discussion_r248088266
-            stop_coroutines.append(self.octobot.get_config()[CONFIG_NOTIFICATION_INSTANCE]
+            stop_coroutines.append(self.octobot.config[CONFIG_NOTIFICATION_INSTANCE]
                                    .notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
 
         self.logger.info("Stopping threads ...")
@@ -100,7 +100,7 @@ class TaskManager:
 
     def run_in_main_asyncio_loop(self, coroutine):
         # restart a new loop if necessary (for backtesting analysis)
-        # if backtesting_enabled(self.octobot.get_config()) and self.async_loop.is_closed(): TODO
+        # if backtesting_enabled(self.octobot.config) and self.async_loop.is_closed(): TODO
         #     self.logger.debug("Main loop is closed, starting a new main loop.")
         #     self._create_new_asyncio_main_loop()
 

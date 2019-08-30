@@ -13,9 +13,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+
 from octobot_commons.enums import TimeFrames
 from octobot_commons.logging.logging_util import get_logger
-from octobot_evaluators.api import create_matrix_channels, create_all_type_evaluators
+from octobot_evaluators.api import create_matrix_channels, create_all_type_evaluators, initialize_evaluators
 
 
 class EvaluatorFactory:
@@ -36,21 +37,24 @@ class EvaluatorFactory:
         self.social_eval_tasks = []
         self.real_time_eval_tasks = []
 
+    async def initialize(self):
+        await initialize_evaluators(self.octobot.config)
+
     async def create(self):
         await create_matrix_channels()
-        await create_all_type_evaluators(self.octobot.get_config(), "test", "BTC/USDT", TimeFrames.ONE_HOUR) # TODO
+        await create_all_type_evaluators(self.octobot.config, "test", "BTC/USDT", TimeFrames.ONE_HOUR) # TODO
         # self.create_dispatchers()
         # self.evaluation_tasks_creation()
 
     # def create_dispatchers(self):
-    #     self.dispatchers_list = DispatcherCreator.create_dispatchers(self.octobot.get_config(),
+    #     self.dispatchers_list = DispatcherCreator.create_dispatchers(self.octobot.config,
     #                                                                  self.octobot.get_async_loop())
     #
     # def evaluation_tasks_creation(self):
     #     self.logger.info("Evaluation threads creation...")
     #
     #     # create Social and TA evaluators
-    #     for crypto_currency in self.octobot.get_config()[CONFIG_CRYPTO_CURRENCIES]:
+    #     for crypto_currency in self.octobot.config[CONFIG_CRYPTO_CURRENCIES]:
     #         self._create_crypto_currency_evaluator_tasks(crypto_currency)
     #
     #     self._check_required_evaluators()
@@ -65,7 +69,7 @@ class EvaluatorFactory:
     #             self._create_symbol_evaluators(exchange, crypto_currency)
     #
     # def _create_crypto_currency_evaluator(self, crypto_currency) -> CryptocurrencyEvaluator:
-    #     crypto_currency_evaluator = CryptocurrencyEvaluator(self.octobot.get_config(), crypto_currency,
+    #     crypto_currency_evaluator = CryptocurrencyEvaluator(self.octobot.config, crypto_currency,
     #                                                         self.dispatchers_list,
     #                                                         self.octobot.get_relevant_evaluators())
     #     self.crypto_currency_evaluator_list[crypto_currency] = crypto_currency_evaluator
@@ -85,7 +89,7 @@ class EvaluatorFactory:
     #                                              self._get_global_price_updater_from_exchange_name(exchange))
     #
     # def _create_symbol_evaluator(self, symbol, crypto_currency_evaluator) -> SymbolEvaluator:
-    #     symbol_evaluator = SymbolEvaluator(self.octobot.get_config(), symbol, crypto_currency_evaluator)
+    #     symbol_evaluator = SymbolEvaluator(self.octobot.config, symbol, crypto_currency_evaluator)
     #     symbol_evaluator.set_traders(self.octobot.get_exchange_traders())
     #     symbol_evaluator.set_trader_simulators(self.octobot.get_exchange_trader_simulators())
     #     crypto_currency_evaluator.add_symbol_evaluator(symbol, symbol_evaluator)
@@ -135,14 +139,14 @@ class EvaluatorFactory:
     #
     # def _create_real_time_ta_list(self, exchange, symbol_evaluator):
     #     real_time_ta_eval_list = []
-    #     if not backtesting_enabled(self.octobot.get_config()):
+    #     if not backtesting_enabled(self.octobot.config):
     #         real_time_ta_eval_list = self._create_real_time_ta_evaluators(exchange, symbol_evaluator)
     #         self.real_time_eval_tasks += real_time_ta_eval_list
     #
     #     return real_time_ta_eval_list
     #
     # def _create_real_time_ta_evaluators(self, exchange, symbol_evaluator):
-    #     return EvaluatorCreator.create_real_time_ta_evals(self.octobot.get_config(),
+    #     return EvaluatorCreator.create_real_time_ta_evals(self.octobot.config,
     #                                                       exchange,
     #                                                       symbol_evaluator.get_symbol(),
     #                                                       self.octobot.get_relevant_evaluators(),
@@ -155,7 +159,7 @@ class EvaluatorFactory:
     #                                    exchange,
     #                                    real_time_ta_eval_list) -> EvaluatorTaskManager:
     #
-    #     return EvaluatorTaskManager(self.octobot.get_config(),
+    #     return EvaluatorTaskManager(self.octobot.config,
     #                                 time_frame,
     #                                 global_price_updater,
     #                                 symbol_evaluator,

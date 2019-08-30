@@ -46,10 +46,10 @@ class ExchangeFactory:
     async def create(self):
         # self.create_previous_state_manager()
 
-        if self.octobot.get_config()[CONFIG_EXCHANGES]:
-            for exchange_class_string in self.octobot.get_config()[CONFIG_EXCHANGES]:
+        if self.octobot.config[CONFIG_EXCHANGES]:
+            for exchange_class_string in self.octobot.config[CONFIG_EXCHANGES]:
                 if exchange_class_string in self.available_exchanges:
-                    exchange_factory = create_new_exchange(self.octobot.get_config(), exchange_class_string,
+                    exchange_factory = create_new_exchange(self.octobot.config, exchange_class_string,
                                                            is_simulated=True,
                                                            is_rest_only=True,
                                                            is_backtesting=False,
@@ -62,17 +62,17 @@ class ExchangeFactory:
                               "to read trading data from. You can add exchanges in the configuration section.")
 
     # def create_previous_state_manager(self):
-    #     if not backtesting_enabled(self.octobot.get_config()) and \
-    #             PreviousTradingStateManager.enabled(self.octobot.get_config()):
+    #     if not backtesting_enabled(self.octobot.config) and \
+    #             PreviousTradingStateManager.enabled(self.octobot.config):
     #         self.previous_trading_state_manager = PreviousTradingStateManager(
-    #             self.octobot.get_config()[CONFIG_EXCHANGES],
+    #             self.octobot.config[CONFIG_EXCHANGES],
     #             self.octobot.reset_trading_history,
-    #             self.octobot.get_config())
+    #             self.octobot.config)
     #
     #         self.previous_trading_state_manager = PreviousTradingStateManager(
-    #             self.octobot.get_config()[CONFIG_EXCHANGES],
+    #             self.octobot.config[CONFIG_EXCHANGES],
     #             self.octobot.reset_trading_history,
-    #             self.octobot.get_config()
+    #             self.octobot.config
     #         )
     #
     # async def _create_exchange_traders(self, exchange_class_string):
@@ -105,14 +105,14 @@ class ExchangeFactory:
     #
     # def _create_exchange_manager(self, exchange_type) -> ExchangeManager:
     #     # Backtesting Exchange
-    #     if backtesting_enabled(self.octobot.get_config()):
-    #         return ExchangeManager(self.octobot.get_config(), exchange_type, is_simulated=True)
+    #     if backtesting_enabled(self.octobot.config):
+    #         return ExchangeManager(self.octobot.config, exchange_type, is_simulated=True)
     #     else:
     #         # Real Exchange
-    #         return ExchangeManager(self.octobot.get_config(), exchange_type, ignore_config=self.ignore_config)
+    #         return ExchangeManager(self.octobot.config, exchange_type, ignore_config=self.ignore_config)
     #
     # async def _create_trader(self, trader_class, exchange_inst) -> Trader:
-    #     exchange_trader = trader_class(self.octobot.get_config(), exchange_inst,
+    #     exchange_trader = trader_class(self.octobot.config, exchange_inst,
     #                                    previous_state_manager=self.previous_trading_state_manager)
     #     await exchange_trader.initialize()
     #     return exchange_trader
@@ -124,12 +124,12 @@ class ExchangeFactory:
     #                                                                                           exchange_inst)
     #
     # def _is_minimum_traders_activated(self, exchange_inst) -> bool:
-    #     return self.exchange_traders[exchange_inst.get_name()].enabled(self.octobot.get_config()) or \
-    #            self.exchange_trader_simulators[exchange_inst.get_name()].enabled(self.octobot.get_config())
+    #     return self.exchange_traders[exchange_inst.get_name()].enabled(self.octobot.config) or \
+    #            self.exchange_trader_simulators[exchange_inst.get_name()].enabled(self.octobot.config)
     #
     # def _create_trading_mode(self, exchange_inst) -> None:
     #     try:
-    #         self.trading_mode = get_activated_trading_mode(self.octobot.get_config())(self.octobot.get_config(),
+    #         self.trading_mode = get_activated_trading_mode(self.octobot.config)(self.octobot.config,
     #                                                                                   exchange_inst)
     #         self.exchange_trading_modes[exchange_inst.get_name()] = self.trading_mode
     #         self.logger.debug(f"Using {self.trading_mode.get_name()} trading mode")
