@@ -15,7 +15,17 @@
 #  License along with this library.
 
 # tools is checking the current python version
+from core.config import config_health_check
+from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
+
+from config import CONFIG_CATEGORY_NOTIFICATION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, CONFIG_CATEGORY_SERVICES, \
+    CONFIG_WEB, CONFIG_WEB_PORT, LOGGING_CONFIG_FILE, LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION
+from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE, \
+    CONFIG_EVALUATOR_FILE_PATH, CONFIG_TRADING_FILE_PATH
+from octobot_trading.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_TRADER, \
+    CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
 from tools.commands import Commands
+from octobot_commons.config_manager import validate_config_file, accepted_terms, is_in_dev_mode
 
 import argparse
 import asyncio
@@ -26,17 +36,9 @@ import traceback
 import webbrowser
 import socket
 from logging.config import fileConfig
-from threading import Thread
 from time import sleep
 
-from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_ENABLED_OPTION, LONG_VERSION, \
-    CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
-    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_FILE_PATH, \
-    CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, \
-    CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT, DEFAULT_CONFIG_FILE
-from config.config import load_config, init_config, is_config_empty_or_missing
 from config.disclaimer import DISCLAIMER
-from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 from tools.external_resources_manager import get_external_resource
 from tentacles_manager.tentacle_util import tentacles_arch_exists
@@ -91,7 +93,7 @@ def _auto_open_web(config, bot):
 
 
 def _log_terms_if_unaccepted(config, logger):
-    if not ConfigManager.accepted_terms(config):
+    if not accepted_terms(config):
         logger.info("*** Disclaimer ***")
         for line in DISCLAIMER:
             logger.info(line)
@@ -129,11 +131,11 @@ def start_octobot(starting_args):
                 init_config()
                 config = load_config(error=False)
             else:
-                is_valid, e = ConfigManager.validate_config_file(config=config)
+                is_valid, e = validate_config_file(config=config)
                 if not is_valid:
                     logger.error("OctoBot can't repair your config.json file: invalid format: " + str(e))
                     raise ConfigError
-                ConfigManager.config_health_check(config)
+                config_health_check(config)
 
             if config is None:
                 raise ConfigError
@@ -153,8 +155,6 @@ def start_octobot(starting_args):
                     logger.info("No tentacles found. Installing default tentacles ...")
                     Commands.package_manager(config, ["install", "all"], force=True)
 
-                ConfigManager.reload_tentacle_config(config)
-
                 if starting_args.data_collector:
                     Commands.data_collector(config)
 
@@ -165,11 +165,9 @@ def start_octobot(starting_args):
 
                     # In those cases load OctoBot
                     from core.octobot import OctoBot
-                    from interfaces.bots.telegram.bot import TelegramApp
-                    from services import WebService
 
-                    TelegramApp.enable(config, not starting_args.no_telegram)
-                    WebService.enable(config, not starting_args.no_web)
+                    # TelegramApp.enable(config, not starting_args.no_telegram)
+                    # WebService.enable(config, not starting_args.no_web)
 
                     update_config_with_args(starting_args, config)
 
@@ -179,14 +177,14 @@ def start_octobot(starting_args):
 
                     _log_terms_if_unaccepted(config, logger)
 
-                    import interfaces
-                    interfaces.__init__(bot, config)
+                    # import interfaces
+                    # interfaces.__init__(bot, config)
 
-                    if not starting_args.no_open_web and not starting_args.no_web:
-                        Thread(target=_auto_open_web, args=(config, bot)).start()
+                    # if not starting_args.no_open_web and not starting_args.no_web:
+                    #     Thread(target=_auto_open_web, args=(config, bot)).start()
 
                     # set debug_mode = True to activate asyncio debug mode
-                    debug_mode = ConfigManager.is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
+                    debug_mode = is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
                     asyncio.run(Commands.start_bot(bot, logger), debug=debug_mode)
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file." + "\nYou can use " +
