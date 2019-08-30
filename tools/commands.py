@@ -21,28 +21,29 @@ import signal
 from threading import Thread
 from concurrent.futures import CancelledError
 
+from core import get_bot
+from octobot_commons.config_util import encrypt
 from tentacles_manager.tentacle_creator.tentacle_creator import TentacleCreator
 
-from backtesting.collector.data_collector import DataCollector
+# from backtesting.collector.data_collector import DataCollector
 from config import TENTACLES_DEFAULT_BRANCH, TENTACLES_FORCE_CONFIRM_PARAM
-from config.config import encrypt
-from interfaces import get_bot
+# from interfaces import get_bot
 from octobot_commons.logging.logging_util import get_logger
 from tentacles_manager.tentacle_manager import TentacleManager
 
 
 class Commands:
 
-    @staticmethod
-    def data_collector(config, catch=True):
-        data_collector_inst = None
-        try:
-            data_collector_inst = DataCollector(config)
-            asyncio.run(data_collector_inst.start())
-        except Exception as e:
-            data_collector_inst.stop()
-            if catch:
-                raise e
+    # @staticmethod TODO
+    # def data_collector(config, catch=True):
+    #     data_collector_inst = None
+    #     try:
+    #         data_collector_inst = DataCollector(config)
+    #         asyncio.run(data_collector_inst.start())
+    #     except Exception as e:
+    #         data_collector_inst.stop()
+    #         if catch:
+    #             raise e
 
     @staticmethod
     def package_manager(config, commands, catch=False, force=False, default_git_branch=TENTACLES_DEFAULT_BRANCH):

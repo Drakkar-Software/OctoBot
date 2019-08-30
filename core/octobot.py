@@ -66,13 +66,7 @@ class OctoBot:
         await self.initializer.create()
         self.task_manager.init_async_loop()
         await self.exchange_factory.create()
-        self.evaluator_factory.create()
-
-    async def start(self, run_in_new_thread=False):
-        await self.task_manager.start_tasks(run_in_new_thread=run_in_new_thread)
-
-    def stop(self):
-        self.task_manager.stop_threads()
+        await self.evaluator_factory.create()
 
     def run_in_main_asyncio_loop(self, coroutine):
         return self.task_manager.run_in_main_asyncio_loop(coroutine)

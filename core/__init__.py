@@ -13,3 +13,22 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+
+bot_instance = None
+global_config = None
+
+
+def __init__(bot, config):
+    global bot_instance
+    bot_instance = bot
+
+    global global_config
+    global_config = config
+
+
+def get_bot():
+    return bot_instance
+
+
+def get_config():
+    return global_config

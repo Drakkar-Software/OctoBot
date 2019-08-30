@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from octobot_commons.enums import TimeFrames
-from octobot_commons.tentacles_management.class_inspector import evaluator_parent_inspection, get_class_from_string
 from octobot_commons.logging.logging_util import get_logger
 from octobot_evaluators.api import create_matrix_channels, create_all_type_evaluators
 
@@ -37,7 +36,7 @@ class EvaluatorFactory:
         self.social_eval_tasks = []
         self.real_time_eval_tasks = []
 
-    def create(self):
+    async def create(self):
         await create_matrix_channels()
         await create_all_type_evaluators(self.octobot.get_config(), "test", "BTC/USDT", TimeFrames.ONE_HOUR) # TODO
         # self.create_dispatchers()
