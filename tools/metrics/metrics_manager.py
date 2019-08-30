@@ -26,9 +26,10 @@ from concurrent.futures import CancelledError
 from config import CONFIG_METRICS_BOT_ID, METRICS_URL, METRICS_ROUTE_GEN_BOT_ID, \
     METRICS_ROUTE_UPTIME, METRICS_ROUTE_REGISTER, TIMER_BEFORE_METRICS_REGISTRATION_SECONDS, \
     TIMER_BETWEEN_METRICS_UPTIME_UPDATE, CONFIG_CATEGORY_NOTIFICATION, CONFIG_NOTIFICATION_TYPE, CONFIG_METRICS, \
-    CONFIG_ENABLED_OPTION, MetricsFields
+    MetricsFields
+from octobot_commons.config_manager import get_metrics_enabled
 from octobot_commons.logging.logging_util import get_logger
-from tools.config_manager import ConfigManager
+from octobot_trading.util import is_trader_simulator_enabled, is_trader_enabled
 from tools.os_util import get_current_platform, get_octobot_type
 
 
@@ -38,7 +39,7 @@ class MetricsManager:
     def __init__(self, octobot):
         self.octobot = octobot
         self.edited_config = octobot.edited_config
-        self.enabled = ConfigManager.get_metrics_enabled(self.edited_config)
+        self.enabled = get_metrics_enabled(self.edited_config)
         self.bot_id = self._init_config_bot_id(self.edited_config)
         self.logger = get_logger(self.__class__.__name__)
         self.current_config = None
@@ -123,8 +124,8 @@ class MetricsManager:
             MetricsFields.CURRENT_SESSION.value: {
                 MetricsFields.STARTED_AT.value: int(self.octobot.start_time),
                 MetricsFields.UP_TIME.value: int(time.time() - self.octobot.start_time),
-                MetricsFields.SIMULATOR.value: ConfigManager.get_trader_simulator_enabled(self.edited_config),
-                MetricsFields.TRADER.value: ConfigManager.get_trader_enabled(self.edited_config),
+                MetricsFields.SIMULATOR.value: is_trader_simulator_enabled(self.edited_config),
+                MetricsFields.TRADER.value: is_trader_enabled(self.edited_config),
                 MetricsFields.EVAL_CONFIG.value: self._get_eval_config(),
                 MetricsFields.PAIRS.value: self._get_traded_pairs(),
                 MetricsFields.EXCHANGES.value: list(self.octobot.get_exchanges_list().keys()),

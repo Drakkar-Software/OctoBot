@@ -109,13 +109,12 @@ class Commands:
             # start
             try:
                 await bot.initialize()
-                await bot.start()
             except CancelledError:
                 logger.info("Core engine tasks cancelled.")
 
             # join threads in a not loop blocking executor
             # TODO remove this when no thread anymore
-            await loop.run_in_executor(None, bot.task_manager.join_threads)
+            await loop.run_in_executor(None, bot.task_manager.join_tasks)
 
         except Exception as e:
             logger.exception(f"OctoBot Exception : {e}")

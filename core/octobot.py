@@ -65,6 +65,8 @@ class OctoBot:
     async def initialize(self):
         await self.initializer.create()
         self.task_manager.init_async_loop()
+        await self.task_manager.start_tools_tasks()
+        await self.evaluator_factory.initialize()
         await self.exchange_factory.create()
         await self.evaluator_factory.create()
 
@@ -73,57 +75,6 @@ class OctoBot:
 
     def set_watcher(self, watcher):
         self.task_manager.watcher = watcher
-
-    def get_symbols_tasks_manager(self):
-        return self.evaluator_factory.symbol_tasks_manager
-
-    def get_exchange_traders(self):
-        return self.exchange_factory.exchange_traders
-
-    def get_exchange_trader_simulators(self):
-        return self.exchange_factory.exchange_trader_simulators
-
-    def get_exchange_trading_modes(self):
-        return self.exchange_factory.exchange_trading_modes
-
-    def get_exchanges_list(self):
-        return self.exchange_factory.exchanges_list
-
-    def get_symbol_evaluator_list(self):
-        return self.evaluator_factory.symbol_evaluator_list
-
-    def get_symbols_list(self):
-        return self.evaluator_factory.symbol_evaluator_list.keys()
-
-    def get_crypto_currency_evaluator_list(self):
-        return self.evaluator_factory.crypto_currency_evaluator_list
-
-    def get_dispatchers_list(self):
-        return self.evaluator_factory.dispatchers_list
-
-    def get_global_updaters_by_exchange(self):
-        return self.exchange_factory.global_updaters_by_exchange
-
-    def get_trading_mode(self):
-        return self.exchange_factory.trading_mode
-
-    def is_ready(self):
-        return self.task_manager.ready
-
-    def get_config(self):
-        return self.config
-
-    def get_tools(self):
-        return self.tools
-
-    def get_time_frames(self):
-        return self.initializer.time_frames
-
-    def get_relevant_evaluators(self):
-        return self.initializer.relevant_evaluators
-
-    def get_async_loop(self):
-        return self.task_manager.async_loop
 
     def get_aiohttp_session(self):
         if self._aiohttp_session is None:
