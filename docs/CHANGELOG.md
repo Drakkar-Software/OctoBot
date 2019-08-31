@@ -1,5 +1,35 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+Changelog for 0.3.7-beta
+====================
+*Released date : August 31 2019*
+
+# Warning: config.json file has been moved to the user folder
+
+# Concerned issues / pull request:
+    #948 [Trading] Add 6h timeframe
+    #949 [Config] Migrate config file to user folder enhancement
+    #952 [Trader] Fix kraken orders
+    #953 [Docker] Improve dockerfile
+    #955 [Backtesting] Improve recent trades generation
+    #960 [Backtesting] Use the last candle for profitability computation
+    #962 [Portfolio] Missing stablecoins in traded portfolio
+    #964 [Backtesting][DipAnalyser] try to create sell order without enough funds
+    #968 [Web interface] Handle errors 
+    #969 [Web interface] Add refresh real trader button
+
+# Bug fixes :
+    - Fixed errors when creating orders on Kraken exchange
+    - Fixed innacuracies in backtesting
+    - Now correctly takes every currency into consideration when computing profitability and holdings
+    - Fixed backtesting exchange simulator inconsistencies
+    
+# New features :
+    - Added refresh real trader button similar to /refresh_real_trader telegram command in web interface
+    - Added error handling pages in web interface 
+    - Can now handle 6 hours timeframes
+    - Optimized Dockerfile
+
 Changelog for 0.3.6-beta
 ====================
 *Released date : July 15 2019*
