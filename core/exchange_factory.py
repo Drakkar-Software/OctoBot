@@ -18,6 +18,7 @@ import ccxt
 from octobot_commons.logging.logging_util import get_logger
 from octobot_trading.api.exchange import create_new_exchange
 from octobot_trading.constants import CONFIG_EXCHANGES
+from tools.logger import init_exchange_chan_logger
 
 
 class ExchangeFactory:
@@ -55,6 +56,7 @@ class ExchangeFactory:
                                                            is_backtesting=False,
                                                            is_sandboxed=False)
                     await exchange_factory.create()
+                    await init_exchange_chan_logger(exchange_factory.exchange_name)
                 else:
                     self.logger.error(f"{exchange_class_string} exchange not found")
         else:

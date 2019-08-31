@@ -54,11 +54,11 @@ class TaskManager:
         self.ready = True
         self.tools_task_group = asyncio.gather(*task_list)
 
-        if run_in_new_thread:
-            self._create_new_asyncio_main_loop()
-        else:
-            self.current_loop_thread = threading.current_thread()
-            await self.tools_task_group
+        # if run_in_new_thread:
+        #     self._create_new_asyncio_main_loop()
+        # else:
+        #     self.current_loop_thread = threading.current_thread()
+        #     await self.tools_task_group
 
     async def join_tasks(self):
         await asyncio.gather(*asyncio.all_tasks(asyncio.get_event_loop()))
