@@ -36,14 +36,14 @@ class Initializer:
 
     async def create(self):
         # initialize tools
-        self.performance_analyser = self._create_performance_analyser()
+        self.performance_analyser = self.__create_performance_analyser()
 
-        self._init_metrics()
+        self.__init_metrics()
 
-    def _create_performance_analyser(self):
+    def __create_performance_analyser(self):
         if CONFIG_DEBUG_OPTION_PERF in self.octobot.config and self.octobot.config[CONFIG_DEBUG_OPTION_PERF]:
             return PerformanceAnalyser()
 
-    def _init_metrics(self):
+    def __init_metrics(self):
         if not backtesting_enabled(self.octobot.config):
             self.octobot.metrics_handler = MetricsManager(self.octobot)

@@ -17,6 +17,7 @@
 from octobot_commons.enums import TimeFrames
 from octobot_commons.logging.logging_util import get_logger
 from octobot_evaluators.api import create_matrix_channels, create_all_type_evaluators, initialize_evaluators
+from tools.logger import init_evaluator_chan_logger
 
 
 class EvaluatorFactory:
@@ -42,7 +43,8 @@ class EvaluatorFactory:
 
     async def create(self):
         await create_matrix_channels()
-        await create_all_type_evaluators(self.octobot.config, "test", "BTC/USDT", TimeFrames.ONE_HOUR) # TODO
+        await create_all_type_evaluators(self.octobot.config, "test", "BTC/USDT", TimeFrames.ONE_HOUR)  # TODO
+        await init_evaluator_chan_logger()
         # self.create_dispatchers()
         # self.evaluation_tasks_creation()
 

@@ -15,6 +15,9 @@
 #  License along with this library.
 
 # tools is checking the current python version
+from octobot_commons.errors import ConfigError, ConfigTradingError
+from octobot_evaluators.util.errors import ConfigEvaluatorError
+
 from tools.config_manager import config_health_check
 from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
 
@@ -39,7 +42,6 @@ from logging.config import fileConfig
 from time import sleep
 
 from config.disclaimer import DISCLAIMER
-from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 from tools.external_resources_manager import get_external_resource
 from tentacles_manager.tentacle_util import tentacles_arch_exists
 
