@@ -46,14 +46,13 @@ OctoBot's installation is **very simple**... because **very documented** !
 
 #### [With Docker](https://github.com/Drakkar-Software/OctoBot/wiki/With-Docker)
 ```
-touch config.json && docker run -it -d --name MyAmazingOctobot -v $(pwd)/config.json:/bot/octobot/config.json -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot:beta
+docker run -it -d --name MyAmazingOctobot -v $(pwd)/user:/bot/octobot/user -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot:beta
 ```
 
 #### [With python sources](https://github.com/Drakkar-Software/OctoBot/wiki/With-Python-only) (unix)
 - Install python3.7 (https://www.python.org/downloads/)
 ```
 git clone git@github.com:Drakkar-Software/OctoBot.git && cd OctoBot
-cp ./config/default_config.json ./config.json
 pip3 install -r pre_requirements.txt
 pip3 install -r requirements.txt
 python3 start.py -p install all
