@@ -38,14 +38,8 @@ echo **Installing requirements...**
 %python_cmd% -m pip install -r pre_requirements.txt
 %python_cmd% -m pip install -r requirements.txt
 
-REM CONFIGURATION
-echo **Set default configuration...**
-cd %config_path%
-copy default_config.json ..\config.json
-
 REM BOT MODULES INSTALL
 echo **Installing modules...**
-cd ..
 %python_cmd% start.py -p install all
 
 echo **Installation done.**
