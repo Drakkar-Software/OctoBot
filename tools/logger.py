@@ -15,8 +15,9 @@
 #  License along with this library.
 import logging
 
+from octobot_channels.channels import get_chan
 from octobot_commons.pretty_printer import PrettyPrinter
-from octobot_evaluators.channels import MATRIX_CHANNEL, get_chan as get_evaluator_chan
+from octobot_evaluators.channels import MATRIX_CHANNEL
 from octobot_trading.channels import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORDER_BOOK_CHANNEL, KLINE_CHANNEL, \
     OHLCV_CHANNEL, BALANCE_CHANNEL, BALANCE_PROFITABILITY_CHANNEL, TRADES_CHANNEL, POSITIONS_CHANNEL, ORDERS_CHANNEL
 from octobot_trading.channels.exchange_channel import get_chan as get_trading_chan
@@ -36,7 +37,7 @@ async def init_exchange_chan_logger(exchange_name):
 
 
 async def init_evaluator_chan_logger():
-    await get_evaluator_chan(MATRIX_CHANNEL).new_consumer(matrix_callback)
+    await get_chan(MATRIX_CHANNEL).new_consumer(matrix_callback)
 
 
 async def ticker_callback(exchange, symbol, ticker):
