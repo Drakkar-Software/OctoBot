@@ -13,14 +13,17 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import logging
 
 from octobot_channels.channels import get_chan
+from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import PrettyPrinter
 from octobot_evaluators.channels import MATRIX_CHANNEL
 from octobot_trading.channels import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORDER_BOOK_CHANNEL, KLINE_CHANNEL, \
     OHLCV_CHANNEL, BALANCE_CHANNEL, BALANCE_PROFITABILITY_CHANNEL, TRADES_CHANNEL, POSITIONS_CHANNEL, ORDERS_CHANNEL
 from octobot_trading.channels.exchange_channel import get_chan as get_trading_chan
+
+
+BOT_CHANNEL_LOGGER = get_logger("OctoBot Channel")
 
 
 async def init_exchange_chan_logger(exchange_name):
@@ -41,39 +44,39 @@ async def init_evaluator_chan_logger():
 
 
 async def ticker_callback(exchange, symbol, ticker):
-    logging.info(f"TICKER : EXCHANGE = {exchange} || SYMBOL = {symbol} || TICKER = {ticker}")
+    BOT_CHANNEL_LOGGER.info(f"TICKER : EXCHANGE = {exchange} || SYMBOL = {symbol} || TICKER = {ticker}")
 
 
 async def order_book_callback(exchange, symbol, asks, bids):
-    logging.info(f"ORDERBOOK : EXCHANGE = {exchange} || SYMBOL = {symbol} || ASKS = {asks} || BIDS = {bids}")
+    BOT_CHANNEL_LOGGER.info(f"ORDERBOOK : EXCHANGE = {exchange} || SYMBOL = {symbol} || ASKS = {asks} || BIDS = {bids}")
 
 
 async def ohlcv_callback(exchange, symbol, time_frame, candle):
-    logging.info(
+    BOT_CHANNEL_LOGGER.info(
         f"OHLCV : EXCHANGE = {exchange} || SYMBOL = {symbol} || TIME FRAME = {time_frame} || CANDLE = {candle}")
 
 
 async def recent_trades_callback(exchange, symbol, recent_trades):
-    logging.info(f"RECENT TRADE : EXCHANGE = {exchange} || SYMBOL = {symbol} || RECENT TRADE = {recent_trades}")
+    BOT_CHANNEL_LOGGER.info(f"RECENT TRADE : EXCHANGE = {exchange} || SYMBOL = {symbol} || RECENT TRADE = {recent_trades}")
 
 
 async def kline_callback(exchange, symbol, time_frame, kline):
-    logging.info(
+    BOT_CHANNEL_LOGGER.info(
         f"KLINE : EXCHANGE = {exchange} || SYMBOL = {symbol} || TIME FRAME = {time_frame} || KLINE = {kline}")
 
 
 async def balance_callback(exchange, balance):
-    logging.info(f"BALANCE : EXCHANGE = {exchange} || BALANCE = {balance}")
+    BOT_CHANNEL_LOGGER.info(f"BALANCE : EXCHANGE = {exchange} || BALANCE = {balance}")
 
 
 async def balance_profitability_callback(exchange, profitability, profitability_percent, market_profitability_percent,
                                          initial_portfolio_current_profitability):
-    logging.info(f"BALANCE PROFITABILITY : EXCHANGE = {exchange} || PROFITABILITY = "
+    BOT_CHANNEL_LOGGER.info(f"BALANCE PROFITABILITY : EXCHANGE = {exchange} || PROFITABILITY = "
                   f"{PrettyPrinter.portfolio_profitability_pretty_print(profitability, profitability_percent, 'USDT')}")
 
 
 async def trades_callback(exchange, symbol, trade):
-    logging.info(f"TRADES : EXCHANGE = {exchange} || SYMBOL = {symbol} || TRADE = {trade}")
+    BOT_CHANNEL_LOGGER.info(f"TRADES : EXCHANGE = {exchange} || SYMBOL = {symbol} || TRADE = {trade}")
 
 
 async def orders_callback(exchange, symbol, order, is_closed, is_updated, is_from_bot):
@@ -85,11 +88,11 @@ async def orders_callback(exchange, symbol, order, is_closed, is_updated, is_fro
         order_string += PrettyPrinter.open_order_pretty_printer(exchange, order)
 
     order_string += f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}"
-    logging.info(order_string)
+    BOT_CHANNEL_LOGGER.info(order_string)
 
 
 async def positions_callback(exchange, symbol, position, is_closed, is_updated, is_from_bot):
-    logging.info(f"POSITIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || POSITIONS = {position}"
+    BOT_CHANNEL_LOGGER.info(f"POSITIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || POSITIONS = {position}"
                   f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}")
 
 
@@ -99,5 +102,5 @@ async def matrix_callback(evaluator_name,
                           exchange_name,
                           symbol,
                           time_frame):
-    logging.info(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
+    BOT_CHANNEL_LOGGER.info(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
                   f" SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
