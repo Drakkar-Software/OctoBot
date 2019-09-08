@@ -92,7 +92,7 @@ async def orders_callback(exchange, symbol, order, is_closed, is_updated, is_fro
 
 
 async def positions_callback(exchange, symbol, position, is_closed, is_updated, is_from_bot):
-    BOT_CHANNEL_LOGGER.info(f"POSITIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || POSITIONS = {position}"
+    logging.info(f"POSITIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || POSITIONS = {position}"
                   f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}")
 
 
@@ -102,5 +102,5 @@ async def matrix_callback(evaluator_name,
                           exchange_name,
                           symbol,
                           time_frame):
-    BOT_CHANNEL_LOGGER.info(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
+    logging.info(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
                   f" SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
