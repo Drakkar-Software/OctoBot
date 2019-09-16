@@ -15,8 +15,10 @@
 #  License along with this library.
 
 from logging import WARNING
+from os import path, pardir
 from enum import Enum
 from typing import NewType, Any, Dict
+
 
 PROJECT_NAME = "OctoBot"
 SHORT_VERSION = "0.3.7"  # major.minor.revision
@@ -26,12 +28,15 @@ VERSION_PHASE = ""  # XX
 VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 
+# project root directory is the parent of config dir which contains this file
+PROJECT_ROOT_DIR = path.dirname(path.normpath(path.join(path.abspath(__file__), pardir)))
+
 # logs
 LOG_DATABASE = "log_db"
 LOG_NEW_ERRORS_COUNT = "log_new_errors_count"
 BACKTESTING_NEW_ERRORS_COUNT = "log_backtesting_errors_count"
 STORED_LOG_MIN_LEVEL = WARNING
-LOGS_FOLDER = "logs"
+LOGS_FOLDER = f"{PROJECT_ROOT_DIR}/logs"
 
 # github
 GITHUB = "github"
@@ -111,7 +116,7 @@ BACKTESTING_DATA_TRADES = "trades"
 CONFIG_DATA_COLLECTOR = "data_collector"
 CONFIG_DATA_COLLECTOR_ZIPLINE = "zipline"
 DATA_COLLECTOR_REFRESHER_TIME = MINUTE_TO_SECONDS
-CONFIG_DATA_COLLECTOR_PATH = "backtesting/collector/data/"
+CONFIG_DATA_COLLECTOR_PATH = f"{PROJECT_ROOT_DIR}/backtesting/collector/data/"
 
 # Trading
 CONFIG_EXCHANGES = "exchanges"
@@ -270,7 +275,7 @@ CONFIG_USERNAMES_WHITELIST = "usernames-whitelist"
 
 # Tentacles (packages)
 PYTHON_INIT_FILE = "__init__.py"
-TENTACLES_PATH = "tentacles"
+TENTACLES_PATH = f"{PROJECT_ROOT_DIR}/tentacles"
 TENTACLES_EVALUATOR_PATH = "Evaluator"
 TENTACLES_TRADING_PATH = "Trading"
 CONFIG_TENTACLES_KEY = "tentacles-packages"
@@ -281,14 +286,14 @@ TENTACLES_DEFAULT_BRANCH = SHORT_VERSION
 TENTACLES_FORCE_CONFIRM_PARAM = "force"
 
 # Files
-USER_FOLDER = "user"
+USER_FOLDER = f"{PROJECT_ROOT_DIR}/user"
 CONFIG_FILE = "config.json"
 TEMP_RESTORE_CONFIG_FILE = "temp_config.json"
 CONFIG_EVALUATOR_FILE = "evaluator_config.json"
 CONFIG_TRADING_FILE = "trading_config.json"
 CONFIG_EVALUATOR_FILE_PATH = f"{TENTACLES_PATH}/{TENTACLES_EVALUATOR_PATH}/{CONFIG_EVALUATOR_FILE}"
 CONFIG_TRADING_FILE_PATH = f"{TENTACLES_PATH}/{TENTACLES_TRADING_PATH}/{CONFIG_TRADING_FILE}"
-CONFIG_FOLDER = "config"
+CONFIG_FOLDER = f"{PROJECT_ROOT_DIR}/config"
 CONFIG_DEFAULT_EVALUATOR_FILE = f"{CONFIG_FOLDER}/default_evaluator_config.json"
 CONFIG_DEFAULT_TRADING_FILE = f"{CONFIG_FOLDER}/default_trading_config.json"
 SCHEMA = "schema"
