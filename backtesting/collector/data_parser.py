@@ -17,7 +17,7 @@
 import os
 
 from config import CONFIG_DATA_COLLECTOR_PATH, PriceIndexes, BacktestingDataFormats, BACKTESTING_DATA_OHLCV, \
-    BACKTESTING_DATA_TRADES
+    BACKTESTING_DATA_TRADES, PROJECT_ROOT_DIR
 from backtesting import BacktestingDataFileException
 from backtesting.collector.data_file_manager import read_data_file, get_data_type
 
@@ -25,8 +25,10 @@ from backtesting.collector.data_file_manager import read_data_file, get_data_typ
 class DataCollectorParser:
     @staticmethod
     def parse(file):
-        if os.path.isfile(CONFIG_DATA_COLLECTOR_PATH + file):
-            file_content = DataCollectorParser.get_file_content(CONFIG_DATA_COLLECTOR_PATH + file)
+        if os.path.isfile(f"{CONFIG_DATA_COLLECTOR_PATH}{file}"):
+            file_content = DataCollectorParser.get_file_content(f"{CONFIG_DATA_COLLECTOR_PATH}{file}")
+        elif os.path.isfile(f"{PROJECT_ROOT_DIR}/{file}"):
+            file_content = DataCollectorParser.get_file_content(f"{PROJECT_ROOT_DIR}/{file}")
         else:
             file_content = DataCollectorParser.get_file_content(file)
         return file_content
