@@ -126,15 +126,15 @@ class GlobalPriceUpdater:
 
         await asyncio.gather(*update_tasks)
 
-        if update_tasks:
-            await self.trigger_symbols_finalize()
-
-        if self.in_backtesting and self.keep_running:
-            # force update orders in backtesting but can't update on the very last candle (no next candle
-            # to create recent trades from)
-            await self.update_backtesting_order_status()
-
         if self.keep_running:
+            if update_tasks:
+                await self.trigger_symbols_finalize()
+
+            if self.in_backtesting:
+                # force update orders in backtesting but can't update on the very last candle (no next candle
+                # to create recent trades from)
+                await self.update_backtesting_order_status()
+
             await self._update_pause(now)
 
     def _get_symbol_time_frame_next_update_time(self, symbol, time_frame):
