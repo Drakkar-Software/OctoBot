@@ -31,7 +31,7 @@ from time import sleep
 
 from config import CONFIG_FILE, CONFIG_EVALUATOR_FILE_PATH, CONFIG_ENABLED_OPTION, LONG_VERSION, \
     CONFIG_BACKTESTING, CONFIG_CATEGORY_NOTIFICATION, CONFIG_TRADER, CONFIG_TRADING, CONFIG_SIMULATOR, \
-    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_FILE_PATH, PROJECT_ROOT_DIR, \
+    CONFIG_TRADER_RISK, LOGGING_CONFIG_FILE, CONFIG_TRADING_FILE_PATH, \
     CONFIG_ANALYSIS_ENABLED_OPTION, FORCE_ASYNCIO_DEBUG_OPTION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, \
     CONFIG_CATEGORY_SERVICES, CONFIG_WEB, CONFIG_WEB_PORT, DEFAULT_CONFIG_FILE
 from config.config import load_config, init_config, is_config_empty_or_missing
@@ -40,7 +40,6 @@ from tools.config_manager import ConfigManager
 from tools.errors import ConfigError, ConfigEvaluatorError, ConfigTradingError
 from tools.external_resources_manager import get_external_resource
 from tentacles_manager.tentacle_util import tentacles_arch_exists
-from tentacles_manager import TentaclePathHandler
 
 
 # Keep string '+' operator to ensure backward compatibility in this file
@@ -102,19 +101,12 @@ def _log_terms_if_unaccepted(config, logger):
 
 
 def start_octobot(starting_args):
-    try:
-        fileConfig(LOGGING_CONFIG_FILE)
-    except KeyError:
-        print("Error when loading logging config file, it might be missing or is corrupted. File is: " +
-              LOGGING_CONFIG_FILE)
+    fileConfig(LOGGING_CONFIG_FILE)
 
     logger = logging.getLogger("OctoBot Launcher")
 
     # Force new log file creation not to log at the previous one's end.
-    try:
-        logger.parent.handlers[1].doRollover()
-    except IndexError:
-        print("Logfile rotation disabled: error when handling logging config.")
+    logger.parent.handlers[1].doRollover()
 
     sys.excepthook = _log_uncaught_exceptions
 
@@ -145,9 +137,6 @@ def start_octobot(starting_args):
 
             if config is None:
                 raise ConfigError
-
-            # Set Tentacle package manager current working directory
-            TentaclePathHandler.set_tentacle_parent_directory(PROJECT_ROOT_DIR)
 
             # Handle utility methods before bot initializing if possible
             if starting_args.packager:
