@@ -13,15 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-from octobot_channels.channels import get_chan
+from octobot_channels.channels.channel import get_chan
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import PrettyPrinter
 from octobot_evaluators.channels import MATRIX_CHANNEL
 from octobot_trading.channels import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORDER_BOOK_CHANNEL, KLINE_CHANNEL, \
     OHLCV_CHANNEL, BALANCE_CHANNEL, BALANCE_PROFITABILITY_CHANNEL, TRADES_CHANNEL, POSITIONS_CHANNEL, ORDERS_CHANNEL
 from octobot_trading.channels.exchange_channel import get_chan as get_trading_chan
-
 
 BOT_CHANNEL_LOGGER = get_logger("OctoBot Channel")
 
@@ -57,7 +55,8 @@ async def ohlcv_callback(exchange, symbol, time_frame, candle):
 
 
 async def recent_trades_callback(exchange, symbol, recent_trades):
-    BOT_CHANNEL_LOGGER.info(f"RECENT TRADE : EXCHANGE = {exchange} || SYMBOL = {symbol} || RECENT TRADE = {recent_trades}")
+    BOT_CHANNEL_LOGGER.info(
+        f"RECENT TRADE : EXCHANGE = {exchange} || SYMBOL = {symbol} || RECENT TRADE = {recent_trades}")
 
 
 async def kline_callback(exchange, symbol, time_frame, kline):
@@ -72,7 +71,7 @@ async def balance_callback(exchange, balance):
 async def balance_profitability_callback(exchange, profitability, profitability_percent, market_profitability_percent,
                                          initial_portfolio_current_profitability):
     BOT_CHANNEL_LOGGER.info(f"BALANCE PROFITABILITY : EXCHANGE = {exchange} || PROFITABILITY = "
-                  f"{PrettyPrinter.portfolio_profitability_pretty_print(profitability, profitability_percent, 'USDT')}")
+                            f"{PrettyPrinter.portfolio_profitability_pretty_print(profitability, profitability_percent, 'USDT')}")
 
 
 async def trades_callback(exchange, symbol, trade):
@@ -92,8 +91,8 @@ async def orders_callback(exchange, symbol, order, is_closed, is_updated, is_fro
 
 
 async def positions_callback(exchange, symbol, position, is_closed, is_updated, is_from_bot):
-    logging.info(f"POSITIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || POSITIONS = {position}"
-                  f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}")
+    BOT_CHANNEL_LOGGER.info(f"POSITIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || POSITIONS = {position}"
+                            f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}")
 
 
 async def matrix_callback(evaluator_name,
@@ -102,5 +101,5 @@ async def matrix_callback(evaluator_name,
                           exchange_name,
                           symbol,
                           time_frame):
-    logging.info(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
-                  f" SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
+    BOT_CHANNEL_LOGGER.info(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
+                            f" SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
