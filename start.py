@@ -15,6 +15,8 @@
 #  License along with this library.
 
 # tools is checking the current python version
+from octobot_backtesting import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION
+
 from octobot_commons.errors import ConfigError, ConfigTradingError
 from octobot_evaluators.util.errors import ConfigEvaluatorError
 
@@ -25,8 +27,7 @@ from config import CONFIG_CATEGORY_NOTIFICATION, EXTERNAL_RESOURCE_PUBLIC_ANNOUN
     CONFIG_WEB, CONFIG_WEB_PORT, LOGGING_CONFIG_FILE, LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION
 from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE, \
     CONFIG_EVALUATOR_FILE_PATH, CONFIG_TRADING_FILE_PATH
-from octobot_trading.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION, CONFIG_TRADER, \
-    CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
+from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
 from tools.commands import Commands
 from octobot_commons.config_manager import validate_config_file, accepted_terms, is_in_dev_mode
 

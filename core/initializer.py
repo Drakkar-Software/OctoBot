@@ -15,7 +15,6 @@
 #  License along with this library.
 
 from config import CONFIG_DEBUG_OPTION_PERF
-from octobot_trading.exchanges.backtesting.collector import backtesting_enabled
 from tools import get_logger
 from tools.metrics.metrics_manager import MetricsManager
 from tools.performance_analyser import PerformanceAnalyser
@@ -45,5 +44,6 @@ class Initializer:
             return PerformanceAnalyser()
 
     def __init_metrics(self):
-        if not backtesting_enabled(self.octobot.config):
-            self.octobot.metrics_handler = MetricsManager(self.octobot)
+        # if not backtesting_enabled(self.octobot.config):
+        #     self.octobot.metrics_handler = MetricsManager(self.octobot)
+        pass  # TODO
