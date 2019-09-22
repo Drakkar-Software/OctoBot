@@ -98,6 +98,7 @@ async def positions_callback(exchange, symbol, position, is_closed, is_updated, 
 async def matrix_callback(evaluator_name,
                           evaluator_type,
                           eval_note,
+                          eval_note_type,
                           exchange_name,
                           symbol,
                           time_frame):
