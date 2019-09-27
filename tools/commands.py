@@ -21,7 +21,7 @@ import signal
 from threading import Thread
 from concurrent.futures import CancelledError
 
-from core import get_bot
+from octobot import get_bot
 from octobot_commons.config_util import encrypt
 from tentacles_manager.tentacle_creator.tentacle_creator import TentacleCreator
 
