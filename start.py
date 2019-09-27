@@ -167,7 +167,7 @@ def start_octobot(starting_args):
                 else:
 
                     # In those cases load OctoBot
-                    from core.octobot import OctoBot
+                    from octobot.octobot import OctoBot
 
                     # TelegramApp.enable(config, not starting_args.no_telegram)
                     # WebService.enable(config, not starting_args.no_web)

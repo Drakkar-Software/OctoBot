@@ -18,10 +18,10 @@ import time
 import aiohttp
 
 from config import BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
-from core.evaluator_factory import EvaluatorFactory
-from core.exchange_factory import ExchangeFactory
-from core.initializer import Initializer
-from core.task_manager import TaskManager
+from octobot.evaluator_factory import EvaluatorFactory
+from octobot.exchange_factory import ExchangeFactory
+from octobot.initializer import Initializer
+from octobot.task_manager import TaskManager
 from octobot_commons.logging.logging_util import get_logger
 
 """Main OctoBot class:
