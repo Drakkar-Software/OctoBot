@@ -3,7 +3,7 @@ OctoBot-Commons
 OctoBot-Tentacles-Manager>=1.0.10
 OctoBot-Trading
 OctoBot-Evaluators
-OctoBot-Services
+# OctoBot-Services
 
 # Cryptocurrency trading
 tulipy

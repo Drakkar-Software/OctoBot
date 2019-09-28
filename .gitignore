@@ -126,3 +126,7 @@ log
 logs/states/trading_state_history\.json
 
 backtesting/data/
+
+*.c
+
+cython_debug/

@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
 import copy
 import time
 import aiohttp
@@ -61,6 +62,8 @@ class OctoBot:
         self.task_manager = TaskManager(self)
         self.exchange_factory = ExchangeFactory(self, ignore_config=ignore_config)
         self.evaluator_factory = EvaluatorFactory(self)
+
+        self.async_loop = None
 
     async def initialize(self):
         await self.initializer.create()
