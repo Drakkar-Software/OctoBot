@@ -91,7 +91,7 @@ class TaskManager:
 
         self.logger.info("Threads stopped.")
 
-    def _create_new_asyncio_main_loop(self):
+    def __create_new_asyncio_main_loop(self):
         self.async_loop = asyncio.new_event_loop()
         self.async_loop.set_debug(FORCE_ASYNCIO_DEBUG_OPTION)
         asyncio.set_event_loop(self.async_loop)

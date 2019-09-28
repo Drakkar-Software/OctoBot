@@ -17,8 +17,13 @@ import os
 
 try:
     from Cython.Distutils import build_ext
+    from Cython.Build import cythonize
 except ImportError:
     # create closure for deferred import
+    def cythonize(*args, **kwargs):
+        from Cython.Build import cythonize
+        return cythonize(*args, **kwargs)
+
     def build_ext(*args, **kwargs):
         from Cython.Distutils import build_ext
         return build_ext(*args, **kwargs)
@@ -30,7 +35,11 @@ from config import PROJECT_NAME, VERSION
 
 PACKAGES = find_packages(exclude=["tests"])
 
-packages_list = []
+packages_list: list = ["octobot.evaluator_factory",
+                       "octobot.exchange_factory",
+                       "octobot.initializer",
+                       "octobot.task_manager",
+                       "octobot.octobot"]
 
 ext_modules = [
     Extension(package, [f"{package.replace('.', '/')}.py"])
@@ -58,7 +67,7 @@ setup(
     tests_require=["pytest"],
     test_suite="tests",
     zip_safe=False,
-    setup_requires=REQUIRED,
+    setup_requires=REQUIRED if not CYTHON_DEBUG else [],
     install_requires=[],
     ext_modules=cythonize(ext_modules, gdb_debug=CYTHON_DEBUG),
     python_requires=REQUIRES_PYTHON,
