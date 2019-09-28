@@ -42,25 +42,26 @@ async def init_evaluator_chan_logger():
 
 
 async def ticker_callback(exchange, symbol, ticker):
-    BOT_CHANNEL_LOGGER.info(f"TICKER : EXCHANGE = {exchange} || SYMBOL = {symbol} || TICKER = {ticker}")
+    BOT_CHANNEL_LOGGER.debug(f"TICKER : EXCHANGE = {exchange} || SYMBOL = {symbol} || TICKER = {ticker}")
 
 
 async def order_book_callback(exchange, symbol, asks, bids):
-    BOT_CHANNEL_LOGGER.info(f"ORDERBOOK : EXCHANGE = {exchange} || SYMBOL = {symbol} || ASKS = {asks} || BIDS = {bids}")
+    BOT_CHANNEL_LOGGER.debug(
+        f"ORDERBOOK : EXCHANGE = {exchange} || SYMBOL = {symbol} || ASKS = {asks} || BIDS = {bids}")
 
 
 async def ohlcv_callback(exchange, symbol, time_frame, candle):
-    BOT_CHANNEL_LOGGER.info(
+    BOT_CHANNEL_LOGGER.debug(
         f"OHLCV : EXCHANGE = {exchange} || SYMBOL = {symbol} || TIME FRAME = {time_frame} || CANDLE = {candle}")
 
 
 async def recent_trades_callback(exchange, symbol, recent_trades):
-    BOT_CHANNEL_LOGGER.info(
+    BOT_CHANNEL_LOGGER.debug(
         f"RECENT TRADE : EXCHANGE = {exchange} || SYMBOL = {symbol} || RECENT TRADE = {recent_trades}")
 
 
 async def kline_callback(exchange, symbol, time_frame, kline):
-    BOT_CHANNEL_LOGGER.info(
+    BOT_CHANNEL_LOGGER.debug(
         f"KLINE : EXCHANGE = {exchange} || SYMBOL = {symbol} || TIME FRAME = {time_frame} || KLINE = {kline}")
 
 
@@ -102,5 +103,5 @@ async def matrix_callback(evaluator_name,
                           exchange_name,
                           symbol,
                           time_frame):
-    BOT_CHANNEL_LOGGER.info(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
-                            f" SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
+    BOT_CHANNEL_LOGGER.debug(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
+                             f" SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
