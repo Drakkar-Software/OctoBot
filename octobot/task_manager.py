@@ -14,7 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import platform
 import threading
+from asyncio import CancelledError
+
+import uvloop
 
 from config import CONFIG_NOTIFICATION_INSTANCE, CONFIG_NOTIFICATION_GLOBAL_INFO, FORCE_ASYNCIO_DEBUG_OPTION, \
     NOTIFICATION_STOPPING_MESSAGE
@@ -41,6 +45,15 @@ class TaskManager:
 
     def init_async_loop(self):
         self.async_loop = asyncio.get_running_loop()
+        self.__init_uv_loop()
+
+    def __init_uv_loop(self):
+        if platform == "linux" or platform == "linux2":  # TODO centralize os detection
+            uvloop.install()
+        elif platform == "darwin":
+            uvloop.install()
+        elif platform == "win32":
+            pass
 
     async def start_tools_tasks(self, run_in_new_thread=False):
         task_list = []
@@ -61,7 +74,10 @@ class TaskManager:
         #     await self.tools_task_group
 
     async def join_tasks(self):
-        await asyncio.gather(*asyncio.all_tasks(asyncio.get_event_loop()))
+        try:
+            await asyncio.gather(*asyncio.all_tasks(asyncio.get_event_loop()))
+        except CancelledError:
+            self.logger.error("CancelledError raised")
 
     async def stop_tasks(self):
         stop_coroutines = []

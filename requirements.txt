@@ -9,6 +9,9 @@ OctoBot-Evaluators
 tulipy
 
 ## Tools
+# Async
+uvloop
+
 # Analysis tools
 aiohttp
 jsonschema
