@@ -15,7 +15,7 @@
 #  License along with this library.
 
 # tools is checking the current python version
-from octobot_backtesting import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION
+from octobot_backtesting.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION
 
 from octobot_commons.errors import ConfigError, ConfigTradingError
 from octobot_evaluators.util.errors import ConfigEvaluatorError
