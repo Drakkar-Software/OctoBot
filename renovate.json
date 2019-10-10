@@ -1,6 +1,0 @@
-{
-  "extends": [
-    "config:base"
-  ],
-  "ignoreDeps": ["OctoBot-Tentacles-Manager"]
-}
