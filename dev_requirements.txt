@@ -1,4 +1,4 @@
-pytest==4.4.1
+pytest
 pytest-pep8
 pytest-cov
 pytest-asyncio
@@ -8,3 +8,8 @@ coverage
 coveralls
 
 twine
+pip
+setuptools
+wheel
+
+pur

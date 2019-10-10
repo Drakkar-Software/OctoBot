@@ -1,23 +1,23 @@
 # Drakkar-Software requirements
-OctoBot-Commons
-OctoBot-Tentacles-Manager>=1.0.10
-OctoBot-Trading
-OctoBot-Evaluators
-# OctoBot-Services
+OctoBot-Commons==1.1.46
+OctoBot-Tentacles-Manager>=1.0.12
+OctoBot-Trading==1.3.1
+OctoBot-Evaluators==1.2.4
+# OctoBot-Services==0.0.0
 
 # Cryptocurrency trading
-tulipy
+tulipy==0.4.0
 
 ## Tools
 # Async
-uvloop
+uvloop==0.13.0
 
 # Analysis tools
-aiohttp
-jsonschema
+aiohttp==3.6.2
+jsonschema==3.1.1
 
 ## Others
-psutil
-colorlog
-cryptography
-requests
+psutil==5.6.3
+colorlog==4.0.2
+cryptography==2.7
+requests==2.22.0
