@@ -17,8 +17,9 @@ from octobot_channels.channels.channel import get_chan
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import PrettyPrinter
 from octobot_evaluators.channels import MATRIX_CHANNEL
-from octobot_trading.channels import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORDER_BOOK_CHANNEL, KLINE_CHANNEL, \
-    OHLCV_CHANNEL, BALANCE_CHANNEL, BALANCE_PROFITABILITY_CHANNEL, TRADES_CHANNEL, POSITIONS_CHANNEL, ORDERS_CHANNEL
+from octobot_trading.constants import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORDER_BOOK_CHANNEL, KLINE_CHANNEL, \
+    OHLCV_CHANNEL, BALANCE_CHANNEL, BALANCE_PROFITABILITY_CHANNEL, TRADES_CHANNEL, POSITIONS_CHANNEL, ORDERS_CHANNEL, \
+    MARK_PRICE_CHANNEL
 from octobot_trading.channels.exchange_channel import get_chan as get_trading_chan
 
 BOT_CHANNEL_LOGGER = get_logger("OctoBot Channel")
@@ -35,6 +36,7 @@ async def init_exchange_chan_logger(exchange_name):
     await get_trading_chan(TRADES_CHANNEL, exchange_name).new_consumer(trades_callback)
     await get_trading_chan(POSITIONS_CHANNEL, exchange_name).new_consumer(positions_callback)
     await get_trading_chan(ORDERS_CHANNEL, exchange_name).new_consumer(orders_callback)
+    await get_trading_chan(MARK_PRICE_CHANNEL, exchange_name).new_consumer(mark_price_callback)
 
 
 async def init_evaluator_chan_logger():
@@ -63,6 +65,10 @@ async def recent_trades_callback(exchange, symbol, recent_trades):
 async def kline_callback(exchange, symbol, time_frame, kline):
     BOT_CHANNEL_LOGGER.debug(
         f"KLINE : EXCHANGE = {exchange} || SYMBOL = {symbol} || TIME FRAME = {time_frame} || KLINE = {kline}")
+
+
+async def mark_price_callback(exchange, symbol, mark_price):
+    BOT_CHANNEL_LOGGER.info(f"MARK PRICE : EXCHANGE = {exchange} || SYMBOL = {symbol} || MARK PRICE = {mark_price}")
 
 
 async def balance_callback(exchange, balance):

@@ -1,14 +1,38 @@
 environment:
   matrix:
+    - PYTHON: "C:\\Python37"
+      PYTHON_VERSION: "3.7"
+      PYTHON_ARCH: "32"
     - PYTHON: "C:\\Python37-x64"
+      PYTHON_VERSION: "3.7"
+      PYTHON_ARCH: "64"
+
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
+
 install:
-  - "%PYTHON%\\python.exe -m pip install pypiwin32" # dependency removed from appveyor python default install
-  - "%PYTHON%\\python.exe -m pip install -r pre_requirements.txt"
+  - "%PYTHON%\\python.exe -m pip install --upgrade pip"
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt -r dev_requirements.txt"
-  - copy config\default_config.json config.json
-  - "%PYTHON%\\python.exe start.py -p install all"
+  - mkdir user
+  - copy config\default_config.json user\config.json
+#  - "%PYTHON%\\python.exe start.py -p install all"
+
 build: off
+
 test_script:
-  - "%PYTHON%\\python.exe -m pytest -n 5 tests/unit_tests tests/functional_tests tests/endurance_tests"
+  - echo "todo"
+#  - "%PYTHON%\\python.exe -m pytest -n 5 tests/unit_tests tests/functional_tests tests/endurance_tests"
+
+after_test:
+  - "%WITH_ENV% %PYTHON%\\python.exe setup.py build_ext --inplace"
+  - "%WITH_ENV% %PYTHON%\\python.exe setup.py bdist_wheel"
+
+on_success:
+  - ps: |
+      If ($env:APPVEYOR_REPO_TAG -eq "true") {
+          git fetch --all
+          pip install twine
+          python setup.py sdist bdist_wheel bdist_wininst bdist_egg
+          Invoke-Expression "twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --repository-url https://upload.pypi.org/legacy/ --skip-existing dist/*" 2>&1 | Out-Null
+      }
+

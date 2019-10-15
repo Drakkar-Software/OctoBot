@@ -5,15 +5,30 @@ os: linux
 language: python
 cache: pip
 python: 3.7-dev
+env:
+  global:
+    - GH_REPO=Drakkar-Software/OctoBot
+    - DEPLOY_BRANCH=master
+    - PACKAGE_FOLDER=octobot
+
 install:
-  - python3 -m pip install -r pre_requirements.txt
-  - python3 -m pip install -r requirements.txt -r dev_requirements.txt
-  - cp ./config/default_config.json ./config.json
-  - python3 start.py -p install all
+  - python3 -m pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
+  - mkdir user
+  - cp ./config/default_config.json ./user/config.json
+#  - python3 start.py -p install all
 
 matrix:
   include:
+    - name: "Linux - Python 3.7-dev - Cython compilation"
+      stage: build
+      os: linux
+      python: 3.7-dev
+      language: python
+      script:
+        - python3 setup.py build_ext --inplace
+
     - name: "OS X - Python 3"
+      stage: test
       os: osx
       osx_image: xcode8.3
       language: generic
@@ -29,32 +44,49 @@ matrix:
         - source venv/bin/activate;
 
       script:
-        - pytest -n 3 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests
+        - echo "todo"
+#        - pytest -n 3 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests
 
-    - name: "Linux - Python 3 nightly"
+    - name: "Linux - Python 3.7-dev"
+      stage: test
       os: linux
+      python: 3.7-dev
       language: python
-      before_install:
-        - sudo bash ./docs/install/linux_dependencies.sh
-
       script:
-        - pytest -n 5 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests tests/endurance_tests
-        - python3 setup.py sdist bdist_wheel && python3 -m twine check dist/*
+        - echo "todo"
+#        - pytest -n 5 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests tests/endurance_tests
 
-      after_success:
-        - if [[ $TRAVIS_PULL_REQUEST == 'false' ]]; then bash coveralls; fi
-
-deploy:
-  - provider: pypi
-    user:
-      secure: drvdAty7FzyK3SqUKKsGQJI9PLogE3UqCHxIVfbet8VYypBVoWCG0HHQHJl08q368zzylO45tUjBQP2OdfurpXnGIEcVhVvbuD4v6SrUX1lH6e/g/JBgKDPz6ZtQXpGrno1EKfop0QZVQojm2xXR9oMNxvvVJlGbWaD5BkztxQ9x4Sy0TQsoFwKawx7YuHHcl33+47YBht1fA+YpkGGKxmsqK74yCqf2GzWYNlAjJAhcos+2eHErMI8CkqnrFIjhpV/LB842AAC6bz41PFWIxll2J58+SFYerVYjOCP2JANe5SAwVQQ/rYCTE0I+pYIQiPVBRVOmSeI4DvLpjtWKrW6Uit1xo/080tZR3MBZLrBnyXERVytNY8OFcquAtwtSpfi2x2pUjRlRcwOG3mWMMfrI/UgM7uEN21iEKH57sw3lTeDGZQeuh/KzLNVsAUQGQN0ek88dlS1vWV3KfHjS1f5S/xCf0Bh4iEpw+U6eU09Xhd5+ijmtZBIZDZKlK2zXpz1MuQf5yyLRdRbCcb5rGZfmfYFYoTZTsp0i0rgxqPvOlY0KZJQwJ7EHKAulka/LkDm9JBH/n1uqF5SyHUduJMZgDT6/p9Tq/n5l3XgoJZgDKQgwA3x+RIRKinlmT9ibFiADB1j7lqLQvyAlIbCdrO/K8ULNkAU4xDrAJfEr9GE=
-    password:
-      secure: hbel+oqhAyGrzejIoumrVjmMz3cSnD5LxbppLlPQuqPg19AROMx92O+/vquXLj4CurcDdzp3P5Q3FhRUDJLI29SehOEsTM68FVQYWUNXvf6Mbg7dPMNogvifo4wkHxL3+7MwhYhtfunzfdLnSDdmCn6BzbrXFOLpgBvR+j0TeDyd5LzfMc6s7Mm2nuZZ+G8ZUnDamOydxjHuR+UOx0qFRKLKuIt/LFY4x4jnSQhT4oNeSEkkjLdCo7UnWmP3I8RRLdqSKWPQ46k0pB63lYRaixOYSVbj2R3nBycgGAATCBH4RmA5jG1pXyl/uE561F42N3P+9gjHgsscLDbNmLI3EOEQYn5RVifhoWID2b0XeLy0qy5qKQFEaDuy9ggOEj15OYPtwoHA+PUvnbvonpq4Z4819S2Tx+cCtDKDKAD3hMF+FxCDshtLhJPyyVWW/SNC8uxWtscqox2E4jgjGwf/RqEa7EEk3W9RibjoQWoW+aM6f3dcCPdBmYj1+Rp1PPzGnaJ9bFli1uTcGK0iD8D5ybVzQUus6SGOnx0OWtHOVgSOjUS5mRILBVU4eOE2Yuq4aQEVlBkvCqwkFY3sbJY2r4CA/3eGmEJ/lLHzdMimgVezfPQe3cxvciWouteFqea/BICcEUufRxE0w7FtiBFsyE4phmQlOHunFtO+O6gzimQ=
-    skip_existing: true
-    skip_cleanup: true
-    distributions: "sdist bdist_wheel"
-    on:
-      repo: Drakkar-Software/OctoBot
-      branch: master
-      tags: true
-      condition: $TRAVIS_OS_NAME = 'linux'
+    - name: "Linux - Python 3 nightly - Deploy"
+      stage: deploy
+      script:
+        - ls
+      deploy:
+        - provider: pypi
+          user:
+            secure: drvdAty7FzyK3SqUKKsGQJI9PLogE3UqCHxIVfbet8VYypBVoWCG0HHQHJl08q368zzylO45tUjBQP2OdfurpXnGIEcVhVvbuD4v6SrUX1lH6e/g/JBgKDPz6ZtQXpGrno1EKfop0QZVQojm2xXR9oMNxvvVJlGbWaD5BkztxQ9x4Sy0TQsoFwKawx7YuHHcl33+47YBht1fA+YpkGGKxmsqK74yCqf2GzWYNlAjJAhcos+2eHErMI8CkqnrFIjhpV/LB842AAC6bz41PFWIxll2J58+SFYerVYjOCP2JANe5SAwVQQ/rYCTE0I+pYIQiPVBRVOmSeI4DvLpjtWKrW6Uit1xo/080tZR3MBZLrBnyXERVytNY8OFcquAtwtSpfi2x2pUjRlRcwOG3mWMMfrI/UgM7uEN21iEKH57sw3lTeDGZQeuh/KzLNVsAUQGQN0ek88dlS1vWV3KfHjS1f5S/xCf0Bh4iEpw+U6eU09Xhd5+ijmtZBIZDZKlK2zXpz1MuQf5yyLRdRbCcb5rGZfmfYFYoTZTsp0i0rgxqPvOlY0KZJQwJ7EHKAulka/LkDm9JBH/n1uqF5SyHUduJMZgDT6/p9Tq/n5l3XgoJZgDKQgwA3x+RIRKinlmT9ibFiADB1j7lqLQvyAlIbCdrO/K8ULNkAU4xDrAJfEr9GE=
+          password:
+            secure: hbel+oqhAyGrzejIoumrVjmMz3cSnD5LxbppLlPQuqPg19AROMx92O+/vquXLj4CurcDdzp3P5Q3FhRUDJLI29SehOEsTM68FVQYWUNXvf6Mbg7dPMNogvifo4wkHxL3+7MwhYhtfunzfdLnSDdmCn6BzbrXFOLpgBvR+j0TeDyd5LzfMc6s7Mm2nuZZ+G8ZUnDamOydxjHuR+UOx0qFRKLKuIt/LFY4x4jnSQhT4oNeSEkkjLdCo7UnWmP3I8RRLdqSKWPQ46k0pB63lYRaixOYSVbj2R3nBycgGAATCBH4RmA5jG1pXyl/uE561F42N3P+9gjHgsscLDbNmLI3EOEQYn5RVifhoWID2b0XeLy0qy5qKQFEaDuy9ggOEj15OYPtwoHA+PUvnbvonpq4Z4819S2Tx+cCtDKDKAD3hMF+FxCDshtLhJPyyVWW/SNC8uxWtscqox2E4jgjGwf/RqEa7EEk3W9RibjoQWoW+aM6f3dcCPdBmYj1+Rp1PPzGnaJ9bFli1uTcGK0iD8D5ybVzQUus6SGOnx0OWtHOVgSOjUS5mRILBVU4eOE2Yuq4aQEVlBkvCqwkFY3sbJY2r4CA/3eGmEJ/lLHzdMimgVezfPQe3cxvciWouteFqea/BICcEUufRxE0w7FtiBFsyE4phmQlOHunFtO+O6gzimQ=
+          skip_existing: true
+          skip_cleanup: true
+          distributions: "sdist"
+          on:
+            repo: $GH_REPO
+            branch: $DEPLOY_BRANCH
+            tags: true
+            condition: $TRAVIS_OS_NAME = 'linux'
+        - provider: script
+          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/octobot-pypi-deploy:i686 "i686" "cp37-cp37m" "cp37"
+          skip_cleanup: true
+          on:
+            repo: "$GH_REPO"
+            branch: "$DEPLOY_BRANCH"
+            tags: true
+            condition: "$TRAVIS_OS_NAME = 'linux'"
+        - provider: script
+          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/octobot-pypi-deploy:x86_64 "x86_64" "cp37-cp37m" "cp37"
+          skip_cleanup: true
+          on:
+            repo: "$GH_REPO"
+            branch: "$DEPLOY_BRANCH"
+            tags: true
+            condition: "$TRAVIS_OS_NAME = 'linux'"

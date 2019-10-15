@@ -1,0 +1,6 @@
+recursive-include octobot *.pxd
+
+include README.md
+include LICENSE
+include CHANGELOG.md
+include requirements.txt
