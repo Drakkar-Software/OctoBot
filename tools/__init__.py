@@ -19,6 +19,9 @@ from distutils.version import LooseVersion
 import os
 import sys
 
+from octobot_commons.enums import PlatformsName
+from octobot_commons.os_util import get_os
+
 MIN_PYTHON_VERSION = (3, 7)
 MIN_TENTACLE_MANAGER_VERSION = "1.0.10"
 

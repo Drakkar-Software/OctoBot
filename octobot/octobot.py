@@ -18,7 +18,6 @@ import copy
 import time
 import aiohttp
 
-from config import BOT_TOOLS_RECORDER, BOT_TOOLS_STRATEGY_OPTIMIZER, BOT_TOOLS_BACKTESTING
 from octobot.evaluator_factory import EvaluatorFactory
 from octobot.exchange_factory import ExchangeFactory
 from octobot.initializer import Initializer
@@ -43,11 +42,11 @@ class OctoBot:
         self.edited_config = copy.deepcopy(config)
 
         # tools: used for alternative operations on a bot on the fly (ex: backtesting started from web interface)
-        self.tools = {
-            BOT_TOOLS_BACKTESTING: None,
-            BOT_TOOLS_STRATEGY_OPTIMIZER: None,
-            BOT_TOOLS_RECORDER: None,
-        }
+        # self.tools = {
+        #     BOT_TOOLS_BACKTESTING: None,
+        #     BOT_TOOLS_STRATEGY_OPTIMIZER: None,
+        #     BOT_TOOLS_RECORDER: None,
+        # }
 
         # unique aiohttp session: to be initialized from getter in a task
         self._aiohttp_session = None

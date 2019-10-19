@@ -25,9 +25,6 @@ from octobot import get_bot
 from octobot_commons.config_util import encrypt
 from tentacles_manager.tentacle_creator.tentacle_creator import TentacleCreator
 
-# from backtesting.collector.data_collector import DataCollector
-from config import TENTACLES_DEFAULT_BRANCH, TENTACLES_FORCE_CONFIRM_PARAM
-# from interfaces import get_bot
 from octobot_commons.logging.logging_util import get_logger
 from tentacles_manager.tentacle_manager import TentacleManager
 
@@ -45,17 +42,17 @@ class Commands:
     #         if catch:
     #             raise e
 
-    @staticmethod
-    def package_manager(config, commands, catch=False, force=False, default_git_branch=TENTACLES_DEFAULT_BRANCH):
-        try:
-            if TENTACLES_FORCE_CONFIRM_PARAM in commands:
-                force = True
-                commands.pop(commands.index(TENTACLES_FORCE_CONFIRM_PARAM))
-            tentacle_manager = TentacleManager(config)
-            tentacle_manager.parse_commands(commands, force=force, default_git_branch=default_git_branch)
-        except Exception as e:
-            if not catch:
-                raise e
+    # @staticmethod
+    # def package_manager(config, commands, catch=False, force=False, default_git_branch=TENTACLES_DEFAULT_BRANCH):
+    #     try:
+    #         if TENTACLES_FORCE_CONFIRM_PARAM in commands:
+    #             force = True
+    #             commands.pop(commands.index(TENTACLES_FORCE_CONFIRM_PARAM))
+    #         tentacle_manager = TentacleManager(config)
+    #         tentacle_manager.parse_commands(commands, force=force, default_git_branch=default_git_branch)
+    #     except Exception as e:
+    #         if not catch:
+    #             raise e
 
     @staticmethod
     def tentacle_creator(config, commands, catch=False):
