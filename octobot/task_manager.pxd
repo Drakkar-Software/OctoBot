@@ -30,4 +30,4 @@ cdef class TaskManager:
     cdef void __init_uv_loop(self)
 
     cpdef void init_async_loop(self)
-    cpdef object run_in_main_asyncio_loop(self, coroutine)
+    cpdef object run_in_main_asyncio_loop(self, object coroutine)

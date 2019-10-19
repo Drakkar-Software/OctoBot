@@ -89,5 +89,6 @@ setup(
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Cython'
     ],
 )

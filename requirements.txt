@@ -8,9 +8,6 @@ OctoBot-Trading==1.4.3
 OctoBot-Evaluators==1.2.4
 # OctoBot-Services==0.0.0
 
-# Cryptocurrency trading
-tulipy==0.4.0
-
 ## Tools
 # Async
 # uvloop==0.13.0
@@ -20,7 +17,6 @@ aiohttp==3.6.2
 jsonschema==3.1.1
 
 ## Others
-psutil==5.6.3
 colorlog==4.0.2
-cryptography==2.7
-requests==2.22.0
+cryptography==2.8
+yarl==1.1.0

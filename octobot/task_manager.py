@@ -18,12 +18,15 @@ import platform
 import threading
 from asyncio import CancelledError
 
-import uvloop
-
 from config import CONFIG_NOTIFICATION_INSTANCE, CONFIG_NOTIFICATION_GLOBAL_INFO, FORCE_ASYNCIO_DEBUG_OPTION, \
     NOTIFICATION_STOPPING_MESSAGE
 from tools.asyncio_tools import get_gather_wrapper, run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
+
+try:
+    import uvloop
+except ImportError:
+    get_logger().debug("uvloop is not installed")
 
 
 class TaskManager:
