@@ -23,8 +23,7 @@ from octobot_evaluators.util.errors import ConfigEvaluatorError
 from tools.config_manager import config_health_check
 from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
 
-from config import CONFIG_CATEGORY_NOTIFICATION, EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS, CONFIG_CATEGORY_SERVICES, \
-    CONFIG_WEB, CONFIG_WEB_PORT, LOGGING_CONFIG_FILE, LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION
+from config import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION, LOGGING_CONFIG_FILE
 from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE, \
     CONFIG_EVALUATOR_FILE_PATH, CONFIG_TRADING_FILE_PATH
 from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
@@ -43,7 +42,6 @@ from logging.config import fileConfig
 from time import sleep
 
 from config.disclaimer import DISCLAIMER
-from tools.external_resources_manager import get_external_resource
 from tentacles_manager.tentacle_util import tentacles_arch_exists
 
 
@@ -60,7 +58,7 @@ def update_config_with_args(starting_args, config):
         config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
         config[CONFIG_BACKTESTING][CONFIG_ANALYSIS_ENABLED_OPTION] = starting_args.backtesting_analysis
 
-        config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
+        # config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
 
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
         config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
@@ -73,26 +71,26 @@ def update_config_with_args(starting_args, config):
         config[CONFIG_TRADING][CONFIG_TRADER_RISK] = starting_args.risk
 
 
-def _check_public_announcements(logger):
-    try:
-        announcement = get_external_resource(EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS)
-        if announcement:
-            logger.info(announcement)
-    except Exception as e:
-        logger.warning("Impossible to check announcements: {0}".format(e))
+# def _check_public_announcements(logger):
+#     try:
+#         announcement = get_external_resource(EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS)
+#         if announcement:
+#             logger.info(announcement)
+#     except Exception as e:
+#         logger.warning("Impossible to check announcements: {0}".format(e))
 
 
-def _auto_open_web(config, bot):
-    try:
-        # wait bot is ready
-        while not bot.is_ready():
-            sleep(0.1)
-
-        webbrowser.open("http://{0}:{1}".format(socket.gethostbyname(socket.gethostname()),
-                                                config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT])
-                        )
-    except webbrowser.Error as e:
-        logging.error("{0}, impossible to open automatically web interface".format(e))
+# def _auto_open_web(config, bot):
+#     try:
+#         # wait bot is ready
+#         while not bot.is_ready():
+#             sleep(0.1)
+#
+#         webbrowser.open("http://{0}:{1}".format(socket.gethostbyname(socket.gethostname()),
+#                                                 config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT])
+#                         )
+#     except webbrowser.Error as e:
+#         logging.error("{0}, impossible to open automatically web interface".format(e))
 
 
 def _log_terms_if_unaccepted(config, logger):
@@ -122,7 +120,7 @@ def start_octobot(starting_args):
             # Version
             logger.info("Version : {0}".format(LONG_VERSION))
 
-            _check_public_announcements(logger)
+            # _check_public_announcements(logger)
 
             logger.info("Loading config files...")
 

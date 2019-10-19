@@ -14,10 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from config import CONFIG_DEBUG_OPTION_PERF
 from tools import get_logger
-from tools.metrics.metrics_manager import MetricsManager
-from tools.performance_analyser import PerformanceAnalyser
 
 
 class Initializer:
@@ -31,19 +28,9 @@ class Initializer:
         # Logger
         self.logger = get_logger(self.__class__.__name__)
 
-        self.performance_analyser = None
-
     async def create(self):
         # initialize tools
-        self.performance_analyser = self.__create_performance_analyser()
-
         self.__init_metrics()
 
-    def __create_performance_analyser(self):
-        if CONFIG_DEBUG_OPTION_PERF in self.octobot.config and self.octobot.config[CONFIG_DEBUG_OPTION_PERF]:
-            return PerformanceAnalyser()
-
     def __init_metrics(self):
-        # if not backtesting_enabled(self.octobot.config):
-        #     self.octobot.metrics_handler = MetricsManager(self.octobot)
         pass  # TODO
