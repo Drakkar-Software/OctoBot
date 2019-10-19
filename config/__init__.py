@@ -497,17 +497,6 @@ class FeePropertyColumns(Enum):
     COST = "cost"  # fee amount
 
 
-class PlatformsName(Enum):
-    WINDOWS = "nt"
-    LINUX = "posix"
-    MAC = "mac"
-
-class OctoBotTypes(Enum):
-    BINARY = "binary"
-    PYTHON = "python"
-    DOCKER = "docker"
-
-
 class MetricsFields(Enum):
     ID = "_id"
     CURRENT_SESSION = "currentsession"
