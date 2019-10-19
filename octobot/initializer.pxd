@@ -19,7 +19,5 @@
 cdef class Initializer:
     cdef object logger
     cdef public object octobot
-    cdef public object performance_analyser
 
-    cdef object __create_performance_analyser(self)
     cdef void __init_metrics(self)

@@ -18,8 +18,7 @@ import platform
 import threading
 from asyncio import CancelledError
 
-from config import CONFIG_NOTIFICATION_INSTANCE, CONFIG_NOTIFICATION_GLOBAL_INFO, FORCE_ASYNCIO_DEBUG_OPTION, \
-    NOTIFICATION_STOPPING_MESSAGE
+from config import FORCE_ASYNCIO_DEBUG_OPTION
 from tools.asyncio_tools import get_gather_wrapper, run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
 
@@ -60,11 +59,11 @@ class TaskManager:
 
     async def start_tools_tasks(self, run_in_new_thread=False):
         task_list = []
-        if self.octobot.initializer.performance_analyser:
-            task_list.append(self.octobot.initializer.performance_analyser.start_monitoring())
+        # if self.octobot.initializer.performance_analyser:
+        #     task_list.append(self.octobot.initializer.performance_analyser.start_monitoring())
 
-        if self.octobot.metrics_handler:
-            task_list.append(self.octobot.metrics_handler.start_metrics_task())
+        # if self.octobot.metrics_handler:
+        #     task_list.append(self.octobot.metrics_handler.start_metrics_task())
 
         self.octobot.async_loop = self.async_loop
         self.ready = True
@@ -85,12 +84,12 @@ class TaskManager:
     async def stop_tasks(self):
         stop_coroutines = []
         # Notify stopping
-        if self.octobot.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
-            # To be improved with a full async implementation
-            # To be done : "asyncio.run" --> replaced by a simple await
-            # PR discussion : https://github.com/Drakkar-Software/OctoBot/pull/563#discussion_r248088266
-            stop_coroutines.append(self.octobot.config[CONFIG_NOTIFICATION_INSTANCE]
-                                   .notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
+        # if self.octobot.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
+        #     # To be improved with a full async implementation
+        #     # To be done : "asyncio.run" --> replaced by a simple await
+        #     # PR discussion : https://github.com/Drakkar-Software/OctoBot/pull/563#discussion_r248088266
+        #     stop_coroutines.append(self.octobot.config[CONFIG_NOTIFICATION_INSTANCE]
+        #                            .notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
 
         self.logger.info("Stopping threads ...")
 

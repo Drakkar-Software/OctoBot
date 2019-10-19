@@ -1,4 +1,78 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
+
+## [0.4.0] - 2019-10-19
+### Added
+- octobot main package to initialize all OctoBot packages
+
+### Moved
+- Evaluator modules related to OctoBot-Evaluators
+- Trading modules related to OctoBot-Trading
+- Services modules related to OctoBot-Services
+- Common modules related to OctoBot-Commons
+- Backtesting modules related to OctoBot-Backtesting
+- Websocket modules related to OctoBot-Websockets
+- Service modules related to OctoBot-Services
+- Interface modules related to OctoBot-Interface
+- Notification modules related to OctoBot-Notifications
+
+Changelog for 0.3.7-beta
+====================
+*Released date : August 31 2019*
+
+# Warning: config.json file has been moved to the user folder
+
+# Concerned issues / pull request:
+    #948 [Trading] Add 6h timeframe
+    #949 [Config] Migrate config file to user folder enhancement
+    #952 [Trader] Fix kraken orders
+    #953 [Docker] Improve dockerfile
+    #955 [Backtesting] Improve recent trades generation
+    #960 [Backtesting] Use the last candle for profitability computation
+    #962 [Portfolio] Missing stablecoins in traded portfolio
+    #964 [Backtesting][DipAnalyser] try to create sell order without enough funds
+    #968 [Web interface] Handle errors 
+    #969 [Web interface] Add refresh real trader button
+
+# Bug fixes :
+    - Fixed errors when creating orders on Kraken exchange
+    - Fixed innacuracies in backtesting
+    - Now correctly takes every currency into consideration when computing profitability and holdings
+    - Fixed backtesting exchange simulator inconsistencies
+    
+# New features :
+    - Added refresh real trader button similar to /refresh_real_trader telegram command in web interface
+    - Added error handling pages in web interface 
+    - Can now handle 6 hours timeframes
+    - Optimized Dockerfile
+
+Changelog for 0.3.6-beta
+====================
+*Released date : July 15 2019*
+
+# Concerned issues / pull request:
+    #922 [Notifications] Uncaught exception when error on notifications publish bug
+    #937 [Exchanges] API token fail when api-password is provided but not necessary bug
+    #940 [Bug][High] Fix updater candle time synchronization
+    #927 [Docker] expose web interface for inter-container communications
+    #900 Fix Config checker failed when using wildcard on pairs
+    #931 Improved navbar UI
+    #944 Added switch design for tentacle config checkboxes
+
+# Bug fixes :
+    - Fixed exchange API token error during first installation
+    - Fixed timeframes update rate to fit timeframes time
+    - Fixed uncaught notification exception
+    - Fixed wildcard configuration validation error
+    
+# New features :
+    - Added configuration for Daily and Signal trading modes
+    - Improved web interface UI 
 
 Changelog for 0.3.5-beta
 ====================
