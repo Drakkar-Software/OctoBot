@@ -20,6 +20,8 @@ from octobot_backtesting.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_EN
 from octobot_commons.errors import ConfigError, ConfigTradingError
 from octobot_evaluators.util.errors import ConfigEvaluatorError
 
+from tools.commands import package_manager, tentacle_creator, exchange_keys_encrypter, start_strategy_optimizer, \
+    start_bot, data_collector
 from tools.config_manager import config_health_check
 from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
 
@@ -27,7 +29,6 @@ from config import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION, LOGGING_CONFIG_FILE
 from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE, \
     CONFIG_EVALUATOR_FILE_PATH, CONFIG_TRADING_FILE_PATH
 from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
-from tools.commands import Commands
 from octobot_commons.config_manager import validate_config_file, accepted_terms, is_in_dev_mode
 
 import argparse
@@ -143,24 +144,24 @@ def start_octobot(starting_args):
 
             # Handle utility methods before bot initializing if possible
             if starting_args.packager:
-                Commands.package_manager(config, starting_args.packager)
+                package_manager(config, starting_args.packager)
 
             elif starting_args.creator:
-                Commands.tentacle_creator(config, starting_args.creator)
+                tentacle_creator(config, starting_args.creator)
 
             elif starting_args.encrypter:
-                Commands.exchange_keys_encrypter()
+                exchange_keys_encrypter()
 
             else:
                 if not tentacles_arch_exists():
                     logger.info("No tentacles found. Installing default tentacles ...")
-                    Commands.package_manager(config, ["install", "all"], force=True)
+                    package_manager(config, ["install", "all"], force=True)
 
                 if starting_args.data_collector:
-                    Commands.data_collector(config)
+                    data_collector(config)
 
                 elif starting_args.strategy_optimizer:
-                    Commands.start_strategy_optimizer(config, starting_args.strategy_optimizer)
+                    start_strategy_optimizer(config, starting_args.strategy_optimizer)
 
                 else:
 
@@ -186,7 +187,7 @@ def start_octobot(starting_args):
 
                     # set debug_mode = True to activate asyncio debug mode
                     debug_mode = is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
-                    asyncio.run(Commands.start_bot(bot, logger), debug=debug_mode)
+                    asyncio.run(start_bot(bot, logger), debug=debug_mode)
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file." + "\nYou can use " +
                      DEFAULT_CONFIG_FILE + " as an example to fix it.")
