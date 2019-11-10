@@ -16,7 +16,7 @@
 import os
 
 from setuptools import dist
-dist.Distribution().fetch_build_eggs(['Cython>=0.29.13'])
+dist.Distribution().fetch_build_eggs(['Cython>=0.29.14'])
 
 try:
     from Cython.Distutils import build_ext
@@ -38,7 +38,7 @@ from config import PROJECT_NAME, VERSION
 
 PACKAGES = find_packages(exclude=["tests"])
 
-packages_list: list = ["octobot.evaluator_factory",
+packages_list = ["octobot.evaluator_factory",
                        "octobot.exchange_factory",
                        "octobot.initializer",
                        "octobot.task_manager",

@@ -12,7 +12,7 @@ cache:
 
 install:
   - "%PYTHON%\\python.exe -m pip install --upgrade pip"
-  - "%PYTHON%\\python.exe -m pip install -r requirements.txt -r dev_requirements.txt"
+  - "%PYTHON%\\python.exe -m pip install --prefer-binary -r requirements.txt -r dev_requirements.txt"
   - mkdir user
   - copy config\default_config.json user\config.json
 #  - "%PYTHON%\\python.exe start.py -p install all"
@@ -35,4 +35,3 @@ on_success:
           python setup.py sdist bdist_wheel bdist_wininst bdist_egg
           Invoke-Expression "twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --repository-url https://upload.pypi.org/legacy/ --skip-existing dist/*" 2>&1 | Out-Null
       }
-
