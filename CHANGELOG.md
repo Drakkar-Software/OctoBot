@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-alpha3] - 2019-11-10
+### Fixed
+- Appveyor CI
+- Travis pypi delivery
+
+### Updated
+**Requirements**
+- Cython version to 0.29.14
+- Commons version to 1.1.49
+- Evaluators version to 1.2.6
+- Trading version to 1.4.5
+
 ## [0.4.0-alpha2] - 2019-10-31
 ### Fixed
 - Commands class imports
