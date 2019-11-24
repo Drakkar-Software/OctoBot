@@ -154,8 +154,10 @@ class Order:
         self.status = OrderStatus.CANCELED
         self.canceled_time = time.time()
 
-        # if real order
-        if not self.is_simulated and not self.trader.check_if_self_managed(self.get_order_type()):
+        # if real order => also check order id because a user can try to cancel a loaded order what would normally
+        # be handled as self managed by OctoBot, ex: Binance and take profit orders
+        if not self.is_simulated \
+                and (not self.trader.check_if_self_managed(self.get_order_type()) or self.order_id is not None):
             await self.exchange.cancel_order(self.order_id, self.symbol)
 
         await self.trader.notify_order_cancel(self)

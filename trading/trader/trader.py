@@ -533,15 +533,31 @@ class Trader(Initializable):
         side = TradeOrderSide(order["side"])
         order_type = TradeOrderType(order["type"])
         if side == TradeOrderSide.BUY:
-            if order_type == TradeOrderType.LIMIT:
+            if order_type == TradeOrderType.LIMIT or order_type == TradeOrderType.LIMIT_MAKER:
                 return TraderOrderType.BUY_LIMIT
             elif order_type == TradeOrderType.MARKET:
                 return TraderOrderType.BUY_MARKET
+            else:
+                return Trader._get_sell_and_buy_types(order_type)
         elif side == TradeOrderSide.SELL:
-            if order_type == TradeOrderType.LIMIT:
+            if order_type == TradeOrderType.LIMIT or order_type == TradeOrderType.LIMIT_MAKER:
                 return TraderOrderType.SELL_LIMIT
             elif order_type == TradeOrderType.MARKET:
                 return TraderOrderType.SELL_MARKET
+            else:
+                return Trader._get_sell_and_buy_types(order_type)
+
+    @staticmethod
+    def _get_sell_and_buy_types(order_type):
+        if order_type == TradeOrderType.STOP_LOSS:
+            return TraderOrderType.STOP_LOSS
+        elif order_type == TradeOrderType.STOP_LOSS_LIMIT:
+            return TraderOrderType.STOP_LOSS_LIMIT
+        elif order_type == TradeOrderType.TAKE_PROFIT:
+            return TraderOrderType.TAKE_PROFIT
+        elif order_type == TradeOrderType.TAKE_PROFIT_LIMIT:
+            return TraderOrderType.TAKE_PROFIT_LIMIT
+        return None
 
     def register_trading_mode(self, trading_mode):
         self.trading_modes.append(trading_mode)
