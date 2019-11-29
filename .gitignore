@@ -120,13 +120,10 @@ config\.json
 
 *.csv
 *.ods
-temp_config\.json
-log
-
-logs/states/trading_state_history\.json
-
-backtesting/data/
-
 *.c
 
+temp_config.json
+log
+logs/states/trading_state_history.json
+backtesting/data/
 cython_debug/
