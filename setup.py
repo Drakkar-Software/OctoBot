@@ -16,6 +16,7 @@
 import os
 
 from setuptools import dist
+
 dist.Distribution().fetch_build_eggs(['Cython>=0.29.14'])
 
 try:
@@ -39,10 +40,10 @@ from config import PROJECT_NAME, VERSION
 PACKAGES = find_packages(exclude=["tests"])
 
 packages_list = ["octobot.evaluator_factory",
-                       "octobot.exchange_factory",
-                       "octobot.initializer",
-                       "octobot.task_manager",
-                       "octobot.octobot"]
+                 "octobot.exchange_factory",
+                 "octobot.initializer",
+                 "octobot.task_manager",
+                 "octobot.octobot"]
 
 ext_modules = [
     Extension(package, [f"{package.replace('.', '/')}.py"])
@@ -64,7 +65,7 @@ setup(
     author='Drakkar-Software',
     author_email='drakkar-software@protonmail.com',
     description='Cryptocurrencies alert / trading bot',
-    py_modules=['start', 'octobot'],
+    py_modules=['start'],
     packages=PACKAGES,
     include_package_data=True,
     long_description=DESCRIPTION,

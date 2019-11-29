@@ -1,5 +1,3 @@
-.dockerignore
-
 .idea/
 
 # Remove Git
@@ -7,6 +5,11 @@
 .github/
 .gitattributes
 .gitignore
+
+# python
+venv/
+build/
+.eggs/
 
 # Ignore log files
 logs/
@@ -21,8 +24,8 @@ setup.cfg
 tox.ini
 
 # octobot
-tentacles/
-config.json
-
-# others
-*.md
+# tentacles/ TODO: temp
+# backtesting/ TODO: temp
+# user/ TODO: temp
+tests/
+docs/
