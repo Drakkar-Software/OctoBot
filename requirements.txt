@@ -2,7 +2,7 @@
 OctoBot-Tentacles-Manager>=1.0.10
 
 # Cryptocurrency trading
-python-binance<=0.7.3
+python-binance==0.7.3
 ccxt
 tulipy
 
