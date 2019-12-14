@@ -101,9 +101,9 @@ class RESTExchange(AbstractExchange, Initializable):
     def get_market_status(self, symbol, price_example=None, with_fixer=True):
         try:
             if with_fixer:
-                return ExchangeMarketStatusFixer(self.client.find_market(symbol), price_example).get_market_status()
+                return ExchangeMarketStatusFixer(self.client.market(symbol), price_example).get_market_status()
             else:
-                return self.client.find_market(symbol)
+                return self.client.market(symbol)
         except Exception as e:
             self.logger.error(f"Fail to get market status of {symbol}: {e}")
             return {}
@@ -286,7 +286,7 @@ class RESTExchange(AbstractExchange, Initializable):
 
     def get_fees(self, symbol):
         try:
-            market_status = self.client.find_market(symbol)
+            market_status = self.client.market(symbol)
             return {
                 ExchangeConstantsMarketPropertyColumns.TAKER.value:
                     get_value_or_default(market_status, ExchangeConstantsMarketPropertyColumns.TAKER.value,
