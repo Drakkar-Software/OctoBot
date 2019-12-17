@@ -15,10 +15,10 @@ stages:
 build-docker-image:
   stage: build
   tags:
-    - docker
+    - dind
   script:
     - docker pull $CI_REGISTRY_IMAGE:latest || true
-    - docker build --pull --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+    - docker build --pull --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA --build-arg FOLDERS_TO_REMOVE="spec node_modules vendor/assets lib/assets tmp/cache" --build-arg BUNDLE_WITHOUT="development:test" --build-arg RAILS_ENV="production" .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
 
 test-docker-image:
@@ -27,7 +27,7 @@ test-docker-image:
   before_script:
     - ''
   tags:
-    - build-in-docker
+    - shell
   script:
     - ''
 
@@ -39,7 +39,7 @@ Push latest:
     GIT_STRATEGY: none
   stage: push
   tags:
-    - docker
+    - dind
   only:
     # Only "master" should be tagged "latest"
     - master
@@ -61,7 +61,7 @@ Push tag:
     GIT_STRATEGY: none
   stage: push
   tags:
-    - docker
+    - dind
   only:
     # We want this job to be run on tags only.
     - tags
