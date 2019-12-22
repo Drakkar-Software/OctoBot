@@ -24,8 +24,8 @@ setup.cfg
 tox.ini
 
 # octobot
-# tentacles/ TODO: temp
-# backtesting/ TODO: temp
-# user/ TODO: temp
+# tentacles/ TODO: uncomment
+backtesting/
+user/
 tests/
 docs/
