@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-alpha4] - 2019-12-22
+### Updated
+**Requirements**
+- Commons version to 1.2.0
+- Evaluators version to 1.3.1
+- Trading version to 1.4.11
+- jsonschema to 3.1.1
+
 ## [0.4.0-alpha3] - 2019-11-10
 ### Fixed
 - Appveyor CI

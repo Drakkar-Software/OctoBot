@@ -24,14 +24,6 @@ install:
 
 matrix:
   include:
-    - name: "Linux - Python 3.7-dev - Cython compilation"
-      stage: build
-      os: linux
-      python: 3.7-dev
-      language: python
-      script:
-        - python3 setup.py build_ext --inplace
-
     - name: "Linux - Python 3.7-dev - Python sources"
       stage: test
       os: linux
