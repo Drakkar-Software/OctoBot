@@ -42,7 +42,4 @@ DEFAULT_CONFIG_FILE = f"{CONFIG_FOLDER}/default_config.json"
 LOGGING_CONFIG_FILE = f"{CONFIG_FOLDER}/logging_config.ini"
 LOG_FILE = f"{LOGS_FOLDER}/{PROJECT_NAME}.log"
 
-# Async settings
-DEFAULT_FUTURE_TIMEOUT = 120
-
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='
