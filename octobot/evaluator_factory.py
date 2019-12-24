@@ -16,6 +16,7 @@
 
 from octobot_commons.logging.logging_util import get_logger
 from octobot_evaluators.api import create_matrix_channels, create_all_type_evaluators, initialize_evaluators
+from octobot_services.api.dispatchers import create_dispatcher_factory
 from octobot_trading.exchanges.exchanges import Exchanges
 from tools.logger import init_evaluator_chan_logger
 
@@ -34,11 +35,14 @@ class EvaluatorFactory:
         self.symbol_tasks_manager = {}
         self.symbol_evaluator_list = {}
         self.cryptocurrency_evaluator_list = {}
-        self.dispatchers_list = []
         self.social_eval_tasks = []
         self.real_time_eval_tasks = []
 
+        # Dispatcher instances, used by evaluators like twitter, telegram, ...
+        self.dispatcher_list = []
+
     async def initialize(self):
+        self._create_dispatchers()
         await initialize_evaluators(self.octobot.config)
         await create_matrix_channels()
 
@@ -50,6 +54,10 @@ class EvaluatorFactory:
                                              exchange_configuration.symbols,
                                              exchange_configuration.time_frames)
         await init_evaluator_chan_logger()
+
+    def _create_dispatchers(self):
+        dispatcher_factory = create_dispatcher_factory(self.octobot.config, self.octobot.task_manager.async_loop)
+        self.dispatcher_list = dispatcher_factory.create_all()
 
     # def _check_required_evaluators(self):
     #     if self.symbol_tasks_manager:

@@ -71,6 +71,7 @@ class OctoBot:
         await self.evaluator_factory.initialize()
         await self.exchange_factory.create()
         await self.evaluator_factory.create()
+        await self.task_manager.start_evaluation_util_tasks()
 
     def run_in_main_asyncio_loop(self, coroutine):
         return self.task_manager.run_in_main_asyncio_loop(coroutine)

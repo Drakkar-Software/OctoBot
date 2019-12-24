@@ -19,7 +19,8 @@ import threading
 from asyncio import CancelledError
 
 from config import FORCE_ASYNCIO_DEBUG_OPTION
-from tools.asyncio_tools import get_gather_wrapper, run_coroutine_in_asyncio_loop
+from octobot_services.api.dispatchers import start_dispatchers, stop_dispatchers
+from octobot_commons.asyncio_tools import get_gather_wrapper, run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
 
 try:
@@ -75,6 +76,10 @@ class TaskManager:
         #     self.current_loop_thread = threading.current_thread()
         #     await self.tools_task_group
 
+    async def start_evaluation_util_tasks(self):
+        start_dispatchers(self.octobot.evaluator_factory.dispatcher_list)
+        self.logger.info("Evaluation tasks started...")
+
     async def join_tasks(self):
         try:
             await asyncio.gather(*asyncio.all_tasks(asyncio.get_event_loop()))
@@ -92,6 +97,9 @@ class TaskManager:
         #                            .notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
 
         self.logger.info("Stopping threads ...")
+
+        # stop dispatchers
+        stop_dispatchers(self.octobot.evaluator_factory.dispatcher_list)
 
         if self.tools_task_group:
             self.async_loop.call_soon_threadsafe(self.tools_task_group.cancel)
