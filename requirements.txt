@@ -6,7 +6,7 @@ OctoBot-Commons>=1.2.1, <1.3
 OctoBot-Tentacles-Manager==1.0.12
 OctoBot-Trading>=1.4.11, <1.5
 OctoBot-Evaluators>=1.3.1, <1.4
-# OctoBot-Services==0.0.0
+OctoBot-Interfaces>=1.0.0, <1.1
 
 ## Tools
 # Async

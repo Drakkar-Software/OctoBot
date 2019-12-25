@@ -19,6 +19,7 @@ import threading
 from asyncio import CancelledError
 
 from config import FORCE_ASYNCIO_DEBUG_OPTION
+from octobot_interfaces.api.interfaces import stop_interfaces, start_interfaces
 from octobot_services.api.dispatchers import start_dispatchers, stop_dispatchers
 from octobot_commons.asyncio_tools import get_gather_wrapper, run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
@@ -70,6 +71,9 @@ class TaskManager:
         self.ready = True
         self.tools_task_group = asyncio.gather(*task_list)
 
+        # start interfaces
+        start_interfaces(self.octobot.initializer.interface_list)
+
         # if run_in_new_thread:
         #     self._create_new_asyncio_main_loop()
         # else:
@@ -100,6 +104,9 @@ class TaskManager:
 
         # stop dispatchers
         stop_dispatchers(self.octobot.evaluator_factory.dispatcher_list)
+
+        # stop interfaces
+        stop_interfaces(self.octobot.initializer.interface_list)
 
         if self.tools_task_group:
             self.async_loop.call_soon_threadsafe(self.tools_task_group.cancel)
