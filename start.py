@@ -19,6 +19,7 @@ from octobot_backtesting.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_EN
 
 from octobot_commons.errors import ConfigError, ConfigTradingError
 from octobot_evaluators.util.errors import ConfigEvaluatorError
+from octobot_interfaces.api.interfaces import disable_interfaces
 
 from tools.commands import package_manager, tentacle_creator, exchange_keys_encrypter, start_strategy_optimizer, \
     start_bot, data_collector
@@ -104,6 +105,14 @@ def _log_terms_if_unaccepted(config, logger):
         logger.info("Disclaimer accepted by user.")
 
 
+def _disable_interface_from_param(interface_identifier, param_value, logger):
+    if param_value:
+        if disable_interfaces(interface_identifier) == 0:
+            logger.warning(f"No {interface_identifier} interface to disable")
+        else:
+            logger.info(f"{interface_identifier.capitalize()} interface disabled")
+
+
 def start_octobot(starting_args):
     fileConfig(LOGGING_CONFIG_FILE)
 
@@ -155,7 +164,7 @@ def start_octobot(starting_args):
             else:
                 if not tentacles_arch_exists():
                     logger.info("No tentacles found. Installing default tentacles ...")
-                    package_manager(config, ["install", "all"], force=True)
+                    # package_manager(config, ["install", "all"], force=True)
 
                 if starting_args.data_collector:
                     data_collector(config)
@@ -168,8 +177,8 @@ def start_octobot(starting_args):
                     # In those cases load OctoBot
                     from octobot.octobot import OctoBot
 
-                    # TelegramApp.enable(config, not starting_args.no_telegram)
-                    # WebService.enable(config, not starting_args.no_web)
+                    _disable_interface_from_param("telegram", starting_args.no_telegram, logger)
+                    _disable_interface_from_param("web", starting_args.no_web, logger)
 
                     update_config_with_args(starting_args, config)
 

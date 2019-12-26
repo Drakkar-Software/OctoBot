@@ -15,7 +15,7 @@
 #  License along with this library.
 from config import PROJECT_NAME, LONG_VERSION
 from octobot_backtesting.api.backtesting import is_backtesting_enabled
-from octobot_interfaces.api.interfaces import create_interface_factory, initialize_global_project_data
+from octobot_interfaces.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled
 from octobot_interfaces.base.abstract_interface import AbstractInterface
 from octobot_interfaces.util.bot import get_bot
 from tools import get_logger
@@ -50,14 +50,15 @@ class Initializer:
             await self._create_interface_if_relevant(interface_factory, interface_class, backtesting_enabled)
 
     async def _create_interface_if_relevant(self, interface_factory, interface_class, backtesting_enabled):
-        if self._is_service_relevant(interface_class.REQUIRED_SERVICE, backtesting_enabled):
+        if self._is_interface_relevant(interface_class, backtesting_enabled):
             interface_instance = await interface_factory.create_interface(interface_class)
             await interface_instance.initialize(backtesting_enabled)
             self.interface_list.append(interface_instance)
 
-    def _is_service_relevant(self, service_class, backtesting_enabled):
-        return service_class.get_is_enabled(self.octobot.config) and \
-                (not backtesting_enabled or service_class.BACKTESTING_ENABLED)
+    def _is_interface_relevant(self, interface_class, backtesting_enabled):
+        return is_enabled(interface_class) and \
+               interface_class.REQUIRED_SERVICE.get_is_enabled(self.octobot.config) and \
+               (not backtesting_enabled or interface_class.REQUIRED_SERVICE.BACKTESTING_ENABLED)
 
     def __init_metrics(self):
         pass  # TODO
