@@ -51,8 +51,8 @@ class Initializer:
 
     async def _create_interface_if_relevant(self, interface_factory, interface_class, backtesting_enabled):
         if self._is_service_relevant(interface_class.REQUIRED_SERVICE, backtesting_enabled):
-            interface_instance = await interface_factory.create_interface(interface_class, backtesting_enabled)
-            interface_instance.initialize(backtesting_enabled)
+            interface_instance = await interface_factory.create_interface(interface_class)
+            await interface_instance.initialize(backtesting_enabled)
             self.interface_list.append(interface_instance)
 
     def _is_service_relevant(self, service_class, backtesting_enabled):
