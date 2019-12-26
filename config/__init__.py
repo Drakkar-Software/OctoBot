@@ -604,7 +604,6 @@ class PlatformsName(Enum):
 
 class BacktestingDataFormats(Enum):
     REGULAR_COLLECTOR_DATA = 0
-    KAIKO_DATA = 1
 
 
 class OctoBotTypes(Enum):
