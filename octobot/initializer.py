@@ -17,6 +17,7 @@ from config import PROJECT_NAME, LONG_VERSION
 from octobot_backtesting.api.backtesting import is_backtesting_enabled
 from octobot_interfaces.api.interfaces import create_interface_factory, initialize_global_project_data
 from octobot_interfaces.base.abstract_interface import AbstractInterface
+from octobot_interfaces.util.bot import get_bot
 from tools import get_logger
 
 
@@ -40,7 +41,7 @@ class Initializer:
 
     async def _create_interfaces(self):
         # do not overwrite data in case of inner bots init (backtesting)
-        if AbstractInterface.bot is None:
+        if get_bot() is None:
             initialize_global_project_data(self.octobot, PROJECT_NAME, LONG_VERSION)
         interface_factory = create_interface_factory(self.octobot.config)
         interface_list = interface_factory.get_available_interfaces()
