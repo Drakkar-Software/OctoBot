@@ -26,6 +26,12 @@ def __init__(bot, config):
     global_config = config
 
 
+# TODO: find a better way to keep track of the bot instance in octobot module
+def set_bot(bot):
+    global bot_instance
+    bot_instance = bot
+
+
 def get_bot():
     return bot_instance
 

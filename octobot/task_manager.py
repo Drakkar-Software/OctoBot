@@ -90,7 +90,7 @@ class TaskManager:
         except CancelledError:
             self.logger.error("CancelledError raised")
 
-    async def stop_tasks(self):
+    def stop_tasks(self):
         stop_coroutines = []
         # Notify stopping
         # if self.octobot.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
