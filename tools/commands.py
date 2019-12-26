@@ -21,7 +21,7 @@ import signal
 from threading import Thread
 from concurrent.futures import CancelledError
 
-from octobot import get_bot
+from octobot import get_bot, set_bot
 from octobot_commons.config_util import encrypt
 
 from tentacles_manager import TENTACLES_DEFAULT_BRANCH
@@ -94,7 +94,7 @@ def start_strategy_optimizer(config, commands):
 
 def __signal_handler(_, __):
     # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
-    stopping_thread = Thread(target=get_bot().stop)
+    stopping_thread = Thread(target=get_bot().task_manager.stop_tasks())
     stopping_thread.start()
     stopping_thread.join()
     os._exit(0)
@@ -109,6 +109,7 @@ async def start_bot(bot, logger, catch=False):
 
         # start
         try:
+            set_bot(bot)
             await bot.initialize()
         except CancelledError:
             logger.info("Core engine tasks cancelled.")
@@ -125,7 +126,7 @@ async def start_bot(bot, logger, catch=False):
 
 
 def stop_bot(bot):
-    bot.stop()
+    bot.task_manager.stop_tasks()
     os._exit(0)
 
 
