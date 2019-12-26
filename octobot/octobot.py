@@ -41,6 +41,9 @@ class OctoBot:
         self.startup_config = copy.deepcopy(config)
         self.edited_config = copy.deepcopy(config)
 
+        # Used to know when OctoBot is ready to answer in APIs
+        self.initialized = False
+
         # tools: used for alternative operations on a bot on the fly (ex: backtesting started from web interface)
         # self.tools = {
         #     BOT_TOOLS_BACKTESTING: None,
@@ -72,6 +75,7 @@ class OctoBot:
         await self.exchange_factory.create()
         await self.evaluator_factory.create()
         await self.task_manager.start_evaluation_util_tasks()
+        self.initialized = True
 
     def run_in_main_asyncio_loop(self, coroutine):
         return self.task_manager.run_in_main_asyncio_loop(coroutine)
