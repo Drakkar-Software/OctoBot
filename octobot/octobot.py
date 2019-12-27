@@ -18,11 +18,14 @@ import copy
 import time
 import aiohttp
 
+from config import PROJECT_NAME, LONG_VERSION
 from octobot.evaluator_factory import EvaluatorFactory
 from octobot.exchange_factory import ExchangeFactory
 from octobot.initializer import Initializer
 from octobot.task_manager import TaskManager
+from octobot_commons.enums import MarkdownFormat
 from octobot_commons.logging.logging_util import get_logger
+from octobot_notifications.api.notification import send_notification, create_notification
 
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
@@ -76,6 +79,8 @@ class OctoBot:
         await self.evaluator_factory.create()
         await self.task_manager.start_evaluation_util_tasks()
         self.initialized = True
+        await send_notification(create_notification(f"{PROJECT_NAME} {LONG_VERSION} is starting ...",
+                                                    markdown_format=MarkdownFormat.ITALIC))
 
     def run_in_main_asyncio_loop(self, coroutine):
         return self.task_manager.run_in_main_asyncio_loop(coroutine)
