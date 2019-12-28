@@ -24,6 +24,5 @@ cdef class EvaluatorFactory:
     cdef public dict symbol_evaluator_list
     cdef public dict cryptocurrency_evaluator_list
 
-    cdef public list dispatchers_list
     cdef public list social_eval_tasks
     cdef public list real_time_eval_tasks
