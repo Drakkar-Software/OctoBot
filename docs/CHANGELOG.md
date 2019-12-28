@@ -1,5 +1,21 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+Changelog for 0.3.8-beta
+====================
+*Released date : December 28 2019*
+
+# Concerned issues / pull request:
+    #978 can now call start.py from any directory
+    #991 add new exchange order types support
+
+# Bug fixes :
+    - Fixed ccxt deprecated methods
+    - Fixed binance websocket regression
+    
+# New features :
+    - Start can now be started from any directory
+    - New order types support
+
 Changelog for 0.3.7-beta
 ====================
 *Released date : August 31 2019*
