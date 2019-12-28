@@ -253,8 +253,9 @@ def main(args=None):
     parser.add_argument('-no', '--no_open_web', help="Don't automatically open web interface.",
                         action='store_true')
     parser.add_argument('-nt', '--no-telegram', help='Start OctoBot without telegram interface, even if telegram '
-                                                     'credentials are in config. Telegram interface is required to '
-                                                     'listen to telegram signals and discuss with OctoBot on telegram.',
+                                                     'credentials are in config. With this parameter, your Octobot '
+                                                     'won`t reply to any telegram command but is still able to listen '
+                                                     'to telegram feed and send telegram notifications',
                         action='store_true')
     parser.add_argument('--encrypter', help="Start the exchange api keys encrypter. This tool is useful to manually add"
                                             " exchanges configuration in your config.json without using any interface "

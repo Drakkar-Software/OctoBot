@@ -77,7 +77,6 @@ class OctoBot:
         await self.evaluator_factory.initialize()
         await self.exchange_factory.create()
         await self.evaluator_factory.create()
-        await self.task_manager.start_evaluation_util_tasks()
         self.initialized = True
         await send_notification(create_notification(f"{PROJECT_NAME} {LONG_VERSION} is starting ...",
                                                     markdown_format=MarkdownFormat.ITALIC))
