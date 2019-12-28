@@ -13,7 +13,6 @@ Changelog for 0.3.8-beta
     - Fixed binance websocket regression
     
 # New features :
-    - Start can now be started from any directory
     - New order types support
 
 Changelog for 0.3.7-beta
