@@ -20,7 +20,7 @@ import os
 import sys
 
 MIN_PYTHON_VERSION = (3, 7)
-MIN_TENTACLE_MANAGER_VERSION = "1.0.10"
+MIN_TENTACLE_MANAGER_VERSION = "1.0.13"
 
 # check python version
 current_version = sys.version_info
