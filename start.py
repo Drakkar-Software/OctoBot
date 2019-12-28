@@ -101,12 +101,21 @@ def _log_terms_if_unaccepted(config, logger):
 
 
 def start_octobot(starting_args):
-    fileConfig(LOGGING_CONFIG_FILE)
+    try:
+        fileConfig(LOGGING_CONFIG_FILE)
+    except KeyError:
+        print("Error when loading logging config file, it might be missing or is corrupted. File is: " +
+              LOGGING_CONFIG_FILE + " please make sure that this script is called from its location directory.")
+        os._exit(-1)
 
     logger = logging.getLogger("OctoBot Launcher")
 
     # Force new log file creation not to log at the previous one's end.
-    logger.parent.handlers[1].doRollover()
+    try:
+        logger.parent.handlers[1].doRollover()
+    except IndexError:
+        print("Logfile rotation disabled: error when handling logging config.")
+
 
     sys.excepthook = _log_uncaught_exceptions
 
