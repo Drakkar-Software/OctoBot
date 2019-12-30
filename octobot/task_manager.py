@@ -20,7 +20,7 @@ from asyncio import CancelledError
 
 from config import FORCE_ASYNCIO_DEBUG_OPTION
 from octobot_interfaces.api.interfaces import stop_interfaces, start_interfaces
-from octobot_commons.asyncio_tools import get_gather_wrapper, run_coroutine_in_asyncio_loop
+from octobot_commons.asyncio_tools import run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
 
 try:
@@ -112,7 +112,7 @@ class TaskManager:
         self.async_loop.close()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        asyncio.run(get_gather_wrapper(stop_coroutines))
+        asyncio.run(asyncio.gather(*stop_coroutines))
 
         self.logger.info("Threads stopped.")
 
