@@ -33,7 +33,7 @@ class EvaluatorFactory:
 
         self.symbol_tasks_manager = {}
         self.symbol_evaluator_list = {}
-        self.crypto_currency_evaluator_list = {}
+        self.cryptocurrency_evaluator_list = {}
         self.dispatchers_list = []
         self.social_eval_tasks = []
         self.real_time_eval_tasks = []
@@ -46,6 +46,7 @@ class EvaluatorFactory:
         for exchange_configuration in Exchanges.instance().exchanges.values():
             await create_all_type_evaluators(self.octobot.config,
                                              exchange_configuration.exchange_name,
+                                             exchange_configuration.cryptocurrencies,
                                              exchange_configuration.symbols,
                                              exchange_configuration.time_frames)
         await init_evaluator_chan_logger()
