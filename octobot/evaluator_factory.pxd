@@ -22,7 +22,7 @@ cdef class EvaluatorFactory:
 
     cdef public dict symbol_tasks_manager
     cdef public dict symbol_evaluator_list
-    cdef public dict crypto_currency_evaluator_list
+    cdef public dict cryptocurrency_evaluator_list
 
     cdef public list dispatchers_list
     cdef public list social_eval_tasks
