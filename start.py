@@ -14,9 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-# tools is checking the current python version
-from octobot_backtesting.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION
-
 from octobot_commons.errors import ConfigError, ConfigTradingError
 from octobot_evaluators.util.errors import ConfigEvaluatorError
 from octobot_interfaces.api.interfaces import disable_interfaces
@@ -55,11 +52,15 @@ def _log_uncaught_exceptions(ex_cls, ex, tb):
     logging.exception('{0}: {1}'.format(ex_cls, ex))
 
 
-def update_config_with_args(starting_args, config):
+def update_config_with_args(starting_args, config, logger):
     if starting_args.backtesting:
-        config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-        config[CONFIG_BACKTESTING][CONFIG_ANALYSIS_ENABLED_OPTION] = starting_args.backtesting_analysis
-
+        try:
+            from octobot_backtesting.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION
+            config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
+            config[CONFIG_BACKTESTING][CONFIG_ANALYSIS_ENABLED_OPTION] = starting_args.backtesting_analysis
+        except ImportError as e:
+            logger.error("Can't start backtesting without the octobot_backtesting package properly installed.")
+            raise e
         # config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
 
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
@@ -180,7 +181,7 @@ def start_octobot(starting_args):
                     _disable_interface_from_param("telegram", starting_args.no_telegram, logger)
                     _disable_interface_from_param("web", starting_args.no_web, logger)
 
-                    update_config_with_args(starting_args, config)
+                    update_config_with_args(starting_args, config, logger)
 
                     reset_trading_history = starting_args.reset_trading_history
 
