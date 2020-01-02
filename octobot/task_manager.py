@@ -71,7 +71,7 @@ class TaskManager:
         self.tools_task_group = asyncio.gather(*task_list)
 
         # start interfaces
-        start_interfaces(self.octobot.initializer.interface_list)
+        start_interfaces(self.octobot.interface_factory.interface_list)
 
         # if run_in_new_thread:
         #     self._create_new_asyncio_main_loop()
@@ -98,7 +98,7 @@ class TaskManager:
         self.logger.info("Stopping threads ...")
 
         # stop interfaces
-        stop_interfaces(self.octobot.initializer.interface_list)
+        stop_interfaces(self.octobot.interface_factory.interface_list)
 
         if self.tools_task_group:
             self.async_loop.call_soon_threadsafe(self.tools_task_group.cancel)

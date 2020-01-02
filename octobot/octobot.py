@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import asyncio
 import copy
 import time
 import aiohttp
@@ -22,6 +21,7 @@ from config import PROJECT_NAME, LONG_VERSION
 from octobot.evaluator_factory import EvaluatorFactory
 from octobot.exchange_factory import ExchangeFactory
 from octobot.initializer import Initializer
+from octobot.interface_factory import InterfaceFactory
 from octobot.task_manager import TaskManager
 from octobot_commons.enums import MarkdownFormat
 from octobot_commons.logging.logging_util import get_logger
@@ -67,12 +67,14 @@ class OctoBot:
         self.task_manager = TaskManager(self)
         self.exchange_factory = ExchangeFactory(self, ignore_config=ignore_config)
         self.evaluator_factory = EvaluatorFactory(self)
+        self.interface_factory = InterfaceFactory(self)
 
         self.async_loop = None
 
     async def initialize(self):
         await self.initializer.create()
         self.task_manager.init_async_loop()
+        await self.interface_factory.create()
         await self.task_manager.start_tools_tasks()
         await self.evaluator_factory.initialize()
         await self.exchange_factory.create()

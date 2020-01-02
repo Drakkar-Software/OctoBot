@@ -1,3 +1,4 @@
+# cython: language_level=3
 #  Drakkar-Software OctoBot
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -13,23 +14,14 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from tools import get_logger
 
 
-class Initializer:
-    """Initializer class:
-    - Initialize services, constants and tools
-    """
+cdef class InterfaceFactory:
+    cdef public object octobot
+    cdef object logger
 
-    def __init__(self, octobot):
-        self.octobot = octobot
+    cdef public list interface_list
+    cdef public list notifier_list
 
-        # Logger
-        self.logger = get_logger(self.__class__.__name__)
-
-    async def create(self):
-        # initialize tools
-        self.__init_metrics()
-
-    def __init_metrics(self):
-        pass  # TODO
+    cdef bool _is_interface_relevant(self, object interface_class, bool backtesting_enabled)
+    cdef bool _is_notifier_relevant(self, object notifier_class, bool backtesting_enabled)
