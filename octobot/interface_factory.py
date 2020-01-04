@@ -15,7 +15,8 @@
 #  License along with this library.
 
 from config import PROJECT_NAME, LONG_VERSION
-from octobot_interfaces.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled
+from octobot_interfaces.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled, \
+    start_interfaces
 from octobot_interfaces.util.bot import get_bot
 from octobot_notifications.api.notification import create_notifier_factory, is_enabled_in_config
 from tools import get_logger
@@ -46,6 +47,17 @@ class InterfaceFactory:
             pass
         await self._create_interfaces(in_backtesting)
         await self._create_notifiers(in_backtesting)
+
+    async def start_interfaces(self):
+        to_start_interfaces = self.interface_list
+        started_interfaces = await start_interfaces(to_start_interfaces)
+        if len(started_interfaces) != len(to_start_interfaces):
+            missing_interfaces = [interface.get_name()
+                                  for interface in to_start_interfaces
+                                  if interface not in started_interfaces]
+            self.logger.error(
+                f"{', '.join(missing_interfaces)} interface{'s' if len(missing_interfaces) > 1 else ''} "
+                f"did not start properly.")
 
     async def _create_interfaces(self, in_backtesting):
         # do not overwrite data in case of inner bots init (backtesting)
