@@ -26,3 +26,7 @@ cdef class EvaluatorFactory:
 
     cdef public list social_eval_tasks
     cdef public list real_time_eval_tasks
+
+    cdef public list service_feed_list
+
+    cdef void _initialize_service_feeds(self)
