@@ -22,6 +22,7 @@ from config import FORCE_ASYNCIO_DEBUG_OPTION
 from octobot_interfaces.api.interfaces import stop_interfaces, start_interfaces
 from octobot_commons.asyncio_tools import run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
+from octobot_services.api.service_feeds import stop_service_feed
 
 try:
     import uvloop
@@ -71,7 +72,15 @@ class TaskManager:
         self.tools_task_group = asyncio.gather(*task_list)
 
         # start interfaces
-        start_interfaces(self.octobot.interface_factory.interface_list)
+        to_start_interfaces = self.octobot.interface_factory.interface_list
+        started_interfaces = await start_interfaces(to_start_interfaces)
+        if len(started_interfaces) != len(to_start_interfaces):
+            missing_interfaces = [interface.get_name()
+                                  for interface in to_start_interfaces
+                                  if interface not in started_interfaces]
+            self.logger.error(
+                f"{', '.join(missing_interfaces)} interface{'s' if len(missing_interfaces) > 1 else ''} "
+                f"did not start properly.")
 
         # if run_in_new_thread:
         #     self._create_new_asyncio_main_loop()
@@ -98,21 +107,27 @@ class TaskManager:
         self.logger.info("Stopping threads ...")
 
         # stop interfaces
-        stop_interfaces(self.octobot.interface_factory.interface_list)
+        stop_coroutines.append(stop_interfaces(self.octobot.interface_factory.interface_list))
+
+        # stop service feeds
+        for service_feed in self.octobot.evaluator_factory.service_feed_list:
+            stop_coroutines.append(stop_service_feed(service_feed))
 
         if self.tools_task_group:
             self.async_loop.call_soon_threadsafe(self.tools_task_group.cancel)
 
         # close metrics session
-        stop_coroutines.append(self.octobot.metrics_handler.stop_task())
+        # stop_coroutines.append(self.octobot.metrics_handler.stop_task())
 
-        for task in asyncio.all_tasks():
-            task.cancel()
-
-        self.async_loop.close()
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        asyncio.run(asyncio.gather(*stop_coroutines))
+        # TODO: handle proper stop
+        # for task in asyncio.all_tasks(self.async_loop):
+        #     task.cancel()
+        #
+        # self.async_loop.close()
+        # loop = asyncio.new_event_loop()
+        # asyncio.set_event_loop(loop)
+        
+        self.async_loop.call_soon_threadsafe(asyncio.gather(*stop_coroutines, loop=self.async_loop))
 
         self.logger.info("Threads stopped.")
 
