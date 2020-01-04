@@ -23,5 +23,5 @@ cdef class InterfaceFactory:
     cdef public list interface_list
     cdef public list notifier_list
 
-    cdef bool _is_interface_relevant(self, object interface_class, bool backtesting_enabled)
-    cdef bool _is_notifier_relevant(self, object notifier_class, bool backtesting_enabled)
+    cdef bint _is_interface_relevant(self, object interface_class, bint backtesting_enabled)
+    cdef bint _is_notifier_relevant(self, object notifier_class, bint backtesting_enabled)
