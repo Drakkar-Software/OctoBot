@@ -19,7 +19,7 @@ import threading
 from asyncio import CancelledError
 
 from config import FORCE_ASYNCIO_DEBUG_OPTION
-from octobot_interfaces.api.interfaces import stop_interfaces, start_interfaces
+from octobot_interfaces.api.interfaces import stop_interfaces
 from octobot_commons.asyncio_tools import run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
 from octobot_services.api.service_feeds import stop_service_feed
@@ -70,17 +70,6 @@ class TaskManager:
         self.octobot.async_loop = self.async_loop
         self.ready = True
         self.tools_task_group = asyncio.gather(*task_list)
-
-        # start interfaces
-        to_start_interfaces = self.octobot.interface_factory.interface_list
-        started_interfaces = await start_interfaces(to_start_interfaces)
-        if len(started_interfaces) != len(to_start_interfaces):
-            missing_interfaces = [interface.get_name()
-                                  for interface in to_start_interfaces
-                                  if interface not in started_interfaces]
-            self.logger.error(
-                f"{', '.join(missing_interfaces)} interface{'s' if len(missing_interfaces) > 1 else ''} "
-                f"did not start properly.")
 
         # if run_in_new_thread:
         #     self._create_new_asyncio_main_loop()
