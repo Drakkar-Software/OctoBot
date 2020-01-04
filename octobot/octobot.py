@@ -74,11 +74,12 @@ class OctoBot:
     async def initialize(self):
         await self.initializer.create()
         self.task_manager.init_async_loop()
-        await self.interface_factory.create()
         await self.task_manager.start_tools_tasks()
         await self.evaluator_factory.initialize()
         await self.exchange_factory.create()
         await self.evaluator_factory.create()
+        await self.interface_factory.create()
+        await self.interface_factory.start_interfaces()
         self.initialized = True
         await send_notification(create_notification(f"{PROJECT_NAME} {LONG_VERSION} is starting ...",
                                                     markdown_format=MarkdownFormat.ITALIC))
