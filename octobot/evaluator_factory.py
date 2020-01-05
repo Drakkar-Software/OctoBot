@@ -43,7 +43,7 @@ class EvaluatorFactory:
         await create_matrix_channels()
 
     async def create(self):
-        for exchange_configuration in Exchanges.instance().exchanges.values():
+        for exchange_configuration in Exchanges.instance().get_all_exchanges():
             await create_all_type_evaluators(self.octobot.config,
                                              exchange_configuration.exchange_name,
                                              exchange_configuration.symbols,
