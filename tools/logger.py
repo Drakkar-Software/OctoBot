@@ -43,49 +43,49 @@ async def init_evaluator_chan_logger():
     await get_chan(MATRIX_CHANNEL).new_consumer(matrix_callback)
 
 
-async def ticker_callback(exchange, exchange_id, symbol, ticker):
+async def ticker_callback(exchange: str, exchange_id: str, symbol: str, ticker):
     BOT_CHANNEL_LOGGER.debug(f"TICKER : EXCHANGE = {exchange} || SYMBOL = {symbol} || TICKER = {ticker}")
 
 
-async def order_book_callback(exchange, exchange_id, symbol, asks, bids):
+async def order_book_callback(exchange: str, exchange_id: str, symbol: str, asks, bids):
     BOT_CHANNEL_LOGGER.debug(
         f"ORDERBOOK : EXCHANGE = {exchange} || SYMBOL = {symbol} || ASKS = {asks} || BIDS = {bids}")
 
 
-async def ohlcv_callback(exchange, exchange_id, symbol, time_frame, candle):
+async def ohlcv_callback(exchange: str, exchange_id: str, symbol: str, time_frame, candle):
     BOT_CHANNEL_LOGGER.debug(
         f"OHLCV : EXCHANGE = {exchange} || SYMBOL = {symbol} || TIME FRAME = {time_frame} || CANDLE = {candle}")
 
 
-async def recent_trades_callback(exchange, exchange_id, symbol, recent_trades):
+async def recent_trades_callback(exchange: str, exchange_id: str, symbol: str, recent_trades):
     BOT_CHANNEL_LOGGER.debug(
         f"RECENT TRADE : EXCHANGE = {exchange} || SYMBOL = {symbol} || RECENT TRADE = {recent_trades}")
 
 
-async def kline_callback(exchange, exchange_id, symbol, time_frame, kline):
+async def kline_callback(exchange: str, exchange_id: str, symbol: str, time_frame, kline):
     BOT_CHANNEL_LOGGER.debug(
         f"KLINE : EXCHANGE = {exchange} || SYMBOL = {symbol} || TIME FRAME = {time_frame} || KLINE = {kline}")
 
 
-async def mark_price_callback(exchange, exchange_id, symbol, mark_price):
+async def mark_price_callback(exchange: str, exchange_id: str, symbol: str, mark_price):
     BOT_CHANNEL_LOGGER.info(f"MARK PRICE : EXCHANGE = {exchange} || SYMBOL = {symbol} || MARK PRICE = {mark_price}")
 
 
-async def balance_callback(exchange, exchange_id, balance):
+async def balance_callback(exchange: str, exchange_id: str, balance):
     BOT_CHANNEL_LOGGER.info(f"BALANCE : EXCHANGE = {exchange} || BALANCE = {balance}")
 
 
-async def balance_profitability_callback(exchange, exchange_id, profitability, profitability_percent, market_profitability_percent,
-                                         initial_portfolio_current_profitability):
+async def balance_profitability_callback(exchange: str, exchange_id: str, profitability, profitability_percent,
+                                         market_profitability_percent, initial_portfolio_current_profitability):
     BOT_CHANNEL_LOGGER.info(f"BALANCE PROFITABILITY : EXCHANGE = {exchange} || PROFITABILITY = "
                             f"{PrettyPrinter.portfolio_profitability_pretty_print(profitability, profitability_percent, 'USDT')}")
 
 
-async def trades_callback(exchange, exchange_id, symbol, trade):
+async def trades_callback(exchange: str, exchange_id: str, symbol: str, trade):
     BOT_CHANNEL_LOGGER.info(f"TRADES : EXCHANGE = {exchange} || SYMBOL = {symbol} || TRADE = {trade}")
 
 
-async def orders_callback(exchange, exchange_id, symbol, order, is_closed, is_updated, is_from_bot):
+async def orders_callback(exchange: str, exchange_id: str, symbol: str, order, is_closed, is_updated, is_from_bot):
     order_string = f"ORDERS : EXCHANGE = {exchange} || SYMBOL = {symbol} ||"
     if is_closed:
         # order_string += PrettyPrinter.trade_pretty_printer(exchange, order)
@@ -97,7 +97,8 @@ async def orders_callback(exchange, exchange_id, symbol, order, is_closed, is_up
     BOT_CHANNEL_LOGGER.info(order_string)
 
 
-async def positions_callback(exchange, exchange_id, symbol, position, is_closed, is_updated, is_from_bot):
+async def positions_callback(exchange: str, exchange_id: str, symbol: str, position, is_closed, is_updated,
+                             is_from_bot):
     BOT_CHANNEL_LOGGER.info(f"POSITIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || POSITIONS = {position}"
                             f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}")
 
@@ -107,7 +108,8 @@ async def matrix_callback(evaluator_name,
                           eval_note,
                           eval_note_type,
                           exchange_name,
+                          cryptocurrency,
                           symbol,
                           time_frame):
     BOT_CHANNEL_LOGGER.debug(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
-                             f" SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
+                             f" CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
