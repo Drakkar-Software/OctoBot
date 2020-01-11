@@ -20,4 +20,4 @@ cdef class Initializer:
     cdef object logger
     cdef public object octobot
 
-    cdef void __init_metrics(self)
+    cdef void _init_metrics(self)
