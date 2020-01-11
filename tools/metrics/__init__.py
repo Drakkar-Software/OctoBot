@@ -13,28 +13,3 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot_backtesting.api.backtesting import is_backtesting_enabled
-from tools.metrics.metrics_manager import MetricsManager
-
-
-from tools import get_logger
-
-
-class Initializer:
-    """Initializer class:
-    - Initialize services, constants and tools
-    """
-
-    def __init__(self, octobot):
-        self.octobot = octobot
-
-        # Logger
-        self.logger = get_logger(self.__class__.__name__)
-
-    async def create(self):
-        # initialize tools
-        self._init_metrics()
-
-    def _init_metrics(self):
-        if not is_backtesting_enabled(self.octobot.config):
-            self.octobot.metrics_handler = MetricsManager(self.octobot)

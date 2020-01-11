@@ -18,9 +18,9 @@ from octobot_commons.config import load_config, get_user_config
 from octobot_commons.config_manager import _handle_encrypted_value, dump_json, save_config
 from octobot_commons.constants import TEMP_RESTORE_CONFIG_FILE, CONFIG_ENABLED_OPTION
 from octobot_commons.logging.logging_util import get_logger
+from octobot_trading.api.trader import is_trader_enabled_in_config, is_trader_simulator_enabled_in_config
 from octobot_trading.constants import CONFIG_EXCHANGES, CONFIG_EXCHANGE_ENCRYPTED_VALUES, CONFIG_SIMULATOR, \
     CONFIG_TRADER
-from octobot_trading.util import is_trader_enabled, is_trader_simulator_enabled
 
 
 def config_health_check(config):
@@ -38,9 +38,9 @@ def config_health_check(config):
 
     # 2 ensure single trader activated
     try:
-        trader_enabled = is_trader_enabled(config)
+        trader_enabled = is_trader_enabled_in_config(config)
         if trader_enabled:
-            simulator_enabled = is_trader_simulator_enabled(config)
+            simulator_enabled = is_trader_simulator_enabled_in_config(config)
             if simulator_enabled:
                 get_logger().error(f"Impossible to activate a trader simulator additionally to a real trader, "
                                    f"simulator deactivated.")
