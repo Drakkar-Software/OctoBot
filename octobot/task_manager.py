@@ -64,8 +64,8 @@ class TaskManager:
         # if self.octobot.initializer.performance_analyser:
         #     task_list.append(self.octobot.initializer.performance_analyser.start_monitoring())
 
-        # if self.octobot.metrics_handler:
-        #     task_list.append(self.octobot.metrics_handler.start_metrics_task())
+        if self.octobot.metrics_handler:
+            task_list.append(self.octobot.metrics_handler.start_metrics_task())
 
         self.octobot.async_loop = self.async_loop
         self.ready = True
