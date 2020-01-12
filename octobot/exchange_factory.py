@@ -18,7 +18,7 @@ import os
 import ccxt
 
 from octobot_commons.logging.logging_util import get_logger
-from octobot_trading.api.exchange import create_new_exchange
+from octobot_trading.api.exchange import create_new_exchange, get_exchange_manager_id
 from octobot_trading.constants import CONFIG_EXCHANGES
 from tools.logger import init_exchange_chan_logger
 
@@ -36,7 +36,7 @@ class ExchangeFactory:
         self.logger = get_logger(self.__class__.__name__)
 
         self.exchange_manager = None
-        self.exchange_manager_list = []
+        self.exchange_manager_ids = []
         self.exchange_traders = {}
         self.exchange_trader_simulators = {}
         self.exchange_trading_modes = {}
@@ -59,7 +59,7 @@ class ExchangeFactory:
                                                            backtesting_files=[os.getenv('BACKTESTING_FILE')])
                     await exchange_factory.create()
                     await init_exchange_chan_logger(exchange_factory.exchange_name)
-                    self.exchange_manager_list.append(exchange_factory.exchange_manager)
+                    self.exchange_manager_ids.append(get_exchange_manager_id(exchange_factory.exchange_manager))
                 else:
                     self.logger.error(f"{exchange_class_string} exchange not found")
         else:
