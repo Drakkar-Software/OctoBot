@@ -28,7 +28,7 @@ from octobot_commons.constants import CONFIG_METRICS_BOT_ID, METRICS_URL, METRIC
     CONFIG_ENABLED_OPTION
 from octobot_evaluators.api import get_evaluator_classes_from_type
 from octobot_evaluators.enums import EvaluatorMatrixTypes
-from octobot_trading.api.exchange import get_trading_pairs, get_exchange_names
+from octobot_trading.api.exchange import get_trading_pairs, get_exchange_names, get_exchange_managers_from_exchange_ids
 from octobot_trading.api.modes import get_activated_trading_mode
 from tools.metrics.metrics_fields import MetricsFields
 from octobot_notifications.constants import CONFIG_CATEGORY_NOTIFICATION, CONFIG_NOTIFICATION_TYPE
@@ -57,6 +57,8 @@ class MetricsManager:
         self.session = octobot.get_aiohttp_session()
         self.has_real_trader = is_trader_enabled_in_config(self.edited_config)
         self.has_simulator = is_trader_simulator_enabled_in_config(self.edited_config)
+        self.exchange_managers = get_exchange_managers_from_exchange_ids(
+            self.octobot.exchange_factory.exchange_manager_ids)
 
     async def start_metrics_task(self):
         if self.enabled:
@@ -155,7 +157,7 @@ class MetricsManager:
         total_origin_values = 0
         total_profitability = 0
 
-        for exchange_manager in self._get_exchange_managers():
+        for exchange_manager in self.exchange_managers:
             profitability, _, _, _, _ = get_profitability_stats(exchange_manager)
             total_profitability += profitability
             total_origin_values += get_current_portfolio_value(exchange_manager)
@@ -165,7 +167,7 @@ class MetricsManager:
     def _get_real_portfolio_value(self):
         if self.has_real_trader:
             total_value = 0
-            for exchange_manager in self._get_exchange_managers():
+            for exchange_manager in self.exchange_managers:
                 current_value = get_current_portfolio_value(exchange_manager)
                 # current_value might be 0 if no trades have been made / canceled => use origin value
                 if current_value == 0:
@@ -175,12 +177,9 @@ class MetricsManager:
         else:
             return 0
 
-    def _get_exchange_managers(self):
-        return self.octobot.exchange_factory.exchange_manager_list
-
     def _get_traded_pairs(self):
         pairs = set()
-        for exchange_manager in self._get_exchange_managers():
+        for exchange_manager in self.exchange_managers:
             pairs = pairs.union(get_trading_pairs(exchange_manager))
         return list(pairs)
 
