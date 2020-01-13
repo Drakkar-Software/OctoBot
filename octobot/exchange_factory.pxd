@@ -31,6 +31,6 @@ cdef class ExchangeFactory:
     cdef public dict exchange_traders
     cdef public dict exchange_trader_simulators
     cdef public dict exchange_trading_modes
-    cdef public dict exchange_manager_ids
+    cdef public list exchange_manager_ids
 
     cdef public list available_exchanges
