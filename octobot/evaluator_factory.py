@@ -31,6 +31,8 @@ class EvaluatorFactory:
         # Logger
         self.logger = get_logger(self.__class__.__name__)
 
+        self.matrix_id = None
+
         self.symbol_tasks_manager = {}
         self.symbol_evaluator_list = {}
         self.cryptocurrency_evaluator_list = {}
@@ -40,16 +42,17 @@ class EvaluatorFactory:
         self.service_feed_list = []
 
     async def initialize(self):
-        await initialize_evaluators(self.octobot.config)
+        self.matrix_id = await initialize_evaluators(self.octobot.config)
         await create_matrix_channels()
 
     async def create(self):
         for exchange_configuration in Exchanges.instance().get_all_exchanges():
             await create_all_type_evaluators(self.octobot.config,
-                                             exchange_configuration.exchange_name,
-                                             exchange_configuration.cryptocurrencies,
-                                             exchange_configuration.symbols,
-                                             exchange_configuration.time_frames)
+                                             matrix_id=self.matrix_id,
+                                             exchange_name=exchange_configuration.exchange_name,
+                                             cryptocurrencies=exchange_configuration.cryptocurrencies,
+                                             symbols=exchange_configuration.symbols,
+                                             time_frames=exchange_configuration.time_frames)
         await init_evaluator_chan_logger()
 
     # def _check_required_evaluators(self):
