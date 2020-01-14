@@ -54,6 +54,7 @@ class ExchangeFactory:
                     exchange_factory = create_new_exchange(self.octobot.config, exchange_class_string,
                                                            is_simulated=True,
                                                            is_rest_only=True,
+                                                           ignore_config=False,
                                                            is_backtesting=False,
                                                            is_sandboxed=False,
                                                            backtesting_files=[os.getenv('BACKTESTING_FILE')])
