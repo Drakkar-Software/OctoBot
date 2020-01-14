@@ -60,8 +60,9 @@ class ExchangeFactory:
                                                            matrix_id=self.octobot.evaluator_factory.matrix_id,
                                                            backtesting_files=[os.getenv('BACKTESTING_FILE')])
                     await exchange_factory.create()
-                    await init_exchange_chan_logger(exchange_factory.exchange_name)
-                    self.exchange_manager_ids.append(get_exchange_manager_id(exchange_factory.exchange_manager))
+                    exchange_id = get_exchange_manager_id(exchange_factory.exchange_manager)
+                    await init_exchange_chan_logger(exchange_id)
+                    self.exchange_manager_ids.append(exchange_id)
                 else:
                     self.logger.error(f"{exchange_class_string} exchange not found")
         else:
