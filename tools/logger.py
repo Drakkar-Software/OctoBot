@@ -103,7 +103,8 @@ async def positions_callback(exchange: str, exchange_id: str, symbol: str, posit
                             f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}")
 
 
-async def matrix_callback(evaluator_name,
+async def matrix_callback(matrix_id,
+                          evaluator_name,
                           evaluator_type,
                           eval_note,
                           eval_note_type,
@@ -111,5 +112,5 @@ async def matrix_callback(evaluator_name,
                           cryptocurrency,
                           symbol,
                           time_frame):
-    BOT_CHANNEL_LOGGER.debug(f"MATRIX : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
+    BOT_CHANNEL_LOGGER.debug(f"MATRIX ({matrix_id}) : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
                              f" CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
