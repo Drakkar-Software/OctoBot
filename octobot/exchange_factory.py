@@ -57,6 +57,7 @@ class ExchangeFactory:
                                                            ignore_config=False,
                                                            is_backtesting=False,
                                                            is_sandboxed=False,
+                                                           matrix_id=self.octobot.evaluator_factory.matrix_id,
                                                            backtesting_files=[os.getenv('BACKTESTING_FILE')])
                     await exchange_factory.create()
                     await init_exchange_chan_logger(exchange_factory.exchange_name)
