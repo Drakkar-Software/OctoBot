@@ -18,14 +18,14 @@ import os
 import ccxt
 
 from octobot_commons.logging.logging_util import get_logger
-from octobot_trading.api.exchange import create_new_exchange, get_exchange_manager_id
+from octobot_trading.api.exchange import get_exchange_manager_id, create_exchange_builder
 from octobot_trading.constants import CONFIG_EXCHANGES
 from tools.logger import init_exchange_chan_logger
 
 
 class ExchangeFactory:
-    """ExchangeFactory class:
-    - Create exchanges and trades according to configureated exchanges
+    """
+    - Create exchanges and trades according to configured exchanges
     """
 
     def __init__(self, octobot, ignore_config=False):
@@ -51,18 +51,12 @@ class ExchangeFactory:
         if self.octobot.config[CONFIG_EXCHANGES]:
             for exchange_class_string in self.octobot.config[CONFIG_EXCHANGES]:
                 if exchange_class_string in self.available_exchanges:
-                    exchange_factory = create_new_exchange(self.octobot.config, exchange_class_string,
-                                                           is_simulated=True,
-                                                           is_rest_only=True,
-                                                           ignore_config=False,
-                                                           is_backtesting=False,
-                                                           is_sandboxed=False,
-                                                           matrix_id=self.octobot.evaluator_factory.matrix_id,
-                                                           backtesting_files=[os.getenv('BACKTESTING_FILE')])
-                    await exchange_factory.create()
-                    exchange_id = get_exchange_manager_id(exchange_factory.exchange_manager)
-                    await init_exchange_chan_logger(exchange_id)
-                    self.exchange_manager_ids.append(exchange_id)
+                    exchange_manager = await create_exchange_builder(self.octobot.config, exchange_class_string) \
+                                            .is_simulated() \
+                                            .is_rest_only() \
+                                            .build()
+                    await init_exchange_chan_logger(exchange_manager.id)
+                    self.exchange_manager_ids.append(exchange_manager.id)
                 else:
                     self.logger.error(f"{exchange_class_string} exchange not found")
         else:
