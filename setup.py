@@ -43,6 +43,7 @@ packages_list = ["octobot.evaluator_factory",
                  "octobot.exchange_factory",
                  "octobot.initializer",
                  "octobot.task_manager",
+                 "octobot.octobot_api",
                  "octobot.octobot"]
 
 ext_modules = [

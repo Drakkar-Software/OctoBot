@@ -44,21 +44,21 @@ from octobot_trading.api.trader import is_trader_enabled_in_config, is_trader_si
 class MetricsManager:
     _headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
-    def __init__(self, octobot):
-        self.octobot = octobot
-        self.bot_config = octobot.config
-        self.edited_config = octobot.edited_config
+    def __init__(self, octobot_api):
+        self.octobot_api = octobot_api
+        self.bot_config = octobot_api.get_global_config()
+        self.edited_config = octobot_api.get_edited_config()
         self.enabled = get_metrics_enabled(self.edited_config)
         self.bot_id = self._init_config_bot_id(self.edited_config)
         self.reference_market = get_reference_market(self.edited_config)
         self.logger = get_logger(self.__class__.__name__)
         self.current_config = None
         self.keep_running = True
-        self.session = octobot.get_aiohttp_session()
+        self.session = octobot_api.get_aiohttp_session()
         self.has_real_trader = is_trader_enabled_in_config(self.edited_config)
         self.has_simulator = is_trader_simulator_enabled_in_config(self.edited_config)
         self.exchange_managers = get_exchange_managers_from_exchange_ids(
-            self.octobot.exchange_factory.exchange_manager_ids)
+            self.octobot_api.get_exchange_manager_ids())
 
     async def start_metrics_task(self):
         if self.enabled:
@@ -90,7 +90,7 @@ class MetricsManager:
         return not existing_id
 
     @staticmethod
-    def background_get_id_and_register_bot(octobot):
+    def background_get_id_and_register_bot(octobot_api):
         metrics_manager = MetricsManager(octobot)
         threading.Thread(target=metrics_manager._blocking_get_id_and_register).start()
 
@@ -122,7 +122,7 @@ class MetricsManager:
 
     async def _update_uptime_and_profitability(self, retry_on_error=True):
         self.current_config[MetricsFields.CURRENT_SESSION.value][MetricsFields.UP_TIME.value] = \
-            int(time.time() - self.octobot.start_time)
+            int(time.time() - self.octobot_api.get_start_time())
         self.current_config[MetricsFields.CURRENT_SESSION.value][MetricsFields.PROFITABILITY.value] = \
             self._get_profitability()
         await self._post_metrics(METRICS_ROUTE_UPTIME, self.current_config, retry_on_error)
@@ -137,8 +137,8 @@ class MetricsManager:
         return {
             MetricsFields.ID.value: self.bot_id,
             MetricsFields.CURRENT_SESSION.value: {
-                MetricsFields.STARTED_AT.value: int(self.octobot.start_time),
-                MetricsFields.UP_TIME.value: int(time.time() - self.octobot.start_time),
+                MetricsFields.STARTED_AT.value: int(self.octobot_api.get_start_time()),
+                MetricsFields.UP_TIME.value: int(time.time() - self.octobot_api.get_start_time()),
                 MetricsFields.SIMULATOR.value: self.has_simulator,
                 MetricsFields.TRADER.value: self.has_real_trader,
                 MetricsFields.EVAL_CONFIG.value: self._get_eval_config(),

@@ -20,6 +20,7 @@ import aiohttp
 from config import PROJECT_NAME, LONG_VERSION
 from octobot.evaluator_factory import EvaluatorFactory
 from octobot.exchange_factory import ExchangeFactory
+from octobot.octobot_api import OctoBotAPI
 from octobot.service_feed_factory import ServiceFeedFactory
 from octobot.initializer import Initializer
 from octobot.interface_factory import InterfaceFactory
@@ -62,6 +63,9 @@ class OctoBot:
 
         # metrics if enabled
         self.metrics_handler = None
+
+        # octobot_api to request the current instance
+        self.octobot_api = OctoBotAPI(self)
 
         # Logger
         self.logger = get_logger(self.__class__.__name__)
