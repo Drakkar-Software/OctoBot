@@ -112,5 +112,5 @@ async def matrix_callback(matrix_id,
                           cryptocurrency,
                           symbol,
                           time_frame):
-    BOT_CHANNEL_LOGGER.debug(f"MATRIX ({matrix_id}) : EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
-                             f" CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note}")
+    BOT_CHANNEL_LOGGER.debug(f"EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
+                             f" CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} || NOTE = {eval_note} [MATRIX id = {matrix_id}] ")
