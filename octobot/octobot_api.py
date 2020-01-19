@@ -42,6 +42,9 @@ class OctoBotAPI:
     def get_start_time(self) -> float:
         return self._octobot.start_time
 
+    def get_matrix_id(self) -> str:
+        return self._octobot.evaluator_factory.matrix_id
+
     def get_previous_states_manager(self) -> object:
         return self._octobot.exchange_factory.previous_trading_state_manager
 
