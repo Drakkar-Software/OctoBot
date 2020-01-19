@@ -52,6 +52,7 @@ class ExchangeFactory:
             for exchange_class_string in self.octobot.config[CONFIG_EXCHANGES]:
                 if exchange_class_string in self.available_exchanges:
                     exchange_manager = await create_exchange_builder(self.octobot.config, exchange_class_string) \
+                                            .has_matrix(self.octobot.evaluator_factory.matrix_id) \
                                             .is_simulated() \
                                             .is_rest_only() \
                                             .build()
