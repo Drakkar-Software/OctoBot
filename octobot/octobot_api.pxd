@@ -25,6 +25,7 @@ cdef class OctoBotAPI:
     cpdef dict get_edited_config(self)
     cpdef object get_trading_mode(self)
     cpdef float get_start_time(self)
+    cpdef str get_matrix_id(self)
     cpdef object get_previous_states_manager(self)
     cpdef object get_aiohttp_session(self)
     cpdef object run_in_main_asyncio_loop(self, object coroutine)
