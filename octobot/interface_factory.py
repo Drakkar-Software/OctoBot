@@ -16,7 +16,7 @@
 
 from config import PROJECT_NAME, LONG_VERSION
 from octobot_interfaces.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled, \
-    start_interfaces
+    start_interfaces, is_enabled_in_backtesting
 from octobot_interfaces.util.bot import get_bot_api
 from octobot_notifications.api.notification import create_notifier_factory, is_enabled_in_config
 from tools import get_logger
@@ -88,7 +88,7 @@ class InterfaceFactory:
     def _is_interface_relevant(self, interface_class, backtesting_enabled):
         return is_enabled(interface_class) and \
                interface_class.REQUIRED_SERVICE.get_is_enabled(self.octobot.config) and \
-               (not backtesting_enabled or interface_class.REQUIRED_SERVICE.BACKTESTING_ENABLED)
+               (not backtesting_enabled or (backtesting_enabled and is_enabled_in_backtesting(interface_class)))
 
     def _is_notifier_relevant(self, notifier_class, backtesting_enabled):
         return is_enabled_in_config(notifier_class, self.octobot.config) and \
