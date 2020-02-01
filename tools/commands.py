@@ -92,9 +92,9 @@ def start_strategy_optimizer(config, commands):
         optimizer.print_report()
 
 
-def __signal_handler(_, __):
+def _signal_handler(_, __):
     # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
-    stopping_thread = Thread(target=get_bot().task_manager.stop_tasks())
+    stopping_thread = Thread(target=get_bot().task_manager.stop_tasks(), name="Commands signal_handler stop_tasks")
     stopping_thread.start()
     stopping_thread.join()
     os._exit(0)
@@ -105,7 +105,7 @@ async def start_bot(bot, logger, catch=False):
         loop = asyncio.get_event_loop()
 
         # handle CTRL+C signal
-        signal.signal(signal.SIGINT, __signal_handler)
+        signal.signal(signal.SIGINT, _signal_handler)
 
         # start
         try:
