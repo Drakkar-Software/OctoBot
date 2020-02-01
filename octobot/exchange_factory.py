@@ -19,7 +19,7 @@ import ccxt
 
 from octobot_backtesting.api.backtesting import is_backtesting_enabled, get_backtesting_data_files
 from octobot_commons.logging.logging_util import get_logger
-from octobot_trading.api.exchange import get_exchange_manager_id, create_exchange_builder
+from octobot_trading.api.exchange import create_exchange_builder
 from octobot_trading.constants import CONFIG_EXCHANGES
 from tools.logger import init_exchange_chan_logger
 

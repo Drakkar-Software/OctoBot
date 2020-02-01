@@ -39,7 +39,7 @@ class TaskManager:
         self.octobot = octobot
 
         # Logger
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(self.get_name())
 
         self.async_loop = None
         self.ready = False
@@ -49,9 +49,9 @@ class TaskManager:
 
     def init_async_loop(self):
         self.async_loop = asyncio.get_running_loop()
-        self.__init_uv_loop()
+        self._init_uv_loop()
 
-    def __init_uv_loop(self):
+    def _init_uv_loop(self):
         if platform == "linux" or platform == "linux2":  # TODO centralize os detection
             uvloop.install()
         elif platform == "darwin":
@@ -120,11 +120,16 @@ class TaskManager:
 
         self.logger.info("Threads stopped.")
 
-    def __create_new_asyncio_main_loop(self):
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
+
+    def _create_new_asyncio_main_loop(self):
         self.async_loop = asyncio.new_event_loop()
         self.async_loop.set_debug(FORCE_ASYNCIO_DEBUG_OPTION)
         asyncio.set_event_loop(self.async_loop)
-        self.current_loop_thread = threading.Thread(target=self.async_loop.run_forever)
+        self.current_loop_thread = threading.Thread(target=self.async_loop.run_forever,
+                                                    name=f"{self.get_name()} new asyncio main loop")
         self.current_loop_thread.start()
 
     def run_in_main_asyncio_loop(self, coroutine):
