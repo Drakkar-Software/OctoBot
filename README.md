@@ -21,16 +21,21 @@
 ## Description
 Octobot is a powerful fully modular open-source cryptocurrency trading robot.
 
-This repository contains all the features of the bot (trading tools, interfaces, services, ...) without any modules (Octobot's tentacles).
+This repository contains all the features of the bot (trading tools, user interfaces, services, ...).
+[Octobot's tentacles](https://github.com/Drakkar-Software/OctoBot-tentacles) contains the bot's strategies.
 
-To install tentacles, you just have to use the [integrated tentacle manager](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager) 
-and your OctoBot is ready ! 
+To install OctoBot with its tentacles, just use the [launcher](https://github.com/Drakkar-Software/OctoBot/wiki/Installation#octobot-launcher) and your OctoBot is ready ! 
 
 ## Your Octobot
 <a href="https://github.com/Drakkar-Software/OctoBot/blob/assets/telegram-interface.png"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>
 [![Twitter Interface](../assets/twitter-interface.png)](https://twitter.com/HerklosBotCrypt)
 
-OctoBot is highly customizable using its configuration and tentacles system. You can therefore build your own bot using the infinite [configuration](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration) possibilities.
+OctoBot is highly customizable using its configuration and tentacles system. 
+You can build your own bot using the infinite [configuration](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration) possibilities such as 
+**technical analysis**, **social media processing** or even **external statistics management** like google trends.
+
+OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries sur as [Tensorflow](https://github.com/tensorflow/tensorflow) or
+any other lib and take advantage of all the available data and create a very powerful trading strategy. 
 
 Octobot's main feature is **evolution** : you can [install](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager), 
 [modify](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot) and even [create](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
@@ -42,25 +47,25 @@ OctoBot's installation is **very simple**... because **very documented** !
 - Open the OctoBot-Launcher [release page](https://github.com/Drakkar-Software/OctoBot-Launcher/releases)
 - Download launcher (*laucher_windows.exe* or *launcher_linux*)
 - Start the launcher
-- Click on "Update OctoBot"
+- Click on "Install OctoBot"
 
 #### [With Docker](https://github.com/Drakkar-Software/OctoBot/wiki/With-Docker)
-```
+```bash
 docker run -it -d --name MyAmazingOctobot -v $(pwd)/user:/bot/octobot/user -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot:beta
 ```
 
 #### [With python sources](https://github.com/Drakkar-Software/OctoBot/wiki/With-Python-only) (unix)
 - Install python3.7 (https://www.python.org/downloads/)
-```
+```bash
 git clone git@github.com:Drakkar-Software/OctoBot.git && cd OctoBot
-pip3 install -r pre_requirements.txt
-pip3 install -r requirements.txt
+python3 -m pip install -r pre_requirements.txt
+python3 -m pip install -r requirements.txt
 python3 start.py -p install all
 ```
 
 More details in [wiki page](https://github.com/Drakkar-Software/OctoBot/wiki#installation) and it's done !
 
-## Usage
+## Using OctoBot
 - Just start the launcher
 - Click on "Start Octobot"
 
@@ -70,8 +75,8 @@ For more information have a look at the
 
 ## Exchanges
 [![Binance](../assets/binance-logo.png)](https://www.binance.com)
-[![Bitfinex](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
-[![Bitfinex](../assets/kucoin-logo.png)](https://www.kucoin.com)
+[![CoinbasePro](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
+[![Kucoin](../assets/kucoin-logo.png)](https://www.kucoin.com)
 [![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
 [![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
 
@@ -80,6 +85,8 @@ To activate trading on an exchange, just configure OctoBot with your api keys as
 
 ## Roadmap
 [![Roadmap](../assets/roadmap_open_beta.svg)](https://github.com/Drakkar-Software/OctoBot/tree/assets/roadmap_open_beta.png)
+
+Check out our detailed roadmap on the [dedicated progress board](https://trello.com/b/jTp2fg1v/octobot-v04).
 
 ## Disclaimer
 Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
