@@ -23,7 +23,7 @@ from octobot.evaluator_factory cimport EvaluatorFactory
 cdef class OctoBot:
     cdef object logger
 
-    cdef public float start_time
+    cdef public double start_time
 
     cdef public bint reset_trading_history
 
