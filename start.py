@@ -115,12 +115,22 @@ def _disable_interface_from_param(interface_identifier, param_value, logger):
 
 
 def start_octobot(starting_args):
-    fileConfig(LOGGING_CONFIG_FILE)
+    try:
+        fileConfig(LOGGING_CONFIG_FILE)
+    except KeyError:
+        print("Impossible to start OctoBot: the logging configuration can't be found in '" + LOGGING_CONFIG_FILE +
+              "' please make sure you are running OctoBot from its root directory.")
+        os._exit(-1)
 
     logger = logging.getLogger("OctoBot Launcher")
 
-    # Force new log file creation not to log at the previous one's end.
-    logger.parent.handlers[1].doRollover()
+    try:
+        # Force new log file creation not to log at the previous one's end.
+        logger.parent.handlers[1].doRollover()
+    except PermissionError:
+        print("Impossible to start OctoBot: the logging file is locked, this is probably due to another running "
+              "OctoBot instance.")
+        os._exit(-1)
 
     sys.excepthook = _log_uncaught_exceptions
 
