@@ -21,3 +21,4 @@ jsonschema==3.1.1
 colorlog==4.1.0
 cryptography==2.8
 yarl==1.1.0
+idna<2.9,>=2.5
