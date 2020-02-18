@@ -20,6 +20,7 @@ import ccxt
 from octobot_backtesting.api.backtesting import is_backtesting_enabled, get_backtesting_data_files
 from octobot_commons.logging.logging_util import get_logger
 from octobot_trading.api.exchange import create_exchange_builder
+from octobot_trading.api.trader import is_trader_enabled_in_config, is_trader_simulator_enabled_in_config
 from octobot_trading.constants import CONFIG_EXCHANGES
 from tools.logger import init_exchange_chan_logger
 
@@ -54,8 +55,11 @@ class ExchangeFactory:
                 if exchange_class_string in self.available_exchanges:
                     exchange_builder = create_exchange_builder(self.octobot.config, exchange_class_string) \
                                           .has_matrix(self.octobot.evaluator_factory.matrix_id) \
-                                          .is_simulated() \
                                           .is_rest_only()
+                    if is_trader_enabled_in_config(self.octobot.config):
+                        exchange_builder.is_real()
+                    elif is_trader_simulator_enabled_in_config(self.octobot.config):
+                        exchange_builder.is_simulated()
                     if is_backtesting_enabled(self.octobot.config):
                         exchange_builder.is_backtesting(get_backtesting_data_files(self.octobot.config))
                     exchange_manager = await exchange_builder.build()
