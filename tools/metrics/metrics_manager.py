@@ -26,7 +26,7 @@ from octobot_commons.constants import CONFIG_METRICS_BOT_ID, METRICS_URL, METRIC
     METRICS_ROUTE_UPTIME, METRICS_ROUTE_REGISTER, TIMER_BEFORE_METRICS_REGISTRATION_SECONDS, \
     TIMER_BETWEEN_METRICS_UPTIME_UPDATE, CONFIG_METRICS, \
     CONFIG_ENABLED_OPTION
-from octobot_evaluators.api import get_evaluator_classes_from_type
+from octobot_evaluators.api.evaluators import get_evaluator_classes_from_type
 from octobot_evaluators.enums import EvaluatorMatrixTypes
 from octobot_trading.api.exchange import get_trading_pairs, get_exchange_names, get_exchange_managers_from_exchange_ids
 from octobot_trading.api.modes import get_activated_trading_mode
