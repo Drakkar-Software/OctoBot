@@ -15,7 +15,8 @@
 #  License along with this library.
 
 from octobot_commons.logging.logging_util import get_logger
-from octobot_evaluators.api import create_matrix_channels, create_all_type_evaluators, initialize_evaluators
+from octobot_evaluators.api.evaluators import initialize_evaluators, create_all_type_evaluators
+from octobot_evaluators.api.initialization import create_matrix_channels
 from octobot_trading.exchanges.exchanges import Exchanges
 from tools.logger import init_evaluator_chan_logger
 
