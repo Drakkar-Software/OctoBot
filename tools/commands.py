@@ -85,11 +85,12 @@ def exchange_keys_encrypter(catch=False):
 
 
 def start_strategy_optimizer(config, commands):
-    from backtesting.strategy_optimizer.strategy_optimizer import StrategyOptimizer
-    optimizer = StrategyOptimizer(config, commands[0])
-    if optimizer.is_properly_initialized:
-        optimizer.find_optimal_configuration()
-        optimizer.print_report()
+    from octobot_backtesting.api.strategy_optimizer import create_strategy_optimizer, \
+        get_optimizer_is_properly_initialized, find_optimal_configuration, print_optimizer_report
+    optimizer = create_strategy_optimizer(config, commands[0])
+    if get_optimizer_is_properly_initialized(optimizer):
+        find_optimal_configuration(optimizer)
+        print_optimizer_report(optimizer)
 
 
 def _signal_handler(_, __):
