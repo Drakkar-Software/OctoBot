@@ -77,8 +77,6 @@ class MetricsManager:
                 pass
             except Exception as e:
                 self.logger.debug(f"Exception when handling metrics registration: {e}")
-                #todo remove
-                self.logger.exception(e)
 
     async def stop_task(self):
         self.keep_running = False
