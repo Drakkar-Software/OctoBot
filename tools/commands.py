@@ -119,7 +119,7 @@ async def start_bot(bot, logger, catch=False):
         await bot.task_manager.join_tasks()
 
     except Exception as e:
-        logger.exception(f"OctoBot Exception : {e}")
+        logger.exception(e, True, f"OctoBot Exception : {e}")
         if not catch:
             raise e
         stop_bot(bot)
