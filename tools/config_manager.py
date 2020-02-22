@@ -33,8 +33,7 @@ def config_health_check(config):
                     if not _handle_encrypted_value(key, exchange_config, verbose=True):
                         should_replace_config = True
                 except Exception as e:
-                    get_logger().error(f"Exception when checking exchange config encryption: {e}")
-                    get_logger().exception(e)
+                    get_logger().exception(e, True, f"Exception when checking exchange config encryption: {e}")
 
     # 2 ensure single trader activated
     try:
@@ -47,8 +46,7 @@ def config_health_check(config):
                 config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = False
                 should_replace_config = True
     except KeyError as e:
-        get_logger().error(f"KeyError when checking traders activation: {e}. Activating trader simulator.")
-        get_logger().exception(e)
+        get_logger().exception(e, True, f"KeyError when checking traders activation: {e}. Activating trader simulator.")
         config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
         should_replace_config = True
