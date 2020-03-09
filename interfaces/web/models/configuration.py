@@ -14,14 +14,13 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import json
 from tools.logging.logging_util import get_logger
 from copy import copy
 
 import ccxt
 import requests
 
-from config import CONFIG_EVALUATOR, COIN_MARKET_CAP_CURRENCIES_LIST_URL, CONFIG_EXCHANGES, TESTED_EXCHANGES, \
+from config import CONFIG_EVALUATOR, CURRENCIES_LIST_URL, CONFIG_EXCHANGES, TESTED_EXCHANGES, \
     UPDATED_CONFIG_SEPARATOR, CONFIG_TRADING_TENTACLES, EVALUATOR_ACTIVATION, EVALUATOR_EVAL_DEFAULT_TYPE, \
     SIMULATOR_TESTED_EXCHANGES, CONFIG_METRICS, CONFIG_ENABLED_OPTION, CONFIG_ADVANCED_CLASSES
 from interfaces import get_bot
@@ -418,7 +417,7 @@ def get_symbol_list(exchanges):
 
 def get_all_symbol_list():
     try:
-        currencies_list = json.loads(requests.get(COIN_MARKET_CAP_CURRENCIES_LIST_URL).text)
+        currencies_list = requests.get(CURRENCIES_LIST_URL).json()
         return {
             currency_data[NAME_KEY]: currency_data["symbol"]
             for currency_data in currencies_list["data"]
