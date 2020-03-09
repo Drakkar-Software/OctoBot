@@ -228,7 +228,7 @@
                     <div class="card-body">
                         Add a new currency :
                         <select id="AddCurrencySelect" class="selectpicker" data-live-search="true" reference_market="{{ config_reference_market }}">
-                           {% for currency in full_symbol_list | sort() %}
+                           {% for currency in full_symbol_list %}
                                 {% if currency not in config_symbols %}
                                     <option data-tokens="{{ currency }}" symbol="{{ full_symbol_list[currency] }}">{{ currency }}</option>
                                 {% endif %}
