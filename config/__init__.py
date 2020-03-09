@@ -314,7 +314,7 @@ GLOBAL_CONFIG_KEY = "global_config"
 EVALUATOR_CONFIG_KEY = "evaluator_config"
 DEACTIVATE_OTHERS = "deactivate_others"
 TRADING_CONFIG_KEY = "trading_config"
-COIN_MARKET_CAP_CURRENCIES_LIST_URL = "https://api.coinmarketcap.com/v2/listings/"
+CURRENCIES_LIST_URL = "https://api.coincap.io/v2/assets?limit=1000"
 
 # Types
 CONFIG_DICT_TYPE = NewType('ConfigDictType', Dict[str, Any])
