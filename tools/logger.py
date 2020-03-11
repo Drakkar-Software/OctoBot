@@ -86,7 +86,8 @@ async def trades_callback(exchange: str, exchange_id: str, symbol: str, trade: d
                             f"|| OLD_TRADE = {old_trade}")
 
 
-async def orders_callback(exchange: str, exchange_id: str, symbol: str, order: dict, is_closed, is_updated, is_from_bot):
+async def orders_callback(exchange: str, exchange_id: str, symbol: str, order: dict, is_closed, is_updated,
+                          is_from_bot):
     order_string = f"ORDERS : EXCHANGE = {exchange} || SYMBOL = {symbol} ||"
     if is_closed:
         # order_string += PrettyPrinter.trade_pretty_printer(exchange, order)
@@ -98,10 +99,11 @@ async def orders_callback(exchange: str, exchange_id: str, symbol: str, order: d
     BOT_CHANNEL_LOGGER.info(order_string)
 
 
-async def positions_callback(exchange: str, exchange_id: str, symbol: str, position, is_closed, is_updated,
-                             is_from_bot):
+async def positions_callback(exchange: str, exchange_id: str, symbol: str, position,
+                             is_closed, is_updated, is_liquidated, is_from_bot):
     BOT_CHANNEL_LOGGER.info(f"POSITIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || POSITIONS = {position}"
-                            f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}")
+                            f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || LIQUIDATED = {is_liquidated} "
+                            f"|| FROM_BOT = {is_from_bot}")
 
 
 async def matrix_callback(matrix_id,
