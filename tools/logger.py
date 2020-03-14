@@ -19,7 +19,7 @@ from octobot_commons.pretty_printer import PrettyPrinter
 from octobot_evaluators.channels import MATRIX_CHANNEL
 from octobot_trading.constants import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORDER_BOOK_CHANNEL, KLINE_CHANNEL, \
     OHLCV_CHANNEL, BALANCE_CHANNEL, BALANCE_PROFITABILITY_CHANNEL, TRADES_CHANNEL, POSITIONS_CHANNEL, ORDERS_CHANNEL, \
-    MARK_PRICE_CHANNEL
+    MARK_PRICE_CHANNEL, FUNDING_CHANNEL
 from octobot_trading.channels.exchange_channel import get_chan as get_trading_chan
 
 BOT_CHANNEL_LOGGER = get_logger("OctoBot Channel")
@@ -37,6 +37,7 @@ async def init_exchange_chan_logger(exchange_id):
     await get_trading_chan(POSITIONS_CHANNEL, exchange_id).new_consumer(positions_callback)
     await get_trading_chan(ORDERS_CHANNEL, exchange_id).new_consumer(orders_callback)
     await get_trading_chan(MARK_PRICE_CHANNEL, exchange_id).new_consumer(mark_price_callback)
+    await get_trading_chan(FUNDING_CHANNEL, exchange_id).new_consumer(funding_callback)
 
 
 async def init_evaluator_chan_logger():
@@ -104,6 +105,12 @@ async def positions_callback(exchange: str, exchange_id: str, symbol: str, posit
     BOT_CHANNEL_LOGGER.info(f"POSITIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || POSITIONS = {position}"
                             f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || LIQUIDATED = {is_liquidated} "
                             f"|| FROM_BOT = {is_from_bot}")
+
+
+async def funding_callback(exchange: str, exchange_id: str, symbol: str, funding_rate,
+                           next_funding_time, timestamp):
+    BOT_CHANNEL_LOGGER.info(f"FUNDING : EXCHANGE = {exchange} || SYMBOL = {symbol} || RATE = {str(funding_rate)}"
+                            f"|| NEXT TIME = {str(next_funding_time)} || TIMESTAMP = {str(timestamp)}")
 
 
 async def matrix_callback(matrix_id,
