@@ -22,8 +22,20 @@ VERSION_PHASE = "5"  # XX
 VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 
+# tentacles
+# TODO: use real link
+DEFAULT_TENTACLES_URL = f"https://raw.githubusercontent.com/GuillaumeDSM/test_tentacles2/master/tentacles.zip"
+
 # logs
 LOGS_FOLDER = "logs"
+
+# command line special args
+FORCE_ARG = "force"
+ALL_ARG = "all"
+HELP_ARG = "help"
+INSTALL_ARG = "install"
+UPDATE_ARG = "update"
+UNINSTALL_ARG = "uninstall"
 
 # terms of service
 CONFIG_ACCEPTED_TERMS = "accepted_terms"
