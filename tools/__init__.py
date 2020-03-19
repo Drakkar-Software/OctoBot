@@ -36,7 +36,7 @@ if not current_version >= MIN_PYTHON_VERSION:
 else:
     # check compatible tentacle manager
     try:
-        from tentacles_manager import VERSION
+        from octobot_tentacles_manager import VERSION
         if LooseVersion(VERSION) < MIN_TENTACLE_MANAGER_VERSION:
             print("OctoBot requires OctoBot-Tentacles-Manager in a minimum version of " + MIN_TENTACLE_MANAGER_VERSION +
                   " you can install and update OctoBot-Tentacles-Manager using the following command: "

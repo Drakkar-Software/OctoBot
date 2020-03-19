@@ -23,7 +23,8 @@ from tools.commands import package_manager, tentacle_creator, exchange_keys_encr
 from tools.config_manager import config_health_check
 from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
 
-from config import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION, LOGGING_CONFIG_FILE
+from config import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION, LOGGING_CONFIG_FILE, INSTALL_ARG, ALL_ARG, UPDATE_ARG, \
+    UNINSTALL_ARG, FORCE_ARG, HELP_ARG
 from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE, \
     CONFIG_EVALUATOR_FILE_PATH, CONFIG_TRADING_FILE_PATH
 from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
@@ -41,7 +42,7 @@ from logging.config import fileConfig
 from time import sleep
 
 from config.disclaimer import DISCLAIMER
-from tentacles_manager.tentacle_util import tentacles_arch_exists
+from octobot_tentacles_manager.api.loader import load_tentacles
 
 
 # Keep string '+' operator to ensure backward compatibility in this file
@@ -114,7 +115,7 @@ def _disable_interface_from_param(interface_identifier, param_value, logger):
             logger.info(f"{interface_identifier.capitalize()} interface disabled")
 
 
-def start_octobot(starting_args):
+def _init_logger():
     try:
         fileConfig(LOGGING_CONFIG_FILE)
     except KeyError:
@@ -133,11 +134,16 @@ def start_octobot(starting_args):
         os._exit(-1)
 
     sys.excepthook = _log_uncaught_exceptions
+    return logger
 
+
+def start_octobot(starting_args):
     try:
         if starting_args.version:
             print(LONG_VERSION)
         else:
+            logger = _init_logger()
+
             # Version
             logger.info("Version : {0}".format(LONG_VERSION))
 
@@ -164,7 +170,7 @@ def start_octobot(starting_args):
 
             # Handle utility methods before bot initializing if possible
             if starting_args.packager:
-                package_manager(config, starting_args.packager)
+                package_manager(starting_args.packager)
 
             elif starting_args.creator:
                 tentacle_creator(config, starting_args.creator)
@@ -173,9 +179,9 @@ def start_octobot(starting_args):
                 exchange_keys_encrypter()
 
             else:
-                if not tentacles_arch_exists():
+                if not load_tentacles(verbose=True):
                     logger.info("No tentacles found. Installing default tentacles ...")
-                    # package_manager(config, ["install", "all"], force=True)
+                    package_manager([INSTALL_ARG, ALL_ARG])
 
                 if starting_args.data_collector:
                     data_collector(config)
@@ -272,14 +278,13 @@ def main(args=None):
                                             " exchanges configuration in your config.json without using any interface "
                                             "(ie the web interface that handle encryption automatically)",
                         action='store_true')
-    parser.add_argument('-p', '--packager', help='Start OctoBot Tentacles Manager. examples: -p install all '
-                                                 'to install all tentacles packages and -p install [tentacle] to '
-                                                 'install specific tentacle. Tentacles Manager allows to install, '
-                                                 'update, uninstall and reset tentacles. You can specify github '
-                                                 'branches using branch= parameter. '
-                                                 'You can also skip installation confirm inputs by adding the force '
-                                                 'parameter. Use: -p help to get the '
-                                                 'Tentacle Manager help.',
+    parser.add_argument('-p', '--packager', help='Start OctoBot Tentacles Manager. examples: -p' + INSTALL_ARG +
+                                                 ALL_ARG + ' to install all tentacles packages and -p ' + INSTALL_ARG +
+                                                 ' [tentacle] to install specific tentacle. Tentacles Manager allows '
+                                                 'to ' + INSTALL_ARG + ', ' + UPDATE_ARG + ' and ' + UNINSTALL_ARG +
+                                                 ' tentacles.' 'You can also skip uninstalling confirm inputs '
+                                                 'by adding the ' + FORCE_ARG + ' option. '
+                                                 'Use: -p ' + HELP_ARG + ' to get the Tentacle Manager help.',
                         nargs='+')
 
     parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c Evaluator '
