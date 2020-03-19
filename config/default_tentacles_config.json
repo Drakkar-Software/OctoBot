@@ -1,4 +1,5 @@
 {
+  "tentacle_activation": {
     "ADXMomentumEvaluator": false,
     "ATRVolatilityEvaluator": false,
     "BBMomentumEvaluator": false,
@@ -27,11 +28,15 @@
     "OBVMomentumEvaluator": false,
     "RSIMomentumEvaluator": true,
     "RedditForumEvaluator": false,
-    "SimpleMixedStrategiesEvaluator": true,
+    "SimpleMixedStrategyEvaluator": true,
     "StochasticRSIVolatilityEvaluator": false,
     "StochasticVolatilityEvaluator": false,
     "TRIXMomentumEvaluator": false,
     "TwitterNewsEvaluator": false,
     "WhalesOrderBookEvaluator": false,
-    "WilliamsRMomentumEvaluator": false
+    "WilliamsRMomentumEvaluator": false,
+
+    "DailyTradingMode": true,
+    "SignalTradingMode": false
+  }
 }

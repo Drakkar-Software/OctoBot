@@ -89,7 +89,7 @@ class MetricsManager:
 
     @staticmethod
     def background_get_id_and_register_bot(octobot_api):
-        metrics_manager = MetricsManager(octobot)
+        metrics_manager = MetricsManager(octobot_api)
         threading.Thread(target=metrics_manager._blocking_get_id_and_register).start()
 
     def _blocking_get_id_and_register(self):
