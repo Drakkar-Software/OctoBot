@@ -19,7 +19,7 @@ from octobot_commons.pretty_printer import PrettyPrinter
 from octobot_evaluators.channels import MATRIX_CHANNEL
 from octobot_trading.constants import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORDER_BOOK_CHANNEL, KLINE_CHANNEL, \
     OHLCV_CHANNEL, BALANCE_CHANNEL, BALANCE_PROFITABILITY_CHANNEL, TRADES_CHANNEL, POSITIONS_CHANNEL, ORDERS_CHANNEL, \
-    MARK_PRICE_CHANNEL, FUNDING_CHANNEL
+    MARK_PRICE_CHANNEL, FUNDING_CHANNEL, LIQUIDATIONS_CHANNEL, MINI_TICKER_CHANNEL, ORDER_BOOK_TICKER_CHANNEL
 from octobot_trading.channels.exchange_channel import get_chan as get_trading_chan
 
 BOT_CHANNEL_LOGGER = get_logger("OctoBot Channel")
@@ -27,13 +27,16 @@ BOT_CHANNEL_LOGGER = get_logger("OctoBot Channel")
 
 async def init_exchange_chan_logger(exchange_id):
     await get_trading_chan(TICKER_CHANNEL, exchange_id).new_consumer(ticker_callback)
+    await get_trading_chan(MINI_TICKER_CHANNEL, exchange_id).new_consumer(mini_ticker_callback)
     await get_trading_chan(RECENT_TRADES_CHANNEL, exchange_id).new_consumer(recent_trades_callback)
     await get_trading_chan(ORDER_BOOK_CHANNEL, exchange_id).new_consumer(order_book_callback)
+    await get_trading_chan(ORDER_BOOK_TICKER_CHANNEL, exchange_id).new_consumer(order_book_ticker_callback)
     await get_trading_chan(KLINE_CHANNEL, exchange_id).new_consumer(kline_callback)
     await get_trading_chan(OHLCV_CHANNEL, exchange_id).new_consumer(ohlcv_callback)
     await get_trading_chan(BALANCE_CHANNEL, exchange_id).new_consumer(balance_callback)
     await get_trading_chan(BALANCE_PROFITABILITY_CHANNEL, exchange_id).new_consumer(balance_profitability_callback)
     await get_trading_chan(TRADES_CHANNEL, exchange_id).new_consumer(trades_callback)
+    await get_trading_chan(LIQUIDATIONS_CHANNEL, exchange_id).new_consumer(liquidations_callback)
     await get_trading_chan(POSITIONS_CHANNEL, exchange_id).new_consumer(positions_callback)
     await get_trading_chan(ORDERS_CHANNEL, exchange_id).new_consumer(orders_callback)
     await get_trading_chan(MARK_PRICE_CHANNEL, exchange_id).new_consumer(mark_price_callback)
@@ -48,9 +51,21 @@ async def ticker_callback(exchange: str, exchange_id: str, symbol: str, ticker):
     BOT_CHANNEL_LOGGER.debug(f"TICKER : EXCHANGE = {exchange} || SYMBOL = {symbol} || TICKER = {ticker}")
 
 
+async def mini_ticker_callback(exchange: str, exchange_id: str, symbol: str, mini_ticker):
+    BOT_CHANNEL_LOGGER.debug(f"MINI TICKER : EXCHANGE = {exchange} || SYMBOL = {symbol} || MINI TICKER = {mini_ticker}")
+
+
 async def order_book_callback(exchange: str, exchange_id: str, symbol: str, asks, bids):
     BOT_CHANNEL_LOGGER.debug(
         f"ORDERBOOK : EXCHANGE = {exchange} || SYMBOL = {symbol} || ASKS = {asks} || BIDS = {bids}")
+
+
+async def order_book_ticker_callback(exchange: str, exchange_id: str, symbol: str,
+                                     ask_quantity, ask_price, bid_quantity, bid_price):
+    BOT_CHANNEL_LOGGER.debug(
+        f"ORDERBOOK TICKER : EXCHANGE = {exchange} || SYMBOL = {symbol} "
+        f"|| ASK PRICE / QUANTIY = {ask_price} / {ask_quantity}"
+        f"|| BID PRICE / QUANTIY = {bid_price} / {bid_quantity}")
 
 
 async def ohlcv_callback(exchange: str, exchange_id: str, symbol: str, time_frame, candle):
@@ -60,7 +75,12 @@ async def ohlcv_callback(exchange: str, exchange_id: str, symbol: str, time_fram
 
 async def recent_trades_callback(exchange: str, exchange_id: str, symbol: str, recent_trades):
     BOT_CHANNEL_LOGGER.debug(
-        f"RECENT TRADE : EXCHANGE = {exchange} || SYMBOL = {symbol} || RECENT TRADE = {recent_trades}")
+        f"RECENT TRADES : EXCHANGE = {exchange} || SYMBOL = {symbol} || RECENT TRADES = {recent_trades}")
+
+
+async def liquidations_callback(exchange: str, exchange_id: str, symbol: str, liquidations):
+    BOT_CHANNEL_LOGGER.debug(
+        f"LIQUIDATIONS : EXCHANGE = {exchange} || SYMBOL = {symbol} || LIQUIDATIONS = {liquidations}")
 
 
 async def kline_callback(exchange: str, exchange_id: str, symbol: str, time_frame, kline):
