@@ -13,11 +13,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import copy
 import time
 import aiohttp
 
-from config import PROJECT_NAME, LONG_VERSION
+from config import PROJECT_NAME, LONG_VERSION, CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
+from octobot.configuration_manager import ConfigurationManager
 from octobot.evaluator_factory import EvaluatorFactory
 from octobot.exchange_factory import ExchangeFactory
 from octobot.octobot_api import OctoBotAPI
@@ -27,9 +27,9 @@ from octobot.interface_factory import InterfaceFactory
 from octobot.task_manager import TaskManager
 from octobot_commons.enums import MarkdownFormat
 from octobot_commons.logging.logging_util import get_logger
-from octobot_evaluators.constants import CONFIG_EVALUATOR
 from octobot_notifications.api.notification import send_notification, create_notification
-from octobot_trading.constants import CONFIG_TRADING_TENTACLES
+from octobot_trading.api.exchange import get_exchange_manager_from_exchange_id
+from octobot_trading.api.modes import get_trading_modes
 
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
@@ -45,8 +45,13 @@ class OctoBot:
         self.start_time = time.time()
         self.config = config
         self.reset_trading_history = reset_trading_history
-        self.startup_config = copy.deepcopy(self.config)
-        self.edited_config = copy.deepcopy(self.config)
+
+        # tentacle setup configuration
+        self.tentacles_setup_config = None
+
+        # Configuration manager to handle current, edited and startup configurations
+        self.configuration_manager = ConfigurationManager()
+        self.configuration_manager.add_element(CONFIG_KEY, self.config)
 
         # Used to know when OctoBot is ready to answer in APIs
         self.initialized = False
@@ -83,9 +88,9 @@ class OctoBot:
         await self.initializer.create()
         self.task_manager.init_async_loop()
         await self.task_manager.start_tools_tasks()
-        await self.evaluator_factory.initialize()
+        await self.evaluator_factory.initialize(self.tentacles_setup_config)
         await self.service_feed_factory.initialize()
-        await self.exchange_factory.create()
+        await self.exchange_factory.create(self.tentacles_setup_config)
         await self.evaluator_factory.create()
         # Start service feeds now that evaluators registered their feed requirements
         await self.service_feed_factory.create()
@@ -96,15 +101,22 @@ class OctoBot:
     async def _post_initialize(self):
         self.initialized = True
 
-        # update startup_config and edited_config now that config contains all necessary info
-        # (tentacles config added in initialize)
-        # this might be temporary waiting for tentacle manager refactor
-        for config_element in (CONFIG_EVALUATOR, CONFIG_TRADING_TENTACLES):
-            self.startup_config[config_element] = copy.deepcopy(self.config[config_element])
-            self.edited_config[config_element] = copy.deepcopy(self.config[config_element])
-
+        # make tentacles setup config editable while saving previous states
+        self.configuration_manager.add_element(TENTACLES_SETUP_CONFIG_KEY, self.tentacles_setup_config)
         await send_notification(create_notification(f"{PROJECT_NAME} {LONG_VERSION} is starting ...",
                                                     markdown_format=MarkdownFormat.ITALIC))
+
+    def get_edited_config(self, config_key):
+        return self.configuration_manager.get_edited_config(config_key)
+
+    def get_startup_config(self, config_key):
+        return self.configuration_manager.get_startup_config(config_key)
+
+    def get_trading_mode(self):
+        first_exchange_manager = get_exchange_manager_from_exchange_id(
+            next(iter(self.exchange_factory.exchange_manager_ids))
+        )
+        return get_trading_modes(first_exchange_manager)[0]
 
     def run_in_main_asyncio_loop(self, coroutine):
         return self.task_manager.run_in_main_asyncio_loop(coroutine)

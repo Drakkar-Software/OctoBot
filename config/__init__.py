@@ -25,9 +25,15 @@ LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE
 # tentacles
 # TODO: use real link
 DEFAULT_TENTACLES_URL = f"https://raw.githubusercontent.com/GuillaumeDSM/test_tentacles2/master/tentacles.zip"
+DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 
 # logs
 LOGS_FOLDER = "logs"
+
+# config types keys
+CONFIG_KEY = "config"
+TENTACLES_SETUP_CONFIG_KEY = "tentacles_setup"
+
 
 # command line special args
 FORCE_ARG = "force"

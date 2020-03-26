@@ -1,4 +1,3 @@
-# cython: language_level=3
 #  Drakkar-Software OctoBot
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -14,9 +13,25 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import copy
 
 
-cdef class Initializer:
-    cdef public object octobot
+class ConfigurationManager:
+    def __init__(self):
+        self.configuration_elements = {}
 
-    cdef void _init_metrics(self)
+    def add_element(self, key, element):
+        self.configuration_elements[key] = ConfigurationElement(element)
+
+    def get_edited_config(self, key):
+        return self.configuration_elements[key].edited_config
+
+    def get_startup_config(self, key):
+        return self.configuration_elements[key].startup_config
+
+
+class ConfigurationElement:
+    def __init__(self, element):
+        self.config = element
+        self.startup_config = copy.deepcopy(element)
+        self.edited_config = copy.deepcopy(element)

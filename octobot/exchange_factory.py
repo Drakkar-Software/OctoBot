@@ -13,8 +13,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import os
-
 import ccxt
 
 from octobot_backtesting.api.backtesting import is_backtesting_enabled, get_backtesting_data_files
@@ -49,12 +47,13 @@ class ExchangeFactory:
 
         self.available_exchanges = ccxt.exchanges
 
-    async def create(self):
+    async def create(self, tentacles_setup_config):
         if self.octobot.config[CONFIG_EXCHANGES]:
             for exchange_class_string in self.octobot.config[CONFIG_EXCHANGES]:
                 if exchange_class_string in self.available_exchanges:
                     exchange_builder = create_exchange_builder(self.octobot.config, exchange_class_string) \
                                           .has_matrix(self.octobot.evaluator_factory.matrix_id) \
+                                          .use_tentacles_setup_config(tentacles_setup_config) \
                                           .is_rest_only()
                     if is_trader_enabled_in_config(self.octobot.config):
                         exchange_builder.is_real()

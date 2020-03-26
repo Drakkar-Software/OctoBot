@@ -25,8 +25,7 @@ from octobot_commons.config import load_config, is_config_empty_or_missing, init
 
 from config import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION, LOGGING_CONFIG_FILE, INSTALL_ARG, ALL_ARG, UPDATE_ARG, \
     UNINSTALL_ARG, FORCE_ARG, HELP_ARG
-from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE, \
-    CONFIG_EVALUATOR_FILE_PATH, CONFIG_TRADING_FILE_PATH
+from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE
 from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
 from octobot_commons.config_manager import validate_config_file, accepted_terms, is_in_dev_mode
 
@@ -182,6 +181,8 @@ def start_octobot(starting_args):
                 if not load_tentacles(verbose=True):
                     logger.info("No tentacles found. Installing default tentacles ...")
                     package_manager([INSTALL_ARG, ALL_ARG])
+                    # reload tentacles
+                    load_tentacles(verbose=True)
 
                 if starting_args.data_collector:
                     data_collector(config)
@@ -228,15 +229,15 @@ def start_octobot(starting_args):
         os._exit(-1)
 
     except ConfigEvaluatorError:
-        logger.error("OctoBot can't start without a valid " + CONFIG_EVALUATOR_FILE_PATH
-                     + " configuration file.\nThis file is generated on tentacle "
-                       "installation using the following command:\nstart.py -p install all")
+        logger.error("OctoBot can't start without a valid  configuration file.\n"
+                     "This file is generated on tentacle "
+                     "installation using the following command:\nstart.py -p install all")
         os._exit(-1)
 
     except ConfigTradingError:
-        logger.error("OctoBot can't start without a valid " + CONFIG_TRADING_FILE_PATH
-                     + " configuration file.\nThis file is generated on tentacle "
-                       "installation using the following command:\nstart.py -p install all")
+        logger.error("OctoBot can't start without a valid configuration file.\n"
+                     "This file is generated on tentacle "
+                     "installation using the following command:\nstart.py -p install all")
         os._exit(-1)
 
 
