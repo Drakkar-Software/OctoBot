@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from config import CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
 from tools.commands import stop_bot as command_stop, restart_bot as command_restart
 
 
@@ -31,13 +32,22 @@ class OctoBotAPI:
         return self._octobot.config
 
     def get_startup_config(self) -> dict:
-        return self._octobot.startup_config
+        return self._octobot.get_startup_config(CONFIG_KEY)
 
     def get_edited_config(self) -> dict:
-        return self._octobot.edited_config
+        return self._octobot.get_edited_config(CONFIG_KEY)
+
+    def get_startup_tentacles_config(self) -> dict:
+        return self._octobot.get_startup_config(TENTACLES_SETUP_CONFIG_KEY)
+
+    def get_edited_tentacles_config(self) -> dict:
+        return self._octobot.get_edited_config(TENTACLES_SETUP_CONFIG_KEY)
 
     def get_trading_mode(self) -> object:
         return self._octobot.get_trading_mode()
+
+    def get_tentacles_setup_config(self) -> object:
+        return self._octobot.tentacles_setup_config
 
     def get_start_time(self) -> float:
         return self._octobot.start_time
