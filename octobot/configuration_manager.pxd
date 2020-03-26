@@ -16,7 +16,14 @@
 #  License along with this library.
 
 
-cdef class Initializer:
-    cdef public object octobot
+cdef class ConfigurationManager:
+    cdef dict configuration_elements
 
-    cdef void _init_metrics(self)
+    cpdef void add_element(self, str key, object element)
+    cpdef object get_edited_config(self, str key)
+    cpdef object get_startup_config(self, str key)
+
+cdef class ConfigurationElement:
+    cdef public object config
+    cdef public object startup_config
+    cdef public object edited_config

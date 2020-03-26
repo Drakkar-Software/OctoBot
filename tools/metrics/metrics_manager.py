@@ -29,7 +29,6 @@ from octobot_commons.constants import CONFIG_METRICS_BOT_ID, METRICS_URL, METRIC
 from octobot_evaluators.api.evaluators import get_evaluator_classes_from_type
 from octobot_evaluators.enums import EvaluatorMatrixTypes
 from octobot_trading.api.exchange import get_trading_pairs, get_exchange_names, get_exchange_managers_from_exchange_ids
-from octobot_trading.api.modes import get_activated_trading_mode
 from tools.metrics.metrics_fields import MetricsFields
 from octobot_notifications.constants import CONFIG_CATEGORY_NOTIFICATION, CONFIG_NOTIFICATION_TYPE
 from octobot_commons.logging.logging_util import get_logger
@@ -187,17 +186,26 @@ class MetricsManager:
         return self.edited_config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_NOTIFICATION_TYPE] if has_notifications else []
 
     def _get_eval_config(self):
+        tentacle_setup_config = self.octobot_api.get_tentacles_setup_config()
         # trading mode
-        config_eval = [get_activated_trading_mode(self.bot_config).get_name()]
+        config_eval = [self.octobot_api.get_trading_mode().get_name()]
 
         # strategies
-        for strategy in get_evaluator_classes_from_type(EvaluatorMatrixTypes.STRATEGIES.value, self.bot_config):
+        for strategy in get_evaluator_classes_from_type(EvaluatorMatrixTypes.STRATEGIES.value,
+                                                        self.bot_config,
+                                                        tentacle_setup_config):
             config_eval.append(strategy.get_name())
 
         # evaluators
-        evaluators = get_evaluator_classes_from_type(EvaluatorMatrixTypes.TA.value, self.bot_config)
-        evaluators += get_evaluator_classes_from_type(EvaluatorMatrixTypes.SOCIAL.value, self.bot_config)
-        evaluators += get_evaluator_classes_from_type(EvaluatorMatrixTypes.REAL_TIME.value, self.bot_config)
+        evaluators = get_evaluator_classes_from_type(EvaluatorMatrixTypes.TA.value,
+                                                     self.bot_config,
+                                                     tentacle_setup_config)
+        evaluators += get_evaluator_classes_from_type(EvaluatorMatrixTypes.SOCIAL.value,
+                                                      self.bot_config,
+                                                      tentacle_setup_config)
+        evaluators += get_evaluator_classes_from_type(EvaluatorMatrixTypes.REAL_TIME.value,
+                                                      self.bot_config,
+                                                      tentacle_setup_config)
         for evaluator in evaluators:
             config_eval.append(evaluator.get_name())
         return config_eval

@@ -25,6 +25,7 @@ from concurrent.futures import CancelledError
 from config import FORCE_ARG, ALL_ARG, UNINSTALL_ARG, UPDATE_ARG, INSTALL_ARG, HELP_ARG, DEFAULT_TENTACLES_URL
 from octobot import get_bot, set_bot
 from octobot_commons.config_util import encrypt
+from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config
 from octobot_tentacles_manager.api.creator import start_tentacle_creator
 from octobot_commons.logging.logging_util import get_logger
 from octobot_tentacles_manager.api.installer import install_all_tentacles, install_tentacles, \
@@ -135,7 +136,8 @@ def exchange_keys_encrypter(catch=False):
 def start_strategy_optimizer(config, commands):
     from octobot_backtesting.api.strategy_optimizer import create_strategy_optimizer, \
         get_optimizer_is_properly_initialized, find_optimal_configuration, print_optimizer_report
-    optimizer = create_strategy_optimizer(config, commands[0])
+    tentacles_setup_config = asyncio.run(get_tentacles_setup_config())
+    optimizer = create_strategy_optimizer(config, tentacles_setup_config, commands[0])
     if get_optimizer_is_properly_initialized(optimizer):
         find_optimal_configuration(optimizer)
         print_optimizer_report(optimizer)
