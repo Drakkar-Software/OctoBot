@@ -34,15 +34,6 @@ LOGS_FOLDER = "logs"
 CONFIG_KEY = "config"
 TENTACLES_SETUP_CONFIG_KEY = "tentacles_setup"
 
-
-# command line special args
-FORCE_ARG = "force"
-ALL_ARG = "all"
-HELP_ARG = "help"
-INSTALL_ARG = "install"
-UPDATE_ARG = "update"
-UNINSTALL_ARG = "uninstall"
-
 # terms of service
 CONFIG_ACCEPTED_TERMS = "accepted_terms"
 

@@ -13,6 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
+import sys
+import logging
+import traceback
+from logging.config import fileConfig
+
+from config import LOGGING_CONFIG_FILE
 from octobot_channels.channels.channel import get_chan
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import PrettyPrinter
@@ -23,6 +30,33 @@ from octobot_trading.constants import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORD
 from octobot_trading.channels.exchange_channel import get_chan as get_trading_chan
 
 BOT_CHANNEL_LOGGER = get_logger("OctoBot Channel")
+
+
+def _log_uncaught_exceptions(ex_cls, ex, tb):
+    logging.exception(''.join(traceback.format_tb(tb)))
+    logging.exception('{0}: {1}'.format(ex_cls, ex))
+
+
+def init_logger():
+    try:
+        fileConfig(LOGGING_CONFIG_FILE)
+    except KeyError:
+        print("Impossible to start OctoBot: the logging configuration can't be found in '" + LOGGING_CONFIG_FILE +
+              "' please make sure you are running OctoBot from its root directory.")
+        os._exit(-1)
+
+    logger = logging.getLogger("OctoBot Launcher")
+
+    try:
+        # Force new log file creation not to log at the previous one's end.
+        logger.parent.handlers[1].doRollover()
+    except PermissionError:
+        print("Impossible to start OctoBot: the logging file is locked, this is probably due to another running "
+              "OctoBot instance.")
+        os._exit(-1)
+
+    sys.excepthook = _log_uncaught_exceptions
+    return logger
 
 
 async def init_exchange_chan_logger(exchange_id):
