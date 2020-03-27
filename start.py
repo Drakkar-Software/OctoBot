@@ -17,27 +17,24 @@
 from octobot_commons.errors import ConfigError, ConfigTradingError
 from octobot_evaluators.util.errors import ConfigEvaluatorError
 from octobot_interfaces.api.interfaces import disable_interfaces
+from octobot_tentacles_manager.cli import register_tentacles_manager_arguments
 
-from tools.commands import package_manager, tentacle_creator, exchange_keys_encrypter, start_strategy_optimizer, \
-    start_bot, data_collector
+from tools.commands import exchange_keys_encrypter, start_strategy_optimizer, start_bot, data_collector, \
+    call_tentacles_manager
 from tools.config_manager import config_health_check
 from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
 
-from config import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION, LOGGING_CONFIG_FILE, INSTALL_ARG, ALL_ARG, UPDATE_ARG, \
-    UNINSTALL_ARG, FORCE_ARG, HELP_ARG
+from config import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION
 from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE
 from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
 from octobot_commons.config_manager import validate_config_file, accepted_terms, is_in_dev_mode
 
 import argparse
 import asyncio
-import logging
 import os
 import sys
-import traceback
 import webbrowser
 import socket
-from logging.config import fileConfig
 from time import sleep
 
 from config.disclaimer import DISCLAIMER
@@ -45,11 +42,7 @@ from octobot_tentacles_manager.api.loader import load_tentacles
 
 
 # Keep string '+' operator to ensure backward compatibility in this file
-
-
-def _log_uncaught_exceptions(ex_cls, ex, tb):
-    logging.exception(''.join(traceback.format_tb(tb)))
-    logging.exception('{0}: {1}'.format(ex_cls, ex))
+from tools.logger import init_logger
 
 
 def update_config_with_args(starting_args, config, logger):
@@ -114,34 +107,12 @@ def _disable_interface_from_param(interface_identifier, param_value, logger):
             logger.info(f"{interface_identifier.capitalize()} interface disabled")
 
 
-def _init_logger():
-    try:
-        fileConfig(LOGGING_CONFIG_FILE)
-    except KeyError:
-        print("Impossible to start OctoBot: the logging configuration can't be found in '" + LOGGING_CONFIG_FILE +
-              "' please make sure you are running OctoBot from its root directory.")
-        os._exit(-1)
-
-    logger = logging.getLogger("OctoBot Launcher")
-
-    try:
-        # Force new log file creation not to log at the previous one's end.
-        logger.parent.handlers[1].doRollover()
-    except PermissionError:
-        print("Impossible to start OctoBot: the logging file is locked, this is probably due to another running "
-              "OctoBot instance.")
-        os._exit(-1)
-
-    sys.excepthook = _log_uncaught_exceptions
-    return logger
-
-
 def start_octobot(starting_args):
     try:
         if starting_args.version:
             print(LONG_VERSION)
         else:
-            logger = _init_logger()
+            logger = init_logger()
 
             # Version
             logger.info("Version : {0}".format(LONG_VERSION))
@@ -168,19 +139,13 @@ def start_octobot(starting_args):
                 raise ConfigError
 
             # Handle utility methods before bot initializing if possible
-            if starting_args.packager:
-                package_manager(starting_args.packager)
-
-            elif starting_args.creator:
-                tentacle_creator(config, starting_args.creator)
-
-            elif starting_args.encrypter:
+            if starting_args.encrypter:
                 exchange_keys_encrypter()
 
             else:
                 if not load_tentacles(verbose=True):
                     logger.info("No tentacles found. Installing default tentacles ...")
-                    package_manager([INSTALL_ARG, ALL_ARG])
+                    # asyncio.run(install_all_tentacles(DEFAULT_TENTACLES_URL))
                     # reload tentacles
                     load_tentacles(verbose=True)
 
@@ -279,20 +244,6 @@ def main(args=None):
                                             " exchanges configuration in your config.json without using any interface "
                                             "(ie the web interface that handle encryption automatically)",
                         action='store_true')
-    parser.add_argument('-p', '--packager', help='Start OctoBot Tentacles Manager. examples: -p' + INSTALL_ARG +
-                                                 ALL_ARG + ' to install all tentacles packages and -p ' + INSTALL_ARG +
-                                                 ' [tentacle] to install specific tentacle. Tentacles Manager allows '
-                                                 'to ' + INSTALL_ARG + ', ' + UPDATE_ARG + ' and ' + UNINSTALL_ARG +
-                                                 ' tentacles.' 'You can also skip uninstalling confirm inputs '
-                                                 'by adding the ' + FORCE_ARG + ' option. '
-                                                 'Use: -p ' + HELP_ARG + ' to get the Tentacle Manager help.',
-                        nargs='+')
-
-    parser.add_argument('-c', '--creator', help='Start OctoBot Tentacles Creator. examples: -c Evaluator '
-                                                'to create a new evaluator tentacles. Use: -c help to get the '
-                                                'Tentacle Creator help.',
-                        nargs='+')
-
     parser.add_argument('-o', '--strategy_optimizer', help='Start Octobot strategy optimizer. This mode will make '
                                                            'octobot play backtesting scenarii located in '
                                                            'abstract_strategy_test.py with different timeframes, '
@@ -303,10 +254,21 @@ def main(args=None):
                                                            'test. Example: -o FullMixedStrategiesEvaluator'
                                                            ' Warning: this process may take a long time.',
                         nargs='+')
+    parser.set_defaults(func=start_octobot)
+
+    # add sub commands
+    subparsers = parser.add_subparsers(title="Other commands")
+
+    # tentacles manager
+    tentacles_parser = subparsers.add_parser("tentacles", help='Calls OctoBot tentacles manager.\n'
+                                                               'Use "tentacles --help" to get the '
+                                                               'tentacles manager help.')
+    register_tentacles_manager_arguments(tentacles_parser)
+    tentacles_parser.set_defaults(func=call_tentacles_manager)
 
     args = parser.parse_args(args)
-
-    start_octobot(args)
+    # call the appropriate command entry point
+    args.func(args)
 
 
 if __name__ == '__main__':
