@@ -88,9 +88,9 @@ class OctoBot:
         await self.initializer.create()
         self.task_manager.init_async_loop()
         await self.task_manager.start_tools_tasks()
-        await self.evaluator_factory.initialize(self.tentacles_setup_config)
+        await self.evaluator_factory.initialize()
         await self.service_feed_factory.initialize()
-        await self.exchange_factory.create(self.tentacles_setup_config)
+        await self.exchange_factory.create()
         await self.evaluator_factory.create()
         # Start service feeds now that evaluators registered their feed requirements
         await self.service_feed_factory.create()

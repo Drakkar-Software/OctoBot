@@ -34,8 +34,8 @@ class EvaluatorFactory:
         self.matrix_id = None
         self.tentacles_setup_config = None
 
-    async def initialize(self, tentacles_setup_config):
-        self.tentacles_setup_config = tentacles_setup_config
+    async def initialize(self):
+        self.tentacles_setup_config = self.octobot.tentacles_setup_config
         self.matrix_id = await initialize_evaluators(self.octobot.config, self.tentacles_setup_config)
         await create_matrix_channels()
 
