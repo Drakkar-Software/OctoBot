@@ -116,7 +116,9 @@ logs/OctoBot\.log\.*
 
 # Tentacles
 tentacles
-config\.json
+
+# User config
+user/
 
 *.csv
 *.ods
