@@ -22,9 +22,14 @@ VERSION_PHASE = "5"  # XX
 VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 
+# OctoBot urls
+OCTOBOT_ONLINE = "https://www.tentacles.octobot.online"
+REPOSITORY = "repository"
+TENTACLES_REPOSITORY = "tentacles"
+RELEASES = "releases"
+
 # tentacles
-# TODO: use real link
-DEFAULT_TENTACLES_URL = f"https://raw.githubusercontent.com/GuillaumeDSM/test_tentacles2/master/tentacles.zip"
+DEFAULT_TENTACLES_URL = f"{OCTOBOT_ONLINE}/{REPOSITORY}/{TENTACLES_REPOSITORY}/{RELEASES}/{SHORT_VERSION}.zip"
 DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 
 # logs
