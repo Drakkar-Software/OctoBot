@@ -1,6 +1,6 @@
 notifications:
   email: false
-sudo: enabled
+dist: xenial
 os: linux
 language: python
 cache: pip
@@ -10,8 +10,6 @@ env:
     - GH_REPO=Drakkar-Software/OctoBot
     - DEPLOY_BRANCH=master
     - PACKAGE_FOLDER=octobot
-    - secure: mYUVy5b1v+Efd8CcXNIiZ1pebAMUgYjEsAEVUctKXT0XcBR9uRZRoylwy+un3AtBFbMa2O7mHQASwlz3HkpWfuKmxnb+QcO3Na2OSk0yMyyfHneMy4IIr4h2eKy3wdBJ4b0kcQeIcqbhk/8blQkyWN+yxXQLU1a3jJTn0IOgaWQIGMnxmzlBQ0iPr/sc3idjUWBVIobwQbEsUP8DRlRio5nY4aH/z6uqg8RpetmT8LNKxXOQfDabJG4cgi3y6Gu/Lwh8he8e6wsYwgDt4D7e6gxKrAFQXKMGyZZXT1q3Dnrs0mU+x3QS4cUJPq6FYFfaQ5RMof8DxMslt96qpMw0hNZmS9jqJKV3kFU38l2JUbVood4F1XsmdRvjGZb5fu0vMbJBUa7FJFQFFapPbQgrPq9DjnzgLw1DDMRRoIp10aPHOHT7u2R0EkDphTKu33lCln+KjJkJVnzh0m35s0a5QHodHuYJbZZIQfYVz5nAxp3N97okcV1if33QFl4Cj415U8L4RMLyTe7BmvppoC9SQX36X5d46pKeMPy7peoQYRddOWw/zItADRoH1c3nOYgxIDsMgHDoPwh8THUhZPkVYbwsQMGuBYqCOWMBY90j+MOvNerR7jPaCMwaHl+KI7kuVng3XTH+HWAMSBdgmysslYBaTtDBE2yPbFX0RdWgRvg=
-    - secure: zDKTFc0ulnQAlz/yyFAjI4Fbfo0Y27u5exE7zP8OOXG3O2XRJIQ4AZbyH4s/LB6xJGVMognyDAMqqQXsYKu5SOTqhvCCoMjlzixLPyKBB6w3LR9FNL6SlfvE2EvLmPOYYYfOYbM/wEti6RFHc3S9ntojAZbKUZ7m0N0rwxjrK3dTjg7ZhA3qfP6iDnbuZA6axgSDLIg4DIQiSMg+1VtbVWwdvS0j5nr65g/D4qfsvZpDKBF5+JG/37QDCLmOvYtZUEjFbXJu7HjpbBT7v+ZRthn6UptgzE6Efwo3tMH9wltYgU+QnaGD4D8KSwkqG5UiyLPrUjI0d8pULubbGHk66TI+BrlR+mcsA5+v9TNAuSg1SL4WzU8Pz8ixX2NaxuhwKhyWILY7dgfts4moAcmmZ8ys4yC85qcjmd64c7QmOOWb+shZvu3W6VD6P1KvXWU+nYM5uj7K1bjOgftDvuF7xP4gQ0g+51y/n6DHrxrqEQA77MBZHUFFmyVIaQvzDcUGA0mQnvy0gzeWf9MOlHGSdQK4h9377fDDbuJb296XrppqcNNzJRyXuUqJqPu3NgOeR4vmggkBI5THM+eoyTebLOoIkOyJjl9/seyiCeUx9DWgfOCEUl1nkBwnQCbrUsf6aclJy1IBYwPflDqPEy4G794nME3a7vuKwzWFo+SInG4=
 
 before_install:
   - python3 -m pip install --upgrade pip
@@ -22,7 +20,7 @@ install:
   - cp ./config/default_config.json ./user/config.json
 #  - python3 start.py -p install all
 
-matrix:
+jobs:
   include:
     - name: "Linux - Python 3.7-dev - Python sources"
       stage: test
@@ -51,11 +49,11 @@ matrix:
         - ls
       deploy:
         - provider: pypi
-          user: __ token__
+          username: __token__
           password:
             secure: Exh7oIsqs6neRU1BFhr0doLCn6EIkoBsoahP2SKl7tMdbhKaPCjPVQ56WI7FGW5nhK+x6IvIY5x9MUqr/b/LHzMrkQKbcgwzllvQYeIB4GUbxOrkZk1ju0oYZpDVaba9qSuBP2xo/bV5zm7DHgMZA44nXQQZKg6vPXEwtNBYUCo5uaRob5kwX5IqLhsl23D1Xcrq8CM9deeUQ87q/gNmKfjOtwGx5EvM8/Ckp3UK2G3rU7uDREVMYDttrXeCpIoK8DSFvxTJ5Nfqt9wh7N6lnleJELab1mKv7MxxEkbSZIuSCe0HU1WNUlUwSIeYKZu1QK0UvI1xPWVS2lsTDf1ePU+gUAnXLhKBRDRa8cNAGyAiDpHQJVXr5KH2dfXdLZHmyWFpmafM5Ew6WWrqj+KeGhzdPXuc2Igojua9v6/GF3Cdbls2KfIy51awOiIsqyKYAphhTiNkt3uUB1mSJKgH8Pm0QWB1NHup4zTzRtu3Z0fRGHl69XJDO2cEOERqe5XQ89o8OGrjvFWsFanV5XYPrDoC/WFHp0aODg2fCz+goPrlYV6ri/5Wp1QxD4xb6BSGfmH0ymz260KR78TiyIpThcWxsIFEbhNFTdkZ7Sh5I5nNeBHZztup3eW+ESCwEwlp/21q778P2l5kVnJMB9VYbZEEqQlAUT2ZM//rQMgBKQA=
           skip_existing: true
-          skip_cleanup: true
+          cleanup: false
           distributions: "sdist"
           on:
             repo: $GH_REPO
@@ -64,7 +62,7 @@ matrix:
             condition: $TRAVIS_OS_NAME = 'linux'
         - provider: script
           script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/octobot-pypi-deploy:i686 "i686" "cp37-cp37m" "cp37"
-          skip_cleanup: true
+          cleanup: false
           on:
             repo: "$GH_REPO"
             branch: "$DEPLOY_BRANCH"
@@ -72,7 +70,7 @@ matrix:
             condition: "$TRAVIS_OS_NAME = 'linux'"
         - provider: script
           script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/octobot-pypi-deploy:x86_64 "x86_64" "cp37-cp37m" "cp37"
-          skip_cleanup: true
+          cleanup: false
           on:
             repo: "$GH_REPO"
             branch: "$DEPLOY_BRANCH"
@@ -100,7 +98,7 @@ matrix:
       deploy:
         - provider: script ..
           script: python3 setup.py bdist_wheel && python3 -m twine upload dist/* -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing
-          skip_cleanup: true
+          cleanup: false
           on:
             repo: "$GH_REPO"
             branch: "$DEPLOY_BRANCH"
