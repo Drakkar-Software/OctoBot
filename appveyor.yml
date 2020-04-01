@@ -30,8 +30,10 @@ after_test:
 on_success:
   - ps: |
       If ($env:APPVEYOR_REPO_TAG -eq "true") {
-          git fetch --all
-          pip install twine
-          python setup.py sdist bdist_wheel bdist_wininst bdist_egg
-          Invoke-Expression "twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --repository-url https://upload.pypi.org/legacy/ --skip-existing dist/*" 2>&1 | Out-Null
+          Write-Output ("Deploying " + $env:APPVEYOR_REPO_TAG_NAME + " to PyPI...")
+          &"${env:PYTHON}/python.exe" -m pip install twine
+          &"${env:PYTHON}/python.exe" setup.py sdist bdist_wheel bdist_egg
+          &"${env:PYTHON}/python.exe" -m twine upload -u ${env:PYPI_USERNAME} -p ${env:PYPI_PASSWORD} --skip-existing dist/*
+      } else {
+          Write-Output "No tag for deployment"
       }
