@@ -3,6 +3,7 @@ pytest-pep8
 pytest-cov
 pytest-asyncio
 pytest-xdist
+mock>=4.0.1
 
 coverage
 coveralls
