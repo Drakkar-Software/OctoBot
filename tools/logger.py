@@ -29,7 +29,7 @@ from octobot_trading.constants import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORD
     MARK_PRICE_CHANNEL, FUNDING_CHANNEL, LIQUIDATIONS_CHANNEL, MINI_TICKER_CHANNEL, ORDER_BOOK_TICKER_CHANNEL
 from octobot_trading.channels.exchange_channel import get_chan as get_trading_chan
 
-BOT_CHANNEL_LOGGER = get_logger("OctoBot Channel")
+BOT_CHANNEL_LOGGER = None
 
 
 def _log_uncaught_exceptions(ex_cls, ex, tb):
@@ -40,6 +40,9 @@ def _log_uncaught_exceptions(ex_cls, ex, tb):
 def init_logger():
     try:
         fileConfig(LOGGING_CONFIG_FILE)
+        # overwrite BOT_CHANNEL_LOGGER to apply global logging configuration
+        global BOT_CHANNEL_LOGGER
+        BOT_CHANNEL_LOGGER = get_logger("OctoBot Channel")
     except KeyError:
         print("Impossible to start OctoBot: the logging configuration can't be found in '" + LOGGING_CONFIG_FILE +
               "' please make sure you are running OctoBot from its root directory.")
