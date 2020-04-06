@@ -41,11 +41,13 @@ class EvaluatorFactory:
 
     async def create(self):
         for exchange_configuration in Exchanges.instance().get_all_exchanges():
-            await create_all_type_evaluators(self.octobot.config,
-                                             tentacles_setup_config=self.tentacles_setup_config,
-                                             matrix_id=self.matrix_id,
-                                             exchange_name=exchange_configuration.exchange_name,
-                                             cryptocurrencies=exchange_configuration.cryptocurrencies,
-                                             symbols=exchange_configuration.symbols,
-                                             time_frames=exchange_configuration.time_frames)
+            await create_all_type_evaluators(
+                self.octobot.config,
+                tentacles_setup_config=self.tentacles_setup_config,
+                matrix_id=self.matrix_id,
+                exchange_name=exchange_configuration.exchange_name,
+                symbols_by_crypto_currencies=exchange_configuration.symbols_by_crypto_currencies,
+                symbols=exchange_configuration.symbols,
+                time_frames=exchange_configuration.time_frames
+            )
         await init_evaluator_chan_logger()
