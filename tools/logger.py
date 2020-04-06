@@ -23,7 +23,7 @@ from config import LOGGING_CONFIG_FILE
 from octobot_channels.channels.channel import get_chan
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import PrettyPrinter
-from octobot_evaluators.channels import MATRIX_CHANNEL
+from octobot_evaluators.constants import MATRIX_CHANNEL
 from octobot_trading.constants import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORDER_BOOK_CHANNEL, KLINE_CHANNEL, \
     OHLCV_CHANNEL, BALANCE_CHANNEL, BALANCE_PROFITABILITY_CHANNEL, TRADES_CHANNEL, POSITIONS_CHANNEL, ORDERS_CHANNEL, \
     MARK_PRICE_CHANNEL, FUNDING_CHANNEL, LIQUIDATIONS_CHANNEL, MINI_TICKER_CHANNEL, ORDER_BOOK_TICKER_CHANNEL

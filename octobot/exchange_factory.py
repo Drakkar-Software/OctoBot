@@ -52,9 +52,9 @@ class ExchangeFactory:
             for exchange_class_string in self.octobot.config[CONFIG_EXCHANGES]:
                 if exchange_class_string in self.available_exchanges:
                     exchange_builder = create_exchange_builder(self.octobot.config, exchange_class_string) \
-                                          .has_matrix(self.octobot.evaluator_factory.matrix_id) \
-                                          .use_tentacles_setup_config(self.octobot.tentacles_setup_config) \
-                                          .is_rest_only()
+                        .has_matrix(self.octobot.evaluator_factory.matrix_id) \
+                        .use_tentacles_setup_config(self.octobot.tentacles_setup_config) \
+                        .is_rest_only()
                     if is_trader_enabled_in_config(self.octobot.config):
                         exchange_builder.is_real()
                     elif is_trader_simulator_enabled_in_config(self.octobot.config):
