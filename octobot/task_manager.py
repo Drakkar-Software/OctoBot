@@ -99,7 +99,7 @@ class TaskManager:
         stop_coroutines.append(stop_interfaces(self.octobot.interface_factory.interface_list))
 
         # stop service feeds
-        for service_feed in self.octobot.evaluator_factory.service_feed_list:
+        for service_feed in self.octobot.evaluator_factory.service_feed_factory.service_feeds:
             stop_coroutines.append(stop_service_feed(service_feed))
 
         if self.tools_task_group:
