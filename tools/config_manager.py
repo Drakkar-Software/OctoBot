@@ -59,15 +59,3 @@ def config_health_check(config):
         except Exception as e:
             get_logger().error(f"Save of the health checked config failed : {e}, will use the initial config")
             return load_config(error=False, fill_missing_fields=True)
-
-
-def jsonify_config(config):
-    # check exchange keys encryption
-    for exchange, exchange_config in config[CONFIG_EXCHANGES].items():
-        try:
-            for key in CONFIG_EXCHANGE_ENCRYPTED_VALUES:
-                _handle_encrypted_value(key, CONFIG_EXCHANGES)
-        except Exception:
-            config[CONFIG_EXCHANGES][exchange] = {key: "" for key in CONFIG_EXCHANGE_ENCRYPTED_VALUES}
-
-    return dump_json(config)
