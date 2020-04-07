@@ -24,3 +24,4 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN cp /opt/venv/bin/OctoBot /octobot/OctoBot
 
 CMD ["./OctoBot", "-no"]
+

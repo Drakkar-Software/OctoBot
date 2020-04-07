@@ -5,11 +5,14 @@ os: linux
 language: python
 cache: pip
 python: 3.7-dev
+services:
+  - docker
 env:
   global:
     - GH_REPO=Drakkar-Software/OctoBot
     - DEPLOY_BRANCH=master
     - PACKAGE_FOLDER=octobot
+    - TRAVIS_BRANCH=${TRAVIS_BRANCH////_}
 
 before_install:
   - python3 -m pip install --upgrade pip
@@ -18,7 +21,6 @@ install:
   - python3 -m pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
   - mkdir user
   - cp ./config/default_config.json ./user/config.json
-#  - python3 start.py -p install all
 
 jobs:
   include:
@@ -43,10 +45,28 @@ jobs:
         - rm -rf $PACKAGE_FOLDER
 #        - pytest -n 5 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests tests/endurance_tests
 
+    - name: "Linux - Docker - Deploy"
+      stage: deploy
+      os: linux
+      before_install: echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+      install: skip
+      script:
+        - docker build . -t drakkarsoftware/octobot:$TRAVIS_BRANCH -f docker/amd64/Dockerfile
+      deploy:
+          - provider: script
+            script: docker push drakkarsoftware/octobot:$TRAVIS_BRANCH
+            cleanup: false
+            on:
+              repo: "$GH_REPO"
+              branch: "$DEPLOY_BRANCH"
+              tags: true
+              condition: "$TRAVIS_OS_NAME = 'linux'"
+
     - name: "Linux - Python 3 nightly - Deploy"
       stage: deploy
-      script:
-        - ls
+      before_install: skip
+      install: skip
+      script: skip
       deploy:
         - provider: pypi
           username: __token__
@@ -104,3 +124,23 @@ jobs:
             branch: "$DEPLOY_BRANCH"
             tags: true
             condition: "$TRAVIS_OS_NAME = 'osx'"
+
+    - name: "Linux - Heroku - Deploy"
+      stage: edge
+      os: linux
+      before_install: echo "$HEROKU_TOKEN" | docker login --username=_ --password-stdin registry.heroku.com
+      install: skip
+      script: skip
+      before_deploy:
+        - docker pull drakkarsoftware/octobot:$TRAVIS_BRANCH
+        - docker tag drakkarsoftware/octobot:$TRAVIS_BRANCH registry.heroku.com/$HEROKU_APP_NAME/octobot
+        - docker push registry.heroku.com/$HEROKU_APP_NAME/octobot
+      deploy:
+        - provider: script
+          script: heroku container:release octobot -a $HEROKU_APP_NAME
+          cleanup: false
+          on:
+            repo: "$GH_REPO"
+            branch: "$DEPLOY_BRANCH"
+            tags: true
+            condition: "$TRAVIS_OS_NAME = 'linux'"

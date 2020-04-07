@@ -12,7 +12,7 @@ RUN pip install --upgrade pip \
     && pip install --prefer-binary -r requirements.txt \
     && python setup.py install
 
-FROM python:3.-slim
+FROM python:3.7-slim
 
 WORKDIR /octobot
 COPY --from=base /opt/venv /opt/venv
