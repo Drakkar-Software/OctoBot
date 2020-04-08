@@ -15,11 +15,15 @@
 #  License along with this library.
 
 import os
+
+import aiohttp
 import sys
 import asyncio
 import signal
 from threading import Thread
 from concurrent.futures import CancelledError
+
+from octobot_tentacles_manager.api.installer import install_all_tentacles
 
 from octobot.constants import DEFAULT_TENTACLES_URL
 from octobot import get_bot, set_bot
@@ -36,6 +40,8 @@ COMMANDS_LOGGER_NAME = "Commands"
 # TODO
 def data_collector(config, catch=True):
     pass
+
+
 #     data_collector_inst = None
 #     try:
 #         data_collector_inst = DataCollector(config)
@@ -77,12 +83,25 @@ def start_strategy_optimizer(config, commands):
         print_optimizer_report(optimizer)
 
 
+def run_tentacles_installation():
+    asyncio.run(_install_all_tentacles())
+
+
+async def _install_all_tentacles():
+    async with aiohttp.ClientSession() as aiohttp_session:
+        await install_all_tentacles(DEFAULT_TENTACLES_URL, aiohttp_session=aiohttp_session)
+
+
 def _signal_handler(_, __):
     # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
     stopping_thread = Thread(target=get_bot().task_manager.stop_tasks(), name="Commands signal_handler stop_tasks")
     stopping_thread.start()
     stopping_thread.join()
     os._exit(0)
+
+
+def run_bot(bot, logger, asyncio_debug_mode):
+    asyncio.run(start_bot(bot, logger), debug=asyncio_debug_mode)
 
 
 async def start_bot(bot, logger, catch=False):
