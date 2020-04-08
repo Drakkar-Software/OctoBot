@@ -18,7 +18,7 @@ import platform
 import threading
 from asyncio import CancelledError
 
-from config import FORCE_ASYNCIO_DEBUG_OPTION
+from octobot.constants import FORCE_ASYNCIO_DEBUG_OPTION
 from octobot_interfaces.api.interfaces import stop_interfaces
 from octobot_commons.asyncio_tools import run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger

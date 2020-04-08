@@ -13,8 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from config import CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
-from tools.commands import stop_bot as command_stop, restart_bot as command_restart
+from octobot.constants import CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
+from octobot.commands import stop_bot as command_stop, restart_bot as command_restart
 
 
 class OctoBotAPI:

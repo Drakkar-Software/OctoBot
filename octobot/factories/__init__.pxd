@@ -14,18 +14,3 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-
-cdef class ConfigurationManager:
-    cdef dict configuration_elements
-
-    cpdef void add_element(self, str key, object element)
-    cpdef object get_edited_config(self, str key)
-    cpdef object get_startup_config(self, str key)
-
-cdef class ConfigurationElement:
-    cdef public object config
-    cdef public object startup_config
-    cdef public object edited_config
-
-cpdef config_health_check(dict config)
