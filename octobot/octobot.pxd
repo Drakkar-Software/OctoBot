@@ -36,7 +36,7 @@ cdef class OctoBot:
     cdef public dict config
 
     cdef object _aiohttp_session
-    cdef public object metrics_handler
+    cdef public object community_handler
     cdef public object async_loop
     cdef public object tentacles_setup_config
 

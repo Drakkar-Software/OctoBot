@@ -66,8 +66,8 @@ class OctoBot:
         # unique aiohttp session: to be initialized from getter in a task
         self._aiohttp_session = None
 
-        # metrics if enabled
-        self.metrics_handler = None
+        # community if enabled
+        self.community_handler = None
 
         # octobot_api to request the current instance
         self.octobot_api = OctoBotAPI(self)

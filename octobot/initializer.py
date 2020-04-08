@@ -15,7 +15,7 @@
 #  License along with this library.
 from octobot_backtesting.api.backtesting import is_backtesting_enabled
 from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config
-from octobot.metrics.metrics_manager import MetricsManager
+from octobot.community.community_manager import CommunityManager
 
 
 class Initializer:
@@ -34,4 +34,4 @@ class Initializer:
 
     def _init_metrics(self):
         if not is_backtesting_enabled(self.octobot.config):
-            self.octobot.metrics_handler = MetricsManager(self.octobot.octobot_api)
+            self.octobot.metrics_handler = CommunityManager(self.octobot.octobot_api)

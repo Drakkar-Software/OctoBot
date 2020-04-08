@@ -16,7 +16,7 @@
 from enum import Enum
 
 
-class MetricsFields(Enum):
+class CommunityFields(Enum):
     ID = "_id"
     CURRENT_SESSION = "currentsession"
     STARTED_AT = "startedat"

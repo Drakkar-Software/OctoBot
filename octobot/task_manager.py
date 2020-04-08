@@ -64,8 +64,8 @@ class TaskManager:
         # if self.octobot.initializer.performance_analyser:
         #     task_list.append(self.octobot.initializer.performance_analyser.start_monitoring())
 
-        if self.octobot.metrics_handler:
-            task_list.append(self.octobot.metrics_handler.start_metrics_task())
+        if self.octobot.community_handler:
+            task_list.append(self.octobot.community_handler.start_community_task())
 
         self.octobot.async_loop = self.async_loop
         self.ready = True
@@ -105,7 +105,7 @@ class TaskManager:
         if self.tools_task_group:
             self.async_loop.call_soon_threadsafe(self.tools_task_group.cancel)
 
-        # close metrics session
+        # close community session
         # stop_coroutines.append(self.octobot.metrics_handler.stop_task())
 
         # TODO: handle proper stop
