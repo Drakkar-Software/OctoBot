@@ -28,7 +28,7 @@ from octobot_tentacles_manager.api.installer import install_all_tentacles
 from octobot.constants import DEFAULT_TENTACLES_URL
 from octobot import get_bot, set_bot
 from octobot_commons.config_util import encrypt
-from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config
+from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config, ensure_setup_configuration
 from octobot_commons.logging.logging_util import get_logger
 from octobot_tentacles_manager.api.loader import reload_tentacle_info
 from octobot_tentacles_manager.cli import handle_tentacles_manager_command
@@ -111,6 +111,8 @@ async def start_bot(bot, logger, catch=False):
 
         # load tentacles details
         await reload_tentacle_info()
+        # ensure tentacles config exists or create a new one
+        await ensure_setup_configuration()
 
         # start
         try:
