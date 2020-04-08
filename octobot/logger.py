@@ -19,7 +19,7 @@ import logging
 import traceback
 from logging.config import fileConfig
 
-from config import LOGGING_CONFIG_FILE, LOGS_FOLDER
+from octobot.constants import LOGGING_CONFIG_FILE
 from octobot_channels.channels.channel import get_chan
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import PrettyPrinter

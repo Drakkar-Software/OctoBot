@@ -29,7 +29,7 @@
 
 from config import DEFAULT_REFERENCE_MARKET, CONFIG_TRADING, CONFIG_TRADER_REFERENCE_MARKET
 from config.config import load_config
-from tools.config_manager import ConfigManager
+from octobot.tools import ConfigManager
 from octobot_commons.symbol_util import split_symbol
 
 
@@ -69,7 +69,7 @@ def test_get_market_pair():
 
     config[CONFIG_TRADING].pop(CONFIG_TRADER_REFERENCE_MARKET)
 
-    # now use config/__init__.py reference market
+    # now use config/constants.py reference market
     pair, inverted = ConfigManager.get_market_pair(config, "ADA")
     assert pair == "ADA/BTC"
     assert split_symbol(pair)[1] == DEFAULT_REFERENCE_MARKET

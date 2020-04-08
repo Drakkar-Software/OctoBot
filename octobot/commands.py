@@ -21,14 +21,14 @@ import signal
 from threading import Thread
 from concurrent.futures import CancelledError
 
-from config import DEFAULT_TENTACLES_URL
+from octobot.constants import DEFAULT_TENTACLES_URL
 from octobot import get_bot, set_bot
 from octobot_commons.config_util import encrypt
 from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config
 from octobot_commons.logging.logging_util import get_logger
 from octobot_tentacles_manager.api.loader import reload_tentacle_info
 from octobot_tentacles_manager.cli import handle_tentacles_manager_command
-from tools.logger import init_logger
+from octobot.logger import init_logger
 
 COMMANDS_LOGGER_NAME = "Commands"
 

@@ -15,7 +15,7 @@
 #  License along with this library.
 from octobot_backtesting.api.backtesting import is_backtesting_enabled
 from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config
-from tools.metrics.metrics_manager import MetricsManager
+from octobot.metrics.metrics_manager import MetricsManager
 
 
 class Initializer:

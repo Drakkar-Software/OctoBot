@@ -20,9 +20,9 @@ from octobot.interface_factory cimport InterfaceFactory
 from octobot.octobot_api cimport OctoBotAPI
 from octobot.service_feed_factory cimport ServiceFeedFactory
 from octobot.task_manager cimport TaskManager
-from octobot.exchange_factory cimport ExchangeFactory
+from octobot.factories.exchange_factory cimport ExchangeFactory
 
-from octobot.evaluator_factory cimport EvaluatorFactory
+from octobot.factories.evaluator_factory cimport EvaluatorFactory
 
 cdef class OctoBot:
     cdef object logger
