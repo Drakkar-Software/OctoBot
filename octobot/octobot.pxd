@@ -16,9 +16,9 @@
 #  License along with this library.
 from octobot.configuration_manager cimport ConfigurationManager
 from octobot.initializer cimport Initializer
-from octobot.interface_factory cimport InterfaceFactory
+from octobot.factories.interface_factory cimport InterfaceFactory
 from octobot.octobot_api cimport OctoBotAPI
-from octobot.service_feed_factory cimport ServiceFeedFactory
+from octobot.factories.service_feed_factory cimport ServiceFeedFactory
 from octobot.task_manager cimport TaskManager
 from octobot.factories.exchange_factory cimport ExchangeFactory
 

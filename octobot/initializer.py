@@ -34,4 +34,4 @@ class Initializer:
 
     def _init_metrics(self):
         if not is_backtesting_enabled(self.octobot.config):
-            self.octobot.metrics_handler = CommunityManager(self.octobot.octobot_api)
+            self.octobot.community_handler = CommunityManager(self.octobot.octobot_api)

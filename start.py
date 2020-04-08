@@ -14,28 +14,26 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import argparse
-import asyncio
-import aiohttp
 import os
+
 import sys
 
-from octobot.disclaimer import DISCLAIMER
-from octobot.constants import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION
+from octobot.commands import exchange_keys_encrypter, start_strategy_optimizer, start_bot, data_collector, \
+    call_tentacles_manager, run_tentacles_installation, run_bot
 from octobot.configuration_manager import config_health_check
+from octobot.constants import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION
+from octobot.disclaimer import DISCLAIMER
 from octobot.logger import init_logger
+from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
+
 from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
 from octobot_commons.config_manager import validate_config_file, accepted_terms, is_in_dev_mode
 from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE
 from octobot_commons.errors import ConfigError, ConfigTradingError
 from octobot_evaluators.util.errors import ConfigEvaluatorError
 from octobot_interfaces.api.interfaces import disable_interfaces
-from octobot_tentacles_manager.api.installer import install_all_tentacles
-from octobot_tentacles_manager.cli import register_tentacles_manager_arguments
-from octobot_tentacles_manager.constants import DEFAULT_TENTACLES_URL
-from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
-from octobot.commands import exchange_keys_encrypter, start_strategy_optimizer, start_bot, data_collector, \
-    call_tentacles_manager
 from octobot_tentacles_manager.api.loader import load_tentacles
+from octobot_tentacles_manager.cli import register_tentacles_manager_arguments
 
 
 # Keep string '+' operator to ensure backward compatibility in this file
@@ -96,14 +94,9 @@ def _log_terms_if_unaccepted(config, logger):
 def _disable_interface_from_param(interface_identifier, param_value, logger):
     if param_value:
         if disable_interfaces(interface_identifier) == 0:
-            logger.warning(f"No {interface_identifier} interface to disable")
+            logger.warning("No " + interface_identifier + " interface to disable")
         else:
-            logger.info(f"{interface_identifier.capitalize()} interface disabled")
-
-
-async def _install_all_tentacles():
-    async with aiohttp.ClientSession() as aiohttp_session:
-        await install_all_tentacles(DEFAULT_TENTACLES_URL, aiohttp_session=aiohttp_session)
+            logger.info(interface_identifier.capitalize() + " interface disabled")
 
 
 def start_octobot(starting_args):
@@ -144,7 +137,7 @@ def start_octobot(starting_args):
             else:
                 if not load_tentacles(verbose=True):
                     logger.info("No tentacles found. Installing default tentacles ...")
-                    asyncio.run(_install_all_tentacles())
+                    run_tentacles_installation()
                     # reload tentacles
                     load_tentacles(verbose=True)
 
@@ -178,7 +171,7 @@ def start_octobot(starting_args):
 
                     # set debug_mode = True to activate asyncio debug mode
                     debug_mode = is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
-                    asyncio.run(start_bot(bot, logger), debug=debug_mode)
+                    run_bot(bot, logger, debug_mode)
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file." + "\nYou can use " +
                      DEFAULT_CONFIG_FILE + " as an example to fix it.")
