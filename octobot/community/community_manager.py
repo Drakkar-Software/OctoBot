@@ -29,7 +29,7 @@ from octobot_commons.constants import CONFIG_METRICS_BOT_ID, METRICS_URL, METRIC
 from octobot_evaluators.api.evaluators import get_evaluator_classes_from_type
 from octobot_evaluators.enums import EvaluatorMatrixTypes
 from octobot_trading.api.exchange import get_trading_pairs, get_exchange_names, get_exchange_managers_from_exchange_ids
-from octobot.metrics.metrics_fields import MetricsFields
+from octobot.community.community_fields import CommunityFields
 from octobot_notifications.constants import CONFIG_CATEGORY_NOTIFICATION, CONFIG_NOTIFICATION_TYPE
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.config_manager import get_metrics_enabled, simple_save_config_update
@@ -40,7 +40,7 @@ from octobot_trading.api.profitability import get_reference_market, get_current_
 from octobot_trading.api.trader import is_trader_enabled_in_config, is_trader_simulator_enabled_in_config
 
 
-class MetricsManager:
+class CommunityManager:
     _headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
     def __init__(self, octobot_api):
@@ -59,7 +59,7 @@ class MetricsManager:
         self.exchange_managers = get_exchange_managers_from_exchange_ids(
             self.octobot_api.get_exchange_manager_ids())
 
-    async def start_metrics_task(self):
+    async def start_community_task(self):
         if self.enabled:
             try:
                 # first ensure this session is not just a configuration test: register after a timer
@@ -71,11 +71,11 @@ class MetricsManager:
                     try:
                         await self._update_uptime_and_profitability()
                     except Exception as e:
-                        self.logger.debug(f"Exception when handling metrics: {e}")
+                        self.logger.debug(f"Exception when handling community data : {e}")
             except CancelledError:
                 pass
             except Exception as e:
-                self.logger.debug(f"Exception when handling metrics registration: {e}")
+                self.logger.debug(f"Exception when handling community registration: {e}")
 
     async def stop_task(self):
         self.keep_running = False
@@ -83,13 +83,13 @@ class MetricsManager:
 
     @staticmethod
     def should_register_bot(config):
-        existing_id = MetricsManager._init_config_bot_id(config)
+        existing_id = CommunityManager._init_config_bot_id(config)
         return not existing_id
 
     @staticmethod
     def background_get_id_and_register_bot(octobot_api):
-        metrics_manager = MetricsManager(octobot_api)
-        threading.Thread(target=metrics_manager._blocking_get_id_and_register).start()
+        community_manager = CommunityManager(octobot_api)
+        threading.Thread(target=community_manager._blocking_get_id_and_register).start()
 
     def _blocking_get_id_and_register(self):
         try:
@@ -100,10 +100,10 @@ class MetricsManager:
             else:
                 self.bot_id = json.loads(text)
                 self._save_bot_id()
-                metrics = self._get_bot_metrics()
-                requests.post(f"{METRICS_URL}{METRICS_ROUTE_REGISTER}", json=metrics, headers=self._headers)
+                community = self._get_bot_community()
+                requests.post(f"{METRICS_URL}{METRICS_ROUTE_REGISTER}", json=community, headers=self._headers)
         except Exception as e:
-            self.logger.debug(f"Error when handling metrics: {e}")
+            self.logger.debug(f"Error when handling community: {e}")
 
     @staticmethod
     def _init_config_bot_id(config):
@@ -114,39 +114,39 @@ class MetricsManager:
             return None
 
     async def register_session(self, retry_on_error=True):
-        self.current_config = await self._get_current_metrics_config()
-        await self._post_metrics(METRICS_ROUTE_REGISTER, self.current_config, retry_on_error)
+        self.current_config = await self._get_current_community_config()
+        await self._post_community_data(METRICS_ROUTE_REGISTER, self.current_config, retry_on_error)
 
     async def _update_uptime_and_profitability(self, retry_on_error=True):
-        self.current_config[MetricsFields.CURRENT_SESSION.value][MetricsFields.UP_TIME.value] = \
+        self.current_config[CommunityFields.CURRENT_SESSION.value][CommunityFields.UP_TIME.value] = \
             int(time.time() - self.octobot_api.get_start_time())
-        self.current_config[MetricsFields.CURRENT_SESSION.value][MetricsFields.PROFITABILITY.value] = \
+        self.current_config[CommunityFields.CURRENT_SESSION.value][CommunityFields.PROFITABILITY.value] = \
             self._get_profitability()
-        await self._post_metrics(METRICS_ROUTE_UPTIME, self.current_config, retry_on_error)
+        await self._post_community_data(METRICS_ROUTE_UPTIME, self.current_config, retry_on_error)
 
-    async def _get_current_metrics_config(self):
+    async def _get_current_community_config(self):
         if not self.bot_id:
             await self._init_bot_id()
         if self.bot_id:
-            return self._get_bot_metrics()
+            return self._get_bot_community()
 
-    def _get_bot_metrics(self):
+    def _get_bot_community(self):
         return {
-            MetricsFields.ID.value: self.bot_id,
-            MetricsFields.CURRENT_SESSION.value: {
-                MetricsFields.STARTED_AT.value: int(self.octobot_api.get_start_time()),
-                MetricsFields.UP_TIME.value: int(time.time() - self.octobot_api.get_start_time()),
-                MetricsFields.SIMULATOR.value: self.has_simulator,
-                MetricsFields.TRADER.value: self.has_real_trader,
-                MetricsFields.EVAL_CONFIG.value: self._get_eval_config(),
-                MetricsFields.PAIRS.value: self._get_traded_pairs(),
-                MetricsFields.EXCHANGES.value: list(get_exchange_names()),
-                MetricsFields.NOTIFICATIONS.value: self._get_notification_types(),
-                MetricsFields.TYPE.value: get_octobot_type(),
-                MetricsFields.PLATFORM.value: get_current_platform(),
-                MetricsFields.REFERENCE_MARKET.value: self.reference_market,
-                MetricsFields.PORTFOLIO_VALUE.value: self._get_real_portfolio_value(),
-                MetricsFields.PROFITABILITY.value: self._get_profitability()
+            CommunityFields.ID.value: self.bot_id,
+            CommunityFields.CURRENT_SESSION.value: {
+                CommunityFields.STARTED_AT.value: int(self.octobot_api.get_start_time()),
+                CommunityFields.UP_TIME.value: int(time.time() - self.octobot_api.get_start_time()),
+                CommunityFields.SIMULATOR.value: self.has_simulator,
+                CommunityFields.TRADER.value: self.has_real_trader,
+                CommunityFields.EVAL_CONFIG.value: self._get_eval_config(),
+                CommunityFields.PAIRS.value: self._get_traded_pairs(),
+                CommunityFields.EXCHANGES.value: list(get_exchange_names()),
+                CommunityFields.NOTIFICATIONS.value: self._get_notification_types(),
+                CommunityFields.TYPE.value: get_octobot_type(),
+                CommunityFields.PLATFORM.value: get_current_platform(),
+                CommunityFields.REFERENCE_MARKET.value: self.reference_market,
+                CommunityFields.PORTFOLIO_VALUE.value: self._get_real_portfolio_value(),
+                CommunityFields.PROFITABILITY.value: self._get_profitability()
             }
         }
 
@@ -220,7 +220,7 @@ class MetricsManager:
                     self.bot_id = json.loads(text)
                     self._save_bot_id()
         except Exception as e:
-            self.logger.debug(f"Error when handling metrics: {e}")
+            self.logger.debug(f"Error when handling community data : {e}")
 
     def _save_bot_id(self):
         if CONFIG_METRICS not in self.edited_config or not self.edited_config[CONFIG_METRICS]:
@@ -228,12 +228,12 @@ class MetricsManager:
         self.edited_config[CONFIG_METRICS][CONFIG_METRICS_BOT_ID] = self.bot_id
         simple_save_config_update(self.edited_config)
 
-    async def _post_metrics(self, route, bot, retry_on_error):
+    async def _post_community_data(self, route, bot, retry_on_error):
         try:
             async with self.session.post(f"{METRICS_URL}{route}", json=bot, headers=self._headers) as resp:
                 await self._handle_post_error(resp, retry_on_error)
         except Exception as e:
-            self.logger.debug(f"Error when handling metrics: {e}")
+            self.logger.debug(f"Error when handling community data : {e}")
 
     async def _handle_post_error(self, resp, retry_on_error):
         if resp.status != 200:
@@ -243,4 +243,6 @@ class MetricsManager:
                     await self._init_bot_id()
                     await self.register_session(retry_on_error=False)
             else:
-                self.logger.debug(f"Impossible to send metrics: status code: {resp.status}, text: {await resp.text()}")
+                self.logger.debug(f"Impossible to send community data : "
+                                  f"status code: {resp.status}, "
+                                  f"text: {await resp.text()}")
