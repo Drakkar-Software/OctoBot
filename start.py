@@ -180,7 +180,7 @@ def start_octobot(starting_args):
     except ModuleNotFoundError as e:
         if 'tentacles' in str(e):
             logger.error("Impossible to start OctoBot, tentacles are missing.\nTo install tentacles, "
-                         "please use the following command:\nstart.py -p install all")
+                         "please use the following command:\nstart.py tentacles --install --all")
         else:
             logger.exception(e)
         os._exit(-1)
@@ -188,13 +188,13 @@ def start_octobot(starting_args):
     except ConfigEvaluatorError:
         logger.error("OctoBot can't start without a valid  configuration file.\n"
                      "This file is generated on tentacle "
-                     "installation using the following command:\nstart.py -p install all")
+                     "installation using the following command:\nstart.py tentacles --install --all")
         os._exit(-1)
 
     except ConfigTradingError:
         logger.error("OctoBot can't start without a valid configuration file.\n"
                      "This file is generated on tentacle "
-                     "installation using the following command:\nstart.py -p install all")
+                     "installation using the following command:\nstart.py tentacles --install --all")
         os._exit(-1)
 
 
