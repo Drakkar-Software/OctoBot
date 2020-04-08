@@ -29,7 +29,7 @@ from octobot_commons.constants import CONFIG_METRICS_BOT_ID, METRICS_URL, METRIC
 from octobot_evaluators.api.evaluators import get_evaluator_classes_from_type
 from octobot_evaluators.enums import EvaluatorMatrixTypes
 from octobot_trading.api.exchange import get_trading_pairs, get_exchange_names, get_exchange_managers_from_exchange_ids
-from tools.metrics.metrics_fields import MetricsFields
+from octobot.metrics.metrics_fields import MetricsFields
 from octobot_notifications.constants import CONFIG_CATEGORY_NOTIFICATION, CONFIG_NOTIFICATION_TYPE
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.config_manager import get_metrics_enabled, simple_save_config_update

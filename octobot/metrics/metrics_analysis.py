@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.constants import METRICS_URL, COMMUNITY_TOPS_COUNT, METRICS_ROUTE_COMMUNITY
 from octobot_commons.config_manager import get_metrics_enabled
-from tools.metrics.metrics_fields import MetricsFields
+from octobot.metrics.metrics_fields import MetricsFields
 
 LOGGER = get_logger("MetricsAnalysis")
 

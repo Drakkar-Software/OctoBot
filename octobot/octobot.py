@@ -16,14 +16,14 @@
 import time
 import aiohttp
 
-from config import PROJECT_NAME, LONG_VERSION, CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
+from octobot.constants import PROJECT_NAME, LONG_VERSION, CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
 from octobot.configuration_manager import ConfigurationManager
-from octobot.evaluator_factory import EvaluatorFactory
-from octobot.exchange_factory import ExchangeFactory
+from octobot.factories.evaluator_factory import EvaluatorFactory
+from octobot.factories.exchange_factory import ExchangeFactory
 from octobot.octobot_api import OctoBotAPI
-from octobot.service_feed_factory import ServiceFeedFactory
+from octobot.factories.service_feed_factory import ServiceFeedFactory
 from octobot.initializer import Initializer
-from octobot.interface_factory import InterfaceFactory
+from octobot.factories.interface_factory import InterfaceFactory
 from octobot.task_manager import TaskManager
 from octobot_commons.enums import MarkdownFormat
 from octobot_commons.logging.logging_util import get_logger

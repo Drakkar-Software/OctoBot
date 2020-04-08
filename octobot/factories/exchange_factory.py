@@ -20,7 +20,7 @@ from octobot_commons.logging.logging_util import get_logger
 from octobot_trading.api.exchange import create_exchange_builder
 from octobot_trading.api.trader import is_trader_enabled_in_config, is_trader_simulator_enabled_in_config
 from octobot_trading.constants import CONFIG_EXCHANGES
-from tools.logger import init_exchange_chan_logger
+from octobot.logger import init_exchange_chan_logger
 
 
 class ExchangeFactory:
