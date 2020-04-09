@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import time
+import uuid
+
 import aiohttp
 
 from octobot.constants import PROJECT_NAME, LONG_VERSION, CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
@@ -71,6 +73,9 @@ class OctoBot:
 
         # octobot_api to request the current instance
         self.octobot_api = OctoBotAPI(self)
+
+        # octobot instance id
+        self.bot_id = str(uuid.uuid4())
 
         # Logger
         self.logger = get_logger(self.__class__.__name__)
