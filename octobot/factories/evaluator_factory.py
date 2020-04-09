@@ -46,6 +46,7 @@ class EvaluatorFactory:
                 tentacles_setup_config=self.tentacles_setup_config,
                 matrix_id=self.matrix_id,
                 exchange_name=exchange_configuration.exchange_name,
+                bot_id=self.octobot.bot_id,
                 symbols_by_crypto_currencies=exchange_configuration.symbols_by_crypto_currencies,
                 symbols=exchange_configuration.symbols,
                 time_frames=exchange_configuration.time_frames

@@ -34,6 +34,7 @@ cdef class OctoBot:
 
     cdef public dict tools
     cdef public dict config
+    cdef public str bot_id
 
     cdef object _aiohttp_session
     cdef public object community_handler
