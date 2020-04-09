@@ -14,8 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from octobot_commons.logging.logging_util import get_logger
-from octobot_services.api.service_feeds import create_service_feed_factory, start_service_feed, \
-    is_enabled_in_backtesting
+from octobot_services.api.service_feeds import create_service_feed_factory, start_service_feed
 
 
 class ServiceFeedFactory:
@@ -39,11 +38,11 @@ class ServiceFeedFactory:
         except ImportError:
             # If can't import octobot_backtesting, this session can't be a backtesting one, nothing to do
             pass
-        service_feed_factory = create_service_feed_factory(self.octobot.config, self.octobot.async_loop)
+        service_feed_factory = create_service_feed_factory(self.octobot.config,
+                                                           self.octobot.async_loop,
+                                                           self.octobot.bot_id)
         self.service_feeds = [service_feed_factory.create_service_feed(feed)
-                              for feed in service_feed_factory.get_available_service_feeds()
-                              if (not in_backtesting or (in_backtesting
-                                                         and is_enabled_in_backtesting(feed)))]
+                              for feed in service_feed_factory.get_available_service_feeds(in_backtesting)]
 
     async def create(self):
         for feed in self.service_feeds:
