@@ -14,7 +14,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from octobot.configuration_manager cimport ConfigurationManager
 from octobot.initializer cimport Initializer
+from octobot.interface_factory cimport InterfaceFactory
+from octobot.octobot_api cimport OctoBotAPI
+from octobot.service_feed_factory cimport ServiceFeedFactory
 from octobot.task_manager cimport TaskManager
 from octobot.exchange_factory cimport ExchangeFactory
 
@@ -26,20 +30,24 @@ cdef class OctoBot:
     cdef public double start_time
 
     cdef public bint reset_trading_history
+    cdef public bint initialized
 
-    cdef public dict config
-    cdef public dict startup_config
-    cdef public dict edited_config
     cdef public dict tools
+    cdef public dict config
 
     cdef object _aiohttp_session
     cdef public object metrics_handler
     cdef public object async_loop
+    cdef public object tentacles_setup_config
 
     cdef public Initializer initializer
     cdef public TaskManager task_manager
     cdef public ExchangeFactory exchange_factory
     cdef public EvaluatorFactory evaluator_factory
+    cdef public InterfaceFactory interface_factory
+    cdef public ServiceFeedFactory service_feed_factory
+    cdef public OctoBotAPI octobot_api
+    cdef public ConfigurationManager configuration_manager
 
     cpdef object run_in_main_asyncio_loop(self, object coroutine)
     cpdef void set_watcher(self, object watcher)
