@@ -19,7 +19,7 @@ import logging
 import traceback
 from logging.config import fileConfig
 
-from config import LOGGING_CONFIG_FILE
+from config import LOGGING_CONFIG_FILE, LOGS_FOLDER
 from octobot_channels.channels.channel import get_chan
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import PrettyPrinter
@@ -39,6 +39,9 @@ def _log_uncaught_exceptions(ex_cls, ex, tb):
 
 def init_logger():
     try:
+        if not os.path.exists(LOGS_FOLDER):
+            os.mkdir(LOGS_FOLDER)
+
         fileConfig(LOGGING_CONFIG_FILE)
         # overwrite BOT_CHANNEL_LOGGER to apply global logging configuration
         global BOT_CHANNEL_LOGGER
