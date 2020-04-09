@@ -41,6 +41,8 @@ PACKAGES = find_packages(exclude=["tests"])
 
 packages_list = ["octobot.evaluator_factory",
                  "octobot.exchange_factory",
+                 "octobot.interface_factory",
+                 "octobot.service_feed_factory",
                  "octobot.initializer",
                  "octobot.configuration_manager",
                  "octobot.task_manager",

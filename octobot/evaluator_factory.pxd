@@ -18,13 +18,7 @@
 
 cdef class EvaluatorFactory:
     cdef public object octobot
+    cdef public object tentacles_setup_config
     cdef object logger
 
     cdef public str matrix_id
-
-    cdef public dict symbol_tasks_manager
-    cdef public dict symbol_evaluator_list
-    cdef public dict cryptocurrency_evaluator_list
-
-    cdef public list social_eval_tasks
-    cdef public list real_time_eval_tasks
