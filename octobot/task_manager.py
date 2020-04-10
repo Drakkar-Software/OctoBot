@@ -24,11 +24,6 @@ from octobot_commons.asyncio_tools import run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
 from octobot_services.api.service_feeds import stop_service_feed
 
-try:
-    import uvloop
-except ImportError:
-    get_logger().debug("uvloop is not installed")
-
 
 class TaskManager:
     """TaskManager class:
@@ -52,12 +47,16 @@ class TaskManager:
         self._init_uv_loop()
 
     def _init_uv_loop(self):
-        if platform == "linux" or platform == "linux2":  # TODO centralize os detection
-            uvloop.install()
-        elif platform == "darwin":
-            uvloop.install()
-        elif platform == "win32":
-            pass
+        try:
+            import uvloop
+            if platform == "linux" or platform == "linux2":  # TODO centralize os detection
+                uvloop.install()
+            elif platform == "darwin":
+                uvloop.install()
+            elif platform == "win32":
+                pass
+        except ImportError:
+            get_logger().debug("uvloop is not installed")
 
     async def start_tools_tasks(self, run_in_new_thread=False):
         task_list = []
