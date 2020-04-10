@@ -11,7 +11,7 @@ OctoBot-Tentacles-Manager>=2.0.1, <2.1
 
 ## Tools
 # Async
-# uvloop==0.13.0
+#uvloop==0.14.0
 
 ## Others
 colorlog==4.1.0
