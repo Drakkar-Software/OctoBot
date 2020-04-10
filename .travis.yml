@@ -64,8 +64,6 @@ jobs:
 
     - name: "Linux - Python 3 nightly - Deploy"
       stage: deploy
-      before_install: skip
-      install: skip
       script: skip
       deploy:
         - provider: pypi
