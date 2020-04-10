@@ -44,19 +44,6 @@ class TaskManager:
 
     def init_async_loop(self):
         self.async_loop = asyncio.get_running_loop()
-        self._init_uv_loop()
-
-    def _init_uv_loop(self):
-        try:
-            import uvloop
-            if platform == "linux" or platform == "linux2":  # TODO centralize os detection
-                uvloop.install()
-            elif platform == "darwin":
-                uvloop.install()
-            elif platform == "win32":
-                pass
-        except ImportError:
-            get_logger().debug("uvloop is not installed")
 
     async def start_tools_tasks(self, run_in_new_thread=False):
         task_list = []
