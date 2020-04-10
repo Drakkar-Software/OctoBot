@@ -27,7 +27,6 @@ cdef class TaskManager:
     cdef public bint ready
 
     cdef void _create_new_asyncio_main_loop(self)
-    cdef void _init_uv_loop(self)
 
     cpdef void init_async_loop(self)
     cpdef object run_in_main_asyncio_loop(self, object coroutine)
