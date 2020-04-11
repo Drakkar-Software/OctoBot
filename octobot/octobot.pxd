@@ -53,3 +53,6 @@ cdef class OctoBot:
     cpdef object run_in_main_asyncio_loop(self, object coroutine)
     cpdef void set_watcher(self, object watcher)
     cpdef object get_aiohttp_session(self)
+    cpdef object get_edited_config(self, str config_key)
+    cpdef object get_startup_config(self, str config_key)
+    cpdef object get_trading_mode(self)
