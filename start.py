@@ -103,75 +103,77 @@ def start_octobot(starting_args):
     try:
         if starting_args.version:
             print(LONG_VERSION)
+            return
+
+        logger = init_logger()
+
+        # Version
+        logger.info("Version : {0}".format(LONG_VERSION))
+
+        # _check_public_announcements(logger)
+
+        logger.info("Loading config files...")
+
+        # configuration loading
+        config = load_config(error=False, fill_missing_fields=True)
+
+        if config is None and is_config_empty_or_missing():
+            logger.info("No configuration found creating default...")
+            init_config()
+            config = load_config(error=False)
         else:
-            logger = init_logger()
-
-            # Version
-            logger.info("Version : {0}".format(LONG_VERSION))
-
-            # _check_public_announcements(logger)
-
-            logger.info("Loading config files...")
-
-            # configuration loading
-            config = load_config(error=False, fill_missing_fields=True)
-
-            if config is None and is_config_empty_or_missing():
-                logger.info("No configuration found creating default...")
-                init_config()
-                config = load_config(error=False)
-            else:
-                is_valid, e = validate_config_file(config=config)
-                if not is_valid:
-                    logger.error("OctoBot can't repair your config.json file: invalid format: " + str(e))
-                    raise ConfigError
-                config_health_check(config)
-
-            if config is None:
+            is_valid, e = validate_config_file(config=config)
+            if not is_valid:
+                logger.error("OctoBot can't repair your config.json file: invalid format: " + str(e))
                 raise ConfigError
+            config_health_check(config)
 
-            # Handle utility methods before bot initializing if possible
-            if starting_args.encrypter:
-                exchange_keys_encrypter()
+        if config is None:
+            raise ConfigError
 
-            else:
-                if not load_tentacles(verbose=True):
-                    logger.info("No tentacles found. Installing default tentacles ...")
-                    run_tentacles_installation()
-                    # reload tentacles
-                    load_tentacles(verbose=True)
+        # Handle utility methods before bot initializing if possible
+        if starting_args.encrypter:
+            exchange_keys_encrypter()
+            return
 
-                if starting_args.data_collector:
-                    data_collector(config)
+        if not load_tentacles(verbose=True):
+            logger.info("No tentacles found. Installing default tentacles ...")
+            run_tentacles_installation()
+            # reload tentacles
+            load_tentacles(verbose=True)
 
-                elif starting_args.strategy_optimizer:
-                    start_strategy_optimizer(config, starting_args.strategy_optimizer)
+        if starting_args.data_collector:
+            data_collector(config)
+            return
 
-                else:
+        if starting_args.strategy_optimizer:
+            start_strategy_optimizer(config, starting_args.strategy_optimizer)
+            return
 
-                    # In those cases load OctoBot
-                    from octobot.octobot import OctoBot
+        # In those cases load OctoBot
+        from octobot.octobot import OctoBot
 
-                    _disable_interface_from_param("telegram", starting_args.no_telegram, logger)
-                    _disable_interface_from_param("web", starting_args.no_web, logger)
+        _disable_interface_from_param("telegram", starting_args.no_telegram, logger)
+        _disable_interface_from_param("web", starting_args.no_web, logger)
 
-                    update_config_with_args(starting_args, config, logger)
+        update_config_with_args(starting_args, config, logger)
 
-                    reset_trading_history = starting_args.reset_trading_history
+        reset_trading_history = starting_args.reset_trading_history
 
-                    bot = OctoBot(config, reset_trading_history=reset_trading_history)
+        bot = OctoBot(config, reset_trading_history=reset_trading_history)
 
-                    _log_terms_if_unaccepted(config, logger)
+        _log_terms_if_unaccepted(config, logger)
 
-                    # import interfaces
-                    # interfaces.__init__(bot, config)
+        # import interfaces
+        # interfaces.__init__(bot, config)
 
-                    # if not starting_args.no_open_web and not starting_args.no_web:
-                    #     Thread(target=_auto_open_web, args=(config, bot)).start()
+        # if not starting_args.no_open_web and not starting_args.no_web:
+        #     Thread(target=_auto_open_web, args=(config, bot)).start()
 
-                    # set debug_mode = True to activate asyncio debug mode
-                    debug_mode = is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
-                    run_bot(bot, logger, debug_mode)
+        # set debug_mode = True to activate asyncio debug mode
+        debug_mode = is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
+        run_bot(bot, logger, debug_mode)
+
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file." + "\nYou can use " +
                      DEFAULT_CONFIG_FILE + " as an example to fix it.")
