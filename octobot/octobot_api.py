@@ -31,16 +31,16 @@ class OctoBotAPI:
     def get_global_config(self) -> dict:
         return self._octobot.config
 
-    def get_startup_config(self) -> dict:
+    def get_startup_config(self) -> object:
         return self._octobot.get_startup_config(CONFIG_KEY)
 
-    def get_edited_config(self) -> dict:
+    def get_edited_config(self) -> object:
         return self._octobot.get_edited_config(CONFIG_KEY)
 
-    def get_startup_tentacles_config(self) -> dict:
+    def get_startup_tentacles_config(self) -> object:
         return self._octobot.get_startup_config(TENTACLES_SETUP_CONFIG_KEY)
 
-    def get_edited_tentacles_config(self) -> dict:
+    def get_edited_tentacles_config(self) -> object:
         return self._octobot.get_edited_config(TENTACLES_SETUP_CONFIG_KEY)
 
     def get_trading_mode(self) -> object:
