@@ -29,8 +29,7 @@ from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TR
 from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
 from octobot_commons.config_manager import validate_config_file, accepted_terms, is_in_dev_mode
 from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE
-from octobot_commons.errors import ConfigError, ConfigTradingError
-from octobot_evaluators.util.errors import ConfigEvaluatorError
+from octobot_commons.errors import ConfigError, ConfigTradingError, ConfigEvaluatorError
 from octobot_interfaces.api.interfaces import disable_interfaces
 from octobot_tentacles_manager.api.loader import load_tentacles
 from octobot_tentacles_manager.cli import register_tentacles_manager_arguments
