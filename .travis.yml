@@ -13,6 +13,7 @@ env:
     - DEPLOY_BRANCH=master
     - PACKAGE_FOLDER=octobot
     - TRAVIS_BRANCH=${TRAVIS_BRANCH////_}
+    - PLATFORMS="linux/amd64,linux/arm/v7,linux/arm64/v8"
 
 before_install:
   - python3 -m pip install --upgrade pip
@@ -48,10 +49,16 @@ jobs:
     - name: "Linux - Docker - Deploy"
       stage: deploy
       os: linux
-      before_install: echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-      install: skip
+      before_install: skip
+      install:
+        - sudo apt-get update
+        - sudo apt-get install -y docker.io qemu-user-static
       script:
-        - docker build . -t drakkarsoftware/octobot:$TRAVIS_BRANCH -f docker/amd64/Dockerfile
+        - export DOCKER_CLI_EXPERIMENTAL=enabled
+        - docker buildx create --name octobot-builder
+        - docker buildx use octobot-builder
+        - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+        - docker buildx build --platform $PLATFORMS -t drakkarsoftware/octobot:$TRAVIS_BRANCH --push .
       deploy:
           - provider: script
             script: docker push drakkarsoftware/octobot:$TRAVIS_BRANCH
