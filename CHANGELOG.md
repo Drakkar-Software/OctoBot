@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-alpha9] - 2020-04-12
+### Updated
+- [Start] Import ConfigEvaluatorError from OctoBot-Commons
+
+### Fixed
+- [Stop] recursion error
+-  octobot_api cython headers
+
 ## [0.4.0-alpha8] - 2020-04-10
 ### Added
 - Create config when missing user folder
