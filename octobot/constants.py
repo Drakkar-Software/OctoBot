@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
 
 PROJECT_NAME = "OctoBot"
 SHORT_VERSION = "0.4.0"  # major.minor.revision
@@ -29,7 +30,9 @@ TENTACLES_REPOSITORY = "tentacles"
 RELEASES = "releases"
 
 # tentacles
-DEFAULT_TENTACLES_URL = f"{OCTOBOT_ONLINE}/{REPOSITORY}/{TENTACLES_REPOSITORY}/{RELEASES}/{LONG_VERSION}.zip"
+ENV_TENTACLES_URL_TAG = "TENTACLES_URL_TAG"
+DEFAULT_TENTACLES_URL = f"{OCTOBOT_ONLINE}/{REPOSITORY}/{TENTACLES_REPOSITORY}/{RELEASES}/" \
+                        f"{os.getenv(ENV_TENTACLES_URL_TAG, LONG_VERSION)}.zip"
 DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 
 # logs
