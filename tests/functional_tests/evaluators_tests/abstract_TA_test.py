@@ -314,6 +314,7 @@ class AbstractTATest:
         last_candle = self.data_bank.get_last_candle_for_default_symbol(self.time_frame)
         await self.evaluator.ohlcv_callback(self.data_bank.exchange_name,
                                             "0a",
+                                            "Bitcoin",
                                             self.data_bank.default_symbol,
                                             self.time_frame,
                                             last_candle)
