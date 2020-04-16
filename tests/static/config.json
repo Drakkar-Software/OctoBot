@@ -1,5 +1,4 @@
 {
-  "time_frame": ["1h", "4h", "1d"],
   "crypto-currencies":{
     "Bitcoin": {
       "pairs" : ["BTC/USDT", "BTC/EUR"]
@@ -85,6 +84,10 @@
   },
   "trader-simulator":{
     "enabled": true,
+    "fees": {
+        "maker": 0.1,
+        "taker": 0.1
+    },
     "starting-portfolio": {
       "BTC": 10,
       "USD": 1000
