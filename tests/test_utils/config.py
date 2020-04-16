@@ -13,24 +13,16 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-from config.config import load_config
-from config import CONFIG_EVALUATOR, CONFIG_TRADING_TENTACLES, TimeFrames, CONFIG_TIME_FRAME
-
+from octobot.configuration_manager import load_config
+from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config
 
 TEST_CONFIG_FOLDER = "tests/static"
 
 
-def init_config_time_frame_for_tests(config):
-    result = []
-    for time_frame in config[CONFIG_TIME_FRAME]:
-        result.append(TimeFrames(time_frame))
-    config[CONFIG_TIME_FRAME] = result
-
-
 def load_test_config():
     config = load_config(f"{TEST_CONFIG_FOLDER}/config.json")
-    config[CONFIG_EVALUATOR] = load_config(f"{TEST_CONFIG_FOLDER}/evaluator_config.json", False)
-    config[CONFIG_TRADING_TENTACLES] = load_config(f"{TEST_CONFIG_FOLDER}/trading_config.json", False)
-    init_config_time_frame_for_tests(config)
     return config
+
+
+async def load_test_tentacles_config():
+    return await get_tentacles_setup_config(config_path=f"{TEST_CONFIG_FOLDER}/default_tentacles_config.json")
