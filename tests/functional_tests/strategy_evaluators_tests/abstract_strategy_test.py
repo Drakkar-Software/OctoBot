@@ -24,13 +24,13 @@ from octobot_commons.constants import CONFIG_WILDCARD
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection, \
     trading_mode_parent_inspection
-from octobot_evaluators.api.initialization import matrix_channel_exists, create_evaluator_channels
+from octobot_commons.tests.test_config import load_test_config
 from octobot_evaluators.evaluator import StrategyEvaluator
 from octobot_tentacles_manager.api.configurator import update_activation_configuration, get_tentacles_activation
 from octobot_trading.api.exchange import get_exchange_managers_from_exchange_ids
 from octobot_trading.api.profitability import get_profitability_stats
 from octobot_trading.modes import AbstractTradingMode
-from tests.test_utils.config import load_test_config, load_test_tentacles_config
+from tests.test_utils.config import load_test_tentacles_config
 from tentacles.Trading import Mode
 from tentacles.Evaluator import Strategies
 from tentacles.Trading.Mode import DailyTradingMode
@@ -61,8 +61,6 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
             assert run_profitability == profitability
 
     async def _run_backtesting_with_current_config(self, data_file_to_use):
-        if not matrix_channel_exists():
-            await create_evaluator_channels()
         config_to_use = copy.deepcopy(self.config)
         independent_backtesting = create_independent_backtesting(config_to_use,
                                                                  self.tentacles_setup_config,
