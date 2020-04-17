@@ -51,7 +51,7 @@ jobs:
       before_install: echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
       install: skip
       script:
-        - docker build . -t drakkarsoftware/octobot:$TRAVIS_BRANCH -f docker/amd64/Dockerfile
+        - docker build . -t drakkarsoftware/octobot:$TRAVIS_BRANCH -f Dockerfile
       deploy:
           - provider: script
             script: docker push drakkarsoftware/octobot:$TRAVIS_BRANCH
