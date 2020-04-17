@@ -15,7 +15,7 @@
 #  License along with this library.
 from octobot_commons.logging.logging_util import get_logger
 from octobot_evaluators.api.evaluators import initialize_evaluators, create_all_type_evaluators
-from octobot_evaluators.api.initialization import create_matrix_channels
+from octobot_evaluators.api.initialization import create_evaluator_channels
 from octobot_trading.exchanges.exchanges import Exchanges
 from octobot.logger import init_evaluator_chan_logger
 
@@ -37,7 +37,7 @@ class EvaluatorFactory:
     async def initialize(self):
         self.tentacles_setup_config = self.octobot.tentacles_setup_config
         self.matrix_id = await initialize_evaluators(self.octobot.config, self.tentacles_setup_config)
-        await create_matrix_channels()
+        await create_evaluator_channels(self.matrix_id)
 
     async def create(self):
         for exchange_configuration in Exchanges.instance().get_all_exchanges():
@@ -51,4 +51,4 @@ class EvaluatorFactory:
                 symbols=exchange_configuration.symbols,
                 time_frames=exchange_configuration.time_frames
             )
-        await init_evaluator_chan_logger()
+        await init_evaluator_chan_logger(self.matrix_id)

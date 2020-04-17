@@ -24,7 +24,7 @@ from octobot_commons.constants import CONFIG_WILDCARD
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection, \
     trading_mode_parent_inspection
-from octobot_evaluators.api.initialization import matrix_channel_exists, create_matrix_channels
+from octobot_evaluators.api.initialization import matrix_channel_exists, create_evaluator_channels
 from octobot_evaluators.evaluator import StrategyEvaluator
 from octobot_tentacles_manager.api.configurator import update_activation_configuration, get_tentacles_activation
 from octobot_trading.api.exchange import get_exchange_managers_from_exchange_ids
@@ -62,7 +62,7 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
 
     async def _run_backtesting_with_current_config(self, data_file_to_use):
         if not matrix_channel_exists():
-            await create_matrix_channels()
+            await create_evaluator_channels()
         config_to_use = copy.deepcopy(self.config)
         independent_backtesting = create_independent_backtesting(config_to_use,
                                                                  self.tentacles_setup_config,
