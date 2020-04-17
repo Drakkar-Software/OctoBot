@@ -23,11 +23,12 @@ from octobot.constants import LOGGING_CONFIG_FILE, LOGS_FOLDER
 from octobot_channels.channels.channel import get_chan
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import PrettyPrinter
-from octobot_evaluators.constants import MATRIX_CHANNEL
+from octobot_evaluators.constants import MATRIX_CHANNEL, EVALUATORS_CHANNEL
 from octobot_trading.constants import TICKER_CHANNEL, RECENT_TRADES_CHANNEL, ORDER_BOOK_CHANNEL, KLINE_CHANNEL, \
     OHLCV_CHANNEL, BALANCE_CHANNEL, BALANCE_PROFITABILITY_CHANNEL, TRADES_CHANNEL, POSITIONS_CHANNEL, ORDERS_CHANNEL, \
     MARK_PRICE_CHANNEL, FUNDING_CHANNEL, LIQUIDATIONS_CHANNEL, MINI_TICKER_CHANNEL, ORDER_BOOK_TICKER_CHANNEL
 from octobot_trading.channels.exchange_channel import get_chan as get_trading_chan
+from octobot_evaluators.channels.evaluator_channel import get_chan as get_evaluator_chan
 
 BOT_CHANNEL_LOGGER = None
 
@@ -83,8 +84,9 @@ async def init_exchange_chan_logger(exchange_id):
     await get_trading_chan(FUNDING_CHANNEL, exchange_id).new_consumer(funding_callback)
 
 
-async def init_evaluator_chan_logger():
-    await get_chan(MATRIX_CHANNEL).new_consumer(matrix_callback)
+async def init_evaluator_chan_logger(matrix_id: str):
+    await get_evaluator_chan(MATRIX_CHANNEL, matrix_id).new_consumer(matrix_callback)
+    await get_evaluator_chan(EVALUATORS_CHANNEL, matrix_id).new_consumer(evaluators_callback)
 
 
 async def ticker_callback(exchange: str, exchange_id: str, cryptocurrency: str, symbol: str, ticker):
@@ -180,9 +182,10 @@ async def positions_callback(exchange: str, exchange_id: str, cryptocurrency: st
 
 async def funding_callback(exchange: str, exchange_id: str, cryptocurrency: str, symbol: str, funding_rate,
                            next_funding_time, timestamp):
-    BOT_CHANNEL_LOGGER.info(f"FUNDING : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} "
-                            f"|| RATE = {str(funding_rate)}"
-                            f"|| NEXT TIME = {str(next_funding_time)} || TIMESTAMP = {str(timestamp)}")
+    BOT_CHANNEL_LOGGER.info(
+        f"FUNDING : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} "
+        f"|| RATE = {str(funding_rate)}"
+        f"|| NEXT TIME = {str(next_funding_time)} || TIMESTAMP = {str(timestamp)}")
 
 
 async def matrix_callback(matrix_id,
@@ -194,6 +197,21 @@ async def matrix_callback(matrix_id,
                           cryptocurrency,
                           symbol,
                           time_frame):
-    BOT_CHANNEL_LOGGER.debug(f"EXCHANGE = {exchange_name} || EVALUATOR = {evaluator_name} ||"
-                             f" CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} "
+    BOT_CHANNEL_LOGGER.debug(f"MATRIX : EXCHANGE = {exchange_name} || "
+                             f"EVALUATOR = {evaluator_name} || EVALUATOR_TYPE = {evaluator_type} || "
+                             f"CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} "
                              f"|| NOTE = {eval_note} [MATRIX id = {matrix_id}] ")
+
+
+async def evaluators_callback(matrix_id,
+                              evaluator_name,
+                              evaluator_type,
+                              exchange_name,
+                              cryptocurrency,
+                              symbol,
+                              time_frame,
+                              data):
+    BOT_CHANNEL_LOGGER.debug(f"EVALUATORS : EXCHANGE = {exchange_name} || "
+                             f"EVALUATOR = {evaluator_name} || EVALUATOR_TYPE = {evaluator_type} || "
+                             f"CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} "
+                             f"|| DATA = {data} [MATRIX id = {matrix_id}] ")
