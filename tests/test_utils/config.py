@@ -13,15 +13,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot.configuration_manager import load_config
 from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config
 
 TEST_CONFIG_FOLDER = "tests/static"
-
-
-def load_test_config():
-    config = load_config(f"{TEST_CONFIG_FOLDER}/config.json")
-    return config
 
 
 async def load_test_tentacles_config():
