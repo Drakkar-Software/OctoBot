@@ -13,11 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import math
 
-from config import ExchangeConstantsMarketStatusColumns as Ecmsc
-from config import EvaluatorStates
-from trading.trader.order import *
-from trading.trader.portfolio import Portfolio
+from octobot_commons.constants import PORTFOLIO_TOTAL, PORTFOLIO_AVAILABLE
+from octobot_trading.api.orders import get_open_orders
+from octobot_trading.enums import ExchangeConstantsMarketStatusColumns as Ecmsc, TradeOrderSide, EvaluatorStates, \
+    OrderStatus, TraderOrderType
+from octobot_trading.orders.types import SellMarketOrder, BuyMarketOrder, SellLimitOrder, BuyLimitOrder
 
 
 def check_order_limits(order, market_status):
@@ -47,9 +49,8 @@ def check_order_limits(order, market_status):
 
 
 def check_linked_order(order, linked_order, order_type, order_price, market_status):
-    assert linked_order.exchange == order.exchange
+    assert linked_order.exchange_manager == order.exchange_manager
     assert linked_order.trader == order.trader
-    assert linked_order.order_notifier == order.order_notifier
     assert linked_order.order_type == order_type
     assert linked_order.created_last_price == order.created_last_price
     assert linked_order.origin_price == order_price
@@ -82,7 +83,7 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
             if orders:
                 order = orders[0]
                 assert order.status == OrderStatus.OPEN
-                assert order.is_simulated is True
+                assert order.simulated is True
                 assert order.linked_to is None
                 assert order.fee is None
                 assert order.filled_price == 0
@@ -121,29 +122,30 @@ def check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False)
                 orders_market_amount += order.origin_quantity * order.origin_price
             else:
                 orders_currency_amount += order.origin_quantity
-            for symbol in portfolio.portfolio:
-                assert portfolio.portfolio[symbol][Portfolio.TOTAL] >= 0
-                assert portfolio.portfolio[symbol][Portfolio.AVAILABLE] >= 0
+            for symbol in portfolio:
+                assert portfolio[symbol][PORTFOLIO_TOTAL] >= 0
+                assert portfolio[symbol][PORTFOLIO_AVAILABLE] >= 0
                 if not only_positivity:
                     if order_symbol == symbol:
-                        assert initial_portfolio[symbol][Portfolio.TOTAL] == portfolio.portfolio[symbol][
-                            Portfolio.TOTAL]
+                        assert initial_portfolio[symbol][PORTFOLIO_TOTAL] == portfolio[symbol][
+                            PORTFOLIO_TOTAL]
                         assert "{:f}".format(
-                            initial_portfolio[symbol][Portfolio.AVAILABLE] - orders_currency_amount) == \
-                            "{:f}".format(portfolio.portfolio[symbol][Portfolio.AVAILABLE])
+                            initial_portfolio[symbol][PORTFOLIO_AVAILABLE] - orders_currency_amount) == \
+                            "{:f}".format(portfolio[symbol][PORTFOLIO_AVAILABLE])
                     elif market == symbol:
-                        assert initial_portfolio[market][Portfolio.TOTAL] == portfolio.portfolio[market][
-                            Portfolio.TOTAL]
-                        assert "{:f}".format(initial_portfolio[market][Portfolio.AVAILABLE] - orders_market_amount) \
-                               == "{:f}".format(portfolio.portfolio[market][Portfolio.AVAILABLE])
+                        assert initial_portfolio[market][PORTFOLIO_TOTAL] == portfolio[market][
+                            PORTFOLIO_TOTAL]
+                        assert "{:f}".format(initial_portfolio[market][PORTFOLIO_AVAILABLE] - orders_market_amount) \
+                               == "{:f}".format(portfolio[market][PORTFOLIO_AVAILABLE])
 
 
 async def fill_orders(orders, trader):
     if orders:
-        assert trader.get_order_manager().order_list
+        assert get_open_orders(trader.exchange_manager)
         for order in orders:
             order.filled_price = order.origin_price
             order.filled_quantity = order.origin_quantity
             await trader.notify_order_close(order)
-            check_portfolio(trader.portfolio, None, orders, True)
-        assert len(trader.get_order_manager().order_list) == 0
+            check_portfolio(trader.exchange_manager.exchange_personal_data.portfolio_manager.portfolio.portfolio,
+                            None, orders, True)
+        assert len(get_open_orders(trader.exchange_manager)) == 0
