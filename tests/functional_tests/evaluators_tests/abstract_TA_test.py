@@ -19,6 +19,7 @@ from timeit import default_timer as timer
 from mock import patch, AsyncMock
 
 from octobot_commons.constants import START_PENDING_EVAL_NOTE
+from octobot_commons.enums import TimeFramesMinutes, TimeFrames
 from tests.test_utils.data_bank import DataBank
 
 
@@ -83,7 +84,8 @@ class AbstractTATest:
     async def run_stress_test_without_exceptions(self,
                                                  required_not_neutral_evaluation_ratio=0.75,
                                                  reset_eval_to_none_before_each_eval=True,
-                                                 time_limit_seconds=2):
+                                                 time_limit_seconds=2,
+                                                 skip_long_time_frames=False):
         start_time = timer()
         with patch.object(self.evaluator, 'get_symbol_candles', new=self._mocked_get_symbol_candles), \
           patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
@@ -91,6 +93,9 @@ class AbstractTATest:
                 self.data_bank.default_symbol = symbol
                 self.data_bank.standard_mode(self.ENOUGH_DATA_STARTING_POINT)
                 for time_frame, current_time_frame_data in self.data_bank.origin_ohlcv_by_symbol[symbol].items():
+                    if TimeFramesMinutes[time_frame] > TimeFramesMinutes[TimeFrames.THREE_DAYS] and \
+                            skip_long_time_frames:
+                        continue
                     self.time_frame = time_frame
                     # start with 0 data data frame and goes onwards until the end of the data
                     not_neutral_evaluation_count = 0
