@@ -71,7 +71,7 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
         return independent_backtesting
 
     def _update_tentacles_config(self, strategy_evaluator_class, trading_mode_class):
-        required_evaluators = strategy_evaluator_class.get_required_evaluators(self.config)
+        required_evaluators = strategy_evaluator_class.get_required_evaluators()
         to_update_config = {}
         for tentacle_class_name in get_tentacles_activation(self.tentacles_setup_config):
             if CONFIG_WILDCARD not in required_evaluators and tentacle_class_name in required_evaluators:
