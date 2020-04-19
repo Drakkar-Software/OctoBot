@@ -193,6 +193,7 @@ async def matrix_callback(matrix_id,
                           evaluator_type,
                           eval_note,
                           eval_note_type,
+                          eval_time,
                           exchange_name,
                           cryptocurrency,
                           symbol,
@@ -200,7 +201,7 @@ async def matrix_callback(matrix_id,
     BOT_CHANNEL_LOGGER.debug(f"MATRIX : EXCHANGE = {exchange_name} || "
                              f"EVALUATOR = {evaluator_name} || EVALUATOR_TYPE = {evaluator_type} || "
                              f"CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} "
-                             f"|| NOTE = {eval_note} [MATRIX id = {matrix_id}] ")
+                             f"|| NOTE = {eval_note} || TIME = {eval_time} [MATRIX id = {matrix_id}] ")
 
 
 async def evaluators_callback(matrix_id,
