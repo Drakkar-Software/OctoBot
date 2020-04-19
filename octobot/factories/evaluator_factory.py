@@ -49,6 +49,7 @@ class EvaluatorFactory:
                 bot_id=self.octobot.bot_id,
                 symbols_by_crypto_currencies=exchange_configuration.symbols_by_crypto_currencies,
                 symbols=exchange_configuration.symbols,
-                time_frames=exchange_configuration.time_frames
+                time_frames=exchange_configuration.time_frames_without_real_time,
+                real_time_time_frames=exchange_configuration.real_time_time_frames
             )
         await init_evaluator_chan_logger(self.matrix_id)
