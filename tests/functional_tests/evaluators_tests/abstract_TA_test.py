@@ -36,7 +36,7 @@ class AbstractTATest:
     async def initialize(self, TA_evaluator_class, data_file=None):
         self.time_frame = None
         self.evaluator = TA_evaluator_class()
-        patch.object(self.evaluator, 'get_symbol_candles', new=self._mocked_get_symbol_candles)
+        patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data)
         self.data_bank = DataBank(data_file)
         await self.data_bank.initialize()
         self._assert_init()
@@ -87,7 +87,7 @@ class AbstractTATest:
                                                  time_limit_seconds=2,
                                                  skip_long_time_frames=False):
         start_time = timer()
-        with patch.object(self.evaluator, 'get_symbol_candles', new=self._mocked_get_symbol_candles), \
+        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
           patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
             for symbol in self.data_bank.data_importer.symbols:
                 self.data_bank.default_symbol = symbol
@@ -129,7 +129,7 @@ class AbstractTATest:
 
         self.time_frame, pre_dump, start_dump, heavy_dump, end_dump, stopped_dump = self.data_bank.sudden_dump_mode()
 
-        with patch.object(self.evaluator, 'get_symbol_candles', new=self._mocked_get_symbol_candles), \
+        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
           patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
             # not dumped yet
             await self._set_data_and_check_eval(pre_dump, pre_dump_eval, False)
@@ -160,7 +160,7 @@ class AbstractTATest:
         self.time_frame, pre_pump, start_dump, heavy_pump, max_pump, change_trend, dipping, dipped = \
             self.data_bank.sudden_pump_mode()
 
-        with patch.object(self.evaluator, 'get_symbol_candles', new=self._mocked_get_symbol_candles), \
+        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
           patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
             # not pumped yet
             await self._set_data_and_check_eval(pre_pump, pre_pump_eval, False)
@@ -193,7 +193,7 @@ class AbstractTATest:
 
         self.time_frame, pre_sell, start_sell, max_sell, start_rise, bought = self.data_bank.rise_after_over_sold_mode()
 
-        with patch.object(self.evaluator, 'get_symbol_candles', new=self._mocked_get_symbol_candles), \
+        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
           patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
             # not started
             await self._set_data_and_check_eval(pre_sell, pre_sell_eval, False)
@@ -219,7 +219,7 @@ class AbstractTATest:
                                                          max_dip_eval,
                                                          after_dip_eval):
 
-        with patch.object(self.evaluator, 'get_symbol_candles', new=self._mocked_get_symbol_candles), \
+        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
           patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
             # not started, buying started, buying maxed, start dipping, max dip, max: back normal:
             self.time_frame, pre_buy, start_buy, max_buy, start_dip, max_dip, normal = \
@@ -262,7 +262,7 @@ class AbstractTATest:
             micro_down5, back_up5, micro_up6, back_down6, back_normal6, micro_down7, back_up7, micro_down8, back_up8, \
             micro_down9, back_up9 = self.data_bank.overall_flat_trend_mode()
 
-        with patch.object(self.evaluator, 'get_symbol_candles', new=self._mocked_get_symbol_candles), \
+        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
           patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
             # start_move_ending_up_in_a_rise
             await self._set_data_and_check_eval(start_move_ending_up_in_a_rise, eval_start_move_ending_up_in_a_rise, False)
@@ -312,17 +312,17 @@ class AbstractTATest:
             await self._move_and_set_data_and_check_eval(back_up9, eval_back_up9, False)
         await self.data_bank.stop()
 
-    def _mocked_get_symbol_candles(self, exchange_name: str, exchange_id: str, symbol: str, time_frame):
-        return self.data_bank.candles_managers_by_time_frame[time_frame]
+    def _mocked_get_exchange_symbol_data(self, exchange, exchange_id, symbol):
+        return self.data_bank.mocked_symbol_data
 
     async def _call_evaluator(self):
         last_candle = self.data_bank.get_last_candle_for_default_symbol(self.time_frame)
-        await self.evaluator.ohlcv_callback(self.data_bank.exchange_name,
-                                            "0a",
-                                            "Bitcoin",
-                                            self.data_bank.default_symbol,
-                                            self.time_frame,
-                                            last_candle)
+        await self.evaluator.evaluator_ohlcv_callback(self.data_bank.exchange_name,
+                                                      "0a",
+                                                      "Bitcoin",
+                                                      self.data_bank.default_symbol,
+                                                      self.time_frame,
+                                                      last_candle)
 
     async def _set_bank_data_and_call_evaluator(self, end_index):
         self.data_bank.set_data_for_default_symbol(self.time_frame, end_index)
