@@ -244,7 +244,7 @@ def main(args=None):
                                                            'config.json. This tool is useful to quickly test a '
                                                            'strategy and automatically find the best compatible '
                                                            'settings. Param is the name of the strategy class to '
-                                                           'test. Example: -o FullMixedStrategiesEvaluator'
+                                                           'test. Example: -o TechnicalAnalysisStrategyEvaluator'
                                                            ' Warning: this process may take a long time.',
                         nargs='+')
     parser.set_defaults(func=start_octobot)
