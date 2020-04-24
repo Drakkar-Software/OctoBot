@@ -2,4 +2,4 @@ numpy==1.16.1
 Cython==0.29.5
 lxml==4.3.1
 urllib3==1.25.3
-Twisted==19.10.0 # to be removed (python-binance)
+Twisted==20.3.0 # to be removed (python-binance)
