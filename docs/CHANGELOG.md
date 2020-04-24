@@ -1,5 +1,13 @@
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+Changelog for 0.3.9-beta
+====================
+*Released date : April 24 2020*
+
+# Bug fixes :
+    - Fixed web interface crypto-currencies selector
+    - Fixed Tentacles-manager dependancy helper message
+
 Changelog for 0.3.8-beta
 ====================
 *Released date : December 28 2019*
