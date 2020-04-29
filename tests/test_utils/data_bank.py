@@ -19,6 +19,8 @@ from octobot_backtesting.importers.exchanges.exchange_importer import ExchangeDa
 from octobot_commons.constants import TimeFrames
 from octobot_commons.enums import PriceIndexes
 from octobot_trading.api.symbol_data import create_new_candles_manager
+from octobot_trading.exchanges.data.exchange_symbol_data import ExchangeSymbolData
+from octobot_trading.exchanges.exchange_manager import ExchangeManager
 from octobot_trading.util.initializable import Initializable
 
 """
@@ -49,7 +51,9 @@ class DataBank(Initializable):
         self.current_init_indexes_by_time_frame = {}
         self.current_data = None
         self.data_by_symbol_by_data_frame = None
-        self.mocked_symbol_data = MockedSymbolData(self.candles_managers_by_time_frame)
+        manager = ExchangeManager({}, "binance")
+        self.symbol_data = ExchangeSymbolData(manager, self.default_symbol)
+        self.symbol_data.symbol_candles = self.candles_managers_by_time_frame
 
     async def initialize_impl(self):
         await self.data_importer.initialize()
@@ -157,8 +161,3 @@ class DataBank(Initializable):
             result_list += deepcopy(candle_list)
             timestamp_list = [candle[PriceIndexes.IND_PRICE_TIME.value] for candle in result_list]
         return result_list
-
-
-class MockedSymbolData:
-    def __init__(self, symbol_candles):
-        self.symbol_candles = symbol_candles
