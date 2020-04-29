@@ -80,7 +80,7 @@ class DataBank(Initializable):
         return self.data_importer.time_frames
 
     def get_last_candle_for_default_symbol(self, time_frame):
-        return self.candles_managers_by_time_frame[time_frame].get_symbol_prices(1)
+        return [val[0] for val in self.candles_managers_by_time_frame[time_frame].get_symbol_prices(1).values()]
 
     def set_data_for_default_symbol(self, time_frame, end_index):
         self._set_candle_manager(time_frame, end_index, use_current_data=True)
