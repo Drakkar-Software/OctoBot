@@ -321,7 +321,7 @@ class AbstractTATest:
                                                       "0a",
                                                       "Bitcoin",
                                                       self.data_bank.default_symbol,
-                                                      self.time_frame,
+                                                      self.time_frame.value,
                                                       last_candle)
 
     async def _set_bank_data_and_call_evaluator(self, end_index):
