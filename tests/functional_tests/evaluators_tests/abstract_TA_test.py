@@ -33,9 +33,9 @@ class AbstractTATest:
 
     # no __init__ constructor for pytest to be able to collect this class
 
-    async def initialize(self, TA_evaluator_class, data_file=None):
+    async def initialize(self, data_file=None):
         self.time_frame = None
-        self.evaluator = TA_evaluator_class()
+        self.evaluator = self.TA_evaluator_class()
         patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data)
         self.data_bank = DataBank(data_file)
         await self.data_bank.initialize()
@@ -84,8 +84,9 @@ class AbstractTATest:
     async def run_stress_test_without_exceptions(self,
                                                  required_not_neutral_evaluation_ratio=0.75,
                                                  reset_eval_to_none_before_each_eval=True,
-                                                 time_limit_seconds=2,
+                                                 time_limit_seconds=5,
                                                  skip_long_time_frames=False):
+        await self.initialize()
         start_time = timer()
         with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
           patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
@@ -126,6 +127,7 @@ class AbstractTATest:
                                          heavy_dump_started_eval,
                                          end_dump_eval,
                                          after_dump_eval):
+        await self.initialize()
 
         self.time_frame, pre_dump, start_dump, heavy_dump, end_dump, stopped_dump = self.data_bank.sudden_dump_mode()
 
@@ -155,6 +157,7 @@ class AbstractTATest:
                                          stop_pump_eval,
                                          start_dip_eval,
                                          dipped_eval):
+        await self.initialize()
 
         # not started, started, heavy pump, max pump, change trend, dipping, max: dipped:
         self.time_frame, pre_pump, start_dump, heavy_pump, max_pump, change_trend, dipping, dipped = \
@@ -190,6 +193,7 @@ class AbstractTATest:
                                                          max_sell_eval,
                                                          start_rise_eval,
                                                          after_rise_eval):
+        await self.initialize()
 
         self.time_frame, pre_sell, start_sell, max_sell, start_rise, bought = self.data_bank.rise_after_over_sold_mode()
 
@@ -218,6 +222,7 @@ class AbstractTATest:
                                                          start_dip_eval,
                                                          max_dip_eval,
                                                          after_dip_eval):
+        await self.initialize()
 
         with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
           patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
@@ -252,6 +257,7 @@ class AbstractTATest:
                                                eval_micro_down5, eval_back_up5, eval_micro_up6, eval_back_down6,
                                                eval_back_normal6, eval_micro_down7, eval_back_up7, eval_micro_down8,
                                                eval_back_up8, eval_micro_down9, eval_back_up9):
+        await self.initialize()
 
         # long data_frame with flat then sudden big rise and then mostly flat for 120 values
         # start move ending up in a rise, reaches flat trend, first micro up p1, first mirco up p2, micro down,
