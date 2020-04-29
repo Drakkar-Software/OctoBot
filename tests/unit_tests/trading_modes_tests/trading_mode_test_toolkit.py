@@ -68,15 +68,13 @@ def check_linked_order(order, linked_order, order_type, order_price, market_stat
 
 def check_orders(orders, evaluation, state, nb_orders, market_status):
 
-    if state == EvaluatorStates.NEUTRAL:
-        assert orders is None
+    if state == EvaluatorStates.NEUTRAL or state is None:
+        assert orders == []
     else:
         if math.isnan(evaluation):
-            assert orders is None
-        elif math.isnan(evaluation):
-            assert orders is None
+            assert orders == []
         elif state is None or isinstance(state, (int, float, dict)) or state not in EvaluatorStates:
-            assert orders is None
+            assert orders == []
         else:
             assert (not orders and nb_orders == 0) or (len(orders) == nb_orders) \
                 or ((len(orders) == 0 or len(orders) == 1) and nb_orders == "unknown")
