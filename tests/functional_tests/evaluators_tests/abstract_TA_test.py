@@ -313,7 +313,7 @@ class AbstractTATest:
         await self.data_bank.stop()
 
     def _mocked_get_exchange_symbol_data(self, exchange, exchange_id, symbol):
-        return self.data_bank.mocked_symbol_data
+        return self.data_bank.symbol_data
 
     async def _call_evaluator(self):
         last_candle = self.data_bank.get_last_candle_for_default_symbol(self.time_frame)
