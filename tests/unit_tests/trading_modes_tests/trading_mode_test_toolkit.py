@@ -68,12 +68,12 @@ def check_linked_order(order, linked_order, order_type, order_price, market_stat
 
 def check_orders(orders, evaluation, state, nb_orders, market_status):
 
-    if state == EvaluatorStates.NEUTRAL or state is None:
+    if state == EvaluatorStates.NEUTRAL.value or state is None:
         assert orders == []
     else:
         if math.isnan(evaluation):
             assert orders == []
-        elif state is None or isinstance(state, (int, float, dict)) or state not in EvaluatorStates:
+        elif state is None or isinstance(state, (int, float, dict)) or state not in [s.value for s in EvaluatorStates]:
             assert orders == []
         else:
             assert (not orders and nb_orders == 0) or (len(orders) == nb_orders) \
@@ -87,19 +87,19 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
                 assert order.filled_price == 0
                 assert order.filled_quantity == order.origin_quantity
 
-                if state == EvaluatorStates.VERY_SHORT:
+                if state == EvaluatorStates.VERY_SHORT.value:
                     assert isinstance(order, SellMarketOrder)
                     assert order.side == TradeOrderSide.SELL
                     assert order.order_type == TraderOrderType.SELL_MARKET
-                elif state == EvaluatorStates.SHORT:
+                elif state == EvaluatorStates.SHORT.value:
                     assert isinstance(order, SellLimitOrder)
                     assert order.side == TradeOrderSide.SELL
                     assert order.order_type == TraderOrderType.SELL_LIMIT
-                elif state == EvaluatorStates.VERY_LONG:
+                elif state == EvaluatorStates.VERY_LONG.value:
                     assert isinstance(order, BuyMarketOrder)
                     assert order.side == TradeOrderSide.BUY
                     assert order.order_type == TraderOrderType.BUY_MARKET
-                elif state == EvaluatorStates.LONG:
+                elif state == EvaluatorStates.LONG.value:
                     assert isinstance(order, BuyLimitOrder)
                     assert order.side == TradeOrderSide.BUY
                     assert order.order_type == TraderOrderType.BUY_LIMIT
