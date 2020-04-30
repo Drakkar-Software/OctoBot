@@ -1,7 +1,6 @@
 # OctoBot [0.4.0-alpha9](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
-[![Code Factor](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/badge)](https://www.codefactor.io/repository/github/Drakkar-Software/OctoBot/overview/dev) 
-[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
 [![Coverage Status](https://img.shields.io/coveralls/github/Drakkar-Software/OctoBot.svg)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) 
 [![Build Status](https://api.travis-ci.com/Drakkar-Software/OctoBot.svg?branch=dev)](https://travis-ci.com/Drakkar-Software/OctoBot) 
