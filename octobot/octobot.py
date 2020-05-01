@@ -29,7 +29,7 @@ from octobot.factories.interface_factory import InterfaceFactory
 from octobot.task_manager import TaskManager
 from octobot_commons.enums import MarkdownFormat
 from octobot_commons.logging.logging_util import get_logger
-from octobot_notifications.api.notification import send_notification, create_notification
+from octobot_services.api.notification import send_notification, create_notification
 from octobot_trading.api.exchange import get_exchange_manager_from_exchange_id
 from octobot_trading.api.modes import get_trading_modes
 
