@@ -84,42 +84,44 @@ class AbstractTATest:
     async def run_stress_test_without_exceptions(self,
                                                  required_not_neutral_evaluation_ratio=0.75,
                                                  reset_eval_to_none_before_each_eval=True,
-                                                 time_limit_seconds=7,
+                                                 time_limit_seconds=8,
                                                  skip_long_time_frames=False):
-        await self.initialize()
-        start_time = timer()
-        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-          patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
-            for symbol in self.data_bank.data_importer.symbols:
-                self.data_bank.default_symbol = symbol
-                self.data_bank.standard_mode(self.ENOUGH_DATA_STARTING_POINT)
-                for time_frame, current_time_frame_data in self.data_bank.origin_ohlcv_by_symbol[symbol].items():
-                    if TimeFramesMinutes[time_frame] > TimeFramesMinutes[TimeFrames.THREE_DAYS] and \
-                            skip_long_time_frames:
-                        continue
-                    self.time_frame = time_frame
-                    # start with 0 data data frame and goes onwards until the end of the data
-                    not_neutral_evaluation_count = 0
-                    total_candles_count = len(current_time_frame_data)
-                    start_point = self.ENOUGH_DATA_STARTING_POINT + 1
-                    if total_candles_count > start_point:
-                        for _ in range(start_point, total_candles_count):
-                            if reset_eval_to_none_before_each_eval:
-                                # force None value if possible to make sure eval_note is set during eval_impl()
-                                self.evaluator.eval_note = None
-                            await self._increment_bank_data_and_call_evaluator()
+        try:
+            await self.initialize()
+            start_time = timer()
+            with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
+              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                for symbol in self.data_bank.data_importer.symbols:
+                    self.data_bank.default_symbol = symbol
+                    self.data_bank.standard_mode(self.ENOUGH_DATA_STARTING_POINT)
+                    for time_frame, current_time_frame_data in self.data_bank.origin_ohlcv_by_symbol[symbol].items():
+                        if TimeFramesMinutes[time_frame] > TimeFramesMinutes[TimeFrames.THREE_DAYS] and \
+                                skip_long_time_frames:
+                            continue
+                        self.time_frame = time_frame
+                        # start with 0 data data frame and goes onwards until the end of the data
+                        not_neutral_evaluation_count = 0
+                        total_candles_count = len(current_time_frame_data)
+                        start_point = self.ENOUGH_DATA_STARTING_POINT + 1
+                        if total_candles_count > start_point:
+                            for _ in range(start_point, total_candles_count):
+                                if reset_eval_to_none_before_each_eval:
+                                    # force None value if possible to make sure eval_note is set during eval_impl()
+                                    self.evaluator.eval_note = None
+                                await self._increment_bank_data_and_call_evaluator()
 
-                            assert self.evaluator.eval_note is not None
-                            if self.evaluator.eval_note != START_PENDING_EVAL_NOTE:
-                                assert not isnan(self.evaluator.eval_note)
-                            if self.evaluator.eval_note != START_PENDING_EVAL_NOTE:
-                                not_neutral_evaluation_count += 1
+                                assert self.evaluator.eval_note is not None
+                                if self.evaluator.eval_note != START_PENDING_EVAL_NOTE:
+                                    assert not isnan(self.evaluator.eval_note)
+                                if self.evaluator.eval_note != START_PENDING_EVAL_NOTE:
+                                    not_neutral_evaluation_count += 1
 
-                        assert not_neutral_evaluation_count / (total_candles_count - start_point) \
-                            >= required_not_neutral_evaluation_ratio
-        process_time = timer() - start_time
-        assert process_time <= time_limit_seconds
-        await self.data_bank.stop()
+                            assert not_neutral_evaluation_count / (total_candles_count - start_point) \
+                                >= required_not_neutral_evaluation_ratio
+            process_time = timer() - start_time
+            assert process_time <= time_limit_seconds
+        finally:
+            await self.data_bank.stop()
 
     # test reaction to dump
     async def run_test_reactions_to_dump(self, pre_dump_eval,
@@ -127,27 +129,30 @@ class AbstractTATest:
                                          heavy_dump_started_eval,
                                          end_dump_eval,
                                          after_dump_eval):
-        await self.initialize()
+        try:
+            await self.initialize()
 
-        self.time_frame, pre_dump, start_dump, heavy_dump, end_dump, stopped_dump = self.data_bank.sudden_dump_mode()
+            self.time_frame, pre_dump, start_dump, heavy_dump, end_dump, stopped_dump = \
+                self.data_bank.sudden_dump_mode()
 
-        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-          patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
-            # not dumped yet
-            await self._set_data_and_check_eval(pre_dump, pre_dump_eval, False)
+            with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
+              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                # not dumped yet
+                await self._set_data_and_check_eval(pre_dump, pre_dump_eval, False)
 
-            # starts dumping
-            await self._set_data_and_check_eval(start_dump, slight_dump_started_eval, True)
+                # starts dumping
+                await self._set_data_and_check_eval(start_dump, slight_dump_started_eval, True)
 
-            # real dumping
-            await self._set_data_and_check_eval(heavy_dump, heavy_dump_started_eval, True)
+                # real dumping
+                await self._set_data_and_check_eval(heavy_dump, heavy_dump_started_eval, True)
 
-            # end dumping
-            await self._set_data_and_check_eval(end_dump, end_dump_eval, True)
+                # end dumping
+                await self._set_data_and_check_eval(end_dump, end_dump_eval, True)
 
-            # stopped dumping
-            await self._set_data_and_check_eval(stopped_dump, after_dump_eval, True)
-        await self.data_bank.stop()
+                # stopped dumping
+                await self._set_data_and_check_eval(stopped_dump, after_dump_eval, True)
+        finally:
+            await self.data_bank.stop()
 
     # test reaction to pump
     async def run_test_reactions_to_pump(self, pre_pump_eval,
@@ -157,35 +162,37 @@ class AbstractTATest:
                                          stop_pump_eval,
                                          start_dip_eval,
                                          dipped_eval):
-        await self.initialize()
+        try:
+            await self.initialize()
 
-        # not started, started, heavy pump, max pump, change trend, dipping, max: dipped:
-        self.time_frame, pre_pump, start_dump, heavy_pump, max_pump, change_trend, dipping, dipped = \
-            self.data_bank.sudden_pump_mode()
+            # not started, started, heavy pump, max pump, change trend, dipping, max: dipped:
+            self.time_frame, pre_pump, start_dump, heavy_pump, max_pump, change_trend, dipping, dipped = \
+                self.data_bank.sudden_pump_mode()
 
-        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-          patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
-            # not pumped yet
-            await self._set_data_and_check_eval(pre_pump, pre_pump_eval, False)
+            with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
+              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                # not pumped yet
+                await self._set_data_and_check_eval(pre_pump, pre_pump_eval, False)
 
-            # starts pumping
-            await self._set_data_and_check_eval(start_dump, start_pump_started_eval, False)
+                # starts pumping
+                await self._set_data_and_check_eval(start_dump, start_pump_started_eval, False)
 
-            # real pumping
-            await self._set_data_and_check_eval(heavy_pump, heavy_pump_started_eval, False)
+                # real pumping
+                await self._set_data_and_check_eval(heavy_pump, heavy_pump_started_eval, False)
 
-            # max pumping
-            await self._set_data_and_check_eval(max_pump, max_pump_eval, False)
+                # max pumping
+                await self._set_data_and_check_eval(max_pump, max_pump_eval, False)
 
-            # trend reversing
-            await self._set_data_and_check_eval(change_trend, stop_pump_eval, True)
+                # trend reversing
+                await self._set_data_and_check_eval(change_trend, stop_pump_eval, True)
 
-            # starts dipping
-            await self._set_data_and_check_eval(dipping, start_dip_eval, True)
+                # starts dipping
+                await self._set_data_and_check_eval(dipping, start_dip_eval, True)
 
-            # dipped
-            await self._set_data_and_check_eval(dipped, dipped_eval, True)
-        await self.data_bank.stop()
+                # dipped
+                await self._set_data_and_check_eval(dipped, dipped_eval, True)
+        finally:
+            await self.data_bank.stop()
 
     # test reaction to over-sold
     async def run_test_reactions_to_rise_after_over_sold(self, pre_sell_eval,
@@ -193,27 +200,30 @@ class AbstractTATest:
                                                          max_sell_eval,
                                                          start_rise_eval,
                                                          after_rise_eval):
-        await self.initialize()
+        try:
+            await self.initialize()
 
-        self.time_frame, pre_sell, start_sell, max_sell, start_rise, bought = self.data_bank.rise_after_over_sold_mode()
+            self.time_frame, pre_sell, start_sell, max_sell, start_rise, bought = \
+                self.data_bank.rise_after_over_sold_mode()
 
-        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-          patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
-            # not started
-            await self._set_data_and_check_eval(pre_sell, pre_sell_eval, False)
+            with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
+              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                # not started
+                await self._set_data_and_check_eval(pre_sell, pre_sell_eval, False)
 
-            # starts selling
-            await self._set_data_and_check_eval(start_sell, started_sell_eval, True)
+                # starts selling
+                await self._set_data_and_check_eval(start_sell, started_sell_eval, True)
 
-            # max selling
-            await self._set_data_and_check_eval(max_sell, max_sell_eval, True)
+                # max selling
+                await self._set_data_and_check_eval(max_sell, max_sell_eval, True)
 
-            # start buying
-            await self._set_data_and_check_eval(start_rise, start_rise_eval, True)
+                # start buying
+                await self._set_data_and_check_eval(start_rise, start_rise_eval, True)
 
-            # bought
-            await self._set_data_and_check_eval(bought, after_rise_eval, True)
-        await self.data_bank.stop()
+                # bought
+                await self._set_data_and_check_eval(bought, after_rise_eval, True)
+        finally:
+            await self.data_bank.stop()
 
     # test reaction to over-bought
     async def run_test_reactions_to_over_bought_then_dip(self, pre_buy_eval,
@@ -222,32 +232,34 @@ class AbstractTATest:
                                                          start_dip_eval,
                                                          max_dip_eval,
                                                          after_dip_eval):
-        await self.initialize()
+        try:
+            await self.initialize()
 
-        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-          patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
-            # not started, buying started, buying maxed, start dipping, max dip, max: back normal:
-            self.time_frame, pre_buy, start_buy, max_buy, start_dip, max_dip, normal = \
-                self.data_bank.dip_after_over_bought_mode()
+            with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
+              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                # not started, buying started, buying maxed, start dipping, max dip, max: back normal:
+                self.time_frame, pre_buy, start_buy, max_buy, start_dip, max_dip, normal = \
+                    self.data_bank.dip_after_over_bought_mode()
 
-            # not started
-            await self._set_data_and_check_eval(pre_buy, pre_buy_eval, False)
+                # not started
+                await self._set_data_and_check_eval(pre_buy, pre_buy_eval, False)
 
-            # starts buying
-            await self._set_data_and_check_eval(start_buy, started_buy_eval, False)
+                # starts buying
+                await self._set_data_and_check_eval(start_buy, started_buy_eval, False)
 
-            # max buying
-            await self._set_data_and_check_eval(max_buy, max_buy_eval, False)
+                # max buying
+                await self._set_data_and_check_eval(max_buy, max_buy_eval, False)
 
-            # start dipping
-            await self._set_data_and_check_eval(start_dip, start_dip_eval, False)
+                # start dipping
+                await self._set_data_and_check_eval(start_dip, start_dip_eval, False)
 
-            # max dip
-            await self._set_data_and_check_eval(max_dip, max_dip_eval, True)
+                # max dip
+                await self._set_data_and_check_eval(max_dip, max_dip_eval, True)
 
-            # back normal
-            await self._set_data_and_check_eval(normal, after_dip_eval, False)
-        await self.data_bank.stop()
+                # back normal
+                await self._set_data_and_check_eval(normal, after_dip_eval, False)
+        finally:
+            await self.data_bank.stop()
 
     # test reaction to flat trend
     async def run_test_reactions_to_flat_trend(self, eval_start_move_ending_up_in_a_rise,
@@ -257,66 +269,69 @@ class AbstractTATest:
                                                eval_micro_down5, eval_back_up5, eval_micro_up6, eval_back_down6,
                                                eval_back_normal6, eval_micro_down7, eval_back_up7, eval_micro_down8,
                                                eval_back_up8, eval_micro_down9, eval_back_up9):
-        await self.initialize()
+        try:
+            await self.initialize()
 
-        # long data_frame with flat then sudden big rise and then mostly flat for 120 values
-        # start move ending up in a rise, reaches flat trend, first micro up p1, first mirco up p2, micro down,
-        # micro up, micro down, micro up, micro down, back normal, micro down, back normal, micro down, back up,
-        # micro up, back down, back normal, micro down, back up, micro down, back up, micro down, back up
-        self.time_frame, start_move_ending_up_in_a_rise, reaches_flat_trend, first_micro_up_p1, first_micro_up_p2, \
-            micro_down1, micro_up1, micro_down2, micro_up2, micro_down3, back_normal3, micro_down4, back_normal4, \
-            micro_down5, back_up5, micro_up6, back_down6, back_normal6, micro_down7, back_up7, micro_down8, back_up8, \
-            micro_down9, back_up9 = self.data_bank.overall_flat_trend_mode()
+            # long data_frame with flat then sudden big rise and then mostly flat for 120 values
+            # start move ending up in a rise, reaches flat trend, first micro up p1, first mirco up p2, micro down,
+            # micro up, micro down, micro up, micro down, back normal, micro down, back normal, micro down, back up,
+            # micro up, back down, back normal, micro down, back up, micro down, back up, micro down, back up
+            self.time_frame, start_move_ending_up_in_a_rise, reaches_flat_trend, first_micro_up_p1, \
+            first_micro_up_p2, micro_down1, micro_up1, micro_down2, micro_up2, micro_down3, back_normal3, micro_down4, \
+            back_normal4, micro_down5, back_up5, micro_up6, back_down6, back_normal6, micro_down7, back_up7, \
+            micro_down8, back_up8, micro_down9, back_up9 = self.data_bank.overall_flat_trend_mode()
 
-        with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-          patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
-            # start_move_ending_up_in_a_rise
-            await self._set_data_and_check_eval(start_move_ending_up_in_a_rise, eval_start_move_ending_up_in_a_rise, False)
-            #  reaches_flat_trend
-            await self._move_and_set_data_and_check_eval(reaches_flat_trend, eval_reaches_flat_trend, False)
-            #  first_micro_up_p1
-            await self._move_and_set_data_and_check_eval(first_micro_up_p1, eval_first_micro_up_p1, False)
-            #  first_micro_up_p2
-            await self._move_and_set_data_and_check_eval(first_micro_up_p2, eval_first_micro_up_p2, False)
-            #  micro_down1
-            await self._move_and_set_data_and_check_eval(micro_down1, eval_micro_down1, True)
-            #  micro_up1
-            await self._move_and_set_data_and_check_eval(micro_up1, eval_micro_up1, False)
-            #  micro_down2
-            await self._move_and_set_data_and_check_eval(micro_down2, eval_micro_down2, True)
-            #  micro_up2
-            await self._move_and_set_data_and_check_eval(micro_up2, eval_micro_up2, False)
-            #  micro_down3
-            await self._move_and_set_data_and_check_eval(micro_down3, eval_micro_down3, True)
-            #  back_normal3
-            await self._move_and_set_data_and_check_eval(back_normal3, eval_back_normal3, False)
-            #  micro_down4
-            await self._move_and_set_data_and_check_eval(micro_down4, eval_micro_down4, True)
-            #  back_normal4
-            await self._move_and_set_data_and_check_eval(back_normal4, eval_back_normal4, False)
-            #  micro_down5
-            await self._move_and_set_data_and_check_eval(micro_down5, eval_micro_down5, True)
-            #  back_up5
-            await self._move_and_set_data_and_check_eval(back_up5, eval_back_up5, False)
-            #  micro_up6
-            await self._move_and_set_data_and_check_eval(micro_up6, eval_micro_up6, False)
-            #  back_down6
-            await self._move_and_set_data_and_check_eval(back_down6, eval_back_down6, True)
-            #  back_normal6
-            await self._move_and_set_data_and_check_eval(back_normal6, eval_back_normal6, False)
-            #  micro_down7
-            await self._move_and_set_data_and_check_eval(micro_down7, eval_micro_down7, True)
-            #  back_up7
-            await self._move_and_set_data_and_check_eval(back_up7, eval_back_up7, False)
-            #  micro_down8
-            await self._move_and_set_data_and_check_eval(micro_down8, eval_micro_down8, True)
-            #  back_up8
-            await self._move_and_set_data_and_check_eval(back_up8, eval_back_up8, False)
-            #  micro_down9
-            await self._move_and_set_data_and_check_eval(micro_down9, eval_micro_down9, True)
-            #  back_up9
-            await self._move_and_set_data_and_check_eval(back_up9, eval_back_up9, False)
-        await self.data_bank.stop()
+            with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
+              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                # start_move_ending_up_in_a_rise
+                await self._set_data_and_check_eval(start_move_ending_up_in_a_rise, eval_start_move_ending_up_in_a_rise,
+                                                    False)
+                #  reaches_flat_trend
+                await self._move_and_set_data_and_check_eval(reaches_flat_trend, eval_reaches_flat_trend, False)
+                #  first_micro_up_p1
+                await self._move_and_set_data_and_check_eval(first_micro_up_p1, eval_first_micro_up_p1, False)
+                #  first_micro_up_p2
+                await self._move_and_set_data_and_check_eval(first_micro_up_p2, eval_first_micro_up_p2, False)
+                #  micro_down1
+                await self._move_and_set_data_and_check_eval(micro_down1, eval_micro_down1, True)
+                #  micro_up1
+                await self._move_and_set_data_and_check_eval(micro_up1, eval_micro_up1, False)
+                #  micro_down2
+                await self._move_and_set_data_and_check_eval(micro_down2, eval_micro_down2, True)
+                #  micro_up2
+                await self._move_and_set_data_and_check_eval(micro_up2, eval_micro_up2, False)
+                #  micro_down3
+                await self._move_and_set_data_and_check_eval(micro_down3, eval_micro_down3, True)
+                #  back_normal3
+                await self._move_and_set_data_and_check_eval(back_normal3, eval_back_normal3, False)
+                #  micro_down4
+                await self._move_and_set_data_and_check_eval(micro_down4, eval_micro_down4, True)
+                #  back_normal4
+                await self._move_and_set_data_and_check_eval(back_normal4, eval_back_normal4, False)
+                #  micro_down5
+                await self._move_and_set_data_and_check_eval(micro_down5, eval_micro_down5, True)
+                #  back_up5
+                await self._move_and_set_data_and_check_eval(back_up5, eval_back_up5, False)
+                #  micro_up6
+                await self._move_and_set_data_and_check_eval(micro_up6, eval_micro_up6, False)
+                #  back_down6
+                await self._move_and_set_data_and_check_eval(back_down6, eval_back_down6, True)
+                #  back_normal6
+                await self._move_and_set_data_and_check_eval(back_normal6, eval_back_normal6, False)
+                #  micro_down7
+                await self._move_and_set_data_and_check_eval(micro_down7, eval_micro_down7, True)
+                #  back_up7
+                await self._move_and_set_data_and_check_eval(back_up7, eval_back_up7, False)
+                #  micro_down8
+                await self._move_and_set_data_and_check_eval(micro_down8, eval_micro_down8, True)
+                #  back_up8
+                await self._move_and_set_data_and_check_eval(back_up8, eval_back_up8, False)
+                #  micro_down9
+                await self._move_and_set_data_and_check_eval(micro_down9, eval_micro_down9, True)
+                #  back_up9
+                await self._move_and_set_data_and_check_eval(back_up9, eval_back_up9, False)
+        finally:
+            await self.data_bank.stop()
 
     def _mocked_get_exchange_symbol_data(self, exchange, exchange_id, symbol):
         return self.data_bank.symbol_data
