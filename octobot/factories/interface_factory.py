@@ -15,10 +15,10 @@
 #  License along with this library.
 
 from octobot.constants import PROJECT_NAME, LONG_VERSION
-from octobot_interfaces.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled, \
+from octobot_services.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled, \
     start_interfaces, is_enabled_in_backtesting
-from octobot_interfaces.util.bot import get_bot_api
-from octobot_notifications.api.notification import create_notifier_factory, is_enabled_in_config
+from octobot_services.interfaces.util.bot import get_bot_api
+from octobot_services.api.notification import create_notifier_factory, is_enabled_in_config
 from octobot.logger import get_logger
 
 

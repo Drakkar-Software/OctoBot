@@ -14,12 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
-import platform
 import threading
 from asyncio import CancelledError
 
 from octobot.constants import FORCE_ASYNCIO_DEBUG_OPTION
-from octobot_interfaces.api.interfaces import stop_interfaces
+from octobot_services.api.interfaces import stop_interfaces
 from octobot_commons.asyncio_tools import run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
 from octobot_services.api.service_feeds import stop_service_feed
