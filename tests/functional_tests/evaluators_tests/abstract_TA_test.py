@@ -84,7 +84,7 @@ class AbstractTATest:
     async def run_stress_test_without_exceptions(self,
                                                  required_not_neutral_evaluation_ratio=0.75,
                                                  reset_eval_to_none_before_each_eval=True,
-                                                 time_limit_seconds=5,
+                                                 time_limit_seconds=7,
                                                  skip_long_time_frames=False):
         await self.initialize()
         start_time = timer()
