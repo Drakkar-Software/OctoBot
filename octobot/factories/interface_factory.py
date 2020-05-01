@@ -87,10 +87,11 @@ class InterfaceFactory:
 
     def _is_interface_relevant(self, interface_class, backtesting_enabled):
         return is_enabled(interface_class) and \
-               interface_class.REQUIRED_SERVICE.get_is_enabled(self.octobot.config) and \
+               all(service.get_is_enabled(self.octobot.config) for service in interface_class.REQUIRED_SERVICES) and \
                (not backtesting_enabled or (backtesting_enabled and is_enabled_in_backtesting(interface_class)))
 
     def _is_notifier_relevant(self, notifier_class, backtesting_enabled):
         return is_enabled_in_config(notifier_class, self.octobot.config) and \
-               notifier_class.REQUIRED_SERVICE.get_is_enabled(self.octobot.config) and \
+               all(service.get_is_enabled(self.octobot.config)
+                   for service in notifier_class.REQUIRED_SERVICES) and \
                not backtesting_enabled
