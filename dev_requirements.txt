@@ -5,6 +5,6 @@ pytest-asyncio==0.10.0
 pytest-xdist==1.26.1
 
 coverage==4.5.2
-coveralls==1.6.0
+coveralls==2.0.0
 
 twine
