@@ -30,11 +30,9 @@ cdef class OctoBotBacktesting:
     cdef public list service_feeds
     cdef public dict fees_config
     cdef public list backtesting_files
-    cdef public list backtestings
+    cdef public object backtesting
 
     cpdef void memory_leak_checkup(self, list to_check_elements)
     cpdef void check_remaining_objects(self)
 
     cdef void _log_remaining_object_error(self, object obj, int expected, tuple actual)
-    cdef void _register_backtesting(self, object exchange_manager)
-    cdef void _log_import_error(self)

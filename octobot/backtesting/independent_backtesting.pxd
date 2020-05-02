@@ -45,4 +45,3 @@ cdef class IndependentBacktesting:
     cdef str _find_reference_market(self)
     cdef void _add_config_default_backtesting_values(self)
     cdef void _add_crypto_currencies_config(self)
-    cdef void _log_import_error(self)

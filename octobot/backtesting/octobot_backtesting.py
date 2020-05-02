@@ -18,6 +18,10 @@ import gc
 from sys import getrefcount
 from asyncio import get_event_loop
 
+from octobot_backtesting.api.backtesting import stop_backtesting, initialize_backtesting, start_backtesting, \
+    get_importers, adapt_backtesting_channels
+from octobot_backtesting.api.importer import stop_importer
+from octobot_backtesting.importers.exchanges.exchange_importer import ExchangeDataImporter
 from octobot_commons.logging.logging_util import get_logger
 from octobot_trading.api.exchange import get_exchange_managers_from_exchange_ids, stop_exchange
 from octobot_evaluators.api.matrix import del_matrix
@@ -30,7 +34,7 @@ from octobot_trading.exchanges.exchange_simulator import ExchangeSimulator
 from octobot_trading.producers.simulator import OHLCVUpdaterSimulator
 from octobot_evaluators.api.evaluators import create_all_type_evaluators
 from octobot_trading.api.exchange import get_exchange_configuration_from_exchange_id, create_exchange_builder, \
-    get_exchange_manager_id, get_backtesting_instance
+    get_exchange_manager_id
 from octobot.logger import init_exchange_chan_logger
 
 
@@ -50,7 +54,7 @@ class OctoBotBacktesting:
         self.evaluators = []
         self.service_feeds = []
         self.backtesting_files = backtesting_files
-        self.backtestings = []
+        self.backtesting = None
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -63,6 +67,7 @@ class OctoBotBacktesting:
     async def stop(self):
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
         try:
+            await stop_backtesting(self.backtesting)
             exchange_managers = []
             try:
                 for exchange_manager in get_exchange_managers_from_exchange_ids(self.exchange_manager_ids):
@@ -83,11 +88,14 @@ class OctoBotBacktesting:
             for service_feed in self.service_feeds:
                 await stop_service_feed(service_feed)
 
-            to_reference_check = exchange_managers + self.backtestings
+            for importer in get_importers(self.backtesting):
+                await stop_importer(importer)
+
+            to_reference_check = exchange_managers + [self.backtesting]
             # Call at the next loop iteration to first let coroutines get cancelled
             # (references to coroutine and caller objects are kept while in async loop)
             get_event_loop().call_soon(self.memory_leak_checkup, to_reference_check)
-            self.backtestings = []
+            self.backtesting = None
         except Exception as e:
             self.logger.exception(e, True, f"Error when stopping independent backtesting: {e}")
 
@@ -172,6 +180,11 @@ class OctoBotBacktesting:
                                   f"might not work properly")
 
     async def _init_exchanges(self):
+        self.backtesting = await initialize_backtesting(self.backtesting_config, self.backtesting_files)
+        # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
+        # initialize
+        await adapt_backtesting_channels(self.backtesting, self.backtesting_config, ExchangeDataImporter)
+
         for exchange_class_string in self.symbols_to_create_exchange_classes.keys():
             exchange_builder = create_exchange_builder(self.backtesting_config, exchange_class_string) \
                 .has_matrix(self.matrix_id) \
@@ -179,20 +192,16 @@ class OctoBotBacktesting:
                 .set_bot_id(self.bot_id) \
                 .is_simulated() \
                 .is_rest_only() \
-                .is_backtesting(self.backtesting_files)
+                .is_backtesting(self.backtesting)
             try:
                 exchange_manager = await exchange_builder.build()
                 await init_exchange_chan_logger(exchange_manager.id)
             finally:
                 # always save exchange manager ids and backtesting instances
                 self.exchange_manager_ids.append(get_exchange_manager_id(exchange_builder.exchange_manager))
-                self._register_backtesting(exchange_builder.exchange_manager)
-
-    def _register_backtesting(self, exchange_manager):
-        backtesting = get_backtesting_instance(exchange_manager)
-        if backtesting is not None:
-            self.backtestings.append(backtesting)
-
-    def _log_import_error(self):
-        self.logger.error("OctoBotBacktesting requires OctoBot, OctoBot-Trading, OctoBot-Services "
-                          "and OctoBot-Evaluators packages installed")
+        try:
+            # TODO: might be done at the end of initialize_and_run instead, to be defined
+            await start_backtesting(self.backtesting)
+        except ValueError:
+            self._logger.error("Not enough exchange data to calculate backtesting duration")
+            await self.stop()
