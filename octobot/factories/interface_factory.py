@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from octobot.constants import PROJECT_NAME, LONG_VERSION
+from octobot.constants import PROJECT_NAME, LONG_VERSION, CONFIG_KEY
 from octobot_backtesting.api.backtesting import is_backtesting_enabled
 from octobot_services.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled, \
     start_interfaces, is_enabled_in_backtesting
@@ -60,24 +60,28 @@ class InterfaceFactory:
         interface_factory = create_interface_factory(self.octobot.config)
         interface_list = interface_factory.get_available_interfaces()
         for interface_class in interface_list:
-            await self._create_interface_if_relevant(interface_factory, interface_class, in_backtesting)
+            await self._create_interface_if_relevant(interface_factory, interface_class, in_backtesting,
+                                                     self.octobot.get_edited_config(CONFIG_KEY))
 
     async def _create_notifiers(self, in_backtesting):
         notifier_factory = create_notifier_factory(self.octobot.config)
         notifier_list = notifier_factory.get_available_notifiers()
         for notifier_class in notifier_list:
-            await self._create_notifier_class_if_relevant(notifier_factory, notifier_class, in_backtesting)
+            await self._create_notifier_class_if_relevant(notifier_factory, notifier_class, in_backtesting,
+                                                          self.octobot.get_edited_config(CONFIG_KEY))
 
-    async def _create_interface_if_relevant(self, interface_factory, interface_class, backtesting_enabled):
+    async def _create_interface_if_relevant(self, interface_factory, interface_class,
+                                            backtesting_enabled, edited_config):
         if self._is_interface_relevant(interface_class, backtesting_enabled):
             interface_instance = await interface_factory.create_interface(interface_class)
-            await interface_instance.initialize(backtesting_enabled)
+            await interface_instance.initialize(backtesting_enabled, edited_config)
             self.interface_list.append(interface_instance)
 
-    async def _create_notifier_class_if_relevant(self, notifier_factory, notifier_class, backtesting_enabled):
+    async def _create_notifier_class_if_relevant(self, notifier_factory, notifier_class,
+                                                 backtesting_enabled, edited_config):
         if self._is_notifier_relevant(notifier_class, backtesting_enabled):
             notifier_instance = await notifier_factory.create_notifier(notifier_class)
-            await notifier_instance.initialize(backtesting_enabled)
+            await notifier_instance.initialize(backtesting_enabled, edited_config)
             self.notifier_list.append(notifier_instance)
 
     def _is_interface_relevant(self, interface_class, backtesting_enabled):
