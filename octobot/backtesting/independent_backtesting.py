@@ -74,22 +74,20 @@ class IndependentBacktesting:
         return self.backtesting_config
 
     async def join(self, timeout):
-        finished_events = [asyncio.wait_for(backtesting.time_updater.finished_event.wait(), timeout)
-                           for backtesting in self.octobot_backtesting.backtestings]
-        await asyncio.gather(*finished_events)
+        await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
 
     async def stop(self):
         await self.octobot_backtesting.stop()
 
     def is_in_progress(self):
-        if self.octobot_backtesting.backtestings:
-            return any([backtesting.is_in_progress() for backtesting in self.octobot_backtesting.backtestings])
+        if self.octobot_backtesting.backtesting:
+            return self.octobot_backtesting.backtesting.is_in_progress()
         else:
             return False
 
     def get_progress(self):
-        if self.octobot_backtesting.backtestings:
-            return min([backtesting.get_progress() for backtesting in self.octobot_backtesting.backtestings])
+        if self.octobot_backtesting.backtesting:
+            return self.octobot_backtesting.backtesting.get_progress()
         else:
             return 0
 
@@ -228,6 +226,3 @@ class IndependentBacktesting:
                         CONFIG_CRYPTO_PAIRS: []
                     }
                     self.backtesting_config[CONFIG_CRYPTO_CURRENCIES][pair][CONFIG_CRYPTO_PAIRS] = [pair]
-
-    def _log_import_error(self):
-        self.logger.error("Backtesting requires OctoBot-Trading package installed")
