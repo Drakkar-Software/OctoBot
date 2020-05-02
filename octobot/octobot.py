@@ -22,7 +22,7 @@ from octobot.constants import PROJECT_NAME, LONG_VERSION, CONFIG_KEY, TENTACLES_
 from octobot.configuration_manager import ConfigurationManager
 from octobot.factories.evaluator_factory import EvaluatorFactory
 from octobot.factories.exchange_factory import ExchangeFactory
-from octobot.octobot_api import OctoBotAPI
+from octobot.api.octobot_api import OctoBotAPI
 from octobot.factories.service_feed_factory import ServiceFeedFactory
 from octobot.initializer import Initializer
 from octobot.factories.interface_factory import InterfaceFactory
