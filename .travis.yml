@@ -142,3 +142,8 @@ jobs:
             branch: "$DEPLOY_BRANCH"
             tags: true
             condition: "$TRAVIS_OS_NAME = 'linux'"
+
+after_failure:
+  - wget https://raw.githubusercontent.com/DiscordHooks/travis-ci-discord-webhook/master/send.sh
+  - chmod +x send.sh
+  - ./send.sh failure https://discordapp.com/api/webhooks/$WEBHOOK_TOKEN
