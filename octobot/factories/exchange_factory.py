@@ -49,7 +49,6 @@ class ExchangeFactory:
 
         self.available_exchanges = ccxt.exchanges
 
-
     async def _create_exchanges(self, backtesting=None):
         for exchange_class_string in self.octobot.config[CONFIG_EXCHANGES]:
             if exchange_class_string in self.available_exchanges:
@@ -72,7 +71,10 @@ class ExchangeFactory:
 
     async def _create_backtesting_exchanges(self):
         backtesting_files = get_backtesting_data_files(self.octobot.config)
-        backtesting = await initialize_backtesting(self.octobot.config, backtesting_files)
+        backtesting = await initialize_backtesting(self.octobot.config,
+                                                   exchange_ids=self.exchange_manager_ids,
+                                                   matrix_id=self.octobot.evaluator_factory.matrix_id,
+                                                   data_files=backtesting_files)
         await adapt_backtesting_channels(backtesting, self.octobot.config, ExchangeDataImporter)
         await self._create_exchanges(backtesting)
         await start_backtesting(backtesting)
@@ -83,8 +85,6 @@ class ExchangeFactory:
                 await self._create_backtesting_exchanges()
             else:
                 await self._create_exchanges()
-
-
         else:
             self.logger.error("No exchange in configuration. OctoBot requires at least one exchange "
                               "to read trading data from. You can add exchanges in the configuration section.")
