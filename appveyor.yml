@@ -37,3 +37,7 @@ on_success:
       } else {
           Write-Output "No tag for deployment"
       }
+
+on_failure:
+  - ps: Invoke-RestMethod https://raw.githubusercontent.com/DiscordHooks/appveyor-discord-webhook/master/send.ps1 -o send.ps1
+  - ps: ./send.ps1 failure $env:WEBHOOK_URL
