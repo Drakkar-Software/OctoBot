@@ -35,7 +35,7 @@ from octobot_trading.producers.simulator import OHLCVUpdaterSimulator
 from octobot_evaluators.api.evaluators import create_all_type_evaluators
 from octobot_trading.api.exchange import get_exchange_configuration_from_exchange_id, create_exchange_builder, \
     get_exchange_manager_id
-from octobot.logger import init_exchange_chan_logger
+from octobot.logger import init_exchange_chan_logger, init_evaluator_chan_logger
 
 
 class OctoBotBacktesting:
@@ -63,6 +63,8 @@ class OctoBotBacktesting:
         await self._init_exchanges()
         await self._create_evaluators()
         await self._create_service_feeds()
+        await start_backtesting(self.backtesting)
+        await self.start_loggers()
 
     async def stop(self):
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -180,7 +182,10 @@ class OctoBotBacktesting:
                                   f"might not work properly")
 
     async def _init_exchanges(self):
-        self.backtesting = await initialize_backtesting(self.backtesting_config, self.backtesting_files)
+        self.backtesting = await initialize_backtesting(self.backtesting_config,
+                                                        exchange_ids=self.exchange_manager_ids,
+                                                        matrix_id=self.matrix_id,
+                                                        data_files=self.backtesting_files)
         # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
         # initialize
         await adapt_backtesting_channels(self.backtesting, self.backtesting_config, ExchangeDataImporter)
@@ -194,14 +199,15 @@ class OctoBotBacktesting:
                 .is_rest_only() \
                 .is_backtesting(self.backtesting)
             try:
-                exchange_manager = await exchange_builder.build()
-                await init_exchange_chan_logger(exchange_manager.id)
+                await exchange_builder.build()
             finally:
                 # always save exchange manager ids and backtesting instances
                 self.exchange_manager_ids.append(get_exchange_manager_id(exchange_builder.exchange_manager))
-        try:
-            # TODO: might be done at the end of initialize_and_run instead, to be defined
-            await start_backtesting(self.backtesting)
-        except ValueError:
-            self._logger.error("Not enough exchange data to calculate backtesting duration")
-            await self.stop()
+
+    async def start_loggers(self):
+        await self.start_exchange_loggers()
+        await init_evaluator_chan_logger(self.matrix_id)
+
+    async def start_exchange_loggers(self):
+        for exchange_manager_id in self.exchange_manager_ids:
+            await init_exchange_chan_logger(exchange_manager_id)
