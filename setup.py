@@ -34,7 +34,6 @@ except ImportError:
 
 from setuptools import find_packages
 from setuptools import setup, Extension
-
 from octobot.constants import PROJECT_NAME, VERSION
 
 PACKAGES = find_packages(exclude=["tests"])
@@ -42,12 +41,18 @@ PACKAGES = find_packages(exclude=["tests"])
 packages_list = ["octobot.initializer",
                  "octobot.configuration_manager",
                  "octobot.task_manager",
-                 "octobot.octobot_api",
+                 "octobot.api.octobot_api",
                  "octobot.octobot",
                  "octobot.factories.evaluator_factory",
                  "octobot.factories.exchange_factory",
                  "octobot.factories.interface_factory",
-                 "octobot.factories.service_feed_factory"]
+                 "octobot.factories.service_feed_factory",
+                 "octobot.backtesting.octobot_backtesting",
+                 "octobot.backtesting.independent_backtesting",
+                 "octobot.backtesting.abstract_backtesting_test",
+                 "octobot.strategy_optimizer.strategy_test_suite",
+                 "octobot.strategy_optimizer.test_suite_result",
+                 "octobot.strategy_optimizer.strategy_optimizer"]
 
 ext_modules = [
     Extension(package, [f"{package.replace('.', '/')}.py"])

@@ -17,8 +17,8 @@ import asyncio
 from abc import ABCMeta, ABC
 import copy
 
-from octobot_backtesting.abstract_backtesting_test import AbstractBacktestingTest
-from octobot_backtesting.api.backtesting import get_independent_backtesting_exchange_manager_ids, \
+from octobot.backtesting.abstract_backtesting_test import AbstractBacktestingTest
+from octobot.api.backtesting import get_independent_backtesting_exchange_manager_ids, \
     create_independent_backtesting, initialize_and_run_independent_backtesting, join_independent_backtesting
 from octobot_commons.constants import CONFIG_WILDCARD
 from octobot_commons.logging.logging_util import get_logger

@@ -15,6 +15,7 @@
 #  License along with this library.
 
 from octobot.constants import PROJECT_NAME, LONG_VERSION
+from octobot_backtesting.api.backtesting import is_backtesting_enabled
 from octobot_services.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled, \
     start_interfaces, is_enabled_in_backtesting
 from octobot_services.interfaces.util.bot import get_bot_api
@@ -37,13 +38,7 @@ class InterfaceFactory:
         self.notifier_list = []
 
     async def create(self):
-        in_backtesting = False
-        try:
-            from octobot_backtesting.api.backtesting import is_backtesting_enabled
-            in_backtesting = is_backtesting_enabled(self.octobot.config)
-        except ImportError:
-            # If can't import octobot_backtesting, this session can't be a backtesting one, nothing to do
-            pass
+        in_backtesting = is_backtesting_enabled(self.octobot.config)
         await self._create_interfaces(in_backtesting)
         await self._create_notifiers(in_backtesting)
 
