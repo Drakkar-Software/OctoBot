@@ -15,10 +15,11 @@
 #  License along with this library.
 
 import pytest
+from octobot_commons.constants import CONFIG_CRYPTO_CURRENCIES
+from octobot_commons.enums import TimeFrames
+from octobot_commons.tests.test_config import load_test_config
 
-from config import *
-from core.octobot import OctoBot
-from tests.test_utils.config import load_test_config
+from octobot.octobot import OctoBot
 from tests.test_utils.bot_management import call_stop_later, start_bot_with_raise
 
 # All test coroutines will be treated as marked.
@@ -36,6 +37,5 @@ async def test_run_bot(event_loop):
     }
     bot = OctoBot(config, ignore_config=True)
     bot.time_frames = [TimeFrames.ONE_MINUTE]
-    await bot.initialize()
-    await call_stop_later(5, event_loop, bot)
+    await call_stop_later(10, event_loop, bot)
     await start_bot_with_raise(bot)

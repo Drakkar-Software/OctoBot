@@ -14,25 +14,17 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from asyncio import CancelledError
-from threading import Thread
 
 import pytest
+from octobot_commons.tests.test_config import load_test_config
 
-from backtesting.backtesting_util import start_bot
-from core.octobot import OctoBot
-from tests.test_utils.config import load_test_config
-
-
-def stop_bot(bot):
-    thread = Thread(target=bot.stop)
-    thread.start()
-    thread.join()
+from octobot.commands import start_bot, stop_bot
+from octobot.logger import init_logger
+from octobot.octobot import OctoBot
 
 
 async def create_bot() -> OctoBot:
-    # launch a bot
-    config = load_test_config()
-    return OctoBot(config)
+    return OctoBot(load_test_config())
 
 
 async def initialize_bot(bot):
@@ -43,6 +35,6 @@ async def call_stop_later(time, event_loop, bot):
     event_loop.call_later(time, stop_bot, bot)
 
 
-async def start_bot_with_raise(bot, run_in_new_thread=False):
+async def start_bot_with_raise(bot):
     with pytest.raises(CancelledError):
-        await start_bot(bot, run_in_new_thread)
+        await start_bot(bot, init_logger())

@@ -15,13 +15,11 @@ install:
   - "%PYTHON%\\python.exe -m pip install --prefer-binary -r requirements.txt -r dev_requirements.txt"
   - mkdir user
   - copy config\default_config.json user\config.json
-#  - "%PYTHON%\\python.exe start.py -p install all"
 
 build: off
 
 test_script:
-  - echo "todo"
-#  - "%PYTHON%\\python.exe -m pytest -n 5 tests/unit_tests tests/functional_tests tests/endurance_tests"
+  - "%PYTHON%\\python.exe -m pytest -n 5 tests"
 
 after_test:
   - "%WITH_ENV% %PYTHON%\\python.exe setup.py build_ext --inplace"
