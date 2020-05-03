@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-alpha10] - 2020-05-02
+### Added
+- [Backtesting] Synchronized channel support
+
+### Updated
+- [Tests] strategy and TA framework
+- [Tests] trading mode framework migration
+- [Interfaces & Notifications] Migration follow up
+- [Backtesting] Only one instance is created
+
+### Fixed
+- [Tests] Stress test timeout 
+- [Startup] Fix api calls 
+
 ## [0.4.0-alpha9] - 2020-04-12
 ### Updated
 - [Start] Import ConfigEvaluatorError from OctoBot-Commons

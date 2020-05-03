@@ -15,11 +15,28 @@ install:
   - "%PYTHON%\\python.exe -m pip install --prefer-binary -r requirements.txt -r dev_requirements.txt"
   - mkdir user
   - copy config\default_config.json user\config.json
+  - ps: |
+      try
+      {
+        $Env:TENTACLES_URL_SUBCATEGORY = "dev/"
+        $Env:TENTACLES_URL_TAG = $env:APPVEYOR_REPO_BRANCH -replace "/", "_"
+        &"${env:PYTHON}/python.exe" start.py tentacles -q --install --all
+      }
+      catch
+      {
+        If ($env:APPVEYOR_REPO_TAG -eq "false") {
+          $Env:TENTACLES_URL_TAG = "latest"
+        } else {
+          $Env:TENTACLES_URL_TAG = ""
+        }
+        &"${env:PYTHON}/python.exe" start.py tentacles --install --all
+      }
 
 build: off
 
 test_script:
-  - "%PYTHON%\\python.exe -m pytest -n 5 tests"
+  - "%PYTHON%\\python.exe -m pytest tests"
+  - "%PYTHON%\\python.exe -m pytest tentacles"
 
 after_test:
   - "%WITH_ENV% %PYTHON%\\python.exe setup.py build_ext --inplace"

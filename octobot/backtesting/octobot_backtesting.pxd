@@ -35,4 +35,4 @@ cdef class OctoBotBacktesting:
     cpdef void memory_leak_checkup(self, list to_check_elements)
     cpdef void check_remaining_objects(self)
 
-    cdef void _log_remaining_object_error(self, object obj, int expected, tuple actual)
+cdef str _get_remaining_object_error(object obj, int expected, tuple actual)

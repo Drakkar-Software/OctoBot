@@ -95,7 +95,8 @@ class OctoBot:
         await self.task_manager.start_tools_tasks()
         await self.evaluator_factory.initialize()
         await self.service_feed_factory.initialize()
-        await self.exchange_factory.create()
+        if not await self.exchange_factory.create():
+            return  # if exchanges was not properly initialized stop OctoBot initialization
         await self.evaluator_factory.create()
         # Start service feeds now that evaluators registered their feed requirements
         await self.service_feed_factory.create()
