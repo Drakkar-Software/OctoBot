@@ -30,8 +30,7 @@ jobs:
       python: 3.7-dev
       language: python
       script:
-        - echo "todo"
-#        - pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
+        - pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
       after_success:
         - if [ $TRAVIS_PULL_REQUEST == "false" ]; then coveralls; fi
 
@@ -41,9 +40,10 @@ jobs:
       python: 3.7-dev
       language: python
       script:
+        - python3 setup.py build_ext --inplace
         - python3 setup.py install
         - rm -rf $PACKAGE_FOLDER
-#        - pytest -n 5 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests tests/endurance_tests
+        - pytest -n 5 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests tests/endurance_tests
 
     - name: "Linux - Docker - Deploy"
       stage: deploy

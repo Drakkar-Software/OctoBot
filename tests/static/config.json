@@ -70,11 +70,11 @@
       "username":""
     }
   },
-  "notification":{
-    "global-info": false,
-    "price-alerts": false,
-    "trades": false,
-    "notification-type": 1
+  "notification": {
+    "global-info": true,
+    "notification-type": [],
+    "price-alerts": true,
+    "trades": true
   },
   "trading":{
     "risk": 1,

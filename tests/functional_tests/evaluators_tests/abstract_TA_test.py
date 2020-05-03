@@ -90,7 +90,7 @@ class AbstractTATest:
             await self.initialize()
             start_time = timer()
             with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                    patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
                 for symbol in self.data_bank.data_importer.symbols:
                     self.data_bank.default_symbol = symbol
                     self.data_bank.standard_mode(self.ENOUGH_DATA_STARTING_POINT)
@@ -116,8 +116,8 @@ class AbstractTATest:
                                 if self.evaluator.eval_note != START_PENDING_EVAL_NOTE:
                                     not_neutral_evaluation_count += 1
 
-                            assert not_neutral_evaluation_count / (total_candles_count - start_point) \
-                                >= required_not_neutral_evaluation_ratio
+                            assert not_neutral_evaluation_count / (total_candles_count - start_point) >= \
+                                required_not_neutral_evaluation_ratio
             process_time = timer() - start_time
             assert process_time <= time_limit_seconds
         finally:
@@ -136,7 +136,7 @@ class AbstractTATest:
                 self.data_bank.sudden_dump_mode()
 
             with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                    patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
                 # not dumped yet
                 await self._set_data_and_check_eval(pre_dump, pre_dump_eval, False)
 
@@ -170,7 +170,7 @@ class AbstractTATest:
                 self.data_bank.sudden_pump_mode()
 
             with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                    patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
                 # not pumped yet
                 await self._set_data_and_check_eval(pre_pump, pre_pump_eval, False)
 
@@ -207,7 +207,7 @@ class AbstractTATest:
                 self.data_bank.rise_after_over_sold_mode()
 
             with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                    patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
                 # not started
                 await self._set_data_and_check_eval(pre_sell, pre_sell_eval, False)
 
@@ -236,7 +236,7 @@ class AbstractTATest:
             await self.initialize()
 
             with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                    patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
                 # not started, buying started, buying maxed, start dipping, max dip, max: back normal:
                 self.time_frame, pre_buy, start_buy, max_buy, start_dip, max_dip, normal = \
                     self.data_bank.dip_after_over_bought_mode()
@@ -277,12 +277,12 @@ class AbstractTATest:
             # micro up, micro down, micro up, micro down, back normal, micro down, back normal, micro down, back up,
             # micro up, back down, back normal, micro down, back up, micro down, back up, micro down, back up
             self.time_frame, start_move_ending_up_in_a_rise, reaches_flat_trend, first_micro_up_p1, \
-            first_micro_up_p2, micro_down1, micro_up1, micro_down2, micro_up2, micro_down3, back_normal3, micro_down4, \
-            back_normal4, micro_down5, back_up5, micro_up6, back_down6, back_normal6, micro_down7, back_up7, \
-            micro_down8, back_up8, micro_down9, back_up9 = self.data_bank.overall_flat_trend_mode()
+                first_micro_up_p2, micro_down1, micro_up1, micro_down2, micro_up2, micro_down3, back_normal3, \
+                micro_down4, back_normal4, micro_down5, back_up5, micro_up6, back_down6, back_normal6, micro_down7, \
+                back_up7, micro_down8, back_up8, micro_down9, back_up9 = self.data_bank.overall_flat_trend_mode()
 
             with patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data), \
-              patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
+                    patch.object(self.evaluator, 'evaluation_completed', new=AsyncMock()):
                 # start_move_ending_up_in_a_rise
                 await self._set_data_and_check_eval(start_move_ending_up_in_a_rise, eval_start_move_ending_up_in_a_rise,
                                                     False)
@@ -369,11 +369,9 @@ class AbstractTATest:
         await self._set_bank_data_and_call_evaluator(end_index)
         if expected_eval_note != -2:
             if check_inferior:
-                assert self.evaluator.eval_note == expected_eval_note \
-                    or self.evaluator.eval_note <= expected_eval_note
+                assert self.evaluator.eval_note == expected_eval_note or self.evaluator.eval_note <= expected_eval_note
             else:
-                assert self.evaluator.eval_note == expected_eval_note \
-                    or self.evaluator.eval_note >= expected_eval_note
+                assert self.evaluator.eval_note == expected_eval_note or self.evaluator.eval_note >= expected_eval_note
 
     def _assert_init(self):
         assert self.evaluator
