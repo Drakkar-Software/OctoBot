@@ -44,10 +44,8 @@ class TaskManager:
     def init_async_loop(self):
         self.async_loop = asyncio.get_running_loop()
 
-    async def start_tools_tasks(self, run_in_new_thread=False):
+    async def start_tools_tasks(self):
         task_list = []
-        # if self.octobot.initializer.performance_analyser:
-        #     task_list.append(self.octobot.initializer.performance_analyser.start_monitoring())
 
         if self.octobot.community_handler:
             task_list.append(self.octobot.community_handler.start_community_task())
@@ -56,15 +54,10 @@ class TaskManager:
         self.ready = True
         self.tools_task_group = asyncio.gather(*task_list)
 
-        # if run_in_new_thread:
-        #     self._create_new_asyncio_main_loop()
-        # else:
-        #     self.current_loop_thread = threading.current_thread()
-        #     await self.tools_task_group
-
     async def join_tasks(self):
         try:
-            await asyncio.gather(*asyncio.all_tasks(asyncio.get_event_loop()))
+            await asyncio.gather(*[t for t in asyncio.all_tasks(asyncio.get_event_loop()) if
+                                   t is not asyncio.current_task()])
         except CancelledError:
             self.logger.error("CancelledError raised")
 

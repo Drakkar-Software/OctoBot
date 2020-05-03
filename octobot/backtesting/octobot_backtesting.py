@@ -66,7 +66,7 @@ class OctoBotBacktesting:
         await start_backtesting(self.backtesting)
         await self.start_loggers()
 
-    async def stop(self):
+    async def stop(self, memory_check=False):
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
         try:
             await stop_backtesting(self.backtesting)
@@ -93,31 +93,36 @@ class OctoBotBacktesting:
             for importer in get_importers(self.backtesting):
                 await stop_importer(importer)
 
-            to_reference_check = exchange_managers + [self.backtesting]
-            # Call at the next loop iteration to first let coroutines get cancelled
-            # (references to coroutine and caller objects are kept while in async loop)
-            get_event_loop().call_soon(self.memory_leak_checkup, to_reference_check)
+            if memory_check:
+                to_reference_check = exchange_managers + [self.backtesting]
+                # Call at the next loop iteration to first let coroutines get cancelled
+                # (references to coroutine and caller objects are kept while in async loop)
+                get_event_loop().call_soon(self.memory_leak_checkup, to_reference_check)
             self.backtesting = None
         except Exception as e:
             self.logger.exception(e, True, f"Error when stopping independent backtesting: {e}")
 
     def memory_leak_checkup(self, to_check_elements):
         self.logger.debug(f"Memory leak checking {[e.__class__.__name__ for e in to_check_elements]}")
+        memory_leak_errors = []
         for i in range(len(to_check_elements)):
             if getrefcount(to_check_elements[i]) > 2:
                 # Using PyCharm debugger, right click on the element variable and use "Find references"
                 # Warning: Python debugger can add references when watching an element
                 element = to_check_elements[i]
                 # Now expect 3 references because the above element variable adds a reference
-                self.logger.error(f"[Dev oriented error: no effect on backtesting result, please report if you see it]:"
-                                  f" Too many remaining references on the {element.__class__.__name__} element after "
-                                  f"{self.__class__.__name__} run, the garbage collector won't free it "
-                                  f"(expected a maximum of 3 references): {getrefcount(element)} actual references "
-                                  f"({element})")
+                memory_leak_errors.append(f" Too many remaining references on the {element.__class__.__name__} element "
+                                          f"after {self.__class__.__name__} run, the garbage collector won't free it "
+                                          f"(expected a maximum of 3 references): {getrefcount(element)} actual "
+                                          f"references ({element})")
+        if memory_leak_errors:
+            raise AssertionError("[Dev oriented error: no effect on backtesting result, please report if you see it]:\n"
+                                 + "\n".join(memory_leak_errors))
 
     # Use check_remaining_objects to check remaining objects from garbage collector after calling stop().
     # Warning: can take a long time when a lot of objects exist
     def check_remaining_objects(self):
+        objects_leak_errors = []
         exchanges_count = len(self.exchange_manager_ids)
         to_watch_objects = (ExchangeSymbolData, ExchangeManager, ExchangeSimulator, OHLCVUpdaterSimulator)
         objects_references = {obj: (0, []) for obj in to_watch_objects}
@@ -135,19 +140,17 @@ class OctoBotBacktesting:
 
         for obj, max_ref in expected_max_objects_references.items():
             if objects_references[obj][0] > max_ref:
-                self._log_remaining_object_error(obj,
-                                                 max_ref,
-                                                 objects_references[obj])
+                objects_leak_errors.append(_get_remaining_object_error(obj,
+                                                                       max_ref,
+                                                                       objects_references[obj]))
 
-    def _log_remaining_object_error(self, obj, expected, actual):
-        self.logger.error(f"[Dev oriented error: no effect on backtesting result, please report if you see it]: "
-                          f"too many remaining {obj.__name__} instances: expected: {expected} actual {actual[0]}")
-        for i in range(len(actual[1])):
-            self.logger.warning(f"{getrefcount(actual[1][i])} references on {actual[1][i]}")
+        if objects_leak_errors:
+            raise AssertionError("[Dev oriented error: no effect on backtesting result, please report if you see it]:\n"
+                                 + "\n".join(objects_leak_errors))
 
     async def _init_evaluators(self):
         self.matrix_id = await initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
-        await create_evaluator_channels(self.matrix_id)
+        await create_evaluator_channels(self.matrix_id, is_backtesting=True)
 
     async def _init_service_feeds(self):
         try:
@@ -211,3 +214,10 @@ class OctoBotBacktesting:
     async def start_exchange_loggers(self):
         for exchange_manager_id in self.exchange_manager_ids:
             await init_exchange_chan_logger(exchange_manager_id)
+
+
+def _get_remaining_object_error(obj, expected, actual):
+    error = f"too many remaining {obj.__name__} instances: expected: {expected} actual {actual[0]}"
+    for i in range(len(actual[1])):
+        error += f"{getrefcount(actual[1][i])} references on {actual[1][i]}"
+        return error

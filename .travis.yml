@@ -12,15 +12,17 @@ env:
     - GH_REPO=Drakkar-Software/OctoBot
     - DEPLOY_BRANCH=master
     - PACKAGE_FOLDER=octobot
-    - TRAVIS_BRANCH=${TRAVIS_BRANCH////_}
+    - TRAVIS_CLEANED_BRANCH=${TRAVIS_BRANCH////_}
 
 before_install:
   - python3 -m pip install --upgrade pip
+  - if [ -z $TRAVIS_TAG ]; then export TENTACLES_URL_TAG=latest; fi
 
 install:
   - python3 -m pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
   - mkdir user
   - cp ./config/default_config.json ./user/config.json
+  - TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=$TRAVIS_CLEANED_BRANCH python3 start.py tentacles -q --install --all || python3 start.py tentacles --install --all
 
 jobs:
   include:
@@ -31,6 +33,7 @@ jobs:
       language: python
       script:
         - pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
+        - pytest tentacles
       after_success:
         - if [ $TRAVIS_PULL_REQUEST == "false" ]; then coveralls; fi
 
@@ -43,7 +46,8 @@ jobs:
         - python3 setup.py build_ext --inplace
         - python3 setup.py install
         - rm -rf $PACKAGE_FOLDER
-        - pytest -n 5 --cov=. --cov-config=.coveragerc --durations=0 -rw tests/unit_tests tests/functional_tests tests/endurance_tests
+        - pytest tests
+        - pytest tentacles
 
     - name: "Linux - Docker - Deploy"
       stage: deploy
@@ -51,10 +55,10 @@ jobs:
       before_install: echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
       install: skip
       script:
-        - docker build . -t drakkarsoftware/octobot:$TRAVIS_BRANCH -f Dockerfile
+        - docker build . -t drakkarsoftware/octobot:$TRAVIS_CLEANED_BRANCH -f Dockerfile
       deploy:
           - provider: script
-            script: docker push drakkarsoftware/octobot:$TRAVIS_BRANCH
+            script: docker push drakkarsoftware/octobot:$TRAVIS_CLEANED_BRANCH
             cleanup: false
             on:
               repo: "$GH_REPO"
@@ -130,8 +134,8 @@ jobs:
       install: skip
       script: skip
       before_deploy:
-        - docker pull drakkarsoftware/octobot:$TRAVIS_BRANCH
-        - docker tag drakkarsoftware/octobot:$TRAVIS_BRANCH registry.heroku.com/$HEROKU_APP_NAME/octobot
+        - docker pull drakkarsoftware/octobot:$TRAVIS_CLEANED_BRANCH
+        - docker tag drakkarsoftware/octobot:$TRAVIS_CLEANED_BRANCH registry.heroku.com/$HEROKU_APP_NAME/octobot
         - docker push registry.heroku.com/$HEROKU_APP_NAME/octobot
       deploy:
         - provider: script

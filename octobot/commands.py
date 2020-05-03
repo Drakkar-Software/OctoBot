@@ -124,6 +124,7 @@ async def start_bot(bot, logger, catch=False):
         # join threads in a not loop blocking executor
         # TODO remove this when no thread anymore
         await bot.task_manager.join_tasks()
+        bot.task_manager.stop_tasks()
 
     except Exception as e:
         logger.exception(e, True, f"OctoBot Exception : {e}")

@@ -17,25 +17,26 @@ import asyncio
 from copy import deepcopy
 from os import path
 
+from octobot.backtesting.octobot_backtesting import OctoBotBacktesting
 from octobot_backtesting.constants import CONFIG_BACKTESTING, BACKTESTING_FILE_PATH, BACKTESTING_DEFAULT_JOIN_TIMEOUT
 from octobot_backtesting.data.data_file_manager import get_file_description
 from octobot_backtesting.enums import DataFormatKeys
-from octobot.backtesting.octobot_backtesting import OctoBotBacktesting
 from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
 from octobot_commons.enums import PriceIndexes
 from octobot_commons.errors import ConfigTradingError
-from octobot_commons.logging.logging_util import get_logger, BotLogger
+from octobot_commons.logging.logging_util import get_logger, get_backtesting_errors_count, \
+    reset_backtesting_errors, set_error_publication_enabled
 from octobot_commons.symbol_util import split_symbol
 from octobot_commons.time_frame_manager import find_min_time_frame
-from octobot_trading.api.symbol_data import get_symbol_data, get_symbol_historical_candles
+from octobot_evaluators.constants import CONFIG_FORCED_TIME_FRAME
 from octobot_trading.api.exchange import get_exchange_manager_from_exchange_id, get_exchange_name, \
     get_watched_timeframes
+from octobot_trading.api.modes import get_activated_trading_mode
 from octobot_trading.api.portfolio import get_portfolio, get_origin_portfolio
 from octobot_trading.api.profitability import get_profitability_stats, get_reference_market
-from octobot_trading.api.modes import get_activated_trading_mode
+from octobot_trading.api.symbol_data import get_symbol_data, get_symbol_historical_candles
 from octobot_trading.constants import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_STARTING_PORTFOLIO, CONFIG_SIMULATOR_FEES, CONFIG_EXCHANGES, CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET
-from octobot_evaluators.constants import CONFIG_FORCED_TIME_FRAME
 
 
 class IndependentBacktesting:
@@ -76,8 +77,8 @@ class IndependentBacktesting:
     async def join(self, timeout):
         await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
 
-    async def stop(self):
-        await self.octobot_backtesting.stop()
+    async def stop(self, memory_check=False):
+        await self.octobot_backtesting.stop(memory_check=memory_check)
 
     def is_in_progress(self):
         if self.octobot_backtesting.backtesting:
@@ -92,13 +93,13 @@ class IndependentBacktesting:
             return 0
 
     def _block_errors_publish_till_end_of_backtesting(self):
-        BotLogger.reset_backtesting_errors()
-        BotLogger.set_error_publication_enabled(False)
+        reset_backtesting_errors()
+        set_error_publication_enabled(False)
         asyncio.create_task(self._re_enable_logs_after_backtesting())
 
     async def _re_enable_logs_after_backtesting(self):
         await self.join(timeout=BACKTESTING_DEFAULT_JOIN_TIMEOUT)
-        BotLogger.set_error_publication_enabled(True)
+        set_error_publication_enabled(True)
 
     @staticmethod
     def _get_market_delta(symbol, exchange_manager, min_timeframe):
@@ -159,7 +160,7 @@ class IndependentBacktesting:
             SYMBOL_REPORT: [],
             BOT_REPORT: {},
             CHART_IDENTIFIERS: [],
-            ERRORS_COUNT: BotLogger.get_backtesting_errors_count()
+            ERRORS_COUNT: get_backtesting_errors_count()
         }
         exchange_manager = get_exchange_manager_from_exchange_id(exchange_id)
         _, profitability, _, market_average_profitability, _ = get_profitability_stats(exchange_manager)

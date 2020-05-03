@@ -37,8 +37,8 @@ async def initialize_independent_backtesting_config(independent_backtesting) -> 
     return await independent_backtesting.initialize_config()
 
 
-async def stop_independent_backtesting(independent_backtesting) -> None:
-    await independent_backtesting.stop()
+async def stop_independent_backtesting(independent_backtesting, memory_check=False) -> None:
+    await independent_backtesting.stop(memory_check=memory_check)
 
 
 def check_independent_backtesting_remaining_objects(independent_backtesting) -> None:
@@ -61,9 +61,9 @@ def is_independent_backtesting_finished(independent_backtesting) -> bool:
     return independent_backtesting.get_progress() == 1.0
 
 
-async def get_independent_backtesting_report(independent_backtesting) -> float:
+async def get_independent_backtesting_report(independent_backtesting) -> dict:
     return await independent_backtesting.get_dict_formatted_report()
 
 
-def get_independent_backtesting_exchange_manager_ids(independent_backtesting) -> float:
+def get_independent_backtesting_exchange_manager_ids(independent_backtesting) -> list:
     return independent_backtesting.octobot_backtesting.exchange_manager_ids
