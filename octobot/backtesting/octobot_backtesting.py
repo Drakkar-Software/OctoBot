@@ -147,7 +147,7 @@ class OctoBotBacktesting:
 
     async def _init_evaluators(self):
         self.matrix_id = await initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
-        await create_evaluator_channels(self.matrix_id)
+        await create_evaluator_channels(self.matrix_id, is_backtesting=True)
 
     async def _init_service_feeds(self):
         try:

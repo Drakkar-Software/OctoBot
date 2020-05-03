@@ -15,6 +15,8 @@
 #  License along with this library.
 import ccxt
 
+from octobot.api.backtesting import create_independent_backtesting, initialize_and_run_independent_backtesting
+from octobot.backtesting.independent_backtesting import IndependentBacktesting
 from octobot_backtesting.api.backtesting import is_backtesting_enabled, get_backtesting_data_files, \
     initialize_backtesting, adapt_backtesting_channels, start_backtesting
 from octobot_backtesting.importers.exchanges.exchange_importer import ExchangeDataImporter
@@ -70,21 +72,21 @@ class ExchangeFactory:
                 self.logger.error(f"{exchange_class_string} exchange not found")
 
     async def _create_backtesting_exchanges(self):
-        backtesting_files = get_backtesting_data_files(self.octobot.config)
-        backtesting = await initialize_backtesting(self.octobot.config,
-                                                   exchange_ids=self.exchange_manager_ids,
-                                                   matrix_id=self.octobot.evaluator_factory.matrix_id,
-                                                   data_files=backtesting_files)
-        await adapt_backtesting_channels(backtesting, self.octobot.config, ExchangeDataImporter)
-        await self._create_exchanges(backtesting)
-        await start_backtesting(backtesting)
+        await initialize_and_run_independent_backtesting(
+            create_independent_backtesting(self.octobot.config,
+                                           self.octobot.tentacles_setup_config,
+                                           get_backtesting_data_files(self.octobot.config)))
 
-    async def create(self):
+    async def create(self) -> bool:
+        if is_backtesting_enabled(self.octobot.config):
+            await self._create_backtesting_exchanges()
+            return False
         if self.octobot.config[CONFIG_EXCHANGES]:
-            if is_backtesting_enabled(self.octobot.config):
-                await self._create_backtesting_exchanges()
-            else:
+            try:
                 await self._create_exchanges()
-        else:
-            self.logger.error("No exchange in configuration. OctoBot requires at least one exchange "
-                              "to read trading data from. You can add exchanges in the configuration section.")
+                return True
+            except Exception as e:
+                self.logger.exception(e, error_message="An error happened during exchange creation")
+        self.logger.error("No exchange in configuration. OctoBot requires at least one exchange "
+                          "to read trading data from. You can add exchanges in the configuration section.")
+        return False

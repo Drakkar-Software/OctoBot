@@ -36,6 +36,5 @@ async def test_run_bot(event_loop):
             }
     }
     bot = OctoBot(config, ignore_config=True)
-    bot.time_frames = [TimeFrames.ONE_MINUTE]
     await call_stop_later(10, event_loop, bot)
     await start_bot_with_raise(bot)

@@ -61,9 +61,9 @@ def is_independent_backtesting_finished(independent_backtesting) -> bool:
     return independent_backtesting.get_progress() == 1.0
 
 
-async def get_independent_backtesting_report(independent_backtesting) -> float:
+async def get_independent_backtesting_report(independent_backtesting) -> dict:
     return await independent_backtesting.get_dict_formatted_report()
 
 
-def get_independent_backtesting_exchange_manager_ids(independent_backtesting) -> float:
+def get_independent_backtesting_exchange_manager_ids(independent_backtesting) -> list:
     return independent_backtesting.octobot_backtesting.exchange_manager_ids
