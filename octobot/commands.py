@@ -54,7 +54,7 @@ def data_collector(config, catch=True):
 
 def call_tentacles_manager(command_args):
     init_logger()
-    handle_tentacles_manager_command(command_args, tentacles_url=DEFAULT_TENTACLES_URL)
+    sys.exit(handle_tentacles_manager_command(command_args, tentacles_url=DEFAULT_TENTACLES_URL))
 
 
 def exchange_keys_encrypter(catch=False):
@@ -74,7 +74,7 @@ def exchange_keys_encrypter(catch=False):
 
 
 def start_strategy_optimizer(config, commands):
-    from octobot_backtesting.api.strategy_optimizer import create_strategy_optimizer, \
+    from octobot.api.strategy_optimizer import create_strategy_optimizer, \
         get_optimizer_is_properly_initialized, find_optimal_configuration, print_optimizer_report
     tentacles_setup_config = asyncio.run(get_tentacles_setup_config())
     optimizer = create_strategy_optimizer(config, tentacles_setup_config, commands[0])
