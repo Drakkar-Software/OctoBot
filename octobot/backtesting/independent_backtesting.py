@@ -77,8 +77,8 @@ class IndependentBacktesting:
     async def join(self, timeout):
         await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
 
-    async def stop(self):
-        await self.octobot_backtesting.stop()
+    async def stop(self, memory_check=True):
+        await self.octobot_backtesting.stop(memory_check=memory_check)
 
     def is_in_progress(self):
         if self.octobot_backtesting.backtesting:

@@ -56,7 +56,8 @@ class TaskManager:
 
     async def join_tasks(self):
         try:
-            await asyncio.gather(*asyncio.all_tasks(asyncio.get_event_loop()))
+            await asyncio.gather(*[t for t in asyncio.all_tasks(asyncio.get_event_loop()) if
+                                   t is not asyncio.current_task()])
         except CancelledError:
             self.logger.error("CancelledError raised")
 

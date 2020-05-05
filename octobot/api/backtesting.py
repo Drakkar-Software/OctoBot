@@ -37,8 +37,8 @@ async def initialize_independent_backtesting_config(independent_backtesting) -> 
     return await independent_backtesting.initialize_config()
 
 
-async def stop_independent_backtesting(independent_backtesting) -> None:
-    await independent_backtesting.stop()
+async def stop_independent_backtesting(independent_backtesting, memory_check=True) -> None:
+    await independent_backtesting.stop(memory_check=memory_check)
 
 
 def check_independent_backtesting_remaining_objects(independent_backtesting) -> None:

@@ -66,7 +66,7 @@ class OctoBotBacktesting:
         await start_backtesting(self.backtesting)
         await self.start_loggers()
 
-    async def stop(self):
+    async def stop(self, memory_check=True):
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
         try:
             await stop_backtesting(self.backtesting)
@@ -93,10 +93,11 @@ class OctoBotBacktesting:
             for importer in get_importers(self.backtesting):
                 await stop_importer(importer)
 
-            to_reference_check = exchange_managers + [self.backtesting]
-            # Call at the next loop iteration to first let coroutines get cancelled
-            # (references to coroutine and caller objects are kept while in async loop)
-            get_event_loop().call_soon(self.memory_leak_checkup, to_reference_check)
+            if memory_check:
+                to_reference_check = exchange_managers + [self.backtesting]
+                # Call at the next loop iteration to first let coroutines get cancelled
+                # (references to coroutine and caller objects are kept while in async loop)
+                get_event_loop().call_soon(self.memory_leak_checkup, to_reference_check)
             self.backtesting = None
         except Exception as e:
             self.logger.exception(e, True, f"Error when stopping independent backtesting: {e}")
