@@ -16,6 +16,7 @@
 from octobot.constants import CONFIG_KEY
 from octobot_commons.logging.logging_util import get_logger
 from octobot_services.api.service_feeds import create_service_feed_factory, start_service_feed
+from octobot_backtesting.api.backtesting import is_backtesting_enabled
 
 
 class ServiceFeedFactory:
@@ -32,13 +33,7 @@ class ServiceFeedFactory:
         self.service_feeds = []
 
     async def initialize(self):
-        in_backtesting = False
-        try:
-            from octobot_backtesting.api.backtesting import is_backtesting_enabled
-            in_backtesting = is_backtesting_enabled(self.octobot.config)
-        except ImportError:
-            # If can't import octobot_backtesting, this session can't be a backtesting one, nothing to do
-            pass
+        in_backtesting = is_backtesting_enabled(self.octobot.config)
         service_feed_factory = create_service_feed_factory(self.octobot.config,
                                                            self.octobot.async_loop,
                                                            self.octobot.bot_id)
