@@ -37,9 +37,10 @@ class EvaluatorFactory:
         self.tentacles_setup_config = None
 
     async def initialize(self):
-        self.tentacles_setup_config = self.octobot.tentacles_setup_config
-        self.matrix_id = await initialize_evaluators(self.octobot.config, self.tentacles_setup_config)
-        await create_evaluator_channels(self.matrix_id, is_backtesting=is_backtesting_enabled(self.octobot.config))
+        if not is_backtesting_enabled(self.octobot.config):
+            self.tentacles_setup_config = self.octobot.tentacles_setup_config
+            self.matrix_id = await initialize_evaluators(self.octobot.config, self.tentacles_setup_config)
+            await create_evaluator_channels(self.matrix_id, is_backtesting=is_backtesting_enabled(self.octobot.config))
 
     async def create(self):
         for exchange_configuration in Exchanges.instance().get_all_exchanges():
