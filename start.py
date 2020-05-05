@@ -41,7 +41,6 @@ def update_config_with_args(starting_args, config, logger):
         try:
             from octobot_backtesting.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION
             config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-            config[CONFIG_BACKTESTING][CONFIG_ANALYSIS_ENABLED_OPTION] = starting_args.backtesting_analysis
         except ImportError as e:
             logger.error("Can't start backtesting without the octobot_backtesting package properly installed.")
             raise e
@@ -218,10 +217,6 @@ def main(args=None):
                         action='store_true')
     parser.add_argument('-b', '--backtesting', help='Start OctoBot in backesting mode using the backtesting '
                                                     'config stored in config.json.',
-                        action='store_true')
-    parser.add_argument('-ba', '--backtesting_analysis',
-                        help='Additional argument in order not stop the bot at the end of the backtesting '
-                             '(useful to analyse results using interfaces like the web interface).',
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
