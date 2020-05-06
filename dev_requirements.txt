@@ -1,5 +1,4 @@
 pytest
-pytest-pep8
 pytest-cov
 pytest-asyncio
 pytest-xdist
