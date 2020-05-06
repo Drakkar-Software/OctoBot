@@ -18,6 +18,7 @@ import os
 
 import sys
 
+from octobot.backtesting.octobot_backtesting_factory import OctoBotBacktestingFactory
 from octobot.commands import exchange_keys_encrypter, start_strategy_optimizer, start_bot, data_collector, \
     call_tentacles_manager, run_tentacles_installation, run_bot
 from octobot.configuration_manager import config_health_check
@@ -44,8 +45,6 @@ def update_config_with_args(starting_args, config, logger):
         except ImportError as e:
             logger.error("Can't start backtesting without the octobot_backtesting package properly installed.")
             raise e
-        # config[CONFIG_CATEGORY_NOTIFICATION][CONFIG_ENABLED_OPTION] = False
-
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
         config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
 
@@ -64,19 +63,6 @@ def update_config_with_args(starting_args, config, logger):
 #             logger.info(announcement)
 #     except Exception as e:
 #         logger.warning("Impossible to check announcements: {0}".format(e))
-
-
-# def _auto_open_web(config, bot):
-#     try:
-#         # wait bot is ready
-#         while not bot.is_ready():
-#             sleep(0.1)
-#
-#         webbrowser.open("http://{0}:{1}".format(socket.gethostbyname(socket.gethostname()),
-#                                                 config[CONFIG_CATEGORY_SERVICES][CONFIG_WEB][CONFIG_WEB_PORT])
-#                         )
-#     except webbrowser.Error as e:
-#         logging.error("{0}, impossible to open automatically web interface".format(e))
 
 
 def _log_terms_if_unaccepted(config, logger):
@@ -98,6 +84,7 @@ def _disable_interface_from_param(interface_identifier, param_value, logger):
 
 
 def start_octobot(starting_args):
+    logger = None
     try:
         if starting_args.version:
             print(LONG_VERSION)
@@ -156,17 +143,12 @@ def start_octobot(starting_args):
 
         update_config_with_args(starting_args, config, logger)
 
-        reset_trading_history = starting_args.reset_trading_history
-
-        bot = OctoBot(config, reset_trading_history=reset_trading_history)
+        if starting_args.backtesting:
+            bot = OctoBotBacktestingFactory(config)
+        else:
+            bot = OctoBot(config, reset_trading_history=starting_args.reset_trading_history)
 
         _log_terms_if_unaccepted(config, logger)
-
-        # import interfaces
-        # interfaces.__init__(bot, config)
-
-        # if not starting_args.no_open_web and not starting_args.no_web:
-        #     Thread(target=_auto_open_web, args=(config, bot)).start()
 
         # set debug_mode = True to activate asyncio debug mode
         debug_mode = is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION

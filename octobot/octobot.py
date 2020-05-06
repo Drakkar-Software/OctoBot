@@ -58,13 +58,6 @@ class OctoBot:
         # Used to know when OctoBot is ready to answer in APIs
         self.initialized = False
 
-        # tools: used for alternative operations on a bot on the fly (ex: backtesting started from web interface)
-        # self.tools = {
-        #     BOT_TOOLS_BACKTESTING: None,
-        #     BOT_TOOLS_STRATEGY_OPTIMIZER: None,
-        #     BOT_TOOLS_RECORDER: None,
-        # }
-
         # unique aiohttp session: to be initialized from getter in a task
         self._aiohttp_session = None
 
@@ -95,8 +88,7 @@ class OctoBot:
         await self.task_manager.start_tools_tasks()
         await self.evaluator_factory.initialize()
         await self.service_feed_factory.initialize()
-        if not await self.exchange_factory.create():
-            return  # if exchanges was not properly initialized stop OctoBot initialization
+        await self.exchange_factory.create()
         await self.evaluator_factory.create()
         # Start service feeds now that evaluators registered their feed requirements
         await self.service_feed_factory.create()
