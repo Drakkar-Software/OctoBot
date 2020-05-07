@@ -23,10 +23,13 @@ cdef class TaskManager:
     cdef public object watcher
     cdef public object tools_task_group
     cdef public object current_loop_thread
+    cdef public object bot_main_task
 
     cdef public bint ready
 
     cdef void _create_new_asyncio_main_loop(self)
 
+    cpdef void create_bot_main_task(self, object coroutine)
+    cpdef void run_forever(self)
     cpdef void init_async_loop(self)
     cpdef object run_in_main_asyncio_loop(self, object coroutine)

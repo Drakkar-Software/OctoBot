@@ -18,7 +18,7 @@ import os
 
 import sys
 
-from octobot.commands import exchange_keys_encrypter, start_strategy_optimizer, start_bot, data_collector, \
+from octobot.commands import exchange_keys_encrypter, start_strategy_optimizer, \
     call_tentacles_manager, run_tentacles_installation, run_bot
 from octobot.configuration_manager import config_health_check
 from octobot.constants import LONG_VERSION, FORCE_ASYNCIO_DEBUG_OPTION
@@ -150,9 +150,7 @@ def start_octobot(starting_args):
 
         _log_terms_if_unaccepted(config, logger)
 
-        # set debug_mode = True to activate asyncio debug mode
-        debug_mode = is_in_dev_mode(config) or FORCE_ASYNCIO_DEBUG_OPTION
-        run_bot(bot, logger, debug_mode)
+        run_bot(bot, logger)
 
     except ConfigError:
         logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file." + "\nYou can use " +

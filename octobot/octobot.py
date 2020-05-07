@@ -84,7 +84,6 @@ class OctoBot:
 
     async def initialize(self):
         await self.initializer.create()
-        self.task_manager.init_async_loop()
         await self.task_manager.start_tools_tasks()
         await self.evaluator_factory.initialize()
         await self.service_feed_factory.initialize()
