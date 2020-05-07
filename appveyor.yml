@@ -16,14 +16,12 @@ install:
   - mkdir user
   - copy config\default_config.json user\config.json
   - ps: |
-      try
+      $Env:TENTACLES_URL_SUBCATEGORY = "dev/"
+      $Env:TENTACLES_URL_TAG = $env:APPVEYOR_REPO_BRANCH -replace "/", "_"
+      &"${env:PYTHON}/python.exe" start.py tentacles -q --install --all
+      if ($LastExitCode -ne 0)
       {
-        $Env:TENTACLES_URL_SUBCATEGORY = "dev/"
-        $Env:TENTACLES_URL_TAG = $env:APPVEYOR_REPO_BRANCH -replace "/", "_"
-        &"${env:PYTHON}/python.exe" start.py tentacles -q --install --all
-      }
-      catch
-      {
+        $Env:TENTACLES_URL_SUBCATEGORY = ""
         If ($env:APPVEYOR_REPO_TAG -eq "false") {
           $Env:TENTACLES_URL_TAG = "latest"
         } else {
