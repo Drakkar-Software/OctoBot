@@ -19,4 +19,4 @@ TEST_CONFIG_FOLDER = "tests/static"
 
 
 async def load_test_tentacles_config():
-    return await get_tentacles_setup_config(config_path=f"{TEST_CONFIG_FOLDER}/default_tentacles_config.json")
+    return get_tentacles_setup_config(config_path=f"{TEST_CONFIG_FOLDER}/default_tentacles_config.json")

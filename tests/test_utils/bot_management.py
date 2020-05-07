@@ -39,7 +39,7 @@ async def run_independent_backtesting(data_files, timeout=10):
         config_to_use = load_test_config()
         init_logger()
         independent_backtesting = create_independent_backtesting(config_to_use,
-                                                                 await get_tentacles_setup_config(),
+                                                                 get_tentacles_setup_config(),
                                                                  data_files,
                                                                  "")
         await initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
