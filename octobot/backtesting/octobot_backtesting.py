@@ -35,7 +35,7 @@ from octobot_trading.producers.simulator import OHLCVUpdaterSimulator
 from octobot_evaluators.api.evaluators import create_all_type_evaluators
 from octobot_trading.api.exchange import get_exchange_configuration_from_exchange_id, create_exchange_builder, \
     get_exchange_manager_id
-from octobot.logger import init_exchange_chan_logger, init_evaluator_chan_logger
+from octobot.logger import init_exchange_chan_logger, init_evaluator_chan_logger, BOT_CHANNEL_LOGGER
 
 
 class OctoBotBacktesting:
@@ -64,7 +64,8 @@ class OctoBotBacktesting:
         await self._create_evaluators()
         await self._create_service_feeds()
         await start_backtesting(self.backtesting)
-        await self.start_loggers()
+        if BOT_CHANNEL_LOGGER is not None:
+            await self.start_loggers()
 
     async def stop(self, memory_check=False):
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
