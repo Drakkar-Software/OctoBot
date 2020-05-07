@@ -72,5 +72,6 @@ class ExchangeFactory:
                 await self._create_exchanges()
             except Exception as e:
                 self.logger.exception(e, error_message="An error happened during exchange creation")
-        self.logger.error("No exchange in configuration. OctoBot requires at least one exchange "
-                          "to read trading data from. You can add exchanges in the configuration section.")
+        else:
+            self.logger.error("No exchange in configuration. OctoBot requires at least one exchange "
+                              "to read trading data from. You can add exchanges in the configuration section.")
