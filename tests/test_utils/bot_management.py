@@ -23,6 +23,7 @@ from octobot.api.backtesting import create_independent_backtesting, \
     initialize_and_run_independent_backtesting
 from octobot.logger import init_logger
 from octobot.octobot import OctoBot
+from tests.test_utils.config import load_test_tentacles_config
 
 
 async def create_bot() -> OctoBot:
@@ -39,7 +40,7 @@ async def run_independent_backtesting(data_files, timeout=10):
         config_to_use = load_test_config()
         init_logger()
         independent_backtesting = create_independent_backtesting(config_to_use,
-                                                                 get_tentacles_setup_config(),
+                                                                 load_test_tentacles_config(),
                                                                  data_files,
                                                                  "")
         await initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
