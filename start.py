@@ -18,7 +18,6 @@ import os
 
 import sys
 
-from octobot.backtesting.octobot_backtesting_factory import OctoBotBacktestingFactory
 from octobot.commands import exchange_keys_encrypter, start_strategy_optimizer, start_bot, data_collector, \
     call_tentacles_manager, run_tentacles_installation, run_bot
 from octobot.configuration_manager import config_health_check
@@ -144,6 +143,7 @@ def start_octobot(starting_args):
         update_config_with_args(starting_args, config, logger)
 
         if starting_args.backtesting:
+            from octobot.backtesting.octobot_backtesting_factory import OctoBotBacktestingFactory
             bot = OctoBotBacktestingFactory(config)
         else:
             bot = OctoBot(config, reset_trading_history=starting_args.reset_trading_history)
