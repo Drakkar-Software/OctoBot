@@ -48,7 +48,7 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
         self.config = load_test_config() if config is None else config
         self.strategy_evaluator_class = strategy_evaluator_class
         self.trading_mode_class = trading_mode_class
-        self.tentacles_setup_config = asyncio.run(load_test_tentacles_config())
+        self.tentacles_setup_config = load_test_tentacles_config()
         self._update_tentacles_config(strategy_evaluator_class, trading_mode_class)
 
     def _handle_results(self, independent_backtesting, profitability):
