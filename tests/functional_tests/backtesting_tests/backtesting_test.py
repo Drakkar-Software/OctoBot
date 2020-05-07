@@ -23,6 +23,7 @@ from octobot.api.backtesting import get_independent_backtesting_exchange_manager
     check_independent_backtesting_remaining_objects
 from octobot.backtesting.abstract_backtesting_test import DATA_FILES
 from tests.test_utils.bot_management import run_independent_backtesting
+from octobot_commons.asyncio_tools import ErrorContainer
 
 BACKTESTING_SYMBOLS = ["ICX/BTC", "VEN/BTC", "XRB/BTC"]
 
@@ -31,6 +32,8 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_backtesting():
+    error_container = ErrorContainer()
+    asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]])
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]])
 
@@ -54,3 +57,4 @@ async def test_backtesting():
     await stop_independent_backtesting(current_backtesting, memory_check=True)
     asyncio.get_event_loop().call_soon(check_independent_backtesting_remaining_objects, previous_backtesting)
     asyncio.get_event_loop().call_soon(check_independent_backtesting_remaining_objects, current_backtesting)
+    await asyncio.create_task(error_container.check())
