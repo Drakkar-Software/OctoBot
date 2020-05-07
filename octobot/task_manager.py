@@ -15,7 +15,6 @@
 #  License along with this library.
 import asyncio
 import threading
-from asyncio import CancelledError
 
 from octobot.constants import FORCE_ASYNCIO_DEBUG_OPTION
 from octobot_services.api.interfaces import stop_interfaces
@@ -40,9 +39,10 @@ class TaskManager:
         self.watcher = None
         self.tools_task_group = None
         self.current_loop_thread = None
+        self.bot_main_task = None
 
     def init_async_loop(self):
-        self.async_loop = asyncio.get_running_loop()
+        self.async_loop = asyncio.get_event_loop()
 
     async def start_tools_tasks(self):
         task_list = []
@@ -54,12 +54,11 @@ class TaskManager:
         self.ready = True
         self.tools_task_group = asyncio.gather(*task_list)
 
-    async def join_tasks(self):
-        try:
-            await asyncio.gather(*[t for t in asyncio.all_tasks(asyncio.get_event_loop()) if
-                                   t is not asyncio.current_task()])
-        except CancelledError:
-            self.logger.error("CancelledError raised")
+    def create_bot_main_task(self, coroutine):
+        self.bot_main_task = self.async_loop.create_task(coroutine)
+
+    def run_forever(self):
+        self.async_loop.run_forever()
 
     def stop_tasks(self):
         stop_coroutines = []
@@ -71,7 +70,7 @@ class TaskManager:
         #     stop_coroutines.append(self.octobot.config[CONFIG_NOTIFICATION_INSTANCE]
         #                            .notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
 
-        self.logger.info("Stopping threads ...")
+        self.logger.info("Stopping tasks...")
 
         # stop interfaces
         stop_coroutines.append(stop_interfaces(self.octobot.interface_factory.interface_list))
@@ -84,19 +83,12 @@ class TaskManager:
             self.async_loop.call_soon_threadsafe(self.tools_task_group.cancel)
 
         # close community session
-        # stop_coroutines.append(self.octobot.metrics_handler.stop_task())
+        if self.octobot.community_handler:
+            stop_coroutines.append(self.octobot.community_handler.stop_task())
 
-        # TODO: handle proper stop
-        # for task in asyncio.all_tasks(self.async_loop):
-        #     task.cancel()
-        #
-        # self.async_loop.close()
-        # loop = asyncio.new_event_loop()
-        # asyncio.set_event_loop(loop)
-        
         self.async_loop.call_soon_threadsafe(asyncio.gather(*stop_coroutines, loop=self.async_loop))
 
-        self.logger.info("Threads stopped.")
+        self.logger.info("Tasks stopped.")
 
     @classmethod
     def get_name(cls):

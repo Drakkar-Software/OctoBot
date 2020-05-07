@@ -37,21 +37,6 @@ from octobot.logger import init_logger
 COMMANDS_LOGGER_NAME = "Commands"
 
 
-# TODO
-def data_collector(config, catch=True):
-    pass
-
-
-#     data_collector_inst = None
-#     try:
-#         data_collector_inst = DataCollector(config)
-#         asyncio.run(data_collector_inst.start())
-#     except Exception as e:
-#         data_collector_inst.stop()
-#         if catch:
-#             raise e
-
-
 def call_tentacles_manager(command_args):
     init_logger()
     sys.exit(handle_tentacles_manager_command(command_args, tentacles_url=DEFAULT_TENTACLES_URL))
@@ -100,8 +85,10 @@ def _signal_handler(_, __):
     os._exit(0)
 
 
-def run_bot(bot, logger, asyncio_debug_mode):
-    asyncio.run(start_bot(bot, logger), debug=asyncio_debug_mode)
+def run_bot(bot, logger):
+    bot.task_manager.init_async_loop()
+    bot.task_manager.create_bot_main_task(start_bot(bot, logger))
+    bot.task_manager.run_forever()
 
 
 async def start_bot(bot, logger, catch=False):
@@ -111,6 +98,7 @@ async def start_bot(bot, logger, catch=False):
 
         # load tentacles details
         await reload_tentacle_info()
+
         # ensure tentacles config exists or create a new one
         await ensure_setup_configuration()
 
@@ -120,11 +108,6 @@ async def start_bot(bot, logger, catch=False):
             await bot.initialize()
         except CancelledError:
             logger.info("Core engine tasks cancelled.")
-
-        # join threads in a not loop blocking executor
-        # TODO remove this when no thread anymore
-        await bot.task_manager.join_tasks()
-        bot.task_manager.stop_tasks()
 
     except Exception as e:
         logger.exception(e, True, f"OctoBot Exception : {e}")

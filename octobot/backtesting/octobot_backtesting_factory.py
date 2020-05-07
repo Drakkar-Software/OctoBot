@@ -17,6 +17,7 @@ from octobot_backtesting.api.backtesting import get_backtesting_data_files
 
 from octobot.api.backtesting import create_independent_backtesting, initialize_and_run_independent_backtesting, \
     join_independent_backtesting, stop_independent_backtesting
+from octobot.commands import stop_bot
 from octobot.octobot import OctoBot
 
 
@@ -27,10 +28,10 @@ class OctoBotBacktestingFactory(OctoBot):
 
     async def initialize(self):
         await self.initializer.create()
-        self.task_manager.init_async_loop()
         self.independent_backtesting = create_independent_backtesting(self.config,
                                                                       self.tentacles_setup_config,
                                                                       get_backtesting_data_files(self.config))
         await initialize_and_run_independent_backtesting(self.independent_backtesting)
         await join_independent_backtesting(self.independent_backtesting)
         await stop_independent_backtesting(self.independent_backtesting, memory_check=False)
+        stop_bot(self)
