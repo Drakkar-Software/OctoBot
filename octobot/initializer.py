@@ -28,7 +28,7 @@ class Initializer:
 
     async def create(self):
         # initialize tentacle configuration
-        self.octobot.tentacles_setup_config = await get_tentacles_setup_config()
+        self.octobot.tentacles_setup_config = get_tentacles_setup_config()
         # initialize tools
         self._init_metrics()
 
