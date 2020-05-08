@@ -16,14 +16,14 @@
 import asyncio
 
 import pytest
+
+from octobot_commons.asyncio_tools import ErrorContainer
 from octobot_trading.api.exchange import get_exchange_manager_from_exchange_id
 from octobot_trading.api.profitability import get_profitability_stats
-
 from octobot.api.backtesting import get_independent_backtesting_exchange_manager_ids, stop_independent_backtesting, \
     check_independent_backtesting_remaining_objects
 from octobot.backtesting.abstract_backtesting_test import DATA_FILES
 from tests.test_utils.bot_management import run_independent_backtesting
-from octobot_commons.asyncio_tools import ErrorContainer
 
 BACKTESTING_SYMBOLS = ["ICX/BTC", "VEN/BTC", "XRB/BTC"]
 

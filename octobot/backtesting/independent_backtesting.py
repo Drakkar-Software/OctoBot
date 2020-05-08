@@ -74,7 +74,7 @@ class IndependentBacktesting:
         self._adapt_config()
         return self.backtesting_config
 
-    async def join(self, timeout):
+    async def join_backtesting_updater(self, timeout=None):
         await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
 
     async def stop(self, memory_check=False):
@@ -98,7 +98,7 @@ class IndependentBacktesting:
         asyncio.create_task(self._re_enable_logs_after_backtesting())
 
     async def _re_enable_logs_after_backtesting(self):
-        await self.join(timeout=BACKTESTING_DEFAULT_JOIN_TIMEOUT)
+        await self.join_backtesting_updater(timeout=BACKTESTING_DEFAULT_JOIN_TIMEOUT)
         set_error_publication_enabled(True)
 
     @staticmethod
