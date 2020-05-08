@@ -51,8 +51,8 @@ class DataBank(Initializable):
         self.current_init_indexes_by_time_frame = {}
         self.current_data = None
         self.data_by_symbol_by_data_frame = None
-        manager = ExchangeManager({}, "binance")
-        self.symbol_data = ExchangeSymbolData(manager, self.default_symbol)
+        self.manager = ExchangeManager({}, "binance")
+        self.symbol_data = ExchangeSymbolData(self.manager, self.default_symbol)
         self.symbol_data.symbol_candles = self.candles_managers_by_time_frame
 
     async def initialize_impl(self):
@@ -75,6 +75,7 @@ class DataBank(Initializable):
 
     async def stop(self):
         await self.data_importer.stop()
+        await self.manager.stop()
 
     def get_time_frames(self):
         return self.data_importer.time_frames

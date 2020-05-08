@@ -30,7 +30,7 @@ async def initialize_and_run_independent_backtesting(independent_backtesting, lo
 
 
 async def join_independent_backtesting(independent_backtesting, timeout=BACKTESTING_DEFAULT_JOIN_TIMEOUT) -> None:
-    await independent_backtesting.join(timeout)
+    await independent_backtesting.join_backtesting_updater(timeout)
 
 
 async def initialize_independent_backtesting_config(independent_backtesting) -> dict:
