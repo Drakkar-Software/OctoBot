@@ -27,11 +27,15 @@ class OctoBotBacktestingFactory(OctoBot):
         self.independent_backtesting = None
 
     async def initialize(self):
-        await self.initializer.create()
-        self.independent_backtesting = create_independent_backtesting(self.config,
-                                                                      self.tentacles_setup_config,
-                                                                      get_backtesting_data_files(self.config))
-        await initialize_and_run_independent_backtesting(self.independent_backtesting)
-        await join_independent_backtesting(self.independent_backtesting)
-        await stop_independent_backtesting(self.independent_backtesting, memory_check=False)
-        stop_bot(self)
+        try:
+            await self.initializer.create()
+            self.independent_backtesting = create_independent_backtesting(self.config,
+                                                                          self.tentacles_setup_config,
+                                                                          get_backtesting_data_files(self.config))
+            await initialize_and_run_independent_backtesting(self.independent_backtesting, log_errors=False)
+            await join_independent_backtesting(self.independent_backtesting)
+            await stop_independent_backtesting(self.independent_backtesting, memory_check=False)
+        except Exception as e:
+            self.logger.error(f"Error when starting backtesting: {e}")
+        finally:
+            stop_bot(self)
