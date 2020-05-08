@@ -16,9 +16,14 @@
 import asyncio
 
 from octobot.api.backtesting import create_independent_backtesting, initialize_and_run_independent_backtesting, \
-    check_independent_backtesting_remaining_objects, stop_independent_backtesting, join_independent_backtesting
+    check_independent_backtesting_remaining_objects, stop_independent_backtesting, join_independent_backtesting, \
+    get_independent_backtesting_exchange_manager_ids
 from octobot.backtesting.abstract_backtesting_test import DATA_FILES
 from octobot_commons.asyncio_tools import ErrorContainer
+from octobot_trading.api.exchange import get_exchange_manager_from_exchange_id
+from octobot_trading.api.orders import get_open_orders
+from octobot_trading.api.trades import get_trade_history
+from octobot_trading.constants import CONFIG_SIMULATOR, CONFIG_STARTING_PORTFOLIO
 
 
 async def run_independent_backtestings_with_memory_check(config, tentacles_setup_config, backtesting_count=3):
@@ -29,13 +34,32 @@ async def run_independent_backtestings_with_memory_check(config, tentacles_setup
     :param backtesting_count: number of backtestings to run to ensure no side effects, default is 3
     :return:
     """
-    for _ in range(backtesting_count):
-        error_container = ErrorContainer()
-        asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
-        backtesting = await _run_backtesting(config, tentacles_setup_config)
-        await stop_independent_backtesting(backtesting, memory_check=True)
-        asyncio.get_event_loop().call_soon(check_independent_backtesting_remaining_objects, backtesting)
-        await asyncio.create_task(error_container.check())
+    backtesting = None
+    try:
+        config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO]["USDT"] = 10000
+        config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO]["ETH"] = 20
+        for _ in range(backtesting_count):
+            error_container = ErrorContainer()
+            asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
+            # enabling loggers is slowing down backtesting but can display useful debug info
+            # from octobot.logger import init_logger
+            # init_logger()
+            backtesting = await _run_backtesting(config, tentacles_setup_config)
+            exchange_manager = get_exchange_manager_from_exchange_id(
+                get_independent_backtesting_exchange_manager_ids(backtesting)[0])
+            trades = get_trade_history(exchange_manager)
+            open_orders = get_open_orders(exchange_manager)
+            # ensure at least one order is either open or got filled
+            assert trades + open_orders
+            trades = open_orders = exchange_manager = None  # prevent memory leak
+            await stop_independent_backtesting(backtesting, memory_check=True)
+            asyncio.get_event_loop().call_soon(check_independent_backtesting_remaining_objects, backtesting)
+            await asyncio.create_task(error_container.check())
+    except Exception as e:
+        if backtesting is not None:
+            # do not get stuck in running backtesting
+            await stop_independent_backtesting(backtesting, memory_check=False)
+        raise e
 
 
 async def _run_backtesting(config, tentacles_setup_config):

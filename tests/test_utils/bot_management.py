@@ -17,7 +17,6 @@
 from octobot_backtesting.data import MissingTimeFrame
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.tests.test_config import load_test_config
-from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config
 
 from octobot.api.backtesting import create_independent_backtesting, \
     initialize_and_run_independent_backtesting
@@ -44,7 +43,7 @@ async def run_independent_backtesting(data_files, timeout=10):
                                                                  data_files,
                                                                  "")
         await initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
-        await independent_backtesting.join(timeout)
+        await independent_backtesting.join_backtesting_updater(timeout)
         return independent_backtesting
     except MissingTimeFrame:
         # ignore this exception: is due to missing of the only required time frame

@@ -117,8 +117,10 @@ class OctoBotBacktesting:
                                           f"(expected a maximum of 3 references): {getrefcount(element)} actual "
                                           f"references ({element})")
         if memory_leak_errors:
-            raise AssertionError("[Dev oriented error: no effect on backtesting result, please report if you see it]:\n"
-                                 + "\n".join(memory_leak_errors))
+            errors = "\n".join(memory_leak_errors)
+            raise AssertionError(
+                f"[Dev oriented error: no effect on backtesting result, please report if you see it]: {errors}"
+            )
 
     # Use check_remaining_objects to check remaining objects from garbage collector after calling stop().
     # Warning: can take a long time when a lot of objects exist
@@ -146,8 +148,10 @@ class OctoBotBacktesting:
                                                                        objects_references[obj]))
 
         if objects_leak_errors:
-            raise AssertionError("[Dev oriented error: no effect on backtesting result, please report if you see it]:\n"
-                                 + "\n".join(objects_leak_errors))
+            errors = "\n".join(objects_leak_errors)
+            raise AssertionError(
+                f"[Dev oriented error: no effect on backtesting result, please report if you see it]: {errors}"
+            )
 
     async def _init_evaluators(self):
         self.matrix_id = await initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
