@@ -26,7 +26,7 @@ class OctoBotAPI:
         return self._octobot.initialized
 
     def get_exchange_manager_ids(self) -> list:
-        return self._octobot.exchange_factory.exchange_manager_ids
+        return self._octobot.exchange_producer.exchange_manager_ids
 
     def get_global_config(self) -> dict:
         return self._octobot.config
@@ -53,10 +53,7 @@ class OctoBotAPI:
         return self._octobot.start_time
 
     def get_matrix_id(self) -> str:
-        return self._octobot.evaluator_factory.matrix_id
-
-    def get_previous_states_manager(self) -> object:
-        return self._octobot.exchange_factory.previous_trading_state_manager
+        return self._octobot.evaluator_producer.matrix_id
 
     def get_aiohttp_session(self) -> object:
         return self._octobot.get_aiohttp_session()

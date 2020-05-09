@@ -81,7 +81,7 @@ class TaskManager:
         self.async_loop.call_soon_threadsafe(asyncio.gather(*stop_coroutines, loop=self.async_loop))
 
         self.async_loop.call_soon_threadsafe(self.async_loop.stop)
-        # self.loop_forever_thread.join()
+
         self.logger.info("Tasks stopped.")
 
     @classmethod
@@ -100,9 +100,4 @@ class TaskManager:
         self.current_loop_thread.start()
 
     def run_in_main_asyncio_loop(self, coroutine):
-        # restart a new loop if necessary (for backtesting analysis)
-        # if backtesting_enabled(self.octobot.config) and self.async_loop.is_closed(): TODO
-        #     self.logger.debug("Main loop is closed, starting a new main loop.")
-        #     self._create_new_asyncio_main_loop()
-
         return run_coroutine_in_asyncio_loop(coroutine, self.async_loop)

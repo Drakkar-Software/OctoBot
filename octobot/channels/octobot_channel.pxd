@@ -14,22 +14,15 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from octobot_channels.channels.channel cimport Channel
+from octobot_channels.consumer cimport Consumer, InternalConsumer, SupervisedConsumer
+from octobot_channels.producer cimport Producer
 
-cdef class OctoBotAPI:
+cdef class OctoBotChannel(Channel):
+    pass
 
-    cdef object _octobot
+cdef class OctoBotChannelConsumer(Consumer):
+    pass
 
-    cpdef bint is_initialized(self)
-    cpdef list get_exchange_manager_ids(self)
-    cpdef dict get_global_config(self)
-    cpdef object get_startup_tentacles_config(self)
-    cpdef object get_edited_tentacles_config(self)
-    cpdef object get_startup_config(self)
-    cpdef object get_edited_config(self)
-    cpdef object get_trading_mode(self)
-    cpdef double get_start_time(self)
-    cpdef str get_matrix_id(self)
-    cpdef object get_aiohttp_session(self)
-    cpdef object run_in_main_asyncio_loop(self, object coroutine)
-    cpdef void stop_tasks(self)
-    cpdef void stop_bot(self)
+cdef class OctoBotChannelProducer(Producer):
+    pass

@@ -15,14 +15,14 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from octobot.configuration_manager cimport ConfigurationManager
+from octobot.consumers.octobot_channel_consumer cimport OctoBotChannelGlobalConsumer
 from octobot.initializer cimport Initializer
-from octobot.factories.interface_factory cimport InterfaceFactory
 from octobot.api.octobot_api cimport OctoBotAPI
-from octobot.factories.service_feed_factory cimport ServiceFeedFactory
+from octobot.producers.evaluator_producer cimport EvaluatorProducer
+from octobot.producers.exchange_producer cimport ExchangeProducer
+from octobot.producers.interface_producer cimport InterfaceProducer
+from octobot.producers.service_feed_producer cimport ServiceFeedProducer
 from octobot.task_manager cimport TaskManager
-from octobot.factories.exchange_factory cimport ExchangeFactory
-
-from octobot.factories.evaluator_factory cimport EvaluatorFactory
 
 cdef class OctoBot:
     cdef object logger
@@ -31,6 +31,7 @@ cdef class OctoBot:
 
     cdef public bint reset_trading_history
     cdef public bint initialized
+    cdef public bint ignore_config
 
     cdef public dict tools
     cdef public dict config
@@ -43,11 +44,12 @@ cdef class OctoBot:
 
     cdef public Initializer initializer
     cdef public TaskManager task_manager
-    cdef public ExchangeFactory exchange_factory
-    cdef public EvaluatorFactory evaluator_factory
-    cdef public InterfaceFactory interface_factory
-    cdef public ServiceFeedFactory service_feed_factory
+    cdef public ExchangeProducer exchange_producer
+    cdef public EvaluatorProducer evaluator_producer
+    cdef public InterfaceProducer interface_producer
+    cdef public ServiceFeedProducer service_feed_producer
     cdef public OctoBotAPI octobot_api
+    cdef public OctoBotChannelGlobalConsumer global_consumer
     cdef public ConfigurationManager configuration_manager
 
     cpdef object run_in_main_asyncio_loop(self, object coroutine)

@@ -14,10 +14,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from octobot.channels.octobot_channel cimport OctoBotChannelProducer
 
-
-cdef class ServiceFeedFactory:
+cdef class ServiceFeedProducer(OctoBotChannelProducer):
     cdef public object octobot
-    cdef object logger
 
     cdef public list service_feeds

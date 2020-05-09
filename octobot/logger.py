@@ -19,9 +19,10 @@ import traceback
 from logging.config import fileConfig
 
 import sys
+from octobot_channels.channels.channel_instances import get_chan_at_id
 
-from octobot.constants import LOGGING_CONFIG_FILE, LOGS_FOLDER
-from octobot_commons.enums import ChannelConsumerPriorityLevels
+from octobot.constants import LOGGING_CONFIG_FILE, LOGS_FOLDER, OCTOBOT_CHANNEL
+from octobot_commons.enums import OctoBotChannelSubjects, ChannelConsumerPriorityLevels
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import (
     open_order_pretty_printer,
@@ -144,6 +145,15 @@ async def init_evaluator_chan_logger(matrix_id: str):
     )
     await get_evaluator_chan(EVALUATORS_CHANNEL, matrix_id).new_consumer(
         evaluators_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
+
+
+async def init_octobot_chan_logger(bot_id: str):
+    await get_chan_at_id(OCTOBOT_CHANNEL, bot_id).new_consumer(
+        octobot_channel_callback,
+        priority_level=LOGGER_PRIORITY_LEVEL,
+        bot_id=bot_id,
+        subject=[OctoBotChannelSubjects.NOTIFICATION.value, OctoBotChannelSubjects.ERROR.value]
     )
 
 
@@ -366,4 +376,15 @@ async def evaluators_callback(
         f"EVALUATOR = {evaluator_name} || EVALUATOR_TYPE = {evaluator_type} || "
         f"CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} || TF = {time_frame} "
         f"|| DATA = {data} [MATRIX id = {matrix_id}] "
+    )
+
+
+async def octobot_channel_callback(
+        bot_id: str,
+        subject: str,
+        action: str,
+        data: dict
+):
+    BOT_CHANNEL_LOGGER.debug(
+        f"OCTOBOT_CHANNEL : SUBJECT = {subject} || ACTION = {action} || DATA = {data} "
     )
