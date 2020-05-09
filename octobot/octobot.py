@@ -17,6 +17,7 @@ import time
 import uuid
 
 import aiohttp
+from octobot_services.api.services import stop_services
 
 from octobot.constants import PROJECT_NAME, LONG_VERSION, CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
 from octobot.configuration_manager import ConfigurationManager
@@ -102,6 +103,11 @@ class OctoBot:
         self.configuration_manager.add_element(TENTACLES_SETUP_CONFIG_KEY, self.tentacles_setup_config)
         await send_notification(create_notification(f"{PROJECT_NAME} {LONG_VERSION} is starting ...",
                                                     markdown_format=MarkdownFormat.ITALIC))
+
+    async def stop(self):
+        await self.service_feed_factory.stop()
+        stop_services()
+        await self.interface_factory.stop()
 
     def get_edited_config(self, config_key):
         return self.configuration_manager.get_edited_config(config_key)

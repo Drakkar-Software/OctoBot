@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
 from octobot.constants import PROJECT_NAME, LONG_VERSION, CONFIG_KEY
 from octobot_backtesting.api.backtesting import is_backtesting_enabled
 from octobot_services.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled, \
@@ -21,6 +20,7 @@ from octobot_services.api.interfaces import create_interface_factory, initialize
 from octobot_services.interfaces.util.bot import get_bot_api
 from octobot_services.api.notification import create_notifier_factory, is_enabled_in_config
 from octobot.logger import get_logger
+from octobot_services.managers.interface_manager import stop_interfaces
 
 
 class InterfaceFactory:
@@ -94,3 +94,6 @@ class InterfaceFactory:
                all(service.get_is_enabled(self.octobot.config)
                    for service in notifier_class.REQUIRED_SERVICES) and \
                not backtesting_enabled
+
+    async def stop(self):
+        await stop_interfaces(self.interface_list)

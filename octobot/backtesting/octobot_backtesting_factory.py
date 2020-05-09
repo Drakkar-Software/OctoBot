@@ -38,4 +38,4 @@ class OctoBotBacktestingFactory(OctoBot):
         except Exception as e:
             self.logger.error(f"Error when starting backtesting: {e}")
         finally:
-            stop_bot(self)
+            self.task_manager.stop_tasks()

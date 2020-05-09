@@ -86,9 +86,7 @@ def _signal_handler(_, __):
 
 
 def run_bot(bot, logger):
-    bot.task_manager.init_async_loop()
-    bot.task_manager.create_bot_main_task(start_bot(bot, logger))
-    bot.task_manager.run_forever()
+    bot.task_manager.run_forever(start_bot(bot, logger))
 
 
 async def start_bot(bot, logger, catch=False):
@@ -115,9 +113,10 @@ async def start_bot(bot, logger, catch=False):
         stop_bot(bot)
 
 
-def stop_bot(bot):
+def stop_bot(bot, force=False):
     bot.task_manager.stop_tasks()
-    os._exit(0)
+    if force:
+        os._exit(0)
 
 
 def restart_bot():

@@ -15,12 +15,12 @@
 #  License along with this library.
 import asyncio
 import threading
+from concurrent.futures.thread import ThreadPoolExecutor
 
-from octobot.constants import FORCE_ASYNCIO_DEBUG_OPTION
-from octobot_services.api.interfaces import stop_interfaces
 from octobot_commons.asyncio_tools import run_coroutine_in_asyncio_loop
 from octobot_commons.logging.logging_util import get_logger
-from octobot_services.api.service_feeds import stop_service_feed
+
+from octobot.constants import FORCE_ASYNCIO_DEBUG_OPTION
 
 
 class TaskManager:
@@ -39,10 +39,12 @@ class TaskManager:
         self.watcher = None
         self.tools_task_group = None
         self.current_loop_thread = None
+        self.executors = None
         self.bot_main_task = None
+        self.loop_forever_thread = None
 
     def init_async_loop(self):
-        self.async_loop = asyncio.get_event_loop()
+        self.async_loop = asyncio.new_event_loop()
 
     async def start_tools_tasks(self):
         task_list = []
@@ -53,12 +55,17 @@ class TaskManager:
         self.octobot.async_loop = self.async_loop
         self.ready = True
         self.tools_task_group = asyncio.gather(*task_list)
+        self.create_pool_executor()
 
-    def create_bot_main_task(self, coroutine):
+    def run_bot_in_thread(self, coroutine):
+        self.init_async_loop()
         self.bot_main_task = self.async_loop.create_task(coroutine)
-
-    def run_forever(self):
         self.async_loop.run_forever()
+
+    def run_forever(self, coroutine):
+        self.loop_forever_thread = threading.Thread(target=self.run_bot_in_thread(coroutine),
+                                                    name=f"OctoBot Main Thread")
+        self.loop_forever_thread.start()
 
     def stop_tasks(self):
         stop_coroutines = []
@@ -72,12 +79,7 @@ class TaskManager:
 
         self.logger.info("Stopping tasks...")
 
-        # stop interfaces
-        stop_coroutines.append(stop_interfaces(self.octobot.interface_factory.interface_list))
-
-        # stop service feeds
-        for service_feed in self.octobot.service_feed_factory.service_feeds:
-            stop_coroutines.append(stop_service_feed(service_feed))
+        stop_coroutines.append(self.octobot.stop())
 
         if self.tools_task_group:
             self.async_loop.call_soon_threadsafe(self.tools_task_group.cancel)
@@ -88,11 +90,16 @@ class TaskManager:
 
         self.async_loop.call_soon_threadsafe(asyncio.gather(*stop_coroutines, loop=self.async_loop))
 
+        self.async_loop.call_soon_threadsafe(self.async_loop.stop)
+        # self.loop_forever_thread.join()
         self.logger.info("Tasks stopped.")
 
     @classmethod
     def get_name(cls):
         return cls.__name__
+
+    def create_pool_executor(self, workers=1):
+        self.executors = ThreadPoolExecutor(max_workers=workers)
 
     def _create_new_asyncio_main_loop(self):
         self.async_loop = asyncio.new_event_loop()
