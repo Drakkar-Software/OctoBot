@@ -14,23 +14,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from octobot_channels.channels.channel cimport Channel
 
-
-cdef class ExchangeFactory:
-    cdef public object octobot
+cdef class OctoBotChannelGlobalConsumer:
+    cdef object octobot
     cdef object logger
 
-    cdef public object exchange_manager
-    cdef public object trading_mode
-    cdef public object previous_trading_state_manager
+    cdef list octobot_channel_consumers
 
-    cdef bint ignore_config
-
-    cdef public dict exchanges_list
-    cdef public dict global_updaters_by_exchange
-    cdef public dict exchange_traders
-    cdef public dict exchange_trader_simulators
-    cdef public dict exchange_trading_modes
-    cdef public list exchange_manager_ids
-
-    cdef public list available_exchanges
+    cdef Channel octobot_channel

@@ -17,16 +17,20 @@ import time
 import uuid
 
 import aiohttp
+
+from octobot.logger import init_octobot_chan_logger
 from octobot_services.api.services import stop_services
 
+from octobot.community.community_manager import CommunityManager
 from octobot.constants import PROJECT_NAME, LONG_VERSION, CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
 from octobot.configuration_manager import ConfigurationManager
-from octobot.factories.evaluator_factory import EvaluatorFactory
-from octobot.factories.exchange_factory import ExchangeFactory
+from octobot.consumers.octobot_channel_consumer import OctoBotChannelGlobalConsumer
+from octobot.producers.evaluator_producer import EvaluatorProducer
 from octobot.api.octobot_api import OctoBotAPI
-from octobot.factories.service_feed_factory import ServiceFeedFactory
+from octobot.producers.service_feed_producer import ServiceFeedProducer
 from octobot.initializer import Initializer
-from octobot.factories.interface_factory import InterfaceFactory
+from octobot.producers.interface_producer import InterfaceProducer
+from octobot.producers.exchange_producer import ExchangeProducer
 from octobot.task_manager import TaskManager
 from octobot_commons.enums import MarkdownFormat
 from octobot_commons.logging.logging_util import get_logger
@@ -47,6 +51,7 @@ class OctoBot:
     def __init__(self, config, ignore_config=False, reset_trading_history=False):
         self.start_time = time.time()
         self.config = config
+        self.ignore_config = ignore_config
         self.reset_trading_history = reset_trading_history
 
         # tentacle setup configuration
@@ -68,32 +73,48 @@ class OctoBot:
         # octobot_api to request the current instance
         self.octobot_api = OctoBotAPI(self)
 
+        # octobot channel global consumer
+        self.global_consumer = OctoBotChannelGlobalConsumer(self)
+
         # octobot instance id
         self.bot_id = str(uuid.uuid4())
 
         # Logger
         self.logger = get_logger(self.__class__.__name__)
 
+        # Initialize octobot main tools
         self.initializer = Initializer(self)
         self.task_manager = TaskManager(self)
-        self.exchange_factory = ExchangeFactory(self, ignore_config=ignore_config)
-        self.evaluator_factory = EvaluatorFactory(self)
-        self.interface_factory = InterfaceFactory(self)
-        self.service_feed_factory = ServiceFeedFactory(self)
+
+        # Producers
+        self.exchange_producer = None
+        self.evaluator_producer = None
+        self.interface_producer = None
+        self.service_feed_producer = None
 
         self.async_loop = None
+        self.community_handler = None
 
     async def initialize(self):
         await self.initializer.create()
         await self.task_manager.start_tools_tasks()
-        await self.evaluator_factory.initialize()
-        await self.service_feed_factory.initialize()
-        await self.exchange_factory.create()
-        await self.evaluator_factory.create()
+        await init_octobot_chan_logger(self.bot_id)
+        await self.create_producers()
+        await self.start_producers()
+
+    async def create_producers(self):
+        self.exchange_producer = ExchangeProducer(self.global_consumer.octobot_channel, self,
+                                                  None, self.ignore_config)
+        self.evaluator_producer = EvaluatorProducer(self.global_consumer.octobot_channel, self)
+        self.interface_producer = InterfaceProducer(self.global_consumer.octobot_channel, self)
+        self.service_feed_producer = ServiceFeedProducer(self.global_consumer.octobot_channel, self)
+
+    async def start_producers(self):
+        await self.evaluator_producer.run()
+        await self.exchange_producer.run()
         # Start service feeds now that evaluators registered their feed requirements
-        await self.service_feed_factory.create()
-        await self.interface_factory.create()
-        await self.interface_factory.start_interfaces()
+        await self.service_feed_producer.run()
+        await self.interface_producer.run()
         await self._post_initialize()
 
     async def _post_initialize(self):
@@ -104,11 +125,17 @@ class OctoBot:
         await send_notification(create_notification(f"{PROJECT_NAME} {LONG_VERSION} is starting ...",
                                                     markdown_format=MarkdownFormat.ITALIC))
 
+        # initialize tools
+        self._init_community()
+
     async def stop(self):
         await self.service_feed_factory.stop()
         stop_services()
         await self.interface_factory.stop()
         self.logger.info("Shutting down.")
+
+    def _init_community(self):
+        self.community_handler = CommunityManager(self.octobot_api)
 
     def get_edited_config(self, config_key):
         return self.configuration_manager.get_edited_config(config_key)
@@ -118,7 +145,7 @@ class OctoBot:
 
     def get_trading_mode(self):
         first_exchange_manager = get_exchange_manager_from_exchange_id(
-            next(iter(self.exchange_factory.exchange_manager_ids))
+            next(iter(self.exchange_producer.exchange_manager_ids))
         )
         return get_trading_modes(first_exchange_manager)[0]
 

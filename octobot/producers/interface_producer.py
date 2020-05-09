@@ -13,34 +13,33 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from octobot.channels.octobot_channel import OctoBotChannelProducer
 from octobot.constants import PROJECT_NAME, LONG_VERSION, CONFIG_KEY
 from octobot_backtesting.api.backtesting import is_backtesting_enabled
 from octobot_services.api.interfaces import create_interface_factory, initialize_global_project_data, is_enabled, \
     start_interfaces, is_enabled_in_backtesting
-from octobot_services.interfaces.util.bot import get_bot_api
 from octobot_services.api.notification import create_notifier_factory, is_enabled_in_config
-from octobot.logger import get_logger
+from octobot_services.interfaces.util.bot import get_bot_api
 from octobot_services.managers.interface_manager import stop_interfaces
 
 
-class InterfaceFactory:
+class InterfaceProducer(OctoBotChannelProducer):
     """Initializer class:
     - Initialize services, constants and tools
     """
 
-    def __init__(self, octobot):
+    def __init__(self, channel, octobot):
+        super().__init__(channel)
         self.octobot = octobot
-
-        # Logger
-        self.logger = get_logger(self.__class__.__name__)
 
         self.interface_list = []
         self.notifier_list = []
 
-    async def create(self):
+    async def start(self):
         in_backtesting = is_backtesting_enabled(self.octobot.config)
         await self._create_interfaces(in_backtesting)
         await self._create_notifiers(in_backtesting)
+        await self.start_interfaces()
 
     async def start_interfaces(self):
         to_start_interfaces = self.interface_list
