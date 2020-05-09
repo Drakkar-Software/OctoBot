@@ -126,10 +126,6 @@ def start_octobot(starting_args):
             # reload tentacles
             load_tentacles(verbose=True)
 
-        if starting_args.data_collector:
-            data_collector(config)
-            return
-
         if starting_args.strategy_optimizer:
             start_strategy_optimizer(config, starting_args.strategy_optimizer)
             return
@@ -191,9 +187,6 @@ def main(args=None):
                                                                 'now take the next portfolio as a reference for '
                                                                 'profitability and trading simulators will use a '
                                                                 'fresh new portfolio.',
-                        action='store_true')
-    parser.add_argument('-d', '--data_collector',
-                        help='Start the data collector process to store data for backtesting.',
                         action='store_true')
     parser.add_argument('-b', '--backtesting', help='Start OctoBot in backesting mode using the backtesting '
                                                     'config stored in config.json.',
