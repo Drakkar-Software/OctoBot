@@ -30,8 +30,8 @@ class Initializer:
         # initialize tentacle configuration
         self.octobot.tentacles_setup_config = get_tentacles_setup_config()
         # initialize tools
-        self._init_metrics()
+        self._init_community()
 
-    def _init_metrics(self):
+    def _init_community(self):
         if not is_backtesting_enabled(self.octobot.config):
             self.octobot.community_handler = CommunityManager(self.octobot.octobot_api)
