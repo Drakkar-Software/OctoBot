@@ -1,4 +1,3 @@
-# cython: language_level=3
 #  Drakkar-Software OctoBot
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -14,22 +13,3 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-cdef class OctoBotAPI:
-
-    cdef object _octobot
-
-    cpdef bint is_initialized(self)
-    cpdef list get_exchange_manager_ids(self)
-    cpdef dict get_global_config(self)
-    cpdef object get_startup_tentacles_config(self)
-    cpdef object get_edited_tentacles_config(self)
-    cpdef object get_startup_config(self)
-    cpdef object get_edited_config(self)
-    cpdef object get_trading_mode(self)
-    cpdef double get_start_time(self)
-    cpdef str get_matrix_id(self)
-    cpdef object get_aiohttp_session(self)
-    cpdef object run_in_main_asyncio_loop(self, object coroutine)
-    cpdef void stop_tasks(self)
-    cpdef void stop_bot(self)

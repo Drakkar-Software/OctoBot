@@ -18,5 +18,4 @@
 
 cdef class Initializer:
     cdef public object octobot
-
-    cdef void _init_community(self)
+    cdef object octobot_global_consumer
