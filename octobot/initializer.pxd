@@ -19,4 +19,4 @@
 cdef class Initializer:
     cdef public object octobot
 
-    cdef void _init_metrics(self)
+    cdef void _init_community(self)
