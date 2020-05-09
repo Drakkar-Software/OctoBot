@@ -17,6 +17,7 @@ import argparse
 import os
 
 import sys
+from octobot_backtesting.constants import CONFIG_BACKTESTING_DATA_FILES
 
 from octobot.commands import exchange_keys_encrypter, start_strategy_optimizer, \
     call_tentacles_manager, run_tentacles_installation, run_bot
@@ -40,6 +41,8 @@ def update_config_with_args(starting_args, config, logger):
     if starting_args.backtesting:
         try:
             from octobot_backtesting.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION
+            if starting_args.backtesting_files:
+                config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = starting_args.backtesting_files
             config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
         except ImportError as e:
             logger.error("Can't start backtesting without the octobot_backtesting package properly installed.")
@@ -191,6 +194,9 @@ def main(args=None):
     parser.add_argument('-b', '--backtesting', help='Start OctoBot in backesting mode using the backtesting '
                                                     'config stored in config.json.',
                         action='store_true')
+    parser.add_argument('-bf', '--backtesting-files', type=argparse.FileType('r'), nargs='+',
+                        help='Backtesting files to use (should be provided with -b or --backtesting).',
+                        required=False)
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
                         action='store_true')
