@@ -15,7 +15,7 @@
 #  License along with this library.
 from octobot.constants import CONFIG_KEY
 from octobot_commons.logging.logging_util import get_logger
-from octobot_services.api.service_feeds import create_service_feed_factory, start_service_feed
+from octobot_services.api.service_feeds import create_service_feed_factory, start_service_feed, stop_service_feed
 from octobot_backtesting.api.backtesting import is_backtesting_enabled
 
 
@@ -45,3 +45,7 @@ class ServiceFeedFactory:
             if not await start_service_feed(feed, False, self.octobot.get_edited_config(CONFIG_KEY)):
                 self.logger.error(f"Failed to start {feed.get_name()}. Evaluators requiring this service feed "
                                   f"might not work properly")
+
+    async def stop(self):
+        for service_feed in self.service_feeds:
+            await stop_service_feed(service_feed)
