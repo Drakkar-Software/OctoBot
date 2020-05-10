@@ -1,0 +1,48 @@
+
+- job: Windows
+  pool:
+    vmImage: 'VS2017-Win2016'
+  strategy:
+    maxParallel: 2
+    matrix:
+        Python36-32bit-full:
+          PYTHON_VERSION: '3.7'
+          PYTHON_ARCH: 'x86'
+        Python36-64bit-full:
+          PYTHON_VERSION: '3.7'
+          PYTHON_ARCH: 'x64'
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(PYTHON_VERSION)
+      addToPath: true
+      architecture: $(PYTHON_ARCH)
+  - script: python -m pip install --upgrade pip setuptools wheel
+    displayName: 'Update tools'
+  - script: python -m pip install --prefer-binary -r requirements.txt -r dev_requirements.txt
+    displayName: 'Install dependencies'
+  - powershell: |
+      mkdir user
+      copy config\default_config.json user\config.json
+      $Env:TENTACLES_URL_SUBCATEGORY = "dev/"
+      $Env:TENTACLES_URL_TAG = $env:APPVEYOR_REPO_BRANCH -replace "/", "_"
+      python start.py tentacles -q --install --all
+      if ($LastExitCode -ne 0)
+      {
+        $Env:TENTACLES_URL_SUBCATEGORY = ""
+        If ($env:APPVEYOR_REPO_TAG -eq "false") {
+          $Env:TENTACLES_URL_TAG = "latest"
+        } else {
+          $Env:TENTACLES_URL_TAG = ""
+        }
+        python start.py tentacles --install --all
+      }
+    displayName: 'Install OctoBot environment'
+  - script: python setup.py build_ext --inplace
+    displayName: 'Build OctoBot'
+  - script: python setup.py install
+    displayName: 'Install OctoBot'
+  - script: python -m pytest tests
+    displayName: 'Run OctoBot tests'
+  - script: python -m pytest tentacles
+    displayName: 'Run tentacles tests'
