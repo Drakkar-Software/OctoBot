@@ -86,14 +86,15 @@ def _signal_handler(_, __):
 
 
 def run_bot(bot, logger):
+    # handle CTRL+C signal
+    signal.signal(signal.SIGINT, _signal_handler)
+
+    # start bot
     bot.task_manager.run_forever(start_bot(bot, logger))
 
 
 async def start_bot(bot, logger, catch=False):
     try:
-        # handle CTRL+C signal
-        signal.signal(signal.SIGINT, _signal_handler)
-
         # load tentacles details
         reload_tentacle_info()
         # ensure tentacles config exists or create a new one
