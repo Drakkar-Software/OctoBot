@@ -33,11 +33,12 @@ async def initialize_bot(bot):
     await bot.initialize()
 
 
-async def run_independent_backtesting(data_files, timeout=10):
+async def run_independent_backtesting(data_files, timeout=10, use_loggers=True):
     independent_backtesting = None
     try:
         config_to_use = load_test_config()
-        init_logger()
+        if use_loggers:
+            init_logger()
         independent_backtesting = create_independent_backtesting(config_to_use,
                                                                  load_test_tentacles_config(),
                                                                  data_files,

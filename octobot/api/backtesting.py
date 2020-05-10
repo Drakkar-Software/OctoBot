@@ -21,8 +21,9 @@ from octobot_backtesting.constants import BACKTESTING_FILE_PATH, \
 def create_independent_backtesting(config,
                                    tentacles_setup_config,
                                    data_files,
-                                   data_file_path=BACKTESTING_FILE_PATH) -> IndependentBacktesting:
-    return IndependentBacktesting(config, tentacles_setup_config, data_files, data_file_path)
+                                   data_file_path=BACKTESTING_FILE_PATH,
+                                   run_on_common_part_only=True) -> IndependentBacktesting:
+    return IndependentBacktesting(config, tentacles_setup_config, data_files, data_file_path, run_on_common_part_only)
 
 
 async def initialize_and_run_independent_backtesting(independent_backtesting, log_errors=True) -> None:
