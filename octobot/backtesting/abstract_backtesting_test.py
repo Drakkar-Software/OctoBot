@@ -167,17 +167,21 @@ class AbstractBacktestingTest:
         raise NotImplementedError("_run_backtesting_with_current_config not implemented")
 
     async def _run_and_handle_results(self, data_file, expected_profitability):
-        independent_backtesting = await self._run_backtesting_with_current_config(data_file)
-        self._handle_results(independent_backtesting, expected_profitability)
-        await stop_independent_backtesting(independent_backtesting)
+        independent_backtesting = None
+        try:
+            independent_backtesting = await self._run_backtesting_with_current_config(data_file)
+            self._handle_results(independent_backtesting, expected_profitability)
+        finally:
+            if independent_backtesting is not None:
+                await stop_independent_backtesting(independent_backtesting)
 
     async def run_test_default_run(self, profitability):
         await self._run_and_handle_results(DATA_FILES[DEFAULT_SYMBOL], profitability)
 
     async def run_test_slow_downtrend(self, profitability_1, profitability_2, profitability_3, profitability_4,
                                       skip_extended=False):
-        # await self._run_and_handle_results(DATA_FILES["ICX/BTC"], profitability_1)
-        # await self._run_and_handle_results(DATA_FILES["ONT/BTC"], profitability_2)
+        await self._run_and_handle_results(DATA_FILES["ICX/BTC"], profitability_1)
+        await self._run_and_handle_results(DATA_FILES["ONT/BTC"], profitability_2)
         if not skip_extended:
             await self._run_and_handle_results(EXTENDED_DATA_FILES["NEO/BTC"], profitability_3)
             await self._run_and_handle_results(EXTENDED_DATA_FILES["XVG/BTC"], profitability_4)
