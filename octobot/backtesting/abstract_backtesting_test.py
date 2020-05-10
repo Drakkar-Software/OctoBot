@@ -73,6 +73,7 @@ SYMBOLS = {
 }
 
 DATA_FILES_FOLDER = path.join(CONFIG_BACKTESTING, "optimizer_data_files")
+TEST_DATA_FILES_FOLDER = path.join("tests", "static")
 
 DATA_FILES = {
     "ADA/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774950.9324272.data"),
@@ -84,7 +85,9 @@ DATA_FILES = {
     "XRB/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775026.9255266.data"),
     "ONT/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774988.7215023.data"),
     "XLM/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775018.2658834.data"),
-    "POWR/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581776404.9679003.data")
+    "POWR/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581776404.9679003.data"),
+    "2020ADA/USDT": path.join(TEST_DATA_FILES_FOLDER, "ExchangeHistoryDataCollector_1587769859.9278197.data"),
+    "2020ADA/BTC": path.join(TEST_DATA_FILES_FOLDER, "ExchangeHistoryDataCollector_1588110698.1060486.data")
 }
 
 EXTENDED_DATA_FILES = {

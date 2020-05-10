@@ -44,7 +44,8 @@ class OctoBotBacktesting:
     def __init__(self, backtesting_config,
                  tentacles_setup_config,
                  symbols_to_create_exchange_classes,
-                 backtesting_files):
+                 backtesting_files,
+                 run_on_common_part_only):
         self.logger = get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -56,6 +57,7 @@ class OctoBotBacktesting:
         self.service_feeds = []
         self.backtesting_files = backtesting_files
         self.backtesting = None
+        self.run_on_common_part_only = run_on_common_part_only
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -198,7 +200,10 @@ class OctoBotBacktesting:
                                                         data_files=self.backtesting_files)
         # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
         # initialize
-        await adapt_backtesting_channels(self.backtesting, self.backtesting_config, ExchangeDataImporter)
+        await adapt_backtesting_channels(self.backtesting,
+                                         self.backtesting_config,
+                                         ExchangeDataImporter,
+                                         run_on_common_part_only=self.run_on_common_part_only)
 
         for exchange_class_string in self.symbols_to_create_exchange_classes.keys():
             exchange_builder = create_exchange_builder(self.backtesting_config, exchange_class_string) \

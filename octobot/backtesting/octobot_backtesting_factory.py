@@ -22,17 +22,20 @@ from octobot.octobot import OctoBot
 
 
 class OctoBotBacktestingFactory(OctoBot):
-    def __init__(self, config, log_report=True):
+    def __init__(self, config, log_report=True, run_on_common_part_only=True):
         super().__init__(config)
         self.independent_backtesting = None
         self.log_report = log_report
+        self.run_on_common_part_only = run_on_common_part_only
 
     async def initialize(self):
         try:
             await self.initializer.create()
-            self.independent_backtesting = create_independent_backtesting(self.config,
-                                                                          self.tentacles_setup_config,
-                                                                          get_backtesting_data_files(self.config))
+            self.independent_backtesting = create_independent_backtesting(
+                self.config,
+                self.tentacles_setup_config,
+                get_backtesting_data_files(self.config),
+                run_on_common_part_only=self.run_on_common_part_only)
             await initialize_and_run_independent_backtesting(self.independent_backtesting, log_errors=False)
             await join_independent_backtesting(self.independent_backtesting)
             if self.log_report:

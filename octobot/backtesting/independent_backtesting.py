@@ -44,7 +44,11 @@ from octobot_trading.constants import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG
 
 
 class IndependentBacktesting:
-    def __init__(self, config, tentacles_setup_config, backtesting_files, data_file_path=BACKTESTING_FILE_PATH):
+    def __init__(self, config,
+                 tentacles_setup_config,
+                 backtesting_files,
+                 data_file_path=BACKTESTING_FILE_PATH,
+                 run_on_common_part_only=True):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -60,7 +64,8 @@ class IndependentBacktesting:
         self.octobot_backtesting = OctoBotBacktesting(self.backtesting_config,
                                                       self.tentacles_setup_config,
                                                       self.symbols_to_create_exchange_classes,
-                                                      self.backtesting_files)
+                                                      self.backtesting_files,
+                                                      run_on_common_part_only)
 
     async def initialize_and_run(self, log_errors=True):
         try:
