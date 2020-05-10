@@ -99,34 +99,6 @@ jobs:
             tags: true
             condition: "$TRAVIS_OS_NAME = 'linux'"
 
-    - name: "OSX - Python 3.7 - Deploy"
-      stage: deploy
-      os: osx
-      osx_image: xcode11    # Python 3.7.2 running on macOS 10.14.3
-      language: shell       # 'language: python' is an error on Travis CI macOS
-      # python: 3.7         # 'python:' is ignored on Travis CI macOS
-      before_install: python3 --version ; pip3 --version ; sw_vers
-      install:
-        - python3 -m pip install --prefer-binary --user -r requirements.txt
-        - python3 -m pip install --prefer-binary -r dev_requirements.txt
-      before_cache:
-        - rm -f "$HOME/Library/Caches/pip/log/debug.log"
-      cache:
-        directories:
-          - "$HOME/Library/Caches/pip"
-      script:
-        - python3 setup.py build_ext --inplace
-#        - pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
-      deploy:
-        - provider: script ..
-          script: python3 setup.py bdist_wheel && python3 -m twine upload dist/* -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing
-          cleanup: false
-          on:
-            repo: "$GH_REPO"
-            branch: "$DEPLOY_BRANCH"
-            tags: true
-            condition: "$TRAVIS_OS_NAME = 'osx'"
-
     - name: "Linux - Heroku - Deploy"
       stage: edge
       os: linux
