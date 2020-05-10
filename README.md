@@ -4,7 +4,7 @@
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
 [![Coverage Status](https://img.shields.io/coveralls/github/Drakkar-Software/OctoBot.svg)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) 
 [![Build Status](https://api.travis-ci.com/Drakkar-Software/OctoBot.svg?branch=dev)](https://travis-ci.com/Drakkar-Software/OctoBot) 
-[![Build status](https://ci.appveyor.com/api/projects/status/jr9o8sghywnued9x?svg=true)](https://ci.appveyor.com/project/Herklos/octobot)
+[![Build Status](https://dev.azure.com/drakkarsoftware/OctoBot/_apis/build/status/Drakkar-Software.OctoBot?branchName=dev)](https://dev.azure.com/drakkarsoftware/OctoBot/_build/latest?definitionId=1&branchName=dev)
 
 #### Octobot Community
 [![Active OctoBot](https://img.shields.io/badge/dynamic/json.svg?&url=https://octobotmetrics.herokuapp.com/metrics/community/count/0/-1/0&query=$.total&color=green&label=OctoBots%20online%20this%20month)]()
