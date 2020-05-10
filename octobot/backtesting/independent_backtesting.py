@@ -18,6 +18,7 @@ from copy import deepcopy
 from os import path
 
 from octobot.backtesting.octobot_backtesting import OctoBotBacktesting
+from octobot_backtesting.api.backtesting import get_backtesting_duration
 from octobot_backtesting.constants import CONFIG_BACKTESTING, BACKTESTING_FILE_PATH, BACKTESTING_DEFAULT_JOIN_TIMEOUT
 from octobot_backtesting.data.data_file_manager import get_file_description
 from octobot_backtesting.enums import DataFormatKeys
@@ -26,6 +27,7 @@ from octobot_commons.enums import PriceIndexes
 from octobot_commons.errors import ConfigTradingError
 from octobot_commons.logging.logging_util import get_logger, get_backtesting_errors_count, \
     reset_backtesting_errors, set_error_publication_enabled
+from octobot_commons.pretty_printer import trade_pretty_printer, global_portfolio_pretty_print
 from octobot_commons.symbol_util import split_symbol
 from octobot_commons.time_frame_manager import find_min_time_frame
 from octobot_evaluators.constants import CONFIG_FORCED_TIME_FRAME
@@ -33,8 +35,10 @@ from octobot_trading.api.exchange import get_exchange_manager_from_exchange_id, 
     get_watched_timeframes
 from octobot_trading.api.modes import get_activated_trading_mode
 from octobot_trading.api.portfolio import get_portfolio, get_origin_portfolio
-from octobot_trading.api.profitability import get_profitability_stats, get_reference_market
+from octobot_trading.api.profitability import get_profitability_stats, get_reference_market, \
+    get_current_portfolio_value, get_origin_portfolio_value
 from octobot_trading.api.symbol_data import get_symbol_data, get_symbol_historical_candles
+from octobot_trading.api.trades import get_trade_history
 from octobot_trading.constants import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_SIMULATOR, \
     CONFIG_STARTING_PORTFOLIO, CONFIG_SIMULATOR_FEES, CONFIG_EXCHANGES, CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET
 
@@ -187,6 +191,51 @@ class IndependentBacktesting:
             "trading_mode": trading_mode
         }
         return report
+
+    def log_report(self):
+        self.logger.info(" **** Backtesting report ****")
+        for exchange_id in self.octobot_backtesting.exchange_manager_ids:
+            exchange_manager = get_exchange_manager_from_exchange_id(exchange_id)
+            exchange_name = get_exchange_name(exchange_manager)
+            self.logger.info(f" ========= Trades on {exchange_name} =========")
+            self._log_trades_history(exchange_manager, exchange_name)
+
+            self.logger.info(f" ========= Prices evolution on {exchange_name} =========")
+            min_timeframe = find_min_time_frame(get_watched_timeframes(exchange_manager))
+            for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
+                self._log_symbol_report(symbol, exchange_manager, min_timeframe)
+
+            self.logger.info(" ========= Octobot end state =========")
+            self._log_global_report(exchange_manager)
+
+    def _log_trades_history(self, exchange_manager, exchange_name):
+        trades_history_string = "\n".join([trade_pretty_printer(exchange_name, trade)
+                                           for trade in get_trade_history(exchange_manager)])
+        self.logger.info(f"\n{trades_history_string}")
+
+    def _log_symbol_report(self, symbol, exchange_manager, min_time_frame):
+        market_delta = self._get_market_delta(symbol, exchange_manager, min_time_frame)
+        self.logger.info(f"{symbol} Profitability : {market_delta * 100}%")
+
+    def _log_global_report(self, exchange_manager):
+        _, profitability, _, market_average_profitability, _ = get_profitability_stats(exchange_manager)
+        reference_market = get_reference_market(self.backtesting_config)
+        end_portfolio = get_portfolio(exchange_manager)
+        end_portfolio_value = get_current_portfolio_value(exchange_manager)
+        starting_portfolio = get_origin_portfolio(exchange_manager)
+        starting_portfolio_value = get_origin_portfolio_value(exchange_manager)
+
+        self.logger.info(f"[End portfolio]      value {round(end_portfolio_value, 5)} {reference_market} "
+                         f"Holdings: {global_portfolio_pretty_print(end_portfolio,' | ')}")
+
+        self.logger.info(f"[Starting portfolio] value {round(starting_portfolio_value, 5)} {reference_market} "
+                         f"Holdings: {global_portfolio_pretty_print(starting_portfolio,' | ')}")
+
+        self.logger.info(f"Global market profitability (vs {reference_market}) : "
+                         f"{market_average_profitability}% | Octobot : {profitability}%")
+
+        self.logger.info(
+            f"Simulation lasted {round(get_backtesting_duration(self.octobot_backtesting.backtesting), 3)} sec")
 
     def _adapt_config(self):
         self.backtesting_config[CONFIG_TRADING][CONFIG_TRADER_RISK] = self.risk

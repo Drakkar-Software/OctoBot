@@ -18,3 +18,4 @@ from octobot.octobot cimport OctoBot
 
 cdef class OctoBotBacktestingFactory(OctoBot):
     cdef object independent_backtesting
+    cdef bint log_report
