@@ -63,7 +63,7 @@ class TaskManager:
         self.async_loop.run_forever()
 
     def run_forever(self, coroutine):
-        self.loop_forever_thread = threading.Thread(target=self.run_bot_in_thread(coroutine),
+        self.loop_forever_thread = threading.Thread(target=self.run_bot_in_thread, args=(coroutine,),
                                                     name=f"OctoBot Main Thread")
         self.loop_forever_thread.start()
 
