@@ -68,18 +68,8 @@ class TaskManager:
         self.loop_forever_thread.start()
 
     def stop_tasks(self):
-        stop_coroutines = []
-        # Notify stopping
-        # if self.octobot.config[CONFIG_NOTIFICATION_INSTANCE].enabled(CONFIG_NOTIFICATION_GLOBAL_INFO):
-        #     # To be improved with a full async implementation
-        #     # To be done : "asyncio.run" --> replaced by a simple await
-        #     # PR discussion : https://github.com/Drakkar-Software/OctoBot/pull/563#discussion_r248088266
-        #     stop_coroutines.append(self.octobot.config[CONFIG_NOTIFICATION_INSTANCE]
-        #                            .notify_with_all(NOTIFICATION_STOPPING_MESSAGE))
-
         self.logger.info("Stopping tasks...")
-
-        stop_coroutines.append(self.octobot.stop())
+        stop_coroutines = [self.octobot.stop()]
 
         if self.tools_task_group:
             self.async_loop.call_soon_threadsafe(self.tools_task_group.cancel)
