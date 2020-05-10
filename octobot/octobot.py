@@ -108,6 +108,7 @@ class OctoBot:
         await self.service_feed_factory.stop()
         stop_services()
         await self.interface_factory.stop()
+        self.logger.info("Shutting down.")
 
     def get_edited_config(self, config_key):
         return self.configuration_manager.get_edited_config(config_key)
