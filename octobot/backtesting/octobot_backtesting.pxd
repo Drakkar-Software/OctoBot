@@ -31,6 +31,7 @@ cdef class OctoBotBacktesting:
     cdef public dict fees_config
     cdef public list backtesting_files
     cdef public object backtesting
+    cdef public bint run_on_common_part_only
 
     cpdef void memory_leak_checkup(self, list to_check_elements)
     cpdef void check_remaining_objects(self)
