@@ -67,3 +67,7 @@ async def get_independent_backtesting_report(independent_backtesting) -> dict:
 
 def get_independent_backtesting_exchange_manager_ids(independent_backtesting) -> list:
     return independent_backtesting.octobot_backtesting.exchange_manager_ids
+
+
+def log_independent_backtesting_report(independent_backtesting) -> None:
+    independent_backtesting.log_report()
