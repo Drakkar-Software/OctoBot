@@ -27,7 +27,7 @@ from octobot.backtesting.abstract_backtesting_test import DATA_FILES
 from octobot_trading.api.trades import get_trade_history
 from tests.test_utils.bot_management import run_independent_backtesting
 
-BACKTESTING_SYMBOLS = ["ICX/BTC", "VEN/BTC", "XRB/BTC", "2020ADA/BTC", "2020ADA/USDT"]
+BACKTESTING_SYMBOLS = ["ICX/BTC", "VEN/BTC", "XRB/BTC", "2020ADA/BTC", "2020ADA/USDT", "BTC/USDT"]
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -71,13 +71,41 @@ async def test_double_synchronized_data_file_backtesting():
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
 
-async def test_double_partially_synchronized_data_file_backtesting():
+async def test_double_partially_synchronized_data_file_backtesting_common_only():
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                                               DATA_FILES[BACKTESTING_SYMBOLS[4]]])
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                                              DATA_FILES[BACKTESTING_SYMBOLS[4]]])
+
+    await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
+
+
+async def test_double_partially_synchronized_data_file_backtesting_all_data_files_range():
+    error_container = ErrorContainer()
+    asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
+    previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
+                                                              DATA_FILES[BACKTESTING_SYMBOLS[4]]],
+                                                             run_on_common_part_only=False)
+    current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
+                                                             DATA_FILES[BACKTESTING_SYMBOLS[4]]],
+                                                            run_on_common_part_only=False)
+
+    await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
+
+
+async def test_double_data_file_3_months_gap_backtesting_all_data_files_range():
+    error_container = ErrorContainer()
+    asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
+    previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[5]],
+                                                              DATA_FILES[BACKTESTING_SYMBOLS[0]]],
+                                                             timeout=20,
+                                                             run_on_common_part_only=False)
+    current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[5]],
+                                                             DATA_FILES[BACKTESTING_SYMBOLS[0]]],
+                                                            timeout=20,
+                                                            run_on_common_part_only=False)
 
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
