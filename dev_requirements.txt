@@ -11,5 +11,6 @@ twine
 pip
 setuptools
 wheel
+stdeb
 
 pur

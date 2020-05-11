@@ -98,6 +98,12 @@ jobs:
             branch: "$DEPLOY_BRANCH"
             tags: true
             condition: "$TRAVIS_OS_NAME = 'linux'"
+        - provider: script
+          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/pypi-builder:stdeb
+          cleanup: false
+          on:
+            repo: "$GH_REPO"
+            all_branches: true
 
     - name: "Linux - Heroku - Deploy"
       stage: edge
