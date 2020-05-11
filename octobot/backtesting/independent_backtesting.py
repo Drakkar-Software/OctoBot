@@ -118,7 +118,7 @@ class IndependentBacktesting:
 
         if market_begin and market_end and market_begin > 0:
             market_delta = market_end / market_begin - 1 if market_end >= market_begin \
-                else 1 - market_begin / market_end
+                else -1 * (1 - market_end / market_begin)
         else:
             market_delta = 0
 
