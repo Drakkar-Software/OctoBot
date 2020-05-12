@@ -14,10 +14,12 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import ccxt
+
+from octobot_commons.constants import CONFIG_ENABLED_OPTION
 from octobot_commons.logging.logging_util import get_logger
 from octobot_trading.api.exchange import create_exchange_builder
 from octobot_trading.api.trader import is_trader_enabled_in_config, is_trader_simulator_enabled_in_config
-from octobot_trading.constants import CONFIG_EXCHANGES
+from octobot_trading.constants import CONFIG_EXCHANGES, CONFIG_EXCHANGE_SANDBOXED
 
 from octobot.logger import init_exchange_chan_logger
 
@@ -48,23 +50,29 @@ class ExchangeFactory:
 
     async def _create_exchanges(self, backtesting=None):
         for exchange_class_string in self.octobot.config[CONFIG_EXCHANGES]:
-            if exchange_class_string in self.available_exchanges:
-                exchange_builder = create_exchange_builder(self.octobot.config, exchange_class_string) \
-                    .has_matrix(self.octobot.evaluator_factory.matrix_id) \
-                    .use_tentacles_setup_config(self.octobot.tentacles_setup_config) \
-                    .set_bot_id(self.octobot.bot_id) \
-                    .is_rest_only()
-                if is_trader_enabled_in_config(self.octobot.config):
-                    exchange_builder.is_real()
-                elif is_trader_simulator_enabled_in_config(self.octobot.config):
-                    exchange_builder.is_simulated()
-                if backtesting is not None:
-                    exchange_builder.is_backtesting(backtesting)
-                exchange_manager = await exchange_builder.build()
-                await init_exchange_chan_logger(exchange_manager.id)
-                self.exchange_manager_ids.append(exchange_manager.id)
+            if self.octobot.config[CONFIG_EXCHANGES][exchange_class_string].get(CONFIG_ENABLED_OPTION, True):
+                if exchange_class_string in self.available_exchanges:
+                    sandboxed = self.octobot.config[CONFIG_EXCHANGES][exchange_class_string].get(
+                        CONFIG_EXCHANGE_SANDBOXED, False)
+                    exchange_builder = create_exchange_builder(self.octobot.config, exchange_class_string) \
+                        .has_matrix(self.octobot.evaluator_factory.matrix_id) \
+                        .use_tentacles_setup_config(self.octobot.tentacles_setup_config) \
+                        .set_bot_id(self.octobot.bot_id) \
+                        .is_rest_only() \
+                        .is_sandboxed(sandboxed)
+                    if is_trader_enabled_in_config(self.octobot.config):
+                        exchange_builder.is_real()
+                    elif is_trader_simulator_enabled_in_config(self.octobot.config):
+                        exchange_builder.is_simulated()
+                    if backtesting is not None:
+                        exchange_builder.is_backtesting(backtesting)
+                    exchange_manager = await exchange_builder.build()
+                    await init_exchange_chan_logger(exchange_manager.id)
+                    self.exchange_manager_ids.append(exchange_manager.id)
+                else:
+                    self.logger.error(f"{exchange_class_string} exchange not found")
             else:
-                self.logger.error(f"{exchange_class_string} exchange not found")
+                self.logger.info(f"{exchange_class_string} is disabled in user configuration.")
 
     async def create(self):
         if self.octobot.config[CONFIG_EXCHANGES]:
