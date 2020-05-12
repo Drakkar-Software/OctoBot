@@ -28,6 +28,7 @@ from octobot_evaluators.api.matrix import del_matrix
 from octobot_evaluators.api.evaluators import stop_evaluator, stop_all_evaluator_channels, initialize_evaluators
 from octobot_evaluators.api.initialization import del_evaluator_channels, create_evaluator_channels
 from octobot_services.api.service_feeds import stop_service_feed, start_service_feed
+from octobot_trading.api.modes import init_trading_mode_config
 from octobot_trading.exchanges.data.exchange_symbol_data import ExchangeSymbolData
 from octobot_trading.exchanges.exchange_manager import ExchangeManager
 from octobot_trading.exchanges.exchange_simulator import ExchangeSimulator
@@ -190,6 +191,7 @@ class OctoBotBacktesting:
                                   f"might not work properly")
 
     async def _init_exchanges(self):
+        init_trading_mode_config(self.backtesting_config)
         self.backtesting = await initialize_backtesting(self.backtesting_config,
                                                         exchange_ids=self.exchange_manager_ids,
                                                         matrix_id=self.matrix_id,
