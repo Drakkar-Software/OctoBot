@@ -18,6 +18,7 @@ import ccxt
 from octobot_commons.constants import CONFIG_ENABLED_OPTION
 from octobot_commons.logging.logging_util import get_logger
 from octobot_trading.api.exchange import create_exchange_builder
+from octobot_trading.api.modes import init_trading_mode_config
 from octobot_trading.api.trader import is_trader_enabled_in_config, is_trader_simulator_enabled_in_config
 from octobot_trading.constants import CONFIG_EXCHANGES, CONFIG_EXCHANGE_SANDBOXED
 
@@ -77,6 +78,7 @@ class ExchangeFactory:
     async def create(self):
         if self.octobot.config[CONFIG_EXCHANGES]:
             try:
+                init_trading_mode_config(self.octobot.config)
                 await self._create_exchanges()
             except Exception as e:
                 self.logger.exception(e, error_message="An error happened during exchange creation")
