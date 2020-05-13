@@ -37,7 +37,7 @@ jobs:
       after_success:
         - if [ $TRAVIS_PULL_REQUEST == "false" ]; then coveralls; fi
 
-    - name: "Linux - Python 3.7-dev - Installed"
+    - name: "Linux amd64 - Python 3.7-dev - Installed"
       stage: test
       os: linux
       python: 3.7-dev
@@ -83,7 +83,7 @@ jobs:
             tags: true
             condition: $TRAVIS_OS_NAME = 'linux'
         - provider: script
-          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/octobot-pypi-deploy:i686 "i686" "cp37-cp37m" "cp37"
+          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/pypi-builder:manylinux-i686
           cleanup: false
           on:
             repo: "$GH_REPO"
@@ -91,7 +91,7 @@ jobs:
             tags: true
             condition: "$TRAVIS_OS_NAME = 'linux'"
         - provider: script
-          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/octobot-pypi-deploy:x86_64 "x86_64" "cp37-cp37m" "cp37"
+          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/pypi-builder:manylinux-x86_64
           cleanup: false
           on:
             repo: "$GH_REPO"
