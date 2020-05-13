@@ -1,0 +1,41 @@
+---
+kind: pipeline
+name: tests-python3.7-arm64
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+- name: tests
+  image: python:3.7
+  commands:
+    - pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
+    - python3 setup.py install
+    - pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
+
+---
+kind: pipeline
+name: deploy-python3.7-arm64
+
+workspace:
+  base: /project
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+- name: pypi_publish
+  pull: always
+  image: drakkarsoftware/pypi-builder:manylinux-aarch64
+  environment:
+    PYPI_USERNAME:
+      from_secret: pypi_username
+    PYPI_PASSWORD:
+      from_secret: pypi_password
+  when:
+    event:
+      - tag
+    repo:
+      - Drakkar-Software/OctoBot
