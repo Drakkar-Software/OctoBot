@@ -194,7 +194,7 @@ def main(args=None):
     parser.add_argument('-b', '--backtesting', help='Start OctoBot in backesting mode using the backtesting '
                                                     'config stored in config.json.',
                         action='store_true')
-    parser.add_argument('-bf', '--backtesting-files', type=argparse.FileType('r'), nargs='+',
+    parser.add_argument('-bf', '--backtesting-files', type=str, nargs='+',
                         help='Backtesting files to use (should be provided with -b or --backtesting).',
                         required=False)
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
