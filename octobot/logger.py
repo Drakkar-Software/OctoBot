@@ -21,6 +21,7 @@ from logging.config import fileConfig
 import sys
 
 from octobot.constants import LOGGING_CONFIG_FILE, LOGS_FOLDER
+from octobot_commons.enums import ChannelConsumerPriorityLevels
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.pretty_printer import (
     open_order_pretty_printer,
@@ -48,7 +49,7 @@ from octobot_trading.constants import (
 )
 
 BOT_CHANNEL_LOGGER = None
-LOGGER_PRIORITY_LEVEL = 2
+LOGGER_PRIORITY_LEVEL = ChannelConsumerPriorityLevels.OPTIONAL.value
 
 
 def _log_uncaught_exceptions(ex_cls, ex, tb):
