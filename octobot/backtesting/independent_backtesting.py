@@ -157,12 +157,10 @@ class IndependentBacktesting:
         except ConfigTradingError as e:
             self.logger.error(e)
             trading_mode = "Error when reading trading mode"
-        for exchange_id in self.octobot_backtesting.exchange_manager_ids:
-            report = self._get_exchange_report(exchange_id, reference_market, trading_mode)
-            # TODO: handle multi exchange reports
-            return report
+        report = self._get_exchanges_report(reference_market, trading_mode)
+        return report
 
-    def _get_exchange_report(self, exchange_id, reference_market, trading_mode):
+    def _get_exchanges_report(self, reference_market, trading_mode):
         SYMBOL_REPORT = "symbol_report"
         BOT_REPORT = "bot_report"
         CHART_IDENTIFIERS = "chart_identifiers"
@@ -173,26 +171,35 @@ class IndependentBacktesting:
             CHART_IDENTIFIERS: [],
             ERRORS_COUNT: get_backtesting_errors_count()
         }
-        exchange_manager = get_exchange_manager_from_exchange_id(exchange_id)
-        _, profitability, _, market_average_profitability, _ = get_profitability_stats(exchange_manager)
-        min_timeframe = find_min_time_frame(get_watched_timeframes(exchange_manager))
-        exchange_name = get_exchange_name(exchange_manager)
-        for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
-            market_delta = self._get_market_delta(symbol, exchange_manager, min_timeframe)
-            report[SYMBOL_REPORT].append({symbol: market_delta * 100})
-            report[CHART_IDENTIFIERS].append({
-                "symbol": symbol,
-                "exchange_id": exchange_id,
-                "exchange_name": exchange_name,
-                "time_frame": min_timeframe.value
-            })
+        profitabilities = {}
+        market_average_profitabilities = {}
+        starting_portfolios = {}
+        end_portfolios = {}
+        for exchange_id in self.octobot_backtesting.exchange_manager_ids:
+            exchange_manager = get_exchange_manager_from_exchange_id(exchange_id)
+            _, profitability, _, market_average_profitability, _ = get_profitability_stats(exchange_manager)
+            min_timeframe = find_min_time_frame(get_watched_timeframes(exchange_manager))
+            exchange_name = get_exchange_name(exchange_manager)
+            for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
+                market_delta = self._get_market_delta(symbol, exchange_manager, min_timeframe)
+                report[SYMBOL_REPORT].append({symbol: market_delta * 100})
+                report[CHART_IDENTIFIERS].append({
+                    "symbol": symbol,
+                    "exchange_id": exchange_id,
+                    "exchange_name": exchange_name,
+                    "time_frame": min_timeframe.value
+                })
+            profitabilities[exchange_name] = profitability
+            market_average_profitabilities[exchange_name] = market_average_profitability
+            starting_portfolios[exchange_name] = get_origin_portfolio(exchange_manager)
+            end_portfolios[exchange_name] = get_portfolio(exchange_manager)
 
         report[BOT_REPORT] = {
-            "profitability": profitability,
-            "market_average_profitability": market_average_profitability,
+            "profitability": profitabilities,
+            "market_average_profitability": market_average_profitabilities,
             "reference_market": reference_market,
-            "end_portfolio": get_portfolio(exchange_manager),
-            "starting_portfolio": get_origin_portfolio(exchange_manager),
+            "end_portfolio": end_portfolios,
+            "starting_portfolio": starting_portfolios,
             "trading_mode": trading_mode
         }
         return report
