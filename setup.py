@@ -51,6 +51,7 @@ setup(
     py_modules=['start', 'octobot'],
     packages=PACKAGES,
     long_description=DESCRIPTION,
+    long_description_content_type='text/markdown'
     install_requires=REQUIRED,
     tests_require=["pytest"],
     test_suite="tests",
