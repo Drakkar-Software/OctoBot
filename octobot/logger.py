@@ -113,22 +113,22 @@ async def init_exchange_chan_logger(exchange_id):
         ohlcv_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
     await get_trading_chan(BALANCE_CHANNEL, exchange_id).new_consumer(
-        balance_callback, priority_level=LOGGER_PRIORITY_LEVEL
+        balance_callback, priority_level=ChannelConsumerPriorityLevels.MEDIUM.value
     )
     await get_trading_chan(BALANCE_PROFITABILITY_CHANNEL, exchange_id).new_consumer(
-        balance_profitability_callback, priority_level=LOGGER_PRIORITY_LEVEL
+        balance_profitability_callback, priority_level=ChannelConsumerPriorityLevels.MEDIUM.value
     )
     await get_trading_chan(TRADES_CHANNEL, exchange_id).new_consumer(
-        trades_callback, priority_level=LOGGER_PRIORITY_LEVEL
+        trades_callback, priority_level=ChannelConsumerPriorityLevels.MEDIUM.value
     )
     await get_trading_chan(LIQUIDATIONS_CHANNEL, exchange_id).new_consumer(
-        liquidations_callback, priority_level=LOGGER_PRIORITY_LEVEL
+        liquidations_callback, priority_level=ChannelConsumerPriorityLevels.MEDIUM.value
     )
     await get_trading_chan(POSITIONS_CHANNEL, exchange_id).new_consumer(
-        positions_callback, priority_level=LOGGER_PRIORITY_LEVEL
+        positions_callback, priority_level=ChannelConsumerPriorityLevels.MEDIUM.value
     )
     await get_trading_chan(ORDERS_CHANNEL, exchange_id).new_consumer(
-        orders_callback, priority_level=LOGGER_PRIORITY_LEVEL
+        orders_callback, priority_level=ChannelConsumerPriorityLevels.MEDIUM.value
     )
     await get_trading_chan(MARK_PRICE_CHANNEL, exchange_id).new_consumer(
         mark_price_callback, priority_level=LOGGER_PRIORITY_LEVEL
