@@ -64,9 +64,11 @@ async def test_double_synchronized_data_file_backtesting():
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]],
-                                                              DATA_FILES[BACKTESTING_SYMBOLS[1]]])
+                                                              DATA_FILES[BACKTESTING_SYMBOLS[1]]],
+                                                             timeout=40)
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]],
-                                                             DATA_FILES[BACKTESTING_SYMBOLS[1]]])
+                                                             DATA_FILES[BACKTESTING_SYMBOLS[1]]],
+                                                            timeout=40)
 
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
@@ -75,9 +77,11 @@ async def test_double_partially_synchronized_data_file_backtesting_common_only()
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
-                                                              DATA_FILES[BACKTESTING_SYMBOLS[4]]])
+                                                              DATA_FILES[BACKTESTING_SYMBOLS[4]]],
+                                                             timeout=40)
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
-                                                             DATA_FILES[BACKTESTING_SYMBOLS[4]]])
+                                                             DATA_FILES[BACKTESTING_SYMBOLS[4]]],
+                                                            timeout=40)
 
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
@@ -87,10 +91,12 @@ async def test_double_partially_synchronized_data_file_backtesting_all_data_file
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                                               DATA_FILES[BACKTESTING_SYMBOLS[4]]],
-                                                             run_on_common_part_only=False)
+                                                             run_on_common_part_only=False,
+                                                             timeout=40)
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                                              DATA_FILES[BACKTESTING_SYMBOLS[4]]],
-                                                            run_on_common_part_only=False)
+                                                            run_on_common_part_only=False,
+                                                            timeout=40)
 
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
@@ -100,11 +106,11 @@ async def test_double_data_file_3_months_gap_backtesting_all_data_files_range():
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[5]],
                                                               DATA_FILES[BACKTESTING_SYMBOLS[0]]],
-                                                             timeout=20,
+                                                             timeout=80,
                                                              run_on_common_part_only=False)
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[5]],
                                                              DATA_FILES[BACKTESTING_SYMBOLS[0]]],
-                                                            timeout=20,
+                                                            timeout=80,
                                                             run_on_common_part_only=False)
 
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
