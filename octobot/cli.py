@@ -15,6 +15,7 @@
 #  License along with this library.
 import argparse
 import os
+import sys
 
 from octobot_tentacles_manager.api.loader import load_tentacles
 from octobot_tentacles_manager.cli import register_tentacles_manager_arguments
@@ -231,7 +232,9 @@ def octobot_parser(parser):
     tentacles_parser.set_defaults(func=call_tentacles_manager)
 
 
-def main(args):
+def main(args=None):
+    if not args:
+        args = sys.argv[1:]
     parser = argparse.ArgumentParser(description='OctoBot')
     octobot_parser(parser)
 
