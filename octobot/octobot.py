@@ -129,9 +129,9 @@ class OctoBot:
         self._init_community()
 
     async def stop(self):
-        await self.service_feed_factory.stop()
+        await self.service_feed_producer.stop()
         stop_services()
-        await self.interface_factory.stop()
+        await self.interface_producer.stop()
         self.logger.info("Shutting down.")
 
     def _init_community(self):
