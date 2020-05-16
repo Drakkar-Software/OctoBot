@@ -81,7 +81,7 @@ setup(
     packages=PACKAGES,
     include_package_data=True,
     long_description=DESCRIPTION,
-    long_description_content_type='text/markdown'
+    long_description_content_type='text/markdown',
     cmdclass={'build_ext': build_ext},
     tests_require=["pytest"],
     test_suite="tests",
