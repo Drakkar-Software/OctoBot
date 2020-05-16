@@ -19,7 +19,7 @@ from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.tests.test_config import load_test_config
 
 from octobot.api.backtesting import create_independent_backtesting, \
-    initialize_and_run_independent_backtesting
+    initialize_and_run_independent_backtesting, stop_independent_backtesting
 from octobot.logger import init_logger
 from octobot.octobot import OctoBot
 from tests.test_utils.config import load_test_tentacles_config
@@ -52,4 +52,6 @@ async def run_independent_backtesting(data_files, timeout=10, use_loggers=True, 
         return independent_backtesting
     except Exception as e:
         get_logger().exception(e, True, str(e))
+        # stop backtesting to prevent zombie tasks
+        await stop_independent_backtesting(independent_backtesting)
         return independent_backtesting
