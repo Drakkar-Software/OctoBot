@@ -140,7 +140,7 @@ def start_octobot(args):
 
         if args.backtesting:
             from octobot.backtesting.octobot_backtesting_factory import OctoBotBacktestingFactory
-            bot = OctoBotBacktestingFactory(config)
+            bot = OctoBotBacktestingFactory(config, run_on_common_part_only=not args.whole_data_range)
         else:
             bot = OctoBot(config, reset_trading_history=args.reset_trading_history)
 
@@ -190,6 +190,10 @@ def octobot_parser(parser):
     parser.add_argument('-bf', '--backtesting-files', type=str, nargs='+',
                         help='Backtesting files to use (should be provided with -b or --backtesting).',
                         required=False)
+    parser.add_argument('-wdr', '--whole-data-range',
+                        help='On multiple files backtesting: run on the whole available data instead of the '
+                             'common part only (default behavior).',
+                        action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
                         action='store_true')
