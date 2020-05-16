@@ -61,6 +61,7 @@ class IndependentBacktesting:
         self.fees_config = {}
         self.forced_time_frames = []
         self._init_default_config_values()
+        self.stopped = False
         self.octobot_backtesting = OctoBotBacktesting(self.backtesting_config,
                                                       self.tentacles_setup_config,
                                                       self.symbols_to_create_exchange_classes,
@@ -73,6 +74,9 @@ class IndependentBacktesting:
             self._add_crypto_currencies_config()
             await self.octobot_backtesting.initialize_and_run()
             self._block_errors_publish_till_end_of_backtesting()
+        except RuntimeError as e:
+            self.logger.error(e)
+            await self.stop()
         except Exception as e:
             if log_errors:
                 self.logger.exception(e, True, f"Error when running backtesting: {e}")
@@ -87,7 +91,11 @@ class IndependentBacktesting:
         await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
 
     async def stop(self, memory_check=False):
-        await self.octobot_backtesting.stop(memory_check=memory_check)
+        try:
+            if not self.stopped:
+                await self.octobot_backtesting.stop(memory_check=memory_check)
+        finally:
+            self.stopped = True
 
     def is_in_progress(self):
         if self.octobot_backtesting.backtesting:

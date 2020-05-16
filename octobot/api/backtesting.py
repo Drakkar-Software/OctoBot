@@ -62,6 +62,10 @@ def is_independent_backtesting_finished(independent_backtesting) -> bool:
     return independent_backtesting.get_progress() == 1.0
 
 
+def is_independent_backtesting_stopped(independent_backtesting) -> bool:
+    return independent_backtesting.stopped
+
+
 async def get_independent_backtesting_report(independent_backtesting) -> dict:
     return await independent_backtesting.get_dict_formatted_report()
 
