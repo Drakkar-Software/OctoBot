@@ -19,8 +19,11 @@ from octobot_channels.channels.channel_instances import set_chan_at_id
 from octobot_channels.util.channel_creator import create_channel_instance
 from octobot_commons.enums import OctoBotChannelSubjects
 from octobot_commons.logging.logging_util import get_logger
+from octobot_trading.api.exchange import get_exchange_configuration_from_exchange_id
 from octobot_trading.consumers.octobot_channel_consumer import OctoBotChannelTradingActions as TradingActions, \
     OctoBotChannelTradingDataKeys as TradingKeys, octobot_channel_callback as octobot_channel_trading_callback
+from octobot_evaluators.consumers.octobot_channel_consumer import OctoBotChannelEvaluatorActions as EvaluatorActions, \
+    octobot_channel_callback as octobot_channel_evaluator_callback
 
 
 class OctoBotChannelGlobalConsumer:
@@ -52,6 +55,14 @@ class OctoBotChannelGlobalConsumer:
                 action=[action.value for action in TradingActions]
             ))
 
+        # Initialize evaluator consumer
+        self.octobot_channel_consumers.append(
+            await self.octobot_channel.new_consumer(
+                octobot_channel_evaluator_callback,
+                bot_id=self.octobot.bot_id,
+                action=[action.value for action in EvaluatorActions]
+            ))
+
     async def octobot_channel_callback(self, bot_id, subject, action, data) -> None:
         """
         OctoBot channel consumer callback
@@ -65,6 +76,10 @@ class OctoBotChannelGlobalConsumer:
                 if TradingKeys.EXCHANGE_ID.value in data:
                     exchange_id = data[TradingKeys.EXCHANGE_ID.value]
                     await init_exchange_chan_logger(exchange_id)
+                    exchange_configuration = get_exchange_configuration_from_exchange_id(exchange_id)
+                    await self.octobot.evaluator_producer.create_evaluators(exchange_configuration)
+            if action == EvaluatorActions.EVALUATOR.value:
+                pass
 
     async def stop(self) -> None:
         """
