@@ -33,6 +33,7 @@ cdef class IndependentBacktesting:
     cdef public double risk
     cdef public dict starting_portfolio
     cdef public dict fees_config
+    cdef public bint stopped
 
     cdef public OctoBotBacktesting octobot_backtesting
 
