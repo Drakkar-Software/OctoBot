@@ -75,6 +75,7 @@ class OctoBotChannelGlobalConsumer:
             if action == TradingActions.EXCHANGE.value:
                 if TradingKeys.EXCHANGE_ID.value in data:
                     exchange_id = data[TradingKeys.EXCHANGE_ID.value]
+                    self.octobot.exchange_producer.exchange_manager_ids.append(exchange_id)
                     await init_exchange_chan_logger(exchange_id)
                     exchange_configuration = get_exchange_configuration_from_exchange_id(exchange_id)
                     await self.octobot.evaluator_producer.create_evaluators(exchange_configuration)
