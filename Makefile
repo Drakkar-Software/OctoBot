@@ -27,6 +27,10 @@ build: clean
 .PHONY: clean
 clean:
 	rm -rf build
+	rm -rf auditwheel
+	rm -rf dist
+	rm -rf .eggs
+	rm -rf *.egg-info
 	for i in $(CLEAN_EXT); do find $(EXTENSION_FOLDER) -name "$$i" -delete; done
 
 .PHONY: debug
