@@ -9,7 +9,7 @@ trigger:
     - '*'
   paths:
     include:
-    -  '*'
+      - '*'
 
 pr:
   autoCancel: true
