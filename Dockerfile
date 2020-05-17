@@ -10,7 +10,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY . .
 RUN pip install --upgrade pip \
     && pip install Cython>=0.29.17 \
-    && pip install --only-binary OctoBot-Commons --only-binary OctoBot-Channels --only-binary OctoBot-Evaluators --only-binary OctoBot-Backtesting --only-binary OctoBot-Trading --prefer-binary -r requirements.txt \
+    && pip install --extra-index-url https://www.tentacles.octobot.online/repository/octobot_pypi/simple --only-binary OctoBot-Commons --only-binary OctoBot-Channels --only-binary OctoBot-Evaluators --only-binary OctoBot-Backtesting --only-binary OctoBot-Trading --prefer-binary -r requirements.txt \
     && python setup.py install
 
 FROM python:3.7.7-slim-stretch
