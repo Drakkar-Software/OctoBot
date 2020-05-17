@@ -93,7 +93,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     entry_points={
         'console_scripts': [
-            PROJECT_NAME + ' = start:main'
+            PROJECT_NAME + ' = octobot.cli:main'
         ]
     },
     classifiers=[
