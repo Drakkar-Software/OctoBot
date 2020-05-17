@@ -6,10 +6,7 @@ trigger:
     - 0.4.0
   tags:
     include:
-      - '*'
-  paths:
-    include:
-      - '*'
+    - '*'
 
 pr:
   autoCancel: true
