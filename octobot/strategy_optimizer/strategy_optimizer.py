@@ -166,7 +166,7 @@ class StrategyOptimizer:
 
     def _run_test_suite(self, config, evaluators):
         self.current_test_suite = StrategyTestSuite()
-        self.current_test_suite.evaluators = evaluators
+        self.current_test_suite.evaluators = list(evaluators)
         self.current_test_suite.initialize_with_strategy(self.strategy_class,
                                                          self.tentacles_setup_config,
                                                          deepcopy(config))
