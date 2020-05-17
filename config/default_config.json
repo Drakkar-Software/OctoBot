@@ -18,7 +18,9 @@
     "global-info": true,
     "price-alerts": true,
     "trades": true,
-    "notification-type": []
+    "notification-type": [
+      "web"
+    ]
   },
   "trading":{
     "multi-session-profitability": false,
