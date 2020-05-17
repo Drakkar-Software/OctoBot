@@ -17,6 +17,7 @@ import argparse
 import os
 import sys
 
+from octobot_commons.os_util import get_current_platform, get_octobot_type
 from octobot_tentacles_manager.api.loader import load_tentacles
 from octobot_tentacles_manager.cli import register_tentacles_manager_arguments
 
@@ -94,6 +95,12 @@ def start_octobot(args):
 
         # Version
         logger.info("Version : {0}".format(LONG_VERSION))
+
+        # Current running environment
+        try:
+            logger.debug(f"Running on {get_current_platform()} with {get_octobot_type()}")
+        except Exception as e:
+            logger.error(f"Impossible to identify the current running environment: {e}")
 
         # _check_public_announcements(logger)
 
