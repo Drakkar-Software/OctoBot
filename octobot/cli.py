@@ -121,6 +121,9 @@ def start_octobot(args):
             exchange_keys_encrypter()
             return
 
+        # Add tentacles folder to Python path
+        sys.path.append(os.path.realpath(os.getcwd()))
+
         if not load_tentacles(verbose=True):
             logger.info("No tentacles found. Installing default tentacles ...")
             run_tentacles_installation()
