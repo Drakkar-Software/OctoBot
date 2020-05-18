@@ -51,25 +51,7 @@
       "web-socket": false
     }
   },
-  "services": {
-    "mail": {
-      "gmail-user": "",
-      "gmail-password": "",
-      "mail-dest": ""
-    },
-    "twitter": {
-      "api-key": "",
-      "api-secret": "",
-      "access-token": "",
-      "access-token-secret": ""
-    },
-    "reddit":{
-      "client-id": "",
-      "client-secret": "",
-      "password":"",
-      "username":""
-    }
-  },
+  "services": {},
   "notification": {
     "global-info": true,
     "notification-type": [],
