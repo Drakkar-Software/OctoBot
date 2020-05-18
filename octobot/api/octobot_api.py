@@ -61,6 +61,9 @@ class OctoBotAPI:
     def run_in_main_asyncio_loop(self, coroutine):
         return self._octobot.run_in_main_asyncio_loop(coroutine)
 
+    def run_in_async_executor(self, coroutine):
+        return self._octobot.task_manager.run_in_async_executor(coroutine)
+
     def stop_tasks(self) -> None:
         self._octobot.task_manager.stop_tasks()
 
