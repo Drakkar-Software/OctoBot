@@ -16,6 +16,7 @@
 import asyncio
 import pytest
 
+from tentacles.Services.Interfaces.web_interface import WebInterface
 from octobot_commons.tests.test_config import load_test_config
 from octobot.commands import start_bot
 from octobot.logger import init_logger
@@ -26,6 +27,8 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_run_bot():
+    # avoid web interface in this test
+    WebInterface.enabled = False
     bot = OctoBot(load_test_config(), ignore_config=True)
     bot.task_manager.init_async_loop()
     await start_bot(bot, init_logger())
