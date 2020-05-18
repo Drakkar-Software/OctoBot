@@ -101,3 +101,6 @@ class TaskManager:
 
     def run_in_main_asyncio_loop(self, coroutine):
         return run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
+
+    def run_in_async_executor(self, coroutine):
+        return self.executors.submit(asyncio.run, coroutine).result()
