@@ -144,10 +144,13 @@ class OctoBot:
         return self.configuration_manager.get_startup_config(config_key)
 
     def get_trading_mode(self):
-        first_exchange_manager = get_exchange_manager_from_exchange_id(
-            next(iter(self.exchange_producer.exchange_manager_ids))
-        )
-        return get_trading_modes(first_exchange_manager)[0]
+        try:
+            first_exchange_manager = get_exchange_manager_from_exchange_id(
+                next(iter(self.exchange_producer.exchange_manager_ids))
+            )
+            return get_trading_modes(first_exchange_manager)[0]
+        except StopIteration:
+            return None
 
     def run_in_main_asyncio_loop(self, coroutine):
         return self.task_manager.run_in_main_asyncio_loop(coroutine)
