@@ -24,6 +24,8 @@ from octobot_trading.consumers.octobot_channel_consumer import OctoBotChannelTra
     OctoBotChannelTradingDataKeys as TradingKeys, octobot_channel_callback as octobot_channel_trading_callback
 from octobot_evaluators.consumers.octobot_channel_consumer import OctoBotChannelEvaluatorActions as EvaluatorActions, \
     octobot_channel_callback as octobot_channel_evaluator_callback
+from octobot_services.consumers.octobot_channel_consumer import OctoBotChannelServiceActions as ServiceActions, \
+    OctoBotChannelServiceDataKeys as ServiceKeys, octobot_channel_callback as octobot_channel_service_callback
 
 
 class OctoBotChannelGlobalConsumer:
@@ -63,6 +65,14 @@ class OctoBotChannelGlobalConsumer:
                 action=[action.value for action in EvaluatorActions]
             ))
 
+        # Initialize service consumer
+        self.octobot_channel_consumers.append(
+            await self.octobot_channel.new_consumer(
+                octobot_channel_service_callback,
+                bot_id=self.octobot.bot_id,
+                action=[action.value for action in ServiceActions]
+            ))
+
     async def octobot_channel_callback(self, bot_id, subject, action, data) -> None:
         """
         OctoBot channel consumer callback
@@ -79,8 +89,19 @@ class OctoBotChannelGlobalConsumer:
                     await init_exchange_chan_logger(exchange_id)
                     exchange_configuration = get_exchange_configuration_from_exchange_id(exchange_id)
                     await self.octobot.evaluator_producer.create_evaluators(exchange_configuration)
-            if action == EvaluatorActions.EVALUATOR.value:
-                pass
+                    # If an exchange is created before interface producer is done, it will be registered via
+                    # self.octobot.interface_producer directly on creation
+                    await self.octobot.interface_producer.register_exchange(exchange_id)
+            elif action == EvaluatorActions.EVALUATOR.value:
+                if not self.octobot.service_feed_producer.started:
+                    # Start service feeds now that evaluators registered their feed requirements
+                    await self.octobot.service_feed_producer.start_feeds()
+            elif action == ServiceActions.INTERFACE.value:
+                await self.octobot.interface_producer.register_interface(data[ServiceKeys.INSTANCE.value])
+            elif action == ServiceActions.NOTIFICATION.value:
+                await self.octobot.interface_producer.register_notifier(data[ServiceKeys.INSTANCE.value])
+            elif action == ServiceActions.SERVICE_FEED.value:
+                await self.octobot.service_feed_producer.register_service_feed(data[ServiceKeys.INSTANCE.value])
 
     async def stop(self) -> None:
         """

@@ -16,7 +16,10 @@
 from octobot.channels.octobot_channel import OctoBotChannelProducer
 from octobot.constants import CONFIG_KEY
 from octobot_backtesting.api.backtesting import is_backtesting_enabled
-from octobot_services.api.service_feeds import create_service_feed_factory, start_service_feed, stop_service_feed
+from octobot_commons.enums import OctoBotChannelSubjects
+from octobot_services.api.service_feeds import create_service_feed_factory, stop_service_feed
+from octobot_services.consumers.octobot_channel_consumer import OctoBotChannelServiceActions as ServiceActions, \
+    OctoBotChannelServiceDataKeys as ServiceKeys
 
 
 class ServiceFeedProducer(OctoBotChannelProducer):
@@ -27,6 +30,7 @@ class ServiceFeedProducer(OctoBotChannelProducer):
     def __init__(self, channel, octobot):
         super().__init__(channel)
         self.octobot = octobot
+        self.started = False
 
         self.service_feeds = []
 
@@ -35,15 +39,33 @@ class ServiceFeedProducer(OctoBotChannelProducer):
         service_feed_factory = create_service_feed_factory(self.octobot.config,
                                                            self.octobot.async_loop,
                                                            self.octobot.bot_id)
-        self.service_feeds = [await self.create_feed(service_feed_factory, feed)
-                              for feed in service_feed_factory.get_available_service_feeds(in_backtesting)]
+        for feed in service_feed_factory.get_available_service_feeds(in_backtesting):
+            await self.create_feed(service_feed_factory, feed, in_backtesting)
 
-    async def create_feed(self, service_feed_factory, feed):
-        service_feed = service_feed_factory.create_service_feed(feed)
-        if not await start_service_feed(service_feed, False, self.octobot.get_edited_config(CONFIG_KEY)):
-            self.logger.error(f"Failed to start {service_feed.get_name()}. Evaluators requiring this service feed "
-                              f"might not work properly")
-        return service_feed
+    async def start_feeds(self):
+        self.started = True
+        for feed in self.service_feeds:
+            await self.send(bot_id=self.octobot.bot_id,
+                            subject=OctoBotChannelSubjects.UPDATE.value,
+                            action=ServiceActions.START_SERVICE_FEED.value,
+                            data={
+                                ServiceKeys.INSTANCE.value: feed,
+                                ServiceKeys.EDITED_CONFIG.value: self.octobot.get_edited_config(CONFIG_KEY)
+                            })
+
+    async def create_feed(self, service_feed_factory, feed, in_backtesting):
+        await self.send(bot_id=self.octobot.bot_id,
+                        subject=OctoBotChannelSubjects.CREATION.value,
+                        action=ServiceActions.SERVICE_FEED.value,
+                        data={
+                            ServiceKeys.EDITED_CONFIG.value: self.octobot.get_edited_config(CONFIG_KEY),
+                            ServiceKeys.BACKTESTING_ENABLED.value: in_backtesting,
+                            ServiceKeys.CLASS.value: feed,
+                            ServiceKeys.FACTORY.value: service_feed_factory
+                        })
+
+    async def register_service_feed(self, instance):
+        self.service_feeds.append(instance)
 
     async def stop(self):
         for service_feed in self.service_feeds:

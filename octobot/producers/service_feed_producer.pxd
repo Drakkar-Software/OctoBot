@@ -18,5 +18,6 @@ from octobot.channels.octobot_channel cimport OctoBotChannelProducer
 
 cdef class ServiceFeedProducer(OctoBotChannelProducer):
     cdef public object octobot
+    cdef public bint started
 
     cdef public list service_feeds
