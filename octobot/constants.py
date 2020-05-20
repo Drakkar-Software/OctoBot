@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import os
+import pathlib
 
 PROJECT_NAME = "OctoBot"
 SHORT_VERSION = "0.4.0"  # major.minor.revision
@@ -57,9 +58,10 @@ CONFIG_DEBUG_OPTION = "DEV-MODE"
 FORCE_ASYNCIO_DEBUG_OPTION = False
 
 # Files
-CONFIG_FILE = "config.json"
-TEMP_RESTORE_CONFIG_FILE = "temp_config.json"
-CONFIG_FOLDER = "config"
+# Store the path of the octobot directory from this file since it can change depending on the installation path
+# (local sources, python site-packages, ...)
+OCTOBOT_FOLDER = pathlib.Path(__file__).parent.absolute()
+CONFIG_FOLDER = f"{OCTOBOT_FOLDER}/config"
 SCHEMA = "schema"
 CONFIG_FILE_SCHEMA = f"{CONFIG_FOLDER}/config_{SCHEMA}.json"
 DEFAULT_CONFIG_FILE = f"{CONFIG_FOLDER}/default_config.json"
@@ -68,6 +70,7 @@ LOG_FILE = f"{LOGS_FOLDER}/{PROJECT_NAME}.log"
 
 # Optimizer
 OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION = False
+OPTIMIZER_DATA_FILES_FOLDER = f"{OCTOBOT_FOLDER}/strategy_optimizer/optimizer_data_files"
 
 # Channel
 OCTOBOT_CHANNEL = "OctoBot"

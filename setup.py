@@ -36,7 +36,7 @@ from setuptools import find_packages
 from setuptools import setup, Extension
 from octobot.constants import PROJECT_NAME, VERSION
 
-PACKAGES = find_packages(exclude=["tests"])
+PACKAGES = find_packages(exclude=["tentacles*"])
 
 packages_list = ["octobot.initializer",
                  "octobot.configuration_manager",
@@ -79,14 +79,15 @@ setup(
     description='Cryptocurrencies alert / trading bot',
     py_modules=['start'],
     packages=PACKAGES,
-    include_package_data=True,
+    package_data={
+        "": ["config/*", "strategy_optimizer/optimizer_data_files/*"],
+    },
     long_description=DESCRIPTION,
     long_description_content_type='text/markdown',
     cmdclass={'build_ext': build_ext},
     tests_require=["pytest"],
     test_suite="tests",
     zip_safe=False,
-    data_files=[],
     setup_requires=REQUIRED if not CYTHON_DEBUG else [],
     install_requires=REQUIRED,
     ext_modules=cythonize(ext_modules, gdb_debug=CYTHON_DEBUG),

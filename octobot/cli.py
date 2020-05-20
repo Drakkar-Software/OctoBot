@@ -23,12 +23,12 @@ from octobot_tentacles_manager.cli import register_tentacles_manager_arguments
 
 from octobot.commands import exchange_keys_encrypter, start_strategy_optimizer, \
     run_tentacles_installation, run_bot, call_tentacles_manager
-from octobot.configuration_manager import config_health_check
-from octobot.constants import LONG_VERSION
+from octobot.configuration_manager import config_health_check, init_config
+from octobot.constants import LONG_VERSION, CONFIG_FILE_SCHEMA
 from octobot.disclaimer import DISCLAIMER
 from octobot.logger import init_logger
 from octobot_backtesting.constants import CONFIG_BACKTESTING_DATA_FILES
-from octobot_commons.config import load_config, is_config_empty_or_missing, init_config
+from octobot_commons.config import load_config, is_config_empty_or_missing
 from octobot_commons.config_manager import validate_config_file, accepted_terms
 from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE
 from octobot_commons.errors import ConfigError, ConfigTradingError, ConfigEvaluatorError
@@ -114,7 +114,7 @@ def start_octobot(args):
             init_config()
             config = load_config(error=False)
         else:
-            is_valid, e = validate_config_file(config=config)
+            is_valid, e = validate_config_file(config=config, schema_file=CONFIG_FILE_SCHEMA)
             if not is_valid:
                 logger.error("OctoBot can't repair your config.json file: invalid format: " + str(e))
                 raise ConfigError
