@@ -25,7 +25,7 @@ from concurrent.futures import CancelledError
 
 from octobot_tentacles_manager.api.installer import install_all_tentacles
 
-from octobot.constants import DEFAULT_TENTACLES_URL
+from octobot.constants import DEFAULT_TENTACLES_URL, OCTOBOT_FOLDER
 from octobot import get_bot, set_bot
 from octobot_commons.config_util import encrypt
 from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config, ensure_setup_configuration
@@ -74,7 +74,9 @@ def run_tentacles_installation():
 
 async def _install_all_tentacles():
     async with aiohttp.ClientSession() as aiohttp_session:
-        await install_all_tentacles(DEFAULT_TENTACLES_URL, aiohttp_session=aiohttp_session)
+        await install_all_tentacles(DEFAULT_TENTACLES_URL,
+                                    aiohttp_session=aiohttp_session,
+                                    bot_install_dir=OCTOBOT_FOLDER)
 
 
 def _signal_handler(_, __):
