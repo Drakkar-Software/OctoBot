@@ -17,7 +17,7 @@ FROM python:3.7.7-slim-stretch
 
 WORKDIR /octobot
 COPY --from=base /opt/venv /opt/venv
-COPY config /octobot/config
+COPY octobot/config /octobot/octobot/config
 
 # Make sure we use the virtualenv:
 ENV PATH="/opt/venv/bin:$PATH"
