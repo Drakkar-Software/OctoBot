@@ -14,10 +14,13 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import copy
+import os
+from shutil import copyfile
 
+from octobot.constants import DEFAULT_CONFIG_FILE, CONFIG_FILE_SCHEMA
 from octobot_commons.config import load_config, get_user_config
 from octobot_commons.config_manager import _handle_encrypted_value, dump_json, save_config
-from octobot_commons.constants import TEMP_RESTORE_CONFIG_FILE, CONFIG_ENABLED_OPTION
+from octobot_commons.constants import TEMP_RESTORE_CONFIG_FILE, CONFIG_ENABLED_OPTION, USER_FOLDER
 from octobot_commons.logging.logging_util import get_logger
 from octobot_trading.api.trader import is_trader_enabled_in_config, is_trader_simulator_enabled_in_config
 from octobot_trading.constants import CONFIG_EXCHANGES, CONFIG_EXCHANGE_ENCRYPTED_VALUES, CONFIG_SIMULATOR, \
@@ -76,8 +79,29 @@ def config_health_check(config):
     # 3 save fixed config if necessary
     if should_replace_config:
         try:
-            save_config(get_user_config(), config, TEMP_RESTORE_CONFIG_FILE, json_data=dump_json(config))
+            save_config(get_user_config(),
+                        config,
+                        TEMP_RESTORE_CONFIG_FILE,
+                        CONFIG_FILE_SCHEMA,
+                        json_data=dump_json(config))
             return config
         except Exception as e:
             get_logger().error(f"Save of the health checked config failed : {e}, will use the initial config")
             return load_config(error=False, fill_missing_fields=True)
+
+
+def init_config(
+    config_file=get_user_config(), from_config_file=DEFAULT_CONFIG_FILE
+):
+    """
+    Initialize default config
+    :param config_file: the config file path
+    :param from_config_file: the default config file path
+    """
+    try:
+        if not os.path.exists(USER_FOLDER):
+            os.makedirs(USER_FOLDER)
+
+        copyfile(from_config_file, config_file)
+    except Exception as global_exception:
+        raise Exception(f"Can't init config file {global_exception}")

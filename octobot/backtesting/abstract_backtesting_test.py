@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod
 from os import path
 
 from octobot.api.backtesting import stop_independent_backtesting
-from octobot_backtesting.constants import CONFIG_BACKTESTING
+from octobot.constants import OPTIMIZER_DATA_FILES_FOLDER
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection
 from octobot_tentacles_manager.api.configurator import get_tentacles_activation
@@ -72,31 +72,30 @@ SYMBOLS = {
     }
 }
 
-DATA_FILES_FOLDER = path.join(CONFIG_BACKTESTING, "optimizer_data_files")
 TEST_DATA_FILES_FOLDER = path.join("tests", "static")
 
 DATA_FILES = {
-    "ADA/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774950.9324272.data"),
-    "BTC/USDT": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774962.1269426.data"),
-    "ETH/USDT": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581776676.5721796.data"),
-    "ICX/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774974.669779.data"),
-    "NEO/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774982.726014.data"),
-    "VEN/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774995.2311237.data"),
-    "XRB/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775026.9255266.data"),
-    "ONT/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774988.7215023.data"),
-    "XLM/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775018.2658834.data"),
-    "POWR/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581776404.9679003.data"),
+    "ADA/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774950.9324272.data"),
+    "BTC/USDT": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774962.1269426.data"),
+    "ETH/USDT": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581776676.5721796.data"),
+    "ICX/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774974.669779.data"),
+    "NEO/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774982.726014.data"),
+    "VEN/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774995.2311237.data"),
+    "XRB/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775026.9255266.data"),
+    "ONT/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581774988.7215023.data"),
+    "XLM/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775018.2658834.data"),
+    "POWR/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581776404.9679003.data"),
     "2020ADA/USDT": path.join(TEST_DATA_FILES_FOLDER, "ExchangeHistoryDataCollector_1587769859.9278197.data"),
     "2020ADA/BTC": path.join(TEST_DATA_FILES_FOLDER, "ExchangeHistoryDataCollector_1588110698.1060486.data")
 }
 
 EXTENDED_DATA_FILES = {
-    "ADA/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775117.1713624.data"),
-    "ETC/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775133.1533682.data"),
-    "NEO/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775139.0332782.data"),
-    "WAX/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775144.480404.data"),
-    "XRP/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775149.6372743.data"),
-    "XVG/BTC": path.join(DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775154.2598503.data")
+    "ADA/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775117.1713624.data"),
+    "ETC/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775133.1533682.data"),
+    "NEO/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775139.0332782.data"),
+    "WAX/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775144.480404.data"),
+    "XRP/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775149.6372743.data"),
+    "XVG/BTC": path.join(OPTIMIZER_DATA_FILES_FOLDER, "AbstractExchangeHistoryCollector_1581775154.2598503.data")
 }
 
 
