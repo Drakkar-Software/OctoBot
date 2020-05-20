@@ -1,7 +1,7 @@
 @echo off
 REM VARS
 set bot_location="../../../"
-set config_path=config
+set config_path=octobot\config
 set python_cmd=python
 
 REM dependencies url
@@ -41,11 +41,11 @@ echo **Installing requirements...**
 REM CONFIGURATION
 echo **Set default configuration...**
 cd %config_path%
-copy default_config.json ..\config.json
+copy default_config.json ..\..\config.json
 
 REM BOT MODULES INSTALL
 echo **Installing modules...**
-cd ..
+cd ..\..
 %python_cmd% start.py -p install all
 
 echo **Installation done.**
