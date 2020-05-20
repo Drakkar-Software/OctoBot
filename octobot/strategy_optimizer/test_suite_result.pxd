@@ -17,7 +17,7 @@
 
 cdef class TestSuiteResult:
     cdef public list run_profitabilities
-    cdef public int trades_counts
+    cdef public list trades_counts
     cdef public double risk
     cdef public list time_frames
     cdef public object min_time_frame
