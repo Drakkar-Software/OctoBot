@@ -161,7 +161,7 @@ class IndependentBacktesting:
     async def get_dict_formatted_report(self):
         reference_market = get_reference_market(self.backtesting_config)
         try:
-            trading_mode = get_activated_trading_mode(self.backtesting_config, self.tentacles_setup_config).get_name()
+            trading_mode = get_activated_trading_mode(self.tentacles_setup_config).get_name()
         except ConfigTradingError as e:
             self.logger.error(e)
             trading_mode = "Error when reading trading mode"

@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from octobot_commons.constants import CONFIG_ENABLED_OPTION
-from octobot_trading.api.modes import init_trading_mode_config
 from octobot_trading.constants import CONFIG_EXCHANGES
 
 from octobot.channels.octobot_channel import OctoBotChannelProducer
@@ -33,7 +32,6 @@ class ExchangeProducer(OctoBotChannelProducer):
         self.exchange_manager_ids = []
 
     async def start(self):
-        init_trading_mode_config(self.octobot.config)
         for exchange_name in self.octobot.config[CONFIG_EXCHANGES]:
             if self.octobot.config[CONFIG_EXCHANGES][exchange_name].get(CONFIG_ENABLED_OPTION, True):
                 await self.create_exchange(exchange_name, self.backtesting)

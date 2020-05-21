@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
 import time
 import asyncio
 import json
@@ -44,7 +43,6 @@ class CommunityManager:
 
     def __init__(self, octobot_api):
         self.octobot_api = octobot_api
-        self.bot_config = octobot_api.get_global_config()
         self.edited_config = octobot_api.get_edited_config()
         self.enabled = get_metrics_enabled(self.edited_config)
         self.bot_id = self._init_config_bot_id(self.edited_config)
@@ -191,19 +189,15 @@ class CommunityManager:
 
         # strategies
         for strategy in get_evaluator_classes_from_type(EvaluatorMatrixTypes.STRATEGIES.value,
-                                                        self.bot_config,
                                                         tentacle_setup_config):
             config_eval.append(strategy.get_name())
 
         # evaluators
         evaluators = get_evaluator_classes_from_type(EvaluatorMatrixTypes.TA.value,
-                                                     self.bot_config,
                                                      tentacle_setup_config)
         evaluators += get_evaluator_classes_from_type(EvaluatorMatrixTypes.SOCIAL.value,
-                                                      self.bot_config,
                                                       tentacle_setup_config)
         evaluators += get_evaluator_classes_from_type(EvaluatorMatrixTypes.REAL_TIME.value,
-                                                      self.bot_config,
                                                       tentacle_setup_config)
         for evaluator in evaluators:
             config_eval.append(evaluator.get_name())

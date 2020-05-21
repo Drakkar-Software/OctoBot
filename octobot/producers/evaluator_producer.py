@@ -47,8 +47,7 @@ class EvaluatorProducer(OctoBotChannelProducer):
                         data={
                             EvaluatorKeys.TENTACLES_SETUP_CONFIG.value: self.octobot.tentacles_setup_config,
                             EvaluatorKeys.MATRIX_ID.value: self.octobot.evaluator_producer.matrix_id,
-                            EvaluatorKeys.EXCHANGE_CONFIGURATION.value: exchange_configuration,
-                            EvaluatorKeys.CONFIG.value: self.octobot.config
+                            EvaluatorKeys.EXCHANGE_CONFIGURATION.value: exchange_configuration
                         })
 
 
