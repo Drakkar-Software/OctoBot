@@ -13,7 +13,11 @@
       "api-secret": "your-api-secret-here"
     }
   },
-  "services": {},
+  "services": {
+        "web": {
+            "auto-open-in-web-browser": true
+        }
+  },
   "notification":{
     "global-info": true,
     "price-alerts": true,
