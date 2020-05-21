@@ -29,10 +29,9 @@ from octobot_commons.logging.logging_util import set_global_logger_level, get_gl
 from octobot_tentacles_manager.api.configurator import get_tentacles_activation, update_activation_configuration
 from octobot_evaluators.constants import CONFIG_FORCED_TIME_FRAME
 from octobot_trading.constants import CONFIG_TRADER_RISK, CONFIG_TRADING
-from octobot_evaluators.api.evaluators import create_evaluator_classes
 from octobot_evaluators.evaluator.strategy_evaluator import StrategyEvaluator
 from octobot_evaluators.evaluator.TA_evaluator import TAEvaluator
-from octobot_trading.api.modes import init_trading_mode_config, get_activated_trading_mode
+from octobot_trading.api.modes import get_activated_trading_mode
 from octobot_trading.modes import AbstractTradingMode
 from tentacles.Trading import Mode
 from tentacles.Evaluator import Strategies
@@ -53,9 +52,7 @@ class StrategyOptimizer:
         self.logger = get_logger(self.get_name())
         self.config = config
         self.tentacles_setup_config = deepcopy(tentacles_setup_config)
-        init_trading_mode_config(self.config)
-        create_evaluator_classes(self.config)
-        self.trading_mode = get_activated_trading_mode(self.config, tentacles_setup_config)
+        self.trading_mode = get_activated_trading_mode(tentacles_setup_config)
         self.strategy_class = get_class_from_string(strategy_name, StrategyEvaluator,
                                                     Strategies, evaluator_parent_inspection)
         self.run_results = []
