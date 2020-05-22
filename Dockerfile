@@ -1,7 +1,7 @@
 FROM python:3.7.7-slim-stretch AS base
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential gcc libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev
+    && apt-get install -y --no-install-recommends build-essential gcc libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev
 
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv:
@@ -19,10 +19,8 @@ WORKDIR /octobot
 COPY --from=base /opt/venv /opt/venv
 COPY octobot/config /octobot/octobot/config
 
-# Make sure we use the virtualenv:
-ENV PATH="/opt/venv/bin:$PATH"
-
-RUN cp /opt/venv/bin/OctoBot /octobot/OctoBot
+# Make sure we use the virtualenv
+RUN ln -s /opt/venv/bin/OctoBot OctoBot
 
 ENTRYPOINT ["./OctoBot"]
 CMD ["-no"]
