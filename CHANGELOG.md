@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-alpha16] - 2020-05-22
+### Updated
+- [OctoBotPackage] Move OctoBot related resources into the octobot folder
+- [OctoBot services] Initialization
+### Fixed
+- [Trading] Various bugs
+- [StrategyOptimizer] Various bugs
+
 ## [0.4.0-alpha15] - 2020-05-20
 ### Fixed
 - [Services] use services channel init
