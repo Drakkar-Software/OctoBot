@@ -19,10 +19,8 @@ WORKDIR /octobot
 COPY --from=base /opt/venv /opt/venv
 COPY octobot/config /octobot/octobot/config
 
-# Make sure we use the virtualenv:
+# Make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN cp /opt/venv/bin/OctoBot /octobot/OctoBot
-
-ENTRYPOINT ["./OctoBot"]
+ENTRYPOINT ["./opt/venv/bin/OctoBot"]
 CMD ["-no"]
