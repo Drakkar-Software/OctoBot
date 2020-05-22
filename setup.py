@@ -78,9 +78,7 @@ setup(
     description='Cryptocurrencies alert / trading bot',
     py_modules=['start'],
     packages=PACKAGES,
-    package_data={
-        "": ["config/*", "strategy_optimizer/optimizer_data_files/*"],
-    },
+    include_package_data=True,
     long_description=DESCRIPTION,
     long_description_content_type='text/markdown',
     cmdclass={'build_ext': build_ext},

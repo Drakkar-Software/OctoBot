@@ -1,4 +1,6 @@
 recursive-include octobot *.pxd
+recursive-include octobot/config *
+recursive-include octobot/strategy_optimizer/optimizer_data_files *
 
 include README.md
 include LICENSE
