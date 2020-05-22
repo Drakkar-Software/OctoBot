@@ -1,7 +1,7 @@
 FROM python:3.7.7-slim-stretch AS base
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential gcc libffi-dev libssl-dev
+    && apt-get install -y --no-install-recommends build-essential gcc libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev
 
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv:
