@@ -8,6 +8,7 @@ OctoBot-Evaluators>=1.5.15, <1.6
 OctoBot-Tentacles-Manager>=2.1.4, <2.2
 OctoBot-Services>=1.1.11, <1.2
 OctoBot-Backtesting>=1.5.13, <1.6
+OctoBot-Channels>=1.4.7, <1.5
 
 ## Others
 colorlog==4.1.0
