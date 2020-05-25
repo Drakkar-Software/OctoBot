@@ -143,7 +143,7 @@ async def fill_orders(orders, trader):
         for order in orders:
             order.filled_price = order.origin_price
             order.filled_quantity = order.origin_quantity
-            await trader.notify_order_close(order)
+            await trader.close_filled_order(order)
             check_portfolio(trader.exchange_manager.exchange_personal_data.portfolio_manager.portfolio.portfolio,
                             None, orders, True)
         assert len(get_open_orders(trader.exchange_manager)) == 0
