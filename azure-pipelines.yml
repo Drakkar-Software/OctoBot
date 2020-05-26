@@ -41,10 +41,14 @@ jobs:
       python -m pip install --prefer-binary -r requirements.txt -r dev_requirements.txt
     displayName: 'Install dependencies'
   - powershell: |
+      $env:BranchName = switch ($env:Build_Reason) {
+        'PullRequest' { $env:System_PullRequest_SourceBranch.Replace('refs/pull/','').Replace('refs/heads/','') }
+        default { $env:Build_SourceBranchName }
+      }
       mkdir user
       copy octobot\config\default_config.json user\config.json
       $Env:TENTACLES_URL_SUBCATEGORY = "dev/"
-      $Env:TENTACLES_URL_TAG = $env:build_sourceBranchName -replace "/", "_"
+      $Env:TENTACLES_URL_TAG = $env:BranchName -replace "/", "_"
       python start.py tentacles -q --install --all
       if ($LastExitCode -ne 0)
       {
@@ -96,9 +100,17 @@ jobs:
       python -m pip install --prefer-binary -r requirements.txt -r dev_requirements.txt
     displayName: 'Install dependencies'
   - script: |
+      case "$BUILD_REASON" in
+         "PullRequest")
+            export HEAD_BRANCH_NAME=${SYSTEM_PULLREQUEST_SOURCEBRANCH//refs\/heads\//}
+            export BRANCH_NAME=${HEAD_BRANCH_NAME//refs\/pull\//}
+         ;;
+         *) export BRANCH_NAME=$BUILD_SOURCEBRANCHNAME
+         ;;
+      esac
       mkdir user
       copy octobot\config\default_config.json user\config.json
-      TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=${BUILD_SOURCEBRANCHNAME////_} python3 start.py tentacles -q --install --all || python3 start.py tentacles --install --all
+      TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=${BRANCH_NAME////_} python3 start.py tentacles -q --install --all || python3 start.py tentacles --install --all
     displayName: 'Install OctoBot environment'
   - script: |
       python setup.py build_ext --inplace
