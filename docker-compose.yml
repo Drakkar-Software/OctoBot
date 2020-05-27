@@ -1,0 +1,13 @@
+version: "3"
+volumes:
+  octobot:
+services:
+  octobot:
+    image: drakkarsoftware/octobot:0.4.0
+    volumes:
+       - ./logs:/octobot/logs
+       - ./tentacles:/octobot/tentacles
+       - ./user:/octobot/user
+    ports:
+       - 5001
+    restart: always
