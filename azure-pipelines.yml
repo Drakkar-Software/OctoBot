@@ -69,7 +69,7 @@ jobs:
     displayName: 'Run OctoBot tests'
   - script: python -m pytest tentacles
     displayName: 'Run tentacles tests'
-  - script: python setup.py bdist_wheel bdist_msi
+  - script: python setup.py bdist_wheel
     displayName: 'Building wheel'
   - task: TwineAuthenticate@1
     condition: startsWith(variables['build.sourceBranch'], 'refs/tags/')
