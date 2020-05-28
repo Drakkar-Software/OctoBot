@@ -39,7 +39,9 @@ COMMANDS_LOGGER_NAME = "Commands"
 
 def call_tentacles_manager(command_args):
     init_logger()
-    sys.exit(handle_tentacles_manager_command(command_args, tentacles_url=DEFAULT_TENTACLES_URL))
+    sys.exit(handle_tentacles_manager_command(command_args,
+                                              tentacles_url=DEFAULT_TENTACLES_URL,
+                                              bot_install_dir=OCTOBOT_FOLDER))
 
 
 def exchange_keys_encrypter(catch=False):
