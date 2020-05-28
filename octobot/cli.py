@@ -132,7 +132,7 @@ def start_octobot(args):
         sys.path.append(os.path.realpath(os.getcwd()))
 
         if not load_tentacles(verbose=True):
-            logger.info("No tentacles found. Installing default tentacles ...")
+            logger.info("OctoBot tentacles can't be found or are damaged. Installing default tentacles ...")
             run_tentacles_installation()
             # reload tentacles
             load_tentacles(verbose=True)
