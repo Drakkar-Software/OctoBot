@@ -37,16 +37,6 @@ except ImportError:
 # binary tentacle importation
 sys.path.append(os.path.dirname(sys.executable))
 
-# if compatible version, can proceed with imports
-from octobot_commons.enums import PlatformsName
-from octobot_commons.os_util import get_os
-from octobot_commons.logging.logging_util import get_logger
-
-# check sudo rights
-if get_os() is not PlatformsName.WINDOWS and os.getuid() == 0:
-    get_logger("PythonChecker").warning("OctoBot is started with admin / sudo rights that are not required, "
-                                        "please check you starting command ")
-
 bot_instance = None
 global_config = None
 
