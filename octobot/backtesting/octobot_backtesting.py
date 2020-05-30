@@ -69,6 +69,11 @@ class OctoBotBacktesting:
         if BOT_CHANNEL_LOGGER is not None:
             await self.start_loggers()
 
+    async def stop_importers(self):
+        # Close databases
+        for importer in get_importers(self.backtesting):
+            await stop_importer(importer)
+
     async def stop(self, memory_check=False):
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
         try:
@@ -93,8 +98,8 @@ class OctoBotBacktesting:
             for service_feed in self.service_feeds:
                 await stop_service_feed(service_feed)
 
-            for importer in get_importers(self.backtesting):
-                await stop_importer(importer)
+            # call stop_importers in case it has not been called already
+            await self.stop_importers()
 
             if memory_check:
                 to_reference_check = exchange_managers + [self.backtesting]
