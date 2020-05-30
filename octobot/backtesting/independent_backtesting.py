@@ -73,7 +73,7 @@ class IndependentBacktesting:
             await self.initialize_config()
             self._add_crypto_currencies_config()
             await self.octobot_backtesting.initialize_and_run()
-            self._block_errors_publish_till_end_of_backtesting()
+            self._post_backtesting_start()
         except RuntimeError as e:
             self.logger.error(e)
             await self.stop()
@@ -109,14 +109,20 @@ class IndependentBacktesting:
         else:
             return 0
 
-    def _block_errors_publish_till_end_of_backtesting(self):
+    def _post_backtesting_start(self):
         reset_backtesting_errors()
         set_error_publication_enabled(False)
-        asyncio.create_task(self._re_enable_logs_after_backtesting())
+        asyncio.create_task(self._register_post_backtesting_end_callback())
 
-    async def _re_enable_logs_after_backtesting(self):
+    async def _register_post_backtesting_end_callback(self):
         await self.join_backtesting_updater(timeout=BACKTESTING_DEFAULT_JOIN_TIMEOUT)
+        await self._post_backtesting_end_callback()
+
+    async def _post_backtesting_end_callback(self):
+        # re enable logs
         set_error_publication_enabled(True)
+        # stop backtesting importers to release database files
+        await self.octobot_backtesting.stop_importers()
 
     @staticmethod
     def _get_market_delta(symbol, exchange_manager, min_timeframe):
