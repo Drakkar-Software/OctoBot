@@ -41,6 +41,7 @@ cdef class IndependentBacktesting:
     cpdef double get_progress(self)
     cpdef void log_report(self)
 
+    cdef void _post_backtesting_start(self)
     cdef void _init_default_config_values(self)
     cdef dict _get_exchanges_report(self, str reference_market, object trading_mode)
     cdef void _log_trades_history(self, object exchange_manager, str exchange_name)
