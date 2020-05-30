@@ -20,7 +20,7 @@ cdef class StrategyOptimizer:
     cdef dict config
     cdef object tentacles_setup_config
     cdef dict sorted_results_by_time_frame
-    cdef dict sorted_results_through_all_time_frame
+    cdef list sorted_results_through_all_time_frame
     cdef object current_test_suite
     cdef set errors
     cdef int run_id

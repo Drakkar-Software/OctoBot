@@ -57,7 +57,7 @@ class StrategyOptimizer:
                                                     Strategies, evaluator_parent_inspection)
         self.run_results = []
         self.sorted_results_by_time_frame = {}
-        self.sorted_results_through_all_time_frame = {}
+        self.sorted_results_through_all_time_frame = []
         self.all_time_frames = []
         self.all_TAs = []
         self.risks = []
@@ -84,7 +84,7 @@ class StrategyOptimizer:
             self.errors = set()
             self.run_results = []
             self.sorted_results_by_time_frame = {}
-            self.sorted_results_through_all_time_frame = {}
+            self.sorted_results_through_all_time_frame = []
 
             previous_log_level = get_global_logger_level()
 
