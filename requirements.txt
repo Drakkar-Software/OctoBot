@@ -10,7 +10,7 @@ tulipy==0.3.1
 praw
 
 # Telegram
-python-telegram-bot==11.1.0
+python-telegram-bot==12.7
 
 # Twitter
 Python-Twitter
