@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-alpha18] - 2020-06-01
+### Fixed
+- [Backtesting] Backtesting data files lock related error
+
 ## [0.4.0-alpha17] - 2020-05-26
 ### Fixed
 - [Trades] Trades displayed with a 0 price
