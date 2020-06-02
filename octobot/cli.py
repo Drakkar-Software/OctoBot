@@ -208,8 +208,6 @@ def octobot_parser(parser):
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
                         action='store_true')
-    parser.add_argument('-no', '--no_open_web', help="Don't automatically open web interface.",
-                        action='store_true')
     parser.add_argument('-nt', '--no-telegram', help='Start OctoBot without telegram interface, even if telegram '
                                                      'credentials are in config. With this parameter, your Octobot '
                                                      'won`t reply to any telegram command but is still able to listen '
