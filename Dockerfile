@@ -27,4 +27,3 @@ RUN apt-get update \
 RUN ln -s /opt/venv/bin/OctoBot OctoBot
 
 ENTRYPOINT ["./OctoBot"]
-CMD ["-no"]
