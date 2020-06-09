@@ -80,12 +80,20 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
                 or ((len(orders) == 0 or len(orders) == 1) and nb_orders == "unknown")
             if orders:
                 order = orders[0]
-                assert order.status == OrderStatus.OPEN
-                assert order.simulated is True
-                assert order.linked_to is None
-                assert order.fee is None
-                assert order.filled_price == 0
-                assert order.filled_quantity == order.origin_quantity
+                if order.order_type in (TraderOrderType.SELL_MARKET, TraderOrderType.BUY_MARKET):
+                    assert order.status == OrderStatus.FILLED
+                    assert order.simulated is True
+                    assert order.linked_to is None
+                    assert order.fee
+                    assert order.filled_price > 0
+                    assert order.filled_quantity == order.origin_quantity
+                else:
+                    assert order.status == OrderStatus.OPEN
+                    assert order.simulated is True
+                    assert order.linked_to is None
+                    assert order.fee is None
+                    assert order.filled_price == 0
+                    assert order.filled_quantity == order.origin_quantity
 
                 if state == EvaluatorStates.VERY_SHORT.value:
                     assert isinstance(order, SellMarketOrder)
@@ -124,17 +132,24 @@ def check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False)
                 assert portfolio[symbol][PORTFOLIO_TOTAL] >= 0
                 assert portfolio[symbol][PORTFOLIO_AVAILABLE] >= 0
                 if not only_positivity:
-                    if order_symbol == symbol:
-                        assert initial_portfolio[symbol][PORTFOLIO_TOTAL] == portfolio[symbol][
+                    if order.order_type in (TraderOrderType.SELL_MARKET, TraderOrderType.BUY_MARKET):
+                        # order is filled
+                        assert initial_portfolio[symbol][PORTFOLIO_TOTAL] != portfolio[symbol][
                             PORTFOLIO_TOTAL]
-                        assert "{:f}".format(
-                            initial_portfolio[symbol][PORTFOLIO_AVAILABLE] - orders_currency_amount) == \
-                            "{:f}".format(portfolio[symbol][PORTFOLIO_AVAILABLE])
-                    elif market == symbol:
-                        assert initial_portfolio[market][PORTFOLIO_TOTAL] == portfolio[market][
-                            PORTFOLIO_TOTAL]
-                        assert "{:f}".format(initial_portfolio[market][PORTFOLIO_AVAILABLE] - orders_market_amount) \
-                               == "{:f}".format(portfolio[market][PORTFOLIO_AVAILABLE])
+                        assert initial_portfolio[symbol][PORTFOLIO_AVAILABLE] != portfolio[symbol][
+                            PORTFOLIO_AVAILABLE]
+                    else:
+                        if order_symbol == symbol:
+                            assert initial_portfolio[symbol][PORTFOLIO_TOTAL] == portfolio[symbol][
+                                PORTFOLIO_TOTAL]
+                            assert "{:f}".format(
+                                initial_portfolio[symbol][PORTFOLIO_AVAILABLE] - orders_currency_amount) == \
+                                "{:f}".format(portfolio[symbol][PORTFOLIO_AVAILABLE])
+                        elif market == symbol:
+                            assert initial_portfolio[market][PORTFOLIO_TOTAL] == portfolio[market][
+                                PORTFOLIO_TOTAL]
+                            assert "{:f}".format(initial_portfolio[market][PORTFOLIO_AVAILABLE] - orders_market_amount) \
+                                   == "{:f}".format(portfolio[market][PORTFOLIO_AVAILABLE])
 
 
 async def fill_orders(orders, trader):
