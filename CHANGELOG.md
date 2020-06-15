@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-alpha19] - 2020-06-15
+### Added
+- [Trading modes] Arbitrage trading mode
+- [Orders] Trailing stop orders
+- [Web interface] Web interface login
+### Updated
+- [Orders] Optimized order update system
+- [Web interface] Interface libraries
+### Fixed
+- [Web Interface] OctoBot startup issues
+
 ## [0.4.0-alpha18] - 2020-06-01
 ### Fixed
 - [Backtesting] Backtesting data files lock related error
