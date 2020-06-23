@@ -22,6 +22,7 @@ from octobot.constants import OPTIMIZER_DATA_FILES_FOLDER
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection
 from octobot_tentacles_manager.api.configurator import get_tentacles_activation
+from octobot_tentacles_manager.constants import TENTACLES_EVALUATOR_PATH
 
 DEFAULT_SYMBOL = "ICX/BTC"
 DATA_FILE_PATH = "tests/static/"
@@ -218,10 +219,10 @@ class AbstractBacktestingTest:
             from tentacles.Evaluator import Strategies
             from octobot_evaluators.evaluator.strategy_evaluator import StrategyEvaluator
             tentacles_activation = get_tentacles_activation(self.tentacles_setup_config)
-            for evaluator_name in tentacles_activation:
+            for evaluator_name in tentacles_activation[TENTACLES_EVALUATOR_PATH]:
                 if get_class_from_string(evaluator_name, StrategyEvaluator, Strategies,
                                          evaluator_parent_inspection) is not None:
-                    tentacles_activation[evaluator_name] = False
-            tentacles_activation[strategy_evaluator_class.get_name()] = True
+                    tentacles_activation[TENTACLES_EVALUATOR_PATH][evaluator_name] = False
+            tentacles_activation[TENTACLES_EVALUATOR_PATH][strategy_evaluator_class.get_name()] = True
         except ImportError:
             self.logger.error("Backtesting tests requires OctoBot-Evaluator package installed")
