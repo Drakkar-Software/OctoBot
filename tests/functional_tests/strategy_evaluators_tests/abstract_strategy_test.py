@@ -27,6 +27,7 @@ from octobot_commons.tentacles_management.class_inspector import get_class_from_
 from octobot_commons.tests.test_config import load_test_config
 from octobot_evaluators.evaluator import StrategyEvaluator
 from octobot_tentacles_manager.api.configurator import update_activation_configuration, get_tentacles_activation
+from octobot_tentacles_manager.constants import TENTACLES_EVALUATOR_PATH, TENTACLES_TRADING_PATH
 from octobot_trading.api.exchange import get_exchange_managers_from_exchange_ids
 from octobot_trading.api.profitability import get_profitability_stats
 from octobot_trading.constants import CONFIG_SIMULATOR_FEES_TAKER, CONFIG_SIMULATOR_FEES_MAKER, CONFIG_SIMULATOR_FEES, \
@@ -79,16 +80,17 @@ class AbstractStrategyTest(AbstractBacktestingTest, ABC):
     def _update_tentacles_config(self, strategy_evaluator_class, trading_mode_class):
         default_evaluators = strategy_evaluator_class.get_default_evaluators()
         to_update_config = {}
-        for tentacle_class_name in get_tentacles_activation(self.tentacles_setup_config):
+        tentacles_activation = get_tentacles_activation(self.tentacles_setup_config)
+        for tentacle_class_name in tentacles_activation[TENTACLES_EVALUATOR_PATH]:
             if CONFIG_WILDCARD not in default_evaluators and tentacle_class_name in default_evaluators:
                 to_update_config[tentacle_class_name] = True
             elif get_class_from_string(tentacle_class_name, StrategyEvaluator, Strategies,
-                                       evaluator_parent_inspection) is not None or \
-                get_class_from_string(tentacle_class_name, AbstractTradingMode, Mode,
-                                      trading_mode_parent_inspection) is not None:
+                                       evaluator_parent_inspection) is not None:
                 to_update_config[tentacle_class_name] = False
             elif CONFIG_WILDCARD not in default_evaluators:
                 to_update_config[tentacle_class_name] = False
+        for tentacle_class_name in tentacles_activation[TENTACLES_TRADING_PATH]:
+            to_update_config[tentacle_class_name] = False
         # Add required elements if missing
         to_update_config.update({evaluator: True for evaluator in default_evaluators})
         to_update_config[strategy_evaluator_class.get_name()] = True
