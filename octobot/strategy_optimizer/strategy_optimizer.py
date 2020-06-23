@@ -28,6 +28,7 @@ from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.logging.logging_util import set_global_logger_level, get_global_logger_level
 from octobot_tentacles_manager.api.configurator import get_tentacles_activation, update_activation_configuration
 from octobot_evaluators.constants import CONFIG_FORCED_TIME_FRAME
+from octobot_tentacles_manager.constants import TENTACLES_EVALUATOR_PATH
 from octobot_trading.constants import CONFIG_TRADER_RISK, CONFIG_TRADING
 from octobot_evaluators.evaluator.strategy_evaluator import StrategyEvaluator
 from octobot_evaluators.evaluator.TA_evaluator import TAEvaluator
@@ -176,13 +177,12 @@ class StrategyOptimizer:
 
     def _adapt_tentacles_config(self, activated_evaluators):
         to_update_config = {}
-        for tentacle_class_name in get_tentacles_activation(self.tentacles_setup_config):
+        tentacles_activation = get_tentacles_activation(self.tentacles_setup_config)
+        for tentacle_class_name in tentacles_activation[TENTACLES_EVALUATOR_PATH]:
             if tentacle_class_name in activated_evaluators:
                 to_update_config[tentacle_class_name] = True
             elif get_class_from_string(tentacle_class_name, StrategyEvaluator, Strategies,
-                                       evaluator_parent_inspection) is None and \
-                get_class_from_string(tentacle_class_name, AbstractTradingMode, Mode,
-                                      trading_mode_parent_inspection) is None:
+                                       evaluator_parent_inspection) is None:
                 to_update_config[tentacle_class_name] = False
         update_activation_configuration(self.tentacles_setup_config, to_update_config, False)
 
@@ -305,5 +305,6 @@ class StrategyOptimizer:
 
     def _get_all_TA(self):
         return [evaluator
-                for evaluator, activated in get_tentacles_activation(self.tentacles_setup_config).items()
+                for evaluator, activated
+                in get_tentacles_activation(self.tentacles_setup_config)[TENTACLES_EVALUATOR_PATH].items()
                 if activated and StrategyOptimizer._is_relevant_evaluation_config(evaluator)]
