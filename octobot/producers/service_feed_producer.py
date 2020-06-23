@@ -20,6 +20,7 @@ from octobot_commons.enums import OctoBotChannelSubjects
 from octobot_services.api.service_feeds import create_service_feed_factory, stop_service_feed
 from octobot_services.consumers.octobot_channel_consumer import OctoBotChannelServiceActions as ServiceActions, \
     OctoBotChannelServiceDataKeys as ServiceKeys
+from octobot_tentacles_manager.api.configurator import is_tentacle_activated_in_tentacles_setup_config
 
 
 class ServiceFeedProducer(OctoBotChannelProducer):
@@ -40,7 +41,9 @@ class ServiceFeedProducer(OctoBotChannelProducer):
                                                            self.octobot.async_loop,
                                                            self.octobot.bot_id)
         for feed in service_feed_factory.get_available_service_feeds(in_backtesting):
-            await self.create_feed(service_feed_factory, feed, in_backtesting)
+            if is_tentacle_activated_in_tentacles_setup_config(self.octobot.tentacles_setup_config,
+                                                               feed.get_name()):
+                await self.create_feed(service_feed_factory, feed, in_backtesting)
 
     async def start_feeds(self):
         self.started = True

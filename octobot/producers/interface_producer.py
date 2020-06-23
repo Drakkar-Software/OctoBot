@@ -25,6 +25,7 @@ from octobot_services.interfaces.util.bot import get_bot_api
 from octobot_services.managers.interface_manager import stop_interfaces
 from octobot_services.consumers.octobot_channel_consumer import OctoBotChannelServiceActions as ServiceActions, \
     OctoBotChannelServiceDataKeys as ServiceKeys
+from octobot_tentacles_manager.api.configurator import is_tentacle_activated_in_tentacles_setup_config
 
 
 class InterfaceProducer(OctoBotChannelProducer):
@@ -130,14 +131,18 @@ class InterfaceProducer(OctoBotChannelProducer):
 
     def _is_interface_relevant(self, interface_class, backtesting_enabled):
         return is_enabled(interface_class) and \
-               all(service.get_is_enabled(self.octobot.config) for service in interface_class.REQUIRED_SERVICES) and \
-               (not backtesting_enabled or (backtesting_enabled and is_enabled_in_backtesting(interface_class)))
+           is_tentacle_activated_in_tentacles_setup_config(self.octobot.tentacles_setup_config,
+                                                           interface_class.get_name()) and \
+           all(service.get_is_enabled(self.octobot.config) for service in interface_class.REQUIRED_SERVICES) and \
+           (not backtesting_enabled or (backtesting_enabled and is_enabled_in_backtesting(interface_class)))
 
     def _is_notifier_relevant(self, notifier_class, backtesting_enabled):
         return is_enabled_in_config(notifier_class, self.octobot.config) and \
-               all(service.get_is_enabled(self.octobot.config)
-                   for service in notifier_class.REQUIRED_SERVICES) and \
-               not backtesting_enabled
+           is_tentacle_activated_in_tentacles_setup_config(self.octobot.tentacles_setup_config,
+                                                           notifier_class.get_name()) and \
+           all(service.get_is_enabled(self.octobot.config)
+               for service in notifier_class.REQUIRED_SERVICES) and \
+           not backtesting_enabled
 
     async def stop(self):
         await stop_interfaces(self.interfaces)
