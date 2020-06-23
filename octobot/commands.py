@@ -102,7 +102,7 @@ async def start_bot(bot, logger, catch=False):
         # load tentacles details
         reload_tentacle_info()
         # ensure tentacles config exists or create a new one
-        await ensure_setup_configuration()
+        await ensure_setup_configuration(bot_install_dir=OCTOBOT_FOLDER)
 
         # start
         try:
