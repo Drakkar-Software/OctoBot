@@ -75,92 +75,91 @@ class StrategyOptimizer:
             self.is_properly_initialized = True
 
     def find_optimal_configuration(self, TAs=None, time_frames=None, risks=None):
-        if not self.is_computing:
+        if self.is_computing:
 
-            # set is_computing to True to prevent any simultaneous start
-            self.is_computing = True
-
-            self.errors = set()
-            self.run_results = []
-            self.results_report = []
-            self.sorted_results_by_time_frame = {}
-            self.sorted_results_through_all_time_frame = {}
-
-            previous_log_level = get_global_logger_level()
-
-            try:
-                self.all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
-                nb_TAs = len(self.all_TAs)
-
-                self.all_time_frames = self.strategy_class.get_required_time_frames(self.config) \
-                    if time_frames is None else time_frames
-                nb_TFs = len(self.all_time_frames)
-
-                self.risks = [1] if risks is None else risks
-
-                self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} "
-                                 f"strategy using {self.trading_mode.get_name()} trading mode, {self.all_TAs} "
-                                 f"technical evaluator(s), {self.all_time_frames} time frames and {self.risks} "
-                                 f"risk(s).")
-
-                self.total_nb_runs = int(len(self.risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
-
-                self.logger.info("Setting logging level to logging.ERROR to limit messages.")
-                set_global_logger_level(logging.ERROR)
-
-                self.run_id = 1
-                # test with several risks
-                for risk in self.risks:
-                    self.config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
-                    eval_conf_history = []
-                    # test with several evaluators
-                    for evaluator_conf_iteration in range(nb_TAs):
-                        current_forced_evaluator = self.all_TAs[evaluator_conf_iteration]
-                        # test with 1-n evaluators at a time
-                        for nb_evaluators in range(1, nb_TAs+1):
-                            # test different configurations
-                            for i in range(nb_TAs):
-                                activated_evaluators = self.get_activated_element(self.all_TAs,
-                                                                                  current_forced_evaluator,
-                                                                                  nb_evaluators, eval_conf_history,
-                                                                                  self.strategy_class.get_name(),
-                                                                                  True)
-                                if activated_evaluators is not None:
-                                    self.config[CONFIG_FORCED_EVALUATOR] = activated_evaluators
-                                    time_frames_conf_history = []
-                                    # test different time frames
-                                    for time_frame_conf_iteration in range(nb_TFs):
-                                        current_forced_time_frame = self.all_time_frames[time_frame_conf_iteration]
-                                        # test with 1-n time frames at a time
-                                        for nb_time_frames in range(1, nb_TFs+1):
-                                            # test different configurations
-                                            for _ in range(nb_TFs):
-                                                activated_time_frames = \
-                                                    self.get_activated_element(self.all_time_frames,
-                                                                               current_forced_time_frame,
-                                                                               nb_time_frames,
-                                                                               time_frames_conf_history)
-                                                if activated_time_frames is not None:
-                                                    self.config[CONFIG_FORCED_TIME_FRAME] = activated_time_frames
-                                                    print(f"{self.run_id}/{self.total_nb_runs} Run with: evaluators: "
-                                                          f"{activated_evaluators}, "
-                                                          f"time frames :{activated_time_frames}, risk: {risk}")
-                                                    self._run_test_suite(self.config)
-                                                    print(f" => Result: "
-                                                          f"{self.run_results[-1].get_result_string(False)}")
-                                                    self.run_id += 1
-
-                self._find_optimal_configuration_using_results()
-
-            finally:
-                self.current_test_suite = None
-                set_global_logger_level(previous_log_level)
-                self.is_computing = False
-                self.logger.info(f"{self.get_name()} finished computation.")
-                self.logger.info("Logging level restored.")
-        else:
             raise RuntimeError(f"{self.get_name()} is already computing: processed "
                                f"{self.run_id}/{self.total_nb_runs} processed")
+        # set is_computing to True to prevent any simultaneous start
+        self.is_computing = True
+
+        self.errors = set()
+        self.run_results = []
+        self.results_report = []
+        self.sorted_results_by_time_frame = {}
+        self.sorted_results_through_all_time_frame = {}
+
+        previous_log_level = get_global_logger_level()
+
+        try:
+            self.all_TAs = self.get_all_TA(self.config[CONFIG_EVALUATOR]) if TAs is None else TAs
+            nb_TAs = len(self.all_TAs)
+
+            self.all_time_frames = self.strategy_class.get_required_time_frames(self.config) \
+                if time_frames is None else time_frames
+            nb_TFs = len(self.all_time_frames)
+
+            self.risks = [1] if risks is None else risks
+
+            self.logger.info(f"Trying to find an optimized configuration for {self.strategy_class.get_name()} "
+                             f"strategy using {self.trading_mode.get_name()} trading mode, {self.all_TAs} "
+                             f"technical evaluator(s), {self.all_time_frames} time frames and {self.risks} "
+                             f"risk(s).")
+
+            self.total_nb_runs = int(len(self.risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
+
+            self.logger.info("Setting logging level to logging.ERROR to limit messages.")
+            set_global_logger_level(logging.ERROR)
+
+            self.run_id = 1
+                # test with several risks
+            for risk in self.risks:
+                self.config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
+                eval_conf_history = []
+                    # test with several evaluators
+                for evaluator_conf_iteration in range(nb_TAs):
+                    current_forced_evaluator = self.all_TAs[evaluator_conf_iteration]
+                        # test with 1-n evaluators at a time
+                    for nb_evaluators in range(1, nb_TAs+1):
+                            # test different configurations
+                        for _ in range(nb_TAs):
+                            activated_evaluators = self.get_activated_element(self.all_TAs,
+                                                                              current_forced_evaluator,
+                                                                              nb_evaluators, eval_conf_history,
+                                                                              self.strategy_class.get_name(),
+                                                                              True)
+                            if activated_evaluators is not None:
+                                self.config[CONFIG_FORCED_EVALUATOR] = activated_evaluators
+                                time_frames_conf_history = []
+                                # test different time frames
+                                for time_frame_conf_iteration in range(nb_TFs):
+                                    current_forced_time_frame = self.all_time_frames[time_frame_conf_iteration]
+                                    # test with 1-n time frames at a time
+                                    for nb_time_frames in range(1, nb_TFs+1):
+                                        # test different configurations
+                                        for _ in range(nb_TFs):
+                                            activated_time_frames = \
+                                                self.get_activated_element(self.all_time_frames,
+                                                                           current_forced_time_frame,
+                                                                           nb_time_frames,
+                                                                           time_frames_conf_history)
+                                            if activated_time_frames is not None:
+                                                self.config[CONFIG_FORCED_TIME_FRAME] = activated_time_frames
+                                                print(f"{self.run_id}/{self.total_nb_runs} Run with: evaluators: "
+                                                      f"{activated_evaluators}, "
+                                                      f"time frames :{activated_time_frames}, risk: {risk}")
+                                                self._run_test_suite(self.config)
+                                                print(f" => Result: "
+                                                      f"{self.run_results[-1].get_result_string(False)}")
+                                                self.run_id += 1
+
+            self._find_optimal_configuration_using_results()
+
+        finally:
+            self.current_test_suite = None
+            set_global_logger_level(previous_log_level)
+            self.is_computing = False
+            self.logger.info(f"{self.get_name()} finished computation.")
+            self.logger.info("Logging level restored.")
 
     def _run_test_suite(self, config):
         self.current_test_suite = StrategyTestSuite()
@@ -168,7 +167,10 @@ class StrategyOptimizer:
         no_error = asyncio.run(self.current_test_suite.run_test_suite(self.current_test_suite),
                                debug=FORCE_ASYNCIO_DEBUG_OPTION)
         if not no_error:
-            self.errors = self.errors.union(set(str(e) for e in self.current_test_suite.get_exceptions()))
+            self.errors = self.errors.union(
+                {str(e) for e in self.current_test_suite.get_exceptions()}
+            )
+
         run_result = self.current_test_suite.get_test_suite_result()
         self.run_results.append(run_result)
 
@@ -200,7 +202,7 @@ class StrategyOptimizer:
                 self.logger.info(f"{rank}: {result.get_result_string()}")
         self.logger.info(f" *** Top rankings per time frame *** ")
         for time_frame, results in self.sorted_results_by_time_frame.items():
-            for i in range(0, min(len(results), 5)):
+            for i in range(min(len(results), 5)):
                 self.logger.info(f"{time_frame}: {results[i].get_result_string(False)}")
         self.logger.info(f" *** Top rankings through all time frames *** ")
         for rank, result in enumerate(self.sorted_results_through_all_time_frame[0:25]):

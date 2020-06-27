@@ -56,21 +56,22 @@ class SocialEvaluatorNotTaskedUpdateTask:
                                         "refresh rate.")
 
     async def start_loop(self):
-        if self.social_evaluator_list_timers:
-            while self.keep_running:
-                for social_eval in self.social_evaluator_list_timers:
-                    now = time.time()
-                    social_eval[self.LAST_REFRESH_KEY] += now - social_eval[self.LAST_REFRESH_TIME_KEY]
-                    social_eval[self.LAST_REFRESH_TIME_KEY] = now
-                    if social_eval[self.LAST_REFRESH_KEY] >= social_eval[self.REFRESH_RATE_KEY]:
-                        social_eval[self.LAST_REFRESH_KEY] = 0
+        if not self.social_evaluator_list_timers:
+            return
+        while self.keep_running:
+            for social_eval in self.social_evaluator_list_timers:
+                now = time.time()
+                social_eval[self.LAST_REFRESH_KEY] += now - social_eval[self.LAST_REFRESH_TIME_KEY]
+                social_eval[self.LAST_REFRESH_TIME_KEY] = now
+                if social_eval[self.LAST_REFRESH_KEY] >= social_eval[self.REFRESH_RATE_KEY]:
+                    social_eval[self.LAST_REFRESH_KEY] = 0
 
-                        try:
-                            social_eval[self.EVALUATOR_INSTANCE_KEY].get_data()
-                            await social_eval[self.EVALUATOR_INSTANCE_KEY].eval()
-                        except Exception as e:
-                            self.logger.error(f"Error during Social not tasked update eval() or get_data() on "
-                                              f"{social_eval[self.EVALUATOR_INSTANCE_KEY].get_name()} for "
-                                              f"{social_eval[self.EVALUATOR_INSTANCE_KEY].get_symbol()} : {e}")
+                    try:
+                        social_eval[self.EVALUATOR_INSTANCE_KEY].get_data()
+                        await social_eval[self.EVALUATOR_INSTANCE_KEY].eval()
+                    except Exception as e:
+                        self.logger.error(f"Error during Social not tasked update eval() or get_data() on "
+                                          f"{social_eval[self.EVALUATOR_INSTANCE_KEY].get_name()} for "
+                                          f"{social_eval[self.EVALUATOR_INSTANCE_KEY].get_symbol()} : {e}")
 
-                await asyncio.sleep(SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE)
+            await asyncio.sleep(SOCIAL_EVALUATOR_NOT_THREADED_UPDATE_RATE)

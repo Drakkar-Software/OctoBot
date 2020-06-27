@@ -71,18 +71,19 @@ class AbstractDispatcher(threading.Thread):
         raise NotImplementedError("_get_data not implemented")
 
     def run(self):
-        if self.is_setup_correctly:
-            self.logger.info("Starting dispatcher ...")
-            service_level_dispatcher_if_any = self._get_service_layer_dispatcher()
-            if service_level_dispatcher_if_any is not None and self.service is not None:
-                self.service.start_dispatcher()
-            if self._something_to_watch():
-                self._get_data()
-                if not self._start_dispatcher():
-                    self.logger.warning("Nothing can be monitored even though there is something to watch"
-                                        ", dispatcher is going to sleep.")
-            else:
-                self.logger.info("Nothing to monitor, dispatcher is going to sleep.")
+        if not self.is_setup_correctly:
+            return
+        self.logger.info("Starting dispatcher ...")
+        service_level_dispatcher_if_any = self._get_service_layer_dispatcher()
+        if service_level_dispatcher_if_any is not None and self.service is not None:
+            self.service.start_dispatcher()
+        if self._something_to_watch():
+            self._get_data()
+            if not self._start_dispatcher():
+                self.logger.warning("Nothing can be monitored even though there is something to watch"
+                                    ", dispatcher is going to sleep.")
+        else:
+            self.logger.info("Nothing to monitor, dispatcher is going to sleep.")
 
     def get_is_setup_correctly(self):
         return self.is_setup_correctly

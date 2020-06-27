@@ -25,6 +25,6 @@ UNSET_EVAL_TYPE = "unset_eval_type_param"
 # Will also test evaluation type if if eval_type is provided.
 # Default expected_eval_type is EVALUATOR_EVAL_DEFAULT_TYPE
 def check_valid_eval_note(eval_note, eval_type=UNSET_EVAL_TYPE, expected_eval_type=EVALUATOR_EVAL_DEFAULT_TYPE):
-    if eval_type != UNSET_EVAL_TYPE and eval_type != expected_eval_type:
+    if eval_type not in [UNSET_EVAL_TYPE, expected_eval_type]:
         return False
     return eval_note and eval_note is not START_PENDING_EVAL_NOTE and not math.isnan(eval_note)

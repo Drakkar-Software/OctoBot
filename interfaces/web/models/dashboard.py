@@ -194,26 +194,25 @@ def get_currency_price_graph_update(exchange_name, symbol, time_frame, list_arra
         if exchanges:
             exchange = exchanges[0]
 
-    if time_frame is not None:
-        if symbol_evaluator_list:
-            evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_task_managers(
-                exchange_list[exchange])
+    if time_frame is not None and symbol_evaluator_list:
+        evaluator_thread_managers = symbol_evaluator_list[symbol].get_evaluator_task_managers(
+            exchange_list[exchange])
 
-            data = None
+        data = None
 
-            if time_frame in evaluator_thread_managers:
-                if backtesting:
-                    exchange_simulator = exchange_list[exchange].get_exchange()
-                    data = exchange_simulator.get_full_candles_data(symbol, time_frame)
-                else:
-                    evaluator_thread_manager = evaluator_thread_managers[time_frame]
-                    data = evaluator_thread_manager.get_evaluator().get_data()
-            elif not backtesting and time_frame in get_exchange_time_frames(exchange_name)[0]:
-                # might be the real-time evaluator time frame => check in symbol data
-                data = get_bot().run_in_main_asyncio_loop(
-                    exchange_list[exchange].get_symbol_prices(symbol, time_frame, return_list=False)
-                )
+        if time_frame in evaluator_thread_managers:
+            if backtesting:
+                exchange_simulator = exchange_list[exchange].get_exchange()
+                data = exchange_simulator.get_full_candles_data(symbol, time_frame)
+            else:
+                evaluator_thread_manager = evaluator_thread_managers[time_frame]
+                data = evaluator_thread_manager.get_evaluator().get_data()
+        elif not backtesting and time_frame in get_exchange_time_frames(exchange_name)[0]:
+            # might be the real-time evaluator time frame => check in symbol data
+            data = get_bot().run_in_main_asyncio_loop(
+                exchange_list[exchange].get_symbol_prices(symbol, time_frame, return_list=False)
+            )
 
-            if data is not None:
-                return create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesting)
+        if data is not None:
+            return create_candles_data(symbol, time_frame, data, bot, list_arrays, in_backtesting)
     return None

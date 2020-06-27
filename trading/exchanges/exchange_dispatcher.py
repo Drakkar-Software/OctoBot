@@ -111,7 +111,10 @@ class ExchangeDispatcher(AbstractExchange):
 
     # total (free + used), by currency
     async def get_balance(self):
-        if not self._web_socket_available() or not self.exchange_personal_data.get_portfolio_is_initialized():
+        if not (
+            self._web_socket_available()
+            and self.exchange_personal_data.get_portfolio_is_initialized()
+        ):
             if not self.exchange_personal_data.get_portfolio_is_initialized():
                 self.exchange_personal_data.init_portfolio()
 
@@ -165,7 +168,10 @@ class ExchangeDispatcher(AbstractExchange):
     async def get_order_book(self, symbol, limit=50):
         symbol_data = self.get_symbol_data(symbol)
 
-        if not self._web_socket_available() or not symbol_data.order_book_is_initialized():
+        if not (
+            self._web_socket_available()
+            and symbol_data.order_book_is_initialized()
+        ):
             if not self._web_socket_available() or \
                     (self._web_socket_available() and self.exchange_web_socket.handles_order_book()):
                 symbol_data.init_order_book()
@@ -176,7 +182,10 @@ class ExchangeDispatcher(AbstractExchange):
     async def get_recent_trades(self, symbol, limit=50):
         symbol_data = self.get_symbol_data(symbol)
 
-        if not self._web_socket_available() or not symbol_data.recent_trades_are_initialized():
+        if not (
+            self._web_socket_available()
+            and symbol_data.recent_trades_are_initialized()
+        ):
             if not self._web_socket_available() or \
                     (self._web_socket_available() and self.exchange_web_socket.handles_recent_trades()):
                 symbol_data.init_recent_trades()
@@ -188,7 +197,10 @@ class ExchangeDispatcher(AbstractExchange):
     async def get_price_ticker(self, symbol):
         symbol_data = self.get_symbol_data(symbol)
 
-        if not self._web_socket_available() or not symbol_data.price_ticker_is_initialized():
+        if not (
+            self._web_socket_available()
+            and symbol_data.price_ticker_is_initialized()
+        ):
             await self.exchange.get_price_ticker(symbol=symbol)
 
         return symbol_data.get_symbol_ticker()
@@ -201,9 +213,11 @@ class ExchangeDispatcher(AbstractExchange):
 
     # ORDERS
     async def get_order(self, order_id, symbol=None):
-        if not self._web_socket_available() \
-                or not self.exchange_personal_data.get_orders_are_initialized()\
-                or not self.exchange_personal_data.has_order(order_id):
+        if not (
+            self._web_socket_available()
+            and self.exchange_personal_data.get_orders_are_initialized()
+            and self.exchange_personal_data.has_order(order_id)
+        ):
             await self.exchange.get_order(order_id, symbol=symbol)
 
         if self.exchange_personal_data.has_order(order_id):
@@ -212,7 +226,10 @@ class ExchangeDispatcher(AbstractExchange):
             raise MissingOrderException(order_id)
 
     async def get_all_orders(self, symbol=None, since=None, limit=None):
-        if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
+        if not (
+            self._web_socket_available()
+            and self.exchange_personal_data.get_orders_are_initialized()
+        ):
             if not self.exchange_personal_data.get_orders_are_initialized():
                 self.exchange_personal_data.init_orders()
 
@@ -233,7 +250,10 @@ class ExchangeDispatcher(AbstractExchange):
         return self.exchange_personal_data.get_open_orders(symbol, since, limit)
 
     async def get_closed_orders(self, symbol=None, since=None, limit=None):
-        if not self._web_socket_available() or not self.exchange_personal_data.get_orders_are_initialized():
+        if not (
+            self._web_socket_available()
+            and self.exchange_personal_data.get_orders_are_initialized()
+        ):
             await self.exchange.get_closed_orders(symbol=symbol,
                                                   since=since,
                                                   limit=limit)

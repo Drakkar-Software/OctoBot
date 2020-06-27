@@ -42,20 +42,21 @@ class GlobalPriceUpdater:
 
     # add a time frame to watch and its related evaluator task manager
     def register_evaluator_task_manager(self, time_frame, evaluator_task_manager):
-        if time_frame is not None:
-            if time_frame not in self.evaluator_task_manager_by_time_frame_by_symbol:
-                self.evaluator_task_manager_by_time_frame_by_symbol[time_frame] = {}
+        if time_frame is None:
+            return
+        if time_frame not in self.evaluator_task_manager_by_time_frame_by_symbol:
+            self.evaluator_task_manager_by_time_frame_by_symbol[time_frame] = {}
 
-            # one evaluator_task_manager per time frame per symbol
-            symbol = evaluator_task_manager.get_symbol()
-            self.evaluator_task_manager_by_time_frame_by_symbol[time_frame][symbol] = evaluator_task_manager
+        # one evaluator_task_manager per time frame per symbol
+        symbol = evaluator_task_manager.get_symbol()
+        self.evaluator_task_manager_by_time_frame_by_symbol[time_frame][symbol] = evaluator_task_manager
 
-            if symbol not in self.symbols:
-                self.symbols.append(symbol)
+        if symbol not in self.symbols:
+            self.symbols.append(symbol)
 
-            symbol_evaluator = evaluator_task_manager.get_symbol_evaluator()
-            if symbol_evaluator not in self.symbol_evaluators:
-                self.symbol_evaluators.append(symbol_evaluator)
+        symbol_evaluator = evaluator_task_manager.get_symbol_evaluator()
+        if symbol_evaluator not in self.symbol_evaluators:
+            self.symbol_evaluators.append(symbol_evaluator)
 
     async def start_update_loop(self):
         error = None
@@ -138,9 +139,11 @@ class GlobalPriceUpdater:
             await self._update_pause(now)
 
     def _get_symbol_time_frame_next_update_time(self, symbol, time_frame):
-        if time_frame in self.time_frame_next_update:
-            if symbol in self.time_frame_next_update[time_frame]:
-                return self.time_frame_next_update[time_frame][symbol]
+        if (
+            time_frame in self.time_frame_next_update
+            and symbol in self.time_frame_next_update[time_frame]
+        ):
+            return self.time_frame_next_update[time_frame][symbol]
         return None
 
     def _set_symbol_time_frame_next_update_time(self, symbol, time_frame, candle_time):

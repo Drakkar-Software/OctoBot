@@ -295,7 +295,10 @@ class AbstractTradingModeCreator:
 
         used_last_prices = last_prices[-ORDER_CREATION_LAST_TRADES_TO_USE:]
 
-        reference_sum = sum([float(last_price["price"]) for last_price in used_last_prices])
+        reference_sum = sum(
+            float(last_price["price"]) for last_price in used_last_prices
+        )
+
 
         reference = reference_sum / len(used_last_prices)
 

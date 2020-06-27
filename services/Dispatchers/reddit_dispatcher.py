@@ -61,7 +61,7 @@ class RedditDispatcher(AbstractDispatcher):
                     if self.subreddits:
                         self.subreddits = self.subreddits + "+" + subreddit
                     else:
-                        self.subreddits = self.subreddits + subreddit
+                        self.subreddits += subreddit
 
     def _get_data(self):
         if not self.subreddits:
@@ -134,10 +134,7 @@ class RedditDispatcher(AbstractDispatcher):
                     f"Try to continue after {self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC} seconds."
                 self.logger.error(f"Error when receiving Reddit feed: '{e}' this may mean {message_complement}")
                 self.logger.exception(e)
-                if not self.credentials_ok:
-                    self.connect_attempts += 1
-                else:
-                    self.connect_attempts += 0.1
+                self.connect_attempts += 1 if not self.credentials_ok else 0.1
                 time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except Exception as e:
                 self.logger.error(f"Error when receiving Reddit feed: '{e}'")

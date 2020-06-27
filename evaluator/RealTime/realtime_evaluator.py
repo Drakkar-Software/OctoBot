@@ -142,9 +142,11 @@ class RealTimeExchangeEvaluator(RealTimeEvaluator):
     @staticmethod
     def _compare_data(new_data, old_data):
         try:
-            if new_data[PriceIndexes.IND_PRICE_CLOSE.value][-1] != old_data[PriceIndexes.IND_PRICE_CLOSE.value][-1]:
-                return False
-            return True
+            return (
+                new_data[PriceIndexes.IND_PRICE_CLOSE.value][-1]
+                == old_data[PriceIndexes.IND_PRICE_CLOSE.value][-1]
+            )
+
         except Exception:
             return False
 

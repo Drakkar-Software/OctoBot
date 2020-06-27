@@ -151,12 +151,12 @@ class ExchangeSimulator(AbstractExchange):
         return self.__class__.__name__ + str(self.symbols)
 
     def _prepare(self):
+        self.time_frames_offset = {}
         # create get times and init offsets
         for symbol in self.symbols:
             self.time_frame_get_times[symbol] = {}
             for time_frame in TimeFrames:
                 self.time_frame_get_times[symbol][time_frame.value] = 0
-                self.time_frames_offset = {}
 
     def should_update_data(self, time_frame, symbol):
         smallest_time_frame = self.MIN_ENABLED_TIME_FRAME
@@ -201,7 +201,10 @@ class ExchangeSimulator(AbstractExchange):
         start_timestamp = current_candle[PriceIndexes.IND_PRICE_TIME.value] \
             if backtesting_enabled(self.config) else time.time()
 
-        if not self.handles_trades_history(symbol) or not backtesting_enabled(self.config):
+        if not (
+            self.handles_trades_history(symbol)
+            and backtesting_enabled(self.config)
+        ):
             return self._generate_trades(current_candle, start_timestamp)
         else:
             end_timestamp = self.get_ohlcv(symbol)[timeframe.value][index+1][PriceIndexes.IND_PRICE_TIME.value] \
@@ -348,8 +351,10 @@ class ExchangeSimulator(AbstractExchange):
     """
 
     def init_candles_offset(self, time_frames, symbol):
-        min_time_frame_to_consider = dict()
-        min_time_frame_to_consider[symbol] = self._find_min_time_frame_to_consider(time_frames, symbol)
+        min_time_frame_to_consider = {
+            symbol: self._find_min_time_frame_to_consider(time_frames, symbol)
+        }
+
         if symbol not in self.time_frames_offset:
             self.time_frames_offset[symbol] = {}
         for time_frame in time_frames:
@@ -492,7 +497,6 @@ class ExchangeSimulator(AbstractExchange):
                 result_fees[ExchangeConstantsMarketPropertyColumns.MAKER.value] = \
                     self.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES][CONFIG_SIMULATOR_FEES_MAKER]
 
-            if CONFIG_SIMULATOR_FEES_MAKER in self.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES]:
                 result_fees[ExchangeConstantsMarketPropertyColumns.TAKER.value] = \
                     self.config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES][CONFIG_SIMULATOR_FEES_TAKER]
 
@@ -519,7 +523,7 @@ class ExchangeSimulator(AbstractExchange):
             [ExchangeConstantsMarketStatusColumns.PRECISION_PRICE.value]
         cost = float(round_into_str_with_max_digits(quantity * rate, precision))
 
-        if order_type == TraderOrderType.SELL_MARKET or order_type == TraderOrderType.SELL_LIMIT:
+        if order_type in [TraderOrderType.SELL_MARKET, TraderOrderType.SELL_LIMIT]:
             cost = float(round_into_str_with_max_digits(cost * price, precision))
             fee_currency = market
 

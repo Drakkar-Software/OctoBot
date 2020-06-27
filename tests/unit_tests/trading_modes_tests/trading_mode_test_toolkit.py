@@ -77,8 +77,13 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
         elif state is None or isinstance(state, (int, float, dict)) or state not in EvaluatorStates:
             assert orders is None
         else:
-            assert (not orders and nb_orders == 0) or (len(orders) == nb_orders) \
-                or ((len(orders) == 0 or len(orders) == 1) and nb_orders == "unknown")
+            assert (
+                (not orders and nb_orders == 0)
+                or len(orders) == nb_orders
+                or len(orders) in [0, 1]
+                and nb_orders == "unknown"
+            )
+
             if orders:
                 order = orders[0]
                 assert order.status == OrderStatus.OPEN
@@ -109,33 +114,34 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
 
 
 def check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False):
-    if orders:
-        orders_market_amount = 0
-        orders_currency_amount = 0
-        market = orders[0].market
-        order_symbol = orders[0].currency
-        for order in orders:
-            assert order.market == market
-            assert order.currency == order_symbol
-            if order.side == TradeOrderSide.BUY:
-                orders_market_amount += order.origin_quantity * order.origin_price
-            else:
-                orders_currency_amount += order.origin_quantity
-            for symbol in portfolio.portfolio:
-                assert portfolio.portfolio[symbol][Portfolio.TOTAL] >= 0
-                assert portfolio.portfolio[symbol][Portfolio.AVAILABLE] >= 0
-                if not only_positivity:
-                    if order_symbol == symbol:
-                        assert initial_portfolio[symbol][Portfolio.TOTAL] == portfolio.portfolio[symbol][
-                            Portfolio.TOTAL]
-                        assert "{:f}".format(
-                            initial_portfolio[symbol][Portfolio.AVAILABLE] - orders_currency_amount) == \
-                            "{:f}".format(portfolio.portfolio[symbol][Portfolio.AVAILABLE])
-                    elif market == symbol:
-                        assert initial_portfolio[market][Portfolio.TOTAL] == portfolio.portfolio[market][
-                            Portfolio.TOTAL]
-                        assert "{:f}".format(initial_portfolio[market][Portfolio.AVAILABLE] - orders_market_amount) \
-                               == "{:f}".format(portfolio.portfolio[market][Portfolio.AVAILABLE])
+    if not orders:
+        return
+    orders_market_amount = 0
+    orders_currency_amount = 0
+    market = orders[0].market
+    order_symbol = orders[0].currency
+    for order in orders:
+        assert order.market == market
+        assert order.currency == order_symbol
+        if order.side == TradeOrderSide.BUY:
+            orders_market_amount += order.origin_quantity * order.origin_price
+        else:
+            orders_currency_amount += order.origin_quantity
+        for symbol in portfolio.portfolio:
+            assert portfolio.portfolio[symbol][Portfolio.TOTAL] >= 0
+            assert portfolio.portfolio[symbol][Portfolio.AVAILABLE] >= 0
+            if not only_positivity:
+                if order_symbol == symbol:
+                    assert initial_portfolio[symbol][Portfolio.TOTAL] == portfolio.portfolio[symbol][
+                        Portfolio.TOTAL]
+                    assert "{:f}".format(
+                        initial_portfolio[symbol][Portfolio.AVAILABLE] - orders_currency_amount) == \
+                        "{:f}".format(portfolio.portfolio[symbol][Portfolio.AVAILABLE])
+                elif market == symbol:
+                    assert initial_portfolio[market][Portfolio.TOTAL] == portfolio.portfolio[market][
+                        Portfolio.TOTAL]
+                    assert "{:f}".format(initial_portfolio[market][Portfolio.AVAILABLE] - orders_market_amount) \
+                           == "{:f}".format(portfolio.portfolio[market][Portfolio.AVAILABLE])
 
 
 async def fill_orders(orders, trader):

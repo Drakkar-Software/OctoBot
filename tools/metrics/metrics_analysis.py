@@ -42,9 +42,11 @@ def can_read_metrics(config):
 
 
 def _format_metrics(json_bot_metrics):
-    formatted_metrics = dict()
-    formatted_metrics["total_count"] = len(json_bot_metrics)
-    formatted_metrics["this_month"] = _get_count_last_months(json_bot_metrics, 1)
+    formatted_metrics = {
+        "total_count": len(json_bot_metrics),
+        "this_month": _get_count_last_months(json_bot_metrics, 1),
+    }
+
     formatted_metrics["last_six_month"] = _get_count_last_months(json_bot_metrics, 6)
     formatted_metrics["top_pairs"] = _get_top_traded_item(json_bot_metrics, MetricsFields.CURRENT_SESSION.value,
                                                           MetricsFields.PAIRS.value)
@@ -56,14 +58,18 @@ def _format_metrics(json_bot_metrics):
 
 
 def _get_count_last_months(json_bot_metrics, months):
-    month_count = 0
     month_min_timestamp = (datetime.now() - timedelta(days=months*30.5)).timestamp()
-    for item in json_bot_metrics:
-        if MetricsFields.CURRENT_SESSION.value in item and \
-                MetricsFields.UP_TIME.value in item[MetricsFields.CURRENT_SESSION.value] and \
-                item[MetricsFields.CURRENT_SESSION.value][MetricsFields.UP_TIME.value] >= month_min_timestamp:
-            month_count += 1
-    return month_count
+    return sum(
+        1
+        for item in json_bot_metrics
+        if MetricsFields.CURRENT_SESSION.value in item
+        and MetricsFields.UP_TIME.value
+        in item[MetricsFields.CURRENT_SESSION.value]
+        and item[MetricsFields.CURRENT_SESSION.value][
+            MetricsFields.UP_TIME.value
+        ]
+        >= month_min_timestamp
+    )
 
 
 def _get_top_traded_item(json_bot_metrics, session_key, key, top_count=COMMUNITY_TOPS_COUNT):

@@ -183,9 +183,11 @@ class AbstractEvaluator(AbstractTentacle):
         self.eval_note_changed_time = eval_note_changed_time if eval_note_changed_time else time.time()
 
     def eval_note_changed(self):
-        if self.eval_note_time_to_live is not None:
-            if self.eval_note_changed_time is None:
-                self.eval_note_changed_time = time.time()
+        if (
+            self.eval_note_time_to_live is not None
+            and self.eval_note_changed_time is None
+        ):
+            self.eval_note_changed_time = time.time()
 
     def ensure_eval_note_is_not_expired(self):
         if self.eval_note_time_to_live is not None:

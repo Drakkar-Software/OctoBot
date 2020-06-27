@@ -70,7 +70,7 @@ class TradesManager(Initializable):
         await self._init_origin_portfolio_and_currencies_value()
 
     def is_in_history(self, order):
-        return any([order.get_id() == trade.order_id for trade in self.trade_history])
+        return any(order.get_id() == trade.order_id for trade in self.trade_history)
 
     def get_origin_portfolio(self):
         return self.origin_portfolio
@@ -279,13 +279,15 @@ class TradesManager(Initializable):
         symbol = merge_currencies(currency, self.reference_market)
         symbol_inverted = merge_currencies(self.reference_market, currency)
 
-        if self.exchange.get_exchange_manager().symbol_exists(symbol):
-            if await self._update_currencies_prices(symbol):
-                return self.currencies_last_prices[symbol] * quantity
+        if self.exchange.get_exchange_manager().symbol_exists(
+            symbol
+        ) and await self._update_currencies_prices(symbol):
+            return self.currencies_last_prices[symbol] * quantity
 
-        if self.exchange.get_exchange_manager().symbol_exists(symbol_inverted):
-            if await self._update_currencies_prices(symbol_inverted):
-                return quantity / self.currencies_last_prices[symbol_inverted]
+        if self.exchange.get_exchange_manager().symbol_exists(
+            symbol_inverted
+        ) and await self._update_currencies_prices(symbol_inverted):
+            return quantity / self.currencies_last_prices[symbol_inverted]
 
         self._inform_no_matching_symbol(currency)
         return 0
@@ -320,10 +322,10 @@ class TradesManager(Initializable):
     """
 
     async def _evaluate_portfolio_value(self, portfolio, currencies_values=None):
-        return sum([
+        return sum(
             await self._get_currency_value(portfolio, currency, currencies_values)
             for currency in portfolio
-        ])
+        )
 
     async def _get_currency_value(self, portfolio, currency, currencies_values=None):
         if currency in portfolio and portfolio[currency][Portfolio.TOTAL] != 0:

@@ -113,11 +113,7 @@ class Order:
             # if we have a timestamp, it's a real trader => need to format timestamp if necessary
             self.creation_time = self.exchange.get_uniform_timestamp(timestamp)
 
-        if status is None:
-            self.status = OrderStatus.OPEN
-        else:
-            self.status = status
-
+        self.status = OrderStatus.OPEN if status is None else status
         if self.trader.simulate:
             self.filled_quantity = quantity
 
@@ -156,8 +152,11 @@ class Order:
 
         # if real order => also check order id because a user can try to cancel a loaded order what would normally
         # be handled as self managed by OctoBot, ex: Binance and take profit orders
-        if not self.is_simulated \
-                and (not self.trader.check_if_self_managed(self.get_order_type()) or self.order_id is not None):
+        if not (
+            self.is_simulated
+            or self.trader.check_if_self_managed(self.get_order_type())
+            and self.order_id is None
+        ):
             await self.exchange.cancel_order(self.order_id, self.symbol)
 
         await self.trader.notify_order_cancel(self)
@@ -259,9 +258,11 @@ class Order:
 
     def infer_taker_or_maker(self):
         if self.taker_or_maker is None:
-            if self.order_type == TraderOrderType.SELL_MARKET \
-                    or self.order_type == TraderOrderType.BUY_MARKET \
-                    or self.order_type == TraderOrderType.STOP_LOSS:
+            if self.order_type in [
+                TraderOrderType.SELL_MARKET,
+                TraderOrderType.BUY_MARKET,
+                TraderOrderType.STOP_LOSS,
+            ]:
                 # always true
                 return ExchangeConstantsMarketPropertyColumns.TAKER.value
             else:
@@ -304,7 +305,7 @@ class Order:
             await self.cancel_from_exchange()
 
     def generate_executed_time(self, simulated_time=False):
-        if not simulated_time or not self.last_prices:
+        if not (simulated_time and self.last_prices):
             return time.time()
         else:
             return self.last_prices[-1][eC.TIMESTAMP.value]

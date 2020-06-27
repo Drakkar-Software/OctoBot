@@ -92,7 +92,10 @@ class SymbolEvaluator:
         for strategies_evaluator in self.get_strategies_eval_list(exchange):
             if strategies_evaluator.get_is_active():
                 strategies_evaluator.set_matrix(new_matrix)
-                if not strategies_evaluator.get_name() == ignored_evaluator and strategies_evaluator.get_is_evaluable():
+                if (
+                    strategies_evaluator.get_name() != ignored_evaluator
+                    and strategies_evaluator.get_is_evaluable()
+                ):
                     await strategies_evaluator.eval()
 
                 new_matrix.set_eval(EvaluatorMatrixTypes.STRATEGIES, strategies_evaluator.get_name(),

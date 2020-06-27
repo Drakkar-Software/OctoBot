@@ -210,10 +210,9 @@ class ConfigManager:
         config.pop(CONFIG_ADVANCED_INSTANCES, None)
 
         # remove backtesting specific differences
-        if backtesting_enabled(config):
-            if CONFIG_BACKTESTING in config:
-                config[CONFIG_BACKTESTING].pop(CONFIG_ENABLED_OPTION, None)
-                config[CONFIG_BACKTESTING].pop(CONFIG_ANALYSIS_ENABLED_OPTION, None)
+        if backtesting_enabled(config) and CONFIG_BACKTESTING in config:
+            config[CONFIG_BACKTESTING].pop(CONFIG_ENABLED_OPTION, None)
+            config[CONFIG_BACKTESTING].pop(CONFIG_ANALYSIS_ENABLED_OPTION, None)
 
     @staticmethod
     def filter_to_update_data(to_update_data, current_config):
@@ -341,16 +340,18 @@ class ConfigManager:
         if deactivate_others:
             import evaluator.Strategies as strategies
             for element_name, activated in current_config.items():
-                if element_name not in to_update_data:
-                    if current_config[element_name]:
-                        # do not deactivate strategies
-                        config_class = get_class_from_string(element_name, strategies.StrategiesEvaluator,
-                                                             strategies, evaluator_parent_inspection)
-                        if config_class is None:
-                            get_logger().info(f"{config_file} updated: {element_name} "
-                                              f"{'deactivated'}")
-                            current_config[element_name] = False
-                            something_changed = True
+                if (
+                    element_name not in to_update_data
+                    and current_config[element_name]
+                ):
+                    # do not deactivate strategies
+                    config_class = get_class_from_string(element_name, strategies.StrategiesEvaluator,
+                                                         strategies, evaluator_parent_inspection)
+                    if config_class is None:
+                        get_logger().info(f"{config_file} updated: {element_name} "
+                                          f"{'deactivated'}")
+                        current_config[element_name] = False
+                        something_changed = True
         if something_changed:
             with open(config_file_path, "w+") as config_file_w:
                 config_file_w.write(ConfigManager.dump_json(current_config))
@@ -392,8 +393,7 @@ class ConfigManager:
     def get_symbols(config):
         if CONFIG_CRYPTO_CURRENCIES in config and isinstance(config[CONFIG_CRYPTO_CURRENCIES], dict):
             for crypto_currency_data in config[CONFIG_CRYPTO_CURRENCIES].values():
-                for symbol in crypto_currency_data[CONFIG_CRYPTO_PAIRS]:
-                    yield symbol
+                yield from crypto_currency_data[CONFIG_CRYPTO_PAIRS]
 
     @staticmethod
     def get_all_currencies(config):
@@ -406,11 +406,11 @@ class ConfigManager:
 
     @staticmethod
     def get_pairs(config, currency) -> []:
-        pairs = []
-        for symbol in ConfigManager.get_symbols(config):
-            if currency in split_symbol(symbol):
-                pairs.append(symbol)
-        return pairs
+        return [
+            symbol
+            for symbol in ConfigManager.get_symbols(config)
+            if currency in split_symbol(symbol)
+        ]
 
     @staticmethod
     def get_market_pair(config, currency) -> (str, bool):

@@ -85,7 +85,10 @@ class Evaluator:
         if self.data_changed:
             for ta_evaluator in self.get_ta_eval_list():
                 ta_evaluator.set_data(self.data)
-                if not ta_evaluator.get_name() == ignored_evaluator and ta_evaluator.get_is_evaluable():
+                if (
+                    ta_evaluator.get_name() != ignored_evaluator
+                    and ta_evaluator.get_is_evaluable()
+                ):
                     await ta_evaluator.eval()
 
             # reset data changed after update

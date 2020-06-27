@@ -102,14 +102,13 @@ class Portfolio(Initializable):
 
     @staticmethod
     def get_currency_from_given_portfolio(portfolio, currency, portfolio_type=AVAILABLE):
-        if currency in portfolio:
-            return portfolio[currency][portfolio_type]
-        else:
+        if currency not in portfolio:
             portfolio[currency] = {
                 Portfolio.AVAILABLE: 0,
                 Portfolio.TOTAL: 0
             }
-            return portfolio[currency][portfolio_type]
+
+        return portfolio[currency][portfolio_type]
 
     # Get specified currency quantity in the portfolio
     def get_currency_portfolio(self, currency, portfolio_type=AVAILABLE):

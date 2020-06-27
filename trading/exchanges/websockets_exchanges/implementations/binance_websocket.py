@@ -169,12 +169,10 @@ class BinanceWebSocketClient(AbstractWebSocket):
         if filled is not None and filled > 0:
             if amount is not None:
                 remaining = max(amount - filled, 0.0)
-            if price is not None and price > 0:
-                cost = price * filled
-            else:
+            if price is None or price <= 0:
                 # market order case => estimate price and cost using last_price
                 price = self.safe_float(order, "L", 0.0)
-                cost = price * filled
+            cost = price * filled
         return {
             ExchangeConstantsOrderColumns.INFO.value: order,
             ExchangeConstantsOrderColumns.ID.value: self.safe_string(order, "i"),

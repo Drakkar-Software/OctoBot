@@ -51,22 +51,23 @@ class MetricsManager:
         return self.enabled
 
     async def start_metrics_task(self):
-        if self.enabled:
-            try:
-                # first ensure this session is not just a configuration test: register after a timer
-                await asyncio.sleep(TIMER_BEFORE_METRICS_REGISTRATION_SECONDS)
-                await self.register_session()
-                while self.keep_running:
-                    # send a keepalive at periodic intervals
-                    await asyncio.sleep(TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
-                    try:
-                        await self._update_uptime_and_profitability()
-                    except Exception as e:
-                        self.logger.debug(f"Exception when handling metrics: {e}")
-            except CancelledError:
-                pass
-            except Exception as e:
-                self.logger.debug(f"Exception when handling metrics registration: {e}")
+        if not self.enabled:
+            return
+        try:
+            # first ensure this session is not just a configuration test: register after a timer
+            await asyncio.sleep(TIMER_BEFORE_METRICS_REGISTRATION_SECONDS)
+            await self.register_session()
+            while self.keep_running:
+                # send a keepalive at periodic intervals
+                await asyncio.sleep(TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
+                try:
+                    await self._update_uptime_and_profitability()
+                except Exception as e:
+                    self.logger.debug(f"Exception when handling metrics: {e}")
+        except CancelledError:
+            pass
+        except Exception as e:
+            self.logger.debug(f"Exception when handling metrics registration: {e}")
 
     async def stop_task(self):
         self.keep_running = False
@@ -154,24 +155,28 @@ class MetricsManager:
         return total_profitability * 100 / total_origin_values if total_origin_values > 0 else 0
 
     def _get_real_portfolio_value(self):
-        if self.has_real_trader:
-            total_value = 0
-
-            for trader in self._get_traders(self.has_real_trader):
-                trade_manager = trader.get_trades_manager()
-                current_value = trade_manager.get_portfolio_current_value()
-
-                # current_value might be 0 if no trades have been made / canceled => use origin value
-                if current_value == 0:
-                    current_value = trade_manager.get_portfolio_origin_value()
-
-                total_value += current_value
-            return total_value
-        else:
+        if not self.has_real_trader:
             return 0
+        total_value = 0
+
+        for trader in self._get_traders(self.has_real_trader):
+            trade_manager = trader.get_trades_manager()
+            current_value = trade_manager.get_portfolio_current_value()
+
+            # current_value might be 0 if no trades have been made / canceled => use origin value
+            if current_value == 0:
+                current_value = trade_manager.get_portfolio_origin_value()
+
+            total_value += current_value
+        return total_value
 
     def _get_traded_pairs(self):
-        return list(set(evaluator.get_symbol() for evaluator in self.octobot.get_symbol_evaluator_list().values()))
+        return list(
+            {
+                evaluator.get_symbol()
+                for evaluator in self.octobot.get_symbol_evaluator_list().values()
+            }
+        )
 
     def _get_notification_types(self):
         has_notifications = CONFIG_CATEGORY_NOTIFICATION in self.edited_config \

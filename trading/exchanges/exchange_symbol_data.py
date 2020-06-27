@@ -65,9 +65,9 @@ class SymbolData:
 
     def ensure_data_validity(self, time_frame):
         previous_candle_timestamp = self._get_previous_candle_timestamp(time_frame)
-        error_allowance = 1.2
         current_time = time.time()
         if previous_candle_timestamp is not None:
+            error_allowance = 1.2
             # if update time from the previous time frame is greater than this given time frame:
             # data did not get updated => data are invalid
             if current_time - previous_candle_timestamp > \

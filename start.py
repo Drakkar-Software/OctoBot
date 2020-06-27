@@ -191,7 +191,7 @@ def start_octobot(starting_args):
                     import interfaces
                     interfaces.__init__(bot, config)
 
-                    if not starting_args.no_open_web and not starting_args.no_web:
+                    if not (starting_args.no_open_web or starting_args.no_web):
                         Thread(target=_auto_open_web, args=(config, bot)).start()
 
                     # set debug_mode = True to activate asyncio debug mode

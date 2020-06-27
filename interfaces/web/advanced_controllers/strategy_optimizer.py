@@ -34,16 +34,15 @@ def strategy_optimizer():
         success = False
         reply = "Operation OK"
 
-        if request_data:
-            if update_type == "start_optimizer":
-                try:
-                    strategy = request_data["strategy"][0]
-                    time_frames = request_data["time_frames"]
-                    evaluators = request_data["evaluators"]
-                    risks = request_data["risks"]
-                    success, reply = start_optimizer(strategy, time_frames, evaluators, risks)
-                except Exception as e:
-                    return get_rest_reply('{"start_optimizer": "ko: ' + str(e) + '"}', 500)
+        if request_data and update_type == "start_optimizer":
+            try:
+                strategy = request_data["strategy"][0]
+                time_frames = request_data["time_frames"]
+                evaluators = request_data["evaluators"]
+                risks = request_data["risks"]
+                success, reply = start_optimizer(strategy, time_frames, evaluators, risks)
+            except Exception as e:
+                return get_rest_reply('{"start_optimizer": "ko: ' + str(e) + '"}', 500)
 
         if success:
             return get_rest_reply(jsonify(reply))
@@ -53,18 +52,18 @@ def strategy_optimizer():
     elif request.method == 'GET':
         if request.args:
             target = request.args["update_type"]
-            if target == "optimizer_results":
-                optimizer_results = get_optimizer_results()
-                return jsonify(optimizer_results)
             if target == "optimizer_report":
                 optimizer_report = get_optimizer_report()
                 return jsonify(optimizer_report)
+            elif target == "optimizer_results":
+                optimizer_results = get_optimizer_results()
+                return jsonify(optimizer_results)
             elif target == "optimizer_status":
                 optimizer_status, progress, overall_progress, errors = get_optimizer_status()
                 status = {"status": optimizer_status, "progress": progress,
                           "overall_progress": overall_progress, "errors": errors}
                 return jsonify(status)
-            if target == "strategy_params":
+            elif target == "strategy_params":
                 strategy_name = request.args["strategy_name"]
                 params = {
                     "time_frames": list(get_time_frames_list(strategy_name)),

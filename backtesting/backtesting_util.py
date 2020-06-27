@@ -166,7 +166,7 @@ def _get_reference_market(data_files):
         currency, market = split_symbol(file_symbol)
         if reference_market is None:
             reference_market = market
-        elif not reference_market == market:
+        elif reference_market != market:
             # more than one reference market in data_files: use first reference market
             return reference_market
     return reference_market if reference_market is not None else DEFAULT_REFERENCE_MARKET

@@ -70,30 +70,31 @@ class PreviousTradingStateManager:
     def update_previous_states(self, exchange, simulated_initial_portfolio=None, real_initial_portfolio=None,
                                simulated_initial_portfolio_value=None, real_initial_portfolio_value=None,
                                watched_markets_initial_values=None, reference_market=None):
-        if not self.reset_state_history:
-            try:
-                exchange_name = exchange.get_name()
-                if simulated_initial_portfolio is not None:
-                    self._previous_state[exchange_name][SIMULATOR_INITIAL_STARTUP_PORTFOLIO] =  \
-                        {currency: value[Portfolio.TOTAL] for currency, value in simulated_initial_portfolio.items()}
-                if real_initial_portfolio is not None:
-                    self._previous_state[exchange_name][REAL_INITIAL_STARTUP_PORTFOLIO] =  \
-                        {currency: value[Portfolio.TOTAL] for currency, value in real_initial_portfolio.items()}
-                if simulated_initial_portfolio_value is not None:
-                    self._previous_state[exchange_name][SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE] = \
-                        simulated_initial_portfolio_value
-                if real_initial_portfolio_value is not None:
-                    self._previous_state[exchange_name][REAL_INITIAL_STARTUP_PORTFOLIO_VALUE] = \
-                        real_initial_portfolio_value
-                if watched_markets_initial_values is not None:
-                    self._previous_state[exchange_name][WATCHED_MARKETS_INITIAL_STARTUP_VALUES] = \
-                        watched_markets_initial_values
-                if reference_market is not None:
-                    self._previous_state[exchange_name][REFERENCE_MARKET] = reference_market
-                self._save_state_file()
-            except Exception as e:
-                self.logger.error(f"Error when saving simulator state: {e}")
-                self.logger.exception(e)
+        if self.reset_state_history:
+            return
+        try:
+            exchange_name = exchange.get_name()
+            if simulated_initial_portfolio is not None:
+                self._previous_state[exchange_name][SIMULATOR_INITIAL_STARTUP_PORTFOLIO] =  \
+                    {currency: value[Portfolio.TOTAL] for currency, value in simulated_initial_portfolio.items()}
+            if real_initial_portfolio is not None:
+                self._previous_state[exchange_name][REAL_INITIAL_STARTUP_PORTFOLIO] =  \
+                    {currency: value[Portfolio.TOTAL] for currency, value in real_initial_portfolio.items()}
+            if simulated_initial_portfolio_value is not None:
+                self._previous_state[exchange_name][SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE] = \
+                    simulated_initial_portfolio_value
+            if real_initial_portfolio_value is not None:
+                self._previous_state[exchange_name][REAL_INITIAL_STARTUP_PORTFOLIO_VALUE] = \
+                    real_initial_portfolio_value
+            if watched_markets_initial_values is not None:
+                self._previous_state[exchange_name][WATCHED_MARKETS_INITIAL_STARTUP_VALUES] = \
+                    watched_markets_initial_values
+            if reference_market is not None:
+                self._previous_state[exchange_name][REFERENCE_MARKET] = reference_market
+            self._save_state_file()
+        except Exception as e:
+            self.logger.error(f"Error when saving simulator state: {e}")
+            self.logger.exception(e)
 
     def has_previous_state(self, exchange):
         return exchange.get_name() in self._previous_state
@@ -132,26 +133,25 @@ class PreviousTradingStateManager:
             return False
 
     def _load_previous_state_metadata(self, target_exchanges, config):
-        if path.isfile(self.save_file):
-            try:
-                potential_previous_state = load_config(self.save_file)
-                if isinstance(potential_previous_state, dict):
-                    if not self._check_required_values(potential_previous_state):
-                        return False
-                    # check data
-                    found_currencies_prices = {currency: False for currency in ConfigManager.get_all_currencies(config)}
-                    if not self._check_exchange_data(config, found_currencies_prices):
-                        return False
-                    if not self._check_missing_symbols(found_currencies_prices):
-                        return False
-                if not self._check_no_missing_exchanges(target_exchanges):
-                    return False
-            except Exception as e:
-                self.logger.warning(f"{self.ERROR_MESSAGE}{e}")
-                return False
-            return True
-        else:
+        if not path.isfile(self.save_file):
             return False
+        try:
+            potential_previous_state = load_config(self.save_file)
+            if isinstance(potential_previous_state, dict):
+                if not self._check_required_values(potential_previous_state):
+                    return False
+                # check data
+                found_currencies_prices = {currency: False for currency in ConfigManager.get_all_currencies(config)}
+                if not self._check_exchange_data(config, found_currencies_prices):
+                    return False
+                if not self._check_missing_symbols(found_currencies_prices):
+                    return False
+            if not self._check_no_missing_exchanges(target_exchanges):
+                return False
+        except Exception as e:
+            self.logger.warning(f"{self.ERROR_MESSAGE}{e}")
+            return False
+        return True
 
     def _check_required_values(self, potential_previous_state):
         required_values = [SIMULATOR_INITIAL_STARTUP_PORTFOLIO, REAL_INITIAL_STARTUP_PORTFOLIO,
@@ -186,14 +186,16 @@ class PreviousTradingStateManager:
                 return False
 
             # check initial portfolios and portfolios values
-            if ConfigManager.get_trader_simulator_enabled(config):
-                if exchange_data[SIMULATOR_INITIAL_STARTUP_PORTFOLIO] is None \
-                        or exchange_data[SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE] is None:
-                    return False
-            if ConfigManager.get_trader_enabled(config):
-                if exchange_data[REAL_INITIAL_STARTUP_PORTFOLIO] is None\
-                        or exchange_data[REAL_INITIAL_STARTUP_PORTFOLIO_VALUE] is None:
-                    return False
+            if ConfigManager.get_trader_simulator_enabled(config) and (
+                exchange_data[SIMULATOR_INITIAL_STARTUP_PORTFOLIO] is None
+                or exchange_data[SIMULATOR_INITIAL_STARTUP_PORTFOLIO_VALUE] is None
+            ):
+                return False
+            if ConfigManager.get_trader_enabled(config) and (
+                exchange_data[REAL_INITIAL_STARTUP_PORTFOLIO] is None
+                or exchange_data[REAL_INITIAL_STARTUP_PORTFOLIO_VALUE] is None
+            ):
+                return False
         return True
 
     def _check_missing_symbols(self, found_currencies_prices):
@@ -264,7 +266,7 @@ class PreviousTradingStateManager:
     def _transform_portfolio(read_portfolio):
         portfolio = {}
         for key, val in read_portfolio.items():
-            if not (Portfolio.AVAILABLE in val and Portfolio.TOTAL in val):
+            if Portfolio.AVAILABLE not in val or Portfolio.TOTAL not in val:
                 return None
             else:
                 portfolio[key] = val[Portfolio.TOTAL]

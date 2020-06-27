@@ -176,8 +176,7 @@ def get_tentacle_from_string(name, with_info=True):
         klass = get_class_from_string(name, abstract_class, package, parent_inspector)
         if klass:
             if with_info:
-                info = dict()
-                info[DESCRIPTION_KEY] = klass.get_description()
+                info = {DESCRIPTION_KEY: klass.get_description()}
                 info[NAME_KEY] = name
                 for parent_class in klass.__bases__:
                     if hasattr(parent_class, "get_name"):

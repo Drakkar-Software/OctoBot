@@ -82,19 +82,20 @@ class Trader(Initializable):
             self.order_manager.set_order_refresh_time(self.order_refresh_time)
 
     async def initialize_impl(self):
-        if self.enable:
-            if self.previous_state_manager is not None:
-                self.load_previous_state_if_any()
-            try:
-                await self.portfolio.initialize()
-                await self.trades_manager.initialize()
-            except Exception as e:
-                self.enable = False
-                self.logger.error(f"Error when initializing portfolio: {e}. "
-                                  f"{self.exchange.get_name()} trader disabled.")
-                self.logger.exception(e)
-                if backtesting_enabled(self.config):
-                    raise e
+        if not self.enable:
+            return
+        if self.previous_state_manager is not None:
+            self.load_previous_state_if_any()
+        try:
+            await self.portfolio.initialize()
+            await self.trades_manager.initialize()
+        except Exception as e:
+            self.enable = False
+            self.logger.error(f"Error when initializing portfolio: {e}. "
+                              f"{self.exchange.get_name()} trader disabled.")
+            self.logger.exception(e)
+            if backtesting_enabled(self.config):
+                raise e
 
     def load_previous_state_if_any(self):
         # unused for real trader yet
@@ -230,7 +231,9 @@ class Trader(Initializable):
             await self.create_order(order, self.get_portfolio())
 
     async def _create_not_loaded_order(self, order, new_order, portfolio) -> Order:
-        if not self.simulate and not self.check_if_self_managed(new_order.get_order_type()):
+        if not (
+            self.simulate or self.check_if_self_managed(new_order.get_order_type())
+        ):
             created_order = await self.exchange.create_order(new_order.get_order_type(),
                                                              new_order.get_order_symbol(),
                                                              new_order.get_origin_quantity(),
@@ -253,7 +256,7 @@ class Trader(Initializable):
         return new_order
 
     async def cancel_order(self, order):
-        if not order.is_cancelled() and not order.is_filled():
+        if not (order.is_cancelled() or order.is_filled()):
             async with order.get_lock():
                 odr = order
                 await odr.cancel_order()
@@ -277,9 +280,12 @@ class Trader(Initializable):
     async def cancel_open_orders(self, symbol, cancel_loaded_orders=True):
         # use a copy of the list (not the reference)
         for order in copy.copy(self.get_open_orders()):
-            if order.get_order_symbol() == symbol and order.get_status() is not OrderStatus.CANCELED:
-                if cancel_loaded_orders or order.get_is_from_this_octobot():
-                    await self.notify_order_close(order, True)
+            if (
+                order.get_order_symbol() == symbol
+                and order.get_status() is not OrderStatus.CANCELED
+                and (cancel_loaded_orders or order.get_is_from_this_octobot())
+            ):
+                await self.notify_order_close(order, True)
 
     async def cancel_all_open_orders_with_currency(self, currency):
         symbols = ConfigManager.get_pairs(self.config, currency)
@@ -300,10 +306,7 @@ class Trader(Initializable):
             current_symbol_holding, current_market_quantity, _, price, symbol_market = \
                 await AbstractTradingModeCreator.get_pre_order_data(self.exchange, symbol, self.portfolio)
             if inverted:
-                if price > 0:
-                    quantity = current_market_quantity / price
-                else:
-                    quantity = 0
+                quantity = current_market_quantity / price if price > 0 else 0
             else:
                 quantity = current_symbol_holding
             for order_quantity, order_price in AbstractTradingModeCreator.\
@@ -446,37 +449,39 @@ class Trader(Initializable):
 
     async def force_refresh_orders(self, portfolio=None, delete_desync_orders=True):
         # useless in simulation mode
-        if not self.simulate:
-            self.logger.info(f"Triggered forced {self.exchange.get_name()} trader orders refresh")
-            symbols = self.exchange.get_exchange_manager().get_traded_pairs()
-            added_orders = 0
-            removed_orders = 0
+        if self.simulate:
+            return
 
-            # get orders from exchange for the specified symbols
-            for symbol_traded in symbols:
-                orders = await self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
+        self.logger.info(f"Triggered forced {self.exchange.get_name()} trader orders refresh")
+        symbols = self.exchange.get_exchange_manager().get_traded_pairs()
+        added_orders = 0
+        removed_orders = 0
 
-                # create missing orders
-                for open_order in orders:
-                    # do something only if order not already in list
-                    if not self.order_manager.has_order_id_in_list(open_order["id"]):
-                        order = self.parse_exchange_order_to_order_instance(open_order)
-                        if portfolio:
-                            await self.create_order(order, portfolio, True)
-                        else:
-                            async with self.portfolio.get_lock():
-                                await self.create_order(order, self.portfolio, True)
-                        added_orders += 1
+        # get orders from exchange for the specified symbols
+        for symbol_traded in symbols:
+            orders = await self.exchange.get_open_orders(symbol=symbol_traded, force_rest=True)
 
-                if delete_desync_orders:
-                    # remove orders that are not online anymore
-                    order_ids = [o["id"] for o in orders]
-                    for symbol_order in self.order_manager.get_orders_with_symbol(symbol_traded):
-                        if symbol_order.get_id() not in order_ids:
-                            # remove order from order manager
-                            self.order_manager.remove_order_from_list(symbol_order)
-                            removed_orders += 1
-            self.logger.info(f"Orders refreshed: added {added_orders} order(s) and removed {removed_orders} order(s)")
+            # create missing orders
+            for open_order in orders:
+                # do something only if order not already in list
+                if not self.order_manager.has_order_id_in_list(open_order["id"]):
+                    order = self.parse_exchange_order_to_order_instance(open_order)
+                    if portfolio:
+                        await self.create_order(order, portfolio, True)
+                    else:
+                        async with self.portfolio.get_lock():
+                            await self.create_order(order, self.portfolio, True)
+                    added_orders += 1
+
+            if delete_desync_orders:
+                # remove orders that are not online anymore
+                order_ids = [o["id"] for o in orders]
+                for symbol_order in self.order_manager.get_orders_with_symbol(symbol_traded):
+                    if symbol_order.get_id() not in order_ids:
+                        # remove order from order manager
+                        self.order_manager.remove_order_from_list(symbol_order)
+                        removed_orders += 1
+        self.logger.info(f"Orders refreshed: added {added_orders} order(s) and removed {removed_orders} order(s)")
 
     def parse_exchange_order_to_order_instance(self, order):
         return self.create_order_instance(order_type=self.parse_order_type(order),
@@ -533,14 +538,14 @@ class Trader(Initializable):
         side = TradeOrderSide(order["side"])
         order_type = TradeOrderType(order["type"])
         if side == TradeOrderSide.BUY:
-            if order_type == TradeOrderType.LIMIT or order_type == TradeOrderType.LIMIT_MAKER:
+            if order_type in [TradeOrderType.LIMIT, TradeOrderType.LIMIT_MAKER]:
                 return TraderOrderType.BUY_LIMIT
             elif order_type == TradeOrderType.MARKET:
                 return TraderOrderType.BUY_MARKET
             else:
                 return Trader._get_sell_and_buy_types(order_type)
         elif side == TradeOrderSide.SELL:
-            if order_type == TradeOrderType.LIMIT or order_type == TradeOrderType.LIMIT_MAKER:
+            if order_type in [TradeOrderType.LIMIT, TradeOrderType.LIMIT_MAKER]:
                 return TraderOrderType.SELL_LIMIT
             elif order_type == TradeOrderType.MARKET:
                 return TraderOrderType.SELL_MARKET
@@ -591,9 +596,7 @@ class Trader(Initializable):
     @staticmethod
     def check_if_self_managed(order_type):
         # stop losses and take profits are self managed by the bot
-        if order_type in [TraderOrderType.TAKE_PROFIT,
+        return order_type in [TraderOrderType.TAKE_PROFIT,
                           TraderOrderType.TAKE_PROFIT_LIMIT,
                           TraderOrderType.STOP_LOSS,
-                          TraderOrderType.STOP_LOSS_LIMIT]:
-            return True
-        return False
+                          TraderOrderType.STOP_LOSS_LIMIT]

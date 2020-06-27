@@ -67,21 +67,36 @@ class EvaluatorDivergenceAnalyser:
             for evaluator_name in self.matrix[matrix_type]:
                 if isinstance(self.matrix[matrix_type][evaluator_name], dict):
                     for time_frame in self.matrix[matrix_type][evaluator_name]:
-                        if check_valid_eval_note(
-                                self.matrix[matrix_type][evaluator_name][time_frame]):
-                            if self._calc_eval_note_divergence(self.matrix[matrix_type][evaluator_name][time_frame]) \
-                                    is not START_PENDING_EVAL_NOTE:
-                                self._log_divergence(matrix_type,
-                                                     evaluator_name,
-                                                     self.matrix[matrix_type][evaluator_name][time_frame],
-                                                     time_frame)
-                else:
-                    if check_valid_eval_note(self.matrix[matrix_type][evaluator_name]):
-                        if self._calc_eval_note_divergence(self.matrix[matrix_type][evaluator_name]) \
-                                is not START_PENDING_EVAL_NOTE:
+                        if (
+                            check_valid_eval_note(
+                                self.matrix[matrix_type][evaluator_name][
+                                    time_frame
+                                ]
+                            )
+                            and self._calc_eval_note_divergence(
+                                self.matrix[matrix_type][evaluator_name][
+                                    time_frame
+                                ]
+                            )
+                            is not START_PENDING_EVAL_NOTE
+                        ):
                             self._log_divergence(matrix_type,
                                                  evaluator_name,
-                                                 self.matrix[matrix_type][evaluator_name])
+                                                 self.matrix[matrix_type][evaluator_name][time_frame],
+                                                 time_frame)
+                else:
+                    if (
+                        check_valid_eval_note(
+                            self.matrix[matrix_type][evaluator_name]
+                        )
+                        and self._calc_eval_note_divergence(
+                            self.matrix[matrix_type][evaluator_name]
+                        )
+                        is not START_PENDING_EVAL_NOTE
+                    ):
+                        self._log_divergence(matrix_type,
+                                             evaluator_name,
+                                             self.matrix[matrix_type][evaluator_name])
 
     # Will be called to calculate localized divergence note calc for an evaluator name, for each time frame or a
     # specific one

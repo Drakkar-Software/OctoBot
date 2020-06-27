@@ -41,10 +41,7 @@ class AdvancedManager:
 
         # If the metaclass attribute has been inherited
         try:
-            if class_type.__metaclass__ == parent_metaclass:
-                return False
-            else:
-                return True
+            return class_type.__metaclass__ != parent_metaclass
         except AttributeError:
             return False
 

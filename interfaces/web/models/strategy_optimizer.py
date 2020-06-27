@@ -32,7 +32,7 @@ def get_strategies_list():
     try:
         config = get_bot().get_config()
         classes = AdvancedManager.get_all_classes(StrategiesEvaluator, config)
-        return set(strategy.get_name() for strategy in classes)
+        return {strategy.get_name() for strategy in classes}
     except Exception:
         return []
 
@@ -51,7 +51,7 @@ def get_evaluators_list(strategy_name):
         strategy_class = get_class_from_string(strategy_name, StrategiesEvaluator,
                                                Strategies, evaluator_parent_inspection)
         evaluators = EvaluatorCreator.get_relevant_TAs_for_strategy(strategy_class, get_bot().get_config())
-        return set(evaluator.get_name() for evaluator in evaluators)
+        return {evaluator.get_name() for evaluator in evaluators}
     else:
         return []
 

@@ -30,10 +30,9 @@ LOGGER = get_logger("DataCollectorWebInterfaceModel")
 
 def get_data_files_with_description():
     files = get_all_available_data_files()
-    files_with_description = {
+    return {
         data_file: get_file_description(data_file) for data_file in files
     }
-    return files_with_description
 
 
 def start_backtesting_using_specific_files(files, source, reset_tentacle_config=False):

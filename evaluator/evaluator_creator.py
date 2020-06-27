@@ -183,7 +183,7 @@ class EvaluatorCreator:
             else:
                 parent_classes_names = [e.get_name() for e in evaluator_instance.get_parent_evaluator_classes()]
                 to_check_set = relevant_evaluators
-                if not isinstance(relevant_evaluators, set):
+                if not isinstance(to_check_set, set):
                     to_check_set = set(relevant_evaluators)
                 return not to_check_set.isdisjoint(parent_classes_names)
         return False

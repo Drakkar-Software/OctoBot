@@ -139,11 +139,11 @@ class ExchangeManager(Initializable):
 
     # Exchange configuration functions
     def check_config(self, exchange_name):
-        if CONFIG_EXCHANGE_KEY not in self.config[CONFIG_EXCHANGES][exchange_name] \
-                or CONFIG_EXCHANGE_SECRET not in self.config[CONFIG_EXCHANGES][exchange_name]:
-            return False
-        else:
-            return True
+        return (
+            CONFIG_EXCHANGE_KEY in self.config[CONFIG_EXCHANGES][exchange_name]
+            and CONFIG_EXCHANGE_SECRET
+            in self.config[CONFIG_EXCHANGES][exchange_name]
+        )
 
     def force_disable_web_socket(self, exchange_name):
         return CONFIG_EXCHANGE_WEB_SOCKET in self.config[CONFIG_EXCHANGES][exchange_name] \

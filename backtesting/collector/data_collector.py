@@ -47,7 +47,10 @@ class DataCollector:
 
                 exchange_data_collector = ExchangeDataCollector(self.config, exchange_inst)
 
-                if not exchange_data_collector.get_symbols() or not exchange_data_collector.time_frames:
+                if not (
+                    exchange_data_collector.get_symbols()
+                    and exchange_data_collector.time_frames
+                ):
                     self.logger.warning("{0} exchange not started (not enough symbols or timeframes)"
                                         .format(exchange_class_string))
                 else:

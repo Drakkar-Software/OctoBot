@@ -23,7 +23,7 @@ from config import SIMULATOR_LAST_PRICES_TO_CHECK
 async def fill_limit_or_stop_order(limit_or_stop_order, min_price, max_price):
     last_prices = []
     limit_or_stop_order.created_time = time.time()
-    for i in range(0, SIMULATOR_LAST_PRICES_TO_CHECK):
+    for i in range(SIMULATOR_LAST_PRICES_TO_CHECK):
         last_prices.insert(i, {})
         last_prices[i]["price"] = random.uniform(min_price, max_price)
         last_prices[i]["timestamp"] = time.time()
