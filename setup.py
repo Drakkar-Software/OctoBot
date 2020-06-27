@@ -14,10 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import os
-
 from setuptools import dist
 
-dist.Distribution().fetch_build_eggs(['Cython>=0.29.19'])
+dist.Distribution().fetch_build_eggs(['Cython>=0.29.20'])
 
 try:
     from Cython.Distutils import build_ext
