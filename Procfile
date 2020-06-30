@@ -1,0 +1,1 @@
+web: WEB_PORT=$PORT python start.py
