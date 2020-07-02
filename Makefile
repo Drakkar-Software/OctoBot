@@ -3,7 +3,9 @@ PYTHON_VENV=venv/bin/python
 COMPILER=gcc
 LINKER=gcc
 
-CLEAN_EXT=*.o *.c *.so
+CLEAN_EXT=*.o *.c *.so *.pyc *.pyo
+CLEAN_DIRS=dist auditwheel build *.egg-info *.eggs
+CLEAN_REGEX="(__pycache__)"
 EXTENSION_FOLDER=octobot
 CFLAGS=-O9
 
@@ -26,11 +28,8 @@ build: clean
 
 .PHONY: clean
 clean:
-	rm -rf build
-	rm -rf auditwheel
-	rm -rf dist
-	rm -rf .eggs
-	rm -rf *.egg-info
+	rm -rf $(CLEAN_DIRS)
+	find . | grep -E $(CLEAN_REGEX) | xargs rm -rf
 	for i in $(CLEAN_EXT); do find $(EXTENSION_FOLDER) -name "$$i" -delete; done
 
 .PHONY: debug
