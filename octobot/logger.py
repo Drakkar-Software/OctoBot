@@ -180,7 +180,7 @@ async def order_book_callback(
 ):
     BOT_CHANNEL_LOGGER.debug(
         f"ORDERBOOK : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} "
-        f"|| SYMBOL = {symbol} || ASKS = {asks} || BIDS = {bids}"
+        f"|| SYMBOL = {symbol} || ASKS = {len(asks)} orders || BIDS = {len(bids)} orders"
     )
 
 
@@ -220,7 +220,7 @@ async def recent_trades_callback(
 ):
     BOT_CHANNEL_LOGGER.debug(
         f"RECENT TRADES : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} "
-        f"|| SYMBOL = {symbol} || RECENT TRADES = {recent_trades}"
+        f"|| SYMBOL = {symbol} || 10 first RECENT TRADES = {recent_trades[:10]}"
     )
 
 
