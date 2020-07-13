@@ -294,7 +294,7 @@ async def orders_callback(
     is_updated: bool,
     is_from_bot: bool,
 ):
-    order_string = f"ORDERS : EXCHANGE = {exchange} || SYMBOL = {symbol} ||"
+    order_string = f"ORDERS : EXCHANGE = {exchange} || SYMBOL = {symbol} || "
     if is_closed:
         # order_string += PrettyPrinter.trade_pretty_printer(exchange, order)
         order_string += open_order_pretty_printer(exchange, order)
@@ -302,7 +302,7 @@ async def orders_callback(
         order_string += open_order_pretty_printer(exchange, order)
 
     order_string += (
-        f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}"
+        f" || CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}"
     )
     BOT_CHANNEL_LOGGER.info(order_string)
 
