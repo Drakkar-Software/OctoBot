@@ -72,7 +72,7 @@ class TaskManager:
         stop_coroutines = [self.octobot.stop()]
 
         if self.tools_task_group:
-            self.async_loop.call_soon_threadsafe(self.tools_task_group.cancel)
+            self.tools_task_group.cancel()
 
         # close community session
         if self.octobot.community_handler:
@@ -80,7 +80,7 @@ class TaskManager:
 
         self.async_loop.call_soon_threadsafe(asyncio.gather(*stop_coroutines, loop=self.async_loop))
 
-        self.async_loop.call_soon_threadsafe(self.async_loop.stop)
+        self.async_loop.stop()
 
         self.logger.info("Tasks stopped.")
 
