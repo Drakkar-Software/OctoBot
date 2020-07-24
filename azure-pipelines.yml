@@ -54,9 +54,9 @@ jobs:
       {
         $Env:TENTACLES_URL_SUBCATEGORY = ""
         If ($env:build_sourceBranch -Contains "refs/tags/") {
-          $Env:TENTACLES_URL_TAG = "latest"
-        } else {
           $Env:TENTACLES_URL_TAG = ""
+        } else {
+          $Env:TENTACLES_URL_TAG = "latest"
         }
         python start.py tentacles --install --all
       }
@@ -106,6 +106,12 @@ jobs:
             export BRANCH_NAME=${HEAD_BRANCH_NAME//refs\/pull\//}
          ;;
          *) export BRANCH_NAME=$BUILD_SOURCEBRANCHNAME
+         ;;
+      esac
+      case "$BUILD_SOURCEBRANCH" in
+         *refs/tags*)
+         ;;
+         *) export TENTACLES_URL_TAG=latest
          ;;
       esac
       mkdir user
