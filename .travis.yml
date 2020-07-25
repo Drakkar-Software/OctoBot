@@ -24,6 +24,10 @@ install:
   - cp ./octobot/config/default_config.json ./user/config.json
   - TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=$TRAVIS_CLEANED_BRANCH python3 start.py tentacles -q --install --all || python3 start.py tentacles --install --all
 
+before_deploy:
+  - git config --global user.email "builds@travis-ci.com"
+  - git config --global user.name "Travis CI"
+
 jobs:
   include:
     - name: "Linux - Python 3.7-dev - Python sources"
@@ -76,6 +80,24 @@ jobs:
       deploy:
         - provider: script
           script: bash trigger-travis.sh --pro Drakkar-Software OctoBot-Builder $TRAVIS_TOKEN
+          cleanup: false
+          on:
+            repo: "$GH_REPO"
+            branch: "$DEPLOY_BRANCH"
+            tags: true
+            condition: "$TRAVIS_OS_NAME = 'linux'"
+
+    - name: "Linux - Docker - Deploy - Tag"
+      stage: deploy
+      os: linux
+      before_install: skip
+      install: skip
+      script:
+        - git clone https://github.com/Drakkar-Software/OctoBot-Builder
+        - git tag $TRAVIS_TAG
+      deploy:
+        - provider: script
+          script: git push -q https://$GH_TOKEN@github.com/Drakkar-Software/OctoBot-Builder --tags
           cleanup: false
           on:
             repo: "$GH_REPO"
