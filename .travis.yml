@@ -65,6 +65,14 @@ jobs:
               branch: "$DEPLOY_BRANCH"
               tags: true
               condition: "$TRAVIS_OS_NAME = 'linux'"
+          - provider: script
+            script: docker push drakkarsoftware/octobot:0.4.0-stable
+            cleanup: false
+            on:
+              repo: "$GH_REPO"
+              branch: "$DEPLOY_BRANCH"
+              tags: true
+              condition: "$TRAVIS_OS_NAME = 'linux'"
 
     - name: "Linux - Python 3 nightly - Deploy"
       stage: deploy
