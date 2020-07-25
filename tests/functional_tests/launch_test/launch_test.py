@@ -28,6 +28,7 @@ from octobot.octobot import OctoBot
 pytestmark = pytest.mark.asyncio
 
 
+@pytest.mark.timeout(12)
 async def test_run_bot():
     # avoid web interface in this test
     WebInterface.enabled = False
@@ -56,6 +57,5 @@ async def stop_bot(bot):
         await bot.community_handler.stop_task()
 
     cancel_ccxt_throttle_task()
-    bot.task_manager.async_loop.stop()
 
     stop_logger.info("Tasks stopped.")
