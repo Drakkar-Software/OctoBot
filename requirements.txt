@@ -3,7 +3,7 @@ OctoBot-Tentacles-Manager==1.0.13
 
 # Cryptocurrency trading
 python-binance==0.7.3
-ccxt==1.19.81
+ccxt==1.32.41
 tulipy==0.3.1
 
 # Reddit
