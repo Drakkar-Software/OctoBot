@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-alpha20] - 2020-08-03
+### Added
+- [Real trading] Real trading beta phase
+
 ## [0.4.0-alpha19] - 2020-06-15
 ### Added
 - [Trading modes] Arbitrage trading mode
