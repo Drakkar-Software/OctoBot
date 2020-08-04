@@ -15,6 +15,10 @@
 #  License along with this library.
 
 from __future__ import print_function
+# prevents distutils_patch.py:26: UserWarning: Distutils was imported before Setuptools. This usage is discouraged
+# and may exhibit undesirable behaviors or errors. Please use Setuptools' objects directly or at least import Setuptools
+# first
+import setuptools
 from distutils.version import LooseVersion
 import os
 import sys

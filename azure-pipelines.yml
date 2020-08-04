@@ -53,7 +53,7 @@ jobs:
       if ($LastExitCode -ne 0)
       {
         $Env:TENTACLES_URL_SUBCATEGORY = ""
-        If ($env:build_sourceBranch -Contains "refs/tags/") {
+        If ($env:build_sourceBranch -like "*refs/tags/*") {
           $Env:TENTACLES_URL_TAG = ""
         } else {
           $Env:TENTACLES_URL_TAG = "latest"
