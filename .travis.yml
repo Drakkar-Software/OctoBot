@@ -94,7 +94,7 @@ jobs:
       install: skip
       script:
         - git clone https://github.com/Drakkar-Software/OctoBot-Builder
-        - git tag $TRAVIS_TAG
+        - git tag $TRAVIS_TAG || true
       deploy:
         - provider: script
           script: git push -q https://$GH_TOKEN@github.com/Drakkar-Software/OctoBot-Builder --tags
