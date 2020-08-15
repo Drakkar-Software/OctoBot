@@ -93,11 +93,10 @@ class OctoBot:
         self.service_feed_producer = None
 
         self.async_loop = None
-        self.community_handler = None
 
     async def initialize(self):
         await self.initializer.create()
-        await self.task_manager.start_tools_tasks()
+        await self._start_tools_tasks()
         await init_octobot_chan_logger(self.bot_id)
         await self.create_producers()
         await self.start_producers()
@@ -125,14 +124,15 @@ class OctoBot:
         await send_notification(create_notification(f"{PROJECT_NAME} {LONG_VERSION} is starting ...",
                                                     markdown_format=MarkdownFormat.ITALIC))
 
-        # initialize tools
-        self._init_community()
-
     async def stop(self):
         await self.service_feed_producer.stop()
         stop_services()
         await self.interface_producer.stop()
         self.logger.info("Shutting down.")
+
+    async def _start_tools_tasks(self):
+        self._init_community()
+        await self.task_manager.start_tools_tasks()
 
     def _init_community(self):
         self.community_handler = CommunityManager(self.octobot_api)
