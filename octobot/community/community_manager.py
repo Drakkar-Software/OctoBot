@@ -51,6 +51,13 @@ class CommunityManager:
         self.current_config = None
         self.keep_running = True
         self.session = octobot_api.get_aiohttp_session()
+
+        # these attributes will be set at the last moment to ensure relevance and let time for everything to startup
+        self.has_real_trader = None
+        self.has_simulator = None
+        self.exchange_managers = None
+
+    def _init_community_config(self):
         self.has_real_trader = is_trader_enabled_in_config(self.edited_config)
         self.has_simulator = is_trader_simulator_enabled_in_config(self.edited_config)
         self.exchange_managers = get_exchange_managers_from_exchange_ids(
@@ -61,6 +68,7 @@ class CommunityManager:
             try:
                 # first ensure this session is not just a configuration test: register after a timer
                 await asyncio.sleep(TIMER_BEFORE_METRICS_REGISTRATION_SECONDS)
+                self._init_community_config()
                 await self.register_session()
                 while self.keep_running:
                     # send a keepalive at periodic intervals
