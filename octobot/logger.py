@@ -290,20 +290,12 @@ async def orders_callback(
     cryptocurrency: str,
     symbol: str,
     order: dict,
-    is_closed: bool,
-    is_updated: bool,
+    is_new: bool,
     is_from_bot: bool,
 ):
     order_string = f"ORDERS : EXCHANGE = {exchange} || SYMBOL = {symbol} || "
-    if is_closed:
-        # order_string += PrettyPrinter.trade_pretty_printer(exchange, order)
-        order_string += open_order_pretty_printer(exchange, order)
-    else:
-        order_string += open_order_pretty_printer(exchange, order)
-
-    order_string += (
-        f" || CLOSED = {is_closed} || UPDATED = {is_updated} || FROM_BOT = {is_from_bot}"
-    )
+    order_string += open_order_pretty_printer(exchange, order)
+    order_string += f" || CREATED = {is_new} || FROM_BOT = {is_from_bot}"
     BOT_CHANNEL_LOGGER.info(order_string)
 
 

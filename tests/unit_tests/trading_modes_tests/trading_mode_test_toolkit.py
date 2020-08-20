@@ -19,6 +19,7 @@ from octobot_commons.constants import PORTFOLIO_TOTAL, PORTFOLIO_AVAILABLE
 from octobot_trading.api.orders import get_open_orders
 from octobot_trading.enums import ExchangeConstantsMarketStatusColumns as Ecmsc, TradeOrderSide, EvaluatorStates, \
     OrderStatus, TraderOrderType
+from octobot_trading.orders.states.order_state_factory import create_order_state
 from octobot_trading.orders.types import SellMarketOrder, BuyMarketOrder, SellLimitOrder, BuyLimitOrder
 
 
@@ -158,7 +159,7 @@ async def fill_orders(orders, trader):
         for order in orders:
             order.filled_price = order.origin_price
             order.filled_quantity = order.origin_quantity
-            await trader.close_filled_order(order)
+            await order.on_fill(force_fill=True)
             check_portfolio(trader.exchange_manager.exchange_personal_data.portfolio_manager.portfolio.portfolio,
                             None, orders, True)
         assert len(get_open_orders(trader.exchange_manager)) == 0
