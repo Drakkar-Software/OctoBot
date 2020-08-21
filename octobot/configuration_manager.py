@@ -27,6 +27,9 @@ from octobot_trading.constants import CONFIG_EXCHANGES, CONFIG_EXCHANGE_ENCRYPTE
     CONFIG_TRADER
 
 
+LOGGER_NAME = "Configuration"
+
+
 class ConfigurationManager:
     def __init__(self):
         self.configuration_elements = {}
@@ -58,7 +61,8 @@ def config_health_check(config):
                     if not _handle_encrypted_value(key, exchange_config, verbose=True):
                         should_replace_config = True
                 except Exception as e:
-                    get_logger().exception(e, True, f"Exception when checking exchange config encryption: {e}")
+                    get_logger(LOGGER_NAME).exception(e, True,
+                                                      f"Exception when checking exchange config encryption: {e}")
 
     # 2 ensure single trader activated
     try:
@@ -66,12 +70,14 @@ def config_health_check(config):
         if trader_enabled:
             simulator_enabled = is_trader_simulator_enabled_in_config(config)
             if simulator_enabled:
-                get_logger().error(f"Impossible to activate a trader simulator additionally to a real trader, "
-                                   f"simulator deactivated.")
+                get_logger(LOGGER_NAME).error(f"Impossible to activate a trader simulator additionally to a "
+                                              f"real trader, simulator deactivated.")
                 config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = False
                 should_replace_config = True
     except KeyError as e:
-        get_logger().exception(e, True, f"KeyError when checking traders activation: {e}. Activating trader simulator.")
+        get_logger(LOGGER_NAME).exception(e, True,
+                                          f"KeyError when checking traders activation: {e}. "
+                                          f"Activating trader simulator.")
         config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
         config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
         should_replace_config = True
@@ -86,7 +92,8 @@ def config_health_check(config):
                         json_data=dump_json(config))
             return config
         except Exception as e:
-            get_logger().error(f"Save of the health checked config failed : {e}, will use the initial config")
+            get_logger(LOGGER_NAME).error(f"Save of the health checked config failed : {e}, "
+                                          f"will use the initial config")
             return load_config(error=False, fill_missing_fields=True)
 
 
