@@ -48,6 +48,7 @@ from octobot_trading.constants import (
     MINI_TICKER_CHANNEL,
     ORDER_BOOK_TICKER_CHANNEL,
 )
+from octobot_trading.enums import ExchangeConstantsOrderColumns
 
 BOT_CHANNEL_LOGGER = None
 LOGGER_PRIORITY_LEVEL = ChannelConsumerPriorityLevels.OPTIONAL.value
@@ -293,9 +294,10 @@ async def orders_callback(
     is_new: bool,
     is_from_bot: bool,
 ):
-    order_string = f"ORDERS : EXCHANGE = {exchange} || SYMBOL = {symbol} || "
-    order_string += open_order_pretty_printer(exchange, order)
-    order_string += f" || CREATED = {is_new} || FROM_BOT = {is_from_bot}"
+    order_string = f"ORDERS : EXCHANGE = {exchange} || SYMBOL = {symbol} || " \
+                   f"{open_order_pretty_printer(exchange, order)} || " \
+                   f"status = {order.get(ExchangeConstantsOrderColumns.STATUS.value, None)} || " \
+                   f"CREATED = {is_new} || FROM_BOT = {is_from_bot}"
     BOT_CHANNEL_LOGGER.info(order_string)
 
 
