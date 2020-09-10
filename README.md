@@ -45,6 +45,13 @@ OctoBot's installation is **very simple**... because **very documented** !
 - Click on "Update OctoBot"
 
 #### [With Docker](https://github.com/Drakkar-Software/OctoBot/wiki/With-Docker)
+24h demo with a free Okteto account with
+
+[![Develop on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot&branch=0.4.0)
+
+OR
+
+Self hosting with docker :
 ```
 touch config.json && docker run -it -d --name MyAmazingOctobot -v $(pwd)/config.json:/bot/octobot/config.json -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot:beta
 ```
