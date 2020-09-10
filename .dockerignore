@@ -6,6 +6,10 @@
 .gitattributes
 .gitignore
 
+# docker
+.dockerignore
+Dockerfile
+
 # python
 venv/
 build/
