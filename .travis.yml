@@ -139,26 +139,6 @@ jobs:
             tags: true
             condition: "$TRAVIS_OS_NAME = 'linux'"
 
-    - name: "Linux - Heroku - Deploy"
-      stage: edge
-      os: linux
-      before_install: echo "$HEROKU_TOKEN" | docker login --username=_ --password-stdin registry.heroku.com
-      install: skip
-      script: skip
-      before_deploy:
-        - docker pull drakkarsoftware/octobot:$TRAVIS_CLEANED_BRANCH
-        - docker tag drakkarsoftware/octobot:$TRAVIS_CLEANED_BRANCH registry.heroku.com/$HEROKU_APP_NAME/octobot
-        - docker push registry.heroku.com/$HEROKU_APP_NAME/octobot
-      deploy:
-        - provider: script
-          script: heroku container:release octobot -a $HEROKU_APP_NAME
-          cleanup: false
-          on:
-            repo: "$GH_REPO"
-            branch: "$DEPLOY_BRANCH"
-            tags: true
-            condition: "$TRAVIS_OS_NAME = 'linux'"
-
 after_failure:
   - wget https://raw.githubusercontent.com/DiscordHooks/travis-ci-discord-webhook/master/send.sh
   - chmod +x send.sh
