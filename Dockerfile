@@ -26,4 +26,7 @@ RUN apt-get update \
 # Make sure we use the virtualenv
 RUN ln -s /opt/venv/bin/OctoBot OctoBot
 
+VOLUME /octobot/tentacles
+VOLUME /octobot/user
+
 ENTRYPOINT ["./OctoBot"]
