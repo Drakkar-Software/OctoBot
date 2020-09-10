@@ -53,8 +53,9 @@ OR
 
 Self hosting with docker :
 ```
-touch config.json && docker run -it -d --name MyAmazingOctobot -v $(pwd)/config.json:/bot/octobot/config.json -v $(pwd)/logs:/bot/octobot/logs -v $(pwd)/tentacles:/bot/octobot/tentacles drakkarsoftware/octobot:beta
+docker run -itd --name OctoBot -p 80:5001 drakkarsoftware/octobot:0.4.0-stable
 ```
+And then open [http://localhost](http://localhost).
 
 #### [With python sources](https://github.com/Drakkar-Software/OctoBot/wiki/With-Python-only) (unix)
 - Install python3.7 (https://www.python.org/downloads/)
