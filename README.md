@@ -111,5 +111,8 @@ expect.
 
 Do not hesitate to read the source code and understand the mechanism of this bot.
 
-## Contribute
+## Contribute / Sponsors
 See the [contribution wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Contribution)
+-   [JetBrains](https://www.jetbrains.com/) with PyCharm Pro.
+
+![](https://resources.jetbrains.com/storage/products/pycharm/img/meta/pycharm_logo_300x300.png)
