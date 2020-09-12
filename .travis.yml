@@ -53,6 +53,16 @@ jobs:
         - pytest tests
         - pytest tentacles
 
+    - name: "Linux amd64 - Docker - Lint"
+      stage: test
+      os: linux
+      python: 3.7-dev
+      language: python
+      before_install: skip
+      install: skip
+      script:
+        - docker run --rm -i hadolint/hadolint hadolint --ignore DL3008 --ignore DL3013 - < Dockerfile
+
     - name: "Linux - Docker - Deploy"
       stage: deploy
       os: linux
