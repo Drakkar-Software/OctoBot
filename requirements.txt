@@ -13,4 +13,4 @@ OctoBot-Channels==1.4.11
 ## Others
 colorlog==4.2.1
 yarl==1.1.0
-idna<2.9,>=2.5
+idna>=2.5,<2.11
