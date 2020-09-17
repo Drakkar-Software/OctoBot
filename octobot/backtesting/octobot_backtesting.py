@@ -31,11 +31,11 @@ from octobot_services.api.service_feeds import stop_service_feed, start_service_
 from octobot_trading.exchanges.data.exchange_symbol_data import ExchangeSymbolData
 from octobot_trading.exchanges.exchange_manager import ExchangeManager
 from octobot_trading.exchanges.exchange_simulator import ExchangeSimulator
-from octobot_trading.producers.simulator import OHLCVUpdaterSimulator
 from octobot_evaluators.api.evaluators import create_all_type_evaluators
 from octobot_trading.api.exchange import get_exchange_configuration_from_exchange_id, create_exchange_builder, \
     get_exchange_manager_id
 from octobot.logger import init_exchange_chan_logger, init_evaluator_chan_logger, BOT_CHANNEL_LOGGER
+from octobot_trading.producers.simulator.ohlcv_updater_simulator import OHLCVUpdaterSimulator
 
 
 class OctoBotBacktesting:
