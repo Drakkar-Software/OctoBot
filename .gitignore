@@ -103,6 +103,13 @@ ENV/
 # mypy
 .mypy_cache/
 
+# IDE
+.vscode/
+
+# Tentacles manager temporary files
+octobot/creator_temp/
+creator_temp/
+
 # config
 config/config.json
 
