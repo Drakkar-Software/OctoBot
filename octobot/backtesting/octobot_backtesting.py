@@ -30,7 +30,7 @@ from octobot_evaluators.api.initialization import del_evaluator_channels, create
 from octobot_services.api.service_feeds import stop_service_feed, start_service_feed
 from octobot_trading.exchanges.data.exchange_symbol_data import ExchangeSymbolData
 from octobot_trading.exchanges.exchange_manager import ExchangeManager
-from octobot_trading.exchanges.exchange_simulator import ExchangeSimulator
+from octobot_trading.exchanges.implementations.exchange_simulator import ExchangeSimulator
 from octobot_evaluators.api.evaluators import create_all_type_evaluators
 from octobot_trading.api.exchange import get_exchange_configuration_from_exchange_id, create_exchange_builder, \
     get_exchange_manager_id
