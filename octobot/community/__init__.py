@@ -13,3 +13,25 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+
+from octobot.community import community_fields
+from octobot.community import community_analysis
+from octobot.community import community_manager
+
+from octobot.community.community_fields import (
+    CommunityFields,
+)
+from octobot.community.community_analysis import (
+    get_community_metrics,
+    can_read_metrics,
+)
+from octobot.community.community_manager import (
+    CommunityManager,
+)
+
+__all__ = [
+    "CommunityFields",
+    "get_community_metrics",
+    "can_read_metrics",
+    "CommunityManager",
+]
