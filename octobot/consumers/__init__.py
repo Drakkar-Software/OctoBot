@@ -14,4 +14,12 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from octobot.consumers import octobot_channel_consumer
 
+from octobot.consumers.octobot_channel_consumer import (
+    OctoBotChannelGlobalConsumer,
+)
+
+__all__ = [
+    "OctoBotChannelGlobalConsumer",
+]
