@@ -13,26 +13,28 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot.channels.octobot_channel import OctoBotChannel
-from octobot.logger import init_exchange_chan_logger
-from octobot_channels.channels.channel_instances import set_chan_at_id
-from octobot_channels.util.channel_creator import create_channel_instance
-from octobot_commons.enums import OctoBotChannelSubjects
-from octobot_commons.logging.logging_util import get_logger
-from octobot_trading.api.exchange import get_exchange_configuration_from_exchange_id
-from octobot_trading.consumers.octobot_channel_consumer import OctoBotChannelTradingActions as TradingActions, \
-    OctoBotChannelTradingDataKeys as TradingKeys, octobot_channel_callback as octobot_channel_trading_callback
-from octobot_evaluators.consumers.octobot_channel_consumer import OctoBotChannelEvaluatorActions as EvaluatorActions, \
-    octobot_channel_callback as octobot_channel_evaluator_callback
-from octobot_services.consumers.octobot_channel_consumer import OctoBotChannelServiceActions as ServiceActions, \
-    OctoBotChannelServiceDataKeys as ServiceKeys, octobot_channel_callback as octobot_channel_service_callback
+import async_channel.channels as channel_instances
+import async_channel.util as channel_creator
+
+import octobot_commons.enums as enums
+import octobot_commons.logging as logging
+
+import octobot_evaluators.octobot_channel_consumer as evaluator_channel_consumer
+
+import octobot_services.octobot_channel_consumer as service_channel_consumer
+
+import octobot_trading.api as trading_api
+import octobot_trading.octobot_channel_consumer as trading_channel_consumer
+
+import octobot.channels as octobot_channel
+import octobot.logger as logger
 
 
 class OctoBotChannelGlobalConsumer:
 
     def __init__(self, octobot):
         self.octobot = octobot
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = logging.get_logger(self.__class__.__name__)
 
         # the list of octobot channel consumers
         self.octobot_channel_consumers = []
@@ -42,8 +44,9 @@ class OctoBotChannelGlobalConsumer:
 
     async def initialize(self):
         # Creates OctoBot Channel
-        self.octobot_channel = await create_channel_instance(OctoBotChannel, set_chan_at_id, is_synchronized=True,
-                                                             bot_id=self.octobot.bot_id)
+        self.octobot_channel: octobot_channel.OctoBotChannel = await channel_creator.create_channel_instance(
+            octobot_channel.OctoBotChannel, channel_instances.set_chan_at_id,
+            is_synchronized=True, bot_id=self.octobot.bot_id)
 
         # Initialize global consumer
         self.octobot_channel_consumers.append(
@@ -52,25 +55,25 @@ class OctoBotChannelGlobalConsumer:
         # Initialize trading consumer
         self.octobot_channel_consumers.append(
             await self.octobot_channel.new_consumer(
-                octobot_channel_trading_callback,
+                trading_channel_consumer.octobot_channel_callback,
                 bot_id=self.octobot.bot_id,
-                action=[action.value for action in TradingActions]
+                action=[action.value for action in trading_channel_consumer.OctoBotChannelTradingActions]
             ))
 
         # Initialize evaluator consumer
         self.octobot_channel_consumers.append(
             await self.octobot_channel.new_consumer(
-                octobot_channel_evaluator_callback,
+                evaluator_channel_consumer.octobot_channel_callback,
                 bot_id=self.octobot.bot_id,
-                action=[action.value for action in EvaluatorActions]
+                action=[action.value for action in evaluator_channel_consumer.OctoBotChannelEvaluatorActions]
             ))
 
         # Initialize service consumer
         self.octobot_channel_consumers.append(
             await self.octobot_channel.new_consumer(
-                octobot_channel_service_callback,
+                service_channel_consumer.octobot_channel_callback,
                 bot_id=self.octobot.bot_id,
-                action=[action.value for action in ServiceActions]
+                action=[action.value for action in service_channel_consumer.OctoBotChannelServiceActions]
             ))
 
     async def octobot_channel_callback(self, bot_id, subject, action, data) -> None:
@@ -81,27 +84,30 @@ class OctoBotChannelGlobalConsumer:
         :param action: the callback action
         :param data: the callback data
         """
-        if subject == OctoBotChannelSubjects.NOTIFICATION.value:
-            if action == TradingActions.EXCHANGE.value:
-                if TradingKeys.EXCHANGE_ID.value in data:
-                    exchange_id = data[TradingKeys.EXCHANGE_ID.value]
+        if subject == enums.OctoBotChannelSubjects.NOTIFICATION.value:
+            if action == trading_channel_consumer.OctoBotChannelTradingActions.EXCHANGE.value:
+                if trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_ID.value in data:
+                    exchange_id = data[trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_ID.value]
                     self.octobot.exchange_producer.exchange_manager_ids.append(exchange_id)
-                    await init_exchange_chan_logger(exchange_id)
-                    exchange_configuration = get_exchange_configuration_from_exchange_id(exchange_id)
+                    await logger.init_exchange_chan_logger(exchange_id)
+                    exchange_configuration = trading_api.get_exchange_configuration_from_exchange_id(exchange_id)
                     await self.octobot.evaluator_producer.create_evaluators(exchange_configuration)
                     # If an exchange is created before interface producer is done, it will be registered via
                     # self.octobot.interface_producer directly on creation
                     await self.octobot.interface_producer.register_exchange(exchange_id)
-            elif action == EvaluatorActions.EVALUATOR.value:
+            elif action == evaluator_channel_consumer.OctoBotChannelEvaluatorActions.EVALUATOR.value:
                 if not self.octobot.service_feed_producer.started:
                     # Start service feeds now that evaluators registered their feed requirements
                     await self.octobot.service_feed_producer.start_feeds()
-            elif action == ServiceActions.INTERFACE.value:
-                await self.octobot.interface_producer.register_interface(data[ServiceKeys.INSTANCE.value])
-            elif action == ServiceActions.NOTIFICATION.value:
-                await self.octobot.interface_producer.register_notifier(data[ServiceKeys.INSTANCE.value])
-            elif action == ServiceActions.SERVICE_FEED.value:
-                await self.octobot.service_feed_producer.register_service_feed(data[ServiceKeys.INSTANCE.value])
+            elif action == service_channel_consumer.OctoBotChannelServiceActions.INTERFACE.value:
+                await self.octobot.interface_producer.register_interface(
+                    data[service_channel_consumer.OctoBotChannelServiceDataKeys.INSTANCE.value])
+            elif action == service_channel_consumer.OctoBotChannelServiceActions.NOTIFICATION.value:
+                await self.octobot.interface_producer.register_notifier(
+                    data[service_channel_consumer.OctoBotChannelServiceDataKeys.INSTANCE.value])
+            elif action == service_channel_consumer.OctoBotChannelServiceActions.SERVICE_FEED.value:
+                await self.octobot.service_feed_producer.register_service_feed(
+                    data[service_channel_consumer.OctoBotChannelServiceDataKeys.INSTANCE.value])
 
     async def stop(self) -> None:
         """

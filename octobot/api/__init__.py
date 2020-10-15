@@ -14,13 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from octobot.api import octobot_api
 from octobot.api import backtesting
 from octobot.api import strategy_optimizer
 
-from octobot.api.octobot_api import (
-    OctoBotAPI,
-)
 from octobot.api.backtesting import (
     create_independent_backtesting,
     check_independent_backtesting_remaining_objects,
@@ -57,7 +53,6 @@ from octobot.api.strategy_optimizer import (
 )
 
 __all__ = [
-    "OctoBotAPI",
     "create_independent_backtesting",
     "check_independent_backtesting_remaining_objects",
     "is_independent_backtesting_in_progress",

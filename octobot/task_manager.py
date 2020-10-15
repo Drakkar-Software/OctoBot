@@ -15,12 +15,12 @@
 #  License along with this library.
 import asyncio
 import threading
-from concurrent.futures.thread import ThreadPoolExecutor
+import concurrent.futures as thread 
 
-from octobot_commons.asyncio_tools import run_coroutine_in_asyncio_loop
-from octobot_commons.logging.logging_util import get_logger
+import octobot_commons.asyncio_tools as asyncio_tools
+import octobot_commons.logging as logging
 
-from octobot.constants import FORCE_ASYNCIO_DEBUG_OPTION
+import octobot.constants as constants
 
 
 class TaskManager:
@@ -32,7 +32,7 @@ class TaskManager:
         self.octobot = octobot
 
         # Logger
-        self.logger = get_logger(self.get_name())
+        self.logger = logging.get_logger(self.get_name())
 
         self.async_loop = None
         self.ready = False
@@ -89,18 +89,18 @@ class TaskManager:
         return cls.__name__
 
     def create_pool_executor(self, workers=1):
-        self.executors = ThreadPoolExecutor(max_workers=workers)
+        self.executors = thread.ThreadPoolExecutor(max_workers=workers)
 
     def _create_new_asyncio_main_loop(self):
         self.async_loop = asyncio.new_event_loop()
-        self.async_loop.set_debug(FORCE_ASYNCIO_DEBUG_OPTION)
+        self.async_loop.set_debug(constants.FORCE_ASYNCIO_DEBUG_OPTION)
         asyncio.set_event_loop(self.async_loop)
         self.current_loop_thread = threading.Thread(target=self.async_loop.run_forever,
                                                     name=f"{self.get_name()} new asyncio main loop")
         self.current_loop_thread.start()
 
     def run_in_main_asyncio_loop(self, coroutine):
-        return run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
+        return asyncio_tools.run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
 
     def run_in_async_executor(self, coroutine):
         return self.executors.submit(asyncio.run, coroutine).result()

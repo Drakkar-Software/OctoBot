@@ -13,24 +13,24 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot.backtesting.independent_backtesting import IndependentBacktesting
-from octobot_backtesting.constants import BACKTESTING_FILE_PATH, \
-    BACKTESTING_DEFAULT_JOIN_TIMEOUT
+import octobot.backtesting as backtesting
+import octobot_backtesting.constants as constants
 
 
 def create_independent_backtesting(config,
                                    tentacles_setup_config,
                                    data_files,
-                                   data_file_path=BACKTESTING_FILE_PATH,
-                                   run_on_common_part_only=True) -> IndependentBacktesting:
-    return IndependentBacktesting(config, tentacles_setup_config, data_files, data_file_path, run_on_common_part_only)
+                                   data_file_path=constants.BACKTESTING_FILE_PATH,
+                                   run_on_common_part_only=True) -> backtesting.IndependentBacktesting:
+    return backtesting.IndependentBacktesting(config, tentacles_setup_config, data_files,
+                                              data_file_path, run_on_common_part_only)
 
 
 async def initialize_and_run_independent_backtesting(independent_backtesting, log_errors=True) -> None:
     await independent_backtesting.initialize_and_run(log_errors=log_errors)
 
 
-async def join_independent_backtesting(independent_backtesting, timeout=BACKTESTING_DEFAULT_JOIN_TIMEOUT) -> None:
+async def join_independent_backtesting(independent_backtesting, timeout=constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT) -> None:
     await independent_backtesting.join_backtesting_updater(timeout)
 
 

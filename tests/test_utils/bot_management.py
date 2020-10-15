@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from octobot_backtesting.data import MissingTimeFrame
+from octobot_backtesting.errors import MissingTimeFrame
 from octobot_commons.logging.logging_util import get_logger
 from octobot_commons.tests.test_config import load_test_config
 

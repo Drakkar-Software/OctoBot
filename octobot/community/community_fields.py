@@ -13,10 +13,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from enum import Enum
+import enum 
 
 
-class CommunityFields(Enum):
+class CommunityFields(enum.Enum):
     ID = "_id"
     CURRENT_SESSION = "currentsession"
     STARTED_AT = "startedat"

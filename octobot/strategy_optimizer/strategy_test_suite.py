@@ -13,23 +13,21 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from copy import deepcopy
+import copy
 
-from octobot.api.backtesting import create_independent_backtesting, \
-    initialize_and_run_independent_backtesting, get_independent_backtesting_exchange_manager_ids, \
-    join_independent_backtesting
-from octobot.strategy_optimizer.test_suite_result import TestSuiteResult
-from octobot_backtesting.data import MissingTimeFrame
-from octobot.backtesting.abstract_backtesting_test import AbstractBacktestingTest
-from octobot_evaluators.constants import CONFIG_FORCED_TIME_FRAME
-from octobot_trading.constants import CONFIG_TRADER_RISK, CONFIG_TRADING
-from octobot_trading.api.exchange import get_exchange_managers_from_exchange_ids
-from octobot_trading.api.profitability import get_profitability_stats
-from octobot_trading.api.trades import get_trade_history
+import octobot.api.backtesting as octobot_backtesting_api
+import octobot.strategy_optimizer as octobot_strategy_optimizer
+import octobot.backtesting as octobot_backtesting
+
+import octobot_backtesting.errors as backtesting_errors
+
+import octobot_evaluators.constants as evaluator_constants
+
+import octobot_trading.constants as trading_constants
+import octobot_trading.api as trading_api
 
 
-class StrategyTestSuite(AbstractBacktestingTest):
-
+class StrategyTestSuite(octobot_backtesting.AbstractBacktestingTest):
     # set to True to skip bigger scenarii and make tests faster
     SKIP_LONG_STEPS = False
 
@@ -42,12 +40,13 @@ class StrategyTestSuite(AbstractBacktestingTest):
         self.evaluators = []
 
     def get_test_suite_result(self):
-        return TestSuiteResult(self._profitability_results,
-                               self._trades_counts,
-                               self.config[CONFIG_TRADING][CONFIG_TRADER_RISK],
-                               self.config[CONFIG_FORCED_TIME_FRAME],
-                               self.evaluators,
-                               self.strategy_evaluator_class.get_name())
+        return octobot_strategy_optimizer.TestSuiteResult(self._profitability_results,
+                                                          self._trades_counts,
+                                                          self.config[trading_constants.CONFIG_TRADING][
+                                                              trading_constants.CONFIG_TRADER_RISK],
+                                                          self.config[evaluator_constants.CONFIG_FORCED_TIME_FRAME],
+                                                          self.evaluators,
+                                                          self.strategy_evaluator_class.get_name())
 
     async def run_test_suite(self, strategy_tester):
         self.exceptions = []
@@ -58,7 +57,7 @@ class StrategyTestSuite(AbstractBacktestingTest):
         for i, test in enumerate(tests):
             try:
                 await test(strategy_tester)
-                self.current_progress = int((i+1)/nb_tests*100)
+                self.current_progress = int((i + 1) / nb_tests * 100)
             except Exception as e:
                 self.logger.exception(e, True, f"Exception when running test {test.__name__}: {e}")
                 self.exceptions.append(e)
@@ -92,13 +91,15 @@ class StrategyTestSuite(AbstractBacktestingTest):
         profitability_result = None
         skip_this_run = False
         if independent_backtesting is not None:
-            exchange_manager_ids = get_independent_backtesting_exchange_manager_ids(independent_backtesting)
+            exchange_manager_ids = octobot_backtesting_api.get_independent_backtesting_exchange_manager_ids(
+                independent_backtesting)
             try:
-                for exchange_manager in get_exchange_managers_from_exchange_ids(exchange_manager_ids):
-                    _, profitability, _, market_average_profitability, _ = get_profitability_stats(exchange_manager)
+                for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(exchange_manager_ids):
+                    _, profitability, _, market_average_profitability, _ = \
+                        trading_api.get_profitability_stats(exchange_manager)
                     # Only one exchange manager per run
                     profitability_result = (profitability, market_average_profitability)
-                    trades_count += len(get_trade_history(exchange_manager))
+                    trades_count += len(trading_api.get_trade_history(exchange_manager))
             except (AttributeError, KeyError):
                 skip_this_run = True
             if not skip_this_run:
@@ -110,15 +111,15 @@ class StrategyTestSuite(AbstractBacktestingTest):
     async def _run_backtesting_with_current_config(self, data_file_to_use):
         independent_backtesting = None
         try:
-            config_to_use = deepcopy(self.config)
-            independent_backtesting = create_independent_backtesting(config_to_use,
-                                                                     self.tentacles_setup_config,
-                                                                     [data_file_to_use],
-                                                                     "")
-            await initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
-            await join_independent_backtesting(independent_backtesting)
+            config_to_use = copy.deepcopy(self.config)
+            independent_backtesting = octobot_backtesting_api.create_independent_backtesting(config_to_use,
+                                                                                 self.tentacles_setup_config,
+                                                                                 [data_file_to_use],
+                                                                                 "")
+            await octobot_backtesting_api.initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
+            await octobot_backtesting_api.join_independent_backtesting(independent_backtesting)
             return independent_backtesting
-        except MissingTimeFrame:
+        except backtesting_errors.MissingTimeFrame:
             # ignore this exception: is due to missing of the only required time frame
             return independent_backtesting
         except Exception as e:
