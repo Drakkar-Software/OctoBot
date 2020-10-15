@@ -13,8 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot.constants import CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
-from octobot.commands import stop_bot as command_stop, restart_bot as command_restart
+import octobot.constants as constants
+import octobot.commands as commands
 
 
 class OctoBotAPI:
@@ -32,16 +32,16 @@ class OctoBotAPI:
         return self._octobot.config
 
     def get_startup_config(self) -> object:
-        return self._octobot.get_startup_config(CONFIG_KEY)
+        return self._octobot.get_startup_config(constants.CONFIG_KEY)
 
     def get_edited_config(self) -> object:
-        return self._octobot.get_edited_config(CONFIG_KEY)
+        return self._octobot.get_edited_config(constants.CONFIG_KEY)
 
     def get_startup_tentacles_config(self) -> object:
-        return self._octobot.get_startup_config(TENTACLES_SETUP_CONFIG_KEY)
+        return self._octobot.get_startup_config(constants.TENTACLES_SETUP_CONFIG_KEY)
 
     def get_edited_tentacles_config(self) -> object:
-        return self._octobot.get_edited_config(TENTACLES_SETUP_CONFIG_KEY)
+        return self._octobot.get_edited_config(constants.TENTACLES_SETUP_CONFIG_KEY)
 
     def get_trading_mode(self) -> object:
         return self._octobot.get_trading_mode()
@@ -68,8 +68,8 @@ class OctoBotAPI:
         self._octobot.task_manager.stop_tasks()
 
     def stop_bot(self) -> None:
-        command_stop(self._octobot)
+        commands.stop_bot(self._octobot)
 
     @staticmethod
     def restart_bot() -> None:
-        command_restart()
+        commands.restart_bot()

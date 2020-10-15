@@ -15,9 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 from octobot.configuration_manager cimport ConfigurationManager
-from octobot.consumers.octobot_channel_consumer cimport OctoBotChannelGlobalConsumer
+from octobot.octobot_channel_consumer cimport OctoBotChannelGlobalConsumer
 from octobot.initializer cimport Initializer
-from octobot.api.octobot_api cimport OctoBotAPI
+from octobot.octobot_api cimport OctoBotAPI
 from octobot.producers.evaluator_producer cimport EvaluatorProducer
 from octobot.producers.exchange_producer cimport ExchangeProducer
 from octobot.producers.interface_producer cimport InterfaceProducer
