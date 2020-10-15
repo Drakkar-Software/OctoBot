@@ -20,34 +20,33 @@ import aiohttp
 import sys
 import asyncio
 import signal
-from threading import Thread
-from concurrent.futures import CancelledError
+import threading
 
-from octobot_tentacles_manager.api.installer import install_all_tentacles
+import octobot_commons.config_util as config_util
+import octobot_commons.logging as logging
 
-from octobot.constants import DEFAULT_TENTACLES_URL, OCTOBOT_FOLDER
-from octobot import get_bot, set_bot
-from octobot_commons.config_util import encrypt
-from octobot_tentacles_manager.api.configurator import get_tentacles_setup_config, ensure_setup_configuration
-from octobot_commons.logging.logging_util import get_logger
-from octobot_tentacles_manager.api.loader import reload_tentacle_info
-from octobot_tentacles_manager.cli import handle_tentacles_manager_command
-from octobot.logger import init_logger
+import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_tentacles_manager.cli as tentacles_manager_cli
+
+import octobot
+import octobot.api.strategy_optimizer as strategy_optimizer_api
+import octobot.logger as octobot_logger
+import octobot.constants as constants
 
 COMMANDS_LOGGER_NAME = "Commands"
 
 
 def call_tentacles_manager(command_args):
-    init_logger()
-    sys.exit(handle_tentacles_manager_command(command_args,
-                                              tentacles_url=DEFAULT_TENTACLES_URL,
-                                              bot_install_dir=OCTOBOT_FOLDER))
+    octobot_logger.init_logger()
+    sys.exit(tentacles_manager_cli.handle_tentacles_manager_command(command_args,
+                                                                    tentacles_url=constants.DEFAULT_TENTACLES_URL,
+                                                                    bot_install_dir=constants.OCTOBOT_FOLDER))
 
 
 def exchange_keys_encrypter(catch=False):
     try:
-        api_key_crypted = encrypt(input("ENTER YOUR API-KEY : ")).decode()
-        api_secret_crypted = encrypt(input("ENTER YOUR API-SECRET : ")).decode()
+        api_key_crypted = config_util.encrypt(input("ENTER YOUR API-KEY : ")).decode()
+        api_secret_crypted = config_util.encrypt(input("ENTER YOUR API-SECRET : ")).decode()
         print(f"Here are your encrypted exchanges keys : \n "
               f"\t- API-KEY : {api_key_crypted}\n"
               f"\t- API-SECRET : {api_secret_crypted}\n\n"
@@ -56,18 +55,17 @@ def exchange_keys_encrypter(catch=False):
               f'\t"api-secret": "{api_secret_crypted}"\n')
     except Exception as e:
         if not catch:
-            get_logger(COMMANDS_LOGGER_NAME).error(f"Fail to encrypt your exchange keys, please try again ({e}).")
+            logging.get_logger(COMMANDS_LOGGER_NAME).error(
+                f"Fail to encrypt your exchange keys, please try again ({e}).")
             raise e
 
 
 def start_strategy_optimizer(config, commands):
-    from octobot.api.strategy_optimizer import create_strategy_optimizer, \
-        get_optimizer_is_properly_initialized, find_optimal_configuration, print_optimizer_report
-    tentacles_setup_config = get_tentacles_setup_config()
-    optimizer = create_strategy_optimizer(config, tentacles_setup_config, commands[0])
-    if get_optimizer_is_properly_initialized(optimizer):
-        find_optimal_configuration(optimizer)
-        print_optimizer_report(optimizer)
+    tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config()
+    optimizer = strategy_optimizer_api.create_strategy_optimizer(config, tentacles_setup_config, commands[0])
+    if strategy_optimizer_api.get_optimizer_is_properly_initialized(optimizer):
+        strategy_optimizer_api.find_optimal_configuration(optimizer)
+        strategy_optimizer_api.print_optimizer_report(optimizer)
 
 
 def run_tentacles_installation():
@@ -76,14 +74,15 @@ def run_tentacles_installation():
 
 async def _install_all_tentacles():
     async with aiohttp.ClientSession() as aiohttp_session:
-        await install_all_tentacles(DEFAULT_TENTACLES_URL,
-                                    aiohttp_session=aiohttp_session,
-                                    bot_install_dir=OCTOBOT_FOLDER)
+        await tentacles_manager_api.install_all_tentacles(constants.DEFAULT_TENTACLES_URL,
+                                                          aiohttp_session=aiohttp_session,
+                                                          bot_install_dir=constants.OCTOBOT_FOLDER)
 
 
 def _signal_handler(_, __):
     # run Commands.BOT.stop_threads in thread because can't use the current asyncio loop
-    stopping_thread = Thread(target=get_bot().task_manager.stop_tasks(), name="Commands signal_handler stop_tasks")
+    stopping_thread = threading.Thread(target=octobot.get_bot().task_manager.stop_tasks(),
+                                       name="Commands signal_handler stop_tasks")
     stopping_thread.start()
     stopping_thread.join()
     os._exit(0)
@@ -100,15 +99,15 @@ def run_bot(bot, logger):
 async def start_bot(bot, logger, catch=False):
     try:
         # load tentacles details
-        reload_tentacle_info()
+        tentacles_manager_api.reload_tentacle_info()
         # ensure tentacles config exists or create a new one
-        await ensure_setup_configuration(bot_install_dir=OCTOBOT_FOLDER)
+        await tentacles_manager_api.ensure_setup_configuration(bot_install_dir=constants.OCTOBOT_FOLDER)
 
         # start
         try:
-            set_bot(bot)
+            octobot.set_bot(bot)
             await bot.initialize()
-        except CancelledError:
+        except asyncio.CancelledError:
             logger.info("Core engine tasks cancelled.")
 
     except Exception as e:

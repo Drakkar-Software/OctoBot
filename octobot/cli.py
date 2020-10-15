@@ -17,44 +17,50 @@ import argparse
 import os
 import sys
 
-from octobot_commons.os_util import get_current_platform, get_octobot_type
-from octobot_tentacles_manager.api.loader import load_tentacles
-from octobot_tentacles_manager.cli import register_tentacles_manager_arguments
+import octobot_commons.os_util as os_util
+import octobot_commons.config as common_config
+import octobot_commons.logging as logging
+import octobot_commons.config_manager as config_manager
+import octobot_commons.constants as common_constants
+import octobot_commons.errors as errors
 
-from octobot.commands import exchange_keys_encrypter, start_strategy_optimizer, \
-    run_tentacles_installation, run_bot, call_tentacles_manager
-from octobot.configuration_manager import config_health_check, init_config
-from octobot.constants import LONG_VERSION, CONFIG_FILE_SCHEMA
-from octobot.disclaimer import DISCLAIMER
-from octobot.logger import init_logger
-from octobot_backtesting.constants import CONFIG_BACKTESTING_DATA_FILES
-from octobot_commons.config import load_config, is_config_empty_or_missing
-from octobot_commons.config_manager import validate_config_file, accepted_terms
-from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_FILE, DEFAULT_CONFIG_FILE
-from octobot_commons.errors import ConfigError, ConfigTradingError, ConfigEvaluatorError
-from octobot_services.api.interfaces import disable_interfaces
-from octobot_trading.constants import CONFIG_TRADER, CONFIG_SIMULATOR, CONFIG_TRADING, CONFIG_TRADER_RISK
+import octobot_services.api as service_api
+
+import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_tentacles_manager.cli as tentacles_manager_cli
+
+import octobot_trading.constants as trading_constants
+
+import octobot.octobot as octobot_class
+import octobot.commands as commands
+import octobot.configuration_manager as configuration_manager
+import octobot.octobot_backtesting_factory as octobot_backtesting
+import octobot.constants as constants
+import octobot.disclaimer as disclaimer
+import octobot.logger as octobot_logger
+
+try:
+    import octobot_backtesting.constants as backtesting_constants
+except ImportError as e:
+    logging.get_logger().error("Can't start backtesting without the octobot_backtesting package properly installed.")
+    raise e
 
 
 def update_config_with_args(starting_args, config, logger):
     if starting_args.backtesting:
-        try:
-            from octobot_backtesting.constants import CONFIG_BACKTESTING, CONFIG_ANALYSIS_ENABLED_OPTION
-            if starting_args.backtesting_files:
-                config[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES] = starting_args.backtesting_files
-            config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-        except ImportError as e:
-            logger.error("Can't start backtesting without the octobot_backtesting package properly installed.")
-            raise e
-        config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-        config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+        if starting_args.backtesting_files:
+            config[backtesting_constants.CONFIG_BACKTESTING][
+                backtesting_constants.CONFIG_BACKTESTING_DATA_FILES] = starting_args.backtesting_files
+        config[backtesting_constants.CONFIG_BACKTESTING][common_constants.CONFIG_ENABLED_OPTION] = True
+        config[trading_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
 
     if starting_args.simulate:
-        config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-        config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+        config[trading_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
 
     if starting_args.risk is not None and 0 < starting_args.risk <= 1:
-        config[CONFIG_TRADING][CONFIG_TRADER_RISK] = starting_args.risk
+        config[trading_constants.CONFIG_TRADING][trading_constants.CONFIG_TRADER_RISK] = starting_args.risk
 
 
 # def _check_public_announcements(logger):
@@ -67,9 +73,9 @@ def update_config_with_args(starting_args, config, logger):
 
 
 def _log_terms_if_unaccepted(config, logger):
-    if not accepted_terms(config):
+    if not config_manager.accepted_terms(config):
         logger.info("*** Disclaimer ***")
-        for line in DISCLAIMER:
+        for line in disclaimer.DISCLAIMER:
             logger.info(line)
         logger.info("... Disclaimer ...")
     else:
@@ -78,7 +84,7 @@ def _log_terms_if_unaccepted(config, logger):
 
 def _disable_interface_from_param(interface_identifier, param_value, logger):
     if param_value:
-        if disable_interfaces(interface_identifier) == 0:
+        if service_api.disable_interfaces(interface_identifier) == 0:
             logger.warning("No " + interface_identifier + " interface to disable")
         else:
             logger.info(interface_identifier.capitalize() + " interface disabled")
@@ -88,17 +94,17 @@ def start_octobot(args):
     logger = None
     try:
         if args.version:
-            print(LONG_VERSION)
+            print(constants.LONG_VERSION)
             return
 
-        logger = init_logger()
+        logger = octobot_logger.init_logger()
 
         # Version
-        logger.info("Version : {0}".format(LONG_VERSION))
+        logger.info("Version : {0}".format(constants.LONG_VERSION))
 
         # Current running environment
         try:
-            logger.debug(f"Running on {get_current_platform()} with {get_octobot_type()}")
+            logger.debug(f"Running on {os_util.get_current_platform()} with {os_util.get_octobot_type()}")
         except Exception as e:
             logger.error(f"Impossible to identify the current running environment: {e}")
 
@@ -107,61 +113,60 @@ def start_octobot(args):
         logger.info("Loading config files...")
 
         # configuration loading
-        config = load_config(error=False, fill_missing_fields=True)
+        config = common_config.load_config(error=False, fill_missing_fields=True)
 
-        if config is None and is_config_empty_or_missing():
+        if config is None and common_config.is_config_empty_or_missing():
             logger.info("No configuration found creating default...")
-            init_config()
-            config = load_config(error=False)
+            configuration_manager.init_config()
+            config = common_config.load_config(error=False)
         else:
-            is_valid, e = validate_config_file(config=config, schema_file=CONFIG_FILE_SCHEMA)
+            is_valid, e = config_manager.validate_config_file(config=config, schema_file=constants.CONFIG_FILE_SCHEMA)
             if not is_valid:
                 logger.error("OctoBot can't repair your config.json file: invalid format: " + str(e))
-                raise ConfigError
-            config_health_check(config)
+                raise errors.ConfigError
+            configuration_manager.config_health_check(config)
 
         if config is None:
-            raise ConfigError
+            raise errors.ConfigError
 
         # Handle utility methods before bot initializing if possible
         if args.encrypter:
-            exchange_keys_encrypter()
+            commands.exchange_keys_encrypter()
             return
 
         # Add tentacles folder to Python path
         sys.path.append(os.path.realpath(os.getcwd()))
 
-        if not load_tentacles(verbose=True):
+        if not tentacles_manager_api.load_tentacles(verbose=True):
             logger.info("OctoBot tentacles can't be found or are damaged. Installing default tentacles ...")
-            run_tentacles_installation()
+            commands.run_tentacles_installation()
             # reload tentacles
-            load_tentacles(verbose=True)
+            tentacles_manager_api.load_tentacles(verbose=True)
 
         if args.strategy_optimizer:
-            start_strategy_optimizer(config, args.strategy_optimizer)
+            commands.start_strategy_optimizer(config, args.strategy_optimizer)
             return
 
         # In those cases load OctoBot
-        from octobot.octobot import OctoBot
-
         _disable_interface_from_param("telegram", args.no_telegram, logger)
         _disable_interface_from_param("web", args.no_web, logger)
 
         update_config_with_args(args, config, logger)
 
         if args.backtesting:
-            from octobot.backtesting.octobot_backtesting_factory import OctoBotBacktestingFactory
-            bot = OctoBotBacktestingFactory(config, run_on_common_part_only=not args.whole_data_range)
+            bot = octobot_backtesting.OctoBotBacktestingFactory(config,
+                                                                run_on_common_part_only=not args.whole_data_range)
         else:
-            bot = OctoBot(config, reset_trading_history=args.reset_trading_history)
+            bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history)
 
         _log_terms_if_unaccepted(config, logger)
 
-        run_bot(bot, logger)
+        commands.run_bot(bot, logger)
 
-    except ConfigError:
-        logger.error("OctoBot can't start without " + CONFIG_FILE + " configuration file." + "\nYou can use " +
-                     DEFAULT_CONFIG_FILE + " as an example to fix it.")
+    except errors.ConfigError:
+        logger.error("OctoBot can't start without " + common_constants.CONFIG_FILE
+                     + " configuration file." + "\nYou can use " +
+                     constants.DEFAULT_CONFIG_FILE + " as an example to fix it.")
         os._exit(-1)
 
     except ModuleNotFoundError as e:
@@ -172,13 +177,13 @@ def start_octobot(args):
             logger.exception(e)
         os._exit(-1)
 
-    except ConfigEvaluatorError:
+    except errors.ConfigEvaluatorError:
         logger.error("OctoBot can't start without a valid  configuration file.\n"
                      "This file is generated on tentacle "
                      "installation using the following command:\nstart.py tentacles --install --all")
         os._exit(-1)
 
-    except ConfigTradingError:
+    except errors.ConfigTradingError:
         logger.error("OctoBot can't start without a valid configuration file.\n"
                      "This file is generated on tentacle "
                      "installation using the following command:\nstart.py tentacles --install --all")
@@ -236,8 +241,8 @@ def octobot_parser(parser):
     tentacles_parser = subparsers.add_parser("tentacles", help='Calls OctoBot tentacles manager.\n'
                                                                'Use "tentacles --help" to get the '
                                                                'tentacles manager help.')
-    register_tentacles_manager_arguments(tentacles_parser)
-    tentacles_parser.set_defaults(func=call_tentacles_manager)
+    tentacles_manager_cli.register_tentacles_manager_arguments(tentacles_parser)
+    tentacles_parser.set_defaults(func=commands.call_tentacles_manager)
 
 
 def main(args=None):

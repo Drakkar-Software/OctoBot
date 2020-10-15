@@ -15,28 +15,23 @@
 #  License along with this library.
 import time
 import uuid
-
 import aiohttp
 
-from octobot.logger import init_octobot_chan_logger
-from octobot_services.api.services import stop_services
+import octobot_commons.enums as enums
+import octobot_commons.logging as logging
 
-from octobot.community.community_manager import CommunityManager
-from octobot.constants import PROJECT_NAME, LONG_VERSION, CONFIG_KEY, TENTACLES_SETUP_CONFIG_KEY
-from octobot.configuration_manager import ConfigurationManager
-from octobot.consumers.octobot_channel_consumer import OctoBotChannelGlobalConsumer
-from octobot.producers.evaluator_producer import EvaluatorProducer
-from octobot.api.octobot_api import OctoBotAPI
-from octobot.producers.service_feed_producer import ServiceFeedProducer
-from octobot.initializer import Initializer
-from octobot.producers.interface_producer import InterfaceProducer
-from octobot.producers.exchange_producer import ExchangeProducer
-from octobot.task_manager import TaskManager
-from octobot_commons.enums import MarkdownFormat
-from octobot_commons.logging.logging_util import get_logger
-from octobot_services.api.notification import send_notification, create_notification
-from octobot_trading.api.exchange import get_exchange_manager_from_exchange_id
-from octobot_trading.api.modes import get_trading_modes
+import octobot_services.api as service_api
+import octobot_trading.api as trading_api
+
+import octobot.logger as logger
+import octobot.community as community_manager
+import octobot.constants as constants
+import octobot.configuration_manager as configuration_manager
+import octobot.task_manager as task_manager
+import octobot.octobot_channel_consumer as octobot_channel_consumer
+import octobot.octobot_api as octobot_api
+import octobot.initializer as initializer
+import octobot.producers as producers
 
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
@@ -58,8 +53,8 @@ class OctoBot:
         self.tentacles_setup_config = None
 
         # Configuration manager to handle current, edited and startup configurations
-        self.configuration_manager = ConfigurationManager()
-        self.configuration_manager.add_element(CONFIG_KEY, self.config)
+        self.configuration_manager = configuration_manager.ConfigurationManager()
+        self.configuration_manager.add_element(constants.CONFIG_KEY, self.config)
 
         # Used to know when OctoBot is ready to answer in APIs
         self.initialized = False
@@ -71,20 +66,20 @@ class OctoBot:
         self.community_handler = None
 
         # octobot_api to request the current instance
-        self.octobot_api = OctoBotAPI(self)
+        self.octobot_api = octobot_api.OctoBotAPI(self)
 
         # octobot channel global consumer
-        self.global_consumer = OctoBotChannelGlobalConsumer(self)
+        self.global_consumer = octobot_channel_consumer.OctoBotChannelGlobalConsumer(self)
 
         # octobot instance id
         self.bot_id = str(uuid.uuid4())
 
         # Logger
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = logging.get_logger(self.__class__.__name__)
 
         # Initialize octobot main tools
-        self.initializer = Initializer(self)
-        self.task_manager = TaskManager(self)
+        self.initializer = initializer.Initializer(self)
+        self.task_manager = task_manager.TaskManager(self)
 
         # Producers
         self.exchange_producer = None
@@ -97,16 +92,16 @@ class OctoBot:
     async def initialize(self):
         await self.initializer.create()
         await self._start_tools_tasks()
-        await init_octobot_chan_logger(self.bot_id)
+        await logger.init_octobot_chan_logger(self.bot_id)
         await self.create_producers()
         await self.start_producers()
 
     async def create_producers(self):
-        self.exchange_producer = ExchangeProducer(self.global_consumer.octobot_channel, self,
-                                                  None, self.ignore_config)
-        self.evaluator_producer = EvaluatorProducer(self.global_consumer.octobot_channel, self)
-        self.interface_producer = InterfaceProducer(self.global_consumer.octobot_channel, self)
-        self.service_feed_producer = ServiceFeedProducer(self.global_consumer.octobot_channel, self)
+        self.exchange_producer = producers.ExchangeProducer(self.global_consumer.octobot_channel, self,
+                                                            None, self.ignore_config)
+        self.evaluator_producer = producers.EvaluatorProducer(self.global_consumer.octobot_channel, self)
+        self.interface_producer = producers.InterfaceProducer(self.global_consumer.octobot_channel, self)
+        self.service_feed_producer = producers.ServiceFeedProducer(self.global_consumer.octobot_channel, self)
 
     async def start_producers(self):
         await self.evaluator_producer.run()
@@ -120,13 +115,14 @@ class OctoBot:
         self.initialized = True
 
         # make tentacles setup config editable while saving previous states
-        self.configuration_manager.add_element(TENTACLES_SETUP_CONFIG_KEY, self.tentacles_setup_config)
-        await send_notification(create_notification(f"{PROJECT_NAME} {LONG_VERSION} is starting ...",
-                                                    markdown_format=MarkdownFormat.ITALIC))
+        self.configuration_manager.add_element(constants.TENTACLES_SETUP_CONFIG_KEY, self.tentacles_setup_config)
+        await service_api.send_notification(
+            service_api.create_notification(f"{constants.PROJECT_NAME} {constants.LONG_VERSION} is starting ...",
+                                            markdown_format=enums.MarkdownFormat.ITALIC))
 
     async def stop(self):
         await self.service_feed_producer.stop()
-        stop_services()
+        service_api.stop_services()
         await self.interface_producer.stop()
         self.logger.info("Shutting down.")
 
@@ -135,7 +131,7 @@ class OctoBot:
         await self.task_manager.start_tools_tasks()
 
     def _init_community(self):
-        self.community_handler = CommunityManager(self.octobot_api)
+        self.community_handler = community_manager.CommunityManager(self.octobot_api)
 
     def get_edited_config(self, config_key):
         return self.configuration_manager.get_edited_config(config_key)
@@ -145,10 +141,10 @@ class OctoBot:
 
     def get_trading_mode(self):
         try:
-            first_exchange_manager = get_exchange_manager_from_exchange_id(
+            first_exchange_manager = trading_api.get_exchange_manager_from_exchange_id(
                 next(iter(self.exchange_producer.exchange_manager_ids))
             )
-            return get_trading_modes(first_exchange_manager)[0]
+            return trading_api.get_trading_modes(first_exchange_manager)[0]
         except StopIteration:
             return None
 

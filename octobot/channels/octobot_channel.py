@@ -14,20 +14,19 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot_channels.constants import CHANNEL_WILDCARD
+import async_channel.constants as channel_constants
+import async_channel.channels as channels
+import async_channel.consumer as consumers
+import async_channel.producer as producers
 
-from octobot_channels.channels.channel import Channel
-from octobot_channels.consumer import Consumer
-from octobot_channels.producer import Producer
 
-
-class OctoBotChannelConsumer(Consumer):
+class OctoBotChannelConsumer(consumers.Consumer):
     """
     Consumer adapted for OctoBotChannel
     """
 
 
-class OctoBotChannelProducer(Producer):
+class OctoBotChannelProducer(producers.Producer):
     """
     Producer adapted for OctoBotChannel
     """
@@ -49,7 +48,7 @@ class OctoBotChannelProducer(Producer):
             })
 
 
-class OctoBotChannel(Channel):
+class OctoBotChannel(channels.Channel):
     """
     Channel used to communicate OctoBot high level events
     """
@@ -70,9 +69,9 @@ class OctoBotChannel(Channel):
                            callback: object = None,
                            size: int = 0,
                            priority_level: int = DEFAULT_PRIORITY_LEVEL,
-                           bot_id: object = CHANNEL_WILDCARD,
-                           subject: object = CHANNEL_WILDCARD,
-                           action: object = CHANNEL_WILDCARD) -> OctoBotChannelConsumer:
+                           bot_id: object = channel_constants.CHANNEL_WILDCARD,
+                           subject: object = channel_constants.CHANNEL_WILDCARD,
+                           action: object = channel_constants.CHANNEL_WILDCARD) -> OctoBotChannelConsumer:
         """
         Creates a new OctoBot Channel consumer
         :param callback: the consumer callback
@@ -89,8 +88,8 @@ class OctoBotChannel(Channel):
 
     def get_filtered_consumers(self,
                                bot_id: str,
-                               subject: str = CHANNEL_WILDCARD,
-                               action: str = CHANNEL_WILDCARD):
+                               subject: str = channel_constants.CHANNEL_WILDCARD,
+                               action: str = channel_constants.CHANNEL_WILDCARD):
         """
         Returns the consumer that matches criteria
         :param subject: the subject criteria
@@ -105,9 +104,9 @@ class OctoBotChannel(Channel):
         })
 
     async def _add_new_consumer_and_run(self, consumer,
-                                        bot_id: object = CHANNEL_WILDCARD,
-                                        subject: object = CHANNEL_WILDCARD,
-                                        action: object = CHANNEL_WILDCARD):
+                                        bot_id: object = channel_constants.CHANNEL_WILDCARD,
+                                        subject: object = channel_constants.CHANNEL_WILDCARD,
+                                        action: object = channel_constants.CHANNEL_WILDCARD):
         """
         Add and run a created OctoBot channel consumer
         :param consumer: the consumer instance to run

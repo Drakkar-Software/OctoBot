@@ -17,7 +17,6 @@
 from octobot.backtesting import abstract_backtesting_test
 from octobot.backtesting import independent_backtesting
 from octobot.backtesting import octobot_backtesting
-from octobot.backtesting import octobot_backtesting_factory
 from octobot.backtesting.abstract_backtesting_test import (
     AbstractBacktestingTest,
 )
@@ -27,13 +26,9 @@ from octobot.backtesting.independent_backtesting import (
 from octobot.backtesting.octobot_backtesting import (
     OctoBotBacktesting,
 )
-from octobot.backtesting.octobot_backtesting_factory import (
-    OctoBotBacktestingFactory,
-)
 
 __all__ = [
     "OctoBotBacktesting",
     "IndependentBacktesting",
     "AbstractBacktestingTest",
-    "OctoBotBacktestingFactory",
 ]

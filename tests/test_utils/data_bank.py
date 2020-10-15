@@ -16,10 +16,10 @@
 from copy import deepcopy
 
 from octobot_backtesting.importers.exchanges.exchange_importer import ExchangeDataImporter
-from octobot_commons.constants import TimeFrames
+from octobot_commons.enums import TimeFrames
 from octobot_commons.enums import PriceIndexes
+import octobot_trading.exchange_data as exchange_data
 from octobot_trading.api.symbol_data import create_new_candles_manager
-from octobot_trading.exchanges.data.exchange_symbol_data import ExchangeSymbolData
 from octobot_trading.exchanges.exchange_manager import ExchangeManager
 from octobot_trading.util.initializable import Initializable
 
@@ -52,7 +52,7 @@ class DataBank(Initializable):
         self.current_data = None
         self.data_by_symbol_by_data_frame = None
         self.manager = ExchangeManager({}, "binance")
-        self.symbol_data = ExchangeSymbolData(self.manager, self.default_symbol)
+        self.symbol_data = exchange_data.ExchangeSymbolData(self.manager, self.default_symbol)
         self.symbol_data.symbol_candles = self.candles_managers_by_time_frame
 
     async def initialize_impl(self):

@@ -14,46 +14,40 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
-from copy import deepcopy
-from os import path
+import copy
+import os.path as path
 
-from octobot.backtesting.octobot_backtesting import OctoBotBacktesting
-from octobot_backtesting.api.backtesting import get_backtesting_duration
-from octobot_backtesting.constants import CONFIG_BACKTESTING, BACKTESTING_FILE_PATH, BACKTESTING_DEFAULT_JOIN_TIMEOUT
-from octobot_backtesting.data.data_file_manager import get_file_description
-from octobot_backtesting.enums import DataFormatKeys
-from octobot_commons.constants import CONFIG_ENABLED_OPTION, CONFIG_CRYPTO_CURRENCIES, CONFIG_CRYPTO_PAIRS
-from octobot_commons.enums import PriceIndexes
-from octobot_commons.errors import ConfigTradingError
-from octobot_commons.logging.logging_util import get_logger, get_backtesting_errors_count, \
-    reset_backtesting_errors, set_error_publication_enabled
-from octobot_commons.pretty_printer import trade_pretty_printer, global_portfolio_pretty_print
-from octobot_commons.symbol_util import split_symbol
-from octobot_commons.time_frame_manager import find_min_time_frame
-from octobot_evaluators.constants import CONFIG_FORCED_TIME_FRAME
-from octobot_trading.api.exchange import get_exchange_manager_from_exchange_id, get_exchange_name, \
-    get_watched_timeframes
-from octobot_trading.api.modes import get_activated_trading_mode
-from octobot_trading.api.portfolio import get_portfolio, get_origin_portfolio
-from octobot_trading.api.profitability import get_profitability_stats, get_reference_market, \
-    get_current_portfolio_value, get_origin_portfolio_value
-from octobot_trading.api.symbol_data import get_symbol_data, get_symbol_historical_candles
-from octobot_trading.api.trades import get_trade_history
-from octobot_trading.constants import CONFIG_TRADER_RISK, CONFIG_TRADING, CONFIG_SIMULATOR, \
-    CONFIG_STARTING_PORTFOLIO, CONFIG_SIMULATOR_FEES, CONFIG_EXCHANGES, CONFIG_TRADER, CONFIG_TRADER_REFERENCE_MARKET
+import octobot_commons.constants as common_constants
+import octobot_commons.enums as enums
+import octobot_commons.errors as errors
+import octobot_commons.logging as logging
+import octobot_commons.pretty_printer as pretty_printer
+import octobot_commons.symbol_util as symbol_util
+import octobot_commons.time_frame_manager as time_frame_manager
+
+import octobot.backtesting as backtesting
+import octobot_backtesting.api as backtesting_api
+import octobot_backtesting.constants as backtesting_constants
+import octobot_backtesting.enums as backtesting_enums
+import octobot_backtesting.data as backtesting_data
+
+import octobot_evaluators.constants as evaluator_constants
+
+import octobot_trading.api as trading_api
+import octobot_trading.constants as trading_constants
 
 
 class IndependentBacktesting:
     def __init__(self, config,
                  tentacles_setup_config,
                  backtesting_files,
-                 data_file_path=BACKTESTING_FILE_PATH,
+                 data_file_path=backtesting_constants.BACKTESTING_FILE_PATH,
                  run_on_common_part_only=True):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
         self.backtesting_files = backtesting_files
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = logging.get_logger(self.__class__.__name__)
         self.data_file_path = data_file_path
         self.symbols_to_create_exchange_classes = {}
         self.risk = 0.1
@@ -62,11 +56,11 @@ class IndependentBacktesting:
         self.forced_time_frames = []
         self._init_default_config_values()
         self.stopped = False
-        self.octobot_backtesting = OctoBotBacktesting(self.backtesting_config,
-                                                      self.tentacles_setup_config,
-                                                      self.symbols_to_create_exchange_classes,
-                                                      self.backtesting_files,
-                                                      run_on_common_part_only)
+        self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
+                                                                  self.tentacles_setup_config,
+                                                                  self.symbols_to_create_exchange_classes,
+                                                                  self.backtesting_files,
+                                                                  run_on_common_part_only)
 
     async def initialize_and_run(self, log_errors=True):
         try:
@@ -110,25 +104,26 @@ class IndependentBacktesting:
             return 0
 
     def _post_backtesting_start(self):
-        reset_backtesting_errors()
-        set_error_publication_enabled(False)
+        logging.reset_backtesting_errors()
+        logging.set_error_publication_enabled(False)
         asyncio.create_task(self._register_post_backtesting_end_callback())
 
     async def _register_post_backtesting_end_callback(self):
-        await self.join_backtesting_updater(timeout=BACKTESTING_DEFAULT_JOIN_TIMEOUT)
+        await self.join_backtesting_updater(timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT)
         await self._post_backtesting_end_callback()
 
     async def _post_backtesting_end_callback(self):
         # re enable logs
-        set_error_publication_enabled(True)
+        logging.set_error_publication_enabled(True)
         # stop backtesting importers to release database files
         await self.octobot_backtesting.stop_importers()
 
     @staticmethod
     def _get_market_delta(symbol, exchange_manager, min_timeframe):
-        market_data = get_symbol_historical_candles(get_symbol_data(exchange_manager, symbol), min_timeframe)
-        market_begin = market_data[PriceIndexes.IND_PRICE_CLOSE.value][0]
-        market_end = market_data[PriceIndexes.IND_PRICE_CLOSE.value][-1]
+        market_data = trading_api.get_symbol_historical_candles(
+            trading_api.get_symbol_data(exchange_manager, symbol), min_timeframe)
+        market_begin = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][0]
+        market_end = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][-1]
 
         if market_begin and market_end and market_begin > 0:
             market_delta = market_end / market_begin - 1 if market_end >= market_begin \
@@ -140,35 +135,39 @@ class IndependentBacktesting:
 
     async def _register_available_data(self):
         for data_file in self.backtesting_files:
-            description = await get_file_description(path.join(self.data_file_path, data_file))
+            description = await backtesting_data.get_file_description(path.join(self.data_file_path, data_file))
             if description is None:
                 raise RuntimeError(f"Impossible to start backtesting: missing or invalid data file: {data_file}")
-            exchange_name = description[DataFormatKeys.EXCHANGE.value]
+            exchange_name = description[backtesting_enums.DataFormatKeys.EXCHANGE.value]
             if exchange_name not in self.symbols_to_create_exchange_classes:
                 self.symbols_to_create_exchange_classes[exchange_name] = []
-            for symbol in description[DataFormatKeys.SYMBOLS.value]:
+            for symbol in description[backtesting_enums.DataFormatKeys.SYMBOLS.value]:
                 self.symbols_to_create_exchange_classes[exchange_name].append(symbol)
 
     def _init_default_config_values(self):
-        self.risk = deepcopy(self.octobot_origin_config[CONFIG_TRADING][CONFIG_TRADER_RISK])
-        self.starting_portfolio = deepcopy(self.octobot_origin_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO])
-        self.fees_config = deepcopy(self.octobot_origin_config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES])
-        if CONFIG_FORCED_TIME_FRAME in self.octobot_origin_config:
-            self.forced_time_frames = deepcopy(self.octobot_origin_config[CONFIG_FORCED_TIME_FRAME])
+        self.risk = copy.deepcopy(self.octobot_origin_config[trading_constants.CONFIG_TRADING][
+                                      trading_constants.CONFIG_TRADER_RISK])
+        self.starting_portfolio = copy.deepcopy(self.octobot_origin_config[trading_constants.CONFIG_SIMULATOR][
+                                                    trading_constants.CONFIG_STARTING_PORTFOLIO])
+        self.fees_config = copy.deepcopy(self.octobot_origin_config[trading_constants.CONFIG_SIMULATOR][
+                                             trading_constants.CONFIG_SIMULATOR_FEES])
+        if evaluator_constants.CONFIG_FORCED_TIME_FRAME in self.octobot_origin_config:
+            self.forced_time_frames = copy.deepcopy(self.octobot_origin_config[
+                                                        evaluator_constants.CONFIG_FORCED_TIME_FRAME])
         self.backtesting_config = {
-            CONFIG_BACKTESTING: {},
-            CONFIG_CRYPTO_CURRENCIES: {},
-            CONFIG_EXCHANGES: {},
-            CONFIG_TRADER: {},
-            CONFIG_SIMULATOR: {},
-            CONFIG_TRADING: {},
+            backtesting_constants.CONFIG_BACKTESTING: {},
+            common_constants.CONFIG_CRYPTO_CURRENCIES: {},
+            trading_constants.CONFIG_EXCHANGES: {},
+            trading_constants.CONFIG_TRADER: {},
+            trading_constants.CONFIG_SIMULATOR: {},
+            trading_constants.CONFIG_TRADING: {},
         }
 
     async def get_dict_formatted_report(self):
-        reference_market = get_reference_market(self.backtesting_config)
+        reference_market = trading_api.get_reference_market(self.backtesting_config)
         try:
-            trading_mode = get_activated_trading_mode(self.tentacles_setup_config).get_name()
-        except ConfigTradingError as e:
+            trading_mode = trading_api.get_activated_trading_mode(self.tentacles_setup_config).get_name()
+        except errors.ConfigTradingError as e:
             self.logger.error(e)
             trading_mode = "Error when reading trading mode"
         report = self._get_exchanges_report(reference_market, trading_mode)
@@ -183,17 +182,17 @@ class IndependentBacktesting:
             SYMBOL_REPORT: [],
             BOT_REPORT: {},
             CHART_IDENTIFIERS: [],
-            ERRORS_COUNT: get_backtesting_errors_count()
+            ERRORS_COUNT: logging.get_backtesting_errors_count()
         }
         profitabilities = {}
         market_average_profitabilities = {}
         starting_portfolios = {}
         end_portfolios = {}
         for exchange_id in self.octobot_backtesting.exchange_manager_ids:
-            exchange_manager = get_exchange_manager_from_exchange_id(exchange_id)
-            _, profitability, _, market_average_profitability, _ = get_profitability_stats(exchange_manager)
-            min_timeframe = find_min_time_frame(get_watched_timeframes(exchange_manager))
-            exchange_name = get_exchange_name(exchange_manager)
+            exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
+            _, profitability, _, market_average_profitability, _ = trading_api.get_profitability_stats(exchange_manager)
+            min_timeframe = time_frame_manager.find_min_time_frame(trading_api.get_watched_timeframes(exchange_manager))
+            exchange_name = trading_api.get_exchange_name(exchange_manager)
             for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
                 market_delta = self._get_market_delta(symbol, exchange_manager, min_timeframe)
                 report[SYMBOL_REPORT].append({symbol: market_delta * 100})
@@ -205,8 +204,8 @@ class IndependentBacktesting:
                 })
             profitabilities[exchange_name] = profitability
             market_average_profitabilities[exchange_name] = market_average_profitability
-            starting_portfolios[exchange_name] = get_origin_portfolio(exchange_manager)
-            end_portfolios[exchange_name] = get_portfolio(exchange_manager)
+            starting_portfolios[exchange_name] = trading_api.get_origin_portfolio(exchange_manager)
+            end_portfolios[exchange_name] = trading_api.get_portfolio(exchange_manager)
 
         report[BOT_REPORT] = {
             "profitability": profitabilities,
@@ -221,13 +220,13 @@ class IndependentBacktesting:
     def log_report(self):
         self.logger.info(" **** Backtesting report ****")
         for exchange_id in self.octobot_backtesting.exchange_manager_ids:
-            exchange_manager = get_exchange_manager_from_exchange_id(exchange_id)
-            exchange_name = get_exchange_name(exchange_manager)
+            exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
+            exchange_name = trading_api.get_exchange_name(exchange_manager)
             self.logger.info(f" ========= Trades on {exchange_name} =========")
             self._log_trades_history(exchange_manager, exchange_name)
 
             self.logger.info(f" ========= Prices evolution on {exchange_name} =========")
-            min_timeframe = find_min_time_frame(get_watched_timeframes(exchange_manager))
+            min_timeframe = time_frame_manager.find_min_time_frame(trading_api.get_watched_timeframes(exchange_manager))
             for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
                 self._log_symbol_report(symbol, exchange_manager, min_timeframe)
 
@@ -235,8 +234,8 @@ class IndependentBacktesting:
             self._log_global_report(exchange_manager)
 
     def _log_trades_history(self, exchange_manager, exchange_name):
-        trades_history_string = "\n".join([trade_pretty_printer(exchange_name, trade)
-                                           for trade in get_trade_history(exchange_manager)])
+        trades_history_string = "\n".join([pretty_printer.trade_pretty_printer(exchange_name, trade)
+                                           for trade in trading_api.get_trade_history(exchange_manager)])
         self.logger.info(f"\n{trades_history_string}")
 
     def _log_symbol_report(self, symbol, exchange_manager, min_time_frame):
@@ -244,32 +243,36 @@ class IndependentBacktesting:
         self.logger.info(f"{symbol} Profitability : {market_delta * 100}%")
 
     def _log_global_report(self, exchange_manager):
-        _, profitability, _, market_average_profitability, _ = get_profitability_stats(exchange_manager)
-        reference_market = get_reference_market(self.backtesting_config)
-        end_portfolio = get_portfolio(exchange_manager)
-        end_portfolio_value = get_current_portfolio_value(exchange_manager)
-        starting_portfolio = get_origin_portfolio(exchange_manager)
-        starting_portfolio_value = get_origin_portfolio_value(exchange_manager)
+        _, profitability, _, market_average_profitability, _ = trading_api.get_profitability_stats(exchange_manager)
+        reference_market = trading_api.get_reference_market(self.backtesting_config)
+        end_portfolio = trading_api.get_portfolio(exchange_manager)
+        end_portfolio_value = trading_api.get_current_portfolio_value(exchange_manager)
+        starting_portfolio = trading_api.get_origin_portfolio(exchange_manager)
+        starting_portfolio_value = trading_api.get_origin_portfolio_value(exchange_manager)
 
         self.logger.info(f"[End portfolio]      value {round(end_portfolio_value, 5)} {reference_market} "
-                         f"Holdings: {global_portfolio_pretty_print(end_portfolio,' | ')}")
+                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(end_portfolio, ' | ')}")
 
         self.logger.info(f"[Starting portfolio] value {round(starting_portfolio_value, 5)} {reference_market} "
-                         f"Holdings: {global_portfolio_pretty_print(starting_portfolio,' | ')}")
+                         f"Holdings: {pretty_printer.global_portfolio_pretty_print(starting_portfolio, ' | ')}")
 
         self.logger.info(f"Global market profitability (vs {reference_market}) : "
                          f"{market_average_profitability}% | Octobot : {profitability}%")
 
         self.logger.info(
-            f"Simulation lasted {round(get_backtesting_duration(self.octobot_backtesting.backtesting), 3)} sec")
+            f"Simulation lasted "
+            f"{round(backtesting_api.get_backtesting_duration(self.octobot_backtesting.backtesting), 3)} sec")
 
     def _adapt_config(self):
-        self.backtesting_config[CONFIG_TRADING][CONFIG_TRADER_RISK] = self.risk
-        self.backtesting_config[CONFIG_TRADING][CONFIG_TRADER_REFERENCE_MARKET] = self._find_reference_market()
-        self.backtesting_config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO] = self.starting_portfolio
-        self.backtesting_config[CONFIG_SIMULATOR][CONFIG_SIMULATOR_FEES] = self.fees_config
+        self.backtesting_config[trading_constants.CONFIG_TRADING][trading_constants.CONFIG_TRADER_RISK] = self.risk
+        self.backtesting_config[trading_constants.CONFIG_TRADING][
+            trading_constants.CONFIG_TRADER_REFERENCE_MARKET] = self._find_reference_market()
+        self.backtesting_config[trading_constants.CONFIG_SIMULATOR][
+            trading_constants.CONFIG_STARTING_PORTFOLIO] = self.starting_portfolio
+        self.backtesting_config[trading_constants.CONFIG_SIMULATOR][
+            trading_constants.CONFIG_SIMULATOR_FEES] = self.fees_config
         if self.forced_time_frames:
-            self.backtesting_config[CONFIG_FORCED_TIME_FRAME] = self.forced_time_frames
+            self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = self.forced_time_frames
         self._add_config_default_backtesting_values()
 
     def _find_reference_market(self):
@@ -277,7 +280,7 @@ class IndependentBacktesting:
         ref_market_candidates = {}
         for pairs in self.symbols_to_create_exchange_classes.values():
             for pair in pairs:
-                base = split_symbol(pair)[1]
+                base = symbol_util.split_symbol(pair)[1]
                 if ref_market_candidate is None:
                     ref_market_candidate = base
                 if base in ref_market_candidates:
@@ -285,22 +288,23 @@ class IndependentBacktesting:
                 else:
                     ref_market_candidates[base] = 1
                 if ref_market_candidate != base and \
-                   ref_market_candidates[ref_market_candidate] < ref_market_candidates[base]:
+                        ref_market_candidates[ref_market_candidate] < ref_market_candidates[base]:
                     ref_market_candidate = base
         return ref_market_candidate
 
     def _add_config_default_backtesting_values(self):
-        if CONFIG_BACKTESTING not in self.backtesting_config:
-            self.backtesting_config[CONFIG_BACKTESTING] = {}
-        self.backtesting_config[CONFIG_BACKTESTING][CONFIG_ENABLED_OPTION] = True
-        self.backtesting_config[CONFIG_TRADER][CONFIG_ENABLED_OPTION] = False
-        self.backtesting_config[CONFIG_SIMULATOR][CONFIG_ENABLED_OPTION] = True
+        if backtesting_constants.CONFIG_BACKTESTING not in self.backtesting_config:
+            self.backtesting_config[backtesting_constants.CONFIG_BACKTESTING] = {}
+        self.backtesting_config[backtesting_constants.CONFIG_BACKTESTING][common_constants.CONFIG_ENABLED_OPTION] = True
+        self.backtesting_config[trading_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        self.backtesting_config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
 
     def _add_crypto_currencies_config(self):
         for pairs in self.symbols_to_create_exchange_classes.values():
             for pair in pairs:
-                if pair not in self.backtesting_config[CONFIG_CRYPTO_CURRENCIES]:
-                    self.backtesting_config[CONFIG_CRYPTO_CURRENCIES][pair] = {
-                        CONFIG_CRYPTO_PAIRS: []
+                if pair not in self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES]:
+                    self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES][pair] = {
+                        common_constants.CONFIG_CRYPTO_PAIRS: []
                     }
-                    self.backtesting_config[CONFIG_CRYPTO_CURRENCIES][pair][CONFIG_CRYPTO_PAIRS] = [pair]
+                    self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES][pair][
+                        common_constants.CONFIG_CRYPTO_PAIRS] = [pair]

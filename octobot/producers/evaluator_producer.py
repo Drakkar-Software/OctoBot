@@ -13,17 +13,18 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot.channels.octobot_channel import OctoBotChannelProducer
-from octobot.logger import init_evaluator_chan_logger
-from octobot_backtesting.api.backtesting import is_backtesting_enabled
-from octobot_commons.enums import OctoBotChannelSubjects
-from octobot_evaluators.api.evaluators import initialize_evaluators
-from octobot_evaluators.api.initialization import create_evaluator_channels
-from octobot_evaluators.consumers.octobot_channel_consumer import OctoBotChannelEvaluatorActions as EvaluatorActions, \
-    OctoBotChannelEvaluatorDataKeys as EvaluatorKeys
+import octobot_commons.enums as common_enums
+
+import octobot_backtesting.api as backtesting_api
+
+import octobot_evaluators.api as evaluator_api
+import octobot_evaluators.octobot_channel_consumer as evaluator_channel_consumer
+
+import octobot.channels as octobot_channel
+import octobot.logger as logger
 
 
-class EvaluatorProducer(OctoBotChannelProducer):
+class EvaluatorProducer(octobot_channel.OctoBotChannelProducer):
     """EvaluatorFactory class:
     - Create evaluators
     """
@@ -36,18 +37,22 @@ class EvaluatorProducer(OctoBotChannelProducer):
         self.matrix_id = None
 
     async def start(self):
-        self.matrix_id = await initialize_evaluators(self.octobot.config, self.tentacles_setup_config)
-        await create_evaluator_channels(self.matrix_id, is_backtesting=is_backtesting_enabled(self.octobot.config))
-        await init_evaluator_chan_logger(self.matrix_id)
+        self.matrix_id = await evaluator_api.initialize_evaluators(self.octobot.config, self.tentacles_setup_config)
+        await evaluator_api.create_evaluator_channels(
+            self.matrix_id, is_backtesting=backtesting_api.is_backtesting_enabled(self.octobot.config))
+        await logger.init_evaluator_chan_logger(self.matrix_id)
 
     async def create_evaluators(self, exchange_configuration):
         await self.send(bot_id=self.octobot.bot_id,
-                        subject=OctoBotChannelSubjects.CREATION.value,
-                        action=EvaluatorActions.EVALUATOR.value,
+                        subject=common_enums.OctoBotChannelSubjects.CREATION.value,
+                        action=evaluator_channel_consumer.OctoBotChannelEvaluatorActions.EVALUATOR.value,
                         data={
-                            EvaluatorKeys.TENTACLES_SETUP_CONFIG.value: self.octobot.tentacles_setup_config,
-                            EvaluatorKeys.MATRIX_ID.value: self.octobot.evaluator_producer.matrix_id,
-                            EvaluatorKeys.EXCHANGE_CONFIGURATION.value: exchange_configuration
+                            evaluator_channel_consumer.OctoBotChannelEvaluatorDataKeys.TENTACLES_SETUP_CONFIG.value:
+                                self.octobot.tentacles_setup_config,
+                            evaluator_channel_consumer.OctoBotChannelEvaluatorDataKeys.MATRIX_ID.value:
+                                self.octobot.evaluator_producer.matrix_id,
+                            evaluator_channel_consumer.OctoBotChannelEvaluatorDataKeys.EXCHANGE_CONFIGURATION.value:
+                                exchange_configuration
                         })
 
 

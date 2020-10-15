@@ -16,27 +16,28 @@
 import asyncio
 import logging
 import math
-from copy import deepcopy
+import copy
 
-from octobot.constants import OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION
-from octobot.strategy_optimizer.strategy_test_suite import StrategyTestSuite
-from octobot.strategy_optimizer.test_suite_result import TestSuiteResult
-from octobot_commons.data_util import mean
-from octobot_commons.tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection, \
-    trading_mode_parent_inspection
-from octobot_commons.logging.logging_util import get_logger
-from octobot_commons.logging.logging_util import set_global_logger_level, get_global_logger_level
-from octobot_tentacles_manager.api.configurator import get_tentacles_activation, update_activation_configuration
-from octobot_evaluators.constants import CONFIG_FORCED_TIME_FRAME
-from octobot_tentacles_manager.constants import TENTACLES_EVALUATOR_PATH
-from octobot_trading.constants import CONFIG_TRADER_RISK, CONFIG_TRADING
-from octobot_evaluators.evaluator.strategy_evaluator import StrategyEvaluator
-from octobot_evaluators.evaluator.TA_evaluator import TAEvaluator
-from octobot_trading.api.modes import get_activated_trading_mode
-from octobot_trading.modes import AbstractTradingMode
-from tentacles.Trading import Mode
-from tentacles.Evaluator import Strategies
-from tentacles.Evaluator import TA
+import octobot_commons.data_util as data_util
+import octobot_commons.tentacles_management as tentacles_management
+import octobot_commons.logging as common_logging
+
+import octobot.constants as constants
+import octobot.strategy_optimizer as strategy_optimizer
+
+import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_tentacles_manager.constants as tentacles_manager_constants
+
+import octobot_evaluators.constants as evaluator_constants
+
+import octobot_evaluators.evaluators as evaluators
+
+import octobot_trading.api as trading_api
+import octobot_trading.modes as trading_modes
+import octobot_trading.constants as trading_constants
+
+import tentacles.Trading as tentacles_Trading
+import tentacles.Evaluator as tentacles_Evaluator
 
 CONFIG = 0
 RANK = 1
@@ -48,14 +49,16 @@ class StrategyOptimizer:
     """
     StrategyOptimizer is a tool that performs backtesting with different configurations
     """
+
     def __init__(self, config, tentacles_setup_config, strategy_name):
         self.is_properly_initialized = False
-        self.logger = get_logger(self.get_name())
+        self.logger = common_logging.get_logger(self.get_name())
         self.config = config
-        self.tentacles_setup_config = deepcopy(tentacles_setup_config)
-        self.trading_mode = get_activated_trading_mode(tentacles_setup_config)
-        self.strategy_class = get_class_from_string(strategy_name, StrategyEvaluator,
-                                                    Strategies, evaluator_parent_inspection)
+        self.tentacles_setup_config = copy.deepcopy(tentacles_setup_config)
+        self.trading_mode = trading_modes.get_activated_trading_mode(tentacles_setup_config)
+        self.strategy_class = tentacles_management.get_class_from_string(
+            strategy_name, evaluators.StrategyEvaluator,
+            tentacles_Evaluator.Strategies, tentacles_management.evaluator_parent_inspection)
         self.run_results = []
         self.sorted_results_by_time_frame = {}
         self.sorted_results_through_all_time_frame = []
@@ -87,7 +90,7 @@ class StrategyOptimizer:
             self.sorted_results_by_time_frame = {}
             self.sorted_results_through_all_time_frame = []
 
-            previous_log_level = get_global_logger_level()
+            previous_log_level = common_logging.get_global_logger_level()
 
             try:
                 self.all_TAs = self._get_all_TA() if TAs is None else TAs
@@ -107,18 +110,18 @@ class StrategyOptimizer:
                 self.total_nb_runs = int(len(self.risks) * ((math.pow(2, nb_TFs) - 1) * (math.pow(2, nb_TAs) - 1)))
 
                 self.logger.info("Setting logging level to logging.ERROR to limit messages.")
-                set_global_logger_level(logging.ERROR)
+                common_logging.set_global_logger_level(logging.ERROR)
 
                 self.run_id = 1
                 # test with several risks
                 for risk in self.risks:
-                    self.config[CONFIG_TRADING][CONFIG_TRADER_RISK] = risk
+                    self.config[trading_constants.CONFIG_TRADING][trading_constants.CONFIG_TRADER_RISK] = risk
                     eval_conf_history = []
                     # test with several evaluators
                     for evaluator_conf_iteration in range(nb_TAs):
                         current_forced_evaluator = self.all_TAs[evaluator_conf_iteration]
                         # test with 1-n evaluators at a time
-                        for nb_evaluators in range(1, nb_TAs+1):
+                        for nb_evaluators in range(1, nb_TAs + 1):
                             # test different configurations
                             for _ in range(nb_TAs):
                                 activated_evaluators = self._get_activated_element(self.all_TAs,
@@ -133,7 +136,7 @@ class StrategyOptimizer:
                                     for time_frame_conf_iteration in range(nb_TFs):
                                         current_forced_time_frame = self.all_time_frames[time_frame_conf_iteration]
                                         # test with 1-n time frames at a time
-                                        for nb_time_frames in range(1, nb_TFs+1):
+                                        for nb_time_frames in range(1, nb_TFs + 1):
                                             # test different configurations
                                             for _ in range(nb_TFs):
                                                 activated_time_frames = \
@@ -142,7 +145,8 @@ class StrategyOptimizer:
                                                                                 nb_time_frames,
                                                                                 time_frames_conf_history)
                                                 if activated_time_frames is not None:
-                                                    self.config[CONFIG_FORCED_TIME_FRAME] = activated_time_frames
+                                                    self.config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = \
+                                                        activated_time_frames
                                                     print(f"{self.run_id}/{self.total_nb_runs} Run with: evaluators: "
                                                           f"{activated_evaluators}, "
                                                           f"time frames :{activated_time_frames}, risk: {risk}")
@@ -154,7 +158,7 @@ class StrategyOptimizer:
                 self._find_optimal_configuration_using_results()
             finally:
                 self.current_test_suite = None
-                set_global_logger_level(previous_log_level)
+                common_logging.set_global_logger_level(previous_log_level)
                 self.is_computing = False
                 self.logger.info(f"{self.get_name()} finished computation.")
                 self.logger.info("Logging level restored.")
@@ -163,13 +167,13 @@ class StrategyOptimizer:
                                f"{self.run_id}/{self.total_nb_runs} processed")
 
     def _run_test_suite(self, config, evaluators):
-        self.current_test_suite = StrategyTestSuite()
+        self.current_test_suite = strategy_optimizer.StrategyTestSuite()
         self.current_test_suite.evaluators = list(evaluators)
         self.current_test_suite.initialize_with_strategy(self.strategy_class,
                                                          self.tentacles_setup_config,
-                                                         deepcopy(config))
+                                                         copy.deepcopy(config))
         no_error = asyncio.run(self.current_test_suite.run_test_suite(self.current_test_suite),
-                               debug=OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION)
+                               debug=constants.OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION)
         if not no_error:
             self.errors = self.errors.union(set([str(e) for e in self.current_test_suite.exceptions]))
         run_result = self.current_test_suite.get_test_suite_result()
@@ -177,14 +181,15 @@ class StrategyOptimizer:
 
     def _adapt_tentacles_config(self, activated_evaluators):
         to_update_config = {}
-        tentacles_activation = get_tentacles_activation(self.tentacles_setup_config)
-        for tentacle_class_name in tentacles_activation[TENTACLES_EVALUATOR_PATH]:
+        tentacles_activation = tentacles_manager_api.get_tentacles_activation(self.tentacles_setup_config)
+        for tentacle_class_name in tentacles_activation[tentacles_manager_constants.TENTACLES_EVALUATOR_PATH]:
             if tentacle_class_name in activated_evaluators:
                 to_update_config[tentacle_class_name] = True
-            elif get_class_from_string(tentacle_class_name, StrategyEvaluator, Strategies,
-                                       evaluator_parent_inspection) is None:
+            elif tentacles_management.get_class_from_string(tentacle_class_name, evaluators.StrategyEvaluator,
+                                                            tentacles_Evaluator.Strategies,
+                                                            tentacles_management.evaluator_parent_inspection) is None:
                 to_update_config[tentacle_class_name] = False
-        update_activation_configuration(self.tentacles_setup_config, to_update_config, False)
+        tentacles_manager_api.update_activation_configuration(self.tentacles_setup_config, to_update_config, False)
 
     def _find_optimal_configuration_using_results(self):
         for time_frame in self.all_time_frames:
@@ -200,7 +205,7 @@ class StrategyOptimizer:
                 results_through_all_time_frame[result_summary][RANK] += rank
                 results_through_all_time_frame[result_summary][TRADES] += result.trades_counts
 
-        result_list = [(result, trades_and_rank[RANK], mean(trades_and_rank[TRADES]))
+        result_list = [(result, trades_and_rank[RANK], data_util.mean(trades_and_rank[TRADES]))
                        for result, trades_and_rank in results_through_all_time_frame.items()]
 
         # inner function to replace uncythonizable lambda expression
@@ -232,7 +237,7 @@ class StrategyOptimizer:
                          f"average trades count: {best_result[TRADES_IN_RESULT]:f}")
 
     def get_overall_progress(self):
-        return int((self.run_id-1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
+        return int((self.run_id - 1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
 
     def is_in_progress(self):
         return self.get_overall_progress() != 100
@@ -243,9 +248,9 @@ class StrategyOptimizer:
     def get_report(self):
         # index, evaluators, risk, score, trades
         if self.sorted_results_through_all_time_frame:
-            results = [TestSuiteResult.convert_result_into_dict(rank, result[CONFIG].evaluators, "",
-                                                                result[CONFIG].risk, result[RANK],
-                                                                round(result[TRADES_IN_RESULT], 5))
+            results = [strategy_optimizer.TestSuiteResult.convert_result_into_dict(rank, result[CONFIG].evaluators, "",
+                                                                                   result[CONFIG].risk, result[RANK],
+                                                                                   round(result[TRADES_IN_RESULT], 5))
                        for rank, result in enumerate(self.sorted_results_through_all_time_frame[0:100])]
         else:
             results = []
@@ -272,16 +277,16 @@ class StrategyOptimizer:
         if nb_elements_to_consider > 1:
             i = 0
             while i < len(all_elements) and \
-                    len(eval_conf) < nb_elements_to_consider+additional_elements_count:
+                    len(eval_conf) < nb_elements_to_consider + additional_elements_count:
                 current_elem = all_elements[i]
                 if current_elem not in eval_conf:
                     eval_conf[current_elem] = True
-                    if len(eval_conf) == nb_elements_to_consider+additional_elements_count and \
+                    if len(eval_conf) == nb_elements_to_consider + additional_elements_count and \
                             ((eval_conf if dict_shaped else sorted([key.value for key in eval_conf]))
                              in elem_conf_history):
                         eval_conf.pop(current_elem)
                 i += 1
-        if len(eval_conf) == nb_elements_to_consider+additional_elements_count:
+        if len(eval_conf) == nb_elements_to_consider + additional_elements_count:
             to_use_conf = eval_conf
             if not dict_shaped:
                 to_use_conf = sorted([key.value for key in eval_conf])
@@ -301,10 +306,13 @@ class StrategyOptimizer:
 
     @staticmethod
     def _is_relevant_evaluation_config(evaluator):
-        return get_class_from_string(evaluator, TAEvaluator, TA, evaluator_parent_inspection) is not None
+        return tentacles_management.get_class_from_string(
+            evaluator, evaluators.TAEvaluator, tentacles_Evaluator.TA,
+            tentacles_management.evaluator_parent_inspection) is not None
 
     def _get_all_TA(self):
         return [evaluator
                 for evaluator, activated
-                in get_tentacles_activation(self.tentacles_setup_config)[TENTACLES_EVALUATOR_PATH].items()
+                in tentacles_manager_api.get_tentacles_activation(self.tentacles_setup_config)[
+                    tentacles_manager_constants.TENTACLES_EVALUATOR_PATH].items()
                 if activated and StrategyOptimizer._is_relevant_evaluation_config(evaluator)]
