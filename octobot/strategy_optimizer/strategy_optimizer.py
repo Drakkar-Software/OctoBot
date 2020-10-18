@@ -32,12 +32,8 @@ import octobot_evaluators.constants as evaluator_constants
 
 import octobot_evaluators.evaluators as evaluators
 
-import octobot_trading.api as trading_api
 import octobot_trading.modes as trading_modes
 import octobot_trading.constants as trading_constants
-
-import tentacles.Trading as tentacles_Trading
-import tentacles.Evaluator as tentacles_Evaluator
 
 CONFIG = 0
 RANK = 1
@@ -51,6 +47,8 @@ class StrategyOptimizer:
     """
 
     def __init__(self, config, tentacles_setup_config, strategy_name):
+        # Lazy import of tentacles to let tentacles manager handle imports
+        import tentacles.Evaluator as tentacles_Evaluator
         self.is_properly_initialized = False
         self.logger = common_logging.get_logger(self.get_name())
         self.config = config
@@ -180,6 +178,8 @@ class StrategyOptimizer:
         self.run_results.append(run_result)
 
     def _adapt_tentacles_config(self, activated_evaluators):
+        # Lazy import of tentacles to let tentacles manager handle imports
+        import tentacles.Evaluator as tentacles_Evaluator
         to_update_config = {}
         tentacles_activation = tentacles_manager_api.get_tentacles_activation(self.tentacles_setup_config)
         for tentacle_class_name in tentacles_activation[tentacles_manager_constants.TENTACLES_EVALUATOR_PATH]:
@@ -306,6 +306,8 @@ class StrategyOptimizer:
 
     @staticmethod
     def _is_relevant_evaluation_config(evaluator):
+        # Lazy import of tentacles to let tentacles manager handle imports
+        import tentacles.Evaluator as tentacles_Evaluator
         return tentacles_management.get_class_from_string(
             evaluator, evaluators.TAEvaluator, tentacles_Evaluator.TA,
             tentacles_management.evaluator_parent_inspection) is not None
