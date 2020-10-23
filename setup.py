@@ -37,24 +37,26 @@ from octobot.constants import PROJECT_NAME, VERSION
 
 PACKAGES = find_packages(exclude=["tentacles*"])
 
-packages_list = ["octobot.initializer",
-                 "octobot.configuration_manager",
-                 "octobot.task_manager",
-                 "octobot.api.octobot_api",
-                 "octobot.octobot",
-                 "octobot.channels.octobot_channel",
-                 "octobot.consumers.octobot_channel_consumer",
-                 "octobot.producers.evaluator_producer",
-                 "octobot.producers.exchange_producer",
-                 "octobot.producers.interface_producer",
-                 "octobot.producers.service_feed_producer",
-                 "octobot.backtesting.octobot_backtesting",
-                 "octobot.backtesting.octobot_backtesting_factory",
-                 "octobot.backtesting.independent_backtesting",
-                 "octobot.backtesting.abstract_backtesting_test",
-                 "octobot.strategy_optimizer.strategy_test_suite",
-                 "octobot.strategy_optimizer.test_suite_result",
-                 "octobot.strategy_optimizer.strategy_optimizer"]
+packages_list = [
+    "octobot.configuration_manager",
+    "octobot.octobot_backtesting_factory",
+    "octobot.octobot_api",
+    "octobot.task_manager",
+    "octobot.octobot_channel_consumer",
+    "octobot.initializer",
+    "octobot.octobot",
+    "octobot.backtesting.independent_backtesting",
+    "octobot.backtesting.abstract_backtesting_test",
+    "octobot.backtesting.octobot_backtesting",
+    "octobot.channels.octobot_channel",
+    "octobot.strategy_optimizer.strategy_test_suite",
+    "octobot.strategy_optimizer.test_suite_result",
+    "octobot.strategy_optimizer.strategy_optimizer",
+    "octobot.producers.interface_producer",
+    "octobot.producers.service_feed_producer",
+    "octobot.producers.evaluator_producer",
+    "octobot.producers.exchange_producer",
+]
 
 ext_modules = [
     Extension(package, [f"{package.replace('.', '/')}.py"])

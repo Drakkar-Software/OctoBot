@@ -14,9 +14,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot.octobot cimport OctoBot
+cimport octobot.octobot  as octobot_class
 
-cdef class OctoBotBacktestingFactory(OctoBot):
+
+cdef class OctoBotBacktestingFactory(octobot_class.OctoBot):
     cdef object independent_backtesting
     cdef bint log_report
     cdef bint run_on_common_part_only

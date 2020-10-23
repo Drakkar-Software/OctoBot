@@ -14,15 +14,16 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot_channels.channels.channel cimport Channel
-from octobot_channels.consumer cimport Consumer, InternalConsumer, SupervisedConsumer
-from octobot_channels.producer cimport Producer
+cimport async_channel.channels as channels
+cimport async_channel.consumer as consumers
+cimport async_channel.producer as producers
 
-cdef class OctoBotChannel(Channel):
+
+cdef class OctoBotChannel(channels.Channel):
     pass
 
-cdef class OctoBotChannelConsumer(Consumer):
+cdef class OctoBotChannelConsumer(consumers.Consumer):
     pass
 
-cdef class OctoBotChannelProducer(Producer):
+cdef class OctoBotChannelProducer(producers.Producer):
     pass
