@@ -1,14 +1,15 @@
 notifications:
   email: false
-dist: xenial
 os: linux
+dist: xenial
 language: python
 cache: pip
-python: 3.7-dev
+python: 3.8-dev
 services:
   - docker
 env:
   global:
+    - PYTHON_VERSION=3.8
     - GH_REPO=Drakkar-Software/OctoBot
     - DEPLOY_BRANCH=master
     - PACKAGE_FOLDER=octobot
@@ -30,22 +31,16 @@ before_deploy:
 
 jobs:
   include:
-    - name: "Linux - Python 3.7-dev - Python sources"
+    - name: "Linux - Python 3.8 - Python sources"
       stage: test
-      os: linux
-      python: 3.7-dev
-      language: python
       script:
         - pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
         - pytest tentacles
       after_success:
         - if [ $TRAVIS_PULL_REQUEST == "false" ]; then coveralls; fi
 
-    - name: "Linux amd64 - Python 3.7-dev - Installed"
+    - name: "Linux amd64 - Python 3.8 - Installed"
       stage: test
-      os: linux
-      python: 3.7-dev
-      language: python
       script:
         - python3 setup.py build_ext --inplace
         - python3 setup.py install
@@ -55,9 +50,6 @@ jobs:
 
     - name: "Linux amd64 - Docker - Lint"
       stage: test
-      os: linux
-      python: 3.7-dev
-      language: python
       before_install: skip
       install: skip
       script:
@@ -65,7 +57,6 @@ jobs:
 
     - name: "Linux - Docker - Deploy"
       stage: deploy
-      os: linux
       before_install: echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
       install: skip
       script:
@@ -82,7 +73,6 @@ jobs:
 
     - name: "Linux - Docker - Deploy - Stable"
       stage: deploy
-      os: linux
       before_install: skip
       install: skip
       script:
@@ -99,7 +89,6 @@ jobs:
 
     - name: "Linux - Docker - Deploy - Tag"
       stage: deploy
-      os: linux
       before_install: skip
       install: skip
       script:
@@ -133,7 +122,7 @@ jobs:
             tags: true
             condition: $TRAVIS_OS_NAME = 'linux'
         - provider: script
-          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/pypi-builder:manylinux-i686
+          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/pypi-builder:python-$PYTHON_VERSION-manylinux-i686
           cleanup: false
           on:
             repo: "$GH_REPO"
@@ -141,7 +130,7 @@ jobs:
             tags: true
             condition: "$TRAVIS_OS_NAME = 'linux'"
         - provider: script
-          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/pypi-builder:manylinux-x86_64
+          script: docker run -it -e PYPI_USERNAME=$PYPI_USERNAME -e PYPI_PASSWORD=$PYPI_PASSWORD -v $(pwd):/project drakkarsoftware/pypi-builder:python-$PYTHON_VERSION-manylinux-x86_64
           cleanup: false
           on:
             repo: "$GH_REPO"
