@@ -1,6 +1,6 @@
 ---
 kind: pipeline
-name: tests-python3.7-arm64
+name: tests-python3.8-arm64
 
 platform:
   os: linux
@@ -8,7 +8,7 @@ platform:
 
 steps:
 - name: tests
-  image: python:3.7
+  image: python:3.8
   environment:
     OCTOBOT_PYPI_URL:
       from_secret: OCTOBOT_PYPI_URL
@@ -24,7 +24,7 @@ steps:
 
 ---
 kind: pipeline
-name: tests-python3.7-arm32
+name: tests-python3.8-arm32
 
 platform:
   os: linux
@@ -32,7 +32,7 @@ platform:
 
 steps:
 - name: tests
-  image: python:3.7
+  image: python:3.8
   environment:
     OCTOBOT_PYPI_URL:
       from_secret: OCTOBOT_PYPI_URL
@@ -48,7 +48,7 @@ steps:
 
 ---
 kind: pipeline
-name: deploy-python3.7-arm64
+name: deploy-python3.8-arm64
 
 workspace:
   base: /project
@@ -60,7 +60,7 @@ platform:
 steps:
 - name: pypi_publish
   pull: always
-  image: drakkarsoftware/pypi-builder:manylinux-aarch64
+  image: drakkarsoftware/pypi-builder:python-3.8-manylinux-aarch64
   environment:
     PYPI_USERNAME:
       from_secret: pypi_username
