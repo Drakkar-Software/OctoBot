@@ -14,15 +14,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot.configuration_manager cimport ConfigurationManager
-from octobot.octobot_channel_consumer cimport OctoBotChannelGlobalConsumer
-from octobot.initializer cimport Initializer
-from octobot.octobot_api cimport OctoBotAPI
-from octobot.producers.evaluator_producer cimport EvaluatorProducer
-from octobot.producers.exchange_producer cimport ExchangeProducer
-from octobot.producers.interface_producer cimport InterfaceProducer
-from octobot.producers.service_feed_producer cimport ServiceFeedProducer
-from octobot.task_manager cimport TaskManager
+cimport octobot.configuration_manager as configuration_manager
+cimport octobot.octobot_channel_consumer as octobot_channel_consumer
+cimport octobot.initializer as initializer
+cimport octobot.octobot_api as octobot_api
+cimport octobot.producers as producers
+cimport octobot.task_manager as task_manager
+
 
 cdef class OctoBot:
     cdef object logger
@@ -42,15 +40,15 @@ cdef class OctoBot:
     cdef public object async_loop
     cdef public object tentacles_setup_config
 
-    cdef public Initializer initializer
-    cdef public TaskManager task_manager
-    cdef public ExchangeProducer exchange_producer
-    cdef public EvaluatorProducer evaluator_producer
-    cdef public InterfaceProducer interface_producer
-    cdef public ServiceFeedProducer service_feed_producer
-    cdef public OctoBotAPI octobot_api
-    cdef public OctoBotChannelGlobalConsumer global_consumer
-    cdef public ConfigurationManager configuration_manager
+    cdef public initializer.Initializer initializer
+    cdef public task_manager.TaskManager task_manager
+    cdef public producers.ExchangeProducer exchange_producer
+    cdef public producers.EvaluatorProducer evaluator_producer
+    cdef public producers.InterfaceProducer interface_producer
+    cdef public producers.ServiceFeedProducer service_feed_producer
+    cdef public octobot_api.OctoBotAPI octobot_api
+    cdef public octobot_channel_consumer.OctoBotChannelGlobalConsumer global_consumer
+    cdef public configuration_manager.ConfigurationManager configuration_manager
 
     cpdef object run_in_main_asyncio_loop(self, object coroutine)
     cpdef void set_watcher(self, object watcher)

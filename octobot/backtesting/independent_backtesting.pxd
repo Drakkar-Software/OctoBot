@@ -15,8 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+cimport octobot.backtesting.octobot_backtesting as octobot_backtesting
 
-from octobot.backtesting.octobot_backtesting cimport OctoBotBacktesting
 
 cdef class IndependentBacktesting:
     cdef list forced_time_frames
@@ -35,7 +35,7 @@ cdef class IndependentBacktesting:
     cdef public dict fees_config
     cdef public bint stopped
 
-    cdef public OctoBotBacktesting octobot_backtesting
+    cdef public octobot_backtesting.OctoBotBacktesting octobot_backtesting
 
     cpdef bint is_in_progress(self)
     cpdef double get_progress(self)

@@ -15,10 +15,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from octobot.backtesting.abstract_backtesting_test cimport AbstractBacktestingTest
-from octobot.strategy_optimizer.test_suite_result cimport TestSuiteResult
+cimport octobot.backtesting as octobot_backtesting
+cimport octobot.strategy_optimizer as strategy_optimizer
 
-cdef class StrategyTestSuite(AbstractBacktestingTest):
+
+cdef class StrategyTestSuite(octobot_backtesting.AbstractBacktestingTest):
     cdef list _profitability_results
     cdef list _trades_counts
 
@@ -26,6 +27,6 @@ cdef class StrategyTestSuite(AbstractBacktestingTest):
     cdef public list exceptions
     cdef public list evaluators
 
-    cpdef TestSuiteResult get_test_suite_result(self)
+    cpdef strategy_optimizer.TestSuiteResult get_test_suite_result(self)
 
     cdef void _handle_results(self, object independent_backtesting, object profitability)

@@ -14,9 +14,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot.channels.octobot_channel cimport OctoBotChannelProducer
+cimport octobot.channels as octobot_channels
 
-cdef class InterfaceProducer(OctoBotChannelProducer):
+
+cdef class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
     cdef public object octobot
 
     cdef public list interfaces
