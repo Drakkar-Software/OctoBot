@@ -14,9 +14,10 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot.channels.octobot_channel cimport OctoBotChannelProducer
+cimport octobot.channels as octobot_channel 
 
-cdef class EvaluatorProducer(OctoBotChannelProducer):
+
+cdef class EvaluatorProducer(octobot_channel.OctoBotChannelProducer):
     cdef public object octobot
     cdef public object tentacles_setup_config
 

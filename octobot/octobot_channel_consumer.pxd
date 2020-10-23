@@ -14,7 +14,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from octobot_channels.channels.channel cimport Channel
+cimport async_channel.channels as channels
 
 cdef class OctoBotChannelGlobalConsumer:
     cdef object octobot
@@ -22,4 +22,4 @@ cdef class OctoBotChannelGlobalConsumer:
 
     cdef list octobot_channel_consumers
 
-    cdef Channel octobot_channel
+    cdef channels.Channel octobot_channel

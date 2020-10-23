@@ -1,3 +1,4 @@
+# cython: language_level=3
 #  Drakkar-Software OctoBot
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -13,3 +14,16 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+
+from octobot.channels cimport octobot_channel
+from octobot.channels.octobot_channel cimport (
+    OctoBotChannelConsumer,
+    OctoBotChannelProducer,
+    OctoBotChannel,
+)
+
+__all__ = [
+    "OctoBotChannelConsumer",
+    "OctoBotChannelProducer",
+    "OctoBotChannel",
+]
