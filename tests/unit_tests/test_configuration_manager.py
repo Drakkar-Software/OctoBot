@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import os
+import pytest
 
 from octobot.configuration_manager import init_config
 from octobot_commons.constants import CONFIG_FILE
@@ -24,10 +25,12 @@ def get_fake_config_path():
     return os.path.join(TEST_CONFIG_FOLDER, f"test_{CONFIG_FILE}")
 
 
+@pytest.mark.timeout(2)
 def test_init_config():
-    if os.path.isfile(get_fake_config_path()):
-        os.remove(get_fake_config_path())
+    fake_config_path = get_fake_config_path()
+    if os.path.isfile(fake_config_path):
+        os.remove(fake_config_path)
 
-    init_config(config_file=get_fake_config_path(), from_config_file=os.path.join(TEST_CONFIG_FOLDER, CONFIG_FILE))
-    assert os.path.isfile(get_fake_config_path())
-    os.remove(get_fake_config_path())
+    init_config(config_file=fake_config_path, from_config_file=os.path.join(TEST_CONFIG_FOLDER, CONFIG_FILE))
+    assert os.path.isfile(fake_config_path)
+    os.remove(fake_config_path)
