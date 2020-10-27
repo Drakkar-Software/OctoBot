@@ -15,6 +15,7 @@
 #  License along with this library.
 import logging
 import os
+import shutil
 import traceback
 import logging.config as config
 
@@ -23,6 +24,7 @@ import async_channel.channels as channel_instances
 import async_channel.enums as channel_enums
 
 import octobot_commons.enums as enums
+import octobot_commons.constants as commons_constants
 import octobot_commons.logging as common_logging
 import octobot_commons.channels_name as channels_name
 import octobot_commons.pretty_printer as pretty_printer
@@ -47,8 +49,7 @@ def init_logger():
     try:
         if not os.path.exists(constants.LOGS_FOLDER):
             os.mkdir(constants.LOGS_FOLDER)
-
-        config.fileConfig(constants.LOGGING_CONFIG_FILE)
+        _load_logger_config()
         # overwrite BOT_CHANNEL_LOGGER to apply global logging configuration
         global BOT_CHANNEL_LOGGER
         BOT_CHANNEL_LOGGER = common_logging.get_logger("OctoBot Channel")
@@ -74,6 +75,20 @@ def init_logger():
 
     sys.excepthook = _log_uncaught_exceptions
     return logger
+
+
+def _load_logger_config():
+    try:
+        # use local logging file to allow users to customize the log level
+        if not os.path.isfile(constants.USER_LOCAL_LOGGING_CONFIG_FILE):
+            if not os.path.exists(commons_constants.USER_FOLDER):
+                os.mkdir(commons_constants.USER_FOLDER)
+            shutil.copyfile(constants.LOGGING_CONFIG_FILE, constants.USER_LOCAL_LOGGING_CONFIG_FILE)
+        config.fileConfig(constants.USER_LOCAL_LOGGING_CONFIG_FILE)
+    except Exception as ex:
+        config.fileConfig(constants.LOGGING_CONFIG_FILE)
+        logging.getLogger("Logging Configuration").warning(f"Impossible to initialize local logging configuration file,"
+                                                           f" using default one. {ex}")
 
 
 async def init_exchange_chan_logger(exchange_id):

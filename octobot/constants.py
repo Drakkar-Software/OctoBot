@@ -16,6 +16,8 @@
 import os
 import pathlib
 
+import octobot_commons.constants as commons_constants
+
 PROJECT_NAME = "OctoBot"
 SHORT_VERSION = "0.4.0"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
@@ -79,6 +81,7 @@ SCHEMA = "schema"
 CONFIG_FILE_SCHEMA = f"{CONFIG_FOLDER}/config_{SCHEMA}.json"
 DEFAULT_CONFIG_FILE = f"{CONFIG_FOLDER}/default_config.json"
 LOGGING_CONFIG_FILE = f"{CONFIG_FOLDER}/logging_config.ini"
+USER_LOCAL_LOGGING_CONFIG_FILE = f"{commons_constants.USER_FOLDER}/logging_config.ini"
 LOG_FILE = f"{LOGS_FOLDER}/{PROJECT_NAME}.log"
 
 # Optimizer
