@@ -18,13 +18,16 @@ FROM python:3.8-slim-buster
 WORKDIR /octobot
 COPY --from=base /opt/venv /opt/venv
 COPY octobot/config /octobot/octobot/config
+COPY docker-entrypoint.sh docker-entrypoint.sh
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /opt/venv/bin/OctoBot OctoBot # Make sure we use the virtualenv
+    && ln -s /opt/venv/bin/OctoBot OctoBot # Make sure we use the virtualenv \
+    && chmod +x docker-entrypoint.sh
 
 VOLUME /octobot/tentacles
 VOLUME /octobot/user
+EXPOSE 5001
 
-ENTRYPOINT ["./OctoBot"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
