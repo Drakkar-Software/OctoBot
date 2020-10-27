@@ -149,4 +149,11 @@ async def _check_backtesting_results(backtesting1, backtesting2, error_container
     await stop_independent_backtesting(backtesting2, memory_check=True)
     asyncio.get_event_loop().call_soon(check_independent_backtesting_remaining_objects, backtesting1)
     asyncio.get_event_loop().call_soon(check_independent_backtesting_remaining_objects, backtesting2)
+    asyncio.get_event_loop().call_soon(_print_tasks)
     await asyncio.create_task(error_container.check())
+
+
+def _print_tasks():
+    print("**** print tasks start *****")
+    print("\n".join([str(t) for t in asyncio.all_tasks()]))
+    print("**** print tasks done *****")
