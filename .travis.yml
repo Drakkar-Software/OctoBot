@@ -34,7 +34,7 @@ jobs:
     - name: "Linux - Python 3.8 - Python sources"
       stage: test
       script:
-        - pytest --cov=. --cov-config=.coveragerc --durations=0 -rws tests
+        - pytest -s --cov=. --cov-config=.coveragerc --durations=0 -rw tests
         - pytest tentacles
       after_success:
         - if [ $TRAVIS_PULL_REQUEST == "false" ]; then coveralls; fi

@@ -33,7 +33,7 @@ async def initialize_bot(bot):
     await bot.initialize()
 
 
-async def run_independent_backtesting(data_files, timeout=10, use_loggers=True, run_on_common_part_only=True):
+async def run_independent_backtesting(data_files, timeout=30, use_loggers=True, run_on_common_part_only=True):
     independent_backtesting = None
     try:
         config_to_use = load_test_config()

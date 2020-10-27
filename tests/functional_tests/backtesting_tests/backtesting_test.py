@@ -33,7 +33,7 @@ BACKTESTING_SYMBOLS = ["ICX/BTC", "VEN/BTC", "XRB/BTC", "2020ADA/BTC", "2020ADA/
 pytestmark = pytest.mark.asyncio
 
 
-@pytest.mark.timeout(15)
+@pytest.mark.timeout(150)
 async def test_single_data_file_backtesting():
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
@@ -43,7 +43,7 @@ async def test_single_data_file_backtesting():
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
 
-@pytest.mark.timeout(15)
+@pytest.mark.timeout(150)
 async def test_single_data_file_no_logs_backtesting():
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
@@ -53,7 +53,7 @@ async def test_single_data_file_no_logs_backtesting():
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
 
-@pytest.mark.timeout(15)
+@pytest.mark.timeout(150)
 async def test_single_data_file_mixed_logs_backtesting():
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
@@ -63,61 +63,61 @@ async def test_single_data_file_mixed_logs_backtesting():
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
 
-@pytest.mark.timeout(45)
+@pytest.mark.timeout(450)
 async def test_double_synchronized_data_file_backtesting():
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]],
                                                               DATA_FILES[BACKTESTING_SYMBOLS[1]]],
-                                                             timeout=40)
+                                                             timeout=140)
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]],
                                                              DATA_FILES[BACKTESTING_SYMBOLS[1]]],
-                                                            timeout=40)
+                                                            timeout=140)
 
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
 
-@pytest.mark.timeout(90)
+@pytest.mark.timeout(900)
 async def test_double_partially_synchronized_data_file_backtesting_common_only():
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                                               DATA_FILES[BACKTESTING_SYMBOLS[4]]],
-                                                             timeout=40)
+                                                             timeout=140)
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                                              DATA_FILES[BACKTESTING_SYMBOLS[4]]],
-                                                            timeout=40)
+                                                            timeout=140)
 
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
 
-@pytest.mark.timeout(90)
+@pytest.mark.timeout(900)
 async def test_double_partially_synchronized_data_file_backtesting_all_data_files_range():
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                                               DATA_FILES[BACKTESTING_SYMBOLS[4]]],
                                                              run_on_common_part_only=False,
-                                                             timeout=40)
+                                                             timeout=140)
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                                              DATA_FILES[BACKTESTING_SYMBOLS[4]]],
                                                             run_on_common_part_only=False,
-                                                            timeout=40)
+                                                            timeout=140)
 
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
 
 
-@pytest.mark.timeout(200)
+@pytest.mark.timeout(500)
 async def test_double_data_file_3_months_gap_backtesting_all_data_files_range():
     error_container = ErrorContainer()
     asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
     previous_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[5]],
                                                               DATA_FILES[BACKTESTING_SYMBOLS[0]]],
-                                                             timeout=80,
+                                                             timeout=180,
                                                              run_on_common_part_only=False)
     current_backtesting = await run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[5]],
                                                              DATA_FILES[BACKTESTING_SYMBOLS[0]]],
-                                                            timeout=80,
+                                                            timeout=180,
                                                             run_on_common_part_only=False)
 
     await _check_backtesting_results(previous_backtesting, current_backtesting, error_container)
