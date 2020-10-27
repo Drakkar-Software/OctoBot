@@ -17,6 +17,7 @@ import copy
 import os
 import shutil
 
+import octobot.constants as constants
 import octobot_commons.config as config
 import octobot_commons.config_manager as config_manager
 import octobot_commons.constants as common_constants
@@ -96,7 +97,7 @@ def config_health_check(config):
 
 
 def init_config(
-        config_file=config.get_user_config(), from_config_file=common_constants.DEFAULT_CONFIG_FILE
+        config_file=config.get_user_config(), from_config_file=constants.DEFAULT_CONFIG_FILE
 ):
     """
     Initialize default config
