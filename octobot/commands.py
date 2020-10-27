@@ -40,10 +40,10 @@ def call_tentacles_manager(command_args):
     octobot_logger.init_logger()
     tentacles_urls = [
         constants.DEFAULT_TENTACLES_URL,
-        tentacles_manager_api.get_compiled_tentacles_url(
-            constants.DEFAULT_COMPILED_TENTACLES_URL,
-            constants.TENTACLES_REQUIRED_VERSION
-        )
+        # tentacles_manager_api.get_compiled_tentacles_url(
+        #     constants.DEFAULT_COMPILED_TENTACLES_URL,
+        #     constants.TENTACLES_REQUIRED_VERSION
+        # )
     ]
     sys.exit(tentacles_manager_cli.handle_tentacles_manager_command(command_args,
                                                                     tentacles_urls=tentacles_urls,
@@ -84,13 +84,13 @@ async def _install_all_tentacles():
         await tentacles_manager_api.install_all_tentacles(constants.DEFAULT_TENTACLES_URL,
                                                           aiohttp_session=aiohttp_session,
                                                           bot_install_dir=constants.OCTOBOT_FOLDER)
-        compiled_tentacles_url = tentacles_manager_api.get_compiled_tentacles_url(
-            constants.DEFAULT_COMPILED_TENTACLES_URL,
-            constants.TENTACLES_REQUIRED_VERSION
-        )
-        await tentacles_manager_api.install_all_tentacles(compiled_tentacles_url,
-                                                          aiohttp_session=aiohttp_session,
-                                                          bot_install_dir=constants.OCTOBOT_FOLDER)
+        # compiled_tentacles_url = tentacles_manager_api.get_compiled_tentacles_url(
+        #     constants.DEFAULT_COMPILED_TENTACLES_URL,
+        #     constants.TENTACLES_REQUIRED_VERSION
+        # )
+        # await tentacles_manager_api.install_all_tentacles(compiled_tentacles_url,
+        #                                                   aiohttp_session=aiohttp_session,
+        #                                                   bot_install_dir=constants.OCTOBOT_FOLDER)
 
 
 def _signal_handler(_, __):
