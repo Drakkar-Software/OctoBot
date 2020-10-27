@@ -110,12 +110,6 @@ ENV/
 octobot/creator_temp/
 creator_temp/
 
-# config
-config/config.json
-
-# Specific config
-config/evaluator_config.json
-
 # Data
 backtesting/collector/data/**
 logs/matrix_history\.data
