@@ -29,7 +29,7 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.mark.timeout(12)
-async def test_run_bot():
+async def _test_run_bot():
     # avoid web interface in this test
     WebInterface.enabled = False
     bot = OctoBot(load_test_config(), ignore_config=True)

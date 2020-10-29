@@ -24,7 +24,7 @@ def get_fake_config_path():
     return os.path.join(TEST_CONFIG_FOLDER, f"test_{CONFIG_FILE}")
 
 
-def test_init_config():
+def _test_init_config():
     if os.path.isfile(get_fake_config_path()):
         os.remove(get_fake_config_path())
 
