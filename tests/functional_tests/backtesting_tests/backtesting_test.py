@@ -37,22 +37,28 @@ pytestmark = pytest.mark.asyncio
 
 async def test_single_data_file_backtesting():
     await _check_double_backtesting(
-        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]]),
-        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]])
+        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]],
+                                    timeout=140),
+        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]],
+                                    timeout=140)
     )
 
 
 async def test_single_data_file_no_logs_backtesting():
     await _check_double_backtesting(
-        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], use_loggers=False),
-        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], use_loggers=False)
+        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], use_loggers=False,
+                                    timeout=140),
+        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], use_loggers=False,
+                                    timeout=140)
     )
 
 
 async def test_single_data_file_mixed_logs_backtesting():
     await _check_double_backtesting(
-        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], use_loggers=False),
-        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], use_loggers=True)
+        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], use_loggers=False,
+                                    timeout=140),
+        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], use_loggers=True,
+                                    timeout=140)
     )
 
 
@@ -60,10 +66,10 @@ async def test_double_synchronized_data_file_backtesting():
     await _check_double_backtesting(
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[1]]],
-                                    timeout=40),
+                                    timeout=140),
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[1]]],
-                                    timeout=40)
+                                    timeout=140)
     )
 
 
@@ -71,10 +77,10 @@ async def test_double_partially_synchronized_data_file_backtesting_common_only()
     await _check_double_backtesting(
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[4]]],
-                                    timeout=40),
+                                    timeout=140),
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[4]]],
-                                    timeout=40)
+                                    timeout=140)
     )
 
 
@@ -83,11 +89,11 @@ async def test_double_partially_synchronized_data_file_backtesting_all_data_file
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[4]]],
                                     run_on_common_part_only=False,
-                                    timeout=40),
+                                    timeout=140),
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[4]]],
                                     run_on_common_part_only=False,
-                                    timeout=40)
+                                    timeout=140)
     )
 
 
@@ -96,11 +102,11 @@ async def test_double_data_file_3_months_gap_backtesting_all_data_files_range():
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[5]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[0]]],
                                     run_on_common_part_only=False,
-                                    timeout=80),
+                                    timeout=180),
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[5]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[0]]],
                                     run_on_common_part_only=False,
-                                    timeout=80)
+                                    timeout=180)
     )
 
 
