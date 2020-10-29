@@ -35,7 +35,7 @@ BACKTESTING_SYMBOLS = ["ICX/BTC", "VEN/BTC", "XRB/BTC", "2020ADA/BTC", "2020ADA/
 pytestmark = pytest.mark.asyncio
 
 
-async def _test_single_data_file_backtesting():
+async def test_single_data_file_backtesting():
     await _check_double_backtesting(
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]],
                                     timeout=140),
@@ -97,7 +97,7 @@ async def _test_double_partially_synchronized_data_file_backtesting_all_data_fil
     )
 
 
-async def test_double_data_file_3_months_gap_backtesting_all_data_files_range():
+async def _test_double_data_file_3_months_gap_backtesting_all_data_files_range():
     await _check_double_backtesting(
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[5]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[0]]],
