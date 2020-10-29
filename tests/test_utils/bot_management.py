@@ -60,4 +60,4 @@ async def run_independent_backtesting(data_files, timeout=10, use_loggers=True, 
         get_logger().exception(e, True, str(e))
         # stop backtesting to prevent zombie tasks
         await stop_independent_backtesting(independent_backtesting)
-        return independent_backtesting
+        raise
