@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
 
 from octobot_backtesting.errors import MissingTimeFrame
 from octobot_commons.logging.logging_util import get_logger
@@ -50,6 +51,11 @@ async def run_independent_backtesting(data_files, timeout=10, use_loggers=True, 
     except MissingTimeFrame:
         # ignore this exception: is due to missing of the only required time frame
         return independent_backtesting
+    except asyncio.TimeoutError as e:
+        get_logger().exception(e, True, f"Timeout after waiting for backtesting for {timeout} seconds.")
+        # stop backtesting to prevent zombie tasks
+        await stop_independent_backtesting(independent_backtesting)
+        raise
     except Exception as e:
         get_logger().exception(e, True, str(e))
         # stop backtesting to prevent zombie tasks
