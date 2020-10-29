@@ -62,7 +62,7 @@ async def _test_single_data_file_mixed_logs_backtesting():
     )
 
 
-async def test_double_synchronized_data_file_backtesting():
+async def _test_double_synchronized_data_file_backtesting():
     await _check_double_backtesting(
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[1]]],
@@ -84,7 +84,7 @@ async def _test_double_partially_synchronized_data_file_backtesting_common_only(
     )
 
 
-async def _test_double_partially_synchronized_data_file_backtesting_all_data_files_range():
+async def test_double_partially_synchronized_data_file_backtesting_all_data_files_range():
     await _check_double_backtesting(
         run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[3]],
                                      DATA_FILES[BACKTESTING_SYMBOLS[4]]],
