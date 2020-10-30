@@ -45,8 +45,8 @@ jobs:
         - python3 setup.py build_ext --inplace
         - python3 setup.py install
         - rm -rf $PACKAGE_FOLDER
-        - pytest -s tests
-        - pytest tentacles
+        - pytest tests
+        - pytest tentacles/Trading/Mode/daily_trading_mode/tests/test_daily_trading_mode.py::test_run_independent_backtestings_with_memory_check
 
     - name: "Linux amd64 - Docker - Lint"
       stage: test

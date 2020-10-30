@@ -67,7 +67,7 @@ jobs:
     displayName: 'Install OctoBot'
   - script: python -m pytest tests
     displayName: 'Run OctoBot tests'
-  - script: python -m pytest tentacles
+  - script: python -m pytest tentacles/Trading/Mode/daily_trading_mode/tests/test_daily_trading_mode.py::test_run_independent_backtestings_with_memory_check
     displayName: 'Run tentacles tests'
   - script: python setup.py bdist_wheel
     displayName: 'Building wheel'
@@ -124,7 +124,7 @@ jobs:
     displayName: 'Install OctoBot'
   - script: python -m pytest tests
     displayName: 'Run OctoBot tests'
-  - script: python -m pytest tentacles
+  - script: python -m pytest tentacles/Trading/Mode/daily_trading_mode/tests/test_daily_trading_mode.py::test_run_independent_backtestings_with_memory_check
     displayName: 'Run tentacles tests'
   - script: python setup.py bdist_wheel
     displayName: 'Building wheel'
