@@ -29,6 +29,7 @@ import octobot_services.api as service_api
 
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchange_data as exchange_data
+import octobot_trading.personal_data as personal_data
 import octobot_trading.api as trading_api
 
 import octobot.logger as logger
@@ -130,8 +131,14 @@ class OctoBotBacktesting:
     def check_remaining_objects(self):
         objects_leak_errors = []
         exchanges_count = len(self.exchange_manager_ids)
-        to_watch_objects = (exchange_data.ExchangeSymbolData, exchanges.ExchangeManager,
-                            exchanges.ExchangeSimulator, exchange_data.OHLCVUpdaterSimulator)
+        to_watch_objects = (exchange_data.ExchangeSymbolData, exchanges.ExchangeManager, exchanges.Exchanges,
+                            exchanges.ExchangeConfig, exchanges.AbstractExchange,
+                            personal_data.Order, personal_data.Trade, personal_data.Portfolio,
+                            personal_data.ExchangePersonalData,
+                            exchange_data.KlineProducer, exchange_data.FundingChannel, exchange_data.OrderBookChannel,
+                            exchange_data.MarkPriceChannel, exchange_data.RecentTradeChannel,
+                            exchanges.TraderSimulator, exchanges.SpotExchange, exchanges.DefaultCCXTSpotExchange,
+                            exchanges.Trader, exchanges.ExchangeSimulator, exchange_data.OHLCVUpdaterSimulator)
         objects_references = {obj: (0, []) for obj in to_watch_objects}
         expected_max_objects_references = {
             exchange_data.ExchangeSymbolData: exchanges_count + 1,
