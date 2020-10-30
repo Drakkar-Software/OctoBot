@@ -7,7 +7,7 @@ OctoBot-Trading==1.11.7
 OctoBot-Evaluators==1.6.2
 OctoBot-Tentacles-Manager==2.3.4
 OctoBot-Services==1.2.2
-OctoBot-Backtesting==1.6.2
+OctoBot-Backtesting==1.6.4
 Async-Channel==2.0.3
 
 ## Others
