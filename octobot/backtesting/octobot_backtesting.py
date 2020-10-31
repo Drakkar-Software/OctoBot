@@ -66,11 +66,12 @@ class OctoBotBacktesting:
             await self.start_loggers()
 
     async def stop_importers(self):
-        # Close databases
-        for importer in backtesting_api.get_importers(self.backtesting):
-            await backtesting_api.stop_importer(importer)
+        if self.backtesting is not None:
+            # Close databases
+            for importer in backtesting_api.get_importers(self.backtesting):
+                await backtesting_api.stop_importer(importer)
 
-    async def stop(self, memory_check=False):
+    async def stop(self, memory_check=False, should_raise=False):
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
         try:
             await backtesting_api.stop_backtesting(self.backtesting)
@@ -93,7 +94,11 @@ class OctoBotBacktesting:
             evaluator_api.del_matrix(self.matrix_id)
             for service_feed in self.service_feeds:
                 await service_api.stop_service_feed(service_feed)
-
+        except Exception as e:
+            self.logger.exception(e, True, f"Error when stopping independent backtesting: {e}")
+            if should_raise:
+                raise
+        finally:
             # call stop_importers in case it has not been called already
             await self.stop_importers()
 
@@ -103,8 +108,6 @@ class OctoBotBacktesting:
                 # (references to coroutine and caller objects are kept while in async loop)
                 asyncio.get_event_loop().call_soon(self.memory_leak_checkup, to_reference_check)
             self.backtesting = None
-        except Exception as e:
-            self.logger.exception(e, True, f"Error when stopping independent backtesting: {e}")
 
     def memory_leak_checkup(self, to_check_elements):
         self.logger.debug(f"Memory leak checking {[e.__class__.__name__ for e in to_check_elements]}")

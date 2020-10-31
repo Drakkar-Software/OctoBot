@@ -35,6 +35,8 @@ cdef class IndependentBacktesting:
     cdef public dict fees_config
     cdef public bint stopped
 
+    cdef public object post_backtesting_task
+
     cdef public octobot_backtesting.OctoBotBacktesting octobot_backtesting
 
     cpdef bint is_in_progress(self)
