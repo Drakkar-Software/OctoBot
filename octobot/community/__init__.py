@@ -21,6 +21,7 @@ from octobot.community.community_fields import (
 
 from octobot.community import community_analysis
 from octobot.community import community_manager
+from octobot.community import authentication
 
 from octobot.community.community_analysis import (
     get_community_metrics,
@@ -29,10 +30,20 @@ from octobot.community.community_analysis import (
 from octobot.community.community_manager import (
     CommunityManager,
 )
+from octobot.community.authentication import (
+    authenticated,
+    CommunityAuthentication,
+    FailedAuthentication,
+    AuthenticationRequired,
+)
 
 __all__ = [
     "CommunityFields",
     "get_community_metrics",
     "can_read_metrics",
     "CommunityManager",
+    "authenticated",
+    "CommunityAuthentication",
+    "FailedAuthentication",
+    "AuthenticationRequired",
 ]
