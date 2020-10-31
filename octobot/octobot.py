@@ -65,6 +65,9 @@ class OctoBot:
         # community if enabled
         self.community_handler = None
 
+        # community authentication
+        self.community_auth = community_manager.CommunityAuthentication(None)
+
         # octobot_api to request the current instance
         self.octobot_api = octobot_api.OctoBotAPI(self)
 
