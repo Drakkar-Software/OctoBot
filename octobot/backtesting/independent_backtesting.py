@@ -56,6 +56,7 @@ class IndependentBacktesting:
         self.forced_time_frames = []
         self._init_default_config_values()
         self.stopped = False
+        self.post_backtesting_task = None
         self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
                                                                   self.tentacles_setup_config,
                                                                   self.symbols_to_create_exchange_classes,
@@ -84,10 +85,10 @@ class IndependentBacktesting:
     async def join_backtesting_updater(self, timeout=None):
         await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
 
-    async def stop(self, memory_check=False):
+    async def stop(self, memory_check=False, should_raise=False):
         try:
             if not self.stopped:
-                await self.octobot_backtesting.stop(memory_check=memory_check)
+                await self.octobot_backtesting.stop(memory_check=memory_check, should_raise=should_raise)
         finally:
             self.stopped = True
 
@@ -106,7 +107,7 @@ class IndependentBacktesting:
     def _post_backtesting_start(self):
         logging.reset_backtesting_errors()
         logging.set_error_publication_enabled(False)
-        asyncio.create_task(self._register_post_backtesting_end_callback())
+        self.post_backtesting_task = asyncio.create_task(self._register_post_backtesting_end_callback())
 
     async def _register_post_backtesting_end_callback(self):
         await self.join_backtesting_updater(timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT)

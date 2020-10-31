@@ -25,9 +25,10 @@ def get_fake_config_path():
 
 
 def test_init_config():
-    if os.path.isfile(get_fake_config_path()):
-        os.remove(get_fake_config_path())
+    config_path = get_fake_config_path()
+    if os.path.isfile(config_path):
+        os.remove(config_path)
 
-    init_config(config_file=get_fake_config_path(), from_config_file=os.path.join(TEST_CONFIG_FOLDER, CONFIG_FILE))
-    assert os.path.isfile(get_fake_config_path())
-    os.remove(get_fake_config_path())
+    init_config(config_file=config_path, from_config_file=os.path.join(TEST_CONFIG_FOLDER, CONFIG_FILE))
+    assert os.path.isfile(config_path)
+    os.remove(config_path)
