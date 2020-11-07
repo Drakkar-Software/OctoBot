@@ -8,7 +8,7 @@ OctoBot-Evaluators==1.6.4
 OctoBot-Tentacles-Manager==2.3.5
 OctoBot-Services==1.2.3
 OctoBot-Backtesting==1.6.4
-Async-Channel==2.0.3
+Async-Channel==2.0.4
 
 ## Others
 colorlog==4.2.1
