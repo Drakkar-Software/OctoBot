@@ -194,7 +194,9 @@ class CommunityManager:
     def _get_eval_config(self):
         tentacle_setup_config = self.octobot_api.get_tentacles_setup_config()
         # trading mode
-        config_eval = [self.octobot_api.get_trading_mode().get_name()]
+        config_eval = []
+        if (trading_mode := self.octobot_api.get_trading_mode()) is not None:
+            config_eval.append(trading_mode.get_name())
 
         # strategies
         for strategy in evaluator_api.get_evaluator_classes_from_type(
