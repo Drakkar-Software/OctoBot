@@ -3,8 +3,6 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
 [![Coverage Status](https://img.shields.io/coveralls/github/Drakkar-Software/OctoBot.svg)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev) 
-[![Build Status](https://api.travis-ci.com/Drakkar-Software/OctoBot.svg?branch=dev)](https://travis-ci.com/Drakkar-Software/OctoBot) 
-[![Build Status](https://dev.azure.com/drakkarsoftware/OctoBot/_apis/build/status/Drakkar-Software.OctoBot?branchName=0.4.0)](https://dev.azure.com/drakkarsoftware/OctoBot/_build/latest?definitionId=1&branchName=0.4.0)
 [![Build Status](https://cloud.drone.io/api/badges/Drakkar-Software/OctoBot/status.svg)](https://cloud.drone.io/Drakkar-Software/OctoBot)
 
 #### Octobot Community
