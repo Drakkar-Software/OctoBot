@@ -222,9 +222,9 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          platforms: linux/amd64
           push: false
-          tags: drakkarsoftware/octobot:latest
+          tags: drakkarsoftware/octobot:0.4.0
 
       - name: Build and push latest
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.ref == 'refs/heads/0.4.0'
@@ -232,9 +232,9 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          platforms: linux/amd64
           push: true
-          tags: drakkarsoftware/octobot:latest
+          tags: drakkarsoftware/octobot:0.4.0
 
       - name: Build and push on tag
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
@@ -242,10 +242,11 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: |
-            drakkarsoftware/octobot:latest
+            drakkarsoftware/octobot:0.4.0
+            drakkarsoftware/octobot:0.4.0-stable
             drakkarsoftware/octobot:${GITHUB_REF////_}
 
       - name: Image digest
