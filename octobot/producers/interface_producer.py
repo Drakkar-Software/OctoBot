@@ -63,8 +63,9 @@ class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
             await self._register_exchange(to_notify_instance, exchange_id)
 
     async def register_interface(self, instance):
-        self.interfaces.append(instance)
-        await self._register_existing_exchanges(instance)
+        if instance is not None:
+            self.interfaces.append(instance)
+            await self._register_existing_exchanges(instance)
 
     async def register_notifier(self, instance):
         self.notifiers.append(instance)
