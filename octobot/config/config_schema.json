@@ -176,9 +176,6 @@
     "trading": {
       "type": "object",
       "properties": {
-        "multi-session-profitability": {
-          "type": "boolean"
-        },
         "reference-market": {
           "type": "string"
         },
@@ -189,7 +186,6 @@
         }
       },
       "required": [
-        "multi-session-profitability",
         "reference-market",
         "risk"
       ]
