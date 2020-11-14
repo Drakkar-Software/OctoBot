@@ -139,6 +139,9 @@ def stop_bot(bot, force=False):
 def restart_bot():
     if sys.argv[0].endswith(".py"):
         os.execl(sys.executable, sys.executable, *sys.argv)
+    elif sys.argv[0].endswith(constants.PROJECT_NAME):
+        # restart from python OctoBot package entrypoint
+        os.execl(sys.argv[0], *sys.argv)
     else:
         # prevent binary to add self as first argument
         os.execl(sys.executable, *sys.argv)
