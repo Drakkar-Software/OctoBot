@@ -1,6 +1,5 @@
 {
   "type": "object",
-
   "properties": {
     "DEBUG": {
       "type": "boolean"
@@ -8,13 +7,7 @@
     "DEV-MODE": {
       "type": "boolean"
     },
-    "PERF": {
-      "type": "boolean"
-    },
     "SAVE_EVALUATIONS": {
-      "type": "boolean"
-    },
-    "performance-analyser": {
       "type": "boolean"
     },
     "accepted_terms": {
@@ -35,28 +28,31 @@
       "type": "object",
       "patternProperties": {
         "^.*$": {
-            "type": "object",
-            "properties": {
-                "pairs": {
-                    "type": "array",
-                    "uniqueItems": true,
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "quote": {
-                    "type": "string"
-                    }
-                },
-                "add": {
-                    "type": "array",
-                    "uniqueItems": true,
-                    "items": {
-                        "type": "string"
-                    }
-                }
-           }
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "pairs": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "quote": {
+              "type": "string"
+            },
+            "add": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
         }
+      }
     },
     "data-collector": {
       "type": "object",
@@ -69,7 +65,9 @@
     "exchanges": {
       "type": "object",
       "patternProperties": {
-          "^.*$": { "type": "object" }
+        "^.*$": {
+          "type": "object"
+        }
       }
     },
     "metrics": {
@@ -112,13 +110,9 @@
     "services": {
       "type": "object",
       "patternProperties": {
-          "^.*$": { "type": "object" }
-      }
-    },
-    "tentacles-packages": {
-      "type": "array",
-      "items": {
-        "type": "string"
+        "^.*$": {
+          "type": "object"
+        }
       }
     },
     "trader": {
@@ -160,10 +154,10 @@
         "starting-portfolio": {
           "type": "object",
           "patternProperties": {
-              "^.*$": {
-                "type": "number",
-                "minimum": 0
-              }
+            "^.*$": {
+              "type": "number",
+              "minimum": 0
+            }
           }
         }
       },
@@ -197,9 +191,16 @@
       }
     }
   },
-
-  "required": ["backtesting", "crypto-currencies", "exchanges", "services", "notification", "trading", "trader", "trader-simulator"],
-
+  "required": [
+    "backtesting",
+    "crypto-currencies",
+    "exchanges",
+    "services",
+    "notification",
+    "trading",
+    "trader",
+    "trader-simulator"
+  ],
   "additionalProperties": {
     "type": "string"
   }

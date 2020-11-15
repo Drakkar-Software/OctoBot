@@ -4,6 +4,7 @@
   },
   "crypto-currencies":{
     "Bitcoin": {
+      "enabled": true,
       "pairs" : ["BTC/USDT"]
     }
   },
