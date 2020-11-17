@@ -119,7 +119,6 @@ async def start_bot(bot, logger, catch=False):
 
         # start
         try:
-            octobot.set_bot(bot)
             await bot.initialize()
         except asyncio.CancelledError:
             logger.info("Core engine tasks cancelled.")
