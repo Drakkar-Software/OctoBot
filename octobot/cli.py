@@ -31,6 +31,7 @@ import octobot_tentacles_manager.cli as tentacles_manager_cli
 
 import octobot_trading.constants as trading_constants
 
+import octobot
 import octobot.octobot as octobot_class
 import octobot.commands as commands
 import octobot.configuration_manager as configuration_manager
@@ -133,6 +134,16 @@ def start_octobot(args):
         if args.encrypter:
             commands.exchange_keys_encrypter()
             return
+        update_config_with_args(args, config, logger)
+
+        if args.backtesting:
+            bot = octobot_backtesting.OctoBotBacktestingFactory(config,
+                                                                run_on_common_part_only=not args.whole_data_range)
+        else:
+            bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history)
+        octobot.set_bot(bot)
+
+        _log_terms_if_unaccepted(config, logger)
 
         # Add tentacles folder to Python path
         sys.path.append(os.path.realpath(os.getcwd()))
@@ -150,16 +161,6 @@ def start_octobot(args):
         # In those cases load OctoBot
         _disable_interface_from_param("telegram", args.no_telegram, logger)
         _disable_interface_from_param("web", args.no_web, logger)
-
-        update_config_with_args(args, config, logger)
-
-        if args.backtesting:
-            bot = octobot_backtesting.OctoBotBacktestingFactory(config,
-                                                                run_on_common_part_only=not args.whole_data_range)
-        else:
-            bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history)
-
-        _log_terms_if_unaccepted(config, logger)
 
         commands.run_bot(bot, logger)
 
