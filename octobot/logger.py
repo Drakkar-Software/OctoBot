@@ -31,7 +31,7 @@ import octobot_commons.pretty_printer as pretty_printer
 
 import octobot_evaluators.evaluators.channel as evaluator_channels
 
-import octobot_trading.exchanges as trading_exchanges
+import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.enums as trading_enums
 
 import octobot.constants as constants
@@ -92,63 +92,63 @@ def _load_logger_config():
 
 
 async def init_exchange_chan_logger(exchange_id):
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.TICKER_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.TICKER_CHANNEL.value,
                                      exchange_id).new_consumer(
         ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.MINI_TICKER_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MINI_TICKER_CHANNEL.value,
                                      exchange_id).new_consumer(
         mini_ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.RECENT_TRADES_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.RECENT_TRADES_CHANNEL.value,
                                      exchange_id).new_consumer(
         recent_trades_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.ORDER_BOOK_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.ORDER_BOOK_CHANNEL.value,
                                      exchange_id).new_consumer(
         order_book_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.ORDER_BOOK_TICKER_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.ORDER_BOOK_TICKER_CHANNEL.value,
                                      exchange_id).new_consumer(
         order_book_ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.KLINE_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.KLINE_CHANNEL.value,
                                      exchange_id).new_consumer(
         kline_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.OHLCV_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.OHLCV_CHANNEL.value,
                                      exchange_id).new_consumer(
         ohlcv_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.BALANCE_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.BALANCE_CHANNEL.value,
                                      exchange_id).new_consumer(
         balance_callback, priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.BALANCE_PROFITABILITY_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.BALANCE_PROFITABILITY_CHANNEL.value,
                                      exchange_id).new_consumer(
         balance_profitability_callback, priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.TRADES_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.TRADES_CHANNEL.value,
                                      exchange_id).new_consumer(
         trades_callback, priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.LIQUIDATIONS_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.LIQUIDATIONS_CHANNEL.value,
                                      exchange_id).new_consumer(
         liquidations_callback, priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.POSITIONS_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.POSITIONS_CHANNEL.value,
                                      exchange_id).new_consumer(
         positions_callback, priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.ORDERS_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.ORDERS_CHANNEL.value,
                                      exchange_id).new_consumer(
         orders_callback, priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
                                      exchange_id).new_consumer(
         mark_price_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
-    await trading_exchanges.get_chan(channels_name.OctoBotTradingChannelsName.FUNDING_CHANNEL.value,
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.FUNDING_CHANNEL.value,
                                      exchange_id).new_consumer(
         funding_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
