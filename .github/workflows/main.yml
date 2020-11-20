@@ -96,12 +96,20 @@ jobs:
 
     - name: Compile project
       if: matrix.type == 'cython'
-      env:
-        CYTHON_IGNORE: true
       run: |
+        python setup.py build_ext --inplace
         python setup.py install
 
     - name: Pytests
+      if: matrix.type == 'cython'
+      env:
+        CYTHON_IGNORE: True
+      run: |
+        pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
+        pytest --durations=0 -rw tentacles
+
+    - name: Pytests
+      if: matrix.type != 'cython'
       run: |
         pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
         pytest --durations=0 -rw tentacles
@@ -222,9 +230,9 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          platforms: linux/amd64
           push: false
-          tags: drakkarsoftware/octobot:latest
+          tags: drakkarsoftware/octobot:0.4.0
 
       - name: Build and push latest
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.ref == 'refs/heads/0.4.0'
@@ -232,9 +240,9 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          platforms: linux/amd64
           push: true
-          tags: drakkarsoftware/octobot:latest
+          tags: drakkarsoftware/octobot:0.4.0
 
       - name: Build and push on tag
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
@@ -242,10 +250,11 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: |
-            drakkarsoftware/octobot:latest
+            drakkarsoftware/octobot:0.4.0
+            drakkarsoftware/octobot:0.4.0-stable
             drakkarsoftware/octobot:${GITHUB_REF////_}
 
       - name: Image digest
