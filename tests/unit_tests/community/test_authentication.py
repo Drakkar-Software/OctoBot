@@ -305,11 +305,11 @@ def test_auto_login(auth):
     with mock.patch.object(auth, "_refresh_auth", mock.Mock(side_effect=Exception())) as \
             _refresh_auth_mock, \
          mock.patch.object(auth, "logout", mock.Mock()) as logout_mock, \
-         mock.patch.object(auth.logger, "exception", mock.Mock()) as logger_mock:
+         mock.patch.object(auth, "logger", mock.Mock()) as logger_mock:
         auth._auto_login("1")
         assert auth.refresh_token == "1"
         _refresh_auth_mock.assert_called_once()
-        logger_mock.assert_called_once()
+        logger_mock.exception.assert_called_once()
         logout_mock.assert_not_called()
 
 
