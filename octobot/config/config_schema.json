@@ -81,6 +81,9 @@
         }
       }
     },
+    "community-token": {
+      "type": "string"
+    },
     "notification": {
       "type": "object",
       "properties": {
