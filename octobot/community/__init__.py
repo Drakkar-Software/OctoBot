@@ -34,6 +34,7 @@ from octobot.community.authentication import (
     authenticated,
     CommunityAuthentication,
     FailedAuthentication,
+    AuthenticationError,
     AuthenticationRequired,
 )
 
@@ -45,5 +46,6 @@ __all__ = [
     "authenticated",
     "CommunityAuthentication",
     "FailedAuthentication",
+    "AuthenticationError",
     "AuthenticationRequired",
 ]
