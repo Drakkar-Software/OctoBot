@@ -70,9 +70,9 @@ jobs:
       run: |
         mkdir user
         cp ./octobot/config/default_config.json ./user/config.json
-        export TENTACLES_URL_TAG=${GITHUB_REF////_}
-        echo "trying to download tentacles file $TENTACLES_URL_TAG.zip..."
-        TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=${GITHUB_REF////_} python3 start.py tentacles -q --install --all || python3 start.py tentacles --install --all
+        branch="${GITHUB_REF##*/}"
+        echo "Trying to download tentacles package ${branch////_}.zip ..."
+        TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=${branch////_} python3 start.py tentacles -q --install --all || python3 start.py tentacles --install --all
 
     - name: Install tentacles on Windows
       if: matrix.os == 'windows-latest'
@@ -80,7 +80,8 @@ jobs:
         mkdir user
         copy octobot\config\default_config.json user\config.json
         $Env:TENTACLES_URL_SUBCATEGORY = "dev/"
-        $Env:TENTACLES_URL_TAG = $env:GITHUB_REF -replace "/", "_"
+        $Env:TENTACLES_URL_TAG = $env:GITHUB_REF -replace "refs/heads/", "" -replace "/", "_"
+        echo "Trying to download tentacles package $Env:TENTACLES_URL_TAG.zip ..."
         python start.py tentacles -q --install --all
         if ($LastExitCode -ne 0)
         {
@@ -90,6 +91,7 @@ jobs:
           } else {
             $Env:TENTACLES_URL_TAG = "latest"
           }
+          echo "Failed to download branch tentacles, trying to download tentacles package $Env:TENTACLES_URL_TAG.zip ..."
           python start.py tentacles --install --all
         }
       shell: powershell
