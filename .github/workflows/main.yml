@@ -102,6 +102,15 @@ jobs:
         python setup.py install
 
     - name: Pytests
+      if: matrix.type == 'cython'
+      env:
+        CYTHON_IGNORE: true
+      run: |
+        pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
+        pytest --durations=0 -rw tentacles
+
+    - name: Pytests
+      if: matrix.type != 'cython'
       run: |
         pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
         pytest --durations=0 -rw tentacles
