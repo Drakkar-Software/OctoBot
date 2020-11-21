@@ -70,17 +70,17 @@ jobs:
       run: |
         mkdir user
         cp ./octobot/config/default_config.json ./user/config.json
+        export TENTACLES_URL_TAG=${GITHUB_REF////_}
+        echo "trying to download tentacles file $TENTACLES_URL_TAG.zip..."
         TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=${GITHUB_REF////_} python3 start.py tentacles -q --install --all || python3 start.py tentacles --install --all
 
     - name: Install tentacles on Windows
       if: matrix.os == 'windows-latest'
-      env:
-        BASE_BRANCH: ${GITHUB_REF##*/}
       run: |
         mkdir user
         copy octobot\config\default_config.json user\config.json
         $Env:TENTACLES_URL_SUBCATEGORY = "dev/"
-        $Env:TENTACLES_URL_TAG = $env:BASE_BRANCH -replace "/", "_"
+        $Env:TENTACLES_URL_TAG = $env:GITHUB_REF -replace "/", "_"
         python start.py tentacles -q --install --all
         if ($LastExitCode -ne 0)
         {
