@@ -66,7 +66,10 @@ class OctoBot:
         self.community_handler = None
 
         # community authentication
-        self.community_auth = community_manager.CommunityAuthentication(None)
+        self.community_auth = community_manager.CommunityAuthentication(
+            constants.OCTOBOT_COMMUNITY_AUTH_URL,
+            config=self.get_edited_config(constants.CONFIG_KEY)
+        )
 
         # octobot_api to request the current instance
         self.octobot_api = octobot_api.OctoBotAPI(self)
