@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
-
 import pytest
 
 import octobot_commons.asyncio_tools as asyncio_tools
