@@ -29,7 +29,6 @@ import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 
 import octobot_evaluators.constants as evaluator_constants
-
 import octobot_evaluators.evaluators as evaluators
 
 import octobot_trading.modes as trading_modes
@@ -111,48 +110,7 @@ class StrategyOptimizer:
                 common_logging.set_global_logger_level(logging.ERROR)
 
                 self.run_id = 1
-                # test with several risks
-                for risk in self.risks:
-                    self.config[trading_constants.CONFIG_TRADING][trading_constants.CONFIG_TRADER_RISK] = risk
-                    eval_conf_history = []
-                    # test with several evaluators
-                    for evaluator_conf_iteration in range(nb_TAs):
-                        current_forced_evaluator = self.all_TAs[evaluator_conf_iteration]
-                        # test with 1-n evaluators at a time
-                        for nb_evaluators in range(1, nb_TAs + 1):
-                            # test different configurations
-                            for _ in range(nb_TAs):
-                                activated_evaluators = self._get_activated_element(self.all_TAs,
-                                                                                   current_forced_evaluator,
-                                                                                   nb_evaluators, eval_conf_history,
-                                                                                   self.strategy_class.get_name(),
-                                                                                   True)
-                                if activated_evaluators is not None:
-                                    self._adapt_tentacles_config(activated_evaluators)
-                                    time_frames_conf_history = []
-                                    # test different time frames
-                                    for time_frame_conf_iteration in range(nb_TFs):
-                                        current_forced_time_frame = self.all_time_frames[time_frame_conf_iteration]
-                                        # test with 1-n time frames at a time
-                                        for nb_time_frames in range(1, nb_TFs + 1):
-                                            # test different configurations
-                                            for _ in range(nb_TFs):
-                                                activated_time_frames = \
-                                                    self._get_activated_element(self.all_time_frames,
-                                                                                current_forced_time_frame,
-                                                                                nb_time_frames,
-                                                                                time_frames_conf_history)
-                                                if activated_time_frames is not None:
-                                                    self.config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = \
-                                                        activated_time_frames
-                                                    print(f"{self.run_id}/{self.total_nb_runs} Run with: evaluators: "
-                                                          f"{activated_evaluators}, "
-                                                          f"time frames :{activated_time_frames}, risk: {risk}")
-                                                    self._run_test_suite(self.config, activated_evaluators)
-                                                    print(f" => Result: "
-                                                          f"{self.run_results[-1].get_result_string(False)}")
-                                                    self.run_id += 1
-
+                self._iterate_on_configs(nb_TAs, nb_TFs)
                 self._find_optimal_configuration_using_results()
             finally:
                 self.current_test_suite = None
@@ -163,6 +121,50 @@ class StrategyOptimizer:
         else:
             raise RuntimeError(f"{self.get_name()} is already computing: processed "
                                f"{self.run_id}/{self.total_nb_runs} processed")
+
+    def _iterate_on_configs(self, nb_TAs, nb_TFs):
+        # test with several risks
+        for risk in self.risks:
+            self.config[trading_constants.CONFIG_TRADING][trading_constants.CONFIG_TRADER_RISK] = risk
+            eval_conf_history = []
+            # test with several evaluators
+            for evaluator_conf_iteration in range(nb_TAs):
+                current_forced_evaluator = self.all_TAs[evaluator_conf_iteration]
+                # test with 1-n evaluators at a time
+                for nb_evaluators in range(1, nb_TAs + 1):
+                    # test different configurations
+                    for _ in range(nb_TAs):
+                        activated_evaluators = self._get_activated_element(self.all_TAs,
+                                                                           current_forced_evaluator,
+                                                                           nb_evaluators, eval_conf_history,
+                                                                           self.strategy_class.get_name(),
+                                                                           True)
+                        if activated_evaluators is not None:
+                            self._adapt_tentacles_config(activated_evaluators)
+                            time_frames_conf_history = []
+                            # test different time frames
+                            for time_frame_conf_iteration in range(nb_TFs):
+                                current_forced_time_frame = self.all_time_frames[time_frame_conf_iteration]
+                                # test with 1-n time frames at a time
+                                for nb_time_frames in range(1, nb_TFs + 1):
+                                    # test different configurations
+                                    for _ in range(nb_TFs):
+                                        self._run_on_config(risk, current_forced_time_frame, nb_time_frames,
+                                                            time_frames_conf_history, activated_evaluators)
+
+    def _run_on_config(self, risk, current_forced_time_frame, nb_time_frames,
+                       time_frames_conf_history, activated_evaluators):
+        activated_time_frames = self._get_activated_element(self.all_time_frames,
+                                                            current_forced_time_frame,
+                                                            nb_time_frames,
+                                                            time_frames_conf_history)
+        if activated_time_frames is not None:
+            self.config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = activated_time_frames
+            print(f"{self.run_id}/{self.total_nb_runs} Run with: evaluators: {activated_evaluators}, "
+                  f"time frames :{activated_time_frames}, risk: {risk}")
+            self._run_test_suite(self.config, activated_evaluators)
+            print(f" => Result: {self.run_results[-1].get_result_string(False)}")
+            self.run_id += 1
 
     def _run_test_suite(self, config, evaluators):
         self.current_test_suite = strategy_optimizer.StrategyTestSuite()
