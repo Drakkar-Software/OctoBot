@@ -57,10 +57,11 @@ class StrategyTestSuite(octobot_backtesting.AbstractBacktestingTest):
         for i, test in enumerate(tests):
             try:
                 await test(strategy_tester)
-                self.current_progress = int((i + 1) / nb_tests * 100)
             except Exception as e:
                 self.logger.exception(e, True, f"Exception when running test {test.__name__}: {e}")
                 self.exceptions.append(e)
+            finally:
+                self.current_progress = int((i + 1) / nb_tests * 100)
             print('#', end='')
         print(' |', end='')
         return not self.exceptions
