@@ -47,4 +47,7 @@ cdef class StrategyOptimizer:
     cdef void _run_test_suite(self, dict config, dict evaluators)
     cdef void _adapt_tentacles_config(self, dict activated_evaluators)
     cdef void _find_optimal_configuration_using_results(self)
+    cdef void _iterate_on_configs(self, int nb_TAs, int nb_TFs)
+    cdef void _run_on_config(self, object risk, object current_forced_time_frame, int nb_time_frames,
+                            list time_frames_conf_history, dict activated_evaluators)
     cdef list _get_all_TA(self)
