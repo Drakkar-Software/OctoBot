@@ -258,7 +258,6 @@ jobs:
           tags: |
             drakkarsoftware/octobot:0.4.0
             drakkarsoftware/octobot:0.4.0-stable
-            drakkarsoftware/octobot:${GITHUB_REF////_}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
