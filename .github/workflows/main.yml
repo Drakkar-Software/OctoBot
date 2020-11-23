@@ -215,6 +215,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Set Environment Variables
+        run: |
+          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          IMG=octobot
+          echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "IMAGE=${OWNER}/${IMG}" >> $GITHUB_ENV
+          echo "LATEST=0.4.0" >> $GITHUB_ENV
+          echo "STABLE=0.4.0-stable" >> $GITHUB_ENV
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -235,7 +244,7 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: false
-          tags: drakkarsoftware/octobot:0.4.0
+          tags: ${{ env.IMAGE }}:${{ env.LATEST }}
 
       - name: Build and push latest
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.ref == 'refs/heads/0.4.0'
@@ -245,7 +254,7 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
-          tags: drakkarsoftware/octobot:0.4.0
+          tags: ${{ env.IMAGE }}:${{ env.LATEST }}
 
       - name: Build and push on tag
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
@@ -256,8 +265,9 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            drakkarsoftware/octobot:0.4.0
-            drakkarsoftware/octobot:0.4.0-stable
+            ${{ env.IMAGE }}:${{ env.LATEST }}
+            ${{ env.IMAGE }}:${{ env.STABLE }}
+            ${{ env.IMAGE }}:${{ env.VERSION }}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
