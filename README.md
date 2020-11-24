@@ -42,13 +42,11 @@ Octobot's main feature is **evolution** : you can [install](https://github.com/D
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** ! See the [OctoBot Wiki](https://github.com/Drakkar-Software/OctoBot/wiki) for more info.
 
-
 #### [With executable](https://github.com/Drakkar-Software/OctoBot/wiki/Installation)
 - Open the OctoBot-Binary [release page](https://github.com/Drakkar-Software/OctoBot-Binary/releases)
 - Open the latest release **Assets** panel
 - Download the OctoBot executable for your platform
 - Start OctoBot
-
 
 #### [With Docker](https://github.com/Drakkar-Software/OctoBot/wiki/With-Docker)
 Self hosting with docker :
@@ -64,6 +62,11 @@ git clone git@github.com:Drakkar-Software/OctoBot.git -b 0.4.0 && cd OctoBot
 pip3 install -r requirements.txt
 python3 start.py
 ```
+
+#### One click deployment
+[![Deploy to DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/Drakkar-Software/OctoBot/tree/0.4.0&refcode=40c9737100b1)
+
+Get 60-day free hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
 
 ## Exchanges
 [![Binance](../assets/binance-logo.png)](https://www.binance.com)
