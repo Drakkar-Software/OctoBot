@@ -70,7 +70,7 @@ class IndependentBacktesting:
             await self.octobot_backtesting.initialize_and_run()
             self._post_backtesting_start()
         except RuntimeError as e:
-            self.logger.error(e)
+            self.logger.error(f"{e} ({e.__class__.__name__})")
             await self.stop()
         except Exception as e:
             if log_errors:
