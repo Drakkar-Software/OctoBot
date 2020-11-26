@@ -144,4 +144,4 @@ def restart_bot():
         os.execl(sys.argv[0], *sys.argv)
     else:
         # prevent binary to add self as first argument
-        os.execl(sys.executable, *sys.argv)
+        os.execl(sys.executable, *(f'"{a}"' for a in sys.argv))
