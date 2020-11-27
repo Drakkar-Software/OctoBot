@@ -28,4 +28,4 @@ cdef class ConfigurationElement:
     cdef public object startup_config
     cdef public object edited_config
 
-cpdef config_health_check(dict config)
+cpdef config_health_check(dict config, bint in_backtesting)
