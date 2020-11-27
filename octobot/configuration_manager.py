@@ -50,7 +50,8 @@ class ConfigurationElement:
         self.edited_config = copy.deepcopy(element)
 
 
-def config_health_check(config):
+def config_health_check(config, in_backtesting):
+    logger = logging.get_logger(LOGGER_NAME)
     # 1 ensure api key encryption
     should_replace_config = False
     if trading_constants.CONFIG_EXCHANGES in config:
@@ -60,8 +61,8 @@ def config_health_check(config):
                     if not config_manager._handle_encrypted_value(key, exchange_config, verbose=True):
                         should_replace_config = True
                 except Exception as e:
-                    logging.get_logger(LOGGER_NAME).exception(e, True,
-                                                              f"Exception when checking exchange config encryption: {e}")
+                    logger.exception(e, True,
+                                     f"Exception when checking exchange config encryption: {e}")
 
     # 2 ensure single trader activated
     try:
@@ -69,19 +70,26 @@ def config_health_check(config):
         if trader_enabled:
             simulator_enabled = trading_api.is_trader_simulator_enabled_in_config(config)
             if simulator_enabled:
-                logging.get_logger(LOGGER_NAME).error(f"Impossible to activate a trader simulator additionally to a "
-                                                      f"real trader, simulator deactivated.")
+                logger.error(f"Impossible to activate a trader simulator additionally to a "
+                             f"real trader, simulator deactivated.")
                 config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = False
                 should_replace_config = True
     except KeyError as e:
-        logging.get_logger(LOGGER_NAME).exception(e, True,
-                                                  f"KeyError when checking traders activation: {e}. "
-                                                  f"Activating trader simulator.")
+        logger.exception(e, True,
+                         f"KeyError when checking traders activation: {e}. "
+                         f"Activating trader simulator.")
         config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
         config[trading_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
         should_replace_config = True
 
-    # 3 save fixed config if necessary
+    # 3 inform about configuration issues
+    if not (in_backtesting or
+            trading_api.is_trader_enabled_in_config(config) or
+            trading_api.is_trader_simulator_enabled_in_config(config)):
+        logger.error(f"Real trader and trader simulator are deactivated in configuration. This will prevent OctoBot "
+                     f"from creating any new order.")
+
+    # 4 save fixed config if necessary
     if should_replace_config:
         try:
             config_manager.save_config(config.get_user_config(),
@@ -91,8 +99,8 @@ def config_health_check(config):
                                        json_data=config_manager.dump_json(config))
             return config
         except Exception as e:
-            logging.get_logger(LOGGER_NAME).error(f"Save of the health checked config failed : {e}, "
-                                                  f"will use the initial config")
+            logger.error(f"Save of the health checked config failed : {e}, "
+                         f"will use the initial config")
             return config.load_config(error=False, fill_missing_fields=True)
 
 
