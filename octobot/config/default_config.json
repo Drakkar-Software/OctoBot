@@ -32,7 +32,8 @@
     "risk": 0.5
   },
   "trader":{
-    "enabled": false
+    "enabled": false,
+    "load-trade-history": false
   },
   "trader-simulator":{
     "enabled": true,
