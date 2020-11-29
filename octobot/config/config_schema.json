@@ -123,6 +123,9 @@
       "properties": {
         "enabled": {
           "type": "boolean"
+        },
+        "load-trade-history": {
+          "type": "boolean"
         }
       },
       "required": [
