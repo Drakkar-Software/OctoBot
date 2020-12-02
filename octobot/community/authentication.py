@@ -37,6 +37,7 @@ class CommunityAuthentication:
     """
     ALLOWED_TIME_DELAY = 1 * commons_constants.MINUTE_TO_SECONDS
     AUTHORIZATION_HEADER = "Authorization"
+    IDENTIFIER_HEADER = "Identifier"
     REFRESH_TOKEN = "refresh_token"
     GRANT_TYPE = "grant_type"
 
@@ -45,6 +46,7 @@ class CommunityAuthentication:
         self.authentication_url = authentication_url
         self.refresh_token = None
         self.edited_config = config
+        self.identifier = None
 
         self._auth_token = None
         self._expire_at = None
@@ -150,7 +152,8 @@ class CommunityAuthentication:
     def _refresh_session(self):
         self._session.headers.update(
             {
-                CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {self._auth_token}"
+                CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {self._auth_token}",
+                CommunityAuthentication.IDENTIFIER_HEADER: self.identifier
             }
         )
 

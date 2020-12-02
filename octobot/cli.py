@@ -142,6 +142,9 @@ def start_octobot(args):
         else:
             bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history)
         octobot.set_bot(bot)
+        if args.identifier:
+            # set community identifier
+            bot.community_auth.identifier = args.identifier[0]
 
         _log_terms_if_unaccepted(config, logger)
 
@@ -221,8 +224,9 @@ def octobot_parser(parser):
                         action='store_true')
     parser.add_argument('--encrypter', help="Start the exchange api keys encrypter. This tool is useful to manually add"
                                             " exchanges configuration in your config.json without using any interface "
-                                            "(ie the web interface that handle encryption automatically)",
+                                            "(ie the web interface that handle encryption automatically).",
                         action='store_true')
+    parser.add_argument('--identifier', help="OctoBot community identifier.", type=str, nargs=1)
     parser.add_argument('-o', '--strategy_optimizer', help='Start Octobot strategy optimizer. This mode will make '
                                                            'octobot play backtesting scenarii located in '
                                                            'abstract_strategy_test.py with different timeframes, '

@@ -100,16 +100,21 @@ def test_reset_tokens(auth):
     auth.refresh_token = "1"
     auth._expire_at = "1"
     auth._session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] = "1"
+    auth._session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] = "2"
     auth._reset_tokens()
     assert auth._auth_token is auth.refresh_token is auth._expire_at is None
     assert community.CommunityAuthentication.AUTHORIZATION_HEADER not in auth._session.headers
+    assert community.CommunityAuthentication.IDENTIFIER_HEADER in auth._session.headers
 
 
 def test_refresh_session(auth):
     auth._auth_token = "1"
+    auth._session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] = "3"
+    auth.identifier = "4"
     assert community.CommunityAuthentication.AUTHORIZATION_HEADER not in auth._session.headers
     auth._refresh_session()
     assert auth._session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == f"Bearer 1"
+    assert auth._session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] == "4"
 
 
 def test_get_logged_in_email_authenticated(logged_in_auth):
