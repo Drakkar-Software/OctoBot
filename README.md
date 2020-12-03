@@ -33,7 +33,7 @@ OctoBot is highly customizable using its configuration and tentacles system.
 You can build your own bot using the infinite [configuration](https://github.com/Drakkar-Software/OctoBot/wiki/Configuration) possibilities such as 
 **technical analysis**, **social media processing** or even **external statistics management** like google trends.
 
-OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries sur as [Tensorflow](https://github.com/tensorflow/tensorflow) or
+OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or
 any other lib and take advantage of all the available data and create a very powerful trading strategy. 
 
 Octobot's main feature is **evolution** : you can [install](https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager), 
