@@ -157,6 +157,9 @@ def start_octobot(args):
             # reload tentacles
             tentacles_manager_api.load_tentacles(verbose=True)
 
+        # Clear community cache
+        bot.community_auth.clear_cache()
+
         if args.strategy_optimizer:
             commands.start_strategy_optimizer(config, args.strategy_optimizer)
             return
