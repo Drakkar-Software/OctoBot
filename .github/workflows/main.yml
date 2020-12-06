@@ -14,7 +14,7 @@ jobs:
         architecture: 'x64'
 
     - name: Install dependencies
-      run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
+      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
 
 #    - name: Black lint
 #      run: black ${{ secrets.PACKAGE_FOLDER }} --diff --check
@@ -63,7 +63,7 @@ jobs:
         architecture: ${{ matrix.arch }}
 
     - name: Install dependencies
-      run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
+      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
 
     - name: Install tentacles on Unix
       if: matrix.os != 'windows-latest'
@@ -148,7 +148,7 @@ jobs:
 
     - name: Install dependencies
       if: matrix.os != 'ubuntu-latest'
-      run: pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
+      run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
 
     - name: Build wheel
       if: matrix.os != 'ubuntu-latest'
