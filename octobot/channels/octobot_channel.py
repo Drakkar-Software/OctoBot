@@ -84,6 +84,7 @@ class OctoBotChannel(channels.Channel):
         """
         consumer = OctoBotChannelConsumer(callback, size=size, priority_level=priority_level)
         await self._add_new_consumer_and_run(consumer, bot_id=bot_id, subject=subject, action=action)
+        self.logger.debug(f"Consumer started for subject: {subject} action: {action} [{consumer}]")
         return consumer
 
     def get_filtered_consumers(self,
