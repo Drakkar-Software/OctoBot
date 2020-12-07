@@ -45,6 +45,7 @@ class TaskManager:
 
     def init_async_loop(self):
         self.async_loop = asyncio.new_event_loop()
+        self.async_loop.set_exception_handler(self._loop_exception_handler)
 
     async def start_tools_tasks(self):
         task_list = []
@@ -91,9 +92,14 @@ class TaskManager:
     def create_pool_executor(self, workers=1):
         self.executors = thread.ThreadPoolExecutor(max_workers=workers)
 
+    def _loop_exception_handler(self, loop, context):
+        loop_str = "bot main async" if loop is self.async_loop else {loop}
+        self.logger.warning(f"Error in {loop_str} loop: {context}")
+
     def _create_new_asyncio_main_loop(self):
         self.async_loop = asyncio.new_event_loop()
         self.async_loop.set_debug(constants.FORCE_ASYNCIO_DEBUG_OPTION)
+        self.async_loop.set_exception_handler(self._loop_exception_handler)
         asyncio.set_event_loop(self.async_loop)
         self.current_loop_thread = threading.Thread(target=self.async_loop.run_forever,
                                                     name=f"{self.get_name()} new asyncio main loop")
