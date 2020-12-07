@@ -30,6 +30,7 @@ cdef class TaskManager:
     cdef public bint ready
 
     cdef void _create_new_asyncio_main_loop(self)
+    cdef void _loop_exception_handler(self, object loop, object context)
 
     cpdef void run_bot_in_thread(self, object coroutine)
     cpdef void run_forever(self, object coroutine)
