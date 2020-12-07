@@ -8,9 +8,9 @@ RUN apt-get update \
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY . .
-RUN pip install --upgrade pip>=20.0.0 \
+RUN pip install -U setuptools wheel pip>=20.0.0 \
     && pip install Cython==0.29.21 \
-    && pip install --extra-index-url https://www.piwheels.org/simple --extra-index-url https://www.tentacles.octobot.online/repository/octobot_pypi/simple --only-binary OctoBot-Commons --only-binary OctoBot-Channels --only-binary OctoBot-Evaluators --only-binary OctoBot-Backtesting --only-binary OctoBot-Trading --prefer-binary -r requirements.txt \
+    && pip install --extra-index-url https://www.piwheels.org/simple --extra-index-url https://www.tentacles.octobot.online/repository/octobot_pypi/simple --prefer-binary -r requirements.txt \
     && python setup.py install
 
 FROM python:3.8-slim-buster
