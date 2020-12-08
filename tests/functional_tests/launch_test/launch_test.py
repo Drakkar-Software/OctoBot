@@ -13,29 +13,49 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
+import asyncio
 import pytest
 
-from config import *
-from core.octobot import OctoBot
-from tests.test_utils.config import load_test_config
-from tests.test_utils.bot_management import call_stop_later, start_bot_with_raise
+from octobot_commons.logging.logging_util import get_logger
+from octobot_trading.api.exchange import cancel_ccxt_throttle_task
+from tentacles.Services.Interfaces.web_interface import WebInterface
+from octobot_commons.tests.test_config import load_test_config
+from octobot.commands import start_bot
+from octobot.logger import init_logger
+from octobot.octobot import OctoBot
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-async def test_run_bot(event_loop):
-    # launch a bot
-    config = load_test_config()
-    config[CONFIG_CRYPTO_CURRENCIES] = {
-        "Bitcoin":
-            {
-                "pairs": ["BTC/USDT"]
-            }
-    }
-    bot = OctoBot(config, ignore_config=True)
-    bot.time_frames = [TimeFrames.ONE_MINUTE]
-    await bot.initialize()
-    await call_stop_later(5, event_loop, bot)
-    await start_bot_with_raise(bot)
+@pytest.mark.timeout(12)
+async def test_run_bot():
+    # avoid web interface in this test
+    WebInterface.enabled = False
+    bot = OctoBot(load_test_config(), ignore_config=True)
+    bot.task_manager.init_async_loop()
+    await start_bot(bot, init_logger())
+    await asyncio.sleep(10)
+    await stop_bot(bot)
+
+
+async def stop_bot(bot):
+    # force all logger enable to display any error
+    stop_logger = get_logger("StopBotLogger")
+    import logging
+    for logger in logging.Logger.manager.loggerDict.values():
+        logger.disabled = False
+
+    stop_logger.info("Stopping tasks...")
+    await bot.stop()
+
+    if bot.task_manager.tools_task_group:
+        bot.task_manager.tools_task_group.cancel()
+
+    # close community session
+    if bot.community_handler:
+        await bot.community_handler.stop_task()
+
+    cancel_ccxt_throttle_task()
+
+    stop_logger.info("Tasks stopped.")

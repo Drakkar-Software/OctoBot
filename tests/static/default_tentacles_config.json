@@ -1,0 +1,72 @@
+{
+  "tentacle_activation": {
+    "Backtesting": {
+      "ExchangeHistoryDataCollector": true,
+      "ExchangeLiveDataCollector": true,
+      "GenericExchangeDataImporter": true,
+      "LegacyDataConverter": true
+    },
+    "Evaluator": {
+      "ADXMomentumEvaluator": false,
+      "BBMomentumEvaluator": false,
+      "DipAnalyserStrategyEvaluator": false,
+      "DoubleMovingAverageTrendEvaluator": true,
+      "EMADivergenceTrendEvaluator": false,
+      "GoogleTrendsEvaluator": false,
+      "InstantFluctuationsEvaluator": false,
+      "InstantMAEvaluator": false,
+      "KlingerOscillatorMomentumEvaluator": false,
+      "KlingerOscillatorReversalConfirmationMomentumEvaluator": false,
+      "MACDMomentumEvaluator": false,
+      "MoveSignalsStrategyEvaluator": false,
+      "OverallStateAnalyser": false,
+      "PatternAnalyser": false,
+      "RSIMomentumEvaluator": true,
+      "RSIWeightMomentumEvaluator": false,
+      "RedditForumEvaluator": false,
+      "SimpleStrategyEvaluator": true,
+      "StatisticAnalysis": false,
+      "StochasticRSIVolatilityEvaluator": false,
+      "TechnicalAnalysisStrategyEvaluator": false,
+      "TelegramSignalEvaluator": false,
+      "TextAnalysis": false,
+      "TrendAnalysis": false,
+      "TwitterNewsEvaluator": false
+    },
+    "Services": {
+      "GoogleService": true,
+      "GoogleServiceFeed": true,
+      "PremiumTelegramBotInterface": false,
+      "RedditService": true,
+      "RedditServiceFeed": true,
+      "TelegramBotInterface": true,
+      "TelegramNotifier": true,
+      "TelegramService": true,
+      "TelegramServiceFeed": true,
+      "TradingViewService": true,
+      "TradingViewServiceFeed": true,
+      "TwitterNotifier": true,
+      "TwitterService": true,
+      "TwitterServiceFeed": true,
+      "WebHookService": true,
+      "WebInterface": true,
+      "WebNotifier": true,
+      "WebService": true
+    },
+    "Trading": {
+      "ArbitrageTradingMode": false,
+      "Binance": true,
+      "BinanceUS": true,
+      "Bitmax": true,
+      "CoinbasePro": true,
+      "DailyTradingMode": true,
+      "DefaultCCXTSpotExchange": true,
+      "DipAnalyserTradingMode": false,
+      "Kraken": true,
+      "Kucoin": true,
+      "SignalTradingMode": false,
+      "StaggeredOrdersTradingMode": false,
+      "TradingViewSignalsTradingMode": false
+    }
+  }
+}

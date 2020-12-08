@@ -1,0 +1,9 @@
+spec:
+  name: octobot
+  services:
+  - dockerfile_path: Dockerfile
+    git:
+      branch: 0.4.0
+      repo_clone_url: https://github.com/Drakkar-Software/OctoBot
+    name: octobot
+    http_port: 5001

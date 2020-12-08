@@ -1,0 +1,213 @@
+{
+  "type": "object",
+  "properties": {
+    "DEBUG": {
+      "type": "boolean"
+    },
+    "DEV-MODE": {
+      "type": "boolean"
+    },
+    "SAVE_EVALUATIONS": {
+      "type": "boolean"
+    },
+    "accepted_terms": {
+      "type": "boolean"
+    },
+    "backtesting": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "crypto-currencies": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "pairs": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "quote": {
+              "type": "string"
+            },
+            "add": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "data-collector": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string"
+        }
+      }
+    },
+    "exchanges": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+          "type": "object"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "metrics-bot-id": {
+          "type": "string"
+        }
+      }
+    },
+    "community-token": {
+      "type": "string"
+    },
+    "notification": {
+      "type": "object",
+      "properties": {
+        "global-info": {
+          "type": "boolean"
+        },
+        "price-alerts": {
+          "type": "boolean"
+        },
+        "trades": {
+          "type": "boolean"
+        },
+        "notification-type": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "global-info",
+        "price-alerts",
+        "trades",
+        "notification-type"
+      ]
+    },
+    "services": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+          "type": "object"
+        }
+      }
+    },
+    "trader": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "load-trade-history": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    },
+    "trader-simulator": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "fees": {
+          "type": "object",
+          "properties": {
+            "maker": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "taker": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          },
+          "required": [
+            "maker",
+            "taker"
+          ]
+        },
+        "starting-portfolio": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "required": [
+        "enabled",
+        "fees",
+        "starting-portfolio"
+      ]
+    },
+    "trading": {
+      "type": "object",
+      "properties": {
+        "reference-market": {
+          "type": "string"
+        },
+        "risk": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "reference-market",
+        "risk"
+      ]
+    },
+    "watched_symbols": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "backtesting",
+    "crypto-currencies",
+    "exchanges",
+    "services",
+    "notification",
+    "trading",
+    "trader",
+    "trader-simulator"
+  ],
+  "additionalProperties": {
+    "type": "string"
+  }
+}

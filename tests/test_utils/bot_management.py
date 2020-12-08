@@ -13,36 +13,51 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-from asyncio import CancelledError
-from threading import Thread
+import asyncio
 
-import pytest
+from octobot_backtesting.errors import MissingTimeFrame
+from octobot_commons.logging.logging_util import get_logger
+from octobot_commons.tests.test_config import load_test_config
 
-from backtesting.backtesting_util import start_bot
-from core.octobot import OctoBot
-from tests.test_utils.config import load_test_config
-
-
-def stop_bot(bot):
-    thread = Thread(target=bot.stop)
-    thread.start()
-    thread.join()
+from octobot.api.backtesting import create_independent_backtesting, \
+    initialize_and_run_independent_backtesting, stop_independent_backtesting
+from octobot.logger import init_logger
+from octobot.octobot import OctoBot
+from tests.test_utils.config import load_test_tentacles_config
 
 
 async def create_bot() -> OctoBot:
-    # launch a bot
-    config = load_test_config()
-    return OctoBot(config)
+    return OctoBot(load_test_config())
 
 
 async def initialize_bot(bot):
     await bot.initialize()
 
 
-async def call_stop_later(time, event_loop, bot):
-    event_loop.call_later(time, stop_bot, bot)
-
-
-async def start_bot_with_raise(bot, run_in_new_thread=False):
-    with pytest.raises(CancelledError):
-        await start_bot(bot, run_in_new_thread)
+async def run_independent_backtesting(data_files, timeout=10, use_loggers=True, run_on_common_part_only=True):
+    independent_backtesting = None
+    try:
+        config_to_use = load_test_config()
+        if use_loggers:
+            init_logger()
+        independent_backtesting = create_independent_backtesting(config_to_use,
+                                                                 load_test_tentacles_config(),
+                                                                 data_files,
+                                                                 "",
+                                                                 run_on_common_part_only=run_on_common_part_only)
+        await initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
+        await independent_backtesting.join_backtesting_updater(timeout)
+        return independent_backtesting
+    except MissingTimeFrame:
+        # ignore this exception: is due to missing of the only required time frame
+        return independent_backtesting
+    except asyncio.TimeoutError as e:
+        get_logger().exception(e, True, f"Timeout after waiting for backtesting for {timeout} seconds.")
+        # stop backtesting to prevent zombie tasks
+        await stop_independent_backtesting(independent_backtesting)
+        raise
+    except Exception as e:
+        get_logger().exception(e, True, str(e))
+        # stop backtesting to prevent zombie tasks
+        await stop_independent_backtesting(independent_backtesting)
+        raise

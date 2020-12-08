@@ -1,0 +1,50 @@
+{
+  "backtesting": {
+      "files": []
+  },
+  "crypto-currencies":{
+    "Bitcoin": {
+      "enabled": true,
+      "pairs" : ["BTC/USDT"]
+    }
+  },
+  "exchanges": {
+    "binance": {
+      "api-key": "your-api-key-here",
+      "api-secret": "your-api-secret-here"
+    }
+  },
+  "services": {
+        "web": {
+            "auto-open-in-web-browser": true
+        }
+  },
+  "notification":{
+    "global-info": true,
+    "price-alerts": true,
+    "trades": true,
+    "notification-type": [
+      "web"
+    ]
+  },
+  "trading":{
+    "reference-market": "BTC",
+    "risk": 0.5
+  },
+  "trader":{
+    "enabled": false,
+    "load-trade-history": false
+  },
+  "trader-simulator":{
+    "enabled": true,
+    "fees": {
+        "maker": 0.1,
+        "taker": 0.1
+    },
+    "starting-portfolio": {
+      "BTC": 10,
+      "USDT": 1000
+    }
+  },
+  "accepted_terms": false
+}

@@ -13,91 +13,83 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
-from abc import ABCMeta, ABC
+import abc
 import copy
 
-from backtesting.backtesting_util import create_backtesting_config, create_backtesting_bot, \
-    start_backtesting_bot, filter_wanted_symbols, update_starting_portfolio_if_required
-from backtesting.abstract_backtesting_test import AbstractBacktestingTest
-from config import CONFIG_EVALUATOR, CONFIG_BACKTESTING, CONFIG_BACKTESTING_DATA_FILES, CONFIG_TRADING_TENTACLES, \
-    CONFIG_EVALUATORS_WILDCARD
-from evaluator import Strategies
-from evaluator.Strategies.strategies_evaluator import StrategiesEvaluator
-from trading.trader import modes
-from trading.trader.modes.abstract_trading_mode import AbstractTradingMode
-from trading.trader.modes import DailyTradingMode
-from tentacles_management.class_inspector import get_class_from_string, evaluator_parent_inspection, \
-    trading_mode_parent_inspection
-from backtesting.collector.data_file_manager import interpret_file_name, DATA_FILE_EXT
-from tests.test_utils.config import load_test_config
-from services.web_service import WebService
-
+import octobot.backtesting as octobot_backtesting
+import octobot.api as octobot_api
+import octobot_commons.constants as commons_constants
+import octobot_commons.logging as bot_logging
+import octobot_commons.tentacles_management as tentacles_management
+import octobot_commons.tests.test_config as test_config
+import octobot_evaluators.evaluators as evaluators
+import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_tentacles_manager.constants as tentacles_manager_constants
+import octobot_trading.api as trading_api
+import octobot_trading.constants as trading_constants
+import tests.test_utils.config as test_utils_config
+import tentacles.Evaluator.Strategies as Strategies
+import tentacles.Trading.Mode as Mode
 
 DEFAULT_SYMBOL = "ICX/BTC"
 DATA_FILE_PATH = "tests/static/"
 
 
-class AbstractStrategyTest(AbstractBacktestingTest, ABC):
-    __metaclass__ = ABCMeta
+class AbstractStrategyTest(octobot_backtesting.AbstractBacktestingTest, abc.ABC):
+    __metaclass__ = abc.ABCMeta
 
-    def initialize(self, strategy_evaluator_class, trading_mode_class=DailyTradingMode, config=None):
-        if config is None:
-            self.config = create_backtesting_config(load_test_config(), filter_symbols=False)
-        else:
-            self.config = config
+    def initialize(self, strategy_evaluator_class, trading_mode_class=Mode.DailyTradingMode, config=None):
+        self.logger = bot_logging.get_logger(self.__class__.__name__)
+        self.config = test_config.load_test_config() if config is None else config
+        # remove fees
+        self.config[trading_constants.CONFIG_SIMULATOR][trading_constants.CONFIG_SIMULATOR_FEES][
+            trading_constants.CONFIG_SIMULATOR_FEES_TAKER] = 0
+        self.config[trading_constants.CONFIG_SIMULATOR][trading_constants.CONFIG_SIMULATOR_FEES][
+            trading_constants.CONFIG_SIMULATOR_FEES_MAKER] = 0
         self.strategy_evaluator_class = strategy_evaluator_class
         self.trading_mode_class = trading_mode_class
-        self._register_evaluators()
-        self._register_only_strategy(strategy_evaluator_class)
-        self._register_only_trading_mode(trading_mode_class)
-        self._assert_init()
+        self.tentacles_setup_config = test_utils_config.load_test_tentacles_config()
+        self._update_tentacles_config(strategy_evaluator_class, trading_mode_class)
 
-    def _assert_results(self, run_results, profitability, bot):
-        # convenient for building tests
-        # print(f"results: {run_results} expected: {profitability} => {run_results[0] >= profitability}")
+    def _handle_results(self, independent_backtesting, profitability):
+        exchange_manager_ids = octobot_api.get_independent_backtesting_exchange_manager_ids(independent_backtesting)
+        for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(exchange_manager_ids):
+            _, run_profitability, _, market_average_profitability, _ = trading_api.get_profitability_stats(
+                exchange_manager)
+            actual = round(run_profitability, 3)
+            # uncomment this print for building tests
+            # print(f"results: rounded run profitability {actual} market profitability: {market_average_profitability}"
+            #       f" expected: {profitability} [result: {actual ==  profitability}]")
+            assert actual == profitability
 
-        assert run_results[0] >= profitability
-
-    async def _run_backtesting_with_current_config(self, symbol, data_file_to_use=None):
+    async def _run_backtesting_with_current_config(self, data_file_to_use):
         config_to_use = copy.deepcopy(self.config)
-        if data_file_to_use is not None:
-            for index, datafile in enumerate(config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES]):
-                _, file_symbol, _, _ = interpret_file_name(datafile)
-                if symbol == file_symbol:
-                    config_to_use[CONFIG_BACKTESTING][CONFIG_BACKTESTING_DATA_FILES][index] = \
-                        DATA_FILE_PATH + data_file_to_use + DATA_FILE_EXT
+        independent_backtesting = octobot_api.create_independent_backtesting(config_to_use,
+                                                                             self.tentacles_setup_config,
+                                                                             [data_file_to_use],
+                                                                             "")
+        await octobot_api.initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
+        await octobot_api.join_independent_backtesting(independent_backtesting)
+        return independent_backtesting
 
-        # do not activate web interface on standalone backtesting bot
-        WebService.enable(config_to_use, False)
-        filter_wanted_symbols(config_to_use, [symbol])
-        update_starting_portfolio_if_required(config_to_use, symbol)
-        bot = create_backtesting_bot(config_to_use)
-        return await start_backtesting_bot(bot), bot
-
-    def _register_only_strategy(self, strategy_evaluator_class):
-        for evaluator_name in self.config[CONFIG_EVALUATOR]:
-            if get_class_from_string(evaluator_name, StrategiesEvaluator, Strategies,
-                                     evaluator_parent_inspection) is not None:
-                self.config[CONFIG_EVALUATOR][evaluator_name] = False
-        self.config[CONFIG_EVALUATOR][strategy_evaluator_class.get_name()] = True
-
-    def _register_only_trading_mode(self, trading_mode_class):
-        for trading_mode_name in self.config[CONFIG_TRADING_TENTACLES]:
-            if get_class_from_string(trading_mode_name, AbstractTradingMode, modes,
-                                     trading_mode_parent_inspection) is not None:
-                self.config[CONFIG_TRADING_TENTACLES][trading_mode_name] = False
-        self.config[CONFIG_TRADING_TENTACLES][trading_mode_class.get_name()] = True
-
-    def _register_evaluators(self):
-        required_evaluators = self.strategy_evaluator_class.get_required_evaluators(self.config)
-        if required_evaluators != CONFIG_EVALUATORS_WILDCARD:
-            for evaluator_name in self.config[CONFIG_EVALUATOR]:
-                self.config[CONFIG_EVALUATOR][evaluator_name] = False
-            for required_evaluator_name in required_evaluators:
-                self.config[CONFIG_EVALUATOR][required_evaluator_name] = True
-
-    def _assert_init(self):
-        assert self.config
-        assert self.config[CONFIG_EVALUATOR][self.strategy_evaluator_class.get_name()] is True
-        assert self.config[CONFIG_TRADING_TENTACLES][self.trading_mode_class.get_name()] is True
+    def _update_tentacles_config(self, strategy_evaluator_class, trading_mode_class):
+        default_evaluators = strategy_evaluator_class.get_default_evaluators()
+        to_update_config = {}
+        tentacles_activation = tentacles_manager_api.get_tentacles_activation(self.tentacles_setup_config)
+        for tentacle_class_name in tentacles_activation[tentacles_manager_constants.TENTACLES_EVALUATOR_PATH]:
+            if commons_constants.CONFIG_WILDCARD not in default_evaluators and tentacle_class_name in default_evaluators:
+                to_update_config[tentacle_class_name] = True
+            elif tentacles_management.get_class_from_string(tentacle_class_name, evaluators.StrategyEvaluator,
+                                                            Strategies,
+                                                            tentacles_management.evaluator_parent_inspection) is not None:
+                to_update_config[tentacle_class_name] = False
+            elif commons_constants.CONFIG_WILDCARD not in default_evaluators:
+                to_update_config[tentacle_class_name] = False
+        for tentacle_class_name in tentacles_activation[tentacles_manager_constants.TENTACLES_TRADING_PATH]:
+            to_update_config[tentacle_class_name] = False
+        # Add required elements if missing
+        to_update_config.update({evaluator: True for evaluator in default_evaluators})
+        to_update_config[strategy_evaluator_class.get_name()] = True
+        to_update_config[trading_mode_class.get_name()] = True
+        tentacles_manager_api.update_activation_configuration(self.tentacles_setup_config, to_update_config, False,
+                                                              add_missing_elements=True)

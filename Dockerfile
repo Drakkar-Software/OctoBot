@@ -1,38 +1,34 @@
-FROM python:3.7.4-slim
+FROM python:3.8-slim-buster AS base
 
-ENV TENTACLE_DIR="tentacles" \
-    OCTOBOT_DIR="octobot" \
-    LOGS_DIR="logs" \
-    USER_DIR="user" \
-    BUILD_DEPS="build-essential libc6-dev libncurses5-dev libncursesw5-dev libreadline6-dev libdb5.3-dev libgdbm-dev" \
-    LIB_DEPS="libsqlite3-dev libssl-dev libbz2-dev libexpat1-dev liblzma-dev zlib1g-dev" \
-    APPLICATION_DEPS="libxml2-dev libxslt1-dev libxslt-dev libjpeg-dev zlib1g-dev libffi-dev"
-
-# Set up octobot's environment
-COPY . /bot/$OCTOBOT_DIR
-WORKDIR /bot/$OCTOBOT_DIR
-
-# install dependencies
 RUN apt-get update \
-  && apt-get install -qq -y --no-install-recommends $BUILD_DEPS $LIB_DEPS $APPLICATION_DEPS \
-  && pip3 install --no-cache-dir -r pre_requirements.txt \
-  && pip3 install --no-cache-dir -r requirements.txt -r dev_requirements.txt \
-  && mkdir $USER_DIR \
-  && mkdir $LOGS_DIR \
-  && cp ./config/default_config.json ./user/config.json \
-  && python start.py -p install all \
-  && pytest tests/unit_tests tests/functional_tests \
-  && pip3 uninstall -y -r dev_requirements.txt \
-  && rm -rf $TENTACLE_DIR $LOGS_DIR $USER_DIR \
-  && apt-get clean -yq \
-  && apt-get autoremove -yq \
-  && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends build-essential gcc libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev \
+    && python -m venv /opt/venv
 
-VOLUME /bot/$OCTOBOT_DIR/$USER_DIR
-VOLUME /bot/$OCTOBOT_DIR/$TENTACLE_DIR
-VOLUME /bot/$OCTOBOT_DIR/$LOGS_DIR
+# Make sure we use the virtualenv:
+ENV PATH="/opt/venv/bin:$PATH"
 
-ENV WEB_PORT=5001
-EXPOSE $WEB_PORT
+COPY . .
+RUN pip install -U setuptools wheel pip>=20.0.0 \
+    && pip install Cython==0.29.21 \
+    && pip install --extra-index-url https://www.piwheels.org/simple --extra-index-url https://www.tentacles.octobot.online/repository/octobot_pypi/simple --prefer-binary -r requirements.txt \
+    && python setup.py install
 
-ENTRYPOINT ["python", "./start.py", "-no"]
+FROM python:3.8-slim-buster
+
+WORKDIR /octobot
+COPY --from=base /opt/venv /opt/venv
+COPY octobot/config /octobot/octobot/config
+COPY docker-entrypoint.sh docker-entrypoint.sh
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /opt/venv/bin/OctoBot OctoBot # Make sure we use the virtualenv \
+    && chmod +x docker-entrypoint.sh
+
+VOLUME /octobot/tentacles
+VOLUME /octobot/user
+EXPOSE 5001
+
+HEALTHCHECK --interval=1m --timeout=30s --retries=3 CMD curl --fail http://localhost:5001 || exit 1
+ENTRYPOINT ["./docker-entrypoint.sh"]

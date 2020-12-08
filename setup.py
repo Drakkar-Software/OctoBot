@@ -14,31 +14,61 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import os
+from setuptools import dist
 
-from setuptools import setup, find_packages
+dist.Distribution().fetch_build_eggs(['Cython==0.29.21'])
 
-from config import PROJECT_NAME, VERSION
+try:
+    from Cython.Distutils import build_ext
+    from Cython.Build import cythonize
+except ImportError:
+    # create closure for deferred import
+    def cythonize(*args, **kwargs):
+        from Cython.Build import cythonize
+        return cythonize(*args, **kwargs)
 
+    def build_ext(*args, **kwargs):
+        from Cython.Distutils import build_ext
+        return build_ext(*args, **kwargs)
 
-def find_package_data(path):
-    return (path, [os.path.join(dirpath, filename)
-                   for dirpath, dirnames, filenames in os.walk(path)
-                   for filename in
-                   [file for file in filenames if not file.endswith(".py") and not file.endswith(".pyc")]])
+from setuptools import find_packages
+from setuptools import setup, Extension
+from octobot.constants import PROJECT_NAME, VERSION
 
+PACKAGES = find_packages(exclude=["tentacles*"])
 
-PACKAGES = find_packages(exclude=["docs.*", "tests.*", "tentacles.*", "logs"])
-PACKAGES_DATA = [find_package_data("interfaces"),
-                 find_package_data("config"),
-                 ('pre_requirements.txt', ['pre_requirements.txt']),
-                 ('requirements.txt', ['requirements.txt'])]
+packages_list = [
+    "octobot.configuration_manager",
+    "octobot.octobot_backtesting_factory",
+    "octobot.octobot_api",
+    "octobot.task_manager",
+    "octobot.octobot_channel_consumer",
+    "octobot.initializer",
+    "octobot.octobot",
+    "octobot.backtesting.independent_backtesting",
+    "octobot.backtesting.abstract_backtesting_test",
+    "octobot.backtesting.octobot_backtesting",
+    "octobot.channels.octobot_channel",
+    "octobot.strategy_optimizer.strategy_test_suite",
+    "octobot.strategy_optimizer.test_suite_result",
+    "octobot.strategy_optimizer.strategy_optimizer",
+    "octobot.producers.interface_producer",
+    "octobot.producers.service_feed_producer",
+    "octobot.producers.evaluator_producer",
+    "octobot.producers.exchange_producer",
+]
+
+ext_modules = [
+    Extension(package, [f"{package.replace('.', '/')}.py"])
+    for package in packages_list]
 
 # long description from README file
 with open('README.md', encoding='utf-8') as f:
     DESCRIPTION = f.read()
 
-REQUIRED = open('pre_requirements.txt').read() + open('requirements.txt').read() + "OctoBot-Launcher"
-REQUIRES_PYTHON = '>=3.7.2'
+REQUIRED = open('requirements.txt').readlines()
+REQUIRES_PYTHON = '>=3.8'
+CYTHON_DEBUG = False if not os.getenv('CYTHON_DEBUG') else os.getenv('CYTHON_DEBUG')
 
 setup(
     name=PROJECT_NAME,
@@ -48,18 +78,24 @@ setup(
     author='Drakkar-Software',
     author_email='drakkar-software@protonmail.com',
     description='Cryptocurrencies alert / trading bot',
-    py_modules=['start', 'octobot'],
+    py_modules=['start'],
     packages=PACKAGES,
+    package_data={
+        "": ["config/*", "strategy_optimizer/optimizer_data_files/*"],
+    },
     long_description=DESCRIPTION,
-    install_requires=REQUIRED,
+    long_description_content_type='text/markdown',
+    cmdclass={'build_ext': build_ext},
     tests_require=["pytest"],
     test_suite="tests",
     zip_safe=False,
+    setup_requires=REQUIRED if not CYTHON_DEBUG else [],
+    install_requires=REQUIRED,
+    ext_modules=cythonize(ext_modules, gdb_debug=CYTHON_DEBUG),
     python_requires=REQUIRES_PYTHON,
-    data_files=PACKAGES_DATA,
     entry_points={
         'console_scripts': [
-            PROJECT_NAME + ' = start:main'
+            PROJECT_NAME + ' = octobot.cli:main'
         ]
     },
     classifiers=[
@@ -68,6 +104,7 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Cython'
     ],
 )

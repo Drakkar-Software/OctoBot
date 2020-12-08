@@ -51,30 +51,12 @@
       "web-socket": false
     }
   },
-  "services": {
-    "mail": {
-      "gmail-user": "",
-      "gmail-password": "",
-      "mail-dest": ""
-    },
-    "twitter": {
-      "api-key": "",
-      "api-secret": "",
-      "access-token": "",
-      "access-token-secret": ""
-    },
-    "reddit":{
-      "client-id": "",
-      "client-secret": "",
-      "password":"",
-      "username":""
-    }
-  },
-  "notification":{
-    "global-info": false,
-    "price-alerts": false,
-    "trades": false,
-    "notification-type": 1
+  "services": {},
+  "notification": {
+    "global-info": true,
+    "notification-type": [],
+    "price-alerts": true,
+    "trades": true
   },
   "trading":{
     "risk": 1,
@@ -85,6 +67,10 @@
   },
   "trader-simulator":{
     "enabled": true,
+    "fees": {
+        "maker": 0.1,
+        "taker": 0.1
+    },
     "starting-portfolio": {
       "BTC": 10,
       "USD": 1000
