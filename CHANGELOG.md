@@ -6,6 +6,263 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-beta1] - 2020-12-08
+### Added
+- Exception logs
+
+## [0.4.0-alpha27] - 2020-12-06
+### Fixed
+- Restart issues 
+
+## [0.4.0-alpha26] - 2020-11-26
+### Added
+- Docker healthcheck 
+
+## [0.4.0-alpha25] - 2020-11-23
+### Added
+- Community authenticator
+### Updated
+- Cleanup configuration file
+### Fixed
+- Various config related starting issues
+
+## [0.4.0-alpha24] - 2020-10-23
+### Updated
+- Python 3.8 support
+
+## [0.4.0-alpha23] - 2020-09-02
+### Updated
+- [Real trading] Update order status management
+
+## [0.4.0-alpha22] - 2020-08-23
+### Added
+- [Real trading] Fix order handling issue
+
+## [0.4.0-alpha21] - 2020-08-23
+### Added
+- [Real trading] Fix order synchronization issues
+
+## [0.4.0-alpha20] - 2020-08-03
+### Added
+- [Real trading] Real trading beta phase
+
+## [0.4.0-alpha19] - 2020-06-15
+### Added
+- [Trading modes] Arbitrage trading mode
+- [Orders] Trailing stop orders
+- [Web interface] Web interface login
+### Updated
+- [Orders] Optimized order update system
+- [Web interface] Interface libraries
+### Fixed
+- [Web Interface] OctoBot startup issues
+
+## [0.4.0-alpha18] - 2020-06-01
+### Fixed
+- [Backtesting] Backtesting data files lock related error
+
+## [0.4.0-alpha17] - 2020-05-26
+### Fixed
+- [Trades] Trades displayed with a 0 price
+
+## [0.4.0-alpha16] - 2020-05-22
+### Updated
+- [OctoBotPackage] Move OctoBot related resources into the octobot folder
+- [OctoBot services] Initialization
+### Fixed
+- [Trading] Various bugs
+- [StrategyOptimizer] Various bugs
+
+## [0.4.0-alpha15] - 2020-05-20
+### Fixed
+- [Services] use services channel init
+
+## [0.4.0-alpha14] - 2020-05-19
+### Fixed
+- [StrategyOptimizer] typing issue
+
+## [0.4.0-alpha13] - 2020-05-18
+### Fixed
+- [Exchanges] issues in OctoBot exchange data parsing
+
+## [0.4.0-alpha12] - 2020-05-17
+### Fixed
+- [Exchanges] issues in OctoBot exchange data parsing and exchange disabling
+
+## [0.4.0-alpha11] - 2020-05-16
+### Added
+- [Channel] OctoBot channel
+- [Backtesting] Multiple backtesting file support
+
+### Fixed
+- Multiple issues in OctoBot required packages
+
+## [0.4.0-alpha10] - 2020-05-02
+### Added
+- [Backtesting] Synchronized channel support
+
+### Updated
+- [Tests] strategy and TA framework
+- [Tests] trading mode framework migration
+- [Interfaces & Notifications] Migration follow up
+- [Backtesting] Only one instance is created
+
+### Fixed
+- [Tests] Stress test timeout 
+- [Startup] Fix api calls 
+
+Changelog for 0.3.9-beta
+====================
+*Released date : April 24 2020*
+
+# Bug fixes :
+    - Fixed web interface crypto-currencies selector
+    - Fixed Tentacles-manager dependancy helper message
+
+## [0.4.0-alpha9] - 2020-04-12
+### Updated
+- [Start] Import ConfigEvaluatorError from OctoBot-Commons
+
+### Fixed
+- [Stop] recursion error
+-  octobot_api cython headers
+
+## [0.4.0-alpha8] - 2020-04-10
+### Added
+- Create config when missing user folder
+- bot_id generation
+
+### Updated
+- Python files organisation refactor
+- Metrics to community
+- Script helper
+
+## [0.4.0-alpha7] - 2020-04-08
+### Removed
+- Tentacles cythonization
+
+## [0.4.0-alpha6] - 2020-04-07
+### Fixed
+- Wildcard imports
+
+## [0.4.0-alpha5] - 2020-04-05
+### Updated
+**Requirements**
+- Commons version to 1.3.5
+- Evaluators version to 1.4.3
+- Trading version to 1.4.20
+- Interfaces version to 1.0.1
+- Notifications version to 1.0.1
+- cython to 0.29.16
+
+Changelog for 0.3.8-beta
+====================
+*Released date : December 28 2019*
+
+# Concerned issues / pull request:
+    #978 can now call start.py from any directory
+    #991 add new exchange order types support
+
+# Bug fixes :
+    - Fixed ccxt deprecated methods
+    - Fixed binance websocket regression
+    
+# New features :
+    - New order types support
+
+## [0.4.0-alpha4] - 2019-12-22
+### Updated
+**Requirements**
+- Commons version to 1.2.0
+- Evaluators version to 1.3.1
+- Trading version to 1.4.11
+- jsonschema to 3.1.1
+
+## [0.4.0-alpha3] - 2019-11-10
+### Fixed
+- Appveyor CI
+- Travis pypi delivery
+
+### Updated
+**Requirements**
+- Cython version to 0.29.14
+- Commons version to 1.1.49
+- Evaluators version to 1.2.6
+- Trading version to 1.4.5
+
+## [0.4.0-alpha2] - 2019-10-31
+### Fixed
+- Commands class imports
+- start.py calls
+
+## [0.4.0] - 2019-10-19
+### Added
+- octobot main package to initialize all OctoBot packages
+
+### Moved
+- Evaluator modules related to OctoBot-Evaluators
+- Trading modules related to OctoBot-Trading
+- Services modules related to OctoBot-Services
+- Common modules related to OctoBot-Commons
+- Backtesting modules related to OctoBot-Backtesting
+- Websocket modules related to OctoBot-Websockets
+- Service modules related to OctoBot-Services
+- Interface modules related to OctoBot-Interface
+- Notification modules related to OctoBot-Notifications
+
+Changelog for 0.3.7-beta
+====================
+*Released date : August 31 2019*
+
+# Warning: config.json file has been moved to the user folder
+
+# Concerned issues / pull request:
+    #948 [Trading] Add 6h timeframe
+    #949 [Config] Migrate config file to user folder enhancement
+    #952 [Trader] Fix kraken orders
+    #953 [Docker] Improve dockerfile
+    #955 [Backtesting] Improve recent trades generation
+    #960 [Backtesting] Use the last candle for profitability computation
+    #962 [Portfolio] Missing stablecoins in traded portfolio
+    #964 [Backtesting][DipAnalyser] try to create sell order without enough funds
+    #968 [Web interface] Handle errors 
+    #969 [Web interface] Add refresh real trader button
+
+# Bug fixes :
+    - Fixed errors when creating orders on Kraken exchange
+    - Fixed innacuracies in backtesting
+    - Now correctly takes every currency into consideration when computing profitability and holdings
+    - Fixed backtesting exchange simulator inconsistencies
+    
+# New features :
+    - Added refresh real trader button similar to /refresh_real_trader telegram command in web interface
+    - Added error handling pages in web interface 
+    - Can now handle 6 hours timeframes
+    - Optimized Dockerfile
+
+Changelog for 0.3.6-beta
+====================
+*Released date : July 15 2019*
+
+# Concerned issues / pull request:
+    #922 [Notifications] Uncaught exception when error on notifications publish bug
+    #937 [Exchanges] API token fail when api-password is provided but not necessary bug
+    #940 [Bug][High] Fix updater candle time synchronization
+    #927 [Docker] expose web interface for inter-container communications
+    #900 Fix Config checker failed when using wildcard on pairs
+    #931 Improved navbar UI
+    #944 Added switch design for tentacle config checkboxes
+
+# Bug fixes :
+    - Fixed exchange API token error during first installation
+    - Fixed timeframes update rate to fit timeframes time
+    - Fixed uncaught notification exception
+    - Fixed wildcard configuration validation error
+    
+# New features :
+    - Added configuration for Daily and Signal trading modes
+    - Improved web interface UI 
+
 Changelog for 0.3.5-beta
 ====================
 *Released date : May 27 2019*
