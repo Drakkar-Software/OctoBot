@@ -1,33 +1,18 @@
+# Setup requirements
+cython==0.29.21
+
 # Drakkar-Software requirements
-OctoBot-Tentacles-Manager==1.0.13
-
-# Cryptocurrency trading
-python-binance==0.7.3
-ccxt==1.19.81
-tulipy==0.3.1
-
-# Reddit
-praw
-
-# Telegram
-python-telegram-bot==11.1.0
-
-# Twitter
-Python-Twitter
-
-# Web
-flask
-
-## Tools
-# Analysis tools
-newspaper3k
-simplifiedpytrends
-vaderSentiment
-aiohttp
-jsonschema
+OctoBot-Commons==1.4.13
+OctoBot-Trading==1.11.18
+OctoBot-Evaluators==1.6.7
+OctoBot-Tentacles-Manager==2.3.8
+OctoBot-Services==1.2.7
+OctoBot-Backtesting==1.6.8
+Async-Channel==2.0.7
 
 ## Others
-psutil
-colorlog
-cryptography
-requests
+colorlog==4.2.1
+yarl==1.1.0
+idna<2.9,>=2.5
+aiohttp==3.7.3
+requests==2.25.0

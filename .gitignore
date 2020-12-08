@@ -103,11 +103,12 @@ ENV/
 # mypy
 .mypy_cache/
 
-# config
-config/config.json
+# IDE
+.vscode/
 
-# Specific config
-config/evaluator_config.json
+# Tentacles manager temporary files
+octobot/creator_temp/
+creator_temp/
 
 # Data
 backtesting/collector/data/**
@@ -116,12 +117,15 @@ logs/OctoBot\.log\.*
 
 # Tentacles
 tentacles
-config\.json
+
+# User config
+user/
 
 *.csv
 *.ods
-temp_config\.json
-log
-user
+*.c
 
-logs/states/trading_state_history\.json
+temp_config.json
+logs
+backtesting/data/
+cython_debug/
