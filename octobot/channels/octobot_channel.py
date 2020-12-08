@@ -19,6 +19,11 @@ import async_channel.channels as channels
 import async_channel.consumer as consumers
 import async_channel.producer as producers
 
+import octobot_commons.logging as logging
+import octobot.logger as logger
+
+
+
 
 class OctoBotChannelConsumer(consumers.Consumer):
     """
@@ -64,6 +69,7 @@ class OctoBotChannel(channels.Channel):
         super().__init__()
         self.chan_id = bot_id
         self.is_synchronized = True
+        self.logger = logging.get_logger(self.__class__.__name__)
 
     async def new_consumer(self,
                            callback: object = None,
