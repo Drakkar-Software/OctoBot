@@ -4,10 +4,11 @@ updates:
   directory: "/"
   target-branch: "0.4.0"
   schedule:
-    interval: "daily"
+    interval: "weekly"
   open-pull-requests-limit: 10
   allow:
     - dependency-name: "OctoBot*"
+    - dependency-name: "Async-Channel"
     - dependency-name: "cython"
   reviewers:
   - Herklos
