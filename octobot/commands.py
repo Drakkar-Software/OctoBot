@@ -137,7 +137,7 @@ def stop_bot(bot, force=False):
 
 
 def restart_bot():
-    argv = (f'"{a}"' for a in sys.argv)
+    argv = (f'{a}' for a in sys.argv)
     if sys.argv[0].endswith(".py"):
         os.execl(sys.executable, f'"{sys.executable}"', *argv)
     elif sys.argv[0].endswith(constants.PROJECT_NAME):
@@ -145,4 +145,4 @@ def restart_bot():
         os.execl(sys.argv[0], *argv)
     else:
         # prevent binary to add self as first argument
-        os.execl(sys.executable, *argv)
+        os.execl(sys.executable, *(f'"{a}"' for a in sys.argv))
