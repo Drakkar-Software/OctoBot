@@ -16,7 +16,6 @@
 import octobot_commons.enums as common_enums
 import octobot_commons.constants as common_constants
 
-import octobot_trading.constants as trading_constants
 import octobot_trading.octobot_channel_consumer as trading_channel_consumer
 
 import octobot.channels as octobot_channel
@@ -32,8 +31,8 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
         self.exchange_manager_ids = []
 
     async def start(self):
-        for exchange_name in self.octobot.config[trading_constants.CONFIG_EXCHANGES]:
-            if self.octobot.config[trading_constants.CONFIG_EXCHANGES][exchange_name].get(
+        for exchange_name in self.octobot.config[common_constants.CONFIG_EXCHANGES]:
+            if self.octobot.config[common_constants.CONFIG_EXCHANGES][exchange_name].get(
                     common_constants.CONFIG_ENABLED_OPTION, True):
                 await self.create_exchange(exchange_name, self.backtesting)
 
