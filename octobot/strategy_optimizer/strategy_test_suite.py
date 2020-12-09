@@ -18,12 +18,12 @@ import copy
 import octobot.api.backtesting as octobot_backtesting_api
 import octobot.strategy_optimizer as octobot_strategy_optimizer
 import octobot.backtesting as octobot_backtesting
+import octobot_commons.constants as commons_constants
 
 import octobot_backtesting.errors as backtesting_errors
 
 import octobot_evaluators.constants as evaluator_constants
 
-import octobot_trading.constants as trading_constants
 import octobot_trading.api as trading_api
 
 
@@ -42,8 +42,8 @@ class StrategyTestSuite(octobot_backtesting.AbstractBacktestingTest):
     def get_test_suite_result(self):
         return octobot_strategy_optimizer.TestSuiteResult(self._profitability_results,
                                                           self._trades_counts,
-                                                          self.config[trading_constants.CONFIG_TRADING][
-                                                              trading_constants.CONFIG_TRADER_RISK],
+                                                          self.config[commons_constants.CONFIG_TRADING][
+                                                              commons_constants.CONFIG_TRADER_RISK],
                                                           self.config[evaluator_constants.CONFIG_FORCED_TIME_FRAME],
                                                           self.evaluators,
                                                           self.strategy_evaluator_class.get_name())

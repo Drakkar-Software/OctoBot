@@ -21,6 +21,7 @@ import copy
 import octobot_commons.data_util as data_util
 import octobot_commons.tentacles_management as tentacles_management
 import octobot_commons.logging as common_logging
+import octobot_commons.constants as commons_constants
 
 import octobot.constants as constants
 import octobot.strategy_optimizer as strategy_optimizer
@@ -32,7 +33,6 @@ import octobot_evaluators.constants as evaluator_constants
 import octobot_evaluators.evaluators as evaluators
 
 import octobot_trading.modes as trading_modes
-import octobot_trading.constants as trading_constants
 
 CONFIG = 0
 RANK = 1
@@ -125,7 +125,7 @@ class StrategyOptimizer:
     def _iterate_on_configs(self, nb_TAs, nb_TFs):
         # test with several risks
         for risk in self.risks:
-            self.config[trading_constants.CONFIG_TRADING][trading_constants.CONFIG_TRADER_RISK] = risk
+            self.config[commons_constants.CONFIG_TRADING][commons_constants.CONFIG_TRADER_RISK] = risk
             eval_conf_history = []
             # test with several evaluators
             for evaluator_conf_iteration in range(nb_TAs):

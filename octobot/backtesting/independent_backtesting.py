@@ -34,7 +34,6 @@ import octobot_backtesting.data as backtesting_data
 import octobot_evaluators.constants as evaluator_constants
 
 import octobot_trading.api as trading_api
-import octobot_trading.constants as trading_constants
 
 
 class IndependentBacktesting:
@@ -146,22 +145,22 @@ class IndependentBacktesting:
                 self.symbols_to_create_exchange_classes[exchange_name].append(symbol)
 
     def _init_default_config_values(self):
-        self.risk = copy.deepcopy(self.octobot_origin_config[trading_constants.CONFIG_TRADING][
-                                      trading_constants.CONFIG_TRADER_RISK])
-        self.starting_portfolio = copy.deepcopy(self.octobot_origin_config[trading_constants.CONFIG_SIMULATOR][
-                                                    trading_constants.CONFIG_STARTING_PORTFOLIO])
-        self.fees_config = copy.deepcopy(self.octobot_origin_config[trading_constants.CONFIG_SIMULATOR][
-                                             trading_constants.CONFIG_SIMULATOR_FEES])
+        self.risk = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_TRADING][
+                                      common_constants.CONFIG_TRADER_RISK])
+        self.starting_portfolio = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_SIMULATOR][
+                                                    common_constants.CONFIG_STARTING_PORTFOLIO])
+        self.fees_config = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_SIMULATOR][
+                                             common_constants.CONFIG_SIMULATOR_FEES])
         if evaluator_constants.CONFIG_FORCED_TIME_FRAME in self.octobot_origin_config:
             self.forced_time_frames = copy.deepcopy(self.octobot_origin_config[
                                                         evaluator_constants.CONFIG_FORCED_TIME_FRAME])
         self.backtesting_config = {
             backtesting_constants.CONFIG_BACKTESTING: {},
             common_constants.CONFIG_CRYPTO_CURRENCIES: {},
-            trading_constants.CONFIG_EXCHANGES: {},
-            trading_constants.CONFIG_TRADER: {},
-            trading_constants.CONFIG_SIMULATOR: {},
-            trading_constants.CONFIG_TRADING: {},
+            common_constants.CONFIG_EXCHANGES: {},
+            common_constants.CONFIG_TRADER: {},
+            common_constants.CONFIG_SIMULATOR: {},
+            common_constants.CONFIG_TRADING: {},
         }
 
     async def get_dict_formatted_report(self):
@@ -265,13 +264,13 @@ class IndependentBacktesting:
             f"{round(backtesting_api.get_backtesting_duration(self.octobot_backtesting.backtesting), 3)} sec")
 
     def _adapt_config(self):
-        self.backtesting_config[trading_constants.CONFIG_TRADING][trading_constants.CONFIG_TRADER_RISK] = self.risk
-        self.backtesting_config[trading_constants.CONFIG_TRADING][
-            trading_constants.CONFIG_TRADER_REFERENCE_MARKET] = self._find_reference_market()
-        self.backtesting_config[trading_constants.CONFIG_SIMULATOR][
-            trading_constants.CONFIG_STARTING_PORTFOLIO] = self.starting_portfolio
-        self.backtesting_config[trading_constants.CONFIG_SIMULATOR][
-            trading_constants.CONFIG_SIMULATOR_FEES] = self.fees_config
+        self.backtesting_config[common_constants.CONFIG_TRADING][common_constants.CONFIG_TRADER_RISK] = self.risk
+        self.backtesting_config[common_constants.CONFIG_TRADING][
+            common_constants.CONFIG_TRADER_REFERENCE_MARKET] = self._find_reference_market()
+        self.backtesting_config[common_constants.CONFIG_SIMULATOR][
+            common_constants.CONFIG_STARTING_PORTFOLIO] = self.starting_portfolio
+        self.backtesting_config[common_constants.CONFIG_SIMULATOR][
+            common_constants.CONFIG_SIMULATOR_FEES] = self.fees_config
         if self.forced_time_frames:
             self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = self.forced_time_frames
         self._add_config_default_backtesting_values()
@@ -297,8 +296,8 @@ class IndependentBacktesting:
         if backtesting_constants.CONFIG_BACKTESTING not in self.backtesting_config:
             self.backtesting_config[backtesting_constants.CONFIG_BACKTESTING] = {}
         self.backtesting_config[backtesting_constants.CONFIG_BACKTESTING][common_constants.CONFIG_ENABLED_OPTION] = True
-        self.backtesting_config[trading_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
-        self.backtesting_config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
+        self.backtesting_config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        self.backtesting_config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
 
     def _add_crypto_currencies_config(self):
         for pairs in self.symbols_to_create_exchange_classes.values():

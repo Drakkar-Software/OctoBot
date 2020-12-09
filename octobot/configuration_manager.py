@@ -24,7 +24,6 @@ import octobot_commons.constants as common_constants
 import octobot_commons.logging as logging
 
 import octobot_trading.api as trading_api
-import octobot_trading.constants as trading_constants
 
 LOGGER_NAME = "Configuration"
 
@@ -54,9 +53,9 @@ def config_health_check(config, in_backtesting):
     logger = logging.get_logger(LOGGER_NAME)
     # 1 ensure api key encryption
     should_replace_config = False
-    if trading_constants.CONFIG_EXCHANGES in config:
-        for exchange, exchange_config in config[trading_constants.CONFIG_EXCHANGES].items():
-            for key in trading_constants.CONFIG_EXCHANGE_ENCRYPTED_VALUES:
+    if common_constants.CONFIG_EXCHANGES in config:
+        for exchange, exchange_config in config[common_constants.CONFIG_EXCHANGES].items():
+            for key in common_constants.CONFIG_EXCHANGE_ENCRYPTED_VALUES:
                 try:
                     if not config_manager._handle_encrypted_value(key, exchange_config, verbose=True):
                         should_replace_config = True
@@ -72,14 +71,14 @@ def config_health_check(config, in_backtesting):
             if simulator_enabled:
                 logger.error(f"Impossible to activate a trader simulator additionally to a "
                              f"real trader, simulator deactivated.")
-                config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = False
+                config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = False
                 should_replace_config = True
     except KeyError as e:
         logger.exception(e, True,
                          f"KeyError when checking traders activation: {e}. "
                          f"Activating trader simulator.")
-        config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
-        config[trading_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
+        config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
         should_replace_config = True
 
     # 3 inform about configuration issues

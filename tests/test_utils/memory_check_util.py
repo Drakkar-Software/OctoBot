@@ -15,6 +15,7 @@
 #  License along with this library.
 import asyncio
 
+import octobot_commons.constants as commons_constants
 from octobot.api.backtesting import create_independent_backtesting, initialize_and_run_independent_backtesting, \
     check_independent_backtesting_remaining_objects, stop_independent_backtesting, join_independent_backtesting, \
     get_independent_backtesting_exchange_manager_ids
@@ -23,7 +24,6 @@ from octobot_commons.asyncio_tools import ErrorContainer
 from octobot_trading.api.exchange import get_exchange_manager_from_exchange_id
 from octobot_trading.api.orders import get_open_orders
 from octobot_trading.api.trades import get_trade_history
-from octobot_trading.constants import CONFIG_SIMULATOR, CONFIG_STARTING_PORTFOLIO
 
 
 async def run_independent_backtestings_with_memory_check(config, tentacles_setup_config, backtesting_count=3):
@@ -36,8 +36,8 @@ async def run_independent_backtestings_with_memory_check(config, tentacles_setup
     """
     backtesting = None
     try:
-        config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO]["USDT"] = 10000
-        config[CONFIG_SIMULATOR][CONFIG_STARTING_PORTFOLIO]["ETH"] = 20
+        config[commons_constants.CONFIG_SIMULATOR][commons_constants.CONFIG_STARTING_PORTFOLIO]["USDT"] = 10000
+        config[commons_constants.CONFIG_SIMULATOR][commons_constants.CONFIG_STARTING_PORTFOLIO]["ETH"] = 20
         for _ in range(backtesting_count):
             error_container = ErrorContainer()
             asyncio.get_event_loop().set_exception_handler(error_container.exception_handler)
