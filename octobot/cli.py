@@ -29,8 +29,6 @@ import octobot_services.api as service_api
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.cli as tentacles_manager_cli
 
-import octobot_trading.constants as trading_constants
-
 import octobot
 import octobot.octobot as octobot_class
 import octobot.commands as commands
@@ -53,15 +51,15 @@ def update_config_with_args(starting_args, config, logger):
             config[backtesting_constants.CONFIG_BACKTESTING][
                 backtesting_constants.CONFIG_BACKTESTING_DATA_FILES] = starting_args.backtesting_files
         config[backtesting_constants.CONFIG_BACKTESTING][common_constants.CONFIG_ENABLED_OPTION] = True
-        config[trading_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
-        config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
+        config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
 
     if starting_args.simulate:
-        config[trading_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
-        config[trading_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
+        config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
 
     if starting_args.risk is not None and 0 < starting_args.risk <= 1:
-        config[trading_constants.CONFIG_TRADING][trading_constants.CONFIG_TRADER_RISK] = starting_args.risk
+        config[common_constants.CONFIG_TRADING][common_constants.CONFIG_TRADER_RISK] = starting_args.risk
 
 
 # def _check_public_announcements(logger):
