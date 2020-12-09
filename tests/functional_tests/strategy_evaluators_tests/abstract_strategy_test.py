@@ -26,7 +26,6 @@ import octobot_evaluators.evaluators as evaluators
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 import octobot_trading.api as trading_api
-import octobot_trading.constants as trading_constants
 import tests.test_utils.config as test_utils_config
 import tentacles.Evaluator.Strategies as Strategies
 import tentacles.Trading.Mode as Mode
@@ -42,10 +41,10 @@ class AbstractStrategyTest(octobot_backtesting.AbstractBacktestingTest, abc.ABC)
         self.logger = bot_logging.get_logger(self.__class__.__name__)
         self.config = test_config.load_test_config() if config is None else config
         # remove fees
-        self.config[trading_constants.CONFIG_SIMULATOR][trading_constants.CONFIG_SIMULATOR_FEES][
-            trading_constants.CONFIG_SIMULATOR_FEES_TAKER] = 0
-        self.config[trading_constants.CONFIG_SIMULATOR][trading_constants.CONFIG_SIMULATOR_FEES][
-            trading_constants.CONFIG_SIMULATOR_FEES_MAKER] = 0
+        self.config[commons_constants.CONFIG_SIMULATOR][commons_constants.CONFIG_SIMULATOR_FEES][
+            commons_constants.CONFIG_SIMULATOR_FEES_TAKER] = 0
+        self.config[commons_constants.CONFIG_SIMULATOR][commons_constants.CONFIG_SIMULATOR_FEES][
+            commons_constants.CONFIG_SIMULATOR_FEES_MAKER] = 0
         self.strategy_evaluator_class = strategy_evaluator_class
         self.trading_mode_class = trading_mode_class
         self.tentacles_setup_config = test_utils_config.load_test_tentacles_config()
