@@ -139,7 +139,7 @@ def stop_bot(bot, force=False):
 def restart_bot():
     argv = (f'{a}' for a in sys.argv)
     if sys.argv[0].endswith(".py"):
-        os.execl(sys.executable, f'"{sys.executable}"', *argv)
+        os.execl(sys.executable, f'{sys.executable}', *argv)
     elif sys.argv[0].endswith(constants.PROJECT_NAME):
         # restart from python OctoBot package entrypoint
         os.execl(sys.argv[0], *argv)
