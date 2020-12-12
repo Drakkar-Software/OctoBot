@@ -20,7 +20,7 @@ import time
 import os
 
 import octobot.community as community
-import octobot_commons.config_manager
+import octobot_commons.configuration
 import octobot_commons.constants as commons_constants
 
 AUTH_URL = os.getenv("COMMUNITY_SERVER_URL", "https://oh.fake/auth")
@@ -273,20 +273,22 @@ def test_remove_login_detail(auth):
 
 
 def test_save_login_token(auth):
-    with mock.patch.object(octobot_commons.config_manager, "simple_save_config_update", mock.Mock()) as save_mock:
+    with mock.patch.object(octobot_commons.configuration.Configuration, "save", mock.Mock()) as save_mock:
         auth._save_login_token("plop")
         save_mock.assert_not_called()
-        auth.edited_config = {}
+        auth.edited_config = octobot_commons.configuration.Configuration("")
+        auth.edited_config.config = {}
         auth._save_login_token("plop")
-        assert auth.edited_config[commons_constants.CONFIG_COMMUNITY_TOKEN] == "plop"
-        save_mock.assert_called_once_with(auth.edited_config)
+        assert auth.edited_config.config[commons_constants.CONFIG_COMMUNITY_TOKEN] == "plop"
+        save_mock.assert_called_once_with()
 
 
 def test_try_auto_login(auth):
     with mock.patch.object(auth, "_auto_login", mock.Mock()) as _auto_login_mock:
         auth._try_auto_login()
         _auto_login_mock.assert_not_called()
-        auth.edited_config = {
+        auth.edited_config = octobot_commons.configuration.Configuration("")
+        auth.edited_config.config = {
             commons_constants.CONFIG_COMMUNITY_TOKEN: "plop"
         }
         auth._try_auto_login()

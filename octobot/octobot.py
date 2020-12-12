@@ -19,6 +19,7 @@ import aiohttp
 
 import octobot_commons.enums as enums
 import octobot_commons.logging as logging
+import octobot_commons.configuration as configuration
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
@@ -43,9 +44,9 @@ class OctoBot:
     - Load configs
     """
 
-    def __init__(self, config, ignore_config=False, reset_trading_history=False):
+    def __init__(self, config: configuration.Configuration, ignore_config=False, reset_trading_history=False):
         self.start_time = time.time()
-        self.config = config
+        self.config = config.config
         self.ignore_config = ignore_config
         self.reset_trading_history = reset_trading_history
 
@@ -54,7 +55,7 @@ class OctoBot:
 
         # Configuration manager to handle current, edited and startup configurations
         self.configuration_manager = configuration_manager.ConfigurationManager()
-        self.configuration_manager.add_element(constants.CONFIG_KEY, self.config)
+        self.configuration_manager.add_element(constants.CONFIG_KEY, config, has_dict=True)
 
         # Used to know when OctoBot is ready to answer in APIs
         self.initialized = False
@@ -68,7 +69,7 @@ class OctoBot:
         # community authentication
         self.community_auth = community_manager.CommunityAuthentication(
             constants.OCTOBOT_COMMUNITY_AUTH_URL,
-            config=self.get_edited_config(constants.CONFIG_KEY)
+            config=self.get_edited_config(constants.CONFIG_KEY, dict_only=False),
         )
 
         # octobot_api to request the current instance
@@ -139,11 +140,11 @@ class OctoBot:
     def _init_community(self):
         self.community_handler = community_manager.CommunityManager(self.octobot_api)
 
-    def get_edited_config(self, config_key):
-        return self.configuration_manager.get_edited_config(config_key)
+    def get_edited_config(self, config_key, dict_only=True):
+        return self.configuration_manager.get_edited_config(config_key, dict_only)
 
-    def get_startup_config(self, config_key):
-        return self.configuration_manager.get_startup_config(config_key)
+    def get_startup_config(self, config_key, dict_only=True):
+        return self.configuration_manager.get_startup_config(config_key, dict_only)
 
     def get_trading_mode(self):
         try:
