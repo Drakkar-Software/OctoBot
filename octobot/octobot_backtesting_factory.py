@@ -14,13 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import octobot_backtesting.api as backtesting_api
+import octobot_commons.configuration as configuration
 
 import octobot.api.backtesting as octobot_backtesting_api
 import octobot.octobot as octobot_class
 
 
 class OctoBotBacktestingFactory(octobot_class.OctoBot):
-    def __init__(self, config, log_report=True, run_on_common_part_only=True):
+    def __init__(self, config: configuration.Configuration, log_report=True, run_on_common_part_only=True):
         super().__init__(config)
         self.independent_backtesting = None
         self.log_report = log_report

@@ -20,7 +20,6 @@ from datetime import datetime, timedelta
 
 import octobot_commons.logging as logging
 import octobot_commons.constants as constants
-import octobot_commons.config_manager as config_manager
 
 import octobot.community.community_fields as community_fields
 
@@ -39,7 +38,7 @@ def get_community_metrics():
 
 
 def can_read_metrics(config):
-    return config_manager.get_metrics_enabled(config)
+    return config.get_metrics_enabled()
 
 
 def _format_community_data(json_bot_metrics):

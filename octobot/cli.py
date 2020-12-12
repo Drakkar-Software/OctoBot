@@ -18,9 +18,8 @@ import os
 import sys
 
 import octobot_commons.os_util as os_util
-import octobot_commons.config as common_config
 import octobot_commons.logging as logging
-import octobot_commons.config_manager as config_manager
+import octobot_commons.configuration as configuration
 import octobot_commons.constants as common_constants
 import octobot_commons.errors as errors
 
@@ -45,21 +44,21 @@ except ImportError as e:
     raise e
 
 
-def update_config_with_args(starting_args, config, logger):
+def update_config_with_args(starting_args, config: configuration.Configuration, logger):
     if starting_args.backtesting:
         if starting_args.backtesting_files:
-            config[backtesting_constants.CONFIG_BACKTESTING][
+            config.config[backtesting_constants.CONFIG_BACKTESTING][
                 backtesting_constants.CONFIG_BACKTESTING_DATA_FILES] = starting_args.backtesting_files
-        config[backtesting_constants.CONFIG_BACKTESTING][common_constants.CONFIG_ENABLED_OPTION] = True
-        config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
-        config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
+        config.config[backtesting_constants.CONFIG_BACKTESTING][common_constants.CONFIG_ENABLED_OPTION] = True
+        config.config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        config.config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
 
     if starting_args.simulate:
-        config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
-        config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
+        config.config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        config.config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
 
     if starting_args.risk is not None and 0 < starting_args.risk <= 1:
-        config[common_constants.CONFIG_TRADING][common_constants.CONFIG_TRADER_RISK] = starting_args.risk
+        config.config[common_constants.CONFIG_TRADING][common_constants.CONFIG_TRADER_RISK] = starting_args.risk
 
 
 # def _check_public_announcements(logger):
@@ -71,8 +70,8 @@ def update_config_with_args(starting_args, config, logger):
 #         logger.warning("Impossible to check announcements: {0}".format(e))
 
 
-def _log_terms_if_unaccepted(config, logger):
-    if not config_manager.accepted_terms(config):
+def _log_terms_if_unaccepted(config: configuration.Configuration, logger):
+    if not config.accepted_terms():
         logger.info("*** Disclaimer ***")
         for line in disclaimer.DISCLAIMER:
             logger.info(line)
@@ -112,20 +111,22 @@ def start_octobot(args):
         logger.info("Loading config files...")
 
         # configuration loading
-        config = common_config.load_config(error=False, fill_missing_fields=True)
+        config_path = configuration.get_user_config()
+        config = configuration.Configuration(config_path, constants.CONFIG_FILE_SCHEMA)
+        config.read(should_raise=False, fill_missing_fields=True)
 
-        if config is None and common_config.is_config_empty_or_missing():
+        if not config.is_loaded() and config.is_config_file_empty_or_missing():
             logger.info("No configuration found creating default...")
             configuration_manager.init_config()
-            config = common_config.load_config(error=False)
+            config.read(should_raise=False)
         else:
-            is_valid, e = config_manager.validate_config_file(config=config, schema_file=constants.CONFIG_FILE_SCHEMA)
+            is_valid, error = config.validate()
             if not is_valid:
-                logger.error("OctoBot can't repair your config.json file: invalid format: " + str(e))
+                logger.error("OctoBot can't repair your config.json file: invalid format: " + str(error))
                 raise errors.ConfigError
             configuration_manager.config_health_check(config, args.backtesting)
 
-        if config is None:
+        if not config.is_loaded():
             raise errors.ConfigError
 
         # Handle utility methods before bot initializing if possible
@@ -159,7 +160,7 @@ def start_octobot(args):
         bot.community_auth.clear_cache()
 
         if args.strategy_optimizer:
-            commands.start_strategy_optimizer(config, args.strategy_optimizer)
+            commands.start_strategy_optimizer(config.config, args.strategy_optimizer)
             return
 
         # In those cases load OctoBot

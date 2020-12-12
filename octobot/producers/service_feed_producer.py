@@ -57,7 +57,7 @@ class ServiceFeedProducer(octobot_channels.OctoBotChannelProducer):
                             data={
                                 service_channel_consumer.OctoBotChannelServiceDataKeys.INSTANCE.value: feed,
                                 service_channel_consumer.OctoBotChannelServiceDataKeys.EDITED_CONFIG.value:
-                                    self.octobot.get_edited_config(constants.CONFIG_KEY)
+                                    self.octobot.get_edited_config(constants.CONFIG_KEY, dict_only=False)
                             })
 
     async def create_feed(self, service_feed_factory, feed, in_backtesting):
@@ -66,7 +66,7 @@ class ServiceFeedProducer(octobot_channels.OctoBotChannelProducer):
                         action=service_channel_consumer.OctoBotChannelServiceActions.SERVICE_FEED.value,
                         data={
                             service_channel_consumer.OctoBotChannelServiceDataKeys.EDITED_CONFIG.value:
-                                self.octobot.get_edited_config(constants.CONFIG_KEY),
+                                self.octobot.get_edited_config(constants.CONFIG_KEY, dict_only=False),
                             service_channel_consumer.OctoBotChannelServiceDataKeys.BACKTESTING_ENABLED.value:
                                 in_backtesting,
                             service_channel_consumer.OctoBotChannelServiceDataKeys.CLASS.value: feed,

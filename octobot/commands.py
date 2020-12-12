@@ -22,7 +22,7 @@ import asyncio
 import signal
 import threading
 
-import octobot_commons.config_util as config_util
+import octobot_commons.configuration as configuration
 import octobot_commons.logging as logging
 
 import octobot_tentacles_manager.api as tentacles_manager_api
@@ -52,8 +52,8 @@ def call_tentacles_manager(command_args):
 
 def exchange_keys_encrypter(catch=False):
     try:
-        api_key_crypted = config_util.encrypt(input("ENTER YOUR API-KEY : ")).decode()
-        api_secret_crypted = config_util.encrypt(input("ENTER YOUR API-SECRET : ")).decode()
+        api_key_crypted = configuration.encrypt(input("ENTER YOUR API-KEY : ")).decode()
+        api_secret_crypted = configuration.encrypt(input("ENTER YOUR API-SECRET : ")).decode()
         print(f"Here are your encrypted exchanges keys : \n "
               f"\t- API-KEY : {api_key_crypted}\n"
               f"\t- API-SECRET : {api_secret_crypted}\n\n"

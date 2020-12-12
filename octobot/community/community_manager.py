@@ -20,7 +20,7 @@ import requests
 import threading
 
 import octobot_commons.logging as logging
-import octobot_commons.config_manager as config_manager
+import octobot_commons.configuration as configuration
 import octobot_commons.os_util as os_util
 
 import octobot_commons.constants as common_constants
@@ -40,10 +40,10 @@ class CommunityManager:
 
     def __init__(self, octobot_api):
         self.octobot_api = octobot_api
-        self.edited_config = octobot_api.get_edited_config()
-        self.enabled = config_manager.get_metrics_enabled(self.edited_config)
-        self.bot_id = self._init_config_bot_id(self.edited_config)
-        self.reference_market = trading_api.get_reference_market(self.edited_config)
+        self.edited_config: configuration.Configuration = octobot_api.get_edited_config(dict_only=False)
+        self.enabled = self.edited_config.get_metrics_enabled()
+        self.bot_id = self._init_config_bot_id(self.edited_config.config)
+        self.reference_market = trading_api.get_reference_market(self.edited_config.config)
         self.logger = logging.get_logger(self.__class__.__name__)
         self.current_config = None
         self.keep_running = True
@@ -84,8 +84,8 @@ class CommunityManager:
         await self.session.close()
 
     @staticmethod
-    def should_register_bot(config):
-        existing_id = CommunityManager._init_config_bot_id(config)
+    def should_register_bot(config: configuration.Configuration):
+        existing_id = CommunityManager._init_config_bot_id(config.config)
         return not existing_id
 
     @staticmethod
@@ -185,10 +185,10 @@ class CommunityManager:
         return list(pairs)
 
     def _get_notification_types(self):
-        has_notifications = service_constants.CONFIG_CATEGORY_NOTIFICATION in self.edited_config \
-                            and service_constants.CONFIG_NOTIFICATION_TYPE in self.edited_config[
+        has_notifications = service_constants.CONFIG_CATEGORY_NOTIFICATION in self.edited_config.config \
+                            and service_constants.CONFIG_NOTIFICATION_TYPE in self.edited_config.config[
                                 service_constants.CONFIG_CATEGORY_NOTIFICATION]
-        return self.edited_config[service_constants.CONFIG_CATEGORY_NOTIFICATION][
+        return self.edited_config.config[service_constants.CONFIG_CATEGORY_NOTIFICATION][
             service_constants.CONFIG_NOTIFICATION_TYPE] if has_notifications else []
 
     def _get_eval_config(self):
@@ -231,10 +231,10 @@ class CommunityManager:
 
     def _save_bot_id(self):
         if common_constants.CONFIG_METRICS not in self.edited_config \
-                or not self.edited_config[common_constants.CONFIG_METRICS]:
-            self.edited_config[common_constants.CONFIG_METRICS] = {common_constants.CONFIG_ENABLED_OPTION: True}
-        self.edited_config[common_constants.CONFIG_METRICS][common_constants.CONFIG_METRICS_BOT_ID] = self.bot_id
-        config_manager.simple_save_config_update(self.edited_config)
+                or not self.edited_config.config[common_constants.CONFIG_METRICS]:
+            self.edited_config.config[common_constants.CONFIG_METRICS] = {common_constants.CONFIG_ENABLED_OPTION: True}
+        self.edited_config.config[common_constants.CONFIG_METRICS][common_constants.CONFIG_METRICS_BOT_ID] = self.bot_id
+        self.edited_config.save()
 
     async def _post_community_data(self, route, bot, retry_on_error):
         try:

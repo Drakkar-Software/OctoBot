@@ -18,8 +18,7 @@ import os
 import shutil
 
 import octobot.constants as constants
-import octobot_commons.config as config
-import octobot_commons.config_manager as config_manager
+import octobot_commons.configuration as configuration
 import octobot_commons.constants as common_constants
 import octobot_commons.logging as logging
 
@@ -32,32 +31,39 @@ class ConfigurationManager:
     def __init__(self):
         self.configuration_elements = {}
 
-    def add_element(self, key, element):
-        self.configuration_elements[key] = ConfigurationElement(element)
+    def add_element(self, key, element, has_dict=False):
+        self.configuration_elements[key] = ConfigurationElement(element, has_dict)
 
-    def get_edited_config(self, key):
+    def get_edited_config(self, key, dict_only):
+        config_element = self.configuration_elements[key]
+        if dict_only and config_element.has_dict:
+            return config_element.edited_config.config
         return self.configuration_elements[key].edited_config
 
-    def get_startup_config(self, key):
+    def get_startup_config(self, key, dict_only):
+        config_element = self.configuration_elements[key]
+        if dict_only and config_element.has_dict:
+            return config_element.startup_config.config
         return self.configuration_elements[key].startup_config
 
 
 class ConfigurationElement:
-    def __init__(self, element):
+    def __init__(self, element, has_dict):
         self.config = element
+        self.has_dict = has_dict
         self.startup_config = copy.deepcopy(element)
         self.edited_config = copy.deepcopy(element)
 
 
-def config_health_check(config, in_backtesting):
+def config_health_check(config: configuration.Configuration, in_backtesting: bool) -> configuration.Configuration:
     logger = logging.get_logger(LOGGER_NAME)
     # 1 ensure api key encryption
     should_replace_config = False
-    if common_constants.CONFIG_EXCHANGES in config:
-        for exchange, exchange_config in config[common_constants.CONFIG_EXCHANGES].items():
+    if common_constants.CONFIG_EXCHANGES in config.config:
+        for exchange, exchange_config in config.config[common_constants.CONFIG_EXCHANGES].items():
             for key in common_constants.CONFIG_EXCHANGE_ENCRYPTED_VALUES:
                 try:
-                    if not config_manager._handle_encrypted_value(key, exchange_config, verbose=True):
+                    if not configuration.handle_encrypted_value(key, exchange_config, verbose=True):
                         should_replace_config = True
                 except Exception as e:
                     logger.exception(e, True,
@@ -65,46 +71,43 @@ def config_health_check(config, in_backtesting):
 
     # 2 ensure single trader activated
     try:
-        trader_enabled = trading_api.is_trader_enabled_in_config(config)
+        trader_enabled = trading_api.is_trader_enabled_in_config(config.config)
         if trader_enabled:
-            simulator_enabled = trading_api.is_trader_simulator_enabled_in_config(config)
+            simulator_enabled = trading_api.is_trader_simulator_enabled_in_config(config.config)
             if simulator_enabled:
                 logger.error(f"Impossible to activate a trader simulator additionally to a "
                              f"real trader, simulator deactivated.")
-                config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = False
+                config.config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = False
                 should_replace_config = True
     except KeyError as e:
         logger.exception(e, True,
                          f"KeyError when checking traders activation: {e}. "
                          f"Activating trader simulator.")
-        config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
-        config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
+        config.config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
+        config.config[common_constants.CONFIG_TRADER][common_constants.CONFIG_ENABLED_OPTION] = False
         should_replace_config = True
 
     # 3 inform about configuration issues
     if not (in_backtesting or
-            trading_api.is_trader_enabled_in_config(config) or
-            trading_api.is_trader_simulator_enabled_in_config(config)):
+            trading_api.is_trader_enabled_in_config(config.config) or
+            trading_api.is_trader_simulator_enabled_in_config(config.config)):
         logger.error(f"Real trader and trader simulator are deactivated in configuration. This will prevent OctoBot "
                      f"from creating any new order.")
 
     # 4 save fixed config if necessary
     if should_replace_config:
         try:
-            config_manager.save_config(config.get_user_config(),
-                                       config,
-                                       common_constants.TEMP_RESTORE_CONFIG_FILE,
-                                       common_constants.CONFIG_FILE_SCHEMA,
-                                       json_data=config_manager.dump_json(config))
+            config.save()
             return config
         except Exception as e:
             logger.error(f"Save of the health checked config failed : {e}, "
                          f"will use the initial config")
-            return config.load_config(error=False, fill_missing_fields=True)
+            config.read(should_raise=False, fill_missing_fields=True)
+            return config
 
 
 def init_config(
-        config_file=config.get_user_config(), from_config_file=constants.DEFAULT_CONFIG_FILE
+        config_file=configuration.get_user_config(), from_config_file=constants.DEFAULT_CONFIG_FILE
 ):
     """
     Initialize default config
