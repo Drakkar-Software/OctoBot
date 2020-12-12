@@ -35,8 +35,8 @@ class OctoBotAPI:
     def get_startup_config(self) -> object:
         return self._octobot.get_startup_config(constants.CONFIG_KEY)
 
-    def get_edited_config(self) -> object:
-        return self._octobot.get_edited_config(constants.CONFIG_KEY)
+    def get_edited_config(self, dict_only=True) -> object:
+        return self._octobot.get_edited_config(constants.CONFIG_KEY, dict_only=dict_only)
 
     def get_startup_tentacles_config(self) -> object:
         return self._octobot.get_startup_config(constants.TENTACLES_SETUP_CONFIG_KEY)

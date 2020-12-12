@@ -87,14 +87,16 @@ class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
         interface_list = interface_factory.get_available_interfaces()
         for interface_class in interface_list:
             await self._create_interface_if_relevant(interface_factory, interface_class, in_backtesting,
-                                                     self.octobot.get_edited_config(constants.CONFIG_KEY))
+                                                     self.octobot.get_edited_config(constants.CONFIG_KEY,
+                                                                                    dict_only=False))
 
     async def _create_notifiers(self, in_backtesting):
         notifier_factory = service_api.create_notifier_factory(self.octobot.config)
         notifier_list = notifier_factory.get_available_notifiers()
         for notifier_class in notifier_list:
             await self._create_notifier_class_if_relevant(notifier_factory, notifier_class, in_backtesting,
-                                                          self.octobot.get_edited_config(constants.CONFIG_KEY))
+                                                          self.octobot.get_edited_config(constants.CONFIG_KEY,
+                                                                                         dict_only=False))
 
     async def _create_interface_if_relevant(self, interface_factory, interface_class,
                                             backtesting_enabled, edited_config):

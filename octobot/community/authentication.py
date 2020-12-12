@@ -19,7 +19,6 @@ import requests
 
 import octobot.constants as constants
 import octobot_commons.constants as commons_constants
-import octobot_commons.config_manager as config_manager
 import octobot_commons.logging as bot_logging
 
 
@@ -109,12 +108,12 @@ class CommunityAuthentication:
 
     def _save_login_token(self, value):
         if self.edited_config is not None:
-            self.edited_config[commons_constants.CONFIG_COMMUNITY_TOKEN] = value
-            config_manager.simple_save_config_update(self.edited_config)
+            self.edited_config.config[commons_constants.CONFIG_COMMUNITY_TOKEN] = value
+            self.edited_config.save()
 
     def _try_auto_login(self):
         if self.edited_config is not None:
-            token = self.edited_config.get(commons_constants.CONFIG_COMMUNITY_TOKEN, "")
+            token = self.edited_config.config.get(commons_constants.CONFIG_COMMUNITY_TOKEN, "")
             if token:
                 # try to login using config data
                 self._auto_login(token)
