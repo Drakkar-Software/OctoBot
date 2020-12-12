@@ -58,8 +58,9 @@ And then open [http://localhost](http://localhost).
 #### [With python sources](https://github.com/Drakkar-Software/OctoBot/wiki/With-Python-only) (unix)
 - Install python3.8 (https://www.python.org/downloads/)
 ```
-git clone git@github.com:Drakkar-Software/OctoBot.git && cd OctoBot
-pip3 install -r requirements.txt
+git clone https://github.com/Drakkar-Software/OctoBot.git
+cd OctoBot
+python3 -m pip install -Ur requirements.txt
 python3 start.py
 ```
 
