@@ -124,9 +124,9 @@ async def start_bot(bot, logger, catch=False):
             logger.info("Core engine tasks cancelled.")
 
     except Exception as e:
-        logger.exception(e, True, f"OctoBot Exception : {e}")
+        logger.exception(e)
         if not catch:
-            raise e
+            raise
         stop_bot(bot)
 
 
