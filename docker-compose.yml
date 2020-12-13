@@ -1,6 +1,5 @@
 version: "3"
-volumes:
-  octobot:
+
 services:
   octobot:
     image: drakkarsoftware/octobot:stable
@@ -10,5 +9,5 @@ services:
        - ./tentacles:/octobot/tentacles
        - ./user:/octobot/user
     ports:
-       - 5001
+       - 80:5001
     restart: always
