@@ -1,0 +1,12 @@
+{
+    "heavy_weight_price_multiplier": 1.1,
+    "heavy_weight_volume_multiplier": 1,
+    "light_weight_price_multiplier": 1.04,
+    "light_weight_volume_multiplier": 0.5,
+    "medium_weight_price_multiplier": 1.07,
+    "medium_weight_volume_multiplier": 0.7,
+    "required_strategies": [
+        "DipAnalyserStrategyEvaluator"
+    ],
+    "sell_orders_count": 3
+}

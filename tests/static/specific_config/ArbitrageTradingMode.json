@@ -1,0 +1,10 @@
+{
+    "exchanges_to_trade_on": [
+        "kucoin",
+        "binance"
+    ],
+    "minimal_price_delta_percent": 0.0001,
+    "portfolio_percent_per_trade": 25,
+    "required_strategies": [],
+    "stop_loss_delta_percent": 0.1
+}

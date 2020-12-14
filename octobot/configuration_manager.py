@@ -107,7 +107,8 @@ def config_health_check(config: configuration.Configuration, in_backtesting: boo
 
 
 def init_config(
-        config_file=configuration.get_user_config(), from_config_file=constants.DEFAULT_CONFIG_FILE
+        config_file=configuration.get_user_config(),
+        from_config_file=constants.DEFAULT_CONFIG_FILE
 ):
     """
     Initialize default config
@@ -119,5 +120,13 @@ def init_config(
             os.makedirs(common_constants.USER_FOLDER)
 
         shutil.copyfile(from_config_file, config_file)
+        profile_folder = os.path.join(common_constants.USER_PROFILES_FOLDER,
+                                      common_constants.DEFAULT_PROFILE)
+        if not os.path.exists(profile_folder):
+            os.makedirs(profile_folder)
+        shutil.copyfile(constants.DEFAULT_PROFILE_FILE,
+                        os.path.join(profile_folder, common_constants.DEFAULT_PROFILE_FILE))
+        shutil.copyfile(constants.DEFAULT_PROFILE_AVATAR,
+                        os.path.join(profile_folder, constants.DEFAULT_PROFILE_AVATAR_FILE_NAME))
     except Exception as global_exception:
         raise Exception(f"Can't init config file {global_exception}")

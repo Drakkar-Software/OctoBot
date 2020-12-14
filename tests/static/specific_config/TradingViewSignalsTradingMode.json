@@ -1,0 +1,6 @@
+{
+    "close_to_current_price_difference": 0.02,
+    "required_strategies": [],
+    "use_market_orders": true,
+    "use_maximum_size_orders": false
+}
