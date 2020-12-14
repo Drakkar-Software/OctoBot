@@ -1,0 +1,121 @@
+{
+    "RSI_to_weight": [
+        {
+            "fast_thresholds": [
+                {
+                    "fast_threshold": 20,
+                    "weights": {
+                        "price": 2,
+                        "volume": 2
+                    }
+                },
+                {
+                    "fast_threshold": 30,
+                    "weights": {
+                        "price": 1,
+                        "volume": 1
+                    }
+                }
+            ],
+            "slow_threshold": 30
+        },
+        {
+            "fast_thresholds": [
+                {
+                    "fast_threshold": 20,
+                    "weights": {
+                        "price": 3,
+                        "volume": 3
+                    }
+                },
+                {
+                    "fast_threshold": 35,
+                    "weights": {
+                        "price": 1,
+                        "volume": 1
+                    }
+                }
+            ],
+            "slow_threshold": 35
+        },
+        {
+            "fast_thresholds": [
+                {
+                    "fast_threshold": 20,
+                    "weights": {
+                        "price": 3,
+                        "volume": 3
+                    }
+                },
+                {
+                    "fast_threshold": 40,
+                    "weights": {
+                        "price": 2,
+                        "volume": 1
+                    }
+                }
+            ],
+            "slow_threshold": 45
+        },
+        {
+            "fast_thresholds": [
+                {
+                    "fast_threshold": 45,
+                    "weights": {
+                        "price": 1,
+                        "volume": 1
+                    }
+                }
+            ],
+            "slow_threshold": 55
+        },
+        {
+            "fast_thresholds": [
+                {
+                    "fast_threshold": 45,
+                    "weights": {
+                        "price": 1,
+                        "volume": 1
+                    }
+                },
+                {
+                    "fast_threshold": 55,
+                    "weights": {
+                        "price": 3,
+                        "volume": 2
+                    }
+                },
+                {
+                    "fast_threshold": 60,
+                    "weights": {
+                        "price": 2,
+                        "volume": 1
+                    }
+                }
+            ],
+            "slow_threshold": 65
+        },
+        {
+            "fast_thresholds": [
+                {
+                    "fast_threshold": 55,
+                    "weights": {
+                        "price": 3,
+                        "volume": 2
+                    }
+                },
+                {
+                    "fast_threshold": 70,
+                    "weights": {
+                        "price": 2,
+                        "volume": 2
+                    }
+                }
+            ],
+            "slow_threshold": 70
+        }
+    ],
+    "fast_eval_count": 4,
+    "period": 14,
+    "slow_eval_count": 16
+}

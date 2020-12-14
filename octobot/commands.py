@@ -68,8 +68,8 @@ def exchange_keys_encrypter(catch=False):
 
 
 def start_strategy_optimizer(config, commands):
-    tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config()
-    optimizer = strategy_optimizer_api.create_strategy_optimizer(config, tentacles_setup_config, commands[0])
+    tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(config.get_tentacles_config_path())
+    optimizer = strategy_optimizer_api.create_strategy_optimizer(config.config, tentacles_setup_config, commands[0])
     if strategy_optimizer_api.get_optimizer_is_properly_initialized(optimizer):
         strategy_optimizer_api.find_optimal_configuration(optimizer)
         strategy_optimizer_api.print_optimizer_report(optimizer)

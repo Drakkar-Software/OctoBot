@@ -1,0 +1,102 @@
+{
+  "profile": {
+    "avatar": "default_profile.png",
+    "description": "OctoBot default profile.",
+    "id": "default",
+    "name": "default"
+  },
+  "config": {
+    "crypto-currencies": {
+      "Bitcoin": {
+        "pairs": [
+          "BTC/USDT",
+          "BTC/EUR"
+        ]
+      },
+      "Neo": {
+        "pairs": [
+          "NEO/BTC"
+        ]
+      },
+      "Ethereum": {
+        "pairs": [
+          "ETH/USDT"
+        ]
+      },
+      "Icon": {
+        "pairs": [
+          "ICX/BTC"
+        ]
+      },
+      "VeChain": {
+        "pairs": [
+          "VEN/BTC"
+        ]
+      },
+      "Nano": {
+        "pairs": [
+          "XRB/BTC"
+        ]
+      },
+      "Cardano": {
+        "pairs": [
+          "ADA/BTC"
+        ]
+      },
+      "Ontology": {
+        "pairs": [
+          "ONT/BTC"
+        ]
+      },
+      "Stellar": {
+        "pairs": [
+          "XLM/BTC"
+        ]
+      },
+      "Power Ledger": {
+        "pairs": [
+          "POWR/BTC"
+        ]
+      },
+      "Ethereum Classic": {
+        "pairs": [
+          "ETC/BTC"
+        ]
+      },
+      "WAX": {
+        "pairs": [
+          "WAX/BTC"
+        ]
+      },
+      "XRP": {
+        "pairs": [
+          "XRP/BTC"
+        ]
+      },
+      "Verge": {
+        "pairs": [
+          "XVG/BTC"
+        ]
+      }
+    },
+    "exchanges": {},
+    "trading": {
+      "risk": 1,
+      "reference-market": "BTC"
+    },
+    "trader": {
+      "enabled": false
+    },
+    "trader-simulator": {
+      "enabled": true,
+      "fees": {
+        "maker": 0.1,
+        "taker": 0.1
+      },
+      "starting-portfolio": {
+        "BTC": 10,
+        "USD": 1000
+      }
+    }
+  }
+}

@@ -94,7 +94,8 @@ class TaskManager:
 
     def _loop_exception_handler(self, loop, context):
         loop_str = "bot main async" if loop is self.async_loop else {loop}
-        self.logger.warning(f"Error in {loop_str} loop: {context}")
+        message = f"Error in {loop_str} loop: {context}"
+        self.logger.warning(message)
 
     def _create_new_asyncio_main_loop(self):
         self.async_loop = asyncio.new_event_loop()

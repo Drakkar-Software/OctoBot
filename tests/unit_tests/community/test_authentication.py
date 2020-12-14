@@ -276,7 +276,7 @@ def test_save_login_token(auth):
     with mock.patch.object(octobot_commons.configuration.Configuration, "save", mock.Mock()) as save_mock:
         auth._save_login_token("plop")
         save_mock.assert_not_called()
-        auth.edited_config = octobot_commons.configuration.Configuration("")
+        auth.edited_config = octobot_commons.configuration.Configuration("", "")
         auth.edited_config.config = {}
         auth._save_login_token("plop")
         assert auth.edited_config.config[commons_constants.CONFIG_COMMUNITY_TOKEN] == "plop"
@@ -287,7 +287,7 @@ def test_try_auto_login(auth):
     with mock.patch.object(auth, "_auto_login", mock.Mock()) as _auto_login_mock:
         auth._try_auto_login()
         _auto_login_mock.assert_not_called()
-        auth.edited_config = octobot_commons.configuration.Configuration("")
+        auth.edited_config = octobot_commons.configuration.Configuration("", "")
         auth.edited_config.config = {
             commons_constants.CONFIG_COMMUNITY_TOKEN: "plop"
         }

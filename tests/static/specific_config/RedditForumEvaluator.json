@@ -1,0 +1,68 @@
+{
+    "crypto-currencies": [
+        {
+            "crypto-currency": "Bitcoin",
+            "subreddits": [
+                "Bitcoin"
+            ]
+        },
+        {
+            "crypto-currency": "Ethereum",
+            "subreddits": [
+                "ethereum"
+            ]
+        },
+        {
+            "crypto-currency": "NEO",
+            "subreddits": [
+                "NEO"
+            ]
+        },
+        {
+            "crypto-currency": "ICON",
+            "subreddits": [
+                "icon"
+            ]
+        },
+        {
+            "crypto-currency": "NANO",
+            "subreddits": [
+                "nanocurrency"
+            ]
+        },
+        {
+            "crypto-currency": "VeChain",
+            "subreddits": [
+                "Vechain"
+            ]
+        },
+        {
+            "crypto-currency": "VeChain Thor",
+            "subreddits": [
+                "Vechain"
+            ]
+        },
+        {
+            "crypto-currency": "Substratum",
+            "subreddits": [
+                "SubstratumNetwork"
+            ]
+        },
+        {
+            "crypto-currency": "Ethos",
+            "subreddits": [
+                "ethos_io"
+            ]
+        },
+        {
+            "crypto-currency": "Ontology",
+            "subreddits": [
+                "OntologyNetwork"
+            ]
+        },
+        {
+            "crypto-currency": "Binance Coin",
+            "subreddits": []
+        }
+    ]
+}

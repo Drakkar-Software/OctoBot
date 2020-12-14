@@ -1,0 +1,14 @@
+{
+    "close_to_current_price_difference": 0.005,
+    "default_config": [
+        "SimpleStrategyEvaluator"
+    ],
+    "required_strategies": [
+        "SimpleStrategyEvaluator",
+        "TechnicalAnalysisStrategyEvaluator"
+    ],
+    "required_strategies_min_count": 1,
+    "use_maximum_size_orders": false,
+    "use_prices_close_to_current_price": false,
+    "use_stop_orders": true
+}

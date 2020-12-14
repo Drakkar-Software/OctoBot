@@ -1,0 +1,19 @@
+{
+    "background_social_evaluators": [
+        "RedditForumEvaluator"
+    ],
+    "default_config": [
+        "DoubleMovingAverageTrendEvaluator",
+        "RSIMomentumEvaluator"
+    ],
+    "re_evaluate_TA_when_social_or_realtime_notification": true,
+    "required_evaluators": [
+        "*"
+    ],
+    "required_time_frames": [
+        "1h",
+        "4h",
+        "1d"
+    ],
+    "social_evaluators_notification_timeout": 3600
+}

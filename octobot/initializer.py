@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot.constants as constants
 
 
 class Initializer:
@@ -26,7 +27,9 @@ class Initializer:
 
     async def create(self):
         # initialize tentacle configuration
-        self.octobot.tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config()
+        tentacles_config_path = self.octobot.get_startup_config(constants.CONFIG_KEY, dict_only=False).\
+            get_tentacles_config_path()
+        self.octobot.tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(tentacles_config_path)
 
         # create OctoBot channel
         await self.octobot.global_consumer.initialize()
