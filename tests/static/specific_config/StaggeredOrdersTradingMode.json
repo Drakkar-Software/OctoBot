@@ -1,0 +1,60 @@
+{
+    "pair_settings": [
+        {
+            "increment_percent": 3,
+            "lower_bound": 3000,
+            "mirror_order_delay": 0,
+            "mode": "mountain",
+            "operational_depth": 100,
+            "pair": "BTC/USDT",
+            "spread_percent": 6,
+            "upper_bound": 6000,
+            "use_existing_orders_only": false
+        },
+        {
+            "increment_percent": 3,
+            "lower_bound": 0.0003,
+            "mirror_order_delay": 0,
+            "mode": "mountain",
+            "operational_depth": 50,
+            "pair": "ADA/ETH",
+            "spread_percent": 6,
+            "upper_bound": 0.0007,
+            "use_existing_orders_only": false
+        },
+        {
+            "increment_percent": 0.3,
+            "lower_bound": 400,
+            "mirror_order_delay": 0,
+            "mode": "mountain",
+            "operational_depth": 50,
+            "pair": "ETH/USDT",
+            "spread_percent": 0.7,
+            "upper_bound": 500,
+            "use_existing_orders_only": false
+        },
+        {
+            "increment_percent": 1,
+            "lower_bound": 0.00012386,
+            "mirror_order_delay": 0,
+            "mode": "mountain",
+            "operational_depth": 50,
+            "pair": "KNC/BTC",
+            "spread_percent": 2,
+            "upper_bound": 0.00017386,
+            "use_existing_orders_only": false
+        },
+        {
+            "increment_percent": 0.75,
+            "lower_bound": 0.0253,
+            "mirror_order_delay": 0,
+            "mode": "neutral",
+            "operational_depth": 100,
+            "pair": "ETH/BTC",
+            "spread_percent": 2.25,
+            "upper_bound": 0.0409,
+            "use_existing_orders_only": false
+        }
+    ],
+    "required_strategies": []
+}

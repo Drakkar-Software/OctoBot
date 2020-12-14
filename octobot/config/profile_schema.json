@@ -1,0 +1,152 @@
+{
+  "type": "object",
+  "properties": {
+    "profile": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "crypto-currencies": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "pairs": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "quote": {
+                  "type": "string"
+                },
+                "add": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "exchanges": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "enabled"
+              ]
+            }
+          }
+        },
+        "trader": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "load-trade-history": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "enabled"
+          ]
+        },
+        "trader-simulator": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "fees": {
+              "type": "object",
+              "properties": {
+                "maker": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "taker": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "maker",
+                "taker"
+              ]
+            },
+            "starting-portfolio": {
+              "type": "object",
+              "patternProperties": {
+                "^.*$": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "fees",
+            "starting-portfolio"
+          ]
+        },
+        "trading": {
+          "type": "object",
+          "properties": {
+            "reference-market": {
+              "type": "string"
+            },
+            "risk": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "reference-market",
+            "risk"
+          ]
+        }
+      },
+      "required": [
+        "crypto-currencies",
+        "exchanges",
+        "trading",
+        "trader",
+        "trader-simulator"
+      ]
+    }
+  }
+}

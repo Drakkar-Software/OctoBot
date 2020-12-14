@@ -18,6 +18,7 @@ from math import isnan
 from timeit import default_timer as timer
 from mock import patch, AsyncMock
 
+import tests.test_utils.config as test_utils_config
 from octobot_commons.constants import START_PENDING_EVAL_NOTE
 from octobot_commons.enums import TimeFramesMinutes, TimeFrames
 from tests.test_utils.data_bank import DataBank
@@ -35,7 +36,7 @@ class AbstractTATest:
 
     async def initialize(self, data_file=None):
         self.time_frame = None
-        self.evaluator = self.TA_evaluator_class()
+        self.evaluator = self.TA_evaluator_class(test_utils_config.load_test_tentacles_config())
         patch.object(self.evaluator, 'get_exchange_symbol_data', new=self._mocked_get_exchange_symbol_data)
         self.data_bank = DataBank(data_file)
         await self.data_bank.initialize()

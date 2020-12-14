@@ -72,7 +72,7 @@ class AbstractStrategyTest(octobot_backtesting.AbstractBacktestingTest, abc.ABC)
         return independent_backtesting
 
     def _update_tentacles_config(self, strategy_evaluator_class, trading_mode_class):
-        default_evaluators = strategy_evaluator_class.get_default_evaluators()
+        default_evaluators = strategy_evaluator_class.get_default_evaluators(self.tentacles_setup_config)
         to_update_config = {}
         tentacles_activation = tentacles_manager_api.get_tentacles_activation(self.tentacles_setup_config)
         for tentacle_class_name in tentacles_activation[tentacles_manager_constants.TENTACLES_EVALUATOR_PATH]:
