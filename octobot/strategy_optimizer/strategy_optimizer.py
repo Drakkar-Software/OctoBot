@@ -93,7 +93,8 @@ class StrategyOptimizer:
                 self.all_TAs = self._get_all_TA() if TAs is None else TAs
                 nb_TAs = len(self.all_TAs)
 
-                self.all_time_frames = self.strategy_class.get_required_time_frames(self.config) \
+                self.all_time_frames = self.strategy_class.get_required_time_frames(self.config,
+                                                                                    self.tentacles_setup_config) \
                     if time_frames is None else time_frames
                 nb_TFs = len(self.all_time_frames)
 

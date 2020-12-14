@@ -112,17 +112,19 @@ def start_octobot(args):
 
         # configuration loading
         config_path = configuration.get_user_config()
-        config = configuration.Configuration(config_path, constants.CONFIG_FILE_SCHEMA)
+        config = configuration.Configuration(config_path, common_constants.USER_PROFILES_FOLDER,
+                                             constants.CONFIG_FILE_SCHEMA, constants.PROFILE_FILE_SCHEMA)
         if config.is_config_file_empty_or_missing():
             logger.info("No configuration found creating default...")
             configuration_manager.init_config()
             config.read(should_raise=False)
         else:
             config.read(should_raise=False, fill_missing_fields=True)
-            is_valid, error = config.validate()
-            if not is_valid:
-                logger.error("OctoBot can't repair your config.json file: invalid format: " + str(error))
-                raise errors.ConfigError
+            try:
+                config.validate()
+            except Exception as err:
+                logger.error("OctoBot can't repair your config.json file: invalid format: " + str(err))
+                raise errors.ConfigError from err
         configuration_manager.config_health_check(config, args.backtesting)
 
         if not config.is_loaded():
@@ -159,7 +161,7 @@ def start_octobot(args):
         bot.community_auth.clear_cache()
 
         if args.strategy_optimizer:
-            commands.start_strategy_optimizer(config.config, args.strategy_optimizer)
+            commands.start_strategy_optimizer(config, args.strategy_optimizer)
             return
 
         # In those cases load OctoBot
@@ -169,9 +171,14 @@ def start_octobot(args):
         commands.run_bot(bot, logger)
 
     except errors.ConfigError:
-        logger.error("OctoBot can't start without " + common_constants.CONFIG_FILE
+        logger.error("OctoBot can't start without a valid " + common_constants.CONFIG_FILE
                      + " configuration file." + "\nYou can use " +
                      constants.DEFAULT_CONFIG_FILE + " as an example to fix it.")
+        os._exit(-1)
+
+    except errors.NoProfileError:
+        logger.error("OctoBot can't start without a valid default profile configuration\nYou can use " +
+                     constants.DEFAULT_PROFILE_FILE + " as an example to fix it.")
         os._exit(-1)
 
     except ModuleNotFoundError as e:
