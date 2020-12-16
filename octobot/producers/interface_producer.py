@@ -123,7 +123,9 @@ class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
                                 service_channel_consumer.OctoBotChannelServiceDataKeys.BACKTESTING_ENABLED.value:
                                     backtesting_enabled,
                                 service_channel_consumer.OctoBotChannelServiceDataKeys.CLASS.value: notifier_class,
-                                service_channel_consumer.OctoBotChannelServiceDataKeys.FACTORY.value: notifier_factory
+                                service_channel_consumer.OctoBotChannelServiceDataKeys.FACTORY.value: notifier_factory,
+                                service_channel_consumer.OctoBotChannelServiceDataKeys.EXECUTORS.value:
+                                    self.octobot.task_manager.executors
                             })
             self.to_create_notifiers_count += 1
 
