@@ -143,6 +143,9 @@ class OctoBot:
     def get_edited_config(self, config_key, dict_only=True):
         return self.configuration_manager.get_edited_config(config_key, dict_only)
 
+    def set_edited_config(self, config_key, config):
+        self.configuration_manager.set_edited_config(config_key, config)
+
     def get_startup_config(self, config_key, dict_only=True):
         return self.configuration_manager.get_startup_config(config_key, dict_only)
 

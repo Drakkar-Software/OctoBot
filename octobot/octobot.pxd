@@ -55,5 +55,6 @@ cdef class OctoBot:
     cpdef void set_watcher(self, object watcher)
     cpdef object get_aiohttp_session(self)
     cpdef object get_edited_config(self, str config_key)
+    cpdef void set_edited_config(self, str config_key, object config)
     cpdef object get_startup_config(self, str config_key)
     cpdef object get_trading_mode(self)

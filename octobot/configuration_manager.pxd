@@ -22,6 +22,7 @@ cdef class ConfigurationManager:
     cpdef void add_element(self, str key, object element)
     cpdef object get_edited_config(self, str key)
     cpdef object get_startup_config(self, str key)
+    cpdef void set_edited_config(self, str config_key, object config)
 
 cdef class ConfigurationElement:
     cdef public object config
