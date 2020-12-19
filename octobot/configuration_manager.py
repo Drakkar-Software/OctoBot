@@ -40,6 +40,9 @@ class ConfigurationManager:
             return config_element.edited_config.config
         return self.configuration_elements[key].edited_config
 
+    def set_edited_config(self, key, config):
+        self.configuration_elements[key].edited_config = config
+
     def get_startup_config(self, key, dict_only):
         config_element = self.configuration_elements[key]
         if dict_only and config_element.has_dict:
