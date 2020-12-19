@@ -44,6 +44,9 @@ class OctoBotAPI:
     def get_edited_tentacles_config(self) -> object:
         return self._octobot.get_edited_config(constants.TENTACLES_SETUP_CONFIG_KEY)
 
+    def set_edited_tentacles_config(self, config):
+        self._octobot.set_edited_config(constants.TENTACLES_SETUP_CONFIG_KEY, config)
+
     def get_trading_mode(self) -> object:
         return self._octobot.get_trading_mode()
 
