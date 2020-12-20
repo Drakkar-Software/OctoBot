@@ -142,3 +142,19 @@ def init_default_profile():
                         os.path.join(profile_folder, tentacles_manager_constants.constants.CONFIG_TENTACLES_FILE))
         shutil.copytree(tentacles_manager_constants.USER_REFERENCE_TENTACLE_SPECIFIC_CONFIG_PATH,
                         os.path.join(profile_folder, tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER))
+
+
+def migrate_from_previous_config(config):
+    if common_constants.CONFIG_CRYPTO_CURRENCIES in config.config:
+        # config migration required
+        # add missing exchange enabled config
+        for exchange_config in config.config[common_constants.CONFIG_EXCHANGES].values():
+            exchange_config[common_constants.CONFIG_ENABLED_OPTION] = \
+                exchange_config.get(common_constants.CONFIG_ENABLED_OPTION, True)
+        for key in ("tentacles-packages", "performance-analyser", "PERF", "SAVE_EVALUATIONS"):
+            config.config.pop(key, None)
+        config.save()
+        return True
+    else:
+        # real config issue
+        return False

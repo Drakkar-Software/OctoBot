@@ -27,6 +27,7 @@ import octobot_services.api as service_api
 
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.cli as tentacles_manager_cli
+import octobot_tentacles_manager.constants as tentacles_manager_constants
 
 import octobot
 import octobot.octobot as octobot_class
@@ -114,22 +115,23 @@ def start_octobot(args):
         config_path = configuration.get_user_config()
         config = configuration.Configuration(config_path, common_constants.USER_PROFILES_FOLDER,
                                              constants.CONFIG_FILE_SCHEMA, constants.PROFILE_FILE_SCHEMA)
-        if config.is_config_file_empty_or_missing():
-            logger.info("No configuration found creating default configuration...")
-            configuration_manager.init_default_profile()
-            configuration_manager.init_config()
-            config.read(should_raise=False)
-        elif config.are_profiles_empty_or_missing():
+        if config.are_profiles_empty_or_missing():
             logger.info("No profile found creating default profile...")
             configuration_manager.init_default_profile()
+        if config.is_config_file_empty_or_missing():
+            logger.info("No configuration found creating default configuration...")
+            configuration_manager.init_config()
             config.read(should_raise=False)
         else:
             config.read(should_raise=False, fill_missing_fields=True)
             try:
                 config.validate()
             except Exception as err:
-                logger.error("OctoBot can't repair your config.json file: invalid format: " + str(err))
-                raise errors.ConfigError from err
+                if configuration_manager.migrate_from_previous_config(config):
+                    logger.info("Your configuration has been migrated into the newest format.")
+                else:
+                    logger.error("OctoBot can't repair your config.json file: invalid format: " + str(err))
+                    raise errors.ConfigError from err
         configuration_manager.config_health_check(config, args.backtesting)
 
         if not config.is_loaded():
@@ -156,7 +158,8 @@ def start_octobot(args):
         # Add tentacles folder to Python path
         sys.path.append(os.path.realpath(os.getcwd()))
 
-        if not tentacles_manager_api.load_tentacles(verbose=True):
+        if not (os.path.isfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH) and
+                tentacles_manager_api.load_tentacles(verbose=True)):
             logger.info("OctoBot tentacles can't be found or are damaged. Installing default tentacles ...")
             commands.run_tentacles_installation()
             # reload tentacles
