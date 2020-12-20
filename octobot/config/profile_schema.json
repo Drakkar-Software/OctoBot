@@ -15,6 +15,9 @@
         },
         "avatar": {
           "type": "string"
+        },
+        "read_only": {
+          "type": "boolean"
         }
       }
     },
