@@ -115,8 +115,13 @@ def start_octobot(args):
         config = configuration.Configuration(config_path, common_constants.USER_PROFILES_FOLDER,
                                              constants.CONFIG_FILE_SCHEMA, constants.PROFILE_FILE_SCHEMA)
         if config.is_config_file_empty_or_missing():
-            logger.info("No configuration found creating default...")
+            logger.info("No configuration found creating default configuration...")
+            configuration_manager.init_default_profile()
             configuration_manager.init_config()
+            config.read(should_raise=False)
+        elif config.are_profiles_empty_or_missing():
+            logger.info("No profile found creating default profile...")
+            configuration_manager.init_default_profile()
             config.read(should_raise=False)
         else:
             config.read(should_raise=False, fill_missing_fields=True)
