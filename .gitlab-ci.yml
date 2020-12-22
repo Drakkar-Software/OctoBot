@@ -43,7 +43,6 @@ Push latest:
   only:
     # Only "master" should be tagged "latest"
     - master
-    - 0.4.0 # TEMP
   script:
     # Because we have no guarantee that this job will be picked up by the same runner
     # that built the image in the previous step, we pull it again locally
