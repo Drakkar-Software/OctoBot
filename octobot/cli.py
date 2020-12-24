@@ -162,6 +162,8 @@ def start_octobot(args):
                 tentacles_manager_api.load_tentacles(verbose=True)):
             logger.info("OctoBot tentacles can't be found or are damaged. Installing default tentacles ...")
             commands.run_tentacles_installation()
+            # reload profiles
+            config.load_profiles()
             # reload tentacles
             tentacles_manager_api.load_tentacles(verbose=True)
 
