@@ -1,5 +1,10 @@
 name: OctoBot-CI
-on: push
+on:
+  push:
+    branches:
+      - 'master'
+      - 'dev'
+  pull_request:
 
 jobs:
   lint:
