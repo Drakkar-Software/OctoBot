@@ -26,7 +26,7 @@ jobs:
 
     - name: Pylint
       run: |
-        pylint --rcfile=standard.rc ${{ secrets.PACKAGE_FOLDER }}
+        pylint --rcfile=standard.rc octobot
         if [ $? -ne 1 ]; then exit 0; fi
 
   docker_lint:
@@ -124,7 +124,7 @@ jobs:
 
     - name: Publish coverage
       if: matrix.type == 'sources'
-      run: coveralls
+      run: [[ -z ${{ secrets.COVERALLS_REPO_TOKEN }} ]] || coveralls
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
