@@ -26,6 +26,12 @@ jobs:
 
     - name: Pylint
       run: |
+        ls -al ${{ secrets.PACKAGE_FOLDER }}
+        echo ${{ secrets.PACKAGE_FOLDER }}
+        cd ${{ secrets.PACKAGE_FOLDER }}
+        cat ${{ secrets.PACKAGE_FOLDER }}
+        ls -al ${{ secrets.PACKAGE_FOLDER }} > test
+        cat test
         pylint --rcfile=standard.rc ${{ secrets.PACKAGE_FOLDER }}
         if [ $? -ne 1 ]; then exit 0; fi
 
