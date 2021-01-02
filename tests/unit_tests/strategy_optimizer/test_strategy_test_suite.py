@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
+
 import mock
 import builtins
 import pytest
@@ -41,6 +43,8 @@ class StrategyTestSuiteMock(strategy_optimizer.StrategyTestSuite, mock.Mock):
 async def test_run_test_suite():
     test_suite = StrategyTestSuiteMock()
     tester_mock = mock.Mock()
+    if os.getenv('CYTHON_IGNORE'):
+        return
     with mock.patch.object(builtins, "print", mock.Mock()) as print_mock:
         assert await test_suite.run_test_suite(tester_mock) is False
         calls = (test_suite.test_slow_downtrend, test_suite.test_sharp_downtrend, test_suite.test_flat_markets,
