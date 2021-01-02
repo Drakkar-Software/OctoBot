@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
+
 import mock
 import builtins
 
@@ -41,6 +43,8 @@ def test_find_optimal_configuration():
                                                          test_utils_config.load_test_tentacles_config(),
                                                          strategy_name)
         optimizer.find_optimal_configuration()
+        if os.getenv('CYTHON_IGNORE'):
+            return
         assert optimizer.total_nb_runs == 21
         assert test_suite_mock.call_count == optimizer.total_nb_runs
         assert print_mock.call_count == optimizer.total_nb_runs * 2

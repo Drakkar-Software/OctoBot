@@ -25,14 +25,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Docker build and check health after start
+      - uses: actions/checkout@v2
+
+      - name: Set Environment Variables
+        run: |
+          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | tr -d '-')"
+          IMG=octobot
+          echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "IMAGE=${OWNER}/${IMG}" >> $GITHUB_ENV
+          echo "LATEST=latest" >> $GITHUB_ENV
+          echo "TEST=test" >> $GITHUB_ENV
+          echo "STABLE=stable" >> $GITHUB_ENV
+          echo "CONTAINER_NAME=octobot" >> $GITHUB_ENV
+          echo "WAIT_CONTAINER_TIME=90" >> $GITHUB_ENV
+
+      - name: Docker build
         run: |
           docker build -f ./Dockerfile --build-arg TENTACLES_URL_TAG=${{ env.LATEST }} -t ${{ env.IMAGE }}:${{ env.LATEST }} .
-          docker run -itd --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
+          docker build -f ./tests/Dockerfile --build-arg OCTOBOT_IMAGE=${{ env.IMAGE }}:${{ env.LATEST }} -t ${{ env.IMAGE }}:${{ env.TEST }} .
+
+      - name: run and check health after start
+        run: |
+          docker run -id --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
           sleep ${{ env.WAIT_CONTAINER_TIME }}
           docker logs ${{ env.CONTAINER_NAME }}
           docker inspect ${{ env.CONTAINER_NAME }} | jq '.[].State.Health.Status' | grep "healthy"
 
+      - name: run tests in docker
+        run: |
+          docker run -i ${{ env.IMAGE }}:${{ env.TEST }}
 
   push:
     needs: build_and_test
@@ -50,8 +71,6 @@ jobs:
           echo "IMAGE=${OWNER}/${IMG}" >> $GITHUB_ENV
           echo "LATEST=latest" >> $GITHUB_ENV
           echo "STABLE=stable" >> $GITHUB_ENV
-          echo "CONTAINER_NAME=octobot" >> $GITHUB_ENV
-          echo "WAIT_CONTAINER_TIME=90" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
