@@ -15,7 +15,7 @@ RUN pip install -U setuptools wheel pip>=20.0.0 \
 
 FROM python:3.8-slim-buster
 
-ARG TENTACLES_URL_TAG
+ARG TENTACLES_URL_TAG=""
 ENV TENTACLES_URL_TAG=$TENTACLES_URL_TAG
 
 WORKDIR /octobot
