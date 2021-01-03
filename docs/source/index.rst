@@ -14,7 +14,6 @@ Welcome to OctoBot's documentation!
    installation
 
 
-
 Indices and tables
 ==================
 
