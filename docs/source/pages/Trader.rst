@@ -23,7 +23,7 @@ The **Enabled** parameter is to be set at **true** when OctoBot should trade rea
 When **false** OctoBot will never any create a real trade. This **false** value can be used to make OctoBot only use its simulation mode on real market conditions.
 
 Trading settings
-================
+-----------------
 
 .. code-block::
 
