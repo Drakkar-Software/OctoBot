@@ -3,8 +3,8 @@ Interfaces
 ==========
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/services.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/services.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/services.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/services.jpg
    :alt: services
 
 

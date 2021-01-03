@@ -41,8 +41,8 @@ OctoBot
 ^^^^^^^
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/octobot_arch.svg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/octobot_arch.svg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/octobot_arch.svg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/octobot_arch.svg
    :alt: OctoBot architecture
 
 Simplified view of the OctoBot core components.\ :raw-html-m2r:`<br>`
@@ -134,24 +134,24 @@ Requirements:
 
 #. Clone each `OctoBot repository <https://github.com/Drakkar-Software/OctoBot/wiki/Developer-Guide#octobot-repositories>`_ using the dev branch when specified.
 #. Open Pycharm and open the OctoBot repository.
-#. Open every other `OctoBot repository <https://github.com/Drakkar-Software/OctoBot/wiki/Developer-Guide#octobot-repositories>`_ alongside to the main OctoBot repository **in the same PyCharm window**.
+#. Open every other `OctoBot repository <https://raw.githubusercontent.com/Drakkar-Software/OctoBot/wiki/Developer-Guide#octobot-repositories>`_ alongside to the main OctoBot repository **in the same PyCharm window**.
 #. In File/Settings/Project/Python Interpreter: select your installed python3.8 and create a new virtual environment through PyCharm.\ :raw-html-m2r:`<br>`
 
-   .. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/python_interpreter.png
-      :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/python_interpreter.png
+   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/python_interpreter.png
+      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/python_interpreter.png
       :alt: python interpreter
 
 #. In File/Settings/Project/Python Dependencies: For each repository: check its required OctoBot repository dependency. This will allow your PyCharm python runner to use your OctoBot repositories as source code directly. Thanks to this you will be able to edit any file in any repo and it will be taken into account in your other PyCharm run profiles runners from other open OctoBot repo. This is useful when running tests. If you skip this, you will need to install every OctoBot module with pip and won't be able to edit their code.\ :raw-html-m2r:`<br>`
 
-   .. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/python_dependencies.png
-      :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/python_dependencies.png
+   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/python_dependencies.png
+      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/python_dependencies.png
       :alt: python dependencies
 
 #. For each OctoBot's repository: install missing dependencies in requirements.txt and dev_requirements.txt. **Warning** do not install the requirements related to the previously downloaded repositories or your python runner will use them instead of your local code version.
 #. Create PyCharm run configurations using the previously created virtual env (with all the dependencies installed) for each way you want to start python commands (running OctoBot, running tests, etc). Example of run configs (only the selected one is necessary to start OctoBot):\ :raw-html-m2r:`<br>`
 
-   .. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/run_config.png
-      :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/run_config.png
+   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/run_config.png
+      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/run_config.png
       :alt: run configuration
 
 #. You can now run and debug the whole OctoBot project and its repositories.
