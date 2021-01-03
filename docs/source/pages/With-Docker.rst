@@ -1,3 +1,6 @@
+With docker
+============================================================
+.. WARNING:: For unix distribution only
 
 Installing docker
 -----------------
