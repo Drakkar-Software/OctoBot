@@ -39,3 +39,18 @@ jobs:
           branch: gh-pages
           directory: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs:
+      - docs
+    if: ${{ failure() }}
+
+    steps:
+      - name: Notify discord
+        uses: sarisia/actions-status-discord@v1
+        with:
+          status: Failure
+          webhook: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
+
