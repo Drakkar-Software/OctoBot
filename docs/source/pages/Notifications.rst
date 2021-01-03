@@ -1,6 +1,6 @@
 
 Notifications
--------------
+===========
 
 When notifications are enabled, OctoBot will create notifications on all the given medias. These notifications contain the current evaluations of monitored markets as well as created, filled and cancelled orders.
 

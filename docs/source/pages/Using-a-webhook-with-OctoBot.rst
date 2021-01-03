@@ -2,7 +2,7 @@
 Using a webhook with OctoBot
 ============================
 
-***Warning**\ : this page is only for OctoBot version >= 0.4.0_
+.. WARNING:: this page is only for OctoBot version >= 0.4.0
 
 There are many ways to wake your OctoBot up and make it do something, one of them is using a webhook. With a webhook, you can automatically send messages to your OctoBot from any website supporting this system. https://www.tradingview.com is one of them.
 
