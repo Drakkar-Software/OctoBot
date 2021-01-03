@@ -1,9 +1,5 @@
-.. role:: raw-html-m2r(raw)
-   :format: html
-
-
 OctoBot is customizable !
--------------------------
+===========
 
 You can easily create or add existing tentacles to your OctoBot.
 
