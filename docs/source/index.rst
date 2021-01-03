@@ -29,10 +29,3 @@ Welcome to OctoBot's documentation!
    pages/Reddit-interface
    pages/Twitter-interface
    pages/Telegram-interface
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

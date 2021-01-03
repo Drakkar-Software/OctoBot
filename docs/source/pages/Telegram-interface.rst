@@ -19,15 +19,15 @@ And much more.
 To know the full command list, use the **/help** command
 
 Telegram service configuration
-==============================
+---------------
 
 Create your bot
----------------
+------------------------------
 
 See tutorial on `telegram website <https://core.telegram.org/bots#6-botfather>`_
 
 Configuration
--------------
+------------------------------
 
 Add in **user/config.json** in the services key :
 
