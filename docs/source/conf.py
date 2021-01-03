@@ -30,3 +30,6 @@ html_title = project
 #       written as part of the site generation pipeline for this project.
 # !! MARKER !!
 html_theme = "asteroid_sphinx_theme"
+
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ["_templates"]
