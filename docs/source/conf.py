@@ -1,6 +1,10 @@
+import os
+
 import sys
 
-print("", sys.path[-1], "", sep="\n" + "-" * 80 + "\n")
+PATH_HERE = os.path.abspath(os.path.dirname(__file__))
+PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
+sys.path.insert(0, os.path.abspath(PATH_ROOT))
 
 # -- Project information -----------------------------------------------------
 
@@ -33,3 +37,27 @@ html_theme = "asteroid_sphinx_theme"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
+
+html_logo = "_static/images/favicon.ico"
+
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
+html_theme_options = {
+    "canonical_url": "https://github.com/Drakkar-Software/OctoBot",
+    "collapse_navigation": False,
+    "display_version": True,
+    "logo_only": False,
+}
+
+# The suffix(es) of source filenames.
+# You can specify multiple suffix as a list of string:
+#
+# source_suffix = ['.rst', '.md']
+# source_suffix = ['.rst', '.md', '.ipynb']
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    # '.md': 'markdown',
+    ".ipynb": "nbsphinx",
+}
