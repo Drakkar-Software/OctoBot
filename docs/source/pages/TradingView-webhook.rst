@@ -5,7 +5,7 @@
 TradingView webhook
 ===================
 
-***Warning**\ : this page is only for OctoBot version >= 0.4.0_
+.. WARNING:: this page is only for OctoBot version >= 0.4.0
 
 With OctoBot, you can listen to https://www.tradingview.com signals and automate trades.
 
@@ -19,12 +19,12 @@ TradingView account
 
 
 * Create an account at https://www.tradingview.com (join for free button)
-* To be able to send signals from tradingview.com, you need a pro account, if you don't have one, you can use the pro trial by clicking on 
+* To be able to send signals from tradingview.com, you need a pro account, if you don't have one, you can use the pro trial by clicking on
   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-go-pro-trial-button.png
      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-go-pro-trial-button.png
      :alt: start-free-trial-button
 
-* Add your credit card or paypal account to validate your trial account and click on 
+* Add your credit card or paypal account to validate your trial account and click on
   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-start-trial-button.png
      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-start-trial-button.png
      :alt: start-trial-button

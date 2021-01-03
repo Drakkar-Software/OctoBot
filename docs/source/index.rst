@@ -22,6 +22,17 @@ Welcome to OctoBot's documentation!
 
 .. toctree::
    :maxdepth: 1
+   :caption: Usage
+
+   pages/Trader
+   pages/Simulator
+   pages/Exchanges
+   pages/Notifications
+   pages/Understanding-profitability
+   pages/Frequently-asked-questions-(FAQ)
+
+.. toctree::
+   :maxdepth: 1
    :caption: Interfaces
 
    pages/Web-interface
@@ -29,3 +40,22 @@ Welcome to OctoBot's documentation!
    pages/Reddit-interface
    pages/Twitter-interface
    pages/Telegram-interface
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Advanced Usage
+
+   pages/Customize-your-OctoBot
+   pages/Tentacle-Manager
+   pages/Backtesting-and-strategy-optimization
+   pages/OctoBot-0.4
+   pages/Tests
+   pages/Contribution
+   pages/Developer-Guide
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Webhooks
+
+   pages/TradingView-webhook
+   pages/Using-a-webhook-with-OctoBot
