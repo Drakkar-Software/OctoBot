@@ -3,8 +3,8 @@ Trader
 ======
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/trading.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/trading.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/trading.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/trading.jpg
    :alt: trading
 
 

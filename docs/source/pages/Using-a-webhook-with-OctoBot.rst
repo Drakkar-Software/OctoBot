@@ -18,13 +18,13 @@ Setting up your OctoBot's webhook
 #. Restart your OctoBot.
 #. The webhook address will be displayed on your OctoBot configuration and printed in your logs.
 
-   .. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/webhook_config.jpg
-      :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/webhook_config.jpg
+   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/webhook_config.jpg
+      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/webhook_config.jpg
       :alt: webhook and tradingview config
 
 
-   .. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/webhook_log.jpg
-      :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/webhook_log.jpg
+   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/webhook_log.jpg
+      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/webhook_log.jpg
       :alt: webhook log
 
    ## About ngrok.com
