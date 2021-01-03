@@ -1,0 +1,41 @@
+name: OctoBot-Documentation
+on:
+  push:
+    branches:
+      - 'docs'
+  pull_request:
+    branches:
+      - 'docs'
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: ammaraskar/sphinx-action@master
+        with:
+          docs-folder: "docs/"
+          pre-build-command: pip install -r doc_requirements.txt
+
+      - name: Commit documentation changes
+        env:
+          GITHUB_PAGES_BRANCH: "gh-pages"
+        run: |
+          git clone https://github.com/$GITHUB_REPOSITORY.git --branch $GITHUB_PAGES_BRANCH --single-branch $GITHUB_PAGES_BRANCH
+          cp -r docs/build/html/* $GITHUB_PAGES_BRANCH/
+          cd gh-pages
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Update documentation" -a || true
+          # The above command will fail if no changes were present, so we ignore
+          # the return code.
+
+      - name: Push changes
+        if: github.event_name == 'push'
+        uses: ad-m/github-push-action@master
+        with:
+          branch: gh-pages
+          directory: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
