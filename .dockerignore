@@ -100,3 +100,9 @@ target/
 env/
 venv/
 ENV/
+
+# documentation
+docs
+
+# others
+.nojekyll
