@@ -1,11 +1,7 @@
-
-Install and use OctoBot with python PIP
-=======================================
-
+With Python index package (pip)
+============================================================
 Requirements
 ------------
-
-
 * Python 3.8 (\ `download <https://www.python.org/downloads/>`_\ )
 * Add python to your PATH (\ `tutorial windows <https://superuser.com/questions/143119/how-do-i-add-python-to-the-windows-path>`_\ )
 
