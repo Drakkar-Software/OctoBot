@@ -9,7 +9,7 @@ OctoBot uses the Twitter interface for the following purposes:
 * Monitoring Twitter accounts given in **TwitterNewsEvaluator.json** configuration and enabling the social evaluator **TwitterNewsEvaluator**
 
 Twitter service configuration
-=============================
+---------------
 
 Add in **user/config.json** in the services key :
 
