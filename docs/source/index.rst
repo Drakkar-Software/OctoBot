@@ -13,6 +13,8 @@ Welcome to OctoBot's documentation!
    pages/With-Docker
    pages/With-PIP
    pages/With-Python-only
+   pages/For-Developers
+   pages/Installation-Troubleshoot
 
 .. toctree::
    :maxdepth: 1
