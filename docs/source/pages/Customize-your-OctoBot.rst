@@ -10,8 +10,8 @@ You can easily create or add existing tentacles to your OctoBot.
 Tentacles are evaluators (using social media, trend analysis, news, ...), strategies (interpretations of evaluator's evaluations), analysis tools (implementation of a bollinger bands in depth analysis, twitter posts reader, ...) and trading modes.
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/tentacles.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/tentacles.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tentacles.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tentacles.jpg
    :alt: tentacles
 
 
@@ -125,7 +125,7 @@ class AdvancedInstantSocialReactionMixedStrategiesEvaluator(InstantSocialReactio
    * Automated installation that is handling **OctoBot tentacles** following the [OctoBot Tentacle Template](https://github.com/Drakkar-Software/OctoBot-Tentacles-Template)
    * Manual installation that allows to install any type of tentacle without any specific tentacle package format. **Careful with manual installation: if your tentacle is not defined in any tentacle package (outside of the `tentacles` folder of OctoBot) it will be deleted if you use the ```start.py -p reset_tentacles``` command !**
    ### Web interface installation
-   ![tentacles_packages](https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/tentacles_packages.jpg)
+   ![tentacles_packages](https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tentacles_packages.jpg)
    Simply add your tentacle package and press **register and install**
    ### Automated installation
    To install tentacles via an **OctoBot tentacles package**, 2 steps only:

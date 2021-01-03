@@ -1,6 +1,5 @@
-
 Reddit interface
-================
+============================================================
 
 OctoBot uses the Reddit interface to monitor reddit posts from subreddits given in **RedditForumEvaluator.json**. This interface enables the social evaluator **RedditForumEvaluator**
 

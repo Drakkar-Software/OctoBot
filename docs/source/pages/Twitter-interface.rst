@@ -1,6 +1,6 @@
 
 Twitter interface
-=================
+============================================================
 
 OctoBot uses the Twitter interface for the following purposes:
 
