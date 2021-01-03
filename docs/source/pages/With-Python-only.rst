@@ -1,16 +1,13 @@
-
-Install and use OctoBot with python only (Unix distribution)
+With python only
 ============================================================
+.. WARNING:: For unix distribution only
 
 Requirements
 ------------
-
-
-* Python3.8.X, Python3.8.X-dev, Python3.8.X-pip, git packages installed
+* Packages installed : Python3.8.X, Python3.8.X-dev, Python3.8.X-pip, git
 
 Installation
 ------------
-
 **First, make sure you have python3.8 and python3.8-dev and python3.8-pip installed on your computer.**
 
 Clone the OctoBot repository

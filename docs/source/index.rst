@@ -8,11 +8,17 @@ Welcome to OctoBot's documentation!
 
 .. toctree::
    :maxdepth: 1
-   :caption: Start here
+   :caption: Installation
 
-   why_use_octobot
-   installation
+   pages/With-Docker
+   pages/With-PIP
+   pages/With-Python-only
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Configuration
+
+   pages/Configuration
 
 Indices and tables
 ==================
