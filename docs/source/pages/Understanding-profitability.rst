@@ -7,8 +7,8 @@ Every asset in OctoBot is valued using the **reference market** setting (availab
 To compute its profitability, OctoBot evaluates the value of all its traded assets (the ones available for trading in its configuration) by getting their value in reference market. Profitability is the difference between the total value of the traded assets when the OctoBot session started and the total value of current holdings at the moment profitability is displayed.
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/home.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/home.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/home.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/home.jpg
    :alt: home
 
 

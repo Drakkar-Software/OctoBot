@@ -38,7 +38,7 @@
   * `About <https://github.com/Drakkar-Software/OctoBot/wiki/About>`_
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/home.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/home.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/home.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/home.jpg
    :alt: home
 

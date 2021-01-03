@@ -5,8 +5,8 @@ Notifications
 When notifications are enabled, OctoBot will create notifications on all the given medias. These notifications contain the current evaluations of monitored markets as well as created, filled and cancelled orders.
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/notifications.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/notifications.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/notifications.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/notifications.jpg
    :alt: notifications
 
 

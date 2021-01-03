@@ -33,13 +33,13 @@ When running OctoBot on Windows, clicking into the OctoBot terminal (Powershell 
 To fix this issue, untick the "QuickEdit Mode" in your terminal properties and restart it.
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/powerShellEditMode.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/powerShellEditMode.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/powerShellEditMode.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/powerShellEditMode.jpg
    :alt: Powershell
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/cmdQuickEdit.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/cmdQuickEdit.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/cmdQuickEdit.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/cmdQuickEdit.jpg
    :alt: Cmd
 
 
@@ -85,19 +85,19 @@ Installation
 #. Go to ``\HKEY_CLASSES_ROOT``
 #. Check the 2 following key values (they should be somewhat similar to these):
 
-   .. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/regedit-js.png
-      :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/regedit-js.png
+   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-js.png
+      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-js.png
       :alt: regedit js
 
 
-   .. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/regedit-css.png
-      :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/regedit-css.png
+   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-css.png
+      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-css.png
       :alt: regedit js
 
 #. Check the the following key value in ``\HKEY_CLASSES_ROOT\MIME\Database\Content Type``
 
-   .. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/regedit-json.png
-      :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/regedit-json.png
+   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-json.png
+      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-json.png
       :alt: regedit js
 
 #. Restart you OctoBot and reload the full page including cached files (CTRL+F5 or SHIFT+F5 depending on the browser)

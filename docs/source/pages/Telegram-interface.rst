@@ -1,6 +1,6 @@
 
 Telegram interface
-==================
+============================================================
 
 OctoBot uses the Telegram interface to comunicate. With this interface, OctoBot can:
 

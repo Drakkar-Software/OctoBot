@@ -20,6 +20,16 @@ Welcome to OctoBot's documentation!
 
    pages/Configuration
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Interfaces
+
+   pages/Web-interface
+   pages/Discord-interface
+   pages/Reddit-interface
+   pages/Twitter-interface
+   pages/Telegram-interface
+
 Indices and tables
 ==================
 

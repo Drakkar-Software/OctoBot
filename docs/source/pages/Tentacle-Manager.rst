@@ -5,8 +5,8 @@ Tentacle Manager
 OctBot is fully modular, so you can install any modules you want ! 
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/tentacles.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/tentacles.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tentacles.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tentacles.jpg
    :alt: tentacles
 
 
@@ -32,8 +32,8 @@ Using the web interface
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/tentacles_packages.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/tentacles_packages.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tentacles_packages.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tentacles_packages.jpg
    :alt: tentacles_packages
 
 

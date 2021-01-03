@@ -25,8 +25,8 @@ Exchanges
 ---------
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/exchanges.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/exchanges.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/exchanges.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/exchanges.jpg
    :alt: exchanges
 
 Once you have your own **user/config.json** file, to start using OctoBot, you will just need to add your exchange credentials. 
@@ -47,8 +47,8 @@ CryptoCurrencies
 ----------------
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/currencies.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/currencies.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/currencies.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/currencies.jpg
    :alt: currencies
 
 
@@ -104,8 +104,8 @@ Interfaces
 ----------
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/services.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/services.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/services.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/services.jpg
    :alt: services
 
 
@@ -125,8 +125,8 @@ OctoBot can process two types of trading:
   `Here are the details on how to setup a trader simulator. <https://github.com/Drakkar-Software/OctoBot/wiki/Simulator>`_
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/trading.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/trading.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/trading.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/trading.jpg
    :alt: trading
 
 
@@ -136,8 +136,8 @@ Evaluator and trading configuration
 ===================================
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/trading_modes.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/trading_modes.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/trading_modes.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/trading_modes.jpg
    :alt: trading_modes
 
 
@@ -150,8 +150,8 @@ When using OctoBot's `Tentacle Manager <https://github.com/Drakkar-Software/Octo
 By default, new evaluatuators are not used (set to "false") if not defined otherwise in **config/default_evaluator_config.json**.
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/evaluators.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/evaluators.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/evaluators.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/evaluators.jpg
    :alt: evaluators
 
 
@@ -200,8 +200,8 @@ Some evaluators and trading modes can be configured.
 If it is the case, configuration is possible through OctoBot's web interface.
 
 
-.. image:: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/specific_eval_config.jpg
-   :target: https://github.com/Drakkar-Software/OctoBot/blob/assets/wiki_resources/specific_eval_config.jpg
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/specific_eval_config.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/specific_eval_config.jpg
    :alt: evaluators_config
 
 This edition interface is generated according to the **NameOfTheRelatedClass_schema.json** `json schema <https://json-schema.org/understanding-json-schema/>`_ file of the evaluator or trading mode to configure.
