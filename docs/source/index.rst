@@ -21,6 +21,7 @@ Welcome to OctoBot's documentation!
    :caption: Configuration
 
    pages/Configuration
+   pages/Profiles
 
 .. toctree::
    :maxdepth: 1

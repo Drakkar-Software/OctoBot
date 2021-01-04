@@ -1,6 +1,8 @@
 .. role:: raw-html-m2r(raw)
    :format: html
 
+Profiles
+^^^^^^^^
 
 OctoBot's trading configuration is using profiles (located into user/profiles).\ :raw-html-m2r:`<br>`
 This allows for quick switches between previously set configurations.

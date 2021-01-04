@@ -1,4 +1,4 @@
-With python only
+With Python only
 ============================================================
 .. WARNING:: For unix distribution only
 

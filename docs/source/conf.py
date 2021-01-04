@@ -1,11 +1,11 @@
 import os
 import sys
 
-import octobot.constants as constants
-
 PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
 sys.path.insert(0, os.path.abspath(PATH_ROOT))
+
+import octobot.constants as constants
 
 # -- Project information -----------------------------------------------------
 
