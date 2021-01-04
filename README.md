@@ -40,7 +40,7 @@ Octobot's main feature is **evolution** : you can [install](https://github.com/D
 [modify](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot) and even [create](https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
 
 ## Installation
-OctoBot's installation is **very simple**... because **very documented** ! See the [OctoBot Wiki](https://github.com/Drakkar-Software/OctoBot/wiki) for more info.
+OctoBot's installation is **very simple**... because **very documented** ! See the [OctoBot Documentation](https://docs.octobot.online) for more info.
 
 #### [With executable](https://github.com/Drakkar-Software/OctoBot/wiki/Installation)
 - Open the OctoBot-Binary [release page](https://github.com/Drakkar-Software/OctoBot-Binary/releases)
