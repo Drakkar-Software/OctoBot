@@ -18,7 +18,10 @@ jobs:
       - uses: ammaraskar/sphinx-action@master
         with:
           docs-folder: "docs/"
-          pre-build-command: pip install -r doc_requirements.txt
+          pre-build-command: |
+            apt update
+            apt install gcc python3-dev -y
+            pip install -r doc_requirements.txt -r requirements.txt
 
       - name: Commit documentation changes
         env:
