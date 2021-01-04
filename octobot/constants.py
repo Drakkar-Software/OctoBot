@@ -19,6 +19,7 @@ import pathlib
 import octobot_commons.constants as commons_constants
 
 PROJECT_NAME = "OctoBot"
+AUTHOR = "DrakkarSoftware"
 SHORT_VERSION = "0.4.0"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
 VERSION_DEV_PHASE = "b"  # alpha : a / beta : b / release candidate : rc

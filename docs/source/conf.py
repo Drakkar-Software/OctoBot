@@ -1,6 +1,7 @@
 import os
-
 import sys
+
+import octobot.constants as constants
 
 PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
@@ -8,15 +9,15 @@ sys.path.insert(0, os.path.abspath(PATH_ROOT))
 
 # -- Project information -----------------------------------------------------
 
-project = "OctoBot"
-copyright = "2021, DrakkarSoftware"
-author = "DrakkarSoftware"
+project = constants.PROJECT_NAME
+copyright = f"2021, {constants.AUTHOR}"
+author = constants.AUTHOR
 
 # The short X.Y version
-version = '0.4.0b2'
+version = constants.VERSION
 
 # The full version, including alpha/beta/rc tags
-release = '0.4.0-beta2'
+release = constants.LONG_VERSION
 
 # -- Extensions --------------------------------------------------------------
 extensions = [
