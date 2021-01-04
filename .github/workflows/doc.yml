@@ -58,4 +58,3 @@ jobs:
         with:
           status: Failure
           webhook: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
-
