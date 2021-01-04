@@ -5,8 +5,6 @@
 TradingView webhook
 ===================
 
-.. WARNING:: this page is only for OctoBot version >= 0.4.0
-
 With OctoBot, you can listen to https://www.tradingview.com signals and automate trades.
 
 OctoBot configuration

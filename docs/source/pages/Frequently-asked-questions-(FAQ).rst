@@ -2,7 +2,7 @@
    :format: html
 
 
-Frequently asked questions
+Frequently Asked Questions (FAQ)
 ==========================
 
 Why is my OctoBot not creating orders ?
