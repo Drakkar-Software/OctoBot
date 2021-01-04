@@ -1,4 +1,4 @@
-With docker
+With Docker
 ============================================================
 .. WARNING:: For unix distribution only
 
