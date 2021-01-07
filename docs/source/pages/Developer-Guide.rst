@@ -7,11 +7,6 @@ Developer
 
 Note: this page is referring to OctoBot in versions superior to 0.4.0.
 
-Developer tips
---------------
-
-We gathered some useful tips on the `developer tips page <https://github.com/Drakkar-Software/OctoBot/wiki/Developers-tips>`_.
-
 Environment setup
 -----------------
 
