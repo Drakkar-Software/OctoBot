@@ -55,6 +55,7 @@ Welcome to OctoBot's documentation!
    pages/Tests
    pages/Contribution
    pages/Developer-Guide
+   pages/Developers-tips
 
 .. toctree::
    :maxdepth: 1
