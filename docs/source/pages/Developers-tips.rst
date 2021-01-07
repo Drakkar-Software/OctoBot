@@ -1,9 +1,11 @@
+Developer tips
+=========
 
 Cython
-======
+-----------------
 
 Compile in debug
-----------------
+^^^^^^^^^^
 
 .. code-block:: shell
 
@@ -12,7 +14,7 @@ Compile in debug
    python setup.py build_ext --inplace
 
 Debugging cythonized code
--------------------------
+^^^^^^^^^^
 
 Run your python program with cython debugger :
 
@@ -47,7 +49,7 @@ if **name** == '\ **main**\ ':
    cygdb . -- --args python3-dbg test.py
 
 Strategy tests
-==============
+----------------
 
 To quickly check tentacles strategy tests states or develop a new tentacles strategy test, change the following lines
 in **octobot/tests/functional_tests/strategy_evaluators_tests/abstract_strategy_test.py**\ :
