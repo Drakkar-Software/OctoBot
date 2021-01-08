@@ -1,5 +1,5 @@
 Developer installation
-================================================================================
+======================
 
 Requirements
 ------------
@@ -32,13 +32,12 @@ There **python3** is refering to your **Python3.8.X** installation, just adapt t
 Note that python3.8 might be available under the name **python3.8** after this installation.
 
 Update OctoBot with python only when using OctoBot code directly from dev branch
-------------
+--------------------------------------------------------------------------------
 
 Requirements
-^^^^^^^
+^^^^^^^^^^^^
 
-
-.. INFO::  **Python3.8.X**\ , **git** and an installed and **functional OctoBot setup** cloned from `OctoBot github repository <https://github.com/Drakkar-Software/OctoBot>`
+**Python3.8.X**\ , **git** and an installed and **functional OctoBot setup** cloned from `OctoBot github repository <https://github.com/Drakkar-Software/OctoBot>`
 
 .. code-block:: bash
 

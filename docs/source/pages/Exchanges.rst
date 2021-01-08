@@ -19,10 +19,10 @@ Manual configuration
 
 In **user/config.json**\ , find this lines:
 
-.. code-block::
+.. code-block:: json
 
    "exchanges": {
-   ...
+
    }
 
 Edit this lines and add the exchange(s) you want to use. 
@@ -42,7 +42,7 @@ And copy and paste your api-key and api-secret to your configuration file (see e
 
 Example with Binance and Coinbase Pro :
 
-.. code-block::
+.. code-block:: json
 
    "exchanges": {
        "binance": {
@@ -55,7 +55,7 @@ Example with Binance and Coinbase Pro :
            "api-secret": "YOUR_EXCHANGE_API_SECRET_ENCRYPTED",
            "api-password": "YOUR_EXCHANGE_API_SECRET_ENCRYPTED"
        }
-     },
+   }
 
 
 * **api-key** is your exchange account API key

@@ -1,13 +1,13 @@
 
 Discord interface
-============================================================
+=================
 
 .. WARNING:: **CURRENTLY ON DEVELOPMENT**
 
 OctoBot uses the Discord interface to post alerts in a discord chat.
 
 Discord service configuration
-------------
+-----------------------------
 
 Add in **user/config.json** in the services key :
 
@@ -20,18 +20,18 @@ Add in **user/config.json** in the services key :
 
 **Exemple:**
 
-.. code-block::
+.. code-block:: json
 
    "services": {
       "a service": {
-          ...
+
       },
       "discord": {
           "token": "YOUR_BOT_TOKEN",
           "channel_id": "YOUR_CHANNEL_ID"
       },
       "another service": {
-          ...
+
       }
    }
 

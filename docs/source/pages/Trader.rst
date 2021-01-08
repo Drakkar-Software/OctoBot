@@ -10,7 +10,7 @@ Trader
 
 Open your **user/config.json** file and edit this configuration :
 
-.. code-block::
+.. code-block:: json
 
    "trader":{
      "enabled": true
@@ -25,7 +25,7 @@ When **false** OctoBot will never any create a real trade. This **false** value 
 Trading settings
 -----------------
 
-.. code-block::
+.. code-block:: json
 
    "trading":{
      "reference-market": "BTC",

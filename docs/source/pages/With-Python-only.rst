@@ -29,7 +29,7 @@ Usage
 
 The following command replaces *OctoBot Launcher*\ :
 
-.. code-block::
+.. code-block:: bash
 
    $ python3 start.py
 

@@ -22,7 +22,8 @@ Philosophy
 
 The goal behind OctoBot is to have a **very fast and scalable** trading robot.
 
-To achieve this, OctoBot is entirely built around the `asyncio <https://docs.python.org/3/library/asyncio.html>`_ producer-consumer `Async-Channel <https://github.com/Drakkar-Software/Async-Channel>`_ framework which allows to very quickly and efficiently transmit data to different elements within the bot. The idea is all the time maintain **fully up-to-date data** without having to use update loops (that require have inefficient sleeping time) while also **waking up the evaluation chain as quickly as possible** when an update is available (without having to wait for any update cycle of any update loop).\ :raw-html-m2r:`<br>`
+To achieve this, OctoBot is entirely built around the `asyncio <https://docs.python.org/3/library/asyncio.html>`_ producer-consumer `Async-Channel <https://github.com/Drakkar-Software/Async-Channel>`_ framework which allows to very quickly and efficiently transmit data to different elements within the bot. The idea is all the time maintain **fully up-to-date data** without having to use update loops (that require have inefficient sleeping time) while also **waking up the evaluation chain as quickly as possible** when an update is available (without having to wait for any update cycle of any update loop).
+
 Additionally, in order to save CPU time, as little threads as possible are use by OctoBot (usually less than 10 with a standard setup).
 
 As a final touch, each CPU or memory intensive task is further optimized using `Cython <https://cython.org/>`_. The python code of these tasks is translated into highly optimized C code that allows for less instructions to process and optimized memory representation ending up with a huge performance increase.
@@ -40,7 +41,8 @@ OctoBot
    :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/octobot_arch.svg
    :alt: OctoBot architecture
 
-Simplified view of the OctoBot core components.\ :raw-html-m2r:`<br>`
+Simplified view of the OctoBot core components.
+
 Note: Inside the OctoBot part, each arrow is an async channel.
 
 OctoBot tentacles
@@ -130,20 +132,20 @@ Requirements:
 #. Clone each `OctoBot repository <Developer-Guide.html#id1>`_ using the dev branch when specified.
 #. Open Pycharm and open the OctoBot repository.
 #. Open every other `OctoBot repository <Developer-Guide.html#id1>`_ alongside to the main OctoBot repository **in the same PyCharm window**.
-#. In File/Settings/Project/Python Interpreter: select your installed python3.8 and create a new virtual environment through PyCharm.\ :raw-html-m2r:`<br>`
+#. In File/Settings/Project/Python Interpreter: select your installed python3.8 and create a new virtual environment through PyCharm.
 
    .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/python_interpreter.png
       :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/python_interpreter.png
       :alt: python interpreter
 
-#. In File/Settings/Project/Python Dependencies: For each repository: check its required OctoBot repository dependency. This will allow your PyCharm python runner to use your OctoBot repositories as source code directly. Thanks to this you will be able to edit any file in any repo and it will be taken into account in your other PyCharm run profiles runners from other open OctoBot repo. This is useful when running tests. If you skip this, you will need to install every OctoBot module with pip and won't be able to edit their code.\ :raw-html-m2r:`<br>`
+#. In File/Settings/Project/Python Dependencies: For each repository: check its required OctoBot repository dependency. This will allow your PyCharm python runner to use your OctoBot repositories as source code directly. Thanks to this you will be able to edit any file in any repo and it will be taken into account in your other PyCharm run profiles runners from other open OctoBot repo. This is useful when running tests. If you skip this, you will need to install every OctoBot module with pip and won't be able to edit their code.
 
    .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/python_dependencies.png
       :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/python_dependencies.png
       :alt: python dependencies
 
 #. For each OctoBot's repository: install missing dependencies in requirements.txt and dev_requirements.txt. **Warning** do not install the requirements related to the previously downloaded repositories or your python runner will use them instead of your local code version.
-#. Create PyCharm run configurations using the previously created virtual env (with all the dependencies installed) for each way you want to start python commands (running OctoBot, running tests, etc). Example of run configs (only the selected one is necessary to start OctoBot):\ :raw-html-m2r:`<br>`
+#. Create PyCharm run configurations using the previously created virtual env (with all the dependencies installed) for each way you want to start python commands (running OctoBot, running tests, etc). Example of run configs (only the selected one is necessary to start OctoBot):
 
    .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/run_config.png
       :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/run_config.png

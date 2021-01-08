@@ -1,5 +1,5 @@
 OctoBot is customizable !
-===========
+=========================
 
 You can easily create or add existing tentacles to your OctoBot.
 
@@ -21,7 +21,8 @@ Tentacle installation (OctoBot v0.4)
 Default tentacles
 ^^^^^^^^^^^^^^^^^
 
-OctoBot default tentacles are automatically installed when first starting your OctoBot.\ :raw-html-m2r:`<br>`
+OctoBot default tentacles are automatically installed when first starting your OctoBot.
+
 You can re-install them anytime using the following command options to your OctoBot binary or python version:
 ``tentacles --install --all``
 
@@ -60,16 +61,17 @@ All you need to do, to improve a tentacle, is to extend the existing one you wan
 
 Examples:
 
+.. code-block:: python
 
-#. **TwitterNewsEvaluator** is a simple Twitter evaluator available by default in ``tentacles/Evaluator/Social/Default/new_evaluator.py``. To improve it, all you need to do is to create a file, let's say ``advanced_twitter_news_evaluator.py`` containing a class extending the simple evaluator:
-   ```python
-   from tentacles.Evaluator.Social import TwitterNewsEvaluator
+    #. **TwitterNewsEvaluator** is a simple Twitter evaluator available by default in ``tentacles/Evaluator/Social/Default/new_evaluator.py``. To improve it, all you need to do is to create a file, let's say ``advanced_twitter_news_evaluator.py`` containing a class extending the simple evaluator:
 
-class AdvancedTwitterNewsEvaluator(TwitterNewsEvaluator):
-    def **init**\ (self):
-        super().\ **init**\ ()
+    from tentacles.Evaluator.Social import TwitterNewsEvaluator
 
-.. code-block::
+    class AdvancedTwitterNewsEvaluator(TwitterNewsEvaluator):
+        def __init__(self):
+            super().__init__()
+
+.. code-block:: python
 
    # let's say we want to change this method
    def get_tweet_sentiment(self, tweet):
@@ -77,10 +79,10 @@ class AdvancedTwitterNewsEvaluator(TwitterNewsEvaluator):
        # some advanced tweet analysis to set sentiment value
        return sentiment
 
-.. code-block::
+**StatisticAnalysis** is a simple Statistic analysis tool available by default in ```tentacles/Evaluator/Util/Default/statistics_analysis.py```. To improve it, all you need to do is to create a file, let's say ```advanced_statistics_analysis.py``` containing a class extending the simple analyser:
 
-   2. **StatisticAnalysis** is a simple Statistic analysis tool available by default in ```tentacles/Evaluator/Util/Default/statistics_analysis.py```. To improve it, all you need to do is to create a file, let's say ```advanced_statistics_analysis.py``` containing a class extending the simple analyser:
-   ```python
+.. code-block:: python
+
    from tentacles.Evaluator.Util import StatisticAnalysis
 
 
@@ -93,58 +95,23 @@ class AdvancedTwitterNewsEvaluator(TwitterNewsEvaluator):
            # some advanced trend change detection here
            return changes
 
+**InstantSocialReactionMixedStrategiesEvaluator** is a simple strategy tool available by default in ``tentacles/Evaluator/Strategies/Default/mixed_strategies_evaluator.py``. To improve it, all you need to do is to create a file, let's say ``advanced_instant_strategy_evaluator.py`` containing a class extending the simple strategy:
 
-#. **InstantSocialReactionMixedStrategiesEvaluator** is a simple strategy tool available by default in ``tentacles/Evaluator/Strategies/Default/mixed_strategies_evaluator.py``. To improve it, all you need to do is to create a file, let's say ``advanced_instant_strategy_evaluator.py`` containing a class extending the simple strategy:
-   ```python
-   from tentacles.Evaluator.Strategies import InstantSocialReactionMixedStrategiesEvaluator
-
-class AdvancedInstantSocialReactionMixedStrategiesEvaluator(InstantSocialReactionMixedStrategiesEvaluator):
-
-.. code-block::
-
-   # eval_impl is the methods called when OctoBot is asking for a strategy evaluation
-   async def eval_impl(self):
-       final_evaluation = 0
-       # some advanced computations to set final_evaluation value
-
-       # finally, update self.eval_note to store the strategy result
-       self.eval_note = final_evaluation 
+.. code-block:: python
 
 
-.. code-block::
+    from tentacles.Evaluator.Strategies import InstantSocialReactionMixedStrategiesEvaluator
+
+    class AdvancedInstantSocialReactionMixedStrategiesEvaluator(InstantSocialReactionMixedStrategiesEvaluator):
 
 
-   ## Tentacle installation (OctoBot v0.3)
+       # eval_impl is the methods called when OctoBot is asking for a strategy evaluation
+       async def eval_impl(self):
+           final_evaluation = 0
+           # some advanced computations to set final_evaluation value
 
-   There are 3 ways to install a tentacle without web interface: 
-   * Web interface installation that is handling **OctoBot tentacles** following the [OctoBot Tentacle Template](https://github.com/Drakkar-Software/OctoBot-Tentacles-Template)
-   * Automated installation that is handling **OctoBot tentacles** following the [OctoBot Tentacle Template](https://github.com/Drakkar-Software/OctoBot-Tentacles-Template)
-   * Manual installation that allows to install any type of tentacle without any specific tentacle package format. **Careful with manual installation: if your tentacle is not defined in any tentacle package (outside of the `tentacles` folder of OctoBot) it will be deleted if you use the ```start.py -p reset_tentacles``` command !**
-   ### Web interface installation
-   ![tentacles_packages](https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tentacles_packages.jpg)
-   Simply add your tentacle package and press **register and install**
-   ### Automated installation
-   To install tentacles via an **OctoBot tentacles package**, 2 steps only:
-   1. Add the url to a GitHub repository containing the tentacles package (or the local path to the package) in **user/config.json** inside the **"tentacles-packages"** part.
-   ```json
-   "tentacles-packages": [
-       "C:/Users/JohnSmith/TradingBots/Advanced-Trading-Tentacles-Package"
-     ],
-
-You can add as many tentacles packages as you want, just separate them with a ",".
-
-
-#. Execute the following command: 
-   .. code-block:: bash
-
-      python start.py -p install all
-   This will install every tentacles packages OctoBot can find in its configuration as well as the `default OctoBot tentacles packages <https://github.com/Drakkar-Software/OctoBot-Tentacles>`_.
-
-It is also possible to specify which tentacle(s) to install by naming it(them). In this case only tentacles available in the available tentacles packages can be installed.
-
-.. code-block:: bash
-
-   python start.py -p install forum_evaluator john_smith_macd_evaluator advanced_twitter_evaluator
+           # finally, update self.eval_note to store the strategy result
+           self.eval_note = final_evaluation
 
 Manual installation
 ^^^^^^^^^^^^^^^^^^^

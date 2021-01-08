@@ -9,7 +9,7 @@ Contact Us
 ----------
 
 
-* DrakkarSoftware team at drakkar.software@protonmail.com :raw-html-m2r:`<br>`
+* DrakkarSoftware team at drakkar.software@protonmail.com
 * Concerning Octobot at octobot.drakkars@protonmail.com
 
 Thanks

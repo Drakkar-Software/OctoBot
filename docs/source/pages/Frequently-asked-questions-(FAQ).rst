@@ -63,7 +63,8 @@ For now, OctoBot uses all the available funds to trade. Therefore it's possible 
 Why is backtesting not using all available data ?
 -------------------------------------------------
 
-OctoBot backtesting is always using the **maximum available data allowing to keep a realistic simulation**.\ :raw-html-m2r:`<br>`
+OctoBot backtesting is always using the **maximum available data allowing to keep a realistic simulation**.
+
 However exchange are usually not giving all of their data: they give the last X candles (500 for binance). Therefore a regular backtesting data file has 500 1hour (1h) candles, 500 1minute (1m) candles etc. These candles are always the most recent ones.
 That means that when running a backtesting on 1h and 1d time frames, the maximum backtesting range is not 1h and 1d with 500 candles each but the time range where **both** 1h and 1d have data: there the past 500 hours (500 1h candles and approximately 20 1d candles).
 
