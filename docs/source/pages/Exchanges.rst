@@ -5,14 +5,14 @@ Exchanges
 Web interface configuration
 ---------------------------
 
-Octobot reads trading data (prices, volumes, trades, etc) from exchanges. At least one exchange is required for OctoBot to perform trades. In `simulation mode <https://github.com/Drakkar-Software/OctoBot/wiki/Simulator#simulator>`_\ , exchange API keys configuration is not necessary.
+Octobot reads trading data (prices, volumes, trades, etc) from exchanges. At least one exchange is required for OctoBot to perform trades. In `simulation mode <Simulator.html#simulator>`_\ , exchange API keys configuration is not necessary.
 
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/exchanges.jpg
    :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/exchanges.jpg
    :alt: exchanges
 
-You can configure OctoBot's exchanges using the `web interface <https://github.com/Drakkar-Software/OctoBot/wiki/Web-interface>`_ **configuration** tab.
+You can configure OctoBot's exchanges using the `web interface <Web-interface.html>`_ **configuration** tab.
 
 Manual configuration
 --------------------
@@ -32,7 +32,7 @@ To manually add exchange configuration, you can add your info directly into your
 
 If you want to encrypt your exchange keys before starting OctoBot, you can use the following instructions:
 
-`start the bot <https://github.com/Drakkar-Software/OctoBot/wiki/Usage#start-the-bot>`_ with option **--encrypter** like below :
+Start the OctoBot with option **--encrypter** like below :
 
 .. code-block:: bash
 
@@ -58,10 +58,10 @@ Example with Binance and Coinbase Pro :
      },
 
 
-* **\ *api-key*\ ** is your exchange account API key
-* **\ *api-secret*\ ** is your exchange account API secret
-* **\ *api-password*\ ** is your exchange account API password if this exchange is requiring a password. Leave empty otherwise
-* **\ *web-socket*\ ** is a setting telling OctoBot wether or not to try to use websockets interfaces (websockets are used to get close to real-time data update but it's using more bandwidth). Moreover, RealTime evaluators are much better with websockets enabled.
+* **api-key** is your exchange account API key
+* **api-secret** is your exchange account API secret
+* **api-password** is your exchange account API password if this exchange is requiring a password. Leave empty otherwise
+* **web-socket** is a setting telling OctoBot whether or not to try to use websockets interfaces (websockets are used to get close to real-time data update but it's using more bandwidth). Moreover, RealTime evaluators are much better with websockets enabled.
 
 Octobot officially supported exchanges
 --------------------------------------
@@ -73,11 +73,11 @@ Octobot officially supported exchanges
      - REST
      - Websocket
      - Internal tests
-     - Simulable
+     - Simulated
      - Community tested
    * - Binance
      - 100%
-     - 100%
+     - 80%
      - 100%
      - 100%
      - yes
@@ -92,11 +92,11 @@ Octobot officially supported exchanges
      - 0%
      - 100%
      - 100%
-     - -
-   * - Bitfinex
-     - 75%
+     - yes
+   * - BitMax
+     - 100%
      - 0%
-     - 50%
+     - 100%
      - 100%
      - -
    * - Kraken
@@ -105,6 +105,12 @@ Octobot officially supported exchanges
      - 20%
      - 100%
      - yes
+   * - Bitfinex
+     - 75%
+     - 0%
+     - 50%
+     - 100%
+     - -
    * - Bittrex
      - 75%
      - 0%
@@ -157,10 +163,10 @@ Octobot officially supported exchanges
 
 If you want use any exchange that is available `here <https://github.com/ccxt/ccxt/wiki/Exchange-Markets>`_\ , the REST interface should work but **it's at your own risk** since we did not test it yet.
 
-For simulable only exchanges, see the "Simulated exchange" section below.
+For simulated only exchanges, see the "Simulated exchange" section below.
 
 Simulated exchange
 ------------------
 
-To use the Simulated exchange feature of the Octobot, you have to specifiy a `\ *trader simulator* <https://github.com/Drakkar-Software/OctoBot/wiki/Simulator>`_ configuration.
+To use the Simulated exchange feature of the Octobot, you have to specifiy a `\ trader simulator <Simulator.html>`_ configuration.
 To use an exchange in simulation only, you also have to specify its configuration as described above. For most exchanges,  API credentials are not required in simulation mode, adding the exchange with default values is enough. 
