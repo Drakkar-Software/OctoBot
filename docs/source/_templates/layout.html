@@ -30,6 +30,21 @@
         <link rel="canonical" href="{{ theme_canonical_url }}{{ pagename }}.html"/>
     {% endif %}
 
+    <meta name="keywords" content="{{og_keywords}}" />
+    <meta name="description" content="{{og_description}}" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="{{title}} - {{ og_title}}" />
+    <meta name="twitter:description" content="{{og_description}}" />
+    <meta name="twitter:image" content="{{og_logo}}" />
+    <meta name="twitter:domain" content="{{og_domain}}" />
+    <meta name="twitter:url" content="{{og_url}}" />
+    <meta property="og:title" content="{{title}} - {{og_title}}" />
+    <meta property="og:description" content="{{og_description}}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{og_url}}" />
+    <meta property="og:image" content="{{og_logo}}" />
+    <meta property="og:site_name" content="{{og_title}}" />
+
     {# CSS #}
 
     <link rel="stylesheet" href="{{ pathto('_static/' + style, 1) }}" type="text/css"/>
