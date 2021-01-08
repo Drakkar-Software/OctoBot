@@ -51,7 +51,7 @@ OctoBot's installation is **very simple**... because **very documented** ! See t
 #### [With Docker](https://github.com/Drakkar-Software/OctoBot/wiki/With-Docker)
 Self hosting with docker :
 ```
-docker run -itd --name OctoBot -p 80:5001 drakkarsoftware/octobot:stable
+docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable
 ```
 And then open [http://localhost](http://localhost).
 
