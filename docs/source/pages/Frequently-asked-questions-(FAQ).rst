@@ -3,7 +3,7 @@
 
 
 Frequently Asked Questions (FAQ)
-==========================
+================================
 
 Why is my OctoBot not creating orders ?
 ---------------------------------------
@@ -14,7 +14,7 @@ The most common case of signals without created orders is when there is **not en
 
 Example: not enough **USD** to buy BTC for a BTC/\ **USD** **buy** signal.
 
-Note: In trading simulator and backtesting modes, OctoBot uses a simulated portfolio called ``"starting-portfolio"`` that is defined in the `trading simulator configuration <https://github.com/Drakkar-Software/OctoBot/wiki/Simulator#setup-the-trader_simulator>`_.
+Note: In trading simulator and backtesting modes, OctoBot uses a simulated portfolio called ``"starting-portfolio"`` that is defined in the `trading simulator configuration <Simulator.html#starting-portfolio>`_.
 
 How often will my OctoBot trade ?
 ---------------------------------
@@ -44,7 +44,7 @@ OctoBot will consider it can trade 100% of the portfolio you give it. However ho
 How to change the backtesting starting portfolio ?
 --------------------------------------------------
 
-Each backtesting run is using the `simulator's starting portfolio <https://github.com/Drakkar-Software/OctoBot/wiki/Simulator#starting-portfolio>`_ as a base.
+Each backtesting run is using the `simulator's starting portfolio <Simulator.html#starting-portfolio>`_ as a base.
 
 Note: In 0.3.X, when the reference market is changed during a backtesting, its value will always be 10000. This changes in 0.4.X where it takes the value in starting portfolio.
 

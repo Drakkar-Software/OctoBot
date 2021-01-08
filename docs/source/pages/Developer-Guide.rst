@@ -12,7 +12,7 @@ Environment setup
 
 We recommand using `PyCharm <https://www.jetbrains.com/pycharm/>`_ to navigate through the OctoBot projects. This IDE will allow you to open and navigate through the multiple OctoBot repositories and make your OctoBot run setup use the code directly from the clonned repos using the project dependencies.
 
-More details in the `OctoBot repositories <https://github.com/Drakkar-Software/OctoBot/wiki/Developer-Guide#octobot-repositories>`_ and `Setting up the recommended OctoBot development environment <https://github.com/Drakkar-Software/OctoBot/wiki/Developer-Guide#setting-up-the-recommended-octobot-development-environment>`_ sections.
+More details in the `OctoBot repositories <Developer-Guide.html#id1>`_ and `Setting up the recommended OctoBot development environment <Developer-Guide.html#id2>`_ sections.
 
 OctoBot architecture
 --------------------
@@ -30,7 +30,7 @@ As a final touch, each CPU or memory intensive task is further optimized using `
 Overview
 ^^^^^^^^
 
-The OctoBot code is split into `several repository <https://github.com/Drakkar-Software/OctoBot/wiki/Developer-Guide#octobot-repositories>`_. Each module is handled as an independent python module and is available on the `official python package repository <https://pypi.org/>`_ (used in ``pip`` commands). Modules are made available as python source modules as well as as compiled modules which includes cython optimizations. Installing a module on a platform which as not already been built and made available on `pypi.org <https://pypi.org/>`_ will take much more time as ``pip`` will cythonize and compile the given module, which also requires a cpp compiler. 
+The OctoBot code is split into `several repository <Developer-Guide.html#id1>`_. Each module is handled as an independent python module and is available on the `official python package repository <https://pypi.org/>`_ (used in ``pip`` commands). Modules are made available as python source modules as well as as compiled modules which includes cython optimizations. Installing a module on a platform which as not already been built and made available on `pypi.org <https://pypi.org/>`_ will take much more time as ``pip`` will cythonize and compile the given module, which also requires a cpp compiler.
 
 OctoBot
 ^^^^^^^
@@ -127,9 +127,9 @@ Requirements:
 * Language: `Python 3.8 <https://www.python.org/downloads/>`_
 
 
-#. Clone each `OctoBot repository <https://github.com/Drakkar-Software/OctoBot/wiki/Developer-Guide#octobot-repositories>`_ using the dev branch when specified.
+#. Clone each `OctoBot repository <Developer-Guide.html#id1>`_ using the dev branch when specified.
 #. Open Pycharm and open the OctoBot repository.
-#. Open every other `OctoBot repository <https://raw.githubusercontent.com/Drakkar-Software/OctoBot/wiki/Developer-Guide#octobot-repositories>`_ alongside to the main OctoBot repository **in the same PyCharm window**.
+#. Open every other `OctoBot repository <Developer-Guide.html#id1>`_ alongside to the main OctoBot repository **in the same PyCharm window**.
 #. In File/Settings/Project/Python Interpreter: select your installed python3.8 and create a new virtual environment through PyCharm.\ :raw-html-m2r:`<br>`
 
    .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/python_interpreter.png

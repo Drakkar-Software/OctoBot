@@ -28,15 +28,9 @@ Trading settings
 .. code-block::
 
    "trading":{
-     "multi-session-profitability": false,
      "reference-market": "BTC",
      "risk": 0.8
    }
-
-Multi-session-profitability
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The **Multi-session-profitability** parameter defines whether or not OctoBot profritability should be reset at each start of the bot. If activated, as long as traded pairs configuration is not changing, the computed profitability will be computed taking the previous OctoBot executions into account. If the trader simulator is activated, it will also not reset its portfolio at each start but will continue from where it stopped in the previous execution. Default is false. 
 
 Reference-market
 ^^^^^^^^^^^^^^^^
@@ -59,4 +53,4 @@ Trader simulator
 
 Additionally to the real trading system, a trading simulator is available in OctoBot.
 
-`Here is the article describing the simulator feature of OctoBot <https://github.com/Drakkar-Software/OctoBot/wiki/Simulator>`_
+`Here is the article describing the simulator feature of OctoBot <Simulator.html>`_
