@@ -3,8 +3,8 @@ OctoBot configuration is located in two files:
 
 
 * **user/config.json** is the global configuration file, mostly used to setup the bot exchanges credentials, cryptocurrency pairs, interfaces and the trading risk
-* **tentacles/Evaluator/evaluator_config.json** defines the evaluators and strategies toolkit that the bot is allowed to use. This file is automatically pre-filled when `installing tentacles <https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager>`_ with OctoBot and when using the configuration web interface.
-* **tentacles/Trading/trading_config.json** defines the trade mode that the bot will use. This file is automatically pre-filled when `installing tentacles <https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager>`_ with OctoBot and when using the configuration web interface.
+* **tentacles/Evaluator/evaluator_config.json** defines the evaluators and strategies toolkit that the bot is allowed to use. This file is automatically pre-filled when `installing tentacles <Tentacle-Manager.html>`_ with OctoBot and when using the configuration web interface.
+* **tentacles/Trading/trading_config.json** defines the trade mode that the bot will use. This file is automatically pre-filled when `installing tentacles <Tentacle-Manager.html>`_ with OctoBot and when using the configuration web interface.
 
 OctoBot's web interface allows to easily edit the configuration, however, it is also possible to manually edit configuration files. Please be careful when manually editing them or OctoBot won't be able to read them and wont start. Json file are readable and editable using any text editor.
 
@@ -19,7 +19,7 @@ Global configuration
 
 **user/config.json** is the technical configuration file of OctoBot, an example is available in **config/default_config.json**. 
 
-To start with OctoBot, use **default_config.json** as an example for your **user/config.json** (copy **default_config.json** into OctoBot's **root folder/user** and rename the copy into **config.json**\ ). This operation is automatically done when using `OctoBot's installation procedure <https://github.com/Drakkar-Software/OctoBot/wiki/Installation#instructions>`_.
+To start with OctoBot, use **default_config.json** as an example for your **user/config.json** (copy **default_config.json** into OctoBot's **root folder/user** and rename the copy into **config.json**\ ). This operation is automatically done when using `OctoBot's installation procedure <../index.html>`_.
 
 Exchanges
 ---------
@@ -41,7 +41,7 @@ Once you have your own **user/config.json** file, to start using OctoBot, you wi
        }
      },
 
-`Here is the wiki page helping to setup an exchange for OctoBot <https://github.com/Drakkar-Software/OctoBot/wiki/Exchanges>`_
+`Here are the docs helping to setup an exchange for OctoBot <Exchanges.html>`_
 
 CryptoCurrencies
 ----------------
@@ -111,7 +111,7 @@ Interfaces
 
 Interfaces are all defined in **user/config.json** in the **services** section.
 
-`Here are the details on how to setup OctoBot's interfaces. <https://github.com/Drakkar-Software/OctoBot/wiki/Interfaces>`_
+More details details on how to setup OctoBot's interfaces in the Interfaces section.
 
 Trading and Risk parameter
 --------------------------
@@ -120,9 +120,9 @@ OctoBot can process two types of trading:
 
 
 * Real trading using your exchanges' portfolio.
-  `Here are the details on how to setup a trader. <https://github.com/Drakkar-Software/OctoBot/wiki/Trader>`_
+  `Here are the details on how to setup a trader. <Trader.html>`_
 * Simulated trading using any imaginary portfolio.
-  `Here are the details on how to setup a trader simulator. <https://github.com/Drakkar-Software/OctoBot/wiki/Simulator>`_
+  `Here are the details on how to setup a trader simulator. <Simulator.html>`_
 
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/trading.jpg
@@ -130,7 +130,7 @@ OctoBot can process two types of trading:
    :alt: trading
 
 
-Any type of trading has its **risk** parameter. It is a parameter defining the behavior of the trader, similarly to a real human trader. `This **risk** parameter is described here <https://github.com/Drakkar-Software/OctoBot/wiki/Trader#risk>`_
+Any type of trading has its **risk** parameter. It is a parameter defining the behavior of the trader, similarly to a real human trader. `This risk parameter is described here <Trader.html#risk>`_
 
 Evaluator and trading configuration
 ===================================
@@ -141,11 +141,11 @@ Evaluator and trading configuration
    :alt: trading_modes
 
 
-**tentacles/Evaluator/evaluator_config.json** and **tentacles/Trading/trading_config.json** are configuration files telling OctoBot which evaluators, strategies and trading modes to use. It is automatically kept updated after each `Tentacle Manager <https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager>`_ usage.
+**tentacles/Evaluator/evaluator_config.json** and **tentacles/Trading/trading_config.json** are configuration files telling OctoBot which evaluators, strategies and trading modes to use. It is automatically kept updated after each `Tentacle Manager <Tentacle-Manager.html>`_ usage.
 
 An example of **tentacles/Evaluator/evaluator_config.json** is available in the **config** folder: **config/default_evaluator_config.json**.
 
-When using OctoBot's `Tentacle Manager <https://github.com/Drakkar-Software/OctoBot/wiki/Tentacle-Manager>`_\ , **default_evaluator_config.json** is automatically used to enable default evaluators configuration when no configuration is already available for a given evaluator. The same process is used for trading_config.
+When using OctoBot's `Tentacle Manager <Tentacle-Manager.html>`_\ , **default_evaluator_config.json** is automatically used to enable default evaluators configuration when no configuration is already available for a given evaluator. The same process is used for trading_config.
 
 By default, new evaluatuators are not used (set to "false") if not defined otherwise in **config/default_evaluator_config.json**.
 
@@ -183,10 +183,10 @@ Example of **evaluator_config.json**\ :
 
 * Here, the first part is about technical analysis evaluators: they are all activated except for the **CandlePatternMomentumEvaluator**. This means that any technical evaluator of these types (except **CandlePatternMomentumEvaluator**\ ) will be used by OctoBot. 
 * Second part contains only **InstantFluctuationsEvaluator**\ , OctoBot will then take real time market moves into account using **InstantFluctuationsEvaluator** only.
-* Third part is the social evaluation. Here OctoBot will look at Twitter using **TwitterNewsEvaluator** (this requires that the `Twitter interface <https://github.com/Drakkar-Software/OctoBot/wiki/Twitter-interface>`_ is setup correctly) and google stats using **GoogleTrendStatsEvaluator**. However, OctoBot will not look a reddit (\ ``"RedditForumEvaluator": false``\ ), therefore a `Reddit interface <https://github.com/Drakkar-Software/OctoBot/wiki/Reddit-interface>`_ configuration is not necessary.
+* Third part is the social evaluation. Here OctoBot will look at Twitter using **TwitterNewsEvaluator** (this requires that the `Twitter interface <Twitter-interface.html>`_ is setup correctly) and google stats using **GoogleTrendStatsEvaluator**. However, OctoBot will not look a reddit (\ ``"RedditForumEvaluator": false``\ ), therefore a `Reddit interface <Reddit-interface.html>`_ configuration is not necessary.
 * Last part are the strategies to use. Here only one strategy out of two is to be used by OctoBot: **TempFullMixedStrategiesEvaluator**.
 
-Any setting also applies to subclasses of these evaluators. For example if you add an evaluator extending **ADXMomentumEvaluator**\ , ``"ADXMomentumEvaluator": true`` will tell OctoBot to use the **most advanced ADXMomentumEvaluator** available: if you evaluator extends **ADXMomentumEvaluator**\ , your evaluator will be considered more advanced than the **basic ADXMomentumEvaluator** and OctoBot will use it. See the  `Customize your OctoBot page <https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot>`_ to learn how to add elements to your OctoBot.
+Any setting also applies to subclasses of these evaluators. For example if you add an evaluator extending **ADXMomentumEvaluator**\ , ``"ADXMomentumEvaluator": true`` will tell OctoBot to use the **most advanced ADXMomentumEvaluator** available: if you evaluator extends **ADXMomentumEvaluator**\ , your evaluator will be considered more advanced than the **basic ADXMomentumEvaluator** and OctoBot will use it. See the  `Customize your OctoBot page <Customize-your-OctoBot.html>`_ to learn how to add elements to your OctoBot.
 
 This is valid for any evaluator and strategy.
 

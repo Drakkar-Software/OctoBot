@@ -48,16 +48,14 @@ This is the imaginary portfolio given to the trader simulator to create its orde
 
 The starting portfolio is also **used for backtesting**.
 
-This portfolio is reset at each start of the bot unless `Multi-session-profitability <https://github.com/Drakkar-Software/OctoBot/wiki/Trader#multi-session-profitability>`_ parameter is activated.
-
 Mode, Reference-market and Risk
 -------------------------------
 
-These parameters are defined in the **trading** section, which is used by the trader simulator as well as the real trader. This **trading** section is described on the `real trader page <https://github.com/Drakkar-Software/OctoBot/wiki/Trader#trading-settings>`_
+These parameters are defined in the **trading** section, which is used by the trader simulator as well as the real trader. This **trading** section is described on the `real trader page <Trader.html#trading-settings>`_
 
 Real trader
 -----------
 
 Additionally to the simulated trading system, a real trader is available in OctoBot.
 
-`Here is the article describing the real trader feature of OctoBot <https://github.com/Drakkar-Software/OctoBot/wiki/Trader>`_
+`Here is the article describing the real trader feature of OctoBot <Trader.html>`_

@@ -1,6 +1,6 @@
 
 Notifications
-===========
+=============
 
 When notifications are enabled, OctoBot will create notifications on all the given medias. These notifications contain the current evaluations of monitored markets as well as created, filled and cancelled orders.
 
@@ -39,7 +39,7 @@ example:
 
    "notification-type": ["telegram", "web"]
 
-Discord notifications use the Discord service. `See Discord service configuration wiki <https://github.com/Drakkar-Software/OctoBot/wiki/Discord-Interface>`_
+Discord notifications use the Discord service. `See Discord service configuration docs <Discord-Interface.html>`_
 
 On Twitter
 ^^^^^^^^^^
@@ -50,7 +50,7 @@ Open your **user/config.json** file and set the notification type value **Twitte
 
    "notification-type": ["twitter"]
 
-Twitter notifications use the Twitter service. `See Twitter service configuration wiki <https://github.com/Drakkar-Software/OctoBot/wiki/Twitter-Interface>`_
+Twitter notifications use the Twitter service. `See Twitter service configuration docs <Twitter-Interface.html>`_
 
 On Telegram
 ^^^^^^^^^^^
@@ -61,7 +61,7 @@ Open your **user/config.json** file and set the notification type value **telegr
 
    "notification-type": ["telegram"]
 
-Telegram notifications use the Telegram service. `See Telegram service configuration wiki <https://github.com/Drakkar-Software/OctoBot/wiki/Telegram-interface>`_
+Telegram notifications use the Telegram service. `See Telegram service configuration docs <Telegram-interface.html>`_
 
 On Web Interface
 ^^^^^^^^^^^^^^^^
@@ -72,4 +72,4 @@ Open your **user/config.json** file and set the notification type value **web** 
 
    "notification-type": ["web"]
 
-Web notifications use the Web service. `See Web service configuration wiki <https://github.com/Drakkar-Software/OctoBot/wiki/Web-interface>`_
+Web notifications use the Web service. `See Web service configuration docs <Web-interface.html>`_

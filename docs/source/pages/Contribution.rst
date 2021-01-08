@@ -2,7 +2,7 @@
 Contribution
 ============
 
-Please have a look at our `developer guide <https://github.com/Drakkar-Software/OctoBot/wiki/Developer-Guide>`_.
+Please have a look at our `developer guide <Developer-Guide.html>`_.
 
 Contributing
 ------------
