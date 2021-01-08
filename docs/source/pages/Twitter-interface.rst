@@ -1,6 +1,6 @@
 
 Twitter interface
-============================================================
+=================
 
 OctoBot uses the Twitter interface for the following purposes:
 
@@ -9,7 +9,7 @@ OctoBot uses the Twitter interface for the following purposes:
 * Monitoring Twitter accounts given in **TwitterNewsEvaluator.json** configuration and enabling the social evaluator **TwitterNewsEvaluator**
 
 Twitter service configuration
----------------
+-----------------------------
 
 Add in **user/config.json** in the services key :
 
@@ -24,11 +24,11 @@ Add in **user/config.json** in the services key :
 
 **Exemple:**
 
-.. code-block::
+.. code-block:: json
 
    "services": {
       "a service": {
-          ...
+
       },
       "twitter": {
           "api-key": "YOUR_TWITTER_API_KEY",
@@ -37,7 +37,7 @@ Add in **user/config.json** in the services key :
           "access-token-secret": "YOUR_TWITTER_ACCESS_TOKEN_SECRET"
       },
       "another service": {
-          ...
+
       }
    }
 
