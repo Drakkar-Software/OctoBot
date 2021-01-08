@@ -13,9 +13,9 @@ OctBot is fully modular, so you can install any modules you want !
 You can find in `this <https://github.com/Drakkar-Software/OctoBot-Tentacles>`_ repository all default tentacles (modules) you can create to custom your own cryptocurrencies trader bot.
 
 **It's very simple !**
-If you used `OctoBot's launcher <https://github.com/Drakkar-Software/OctoBot/wiki/Installation#instructions>`_ to install OctoBot, you dont need to do this.
+If you used `the OctoBot binary <https://github.com/Drakkar-Software/OctoBot-Binary/releases>`_ to install OctoBot, you dont need to do this.
 
-Otherwise, after the `developper installation <https://github.com/Drakkar-Software/OctoBot/wiki/Installation#developer-installation>`_ of your OctoBot, you just have to type : 
+Otherwise, after the `developer installation <For-Developers.html>`_ of your OctoBot, you just have to type :
 
 .. code-block::
 
@@ -23,7 +23,7 @@ Otherwise, after the `developper installation <https://github.com/Drakkar-Softwa
 
 And all the default tentacles package from this repository will be installed (and activated).
 
-If you want to modify or disable some of them `see this wiki page <https://github.com/Drakkar-Software/OctoBot/wiki/Customize-your-OctoBot>`_.
+If you want to modify or disable some of them `see this page <Customize-your-OctoBot.html>`_.
 
 Add new tentacles packages to your OctoBot
 ------------------------------------------

@@ -34,11 +34,13 @@ To fix this issue, untick the "QuickEdit Mode" in your terminal properties and r
 
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/powerShellEditMode.jpg
+   :width: 400 px
    :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/powerShellEditMode.jpg
    :alt: Powershell
 
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/cmdQuickEdit.jpg
+   :width: 400 px
    :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/cmdQuickEdit.jpg
    :alt: Cmd
 

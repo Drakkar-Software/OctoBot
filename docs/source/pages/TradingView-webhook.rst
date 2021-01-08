@@ -10,7 +10,7 @@ With OctoBot, you can listen to https://www.tradingview.com signals and automate
 OctoBot configuration
 ---------------------
 
-Simply add the Trading-view service into your OctoBot's configuration and setup your `webhook service <https://github.com/Drakkar-Software/OctoBot/wiki/Using-a-webhook-with-OctoBot>`_.
+Simply add the Trading-view service into your OctoBot's configuration and setup your `webhook service <Using-a-webhook-with-OctoBot.html>`_.
 
 TradingView account
 -------------------
@@ -18,12 +18,16 @@ TradingView account
 
 * Create an account at https://www.tradingview.com (join for free button)
 * To be able to send signals from tradingview.com, you need a pro account, if you don't have one, you can use the pro trial by clicking on
+
   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-go-pro-trial-button.png
+     :width: 200 px
      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-go-pro-trial-button.png
      :alt: start-free-trial-button
 
 * Add your credit card or paypal account to validate your trial account and click on
+
   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-start-trial-button.png
+     :width: 400 px
      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-start-trial-button.png
      :alt: start-trial-button
 
@@ -33,22 +37,28 @@ Create an alert
 ---------------
 
 
-* Go to the right menu and click on the alert button 
+* Go to the right menu and click on the alert button
+
   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-alert-menu.png
+     :width: 300 px
      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-alert-menu.png
      :alt: alert-menu-button
 
-* Create a new alert with 
+* Create a new alert with
+
   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-add-alert-button.png
+     :width: 75 px
      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-add-alert-button.png
      :alt: create-alert-button
 
 * Choose the condition : an indicator cross, a price drop, whatever you want
 * Add your OctoBot webhook as the following screenshot.
+
   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-alert-webhook-url.png
+     :width: 300 px
      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-alert-webhook-url.png
      :alt: set-webhook-url
-  :raw-html-m2r:`<br>`
+
   You can find OctoBot's webhook on your OctoBot's configuration page or in OctoBot's starting logs if you activated a webhook requiring tentacle (like trading view signals trading mode). It should be an url like http://XXXXXXXX.ngrok.io/webhook/trading_view.
 
   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/webhook_config.jpg
@@ -66,6 +76,7 @@ Create an alert
      EXCHANGE={{exchange}}
      EXCHANGE={{ticker}}
      SIGNAL=BUY
+
   if it's a buy signal
 
 OR
@@ -80,6 +91,7 @@ if it's a sell signal
 
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-alert-message.png
+   :width: 400 px
    :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-alert-message.png
    :alt: alert-message
 

@@ -9,8 +9,9 @@ About OctoBot 0.4
    OctoBot 0.4.0 uses python 3.8
 
 
-OctoBot 0.4 is a complete rework of OctoBot, while it doesn't change a lot on the appearance (for now), its core engine is completely different.\ :raw-html-m2r:`<br>`
-With 0.4, OctoBot uses an asynchronous producer/consumer design. This enables deep optimizations by removing every downtime and therefore taking every signal opportunity as soon as possible without being overwhelmed by information. This is ideal for websocket connexions and enables the full potential of any strategy. 
+OctoBot 0.4 is a complete rework of OctoBot, while it doesn't change a lot on the appearance (for now), its core engine is completely different.
+
+With 0.4, OctoBot uses an asynchronous producer/consumer design. This enables deep optimizations by removing every downtime and therefore taking every signal opportunity as soon as possible without being overwhelmed by information. This is ideal for websocket connexions and enables the full potential of any strategy.
 
 To go even further on the optimization path, OctoBot is now using `Cython <https://cython.org/>`_ to compile its CPU intensive processes into efficient C code and increase its performances.
 
@@ -48,7 +49,8 @@ OctoBot 0.4 installation
 OctoBot executable
 ~~~~~~~~~~~~~~~~~~
 
-Download and start the OctoBot 0.4.0 executable for your computer from https://github.com/Drakkar-Software/OctoBot-Binary/releases.\ :raw-html-m2r:`<br>`
+Download and start the OctoBot 0.4.0 executable for your computer from https://github.com/Drakkar-Software/OctoBot-Binary/releases.
+
 The first start will setup your OctoBot environment and download tentacles.
 
 ..
@@ -95,27 +97,33 @@ Note: if you are on an arm architecture (like on raspberry pie), add the ``--arm
    .. code-block::
 
       octobot_cli start
+
    Docker installations:
    .. code-block::
 
       octobot_cli start --docker
+
    ### OctoBot 0.4 update
    To update your OctoBot, use the following command:
    Python installations:
    .. code-block::
 
       octobot_cli update
+
    Docker installations:
    .. code-block::
 
       octobot_cli update --docker
+
    This will update your OctoBot with its dependencies and tentacles
 
 Manual installation
 ^^^^^^^^^^^^^^^^^^^
 
-**With the OctoBot executable**\ :raw-html-m2r:`<br>`
-Download and start the latest OctoBot 0.4.0 executable for your computer from https://github.com/Drakkar-Software/OctoBot-Binary/releases.\ :raw-html-m2r:`<br>`
+**With the OctoBot executable**
+
+Download and start the latest OctoBot 0.4.0 executable for your computer from https://github.com/Drakkar-Software/OctoBot-Binary/releases.
+
 The first start will setup your OctoBot environment and download tentacles.
 
 **With Docker**
@@ -131,7 +139,7 @@ The first start will setup your OctoBot environment and download tentacles.
 
       docker run -it -d --name Octobot -p 5001:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:0.4.0-stable
 
-#. Follow the `docker help wiki <https://github.com/Drakkar-Software/OctoBot/wiki/With-Docker#how-to-look-at-octobot-logs->`_ if you need more details about how to use OctoBot with Docker.
+#. Follow the `docker help docs <With-Docker.html#how-to-look-at-octobot-logs->`_ if you need more details about how to use OctoBot with Docker.
 
 **With Python**
 

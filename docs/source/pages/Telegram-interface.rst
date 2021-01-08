@@ -19,15 +19,15 @@ And much more.
 To know the full command list, use the **/help** command
 
 Telegram service configuration
----------------
+------------------------------
 
 Create your bot
-------------------------------
+---------------
 
 See tutorial on `telegram website <https://core.telegram.org/bots#6-botfather>`_
 
 Configuration
-------------------------------
+-------------
 
 Add in **user/config.json** in the services key :
 
@@ -101,7 +101,7 @@ Troubleshooting
 Chat not found
 ^^^^^^^^^^^^^^
 
-If OctoBot is producing this you get this error, it means that your `chat-id <https://github.com/Drakkar-Software/OctoBot/wiki/Telegram-interface#chat-id>`_ is not set correctly. With an incorrect chat-id, OctoBot is able to read and reply commands but can't push messages by itself.
+If OctoBot is producing this you get this error, it means that your `chat-id <#chat-id>`_ is not set correctly. With an incorrect chat-id, OctoBot is able to read and reply commands but can't push messages by itself.
 
 TelegramSignalEvaluator is not receiving telegram messages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -110,7 +110,7 @@ To use the default Telegram signal evaluator, make sure:
 
 
 #. Your telegram group / channel is referenced in the TelegramSignalEvaluator configuration
-#. Your telegram bot is setup according to `Allow your bot to listen to telegram groups and channels <https://github.com/Drakkar-Software/OctoBot/wiki/Telegram-interface#allow-your-bot-to-listen-to-telegram-groups-and-channels>`_
+#. Your telegram bot is setup according to `Allow your bot to listen to telegram groups and channels <#allow-your-bot-to-listen-to-telegram-groups-and-channels>`_
 #. Your telegram bot is in the telegram channel / group
 #. The telegram notifications you want your bot to process are matching the notification pattern defined in the TelegramSignalEvaluator documentation
 #. The telegram signal trading pairs also are traded pairs in your current OctoBot configuration and are supported by the connected exchange(s)
