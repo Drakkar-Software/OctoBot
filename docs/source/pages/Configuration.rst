@@ -39,7 +39,7 @@ Once you have your own **user/config.json** file, to start using OctoBot, you wi
          "api-secret": "",
          "web-socket": true
        }
-     },
+   }
 
 `Here are the docs helping to setup an exchange for OctoBot <Exchanges.html>`_
 
@@ -64,7 +64,7 @@ Examples:
        "Bitcoin": {
          "pairs": ["BTC/USDT"]
        }
-     }
+   }
 
 OctoBot trading only Bitcoin against USDT
 
@@ -80,7 +80,7 @@ OctoBot trading only Bitcoin against USDT
        "NEO": {
          "pairs": ["NEO/BTC", "NEO/ETH"]
        }
-     },
+   }
 
 OctoBot trading Bitcoin and Ethereum against USDT as well as NEO against BTC and ETH
 
@@ -96,7 +96,7 @@ To tell OctoBot to trade all BTC trading pairs (with BTC as a quote asset), use 
          "pairs": ["*"],
          "quote": "BTC"
        }
-    },
+   }
 
 A "quote" is required to specify the name of the currency to trade with.
 

@@ -40,18 +40,18 @@ Add in **user/config.json** in the services key :
 
 **Exemple:**
 
-.. code-block::
+.. code-block:: json
 
    "services": {
       "a service": {
-          ...
+
       },
       "telegram": {
           "chat-id": "YOUR_CHAT_ID",
           "token": "YOUR_BOT_TOKEN"
       },
       "another service": {
-          ...
+
       }
    }
 

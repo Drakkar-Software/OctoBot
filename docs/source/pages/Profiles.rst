@@ -4,7 +4,7 @@
 Profiles
 ^^^^^^^^
 
-OctoBot's trading configuration is using profiles (located into user/profiles).\ :raw-html-m2r:`<br>`
+OctoBot's trading configuration is using profiles (located into user/profiles).
 This allows for quick switches between previously set configurations.
 
 Profiles include:
