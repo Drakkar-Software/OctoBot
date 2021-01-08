@@ -11,10 +11,11 @@ Windows
 Time synchronization
 ^^^^^^^^^^^^^^^^^^^^
 
-This issue happens when error messages such as ``'recvWindow' must be less than ...`` appear.\ :raw-html-m2r:`<br>`
+This issue happens when error messages such as ``'recvWindow' must be less than ...`` appear.
+
 Open an administrator terminal and type:
 
-.. code-block::
+.. code-block:: bash
 
    net stop w32time
    net start w32time
@@ -47,42 +48,11 @@ To fix this issue, untick the "QuickEdit Mode" in your terminal properties and r
 
 To open the properties menu, right click on the terminal window header and select "properties".
 
-Installation
-^^^^^^^^^^^^
+Web interface display issue "MIME type ('text/plain') is not executable"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+If the web interface is now correctly displayed and this error (or similar) appears in your browser console: ``Refused to execute script from '<URL>' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.``\ , then there might be an issue with your Windows registry. Here is how to solve it:
 
-* During *pip install -r requirements.txt* --> **Failed to install Twisted** : :raw-html-m2r:`<br>`
-
-
-#. Download Twisted compiled for your platform `here <https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_\ :raw-html-m2r:`<br>`
-#. ``python -m pip install Twisted-17.XXXXXX.whl``\ :raw-html-m2r:`<br>`
-#. ``python -m pip install -r requirements.txt``\ :raw-html-m2r:`<br>`
-
-
-* During *pip install -r requirements.txt* --> **Failed to install lru_dict** : :raw-html-m2r:`<br>`
-
-
-#. Download Lru_dict compiled for your platform `here <https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_\ :raw-html-m2r:`<br>`
-#. ``python -m pip install lru_dict‑1.1.6‑XXXXX.whl``\ :raw-html-m2r:`<br>`
-#. ``python -m pip install -r requirements.txt``\ :raw-html-m2r:`<br>`
-
-
-* During *pip install -r requirements.txt* --> **Failed to install cytoolz** : :raw-html-m2r:`<br>`
-
-
-#. Download cytoolz compiled for your platform `here <https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_\ :raw-html-m2r:`<br>`
-#. ``python -m pip install cytoolz‑0.9.0.1‑XXXXX.whl``\ :raw-html-m2r:`<br>`
-#. ``python -m pip install -r requirements.txt``\ :raw-html-m2r:`<br>`
-
-
-* During *pip install -r requirements.txt* --> **Failed to install pycares** : :raw-html-m2r:`<br>`
-
-
-#. Download pycares compiled for your platform `here <https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_\ :raw-html-m2r:`<br>`
-#. ``python -m pip install pycares‑2.3.0‑XXXXX.whl``\ :raw-html-m2r:`<br>`
-#. ``python -m pip install -r requirements.txt``\ :raw-html-m2r:`<br>`
-   ### Web interface display issue "MIME type ('text/plain') is not executable"
-   If the web interface is now correctly displayed and this error (or similar) appears in your browser console: ``Refused to execute script from '<URL>' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.``\ , then there might be an issue with your Windows registry. Here is how to solve it:
 #. Type ``regedit`` in the windows start menu
 #. Go to ``\HKEY_CLASSES_ROOT``
 #. Check the 2 following key values (they should be somewhat similar to these):
@@ -110,7 +80,8 @@ Linux
 Time synchronization
 ^^^^^^^^^^^^^^^^^^^^
 
-This issue happens when error messages such as ``'recvWindow' must be less than ...`` appear.\ :raw-html-m2r:`<br>`
+This issue happens when error messages such as ``'recvWindow' must be less than ...`` appear.
+
 On Debian or Ubuntu, open a terminal and type:
 
 .. code-block:: bash

@@ -1,11 +1,10 @@
-
 Contribution
 ============
 
 Please have a look at our `developer guide <Developer-Guide.html>`_.
 
-Contributing
-------------
+Contributing to OctoBot
+-----------------------
 
 See the associated `document <https://github.com/Drakkar-Software/OctoBot/blob/dev/CONTRIBUTING.md>`_.
 
