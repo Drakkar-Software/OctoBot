@@ -29,7 +29,7 @@ extensions = [
 
 # -- Options for HTML output -------------------------------------------------
 
-html_title = project
+html_title = f"{project} docs"
 
 # NOTE: All the lines are after this are the theme-specific ones. These are
 #       written as part of the site generation pipeline for this project.
@@ -48,12 +48,12 @@ html_favicon = "_static/images/favicon.ico"
 
 domain = "docs.octobot.online"
 html_context = {
-    "og_title": "OctoBot documentation",
+    "og_title": "OctoBot docs",
     "og_description": "Documentation for OctoBot: a free and highly customizable open source cryptocurrency trading robot.",
     "og_domain": domain,
     "og_url": f"https://{domain}",
     "og_logo": f"https://{domain}/_static/images/octobot.png",
-    "og_keywords": "octobot, documentation, free, open source, trading, community, cryptocurrency, cryptocurrencies, bitcoin, ethereum"
+    "og_keywords": "octobot, octobot docs, octobot documentation, free, open source, trading, community, cryptocurrency, cryptocurrencies, bitcoin, ethereum"
 }
 
 # Theme options are theme-specific and customize the look and feel of a theme
