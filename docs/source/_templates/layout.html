@@ -2,7 +2,7 @@
 {%- set url_root = pathto('', 1) %}
 {%- if url_root == '#' %}{% set url_root = '' %}{% endif %}
 {%- if not embedded and docstitle %}
-    {%- set titlesuffix = " &mdash; "|safe + docstitle|e %}
+    {%- set titlesuffix = " | "|safe + docstitle|e %}
 {%- else %}
     {%- set titlesuffix = "" %}
 {%- endif %}
@@ -33,12 +33,12 @@
     <meta name="keywords" content="{{og_keywords}}" />
     <meta name="description" content="{{og_description}}" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="{{title}} - {{ og_title}}" />
+    <meta name="twitter:title" content="{{title}}{{titlesuffix}}" />
     <meta name="twitter:description" content="{{og_description}}" />
     <meta name="twitter:image" content="{{og_logo}}" />
     <meta name="twitter:domain" content="{{og_domain}}" />
     <meta name="twitter:url" content="{{og_url}}" />
-    <meta property="og:title" content="{{title}} - {{og_title}}" />
+    <meta property="og:title" content="{{title}}{{titlesuffix}}" />
     <meta property="og:description" content="{{og_description}}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{og_url}}" />
