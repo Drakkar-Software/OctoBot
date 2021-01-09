@@ -41,19 +41,19 @@ jobs:
 
       - name: Docker build
         run: |
-          docker build -f ./Dockerfile --build-arg TENTACLES_URL_TAG=${{ env.LATEST }} -t ${{ env.IMAGE }}:${{ env.LATEST }} .
+          docker build -f ./Dockerfile -t ${{ env.IMAGE }}:${{ env.LATEST }} .
           docker build -f ./tests/Dockerfile --build-arg OCTOBOT_IMAGE=${{ env.IMAGE }}:${{ env.LATEST }} -t ${{ env.IMAGE }}:${{ env.TEST }} .
-
-      - name: run and check health after start
-        run: |
-          docker run -id --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
-          sleep ${{ env.WAIT_CONTAINER_TIME }}
-          docker logs ${{ env.CONTAINER_NAME }}
-          docker inspect ${{ env.CONTAINER_NAME }} | jq '.[].State.Health.Status' | grep "healthy"
 
       - name: run tests in docker
         run: |
-          docker run -i ${{ env.IMAGE }}:${{ env.TEST }}
+          docker run -i -e TENTACLES_PACKAGES_SOURCE=dev -e TENTACLES_URL_TAG=${branch////_} ${{ env.IMAGE }}:${{ env.TEST }}
+
+      - name: run and check health after start
+        run: |
+          docker run -id -e TENTACLES_PACKAGES_SOURCE=dev -e TENTACLES_URL_TAG=${branch////_} --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
+          sleep ${{ env.WAIT_CONTAINER_TIME }}
+          docker logs ${{ env.CONTAINER_NAME }}
+          docker inspect ${{ env.CONTAINER_NAME }} | jq '.[].State.Health.Status' | grep "healthy"
 
   push:
     needs: build_and_test
