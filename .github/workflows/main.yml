@@ -63,7 +63,7 @@ jobs:
       run: |
         mkdir user
         cp ./octobot/config/default_config.json ./user/config.json
-        branch="${GITHUB_REF##*/}"
+        branch="${GITHUB_HEAD_REF}"
         echo "Trying to download tentacles package ${branch////_}.zip ..."
         TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=${branch////_} python3 start.py tentacles -q --install --all || TENTACLES_URL_TAG=latest python3 start.py tentacles --install --all
 
@@ -73,7 +73,7 @@ jobs:
         mkdir user
         copy octobot\config\default_config.json user\config.json
         $Env:TENTACLES_URL_SUBCATEGORY = "dev/"
-        $Env:TENTACLES_URL_TAG = $env:GITHUB_REF -replace "refs/heads/", "" -replace "/", "_"
+        $Env:TENTACLES_URL_TAG = $env:GITHUB_HEAD_REF -replace "/", "_"
         echo "Trying to download tentacles package $Env:TENTACLES_URL_TAG.zip ..."
         python start.py tentacles -q --install --all
         if ($LastExitCode -ne 0)
