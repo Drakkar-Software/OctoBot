@@ -17,6 +17,12 @@ jobs:
       with:
         python-version: '3.8.x'
         architecture: 'x64'
+    - name: Test
+      run: |
+        echo "GITHUB_HEAD_REF '${GITHUB_HEAD_REF}'"
+        echo "GITHUB_HEAD_REF##*/ '${GITHUB_HEAD_REF##*/}'"
+        echo "GITHUB_REF '${GITHUB_REF}'"
+        echo "GITHUB_REF##*/ '${GITHUB_REF##*/}'"
 
     - name: Install dependencies
       run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
