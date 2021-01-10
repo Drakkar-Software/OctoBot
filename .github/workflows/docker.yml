@@ -37,7 +37,8 @@ jobs:
           echo "TEST=test" >> $GITHUB_ENV
           echo "STABLE=stable" >> $GITHUB_ENV
           echo "CONTAINER_NAME=octobot" >> $GITHUB_ENV
-          echo "WAIT_CONTAINER_TIME=90" >> $GITHUB_ENV
+          echo "CHECK_TENTACLE_CONTAINER_TIME=10" >> $GITHUB_ENV
+          echo "WAIT_CONTAINER_TIME=80" >> $GITHUB_ENV
 
       - name: Docker build
         run: |
@@ -50,7 +51,14 @@ jobs:
 
       - name: run and check health after start
         run: |
+          echo Start OctoBot docker with branche_name tentacles package
           docker run -id -e TENTACLES_PACKAGES_SOURCE=dev -e TENTACLES_URL_TAG=${GITHUB_HEAD_REF////_} --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
+          sleep ${{ env.CHECK_TENTACLE_CONTAINER_TIME }}
+          if docker logs ${{ env.CONTAINER_NAME }} | grep "octobot_tentacles_manager.api.util.tentacles_management Can't find tentacle archive at:" ; then
+              docker rm -f ${{ env.CONTAINER_NAME }}
+              echo Restarting docker with latest tentacle package...
+              docker run -id -e TENTACLES_URL_TAG=${{ env.LATEST }} --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
+          fi
           sleep ${{ env.WAIT_CONTAINER_TIME }}
           docker logs ${{ env.CONTAINER_NAME }}
           docker inspect ${{ env.CONTAINER_NAME }} | jq '.[].State.Health.Status' | grep "healthy"
