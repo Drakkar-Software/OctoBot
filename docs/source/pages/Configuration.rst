@@ -3,8 +3,7 @@ OctoBot configuration is located in two files:
 
 
 * **user/config.json** is the global configuration file, mostly used to setup the bot exchanges credentials, cryptocurrency pairs, interfaces and the trading risk
-* **tentacles/Evaluator/evaluator_config.json** defines the evaluators and strategies toolkit that the bot is allowed to use. This file is automatically pre-filled when `installing tentacles <Tentacle-Manager.html>`_ with OctoBot and when using the configuration web interface.
-* **tentacles/Trading/trading_config.json** defines the trade mode that the bot will use. This file is automatically pre-filled when `installing tentacles <Tentacle-Manager.html>`_ with OctoBot and when using the configuration web interface.
+* **user/tentacles_config/tentacles_config.json** defines the trade mode, the evaluators and strategies toolkit that the bot is allowed to use. This file is automatically pre-filled when `installing tentacles <Tentacle-Manager.html>`_ with OctoBot and when using the configuration web interface.
 
 OctoBot's web interface allows to easily edit the configuration, however, it is also possible to manually edit configuration files. Please be careful when manually editing them or OctoBot won't be able to read them and wont start. Json file are readable and editable using any text editor.
 
@@ -17,7 +16,7 @@ This will appear when a configuration file is not a json valid file.
 Global configuration
 ====================
 
-**user/config.json** is the technical configuration file of OctoBot, an example is available in **config/default_config.json**. 
+**user/config.json** is the technical configuration file of OctoBot, an example is available in **octobot/config/default_config.json**.
 
 To start with OctoBot, use **default_config.json** as an example for your **user/config.json** (copy **default_config.json** into OctoBot's **root folder/user** and rename the copy into **config.json**\ ). This operation is automatically done when using `OctoBot's installation procedure <../index.html>`_.
 
@@ -36,12 +35,11 @@ Once you have your own **user/config.json** file, to start using OctoBot, you wi
    "exchanges": {
        "EXCHANGE_NAME": {
          "api-key": "",
-         "api-secret": "",
-         "web-socket": true
+         "api-secret": ""
        }
    }
 
-`Here are the docs helping to setup an exchange for OctoBot <Exchanges.html>`_
+`Here is the doc helping to setup an exchange for OctoBot <Exchanges.html>`_
 
 CryptoCurrencies
 ----------------
@@ -52,7 +50,7 @@ CryptoCurrencies
    :alt: currencies
 
 
-OctoBot will trade all the cryptocurrencies listed in its configuration. To tell which cryptocurrencies to trade, add the currency in the **crypto-currencies** section in **user/config.json**. 
+OctoBot will trade all the cryptocurrencies listed in its configuration. To tell which cryptocurrencies to trade, add the currency in the **crypto-currencies** section in **user/profiles/YOUR-PROFILE/profile.json**.
 
 In order to keep OctoBot working at its full potential, we recommend to trade **between 1 and 5** different assets **not to use more than 10 to 15** different assets at the same time, depending on the size of your available funds. 
 
@@ -111,8 +109,6 @@ Interfaces
 
 Interfaces are all defined in **user/config.json** in the **services** section.
 
-More details details on how to setup OctoBot's interfaces in the Interfaces section.
-
 Trading and Risk parameter
 --------------------------
 
@@ -130,7 +126,7 @@ OctoBot can process two types of trading:
    :alt: trading
 
 
-Any type of trading has its **risk** parameter. It is a parameter defining the behavior of the trader, similarly to a real human trader. `This risk parameter is described here <Trader.html#risk>`_
+Any type of trading has its risk parameter. It is a parameter defining the behavior of the trader, similarly to a real human trader. `This **risk** parameter is described here <Trader.html#risk>`_
 
 Evaluator and trading configuration
 ===================================
@@ -141,13 +137,13 @@ Evaluator and trading configuration
    :alt: trading_modes
 
 
-**tentacles/Evaluator/evaluator_config.json** and **tentacles/Trading/trading_config.json** are configuration files telling OctoBot which evaluators, strategies and trading modes to use. It is automatically kept updated after each `Tentacle Manager <Tentacle-Manager.html>`_ usage.
+**user/tentacles_config/tentacles_config.json** is a configuration file telling OctoBot which evaluators, strategies and trading modes to use. It is automatically kept updated after each `Tentacle Manager <Tentacle-Manager.html>`_ usage.
 
-An example of **tentacles/Evaluator/evaluator_config.json** is available in the **config** folder: **config/default_evaluator_config.json**.
+An example of **user/tentacles_config/tentacles_config.json** is available in the **config** folder: **octobot/config/default_tentacles_config.json**.
 
-When using OctoBot's `Tentacle Manager <Tentacle-Manager.html>`_\ , **default_evaluator_config.json** is automatically used to enable default evaluators configuration when no configuration is already available for a given evaluator. The same process is used for trading_config.
+When using OctoBot's `Tentacle Manager <Tentacle-Manager.html>`_\ , **default_tentacles_config.json** is automatically used to enable default evaluators configuration when no configuration is already available for a given evaluator. The same process is used for trading_config.
 
-By default, new evaluatuators are not used (set to "false") if not defined otherwise in **config/default_evaluator_config.json**.
+By default, new evaluators are not used (set to "false") if not defined otherwise in **octobot/config/default_tentacles_config.json**.
 
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/evaluators.jpg
@@ -190,7 +186,7 @@ Any setting also applies to subclasses of these evaluators. For example if you a
 
 This is valid for any evaluator and strategy.
 
-Please note that any evaluator or strategy that doesn't extend an element in **evaluator_config.json** has to be added to this file otherwise will be ignored by OctoBot.
+Please note that any evaluator or strategy that doesn't extend an element in **tentacles_config.json** has to be added to this file otherwise will be ignored by OctoBot.
 
 Specific evaluator configuration
 ================================
