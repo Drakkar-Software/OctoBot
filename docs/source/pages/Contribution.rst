@@ -12,8 +12,3 @@ Code of conduct
 ---------------
 
 See the associated `document <https://github.com/Drakkar-Software/OctoBot/blob/dev/CODE_OF_CONDUCT.md>`_.
-
-Delivery
---------
-
-See the associated `document <https://github.com/Drakkar-Software/OctoBot/blob/dev/docs/DELIVERY.md>`_.
