@@ -76,7 +76,7 @@ A simple way to run a docker image is to use docker-compose :
 
 * Install `docker-compose <https://docs.docker.com/compose/install/>`_
 * Download the `docker-compose.yml file <https://github.com/Drakkar-Software/OctoBot/blob/master/docker-compose.yml>`_
-* Start OctoBot with docker-compose :
+* Start OctoBot with docker-compose (with the previous file `docker-compose.yml` in the current folder) :
 
   .. code-block:: bash
 
