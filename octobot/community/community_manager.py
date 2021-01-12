@@ -55,8 +55,8 @@ class CommunityManager:
         self.exchange_managers = None
 
     def _init_community_config(self):
-        self.has_real_trader = trading_api.is_trader_enabled_in_config(self.edited_config)
-        self.has_simulator = trading_api.is_trader_simulator_enabled_in_config(self.edited_config)
+        self.has_real_trader = trading_api.is_trader_enabled_in_config(self.edited_config.config)
+        self.has_simulator = trading_api.is_trader_simulator_enabled_in_config(self.edited_config.config)
         self.exchange_managers = trading_api.get_exchange_managers_from_exchange_ids(
             self.octobot_api.get_exchange_manager_ids())
 
@@ -230,7 +230,7 @@ class CommunityManager:
             self.logger.debug(f"Error when handling community data : {e}")
 
     def _save_bot_id(self):
-        if common_constants.CONFIG_METRICS not in self.edited_config \
+        if common_constants.CONFIG_METRICS not in self.edited_config.config \
                 or not self.edited_config.config[common_constants.CONFIG_METRICS]:
             self.edited_config.config[common_constants.CONFIG_METRICS] = {common_constants.CONFIG_ENABLED_OPTION: True}
         self.edited_config.config[common_constants.CONFIG_METRICS][common_constants.CONFIG_METRICS_BOT_ID] = self.bot_id
