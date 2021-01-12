@@ -12,6 +12,11 @@ Contact Us
 * DrakkarSoftware team at drakkar.software@protonmail.com
 * Concerning Octobot at octobot.drakkars@protonmail.com
 
+Ecosystem
+----------
+
+* OctoBot's ecosystem status is available at `status.octobot.online <https://status.octobot.online>`_
+
 Thanks
 ------
 
