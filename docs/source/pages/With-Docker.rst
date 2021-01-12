@@ -86,7 +86,7 @@ Start OctoBot with docker managed files
 ---------------------------------------
 .. WARNING:: It's easier to use but it will not be possible to update it without deleting its files.
 
--v arguments can be removed from previous start commands but your OctoBot local files are managed by docker.
+-v arguments can be removed from previous start commands but OctoBot's local files will then be managed by docker (and not directly visible).
 
 .. code-block:: bash
 
@@ -97,3 +97,11 @@ Local OctoBot files path are located in /var/lib/docker and can be listed with t
 .. code-block:: bash
 
    docker inspect -f '{{ .Mounts }}' OctoBot
+
+To copy files of a directory outside the OctoBot container, for example for logs files :
+
+.. code-block:: bash
+
+   docker cp OctoBot:/octobot/logs/. .
+
+Wherer "OctoBot" is your container name
