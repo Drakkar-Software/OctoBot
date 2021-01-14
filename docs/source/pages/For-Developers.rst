@@ -50,3 +50,37 @@ Python3
 
 There **python3** is refering to your **Python3.8.X** installation, just adapt the commands to match your setup if any different (might be python, python3, python3.8, etc: it depends on your environment).
 
+
+With Repo
+------------
+Repo is a tool built on top of Git. Repo helps manage many Git repositories.
+
+To create a development OctoBot environment, repo can be used as following :
+
+- `Install repo <https://source.android.com/setup/build/downloading#installing-repo>`_
+- Create a directory for the OctoBot environment
+- Create OctoBot developer environment by running
+
+.. code-block:: bash
+
+   repo init -u https://github.com/Drakkar-Software/OctoBot-Repo-Manifest.git
+
+- Synchronize repositories
+
+.. code-block:: bash
+
+   repo sync
+
+All required OctoBot projects are now available in the current directory :
+
+.. code-block:: bash
+
+    Async-Channel
+    OctoBot
+    OctoBot-Backtesting
+    OctoBot-Commons
+    OctoBot-Evaluators
+    OctoBot-Services
+    OctoBot-Tentacles
+    OctoBot-Tentacles-Manager
+    OctoBot-Trading
