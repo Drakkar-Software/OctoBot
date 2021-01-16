@@ -4,6 +4,7 @@ on:
     branches:
       - 'master'
       - 'dev'
+      - 'test/uv-loop'
   pull_request:
 
 jobs:
@@ -109,6 +110,12 @@ jobs:
       run: |
         pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
         pytest --durations=0 -rw tentacles
+
+    - name: Pytest with uvloop
+      if: matrix.os != 'windows-latest'
+      run: |
+        pip install uvloop
+        pytest tests tentacles
 
     - name: Publish coverage
       if: matrix.type == 'sources' && github.event_name == 'push'

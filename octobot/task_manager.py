@@ -44,6 +44,7 @@ class TaskManager:
         self.loop_forever_thread = None
 
     def init_async_loop(self):
+        self._set_up_uvloop_if_necessary()
         self.async_loop = asyncio.new_event_loop()
         self.async_loop.set_exception_handler(self._loop_exception_handler)
 
@@ -111,3 +112,10 @@ class TaskManager:
 
     def run_in_async_executor(self, coroutine):
         return self.executors.submit(asyncio.run, coroutine).result()
+
+    def _set_up_uvloop_if_necessary(self):
+        try:
+            import uvloop
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        except ImportError:
+            self.logger.debug("uvloop is disabled (not installed)")
