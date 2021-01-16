@@ -34,7 +34,7 @@ BACKTESTING_SYMBOLS = ["ICX/BTC", "VEN/BTC", "XRB/BTC", "2020ADA/BTC", "2020ADA/
 pytestmark = pytest.mark.asyncio
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def event_loop():
     loop = asyncio.new_event_loop()
     # use ErrorContainer to catch otherwise hidden exceptions occurring in async scheduled tasks
