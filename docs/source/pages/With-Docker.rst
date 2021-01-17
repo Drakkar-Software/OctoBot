@@ -9,6 +9,15 @@ Please follow the instructions `here <https://docs.docker.com/install/linux/dock
 
 For a raspberry installation please follow `this guide <https://phoenixnap.com/kb/docker-on-raspberry-pi>`_.
 
+.. note:: Don't forget to run the following command at the end of the installation (and logout)
+
+    .. code-block:: bash
+
+        sudo usermod -aG docker $USER
+
+    so you don't have permission denied each time you use a docker command.
+
+
 Running stable OctoBot
 ----------------------
 
