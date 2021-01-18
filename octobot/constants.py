@@ -17,6 +17,7 @@ import os
 import pathlib
 
 import octobot_commons.constants as commons_constants
+import octobot_tentacles_manager.constants as tentacles_manager_constants
 
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
@@ -55,7 +56,7 @@ ENV_COMPILED_TENTACLES_PACKAGES_TYPE = "COMPILED_TENTACLES_PACKAGES_TYPE"
 ENV_TENTACLE_CATEGORY = "TENTACLE_CATEGORY"
 ENV_COMPILED_TENTACLES_SUBCATEGORY = "COMPILED_TENTACLES_SUBCATEGORY"
 TENTACLES_REQUIRED_VERSION = f"{os.getenv(ENV_TENTACLES_URL_TAG, LONG_VERSION)}"
-# url ending example: 	tentacles/officials/packages/full/base/latest.zip
+# url ending example: 	tentacles/officials/packages/full/base/latest/any_platform.zip
 DEFAULT_TENTACLES_URL = os.getenv(
     ENV_TENTACLES_URL,
     f"{OCTOBOT_ONLINE}/{REPOSITORY}/{TENTACLES_REPOSITORY}/"
@@ -63,7 +64,8 @@ DEFAULT_TENTACLES_URL = os.getenv(
     f"{os.getenv(ENV_TENTACLES_PACKAGES_TYPE, TENTACLE_PACKAGES)}/"
     f"{os.getenv(ENV_TENTACLE_CATEGORY, TENTACLE_CATEGORY)}/"
     f"{os.getenv(ENV_TENTACLE_PACKAGE_NAME, TENTACLE_PACKAGE_NAME)}/"
-    f"{TENTACLES_REQUIRED_VERSION if TENTACLES_REQUIRED_VERSION else LONG_VERSION}.zip"
+    f"{TENTACLES_REQUIRED_VERSION if TENTACLES_REQUIRED_VERSION else LONG_VERSION}/"
+    f"{tentacles_manager_constants.ANY_PLATFORM_FILE_NAME}.{tentacles_manager_constants.TENTACLES_PACKAGE_FORMAT}"
 )
 DEFAULT_COMPILED_TENTACLES_URL = os.getenv(
     ENV_COMPILED_TENTACLES_URL,
