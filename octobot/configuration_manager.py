@@ -145,6 +145,13 @@ def init_default_profile():
 
 
 def migrate_from_previous_config(config):
+    config_path = configuration.get_user_config()
+    previous_config_save_path = f"{config_path}.back"
+    logger = logging.get_logger(LOGGER_NAME)
+    logger.info(f"Updating your {config_path} into the new format. A save of your previous config is available in "
+                f"{previous_config_save_path}")
+    # save the current config file in case some data should be kept
+    shutil.copyfile(config_path, previous_config_save_path)
     if common_constants.CONFIG_CRYPTO_CURRENCIES in config.config:
         # config migration required
         # add missing exchange enabled config
