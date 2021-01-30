@@ -112,9 +112,9 @@ jobs:
 
     - name: Publish coverage
       if: matrix.type == 'sources' && github.event_name == 'push'
-      run: coveralls
+      run: coveralls --service=github
       env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_wheels:
     needs: tests
