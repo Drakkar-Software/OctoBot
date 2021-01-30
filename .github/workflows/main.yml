@@ -111,10 +111,10 @@ jobs:
         pytest --durations=0 -rw tentacles
 
     - name: Publish coverage
-      if: matrix.type == 'sources' && github.event_name == 'push'
-      run: coveralls --service=github
+      if: matrix.type == 'sources'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: coveralls
 
   build_wheels:
     needs: tests
