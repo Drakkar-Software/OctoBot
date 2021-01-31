@@ -25,6 +25,9 @@ from octobot.api.backtesting import get_independent_backtesting_exchange_manager
 from octobot.backtesting.abstract_backtesting_test import DATA_FILES
 from octobot_trading.api.trades import get_trade_history
 from tests.test_utils.bot_management import run_independent_backtesting
+from tests.test_utils.logging import activate_tentacles_loading_logger
+
+activate_tentacles_loading_logger()
 # force tentacles import since it's required for backtesting
 import tentacles
 
