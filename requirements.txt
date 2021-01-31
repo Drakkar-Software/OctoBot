@@ -17,3 +17,4 @@ idna<2.9,>=2.5
 aiohttp==3.7.3
 requests==2.25.1
 
+jinja2==2.11.2
