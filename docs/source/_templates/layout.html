@@ -30,20 +30,20 @@
         <link rel="canonical" href="{{ theme_canonical_url }}{{ pagename }}.html"/>
     {% endif %}
 
-    <meta name="keywords" content="{{og_keywords}}" />
-    <meta name="description" content="{{og_description}}" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="{{title}}{{titlesuffix}}" />
-    <meta name="twitter:description" content="{{og_description}}" />
-    <meta name="twitter:image" content="{{og_logo}}" />
-    <meta name="twitter:domain" content="{{og_domain}}" />
-    <meta name="twitter:url" content="{{og_url}}" />
-    <meta property="og:title" content="{{title}}{{titlesuffix}}" />
-    <meta property="og:description" content="{{og_description}}" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="{{og_url}}" />
-    <meta property="og:image" content="{{og_logo}}" />
-    <meta property="og:site_name" content="{{og_title}}" />
+    <meta name="keywords" content="{{ og_keywords }}"/>
+    <meta name="description" content="{{ og_description }}"/>
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:title" content="{{ title }}{{ titlesuffix }}"/>
+    <meta name="twitter:description" content="{{ og_description }}"/>
+    <meta name="twitter:image" content="{{ og_logo }}"/>
+    <meta name="twitter:domain" content="{{ og_domain }}"/>
+    <meta name="twitter:url" content="{{ og_url }}"/>
+    <meta property="og:title" content="{{ title }}{{ titlesuffix }}"/>
+    <meta property="og:description" content="{{ og_description }}"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="{{ og_url }}"/>
+    <meta property="og:image" content="{{ og_logo }}"/>
+    <meta property="og:site_name" content="{{ og_title }}"/>
 
     {# CSS #}
 
@@ -97,6 +97,10 @@
 
                     <li>
                         <a href="{{ theme_variables.external_urls['github'] }}">Github</a>
+                    </li>
+
+                    <li>
+                        <a href="{{ theme_variables.external_urls['octobot-website'] }}">OctoBot</a>
                     </li>
                 </ul>
             </div>
@@ -273,6 +277,10 @@
                 <li>
                     <a href="{{ theme_variables.external_urls['github'] }}">Github</a>
                 </li>
+
+                <li>
+                    <a href="{{ theme_variables.external_urls['octobot-website'] }}">OctoBot</a>
+                </li>
             </ul>
         </div>
     </div>
@@ -301,11 +309,15 @@
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y4FB265L3N"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    window.dataLayer = window.dataLayer || [];
 
-  gtag('config', 'G-Y4FB265L3N');
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-Y4FB265L3N');
 </script>
 </body>
 </html>
