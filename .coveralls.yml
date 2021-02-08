@@ -1,3 +1,0 @@
-service_name: travis-pro
-repo_token: Vj1ksXvbWhZy4zMOhaO1e3dGbZ0ksBeOA
-parallel: false # if the CI is running your build in parallel
