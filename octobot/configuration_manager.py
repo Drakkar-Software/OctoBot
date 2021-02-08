@@ -137,6 +137,10 @@ def init_default_profile():
                     os.path.join(profile_folder, common_constants.DEFAULT_PROFILE_FILE))
     shutil.copyfile(constants.DEFAULT_PROFILE_AVATAR,
                     os.path.join(profile_folder, constants.DEFAULT_PROFILE_AVATAR_FILE_NAME))
+    load_default_tentacles_config(profile_folder)
+
+
+def load_default_tentacles_config(profile_folder):
     if os.path.isdir(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
         shutil.copyfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH,
                         os.path.join(profile_folder, tentacles_manager_constants.constants.CONFIG_TENTACLES_FILE))
@@ -145,9 +149,23 @@ def init_default_profile():
 
 
 def migrate_from_previous_config(config):
+    logger = logging.get_logger(LOGGER_NAME)
+    # migrate tentacles configuration if necessary
+    previous_tentacles_config = os.path.join(common_constants.USER_FOLDER, "tentacles_config")
+    previous_tentacles_config_save = os.path.join(common_constants.USER_FOLDER, "tentacles_config.back")
+    if os.path.isdir(previous_tentacles_config) and \
+       not os.path.isdir(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
+        logger.info(f"Updating your tentacles configuration located in {previous_tentacles_config} into the new format. "
+                    f"A save of your previous tentacles config is available in {previous_tentacles_config_save}")
+        shutil.copytree(previous_tentacles_config,
+                        tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH)
+        shutil.move(previous_tentacles_config, previous_tentacles_config_save)
+        load_default_tentacles_config(
+            os.path.join(common_constants.USER_PROFILES_FOLDER, common_constants.DEFAULT_PROFILE)
+        )
+    # migrate global configuration if necessary
     config_path = configuration.get_user_config()
     previous_config_save_path = f"{config_path}.back"
-    logger = logging.get_logger(LOGGER_NAME)
     logger.info(f"Updating your {config_path} into the new format. A save of your previous config is available in "
                 f"{previous_config_save_path}")
     # save the current config file in case some data should be kept
