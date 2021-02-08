@@ -82,7 +82,8 @@ class IndependentBacktesting:
         return self.backtesting_config
 
     async def join_backtesting_updater(self, timeout=None):
-        await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
+        if self.octobot_backtesting.backtesting is not None:
+            await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
 
     async def stop(self, memory_check=False, should_raise=False):
         try:
