@@ -69,7 +69,8 @@ class OctoBotBacktesting:
         if self.backtesting is not None:
             # Close databases
             for importer in backtesting_api.get_importers(self.backtesting):
-                await backtesting_api.stop_importer(importer)
+                if importer is not None:
+                    await backtesting_api.stop_importer(importer)
 
     async def stop(self, memory_check=False, should_raise=False):
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
