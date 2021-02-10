@@ -19,7 +19,9 @@
 
 ![Web Interface](../assets/web-interface.gif)
 ## Description
-Octobot is a powerful fully modular open-source cryptocurrency trading robot.
+[Octobot](https://www.octobot.online/) is a powerful fully modular open-source cryptocurrency trading robot.
+
+See the [Octobot official website](https://www.octobot.online/).
 
 This repository contains all the features of the bot (trading tools, evaluation engines, the backtesting toolkit, ...).
 [Octobot's tentacles](https://github.com/Drakkar-Software/OctoBot-tentacles) contains the bot's strategies and user interfaces.
@@ -27,11 +29,11 @@ This repository contains all the features of the bot (trading tools, evaluation 
 To install OctoBot with its tentacles, just use the [latest release for your system](https://github.com/Drakkar-Software/OctoBot-Binary/releases) and your OctoBot is ready ! 
 
 ## Your Octobot
-<a href="https://github.com/Drakkar-Software/OctoBot/blob/assets/telegram-interface.png"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>
-[![Twitter Interface](../assets/twitter-interface.png)](https://twitter.com/HerklosBotCrypt)
+<a href="https://www.octobot.online/guides/#telegram"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>
+[![Twitter Interface](../assets/twitter-interface.png)](https://docs.octobot.online/pages/Twitter-interface.html)
 
 OctoBot is highly customizable using its configuration and tentacles system. 
-You can build your own bot using the infinite [configuration](https://docs.octobot.online/pages/Configuration.html) possibilities such as 
+You can build your own bot using the infinite [configuration](https://www.octobot.online/guides/#trading_modes) possibilities such as 
 **technical analysis**, **social media processing** or even **external statistics management** like google trends.
 
 OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or
@@ -41,23 +43,27 @@ Octobot's main feature is **evolution** : you can [install](https://docs.octobot
 [modify](https://docs.octobot.online/pages/Customize-your-OctoBot.html) and even [create](https://docs.octobot.online/pages/Customize-your-OctoBot.html#tentacle-customization-octobot-v0-3) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
 
 ## Installation
-OctoBot's installation is **very simple**... because **very documented** ! See the [OctoBot Documentation](https://docs.octobot.online) for more info.
+OctoBot's installation is **very simple**... because **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
 
 #### With executable
-- Open the OctoBot-Binary [release page](https://github.com/Drakkar-Software/OctoBot-Binary/releases)
-- Open the latest release **Assets** panel
-- Download the OctoBot executable for your platform
-- Start OctoBot
+Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
+
+In short:
+- Use the latest release on the [release page](https://github.com/Drakkar-Software/OctoBot-Binary/releases)
 
 #### [With Docker](https://docs.octobot.online/pages/With-Docker.html)
-Self hosting with docker :
+Follow the [docker installation guide](https://www.octobot.online/docker_installation/) 
+
+In short :
 ```
 docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable
 ```
 And then open [http://localhost](http://localhost).
 
 #### [With python sources](https://docs.octobot.online/pages/With-Python-only.html)
-- Install python3.8 (https://www.python.org/downloads/)
+Follow the [python installation guide](https://www.octobot.online/python_installation/) 
+
+In short :
 ```
 git clone https://github.com/Drakkar-Software/OctoBot.git
 cd OctoBot
@@ -66,6 +72,10 @@ python3 start.py
 ```
 
 #### One click deployment
+Follow the [Digital Ocean installation guide](https://www.octobot.online/digital_ocean_installation/) 
+
+In short :
+
 [![Deploy to DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/Drakkar-Software/OctoBot/tree/master&refcode=40c9737100b1)
 
 Get 60-day free hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
@@ -80,7 +90,7 @@ Get 60-day free hosting by registering with [OctoBot referral link](https://m.do
 [![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
 
 Octobot supports many [exchanges](https://docs.octobot.online/pages/Exchanges.html#octobot-officially-supported-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
-To activate trading on an exchange, just configure OctoBot with your api keys as described [on the docs](https://docs.octobot.online/pages/Exchanges.html).
+To activate trading on an exchange, just configure OctoBot with your api keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
 
 ## Disclaimer
 Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
