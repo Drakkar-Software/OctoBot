@@ -15,7 +15,7 @@ For a raspberry installation please follow `this guide <https://phoenixnap.com/k
 
         sudo usermod -aG docker $USER
 
-    so you don't have permission denied each time you use a docker command.
+    so you don't have this permission denied error each time you use a docker command : `permission denied while trying to connect to daemon socket`.
 
 
 Running stable OctoBot
