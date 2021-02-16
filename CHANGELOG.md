@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
 
+## [0.4.0-beta4] - 2021-02-16
+### Updated
+- Web interface
+### Fixed
+- Exchange sync issues
+
 ## [0.4.0-beta3] - 2021-02-08
 ### Added
 - Configuration profiles
