@@ -48,11 +48,22 @@ Clone the OctoBot repository using the **dev** branch
 
 Install python packages :
 
+On Unix systems
+
 .. code-block:: bash
 
    $ cd OctoBot
    $ python3 -m pip install -Ur requirements.txt
    $ export TENTACLES_URL_TAG="latest"
+   $ python3 start.py tentacles --install --all
+
+On Windows systems
+
+.. code-block:: bash
+
+   $ cd OctoBot
+   $ python3 -m pip install -Ur requirements.txt
+   $ SET TENTACLES_URL_TAG=latest
    $ python3 start.py tentacles --install --all
 
 Usage
