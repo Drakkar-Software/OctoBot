@@ -38,16 +38,8 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest, windows-latest, ubuntu-latest ]
-        arch: [ x64, x86 ]
+        arch: [ x64 ]
         type: [sources, cython]
-        exclude:
-          - os: macos-latest # currently not supported
-            arch: x86
-          - os: ubuntu-latest # currently not supported
-            arch: x86
-          - os: windows-latest # don't test 'sources' twice on windows
-            arch: x86
-            type: sources
 
     steps:
     - uses: actions/checkout@v2
@@ -126,12 +118,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        arch: [ x64, x86 ]
-        exclude:
-          - os: macos-latest # currently not supported
-            arch: x86
-          - os: ubuntu-latest # currently not supported
-            arch: x86
+        arch: [ x64 ]
     steps:
     - uses: actions/checkout@v2
 
