@@ -63,64 +63,70 @@ Example with Binance and Coinbase Pro :
 * **api-password** is your exchange account API password if this exchange is requiring a password. Leave empty otherwise
 * **web-socket** is a setting telling OctoBot whether or not to try to use websockets interfaces (websockets are used to get close to real-time data update but it's using more bandwidth). Moreover, RealTime evaluators are much better with websockets enabled.
 
-Octobot officially supported exchanges
+OctoBot officially supported exchanges
 --------------------------------------
 
 .. list-table::
    :header-rows: 1
 
    * - Exchange
-     - REST
+     - SPOT (REST)
      - Websocket
-     - Internal tests
+     - Margin & Future
      - Simulated
      - Community tested
    * - Binance
      - 100%
      - 80%
-     - 100%
+     - 0%
      - 100%
      - yes
    * - Kucoin
      - 100%
      - 0%
-     - 100%
+     - 0%
      - 100%
      - yes
    * - Coinbase Pro
      - 100%
      - 0%
-     - 100%
+     - 0%
      - 100%
      - yes
    * - BitMax
      - 100%
      - 0%
+     - 0%
      - 100%
+     - -
+   * - Bybit
+     - 80%
+     - 0%
+     - 0%
      - 100%
      - -
    * - Kraken
-     - 75%
+     - 75% (only supplies the total balance)
      - 0%
-     - 20%
+     - 0%
      - 100%
      - yes
    * - Bitfinex
      - 75%
      - 0%
-     - 50%
+     - 0%
      - 100%
      - -
    * - Bittrex
      - 75%
      - 0%
-     - 50%
+     - 0%
      - 100%
      - -
    * - Bitmex
      - 75%
      - 30%
-     - 20%
+     - 0%
      - 90%
      - -
    * - COSS
