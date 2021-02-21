@@ -3,11 +3,26 @@ version: "3"
 services:
   octobot:
     image: drakkarsoftware/octobot:stable
+    environment:
+      - VIRTUAL_HOST=${HOST}
+      - VIRTUAL_PROTO=http
+      - VIRTUAL_PORT=5001
     volumes:
        - ./logs:/octobot/logs
        - ./backtesting:/octobot/backtesting
        - ./tentacles:/octobot/tentacles
        - ./user:/octobot/user
-    ports:
-       - 80:5001
+    expose:
+       - 5001
     restart: always
+
+  nginx:
+    image: jwilder/nginx-proxy:alpine
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    restart: always
+    privileged: true
+    depends_on:
+      - octobot
