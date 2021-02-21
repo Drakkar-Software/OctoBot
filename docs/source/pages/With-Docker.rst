@@ -85,11 +85,24 @@ A simple way to run a docker image is to use docker-compose :
 
 * Install `docker-compose <https://docs.docker.com/compose/install/>`_
 * Download the `docker-compose.yml file <https://github.com/Drakkar-Software/OctoBot/blob/master/docker-compose.yml>`_
+* Create a `.env` file in the current folder
+* Add `HOST=YOUR_IP_ADDRESS` in the newly created `.env` file. (where YOUR_IP_ADDRESS is the ip address of the computer, can be replaced by `localhost` if it's a local computer)
 * Start OctoBot with docker-compose (with the previous file `docker-compose.yml` in the current folder) :
 
   .. code-block:: bash
 
      docker-compose up -d
+
+Adding ssl encryption
+
+* Create a `ssl` directory in the current folder
+* Move inside the newly created ssl directory
+* Execute the following commands (where YOUR_IP_ADDRESS is the ip address of the computer, can be replaced by `localhost` if it's a local computer):
+
+  .. code-block:: bash
+
+     openssl genrsa -des3 -out YOUR_IP_ADDRESS.key 4096
+     openssl req -new -x509 -days 3650 -key YOUR_IP_ADDRESS.key -out YOUR_IP_ADDRESS.cert
 
 Start OctoBot with docker managed files
 ---------------------------------------
