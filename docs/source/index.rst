@@ -56,6 +56,7 @@ Welcome to OctoBot's documentation!
    pages/Contribution
    pages/Developer-Guide
    pages/Developers-tips
+   pages/With-Docker-on-Android
 
 .. toctree::
    :maxdepth: 1
