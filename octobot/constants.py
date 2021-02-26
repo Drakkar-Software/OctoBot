@@ -24,7 +24,7 @@ AUTHOR = "DrakkarSoftware"
 SHORT_VERSION = "0.4.0"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
 VERSION_DEV_PHASE = "b"  # alpha : a / beta : b / release candidate : rc
-VERSION_PHASE = "4"  # XX
+VERSION_PHASE = "5"  # XX
 VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 
