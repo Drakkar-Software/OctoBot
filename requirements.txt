@@ -14,6 +14,6 @@ Async-Channel==2.0.7
 colorlog==4.2.1
 yarl==1.1.0
 idna<2.9,>=2.5
-aiohttp==3.7.3
+aiohttp==3.7.4
 requests==2.25.1
 chardet<4.0
