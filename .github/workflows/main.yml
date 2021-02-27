@@ -140,6 +140,12 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: pip install cibuildwheel twine
 
+    - name: set up qemu
+      if: matrix.os == 'ubuntu-latest'
+      uses: docker/setup-qemu-action@v1
+      with:
+        platforms: arm64
+
     - name: Build wheels
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -151,6 +157,7 @@ jobs:
         CIBW_BUILD_VERBOSITY_LINUX: 0
         CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
         CIBW_MANYLINUX_I686_IMAGE: manylinux2014
+        CIBW_ARCHS_LINUX: 'auto aarch64'
         CIBW_BEFORE_BUILD_LINUX: >
           python -m pip install --upgrade pip
           pip install --extra-index-url ${{ secrets.OCTOBOT_PYPI_URL }} --prefer-binary auditwheel -r dev_requirements.txt -r requirements.txt
