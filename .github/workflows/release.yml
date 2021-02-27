@@ -26,7 +26,6 @@ jobs:
         repo: OctoBot-Tentacles
 
     - name: Wait for main build done
-      if: github.event_name == 'push'
       uses: fountainhead/action-wait-for-check@v1.0.0
       id: wait-for-build
       with:
@@ -34,6 +33,10 @@ jobs:
         checkName: "Done"
         ref: ${{ github.sha }}
         timeoutSeconds: 3600
+
+    - name: Trigger fail when Main failed
+      if: steps.wait-for-build.outputs.conclusion == 'failure'
+      run: exit 1
 
     - name: Create release on OctoBot-Binary
       uses: actions/create-release@v1
