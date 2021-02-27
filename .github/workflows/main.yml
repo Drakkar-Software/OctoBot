@@ -60,6 +60,10 @@ jobs:
         repo: OctoBot-Tentacles
         timeoutSeconds: 3600
 
+    - name: Trigger fail when Tentacles failed
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && steps.wait-for-build.outputs.conclusion == 'failure'
+      run: exit 1
+
     - name: Install dependencies
       run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
 
