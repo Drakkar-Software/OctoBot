@@ -1,15 +1,17 @@
 FROM python:3.8-slim-buster AS base
 
 # requires git to install requirements with git+https
+# requires rustc is required to build cryptography wheel
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential git gcc libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev \
+    && apt-get install -y rustc \
     && python -m venv /opt/venv
 
 # Make sure we use the virtualenv:
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY . .
-RUN pip install -U setuptools wheel pip \
+RUN pip install -U setuptools wheel pip>=20.0.0 \
     && pip install Cython==0.29.21 \
     && pip install --extra-index-url https://www.piwheels.org/simple --extra-index-url https://www.tentacles.octobot.online/repository/octobot_pypi/simple --prefer-binary -r requirements.txt \
     && python setup.py install
