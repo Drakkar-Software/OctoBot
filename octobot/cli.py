@@ -268,6 +268,34 @@ def octobot_parser(parser):
     tentacles_parser.set_defaults(func=commands.call_tentacles_manager)
 
 
+def start_background_octobot_with_args(version=False,
+                                       encrypter=False,
+                                       strategy_optimizer=False,
+                                       data_collector=False,
+                                       backtesting_files=None,
+                                       no_telegram=False,
+                                       no_web=False,
+                                       backtesting=False,
+                                       identifier=None,
+                                       whole_data_range=True,
+                                       simulate=True,
+                                       risk=None):
+    if backtesting_files is None:
+        backtesting_files = []
+    return start_octobot(argparse.Namespace(version=version,
+                                            encrypter=encrypter,
+                                            strategy_optimizer=strategy_optimizer,
+                                            data_collector=data_collector,
+                                            backtesting_files=backtesting_files,
+                                            no_telegram=no_telegram,
+                                            no_web=no_web,
+                                            backtesting=backtesting,
+                                            identifier=identifier,
+                                            whole_data_range=whole_data_range,
+                                            simulate=simulate,
+                                            risk=risk))
+
+
 def main(args=None):
     if not args:
         args = sys.argv[1:]
