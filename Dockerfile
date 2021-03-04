@@ -1,7 +1,7 @@
 FROM python:3.8-slim-buster AS base
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential gcc libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev \
+    && apt-get install -y --no-install-recommends build-essential git gcc libffi-dev libssl-dev libxml2-dev libxslt1-dev libxslt-dev libjpeg62-turbo-dev zlib1g-dev \
     && python -m venv /opt/venv
 
 # Make sure we use the virtualenv:
