@@ -235,9 +235,8 @@ def octobot_parser(parser):
                              'common part only (default behavior).',
                         action='store_true')
     parser.add_argument('-ebt', '--enable-backtesting-timeout',
-                        help='To disable when running long backtesting : disable backtesting watcher timeout '
-                             'that prevent backtesting from being interrupted during execution.'
-                             'When enabled, the watcher is limiting backtesting time to 30min.',
+                        help='When enabled, the watcher is limiting backtesting time to 30min.'
+                             'When disabled, the backtesting run will not be interrupted during execution',
                         action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
