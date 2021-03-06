@@ -41,7 +41,8 @@ class IndependentBacktesting:
                  tentacles_setup_config,
                  backtesting_files,
                  data_file_path=backtesting_constants.BACKTESTING_FILE_PATH,
-                 run_on_common_part_only=True):
+                 run_on_common_part_only=True,
+                 enable_join_timeout=True):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -56,6 +57,8 @@ class IndependentBacktesting:
         self._init_default_config_values()
         self.stopped = False
         self.post_backtesting_task = None
+        self.join_backtesting_timeout = backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT \
+            if enable_join_timeout else None
         self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
                                                                   self.tentacles_setup_config,
                                                                   self.symbols_to_create_exchange_classes,
@@ -110,7 +113,7 @@ class IndependentBacktesting:
         self.post_backtesting_task = asyncio.create_task(self._register_post_backtesting_end_callback())
 
     async def _register_post_backtesting_end_callback(self):
-        await self.join_backtesting_updater(timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT)
+        await self.join_backtesting_updater(timeout=self.join_backtesting_timeout)
         await self._post_backtesting_end_callback()
 
     async def _post_backtesting_end_callback(self):

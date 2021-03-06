@@ -146,7 +146,8 @@ def start_octobot(args):
 
         if args.backtesting:
             bot = octobot_backtesting.OctoBotBacktestingFactory(config,
-                                                                run_on_common_part_only=not args.whole_data_range)
+                                                                run_on_common_part_only=not args.whole_data_range,
+                                                                enable_join_timeout=args.enable_backtesting_timeout)
         else:
             bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history)
         octobot.set_bot(bot)
@@ -233,6 +234,10 @@ def octobot_parser(parser):
                         help='On multiple files backtesting: run on the whole available data instead of the '
                              'common part only (default behavior).',
                         action='store_true')
+    parser.add_argument('-ebt', '--enable-backtesting-timeout',
+                        help='To disable when running long backtesting : disable backtesting watcher timeout '
+                             'that prevent backtesting from being interrupted during execution.',
+                        action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
                         action='store_true')
@@ -279,6 +284,7 @@ def start_background_octobot_with_args(version=False,
                                        backtesting=False,
                                        identifier=None,
                                        whole_data_range=True,
+                                       enable_backtesting_timeout=True,
                                        simulate=True,
                                        risk=None,
                                        in_subprocess=False):
@@ -294,6 +300,7 @@ def start_background_octobot_with_args(version=False,
                               backtesting=backtesting,
                               identifier=identifier,
                               whole_data_range=whole_data_range,
+                              enable_backtesting_timeout=enable_backtesting_timeout,
                               simulate=simulate,
                               risk=risk)
     if in_subprocess:

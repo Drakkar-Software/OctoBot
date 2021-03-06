@@ -27,6 +27,7 @@ cdef class IndependentBacktesting:
     cdef public list backtesting_files
 
     cdef object logger
+    cdef object join_backtesting_timeout
 
     cdef public str data_file_path
     cdef public dict symbols_to_create_exchange_classes
