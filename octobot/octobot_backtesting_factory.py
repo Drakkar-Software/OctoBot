@@ -42,6 +42,6 @@ class OctoBotBacktestingFactory(octobot_class.OctoBot):
                 octobot_backtesting_api.log_independent_backtesting_report(self.independent_backtesting)
             await octobot_backtesting_api.stop_independent_backtesting(self.independent_backtesting, memory_check=False)
         except Exception as e:
-            self.logger.error(f"Error when starting backtesting: {e}")
+            self.logger.error(f"Error when starting backtesting: {e.__class__.__name__}")
         finally:
             self.task_manager.stop_tasks()
