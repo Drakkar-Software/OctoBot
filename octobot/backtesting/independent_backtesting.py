@@ -42,7 +42,7 @@ class IndependentBacktesting:
                  backtesting_files,
                  data_file_path=backtesting_constants.BACKTESTING_FILE_PATH,
                  run_on_common_part_only=True,
-                 enable_join_timeout=True):
+                 join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -57,8 +57,7 @@ class IndependentBacktesting:
         self._init_default_config_values()
         self.stopped = False
         self.post_backtesting_task = None
-        self.join_backtesting_timeout = backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT \
-            if enable_join_timeout else None
+        self.join_backtesting_timeout = join_backtesting_timeout
         self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
                                                                   self.tentacles_setup_config,
                                                                   self.symbols_to_create_exchange_classes,
