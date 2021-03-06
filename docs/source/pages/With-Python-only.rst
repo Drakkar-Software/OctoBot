@@ -79,3 +79,25 @@ Python3
 -------
 
 There **python3** is refering to your **Python3.8.X** installation, just adapt the commands to match your setup if any different (might be python, python3, python3.8, etc: it depends on your environment).
+
+Start in background
+---------------------------
+.. WARNING:: For unix distribution only
+
+With the Linux screen command, you can push running terminal applications to the background and pull them forward when you want to see them.
+
+.. code-block:: bash
+
+   $ sudo apt-get install -y screen
+   $ screen python3 start.py
+
+
+You need the number from the start of the window name to reattach it. If you forget it, you can always use the -ls (list) option, as shown below, to get a list of the detached windows:
+
+.. code-block:: bash
+
+   $ screen -ls
+   $ screen -r 23167
+(23167 is an example value)
+
+OctoBot has been working away in the background is now brought back to your terminal window as if it had never left.
