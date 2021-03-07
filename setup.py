@@ -16,7 +16,7 @@
 import os
 from setuptools import dist
 
-dist.Distribution().fetch_build_eggs(['Cython==0.29.21'])
+dist.Distribution().fetch_build_eggs(['Cython==0.29.22'])
 
 try:
     from Cython.Distutils import build_ext
@@ -26,6 +26,7 @@ except ImportError:
     def cythonize(*args, **kwargs):
         from Cython.Build import cythonize
         return cythonize(*args, **kwargs)
+
 
     def build_ext(*args, **kwargs):
         from Cython.Distutils import build_ext
@@ -66,7 +67,12 @@ ext_modules = [
 with open('README.md', encoding='utf-8') as f:
     DESCRIPTION = f.read()
 
-REQUIRED = open('requirements.txt').readlines()
+
+def ignore_git_requirements(requirements):
+    return [requirement for requirement in requirements if "git+" not in requirement]
+
+
+REQUIRED = ignore_git_requirements(open('requirements.txt').readlines())
 REQUIRES_PYTHON = '>=3.8'
 CYTHON_DEBUG = False if not os.getenv('CYTHON_DEBUG') else os.getenv('CYTHON_DEBUG')
 
