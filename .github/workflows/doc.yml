@@ -18,7 +18,7 @@ jobs:
           docs-folder: "docs/"
           pre-build-command: |
             apt update
-            apt install gcc python3-dev libssl-dev -y
+            apt install gcc python3-dev libssl-dev git -y
             pip install -r doc_requirements.txt -r requirements.txt
 
       - name: Commit documentation changes

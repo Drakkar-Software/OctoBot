@@ -1,0 +1,64 @@
+name: "OctoBot-Release"
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release-jobs:
+    name: Create release jobs
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Create release on OctoBot-Tentacles
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Version - ${GITHUB_REF##*/}
+        draft: false
+        prerelease: false
+        repo: OctoBot-Tentacles
+
+    - name: Wait for main build done
+      uses: fountainhead/action-wait-for-check@v1.0.0
+      id: wait-for-build
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        checkName: "Done"
+        ref: ${{ github.sha }}
+        timeoutSeconds: 3600
+
+    - name: Trigger fail when Main failed
+      if: steps.wait-for-build.outputs.conclusion == 'failure'
+      run: exit 1
+
+    - name: Create release on OctoBot-Binary
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Version - ${GITHUB_REF##*/}
+        draft: false
+        prerelease: false
+        repo: OctoBot-Binary
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs:
+      - release-jobs
+    if: ${{ failure() }}
+
+    steps:
+      - name: Notify discord
+        uses: sarisia/actions-status-discord@v1
+        with:
+          status: Failure
+          webhook: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}

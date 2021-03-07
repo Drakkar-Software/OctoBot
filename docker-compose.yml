@@ -5,9 +5,8 @@ services:
     image: drakkarsoftware/octobot:stable
     environment:
       - VIRTUAL_HOST=${HOST}
-      - VIRTUAL_PROTO=http
       - VIRTUAL_PORT=5001
-      - CERT_NAME=${HOST}
+      - SELF_SIGNED_HOST=${HOST}
     volumes:
        - ./logs:/octobot/logs
        - ./backtesting:/octobot/backtesting
@@ -25,7 +24,16 @@ services:
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./ssl:/etc/nginx/certs
+      - ./vhost.d:/etc/nginx/vhost.d
     restart: always
     privileged: true
     depends_on:
       - octobot
+
+  nginx-companion:
+    container_name: proxy-companion
+    restart: always
+    image: sebastienheyd/self-signed-proxy-companion:latest
+    volumes:
+       - /var/run/docker.sock:/var/run/docker.sock:ro
+       - ./ssl:/etc/nginx/certs

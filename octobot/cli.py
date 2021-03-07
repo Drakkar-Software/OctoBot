@@ -16,6 +16,7 @@
 import argparse
 import os
 import sys
+import multiprocessing
 
 import octobot_commons.os_util as os_util
 import octobot_commons.logging as logging
@@ -145,7 +146,8 @@ def start_octobot(args):
 
         if args.backtesting:
             bot = octobot_backtesting.OctoBotBacktestingFactory(config,
-                                                                run_on_common_part_only=not args.whole_data_range)
+                                                                run_on_common_part_only=not args.whole_data_range,
+                                                                enable_join_timeout=args.enable_backtesting_timeout)
         else:
             bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history)
         octobot.set_bot(bot)
@@ -232,6 +234,10 @@ def octobot_parser(parser):
                         help='On multiple files backtesting: run on the whole available data instead of the '
                              'common part only (default behavior).',
                         action='store_true')
+    parser.add_argument('-ebt', '--enable-backtesting-timeout',
+                        help='When enabled, the watcher is limiting backtesting time to 30min.'
+                             'When disabled, the backtesting run will not be interrupted during execution',
+                        action='store_true')
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
                         action='store_true')
@@ -266,6 +272,43 @@ def octobot_parser(parser):
                                                                'tentacles manager help.')
     tentacles_manager_cli.register_tentacles_manager_arguments(tentacles_parser)
     tentacles_parser.set_defaults(func=commands.call_tentacles_manager)
+
+
+def start_background_octobot_with_args(version=False,
+                                       encrypter=False,
+                                       strategy_optimizer=False,
+                                       data_collector=False,
+                                       backtesting_files=None,
+                                       no_telegram=False,
+                                       no_web=False,
+                                       backtesting=False,
+                                       identifier=None,
+                                       whole_data_range=True,
+                                       enable_backtesting_timeout=True,
+                                       simulate=True,
+                                       risk=None,
+                                       in_subprocess=False):
+    if backtesting_files is None:
+        backtesting_files = []
+    args = argparse.Namespace(version=version,
+                              encrypter=encrypter,
+                              strategy_optimizer=strategy_optimizer,
+                              data_collector=data_collector,
+                              backtesting_files=backtesting_files,
+                              no_telegram=no_telegram,
+                              no_web=no_web,
+                              backtesting=backtesting,
+                              identifier=identifier,
+                              whole_data_range=whole_data_range,
+                              enable_backtesting_timeout=enable_backtesting_timeout,
+                              simulate=simulate,
+                              risk=risk)
+    if in_subprocess:
+        bot_process = multiprocessing.Process(target=start_octobot, args=(args, ))
+        bot_process.start()
+        return bot_process
+    else:
+        return start_octobot(args)
 
 
 def main(args=None):
