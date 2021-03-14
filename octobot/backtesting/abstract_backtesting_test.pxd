@@ -26,5 +26,4 @@ cdef class AbstractBacktestingTest:
                                         object tentacles_setup_config,
                                         dict config)
 
-    cdef void _handle_results(self, object independent_backtesting, object profitability)
     cdef void _register_only_strategy(self, object strategy_evaluator_class)
