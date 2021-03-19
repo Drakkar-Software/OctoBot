@@ -32,6 +32,7 @@ LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE
 OCTOBOT_WEBSITE_URL = "https://www.octobot.online"
 OCTOBOT_DOCS_URL = "https://docs.octobot.online"
 OCTOBOT_ONLINE = "https://www.tentacles.octobot.online"
+OCTOBOT_FEEDBACK = "https://feedback.octobot.online/"
 REPOSITORY = "repository"
 TENTACLES_REPOSITORY = "tentacles"
 OFFICIALS = "officials"
