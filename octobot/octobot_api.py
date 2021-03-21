@@ -56,6 +56,9 @@ class OctoBotAPI:
     def get_start_time(self) -> float:
         return self._octobot.start_time
 
+    def get_bot_id(self) -> str:
+        return self._octobot.bot_id
+
     def get_matrix_id(self) -> str:
         return self._octobot.evaluator_producer.matrix_id
 

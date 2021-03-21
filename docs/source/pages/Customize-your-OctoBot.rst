@@ -42,7 +42,7 @@ To install a package, use the following options:
 To create a tentacles package from a local folder:
 
 
-#. Make sure it follows the `OctoBot-Tentacles folder architecture <https://github.com/Drakkar-Software/OctoBot-Tentacles/tree/0.4.0>`_
+#. Make sure it follows the `OctoBot-Tentacles folder architecture <https://github.com/Drakkar-Software/OctoBot-Tentacles>`_
 #. Call OctoBot with the following options: ``tentacles -p "path/to/your/packed/tentacles/pack_name.zip" -d "path/to/your/local/tentacles/folder"``
 
 Once your package is created, you can install it using the ``tentacles --install --all --location "path/to/your/packed/tentacles/pack_name.zip"`` command. You can also make it available from an URL and later install it via: ``tentacles --install --all --location "https://my.tentacles.com/pack_name"`` for example.
