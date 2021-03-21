@@ -28,5 +28,3 @@ cdef class StrategyTestSuite(octobot_backtesting.AbstractBacktestingTest):
     cdef public list evaluators
 
     cpdef strategy_optimizer.TestSuiteResult get_test_suite_result(self)
-
-    cdef void _handle_results(self, object independent_backtesting, object profitability)

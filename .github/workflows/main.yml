@@ -74,14 +74,14 @@ jobs:
         cp ./octobot/config/default_config.json ./user/config.json
         branch="${GITHUB_HEAD_REF}"
         echo "Trying to download tentacles package ${branch////_}.zip ..."
-        TENTACLES_PACKAGES_SOURCE=dev TENTACLES_URL_TAG=${branch////_} python3 start.py tentacles -q --install --all || TENTACLES_URL_TAG=latest python3 start.py tentacles --install --all
+        TENTACLES_REPOSITORY=dev-tentacles TENTACLES_URL_TAG=${branch////_} python3 start.py tentacles -q --install --all || TENTACLES_URL_TAG=latest python3 start.py tentacles --install --all
 
     - name: Install tentacles on Windows
       if: matrix.os == 'windows-latest'
       run: |
         mkdir user
         copy octobot\config\default_config.json user\config.json
-        $Env:TENTACLES_PACKAGES_SOURCE = "dev"
+        $Env:TENTACLES_REPOSITORY = "dev-tentacles"
         $Env:TENTACLES_URL_TAG = $env:GITHUB_HEAD_REF -replace "/", "_"
         echo "Trying to download tentacles package $Env:TENTACLES_URL_TAG.zip ..."
         python start.py tentacles -q --install --all
@@ -90,10 +90,10 @@ jobs:
           $Env:TENTACLES_URL_SUBCATEGORY = ""
           If ($env:GITHUB_REF -like "*refs/tags/*") {
             $Env:TENTACLES_URL_TAG = ""
-            $Env:TENTACLES_PACKAGES_SOURCE = ""
+            $Env:TENTACLES_REPOSITORY = ""
           } else {
             $Env:TENTACLES_URL_TAG = "latest"
-            $Env:TENTACLES_PACKAGES_SOURCE = ""
+            $Env:TENTACLES_REPOSITORY = ""
           }
           echo "Failed to download branch tentacles, trying to download tentacles package $Env:TENTACLES_URL_TAG.zip ..."
           python start.py tentacles --install --all

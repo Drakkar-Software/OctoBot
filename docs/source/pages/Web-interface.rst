@@ -57,6 +57,16 @@ You can activate the password authentication from the web interface configuratio
 
 Any IP will be automatically **blocked after 10 authentication failures in a row**. IPs will remain blocked until your OctoBot restarts. If you accidentally block your IP, you can just restart your OctoBot.
 
+How to set it up ?
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Go to "Accounts" page
+- Select "Interfaces" on the left menu
+- Click on "********" next to "Password: "
+- Override the "****" with your password
+- Click on validate
+- Click on "SAVE AND RESTART" red button on the left menu
+
 You forgot your password
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
