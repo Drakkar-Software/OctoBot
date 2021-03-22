@@ -29,10 +29,10 @@ VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 
 # OctoBot urls
-OCTOBOT_WEBSITE_URL = "https://www.octobot.online"
-OCTOBOT_DOCS_URL = "https://docs.octobot.online"
-OCTOBOT_ONLINE = "https://tentacles.octobot.online"
-OCTOBOT_FEEDBACK = "https://feedback.octobot.online/"
+OCTOBOT_WEBSITE_URL = os.getenv("OCTOBOT_ONLINE_URL", "https://www.octobot.online")
+OCTOBOT_DOCS_URL = os.getenv("DOCS_OCTOBOT_ONLINE_URL", "https://docs.octobot.online")
+OCTOBOT_ONLINE = os.getenv("TENTACLES_OCTOBOT_ONLINE_URL", "https://tentacles.octobot.online")
+OCTOBOT_FEEDBACK = os.getenv("FEEDBACK_OCTOBOT_ONLINE_URL", "https://feedback.octobot.online/")
 REPOSITORY = "repository"
 TENTACLES_REPOSITORY = "tentacles"
 OFFICIALS = "officials"
