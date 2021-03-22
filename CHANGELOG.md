@@ -4,11 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-*It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py -p install all)*
+*It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
-## [0.4.0-beta5] - 2021-02-26
+## [0.4.0-beta6] - 2021-03-22
 ### Updated
-- Web interface
+- websites URLs
+
+## [0.4.0-beta5] - 2021-03-21
+### Added
+- Grid orders trading modes
+- Multiple exchanges support
+- Web interface logs export
+- User commands to interact with trading modes
+### Updated
+- Web interface datafile date sorting
 ### Fixed
 - Exchange issues (binance and kraken)
 
