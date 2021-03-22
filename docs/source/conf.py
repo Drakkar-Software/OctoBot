@@ -46,7 +46,7 @@ html_static_path = ["_static"]
 
 html_favicon = "_static/images/favicon.ico"
 
-domain = "docs.octobot.online"
+domain = os.getenv("DOCS_OCTOBOT_ONLINE_DOMAIN", "docs.octobot.online")
 html_context = {
     "og_title": "OctoBot docs",
     "og_description": "Documentation for OctoBot: a free and highly customizable open source cryptocurrency trading robot.",
