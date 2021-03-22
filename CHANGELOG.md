@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.0-beta6] - 2021-03-22
+### Updated
+- websites URLs
+
 ## [0.4.0-beta5] - 2021-03-21
 ### Added
 - Grid orders trading modes
