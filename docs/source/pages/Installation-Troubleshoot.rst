@@ -5,6 +5,42 @@
 Troubleshoot
 ============
 
+Cannot connect to host www.tentacles.octobot.online:443
+-------------------------------------------------------
+
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/troubleshoot-tentacles-url-error.png
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/troubleshoot-tentacles-url-error.png
+   :alt: tentacles url error
+
+.. code-block:: bash
+
+    octobot_tentacles_manager.api.util.tentacles_management Exception during InstallWorker processing: Cannot connect to host www.tentacles.octobot.online:443 ssl:default [No address associated with hostname] (ClientConnectorError)
+
+The tentacles server URL has changed, there is no more leading "www". Starting from 0.4.0b6, OctoBot uses the latest URL.
+To use OctoBot previous versions, please first set this environment variable before downloading tentacles:
+
+On Unix systems
+
+.. code-block:: bash
+
+   $ export TENTACLES_URL="https://tentacles.octobot.online/repository/tentacles/officials/packages/full/base/0.4.0b4/any_platform.zip"
+   $ python3 start.py tentacles --install --all
+
+On Windows systems
+
+.. code-block:: bash
+
+   $ SET TENTACLES_URL=https://tentacles.octobot.online/repository/tentacles/officials/packages/full/base/0.4.0b4/any_platform.zip
+   $ python3 start.py tentacles --install --all
+
+Using Docker
+
+.. code-block:: bash
+
+   $ docker run -itd --name OctoBot -p 80:5001 -e TENTACLES_URL="https://tentacles.octobot.online/repository/tentacles/officials/packages/full/base/0.4.0b4/any_platform.zip" -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable
+
+Where 0.4.0b4 is your OctoBot version.
+
 Windows
 -------
 
@@ -47,32 +83,6 @@ To fix this issue, untick the "QuickEdit Mode" in your terminal properties and r
 
 
 To open the properties menu, right click on the terminal window header and select "properties".
-
-Web interface display issue "MIME type ('text/plain') is not executable"
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If the web interface is now correctly displayed and this error (or similar) appears in your browser console: ``Refused to execute script from '<URL>' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.``\ , then there might be an issue with your Windows registry. Here is how to solve it:
-
-#. Type ``regedit`` in the windows start menu
-#. Go to ``\HKEY_CLASSES_ROOT``
-#. Check the 2 following key values (they should be somewhat similar to these):
-
-   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-js.png
-      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-js.png
-      :alt: regedit js
-
-
-   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-css.png
-      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-css.png
-      :alt: regedit js
-
-#. Check the the following key value in ``\HKEY_CLASSES_ROOT\MIME\Database\Content Type``
-
-   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-json.png
-      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/regedit-json.png
-      :alt: regedit js
-
-#. Restart you OctoBot and reload the full page including cached files (CTRL+F5 or SHIFT+F5 depending on the browser)
 
 Linux
 -----
