@@ -17,7 +17,7 @@ jobs:
     - name: Create release on OctoBot-Tentacles
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
         release_name: Version - ${GITHUB_REF##*/}
@@ -29,7 +29,7 @@ jobs:
       uses: fountainhead/action-wait-for-check@v1.0.0
       id: wait-for-build
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.AUTH_TOKEN }}
         checkName: "Done"
         ref: ${{ github.sha }}
         timeoutSeconds: 3600
@@ -41,7 +41,7 @@ jobs:
     - name: Create release on OctoBot-Binary
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
         release_name: Version - ${GITHUB_REF##*/}
