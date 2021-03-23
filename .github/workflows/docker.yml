@@ -47,7 +47,7 @@ jobs:
         uses: fountainhead/action-wait-for-check@v1.0.0
         id: wait-for-tentacles
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTH_TOKEN }}
           checkName: "ubuntu-latest - Python 3.8 - upload tentacles"
           ref: ${{ github.ref }}
           repo: OctoBot-Tentacles
@@ -83,7 +83,7 @@ jobs:
         uses: fountainhead/action-wait-for-check@v1.0.0
         id: wait-for-main-build
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTH_TOKEN }}
           checkName: "Done"
           ref: ${{ github.sha }}
           timeoutSeconds: 3600
