@@ -16,9 +16,6 @@
 import os
 import pathlib
 
-import octobot_commons.constants as commons_constants
-import octobot_tentacles_manager.constants as tentacles_manager_constants
-
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
 SHORT_VERSION = "0.4.0"  # major.minor.revision
@@ -60,25 +57,30 @@ ENV_TENTACLE_CATEGORY = "TENTACLE_CATEGORY"
 ENV_COMPILED_TENTACLES_SUBCATEGORY = "COMPILED_TENTACLES_SUBCATEGORY"
 TENTACLES_REQUIRED_VERSION = f"{os.getenv(ENV_TENTACLES_URL_TAG, LONG_VERSION)}"
 # url ending example: 	tentacles/officials/packages/full/base/latest/any_platform.zip
-DEFAULT_TENTACLES_URL = os.getenv(
-    ENV_TENTACLES_URL,
-    f"{OCTOBOT_ONLINE}/{REPOSITORY}/"
-    f"{os.getenv(ENV_TENTACLES_REPOSITORY, TENTACLES_REPOSITORY)}/"
-    f"{os.getenv(ENV_TENTACLES_PACKAGES_SOURCE, OFFICIALS)}/"
-    f"{os.getenv(ENV_TENTACLES_PACKAGES_TYPE, TENTACLE_PACKAGES)}/"
-    f"{os.getenv(ENV_TENTACLE_CATEGORY, TENTACLE_CATEGORY)}/"
-    f"{os.getenv(ENV_TENTACLE_PACKAGE_NAME, TENTACLE_PACKAGE_NAME)}/"
-    f"{TENTACLES_REQUIRED_VERSION if TENTACLES_REQUIRED_VERSION else LONG_VERSION}/"
-    f"{tentacles_manager_constants.ANY_PLATFORM_FILE_NAME}.{tentacles_manager_constants.TENTACLES_PACKAGE_FORMAT}"
-)
-DEFAULT_COMPILED_TENTACLES_URL = os.getenv(
-    ENV_COMPILED_TENTACLES_URL,
-    f"{OCTOBOT_ONLINE}/{REPOSITORY}/{TENTACLES_REPOSITORY}/"
-    f"{os.getenv(ENV_TENTACLES_PACKAGES_SOURCE, OFFICIALS)}/"
-    f"{os.getenv(ENV_COMPILED_TENTACLES_PACKAGES_TYPE, TENTACLE_PACKAGES)}/"
-    f"{os.getenv(ENV_COMPILED_TENTACLES_CATEGORY, COMPILED_TENTACLE_CATEGORY)}/"
-    f"{os.getenv(ENV_COMPILED_TENTACLES_SUBCATEGORY, '')}"
-)
+try:
+    import octobot_tentacles_manager.constants as tentacles_manager_constants
+    DEFAULT_TENTACLES_URL = os.getenv(
+        ENV_TENTACLES_URL,
+        f"{OCTOBOT_ONLINE}/{REPOSITORY}/"
+        f"{os.getenv(ENV_TENTACLES_REPOSITORY, TENTACLES_REPOSITORY)}/"
+        f"{os.getenv(ENV_TENTACLES_PACKAGES_SOURCE, OFFICIALS)}/"
+        f"{os.getenv(ENV_TENTACLES_PACKAGES_TYPE, TENTACLE_PACKAGES)}/"
+        f"{os.getenv(ENV_TENTACLE_CATEGORY, TENTACLE_CATEGORY)}/"
+        f"{os.getenv(ENV_TENTACLE_PACKAGE_NAME, TENTACLE_PACKAGE_NAME)}/"
+        f"{TENTACLES_REQUIRED_VERSION if TENTACLES_REQUIRED_VERSION else LONG_VERSION}/"
+        f"{tentacles_manager_constants.ANY_PLATFORM_FILE_NAME}.{tentacles_manager_constants.TENTACLES_PACKAGE_FORMAT}"
+    )
+    DEFAULT_COMPILED_TENTACLES_URL = os.getenv(
+        ENV_COMPILED_TENTACLES_URL,
+        f"{OCTOBOT_ONLINE}/{REPOSITORY}/{TENTACLES_REPOSITORY}/"
+        f"{os.getenv(ENV_TENTACLES_PACKAGES_SOURCE, OFFICIALS)}/"
+        f"{os.getenv(ENV_COMPILED_TENTACLES_PACKAGES_TYPE, TENTACLE_PACKAGES)}/"
+        f"{os.getenv(ENV_COMPILED_TENTACLES_CATEGORY, COMPILED_TENTACLE_CATEGORY)}/"
+        f"{os.getenv(ENV_COMPILED_TENTACLES_SUBCATEGORY, '')}"
+    )
+except ImportError:
+    pass
+
 DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 
 # logs
@@ -108,8 +110,12 @@ DEFAULT_PROFILE_FILE = f"{CONFIG_FOLDER}/default_profile.json"
 DEFAULT_PROFILE_AVATAR_FILE_NAME = "default_profile.png"
 DEFAULT_PROFILE_AVATAR = f"{CONFIG_FOLDER}/{DEFAULT_PROFILE_AVATAR_FILE_NAME}"
 LOGGING_CONFIG_FILE = f"{CONFIG_FOLDER}/logging_config.ini"
-USER_LOCAL_LOGGING_CONFIG_FILE = f"{commons_constants.USER_FOLDER}/logging_config.ini"
 LOG_FILE = f"{LOGS_FOLDER}/{PROJECT_NAME}.log"
+try:
+    import octobot_commons.constants as commons_constants
+    USER_LOCAL_LOGGING_CONFIG_FILE = f"{commons_constants.USER_FOLDER}/logging_config.ini"
+except ImportError:
+    pass
 
 # Optimizer
 OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION = False
