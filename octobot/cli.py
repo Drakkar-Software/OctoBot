@@ -13,6 +13,12 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+# prevents distutils_patch.py:26: UserWarning: Distutils was imported before Setuptools. This usage is discouraged
+# and may exhibit undesirable behaviors or errors. Please use Setuptools' objects directly or at least import Setuptools
+# first
+import setuptools
+from distutils.version import LooseVersion
+
 import argparse
 import os
 import sys
@@ -39,14 +45,15 @@ import octobot.constants as constants
 import octobot.disclaimer as disclaimer
 import octobot.logger as octobot_logger
 
-try:
-    import octobot_backtesting.constants as backtesting_constants
-except ImportError as e:
-    logging.get_logger().error("Can't start backtesting without the octobot_backtesting package properly installed.")
-    raise e
-
 
 def update_config_with_args(starting_args, config: configuration.Configuration, logger):
+    try:
+        import octobot_backtesting.constants as backtesting_constants
+    except ImportError as e:
+        logging.get_logger().error(
+            "Can't start backtesting without the octobot_backtesting package properly installed.")
+        raise e
+
     if starting_args.backtesting:
         if starting_args.backtesting_files:
             config.config[backtesting_constants.CONFIG_BACKTESTING][
@@ -316,6 +323,22 @@ def main(args=None):
         args = sys.argv[1:]
     parser = argparse.ArgumentParser(description='OctoBot')
     octobot_parser(parser)
+
+    MIN_TENTACLE_MANAGER_VERSION = "1.0.10"
+
+    # check compatible tentacle manager
+    try:
+        from octobot_tentacles_manager import VERSION
+
+        if LooseVersion(VERSION) < MIN_TENTACLE_MANAGER_VERSION:
+            print("OctoBot requires OctoBot-Tentacles-Manager in a minimum version of " + MIN_TENTACLE_MANAGER_VERSION +
+                  " you can install and update OctoBot-Tentacles-Manager using the following command: "
+                  "python3 -m pip install -U OctoBot-Tentacles-Manager", file=sys.stderr)
+            sys.exit(-1)
+    except ImportError:
+        print("OctoBot requires OctoBot-Tentacles-Manager, you can install it using "
+              "python3 -m pip install -U OctoBot-Tentacles-Manager", file=sys.stderr)
+        sys.exit(-1)
 
     args = parser.parse_args(args)
     # call the appropriate command entry point
