@@ -72,13 +72,13 @@ jobs:
         with:
           driver: docker
 
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+      # - name: Cache Docker layers
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: /tmp/.buildx-cache
+      #     key: ${{ runner.os }}-buildx-${{ github.sha }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-buildx-
 
       - name: Login to DockerHub
         if: github.event_name == 'push'
@@ -116,8 +116,8 @@ jobs:
           tags: ${{ env.IMAGE }}:${{ env.LATEST }}
           build-args: |
             TENTACLES_URL_TAG=${{ env.LATEST }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
+          # cache-from: type=local,src=/tmp/.buildx-cache
+          # cache-to: type=local,dest=/tmp/.buildx-cache
 
       - name: Docker build test container
         if: github.event_name != 'push'
@@ -155,8 +155,8 @@ jobs:
           tags: ${{ env.IMAGE }}:${{ env.LATEST }}
           build-args: |
             TENTACLES_URL_TAG=${{ env.LATEST }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
+          # cache-from: type=local,src=/tmp/.buildx-cache
+          # cache-to: type=local,dest=/tmp/.buildx-cache
 
       - name: Build and push on tag
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
@@ -171,8 +171,8 @@ jobs:
             ${{ env.IMAGE }}:${{ env.LATEST }}
             ${{ env.IMAGE }}:${{ env.STABLE }}
             ${{ env.IMAGE }}:${{ env.VERSION }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
+          # cache-from: type=local,src=/tmp/.buildx-cache
+          # cache-to: type=local,dest=/tmp/.buildx-cache
 
       - name: Image digest
         run: echo ${{ steps.docker_build_and_psuh.outputs.digest }}
