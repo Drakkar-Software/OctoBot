@@ -108,7 +108,7 @@ jobs:
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          platforms: linux/amd64,linux/arm/v7
+          platforms: linux/amd64
           # Using "load: true" forces the docker driver.
           # Unfortunately, the "docker" driver does not support
           # multi-platform builds.
@@ -151,7 +151,7 @@ jobs:
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ env.IMAGE }}:${{ env.LATEST }}
           build-args: |
@@ -166,7 +166,7 @@ jobs:
           context: .
           file: ./Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
             ${{ env.IMAGE }}:${{ env.LATEST }}
