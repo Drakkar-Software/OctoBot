@@ -67,21 +67,3 @@ def get_bot():
 
 def get_config():
     return global_config
-
-
-from octobot cimport octobot
-
-from octobot.octobot cimport (
-    OctoBot
-)
-
-from octobot cimport octobot_backtesting_factory
-
-from octobot.octobot_backtesting_factory cimport (
-    OctoBotBacktestingFactory,
-)
-
-__all__ = [
-    "OctoBot",
-    "OctoBotBacktestingFactory",
-]

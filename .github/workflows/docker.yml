@@ -2,10 +2,10 @@ name: OctoBot-Docker
 on:
   push:
     branches:
-      - 'master'
-      - 'dev'
+      - "master"
+      - "dev"
     tags:
-      - '*'
+      - "*"
   pull_request:
 
 jobs:
@@ -47,7 +47,7 @@ jobs:
         uses: fountainhead/action-wait-for-check@v1.0.0
         id: wait-for-tentacles
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTH_TOKEN }}
           checkName: "ubuntu-latest - Python 3.8 - upload tentacles"
           ref: ${{ github.ref }}
           repo: OctoBot-Tentacles
@@ -58,10 +58,20 @@ jobs:
         run: exit 1
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        id: qemu-setup
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: all
+
+      - name: Print available platforms
+        run: echo ${{ steps.qemu.outputs.platforms }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        id: buildx
+        uses: docker/setup-buildx-action@master
+        with:
+          driver: docker-container
+          use: true
 
       - name: Cache Docker layers
         uses: actions/cache@v2
@@ -83,7 +93,7 @@ jobs:
         uses: fountainhead/action-wait-for-check@v1.0.0
         id: wait-for-main-build
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTH_TOKEN }}
           checkName: "Done"
           ref: ${{ github.sha }}
           timeoutSeconds: 3600
@@ -92,14 +102,17 @@ jobs:
         if: github.event_name == 'push' && steps.wait-for-main-build.outputs.conclusion == 'failure'
         run: exit 1
 
-      - name: Build and push latest
+      - name: Build latest
         if: github.event_name != 'push'
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@master
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           platforms: linux/amd64
-          load: true
+          # Using "load: true" forces the docker driver.
+          # Unfortunately, the "docker" driver does not support
+          # multi-platform builds.
+          # load: true
           push: false
           tags: ${{ env.IMAGE }}:${{ env.LATEST }}
           build-args: |
@@ -134,11 +147,11 @@ jobs:
 
       - name: Build and push latest
         if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags') && github.ref == 'refs/heads/dev'
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@master
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ env.IMAGE }}:${{ env.LATEST }}
           build-args: |
@@ -148,12 +161,12 @@ jobs:
 
       - name: Build and push on tag
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@master
         with:
           context: .
           file: ./Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
             ${{ env.IMAGE }}:${{ env.LATEST }}
