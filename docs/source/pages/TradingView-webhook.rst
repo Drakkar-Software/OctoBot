@@ -74,7 +74,7 @@ Create an alert
   .. code-block::
 
      EXCHANGE={{exchange}}
-     EXCHANGE={{ticker}}
+     SYMBOL={{ticker}}
      SIGNAL=BUY
 
   if it's a buy signal
@@ -84,7 +84,7 @@ OR
 .. code-block::
 
    EXCHANGE={{exchange}}
-   EXCHANGE={{ticker}}
+   SYMBOL={{ticker}}
    SIGNAL=SELL
 
 if it's a sell signal
