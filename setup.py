@@ -91,7 +91,7 @@ setup(
     },
     long_description=DESCRIPTION,
     long_description_content_type='text/markdown',
-    cmdclass={'build_ext': build_ext},
+    # cmdclass={'build_ext': build_ext},
     tests_require=["pytest"],
     test_suite="tests",
     zip_safe=False,
