@@ -32,6 +32,12 @@ Trading settings
      "risk": 0.8
    }
 
+Load-Trade-History
+-----------------
+
+The **Load-Trade-History** parameter is to be set at **true** when OctoBot should load exchange account trade history.
+Trades will then be displayed on OctoBot dashboard.
+
 Reference-market
 ^^^^^^^^^^^^^^^^
 
