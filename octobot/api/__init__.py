@@ -16,6 +16,7 @@
 
 from octobot.api import backtesting
 from octobot.api import strategy_optimizer
+from octobot.api import updater
 
 from octobot.api.backtesting import (
     create_independent_backtesting,
@@ -51,6 +52,9 @@ from octobot.api.strategy_optimizer import (
     get_optimizer_trading_mode,
     get_optimizer_is_properly_initialized,
 )
+from octobot.api.updater import (
+    get_updater,
+)
 
 __all__ = [
     "create_independent_backtesting",
@@ -83,4 +87,5 @@ __all__ = [
     "get_optimizer_all_risks",
     "get_optimizer_trading_mode",
     "get_optimizer_is_properly_initialized",
+    "get_updater",
 ]

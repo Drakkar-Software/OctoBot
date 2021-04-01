@@ -89,7 +89,7 @@ class TaskManager:
     def get_name(cls):
         return cls.__name__
 
-    def create_pool_executor(self, workers=1):
+    def create_pool_executor(self, workers=2):
         self.executors = thread.ThreadPoolExecutor(max_workers=workers)
 
     def _loop_exception_handler(self, loop, context):
