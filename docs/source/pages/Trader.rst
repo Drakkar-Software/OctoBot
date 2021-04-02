@@ -8,19 +8,27 @@ Trader
    :alt: trading
 
 
-Open your **user/config.json** file and edit this configuration :
+Open your **user/profiles/<profile_name>/profile.json** file and edit this configuration :
 
 .. code-block:: json
 
    "trader":{
-     "enabled": true
+     "enabled": true,
+     "load-trade-history": false
    }
 
 Enabled
 ^^^^^^^
 
-The **Enabled** parameter is to be set at **true** when OctoBot should trade real cryptocurrencies. 
-When **false** OctoBot will never any create a real trade. This **false** value can be used to make OctoBot only use its simulation mode on real market conditions.
+When the **Enabled** parameter is set at **true**, OctoBot will trade using your real funds from your exchange's accounts.
+When **false** OctoBot will never any create a real trade.
+
+Load trade history
+^^^^^^^^^^^^^^^^^^
+
+When the **load-trade-history** parameter is set at **true**, OctoBot will load the account's recent trades for
+the enabled traded pairs at startup. This allows to have a view on your account's trade history.
+When **false**, OctoBot will only historize trades that happen after the bot startup.
 
 Trading settings
 -----------------
@@ -32,16 +40,11 @@ Trading settings
      "risk": 0.8
    }
 
-Load-Trade-History
------------------
-
-The **Load-Trade-History** parameter is to be set at **true** when OctoBot should load exchange account trade history.
-Trades will then be displayed on OctoBot dashboard.
-
 Reference-market
 ^^^^^^^^^^^^^^^^
 
-The **Reference-market** parameter defines which currency OctBot should use as a reference, this reference is used to compute profitability. 
+The **Reference-market** parameter defines which currency OctBot should use as a reference,
+this reference is used to compute profitability and the portfolio total value
 
 Risk
 ^^^^

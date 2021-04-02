@@ -2,7 +2,8 @@
 Simulator
 =========
 
-OctoBot can be used in a simulation mode. In this mode, whether there is a real trading mode enabled or not, OctoBot will simulate trades using the exact same data as with the real trading mode. Real traders and trader_simulators are idependant.
+OctoBot can be used in a simulation mode. In this mode, OctoBot will simulate trades using the exact same process as
+with the real trading mode.
 
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/trading.jpg
@@ -10,12 +11,17 @@ OctoBot can be used in a simulation mode. In this mode, whether there is a real 
    :alt: trading
 
 
-The only difference with a real trader is in the available portfolio that is to be set in the **user/config.json** file. This portfolio will be managed by OctoBot and simulated orders will be using these available cryptocurrencies as a basis. The trader simulator will use the exchanges' last trades to figure out if the current orders would have been filled or not. If they would have been filled, the current simulated portfolio is updated accordingly
+The only difference with a real trader is in the starting portfolio that is set in
+the **user/profiles/<profile_name>/profile.json** file. Each profile has its own simulated portfolio.
+This portfolio will be managed by OctoBot and simulated orders will be using these available cryptocurrencies
+as a basis. The trader simulator will use the exchanges' last trades to figure out if the current orders
+would have been filled or not. If they would have been filled, simulated orders get filled and
+the current simulated portfolio is updated accordingly.
 
 Setup the trader_simulator
 --------------------------
 
-Create in **user/config.json** the trader_simulator key :
+Find the trader-simulator key in **user/profiles/<profile_name>/profile.json** :
 
 .. code-block:: json
 
@@ -34,7 +40,7 @@ Create in **user/config.json** the trader_simulator key :
 Enabled
 ^^^^^^^
 
-Set **enabled** to true to start a trader simulator when starting OctoBot. A trader simulator can be running with a real trader in a single OctoBot, the only difference between them will be the amount of available cryptocurrencies.
+Set **enabled** to true to start a trader simulator when starting OctoBot.
 
 Fees
 ^^^^
@@ -44,7 +50,9 @@ Fees in % to be deducted at simulated orders completion in backtesting.
 Starting portfolio
 ^^^^^^^^^^^^^^^^^^
 
-This is the imaginary portfolio given to the trader simulator to create its orders with. It can contain any amount of any cryptocurrency. If these cryptocurrencies are in the **crypto-currencies** configuration, they will be traded as if they were from a real portfolio.
+This is the imaginary portfolio given to the trader simulator to create its orders with.
+It can contain any amount of any cryptocurrency. If these cryptocurrencies are in
+the **crypto-currencies** configuration, they will be traded as if they were from a real portfolio.
 
 The starting portfolio is also **used for backtesting**.
 
