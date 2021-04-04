@@ -37,3 +37,4 @@ cdef class OctoBotAPI:
     cpdef object run_in_main_asyncio_loop(self, object coroutine)
     cpdef void stop_tasks(self)
     cpdef void stop_bot(self)
+    cpdef void update_bot(self)
