@@ -150,3 +150,8 @@ def restart_bot():
     else:
         # prevent binary to add self as first argument
         os.execl(sys.executable, *(f'"{a}"' for a in sys.argv))
+
+
+def update_bot(bot_api):
+    import octobot.updater.updater_factory as updater_factory
+    bot_api.run_in_async_executor(updater_factory.create_updater().update())

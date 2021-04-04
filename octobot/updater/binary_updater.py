@@ -13,20 +13,20 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import enum
 import json
 import os
-import enum
 
 import aiofiles
 import aiohttp
 
-import octobot.constants as constants
 import octobot.commands as commands
+import octobot.constants as constants
 import octobot.updater.updater as updater_class
-import octobot_commons.os_util as os_util
-import octobot_commons.constants as commons_constants
 import octobot_commons.aiohttp_util as aiohttp_util
+import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
+import octobot_commons.os_util as os_util
 
 
 class DeliveryPlatformsName(enum.Enum):
@@ -55,7 +55,6 @@ class BinaryUpdater(updater_class.Updater):
         return self._parse_latest_version(await self._get_latest_release_data())
 
     async def update_impl(self):
-        # self.aiohttp_session = aiohttp.ClientSession()
         new_binary_file = await self._download_binary()
         if new_binary_file is not None:
             self._move_binaries(commands.get_bot_file(), new_binary_file)

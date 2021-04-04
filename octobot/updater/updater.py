@@ -21,10 +21,8 @@ import octobot_commons.logging as logging
 
 
 class Updater:
-    def __init__(self, bot_api):
+    def __init__(self):
         self.logger = logging.get_logger(self.__class__.__name__)
-        self.bot_api = bot_api
-        self.aiohttp_session = bot_api.get_aiohttp_session()
 
     async def should_be_updated(self):
         """
