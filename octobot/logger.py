@@ -35,6 +35,7 @@ import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.enums as trading_enums
 
 import octobot.constants as constants
+import octobot.configuration_manager as configuration_manager
 
 BOT_CHANNEL_LOGGER = None
 LOGGER_PRIORITY_LEVEL = channel_enums.ChannelConsumerPriorityLevels.OPTIONAL.value
@@ -80,11 +81,11 @@ def init_logger():
 def _load_logger_config():
     try:
         # use local logging file to allow users to customize the log level
-        if not os.path.isfile(constants.USER_LOCAL_LOGGING_CONFIG_FILE):
+        if not os.path.isfile(configuration_manager.get_user_local_config_file()):
             if not os.path.exists(commons_constants.USER_FOLDER):
                 os.mkdir(commons_constants.USER_FOLDER)
-            shutil.copyfile(constants.LOGGING_CONFIG_FILE, constants.USER_LOCAL_LOGGING_CONFIG_FILE)
-        config.fileConfig(constants.USER_LOCAL_LOGGING_CONFIG_FILE)
+            shutil.copyfile(constants.LOGGING_CONFIG_FILE, configuration_manager.get_user_local_config_file())
+        config.fileConfig(configuration_manager.get_user_local_config_file())
     except Exception as ex:
         config.fileConfig(constants.LOGGING_CONFIG_FILE)
         logging.getLogger("Logging Configuration").warning(f"Impossible to initialize local logging configuration file,"
