@@ -16,6 +16,7 @@
 import enum
 import json
 import os
+import stat
 
 import aiofiles
 import aiohttp
@@ -57,6 +58,7 @@ class BinaryUpdater(updater_class.Updater):
     async def update_impl(self):
         new_binary_file = await self._download_binary()
         if new_binary_file is not None:
+            self._give_execution_rights(new_binary_file)
             self._move_binaries(commands.get_bot_file(), new_binary_file)
 
     def _get_latest_release_url(self):
@@ -135,3 +137,8 @@ class BinaryUpdater(updater_class.Updater):
     def _move_binaries(self, current_binary_file, new_binary_file):
         os.rename(current_binary_file, f"{current_binary_file}{self.OLD_BINARY_SUFFIX}")
         os.rename(new_binary_file, current_binary_file)
+
+    def _give_execution_rights(self, new_binary_file):
+        if os_util.get_os() is not commons_enums.PlatformsName.WINDOWS:
+            st = os.stat(new_binary_file)
+            os.chmod(new_binary_file, st.st_mode | stat.S_IEXEC)

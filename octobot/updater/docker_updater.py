@@ -18,4 +18,8 @@ import octobot.updater.updater as updater_class
 
 
 class DockerUpdater(updater_class.Updater):
-    pass
+    async def get_latest_version(self):
+        return None  # disable this updater
+
+    async def update_impl(self):
+        pass
