@@ -16,6 +16,7 @@
 import packaging.version as packaging_version
 
 import octobot.constants as constants
+import octobot.configuration_manager as configuration_manager
 import octobot.commands as commands
 import octobot_commons.logging as logging
 
@@ -36,11 +37,12 @@ class Updater:
     async def get_latest_version(self):
         raise NotImplementedError("get_latest_version is not implemented")
 
-    async def update_impl(self):
+    async def update_impl(self) -> bool:
         raise NotImplementedError("update_impl is not implemented")
 
     async def update_tentacles(self):
-        await commands.install_all_tentacles()
+        await commands.install_all_tentacles(
+            tentacles_url=configuration_manager.get_default_tentacles_url(version=await self.get_latest_version()))
 
     async def post_update(self):
         await self.update_tentacles()
@@ -50,5 +52,5 @@ class Updater:
         """
         Call updater update_impl and updates tentacles on update success
         """
-        await self.update_impl()
-        await self.post_update()
+        if await self.update_impl():
+            await self.post_update()

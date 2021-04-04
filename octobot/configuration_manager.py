@@ -140,6 +140,42 @@ def init_default_profile():
     load_default_tentacles_config(profile_folder)
 
 
+def get_default_tentacles_url(version=None):
+    if version is None:
+        version = constants.TENTACLES_REQUIRED_VERSION \
+            if constants.TENTACLES_REQUIRED_VERSION else constants.LONG_VERSION
+    return os.getenv(
+        constants.ENV_TENTACLES_URL,
+        f"{constants.OCTOBOT_ONLINE}/{constants.REPOSITORY}/"
+        f"{os.getenv(constants.ENV_TENTACLES_REPOSITORY, constants.TENTACLES_REPOSITORY)}/"
+        f"{os.getenv(constants.ENV_TENTACLES_PACKAGES_SOURCE, constants.OFFICIALS)}/"
+        f"{os.getenv(constants.ENV_TENTACLES_PACKAGES_TYPE, constants.TENTACLE_PACKAGES)}/"
+        f"{os.getenv(constants.ENV_TENTACLE_CATEGORY, constants.TENTACLE_CATEGORY)}/"
+        f"{os.getenv(constants.ENV_TENTACLE_PACKAGE_NAME, constants.TENTACLE_PACKAGE_NAME)}/"
+        f"{version}/"
+        f"{tentacles_manager_constants.ANY_PLATFORM_FILE_NAME}.{tentacles_manager_constants.TENTACLES_PACKAGE_FORMAT}"
+    )
+
+
+def get_default_compiled_tentacles_url():
+    return os.getenv(
+        constants.ENV_COMPILED_TENTACLES_URL,
+        f"{constants.OCTOBOT_ONLINE}/{constants.REPOSITORY}/{constants.TENTACLES_REPOSITORY}/"
+        f"{os.getenv(constants.ENV_TENTACLES_PACKAGES_SOURCE, constants.OFFICIALS)}/"
+        f"{os.getenv(constants.ENV_COMPILED_TENTACLES_PACKAGES_TYPE, constants.TENTACLE_PACKAGES)}/"
+        f"{os.getenv(constants.ENV_COMPILED_TENTACLES_CATEGORY, constants.COMPILED_TENTACLE_CATEGORY)}/"
+        f"{os.getenv(constants.ENV_COMPILED_TENTACLES_SUBCATEGORY, '')}"
+    )
+
+
+def get_user_local_config_file():
+    try:
+        import octobot_commons.constants as commons_constants
+        return f"{commons_constants.USER_FOLDER}/logging_config.ini"
+    except ImportError:
+        return None
+
+
 def load_default_tentacles_config(profile_folder):
     if os.path.isdir(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
         shutil.copyfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH,
@@ -154,9 +190,10 @@ def migrate_from_previous_config(config):
     previous_tentacles_config = os.path.join(common_constants.USER_FOLDER, "tentacles_config")
     previous_tentacles_config_save = os.path.join(common_constants.USER_FOLDER, "tentacles_config.back")
     if os.path.isdir(previous_tentacles_config) and \
-       not os.path.isdir(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
-        logger.info(f"Updating your tentacles configuration located in {previous_tentacles_config} into the new format. "
-                    f"A save of your previous tentacles config is available in {previous_tentacles_config_save}")
+            not os.path.isdir(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH):
+        logger.info(
+            f"Updating your tentacles configuration located in {previous_tentacles_config} into the new format. "
+            f"A save of your previous tentacles config is available in {previous_tentacles_config_save}")
         shutil.copytree(previous_tentacles_config,
                         tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_PATH)
         shutil.move(previous_tentacles_config, previous_tentacles_config_save)
