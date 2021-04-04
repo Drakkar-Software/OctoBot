@@ -31,3 +31,6 @@ cdef class ConfigurationElement:
     cdef public object edited_config
 
 cpdef config_health_check(object config, bint in_backtesting)
+cpdef str get_default_tentacles_url(str version=*)
+cpdef str get_default_compiled_tentacles_url()
+cpdef str get_user_local_config_file()

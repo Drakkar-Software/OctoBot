@@ -21,6 +21,6 @@ class PythonUpdater(updater_class.Updater):
     async def get_latest_version(self):
         return None  # disable this updater
 
-    async def update_impl(self):
-        pass
+    async def update_impl(self) -> bool:
+        return False
 
