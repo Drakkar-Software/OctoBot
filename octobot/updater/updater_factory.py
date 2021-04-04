@@ -22,16 +22,16 @@ import octobot.updater.python_updater as python_updater
 import octobot.updater.docker_updater as docker_updater
 
 
-def create_updater(bot_api):
+def create_updater():
     bot_type = os_util.get_octobot_type()
 
     # TEMP
-    return binary_updater.BinaryUpdater(bot_api)
+    return binary_updater.BinaryUpdater()
 
     if bot_type is commons_enums.OctoBotTypes.BINARY:
-        return binary_updater.BinaryUpdater(bot_api)
+        return binary_updater.BinaryUpdater()
     if bot_type is commons_enums.OctoBotTypes.PYTHON:
-        return python_updater.PythonUpdater(bot_api)
+        return python_updater.PythonUpdater()
     if bot_type is commons_enums.OctoBotTypes.DOCKER:
-        return docker_updater.DockerUpdater(bot_api)
+        return docker_updater.DockerUpdater()
     return None
