@@ -27,10 +27,6 @@ from octobot.updater import python_updater
 from octobot.updater.python_updater import (
     PythonUpdater,
 )
-from octobot.updater import docker_updater
-from octobot.updater.docker_updater import (
-    DockerUpdater,
-)
 
 from octobot.updater import updater_factory
 from octobot.updater.updater_factory import (
@@ -42,5 +38,4 @@ __all__ = [
     "create_updater",
     "BinaryUpdater",
     "PythonUpdater",
-    "DockerUpdater",
 ]
