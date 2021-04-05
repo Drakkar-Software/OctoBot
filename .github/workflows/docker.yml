@@ -128,18 +128,18 @@ jobs:
       - name: run tests in docker
         if: github.event_name != 'push'
         run: |
-          docker run -i -e TENTACLES_REPOSITORY=dev-tentacles -e TENTACLES_URL_TAG=${GITHUB_HEAD_REF////_} ${{ env.IMAGE }}:${{ env.TEST }}
+          docker run -i -e TENTACLES_REPOSITORY=dev-tentacles -e TENTACLES_URL_TAG=${GITHUB_HEAD_REF////_} -e DISABLE_SENTRY=True ${{ env.IMAGE }}:${{ env.TEST }}
 
       - name: run and check health after start
         if: github.event_name != 'push'
         run: |
           echo Start OctoBot docker with branche_name tentacles package
-          docker run -id -e TENTACLES_PACKAGES_SOURCE=dev -e TENTACLES_URL_TAG=${GITHUB_HEAD_REF////_} --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
+          docker run -id -e TENTACLES_PACKAGES_SOURCE=dev -e TENTACLES_URL_TAG=${GITHUB_HEAD_REF////_} -e DISABLE_SENTRY=True --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
           sleep ${{ env.CHECK_TENTACLE_CONTAINER_TIME }}
           if docker logs ${{ env.CONTAINER_NAME }} | grep "octobot_tentacles_manager.api.util.tentacles_management Can't find tentacle archive at:" ; then
               docker rm -f ${{ env.CONTAINER_NAME }}
               echo Restarting docker with latest tentacle package...
-              docker run -id -e TENTACLES_URL_TAG=${{ env.LATEST }} --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
+              docker run -id -e TENTACLES_URL_TAG=${{ env.LATEST }} -e DISABLE_SENTRY=True --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
           fi
           sleep ${{ env.WAIT_CONTAINER_TIME }}
           docker logs ${{ env.CONTAINER_NAME }}
