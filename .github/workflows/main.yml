@@ -68,6 +68,8 @@ jobs:
       run: pip install wheel && pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
 
     - name: Install tentacles on Unix
+      env:
+        DISABLE_SENTRY: True
       if: matrix.os != 'windows-latest'
       run: |
         mkdir user
@@ -77,6 +79,8 @@ jobs:
         TENTACLES_REPOSITORY=dev-tentacles TENTACLES_URL_TAG=${branch////_} python3 start.py tentacles -q --install --all || TENTACLES_URL_TAG=latest python3 start.py tentacles --install --all
 
     - name: Install tentacles on Windows
+      env:
+        DISABLE_SENTRY: True
       if: matrix.os == 'windows-latest'
       run: |
         mkdir user
@@ -101,6 +105,8 @@ jobs:
       shell: powershell
 
     - name: Compile project
+      env:
+        DISABLE_SENTRY: True
       if: matrix.type == 'cython'
       run: |
         python setup.py install
@@ -109,11 +115,14 @@ jobs:
       if: matrix.type == 'cython'
       env:
         CYTHON_IGNORE: true
+        DISABLE_SENTRY: True
       run: |
         pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
         pytest --durations=0 -rw tentacles
 
     - name: Pytests
+      env:
+        DISABLE_SENTRY: True
       if: matrix.type != 'cython'
       run: |
         pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
