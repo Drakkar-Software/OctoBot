@@ -19,7 +19,6 @@ import octobot_commons.enums as commons_enums
 
 import octobot.updater.binary_updater as binary_updater
 import octobot.updater.python_updater as python_updater
-import octobot.updater.docker_updater as docker_updater
 
 
 def create_updater():
@@ -27,8 +26,6 @@ def create_updater():
 
     if bot_type == commons_enums.OctoBotTypes.BINARY.value:
         return binary_updater.BinaryUpdater()
-    if bot_type == commons_enums.OctoBotTypes.PYTHON.value:
+    if bot_type == commons_enums.OctoBotTypes.PYTHON.value or bot_type == commons_enums.OctoBotTypes.DOCKER.value:
         return python_updater.PythonUpdater()
-    if bot_type == commons_enums.OctoBotTypes.DOCKER.value:
-        return docker_updater.DockerUpdater()
     return None
