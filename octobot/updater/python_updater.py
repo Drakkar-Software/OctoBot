@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import json
+import os
 import subprocess
 from shlex import quote as shlex_quote
 
@@ -28,11 +29,16 @@ import octobot.updater.updater as updater_class
 class PythonUpdater(updater_class.Updater):
     def __init__(self):
         super().__init__()
-        self.use_git = False  # TODO
+        self.use_git = os.path.isdir(".git")
 
     async def get_latest_version(self):
         if self.use_git:
-            return None
+            try:
+                self._run_git_fetch()
+                return self._run_git_get_latest_tag()
+            except subprocess.CalledProcessError as e:
+                self.logger.debug(f"Failed to update with git : {e}")
+                return None
         # with pip
         return self._get_latest_pypi_version_from_data(await self._get_latest_pypi_version_data())
 
@@ -63,9 +69,11 @@ class PythonUpdater(updater_class.Updater):
             return None
 
     async def update_impl(self) -> bool:
-        if self.use_git:
-            return False
         try:
+            if self.use_git:
+                self._run_git_checkout_tag(self._run_git_get_latest_tag())
+                return True
+
             # with pip
             self._run_pip_update_package(constants.PROJECT_NAME)
             return True
@@ -76,10 +84,31 @@ class PythonUpdater(updater_class.Updater):
     def _run_pip_command(self, *args):
         """
         Use a shell-escaped version of sys.executable with pip module
-        :param args: the pip args
+        :param args: pip args
         :return: the command result
         """
         return subprocess.check_output([shlex_quote(sys.executable), "-m", "pip", *args], shell=True)
+
+    def _run_git_command(self, *args):
+        """
+        Use a shell-escaped version of git executable
+        :param args: git args
+        :return: the command result
+        """
+        return subprocess.check_output([shlex_quote("git"), *args], shell=True)
+
+    def _run_git_fetch(self, with_all=True, with_tags=True):
+        # TODO check if origin is Drakkar-Software/OctoBot
+        return self._run_git_command(["fetch", "origin",
+                                      "--all" if with_all else "",
+                                      "--tags" if with_tags else ""])
+
+    def _run_git_get_latest_tag(self):
+        return self._run_git_command(["describe", "--tags", "$(git rev-list --tags --max-count=1)"])
+
+    def _run_git_checkout_tag(self, tag_name, force=True):
+        return self._run_git_command(["checkout", f"tags/{tag_name}", "-b", tag_name,
+                                      "-f" if force else ""])
 
     def _run_pip_install(self, *args):
         return self._run_pip_command(["install", "--prefer-binary", *args])
