@@ -35,6 +35,7 @@ import octobot.constants as constants
 import octobot.configuration_manager as configuration_manager
 
 COMMANDS_LOGGER_NAME = "Commands"
+IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
 
 
 def call_tentacles_manager(command_args):
@@ -144,7 +145,7 @@ def get_bot_file():
 
 
 def restart_bot():
-    argv = (f'{a}' for a in sys.argv)
+    argv = (f'{a}' for a in sys.argv if a not in IGNORED_COMMAND_WHEN_RESTART)
     if get_bot_file().endswith(".py"):
         os.execl(sys.executable, f'{sys.executable}', *argv)
     elif get_bot_file().endswith(constants.PROJECT_NAME):
