@@ -162,6 +162,9 @@ def start_octobot(args):
             # set community identifier
             bot.community_auth.identifier = args.identifier[0]
 
+        if args.update:
+            return commands.update_bot(bot.octobot_api)
+
         _log_terms_if_unaccepted(config, logger)
 
         # Add tentacles folder to Python path
@@ -226,6 +229,8 @@ def octobot_parser(parser):
                         action='store_true')
     parser.add_argument('-s', '--simulate', help='Force OctoBot to start with the trader simulator only.',
                         action='store_true')
+    parser.add_argument('-u', '--update', help='Update OctoBot to latest version.',
+                        action='store_true')
     parser.add_argument('-rts', '--reset-trading-history', help='Force the traders to reset their history. They will '
                                                                 'now take the next portfolio as a reference for '
                                                                 'profitability and trading simulators will use a '
@@ -282,6 +287,7 @@ def octobot_parser(parser):
 
 
 def start_background_octobot_with_args(version=False,
+                                       update=False,
                                        encrypter=False,
                                        strategy_optimizer=False,
                                        data_collector=False,
@@ -298,6 +304,7 @@ def start_background_octobot_with_args(version=False,
     if backtesting_files is None:
         backtesting_files = []
     args = argparse.Namespace(version=version,
+                              update=update,
                               encrypter=encrypter,
                               strategy_optimizer=strategy_optimizer,
                               data_collector=data_collector,
