@@ -87,7 +87,8 @@ class PythonUpdater(updater_class.Updater):
         :param args: pip args
         :return: the command result
         """
-        return subprocess.check_output([shlex_quote(sys.executable), "-m", "pip"] + list(*args)).decode().strip()
+        return subprocess.check_output([shlex_quote(sys.executable), "-m", "pip"] + list(*args),
+                                       stderr=subprocess.DEVNULL).decode().strip()
 
     def _run_git_command(self, *args):
         """
@@ -95,7 +96,8 @@ class PythonUpdater(updater_class.Updater):
         :param args: git args
         :return: the command result
         """
-        return subprocess.check_output([shlex_quote("git")] + list(*args)).decode().strip()
+        return subprocess.check_output([shlex_quote("git")] + list(*args),
+                                       stderr=subprocess.DEVNULL).decode().strip()
 
     def _run_git_fetch(self, with_all=True, with_tags=True):
         return self._run_git_command(["fetch",
@@ -108,7 +110,14 @@ class PythonUpdater(updater_class.Updater):
     def _run_git_get_last_tag_hash(self):
         return self._run_git_command(["rev-list", "--tags", "--max-count=1"])
 
+    def _run_git_remove_local_branch(self, branch_name):
+        return self._run_git_command(["branch", "-D", branch_name])
+
     def _run_git_checkout_tag(self, tag_name, force=True):
+        try:
+            self._run_git_remove_local_branch(tag_name)
+        except Exception:
+            self.logger.debug(f"Branch {tag_name} doesn't exist")
         # TODO check if origin is Drakkar-Software/OctoBot
         return self._run_git_command(["checkout", f"tags/{tag_name}", "-b", tag_name,
                                       "-f" if force else ""])
