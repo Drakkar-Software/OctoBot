@@ -78,7 +78,7 @@ class PythonUpdater(updater_class.Updater):
             self._run_pip_update_package(constants.PROJECT_NAME)
             return True
         except subprocess.CalledProcessError as e:
-            self.logger.debug(f"Failed to update pip package : {e}")
+            self.logger.debug(f"Failed to update : {e}")
             return False
 
     def _run_pip_command(self, *args):
@@ -87,7 +87,7 @@ class PythonUpdater(updater_class.Updater):
         :param args: pip args
         :return: the command result
         """
-        return subprocess.check_output([shlex_quote(sys.executable), "-m", "pip", *args], shell=True)
+        return subprocess.check_output([shlex_quote(sys.executable), "-m", "pip"] + list(*args)).decode().strip()
 
     def _run_git_command(self, *args):
         """
@@ -95,22 +95,25 @@ class PythonUpdater(updater_class.Updater):
         :param args: git args
         :return: the command result
         """
-        return subprocess.check_output([shlex_quote("git"), *args], shell=True)
+        return subprocess.check_output([shlex_quote("git")] + list(*args)).decode().strip()
 
     def _run_git_fetch(self, with_all=True, with_tags=True):
-        # TODO check if origin is Drakkar-Software/OctoBot
-        return self._run_git_command(["fetch", "origin",
+        return self._run_git_command(["fetch",
                                       "--all" if with_all else "",
                                       "--tags" if with_tags else ""])
 
     def _run_git_get_latest_tag(self):
-        return self._run_git_command(["describe", "--tags", "$(git rev-list --tags --max-count=1)"])
+        return self._run_git_command(["describe", "--tags", self._run_git_get_last_tag_hash()])
+
+    def _run_git_get_last_tag_hash(self):
+        return self._run_git_command(["rev-list", "--tags", "--max-count=1"])
 
     def _run_git_checkout_tag(self, tag_name, force=True):
+        # TODO check if origin is Drakkar-Software/OctoBot
         return self._run_git_command(["checkout", f"tags/{tag_name}", "-b", tag_name,
                                       "-f" if force else ""])
 
-    def _run_pip_install(self, *args):
+    def _run_pip_install(self, args):
         return self._run_pip_command(["install", "--prefer-binary", *args])
 
     def _run_pip_install_package(self, package_name):
