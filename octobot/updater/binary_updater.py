@@ -140,7 +140,12 @@ class BinaryUpdater(updater_class.Updater):
 
     def _move_binaries(self, current_binary_file, new_binary_file):
         self.logger.info(f"Updating local binary file")
-        os.rename(current_binary_file, f"{current_binary_file}{self.OLD_BINARY_SUFFIX}")
+        old_binary_path = f"{current_binary_file}{self.OLD_BINARY_SUFFIX}"
+        try:
+            os.remove(old_binary_path)
+        except OSError:
+            self.logger.debug(f"{old_binary_path} doesn't exist")
+        os.rename(current_binary_file, old_binary_path)
         os.rename(new_binary_file, current_binary_file)
 
     def _give_execution_rights(self, new_binary_file):
