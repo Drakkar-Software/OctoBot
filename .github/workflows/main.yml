@@ -184,7 +184,7 @@ jobs:
         CIBW_ARCHS_LINUX: 'auto aarch64'
         CIBW_BEFORE_BUILD_LINUX: >
           python -m pip install --upgrade pip
-          pip install --extra-index-url ${{ secrets.OCTOBOT_PYPI_URL }} --prefer-binary auditwheel -r dev_requirements.txt -r requirements.txt
+          pip install  --prefer-binary auditwheel -r dev_requirements.txt -r requirements.txt
         CIBW_BEFORE_ALL_LINUX: >
           yum install -y libffi libffi-devel openssl-devel wget unzip blas-devel lapack-devel libxml2-devel libxslt-devel
 
