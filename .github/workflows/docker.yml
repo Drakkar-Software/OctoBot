@@ -38,6 +38,7 @@ jobs:
           echo "LATEST=latest" >> $GITHUB_ENV
           echo "STABLE=stable" >> $GITHUB_ENV
           echo "TEST=test" >> $GITHUB_ENV
+          echo "SHA=${GITHUB_SHA}" >> $GITHUB_ENV
           echo "CONTAINER_NAME=octobot" >> $GITHUB_ENV
           echo "CHECK_TENTACLE_CONTAINER_TIME=10" >> $GITHUB_ENV
           echo "WAIT_CONTAINER_TIME=80" >> $GITHUB_ENV
@@ -112,9 +113,9 @@ jobs:
           # Using "load: true" forces the docker driver.
           # Unfortunately, the "docker" driver does not support
           # multi-platform builds.
-          # load: true
+          load: true
           push: false
-          tags: ${{ env.IMAGE }}:${{ env.LATEST }}
+          tags: ${{ env.IMAGE }}:${{ env.SHA }}
           build-args: |
             TENTACLES_URL_TAG=${{ env.LATEST }}
           cache-from: type=local,src=/tmp/.buildx-cache
@@ -123,7 +124,7 @@ jobs:
       - name: Docker build test container
         if: github.event_name != 'push'
         run: |
-          docker build -f ./tests/Dockerfile --build-arg OCTOBOT_IMAGE=${{ env.IMAGE }}:${{ env.LATEST }} -t ${{ env.IMAGE }}:${{ env.TEST }} .
+          docker build -f ./tests/Dockerfile --build-arg OCTOBOT_IMAGE=${{ env.IMAGE }}:${{ env.SHA }} -t ${{ env.IMAGE }}:${{ env.TEST }} .
 
       - name: run tests in docker
         if: github.event_name != 'push'
