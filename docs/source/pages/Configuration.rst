@@ -1,11 +1,14 @@
 
-OctoBot configuration is located in two files:
+OctoBot configuration is located in the **user** folder:
 
 
-* **user/config.json** is the global configuration file, mostly used to setup the bot exchanges credentials, cryptocurrency pairs, interfaces and the trading risk
-* **user/tentacles_config/tentacles_config.json** defines the trade mode, the evaluators and strategies toolkit that the bot is allowed to use. This file is automatically pre-filled when `installing tentacles <Tentacle-Manager.html>`_ with OctoBot and when using the configuration web interface.
+* **user/config.json** is the global configuration file, mostly used to setup the bot exchanges credentials, interfaces and notification settings.
+* **user/profiles/** contains all the `profiles <Profiles.html>`_ created and imported in your OctoBot.
 
-OctoBot's web interface allows to easily edit the configuration, however, it is also possible to manually edit configuration files. Please be careful when manually editing them or OctoBot won't be able to read them and wont start. Json file are readable and editable using any text editor.
+
+OctoBot's web interface allows to easily edit the configuration, however, it is also possible to manually edit configuration files.
+Please be careful when manually editing them or OctoBot won't be able to read them and wont start.
+Json file are readable and editable using any text editor.
 
 .. code-block::
 
@@ -16,9 +19,11 @@ This will appear when a configuration file is not a json valid file.
 Global configuration
 ====================
 
-**user/config.json** is the technical configuration file of OctoBot, an example is available in **octobot/config/default_config.json**.
+**user/config.json** is the technical configuration file of OctoBot, an example
+is available `on github <https://github.com/Drakkar-Software/OctoBot/blob/master/octobot/config/default_config.json>`_.
 
-To start with OctoBot, use **default_config.json** as an example for your **user/config.json** (copy **default_config.json** into OctoBot's **root folder/user** and rename the copy into **config.json**\ ). This operation is automatically done when using `OctoBot's installation procedure <../index.html>`_.
+When starting OctoBot, if the **user** folder is missing or incomplete, it will automatically be created or
+completed with default values.
 
 Exchanges
 ---------
@@ -35,7 +40,8 @@ Once you have your own **user/config.json** file, to start using OctoBot, you wi
    "exchanges": {
        "EXCHANGE_NAME": {
          "api-key": "",
-         "api-secret": ""
+         "api-secret": "",
+         "enabled": false
        }
    }
 
@@ -50,7 +56,8 @@ CryptoCurrencies
    :alt: currencies
 
 
-OctoBot will trade all the cryptocurrencies listed in its configuration. To tell which cryptocurrencies to trade, add the currency in the **crypto-currencies** section in **user/profiles/YOUR-PROFILE/profile.json**.
+OctoBot will trade all the cryptocurrencies listed in its configuration. To tell which cryptocurrencies to trade,
+add the currency in the **crypto-currencies** section in **user/profiles/<profile_name>/profile.json**.
 
 In order to keep OctoBot working at its full potential, we recommend to trade **between 1 and 5** different assets **not to use more than 10 to 15** different assets at the same time, depending on the size of your available funds. 
 
@@ -60,7 +67,8 @@ Examples:
 
    "crypto-currencies":{
        "Bitcoin": {
-         "pairs": ["BTC/USDT"]
+         "pairs": ["BTC/USDT"],
+         "enabled": true
        }
    }
 
@@ -70,17 +78,21 @@ OctoBot trading only Bitcoin against USDT
 
    "crypto-currencies":{
        "Bitcoin": {
-         "pairs": ["BTC/USDT"]
+         "pairs": ["BTC/USDT"],
+         "enabled": true
        },
        "Ethereum": {
-         "pairs": ["ETH/USDT"]
+         "pairs": ["ETH/USDT"],
+         "enabled": false
        },
        "NEO": {
-         "pairs": ["NEO/BTC", "NEO/ETH"]
+         "pairs": ["NEO/BTC", "NEO/ETH"],
+         "enabled": true
        }
    }
 
-OctoBot trading Bitcoin and Ethereum against USDT as well as NEO against BTC and ETH
+OctoBot trading Bitcoin against USDT as well as NEO against BTC and ETH but not Ethereum against USDT because
+Ethereum is disabled ("enabled": false)
 
 Wildcard
 ^^^^^^^^
@@ -126,7 +138,8 @@ OctoBot can process two types of trading:
    :alt: trading
 
 
-Any type of trading has its risk parameter. It is a parameter defining the behavior of the trader, similarly to a real human trader. `This **risk** parameter is described here <Trader.html#risk>`_
+Any type of trading has its risk parameter. It is a parameter defining the behavior of the trader,
+similarly to a real human trader. `This **risk** parameter is described here <Trader.html#risk>`_
 
 Evaluator and trading configuration
 ===================================
@@ -137,13 +150,16 @@ Evaluator and trading configuration
    :alt: trading_modes
 
 
-**user/tentacles_config/tentacles_config.json** is a configuration file telling OctoBot which evaluators, strategies and trading modes to use. It is automatically kept updated after each `Tentacle Manager <Tentacle-Manager.html>`_ usage.
+**user/profiles/<profile_name>/tentacles_config.json** is a configuration file telling OctoBot which evaluators,
+strategies and trading modes to use. It is automatically kept updated after each `Tentacle Manager <Tentacle-Manager.html>`_ usage.
 
-An example of **user/tentacles_config/tentacles_config.json** is available in the **config** folder: **octobot/config/default_tentacles_config.json**.
+An example of **user/profiles/<profile_name>/tentacles_config.json** is available `as default_tentacles_config.json on github <https://github.com/Drakkar-Software/OctoBot/blob/master/octobot/config/default_tentacles_config.json>`_.
 
-When using OctoBot's `Tentacle Manager <Tentacle-Manager.html>`_\ , **default_tentacles_config.json** is automatically used to enable default evaluators configuration when no configuration is already available for a given evaluator. The same process is used for trading_config.
+When using OctoBot's `Tentacle Manager <Tentacle-Manager.html>`_\ , **default_tentacles_config.json** is automatically
+used to enable default evaluators configuration when no configuration is already available for a given evaluator.
+The same process is used for trading_config.
 
-By default, new evaluators are not used (set to "false") if not defined otherwise in **octobot/config/default_tentacles_config.json**.
+By default, new evaluators are not used (set to "false") if not defined otherwise in **default_tentacles_config.json**.
 
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/evaluators.jpg
@@ -151,7 +167,7 @@ By default, new evaluators are not used (set to "false") if not defined otherwis
    :alt: evaluators
 
 
-Example of **evaluator_config.json**\ :
+Example of **tentacles_config.json**\ :
 
 .. code-block:: json
 
@@ -200,6 +216,9 @@ If it is the case, configuration is possible through OctoBot's web interface.
    :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/specific_eval_config.jpg
    :alt: evaluators_config
 
-This edition interface is generated according to the **NameOfTheRelatedClass_schema.json** `json schema <https://json-schema.org/understanding-json-schema/>`_ file of the evaluator or trading mode to configure.
+This edition interface is generated according to the
+**NameOfTheRelatedClass_schema.json** `json schema <https://json-schema.org/understanding-json-schema/>`_ file
+of the evaluator or trading mode to configure.
 
-It is also possible to manually edit each configuration file using a text editor for JSON. When configurable, each evaluator or trading mode has a **NameOfTheRelatedClass.json** file in the closest config folder.
+It is also possible to manually edit each configuration file using a text editor for JSON. When configurable,
+each evaluator or trading mode has a **NameOfTheRelatedClass.json** file in **user/profiles/<profile_name>/specific_config**.

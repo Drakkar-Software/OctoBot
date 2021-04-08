@@ -36,7 +36,6 @@
     "Services": {
       "GoogleService": true,
       "GoogleServiceFeed": true,
-      "PremiumTelegramBotInterface": false,
       "RedditService": true,
       "RedditServiceFeed": true,
       "TelegramBotInterface": true,

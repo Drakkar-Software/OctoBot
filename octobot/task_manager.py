@@ -89,7 +89,7 @@ class TaskManager:
     def get_name(cls):
         return cls.__name__
 
-    def create_pool_executor(self, workers=1):
+    def create_pool_executor(self, workers=2):
         self.executors = thread.ThreadPoolExecutor(max_workers=workers)
 
     def _loop_exception_handler(self, loop, context):
@@ -110,4 +110,6 @@ class TaskManager:
         return asyncio_tools.run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
 
     def run_in_async_executor(self, coroutine):
-        return self.executors.submit(asyncio.run, coroutine).result()
+        if self.executors is not None:
+            return self.executors.submit(asyncio.run, coroutine).result()
+        return asyncio.run(coroutine)

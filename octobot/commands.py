@@ -32,14 +32,16 @@ import octobot
 import octobot.api.strategy_optimizer as strategy_optimizer_api
 import octobot.logger as octobot_logger
 import octobot.constants as constants
+import octobot.configuration_manager as configuration_manager
 
 COMMANDS_LOGGER_NAME = "Commands"
+IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
 
 
 def call_tentacles_manager(command_args):
     octobot_logger.init_logger()
     tentacles_urls = [
-        constants.DEFAULT_TENTACLES_URL,
+        configuration_manager.get_default_tentacles_url(),
         # tentacles_manager_api.get_compiled_tentacles_url(
         #     constants.DEFAULT_COMPILED_TENTACLES_URL,
         #     constants.TENTACLES_REQUIRED_VERSION
@@ -76,12 +78,14 @@ def start_strategy_optimizer(config, commands):
 
 
 def run_tentacles_installation():
-    asyncio.run(_install_all_tentacles())
+    asyncio.run(install_all_tentacles())
 
 
-async def _install_all_tentacles():
+async def install_all_tentacles(tentacles_url=None):
+    if tentacles_url is None:
+        tentacles_url = configuration_manager.get_default_tentacles_url()
     async with aiohttp.ClientSession() as aiohttp_session:
-        await tentacles_manager_api.install_all_tentacles(constants.DEFAULT_TENTACLES_URL,
+        await tentacles_manager_api.install_all_tentacles(tentacles_url,
                                                           aiohttp_session=aiohttp_session,
                                                           bot_install_dir=constants.OCTOBOT_FOLDER)
         # compiled_tentacles_url = tentacles_manager_api.get_compiled_tentacles_url(
@@ -136,13 +140,22 @@ def stop_bot(bot, force=False):
         os._exit(0)
 
 
+def get_bot_file():
+    return sys.argv[0]
+
+
 def restart_bot():
-    argv = (f'{a}' for a in sys.argv)
-    if sys.argv[0].endswith(".py"):
+    argv = (f'{a}' for a in sys.argv if a not in IGNORED_COMMAND_WHEN_RESTART)
+    if get_bot_file().endswith(".py"):
         os.execl(sys.executable, f'{sys.executable}', *argv)
-    elif sys.argv[0].endswith(constants.PROJECT_NAME):
+    elif get_bot_file().endswith(constants.PROJECT_NAME):
         # restart from python OctoBot package entrypoint
-        os.execl(sys.argv[0], *argv)
+        os.execl(get_bot_file(), *argv)
     else:
         # prevent binary to add self as first argument
         os.execl(sys.executable, *(f'"{a}"' for a in sys.argv))
+
+
+def update_bot(bot_api):
+    import octobot.updater.updater_factory as updater_factory
+    bot_api.run_in_async_executor(updater_factory.create_updater().update())
