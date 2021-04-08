@@ -15,29 +15,4 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from octobot.updater cimport updater
-from octobot.updater.updater cimport (
-    Updater,
-)
-
-from octobot.updater cimport binary_updater
-from octobot.updater.binary_updater cimport (
-    BinaryUpdater,
-)
-from octobot.updater cimport python_updater
-from octobot.updater.python_updater cimport (
-    PythonUpdater,
-)
-
-from octobot.updater cimport updater_factory
-from octobot.updater.updater_factory cimport (
-    create_updater,
-)
-
-__all__ = [
-    "Updater",
-    "create_updater",
-    "BinaryUpdater",
-    "PythonUpdater",
-]
-
+cpdef public object create_updater()

@@ -57,6 +57,10 @@ packages_list = [
     "octobot.producers.service_feed_producer",
     "octobot.producers.evaluator_producer",
     "octobot.producers.exchange_producer",
+    "octobot.updater.binary_updater",
+    "octobot.updater.python_updater",
+    "octobot.updater.updater",
+    "octobot.updater.updater_factory",
 ]
 
 ext_modules = [
