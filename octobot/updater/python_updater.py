@@ -32,15 +32,17 @@ class PythonUpdater(updater_class.Updater):
         self.use_git = os.path.isdir(".git")
 
     async def get_latest_version(self):
-        if self.use_git:
-            try:
-                self._run_git_fetch()
-                return self._run_git_get_latest_tag()
-            except subprocess.CalledProcessError as e:
-                self.logger.debug(f"Failed to update with git : {e}")
-                return None
-        # with pip
-        return self._get_latest_pypi_version_from_data(await self._get_latest_pypi_version_data())
+        if os.getenv("ENABLE_PYTHON_UPDATER", False):
+            if self.use_git:
+                try:
+                    self._run_git_fetch()
+                    return self._run_git_get_latest_tag()
+                except subprocess.CalledProcessError as e:
+                    self.logger.debug(f"Failed to update with git : {e}")
+                    return None
+            # with pip
+            return self._get_latest_pypi_version_from_data(await self._get_latest_pypi_version_data())
+        return None
 
     def _get_latest_pypi_release_url(self):
         return f"https://pypi.python.org/pypi/{constants.PROJECT_NAME}/json"
@@ -70,13 +72,15 @@ class PythonUpdater(updater_class.Updater):
 
     async def update_impl(self) -> bool:
         try:
-            if self.use_git:
-                self._run_git_checkout_tag(self._run_git_get_latest_tag())
-                return True
+            if os.getenv("ENABLE_PYTHON_UPDATER", False):
+                if self.use_git:
+                    self._run_git_checkout_tag(self._run_git_get_latest_tag())
+                    return True
 
-            # with pip
-            self._run_pip_update_package(constants.PROJECT_NAME)
-            return True
+                # with pip
+                self._run_pip_update_package(constants.PROJECT_NAME)
+                return True
+            return False
         except subprocess.CalledProcessError as e:
             self.logger.debug(f"Failed to update : {e}")
             return False
