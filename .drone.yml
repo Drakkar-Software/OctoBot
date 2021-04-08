@@ -10,11 +10,9 @@ steps:
 - name: tests
   image: python:3.8
   environment:
-    OCTOBOT_PYPI_URL:
-      from_secret: OCTOBOT_PYPI_URL
     DRONE_CLEANED_BRANCH: $${DRONE_SOURCE_BRANCH////_}
   commands:
-    - pip install --extra-index-url $OCTOBOT_PYPI_URL --prefer-binary -r dev_requirements.txt -r requirements.txt
+    - pip install --prefer-binary -r dev_requirements.txt -r requirements.txt
     - mkdir user
     - cp ./octobot/config/default_config.json ./user/config.json
     - TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=$DRONE_CLEANED_BRANCH python3 start.py tentacles -q --install --all || python3 start.py tentacles --install --all
@@ -34,11 +32,9 @@ steps:
 - name: tests
   image: python:3.8
   environment:
-    OCTOBOT_PYPI_URL:
-      from_secret: OCTOBOT_PYPI_URL
     DRONE_CLEANED_BRANCH: $${DRONE_SOURCE_BRANCH////_}
   commands:
-    - pip install --extra-index-url https://www.piwheels.org/simple --extra-index-url $OCTOBOT_PYPI_URL --prefer-binary -r dev_requirements.txt -r requirements.txt
+    - pip install --extra-index-url https://www.piwheels.org/simple --prefer-binary -r dev_requirements.txt -r requirements.txt
     - mkdir user
     - cp ./octobot/config/default_config.json ./user/config.json
     - TENTACLES_URL_SUBCATEGORY=dev/ TENTACLES_URL_TAG=$DRONE_CLEANED_BRANCH python3 start.py tentacles -q --install --all || python3 start.py tentacles --install --all

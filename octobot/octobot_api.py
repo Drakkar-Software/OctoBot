@@ -83,3 +83,6 @@ class OctoBotAPI:
     @staticmethod
     def restart_bot() -> None:
         commands.restart_bot()
+
+    def update_bot(self) -> None:
+        commands.update_bot(self)
