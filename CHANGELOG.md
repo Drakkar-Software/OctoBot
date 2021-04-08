@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.0-beta8] - 2021-04-06
+### Added
+- [WebInterface] Starting tutorial
+- [WebInterface] Trader switch button
+- [WebInterface] Update OctoBot
+
+### Fixed
+- [WebInterface] Multiple fixes and improvements
+- [Trading] Fix pair wildcard config
+- [Exchanges] Fix hitbtc
+- [Trading] Rounding problems during order creation 
+
 ## [0.4.0-beta7] - 2021-03-26
 ### Added
 - GridOrders config check
