@@ -14,6 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+from octobot.updater import updater_factory
+from octobot.updater.updater_factory import (
+    create_updater,
+)
+
 from octobot.updater import updater
 from octobot.updater.updater import (
     Updater,
@@ -26,11 +31,6 @@ from octobot.updater.binary_updater import (
 from octobot.updater import python_updater
 from octobot.updater.python_updater import (
     PythonUpdater,
-)
-
-from octobot.updater import updater_factory
-from octobot.updater.updater_factory import (
-    create_updater,
 )
 
 __all__ = [
