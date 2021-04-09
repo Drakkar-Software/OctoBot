@@ -89,20 +89,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Wait for main build done
-        if: github.event_name == 'push'
-        uses: fountainhead/action-wait-for-check@v1.0.0
-        id: wait-for-main-build
-        with:
-          token: ${{ secrets.AUTH_TOKEN }}
-          checkName: "Done"
-          ref: ${{ github.sha }}
-          timeoutSeconds: 3600
-
-      - name: Trigger fail when Main failed
-        if: github.event_name == 'push' && steps.wait-for-main-build.outputs.conclusion == 'failure'
-        run: exit 1
-
       - name: Build latest
         if: github.event_name != 'push'
         uses: docker/build-push-action@master

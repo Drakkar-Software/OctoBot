@@ -30,18 +30,19 @@ jobs:
         commitish: master
         repo: OctoBot-Tentacles
 
-    - name: Wait for main build done
-      uses: fountainhead/action-wait-for-check@v1.0.0
-      id: wait-for-build
-      with:
-        token: ${{ secrets.AUTH_TOKEN }}
-        checkName: "Done"
-        ref: ${{ github.sha }}
-        timeoutSeconds: 3600
-
-    - name: Trigger fail when Main failed
-      if: steps.wait-for-build.outputs.conclusion == 'failure'
-      run: exit 1
+# TODO uncomment when adding tests to OctoBot-Binary
+#    - name: Wait for tentacles build done
+#      uses: fountainhead/action-wait-for-check@v1.0.0
+#      id: wait-for-build
+#      with:
+#        token: ${{ secrets.AUTH_TOKEN }}
+#        checkName: "Done"
+#        ref: ${{ github.sha }}
+#        timeoutSeconds: 3600
+#
+#    - name: Trigger fail when Main failed
+#      if: steps.wait-for-build.outputs.conclusion == 'failure'
+#      run: exit 1
 
     - name: Create release on OctoBot-Binary
       uses: actions/create-release@v1
