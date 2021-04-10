@@ -95,7 +95,7 @@ jobs:
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          platforms: linux/amd64
+          platforms: linux/arm/v7
           # Using "load: true" forces the docker driver.
           # Unfortunately, the "docker" driver does not support
           # multi-platform builds.
@@ -106,31 +106,6 @@ jobs:
             TENTACLES_URL_TAG=${{ env.LATEST }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-
-      - name: Docker build test container
-        if: github.event_name != 'push'
-        run: |
-          docker build -f ./tests/Dockerfile --build-arg OCTOBOT_IMAGE=${{ env.IMAGE }}:${{ env.SHA }} -t ${{ env.IMAGE }}:${{ env.TEST }} .
-
-      - name: run tests in docker
-        if: github.event_name != 'push'
-        run: |
-          docker run -i -e TENTACLES_REPOSITORY=dev-tentacles -e TENTACLES_URL_TAG=${GITHUB_HEAD_REF////_} -e DISABLE_SENTRY=True ${{ env.IMAGE }}:${{ env.TEST }}
-
-      - name: run and check health after start
-        if: github.event_name != 'push'
-        run: |
-          echo Start OctoBot docker with branche_name tentacles package
-          docker run -id -e TENTACLES_PACKAGES_SOURCE=dev -e TENTACLES_URL_TAG=${GITHUB_HEAD_REF////_} -e DISABLE_SENTRY=True --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
-          sleep ${{ env.CHECK_TENTACLE_CONTAINER_TIME }}
-          if docker logs ${{ env.CONTAINER_NAME }} | grep "octobot_tentacles_manager.api.util.tentacles_management Failed to download file at url :" ; then
-              docker rm -f ${{ env.CONTAINER_NAME }}
-              echo Restarting docker with latest tentacle package...
-              docker run -id -e TENTACLES_URL_TAG=${{ env.LATEST }} -e DISABLE_SENTRY=True --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
-          fi
-          sleep ${{ env.WAIT_CONTAINER_TIME }}
-          docker logs ${{ env.CONTAINER_NAME }}
-          docker inspect ${{ env.CONTAINER_NAME }} | jq '.[].State.Health.Status' | grep "healthy"
 
       - name: Build and push latest
         if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags') && github.ref == 'refs/heads/dev'
