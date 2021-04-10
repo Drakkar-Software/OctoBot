@@ -2,11 +2,14 @@ name: OctoBot-CI
 on:
   push:
     branches:
-      - 'master'
-      - 'dev'
+      - "master"
+      - "dev"
     tags:
-      - '*'
+      - "*"
   pull_request:
+    branches:
+      - "!master"   # excludes master
+      - "!dev"      # excludes dev
 
 jobs:
   lint:
