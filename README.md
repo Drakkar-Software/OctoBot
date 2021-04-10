@@ -26,7 +26,7 @@ See the [Octobot official website](https://www.octobot.online/).
 This repository contains all the features of the bot (trading tools, evaluation engines, the backtesting toolkit, ...).
 [Octobot's tentacles](https://github.com/Drakkar-Software/OctoBot-tentacles) contains the bot's strategies and user interfaces.
 
-To install OctoBot with its tentacles, just use the [latest release for your system](https://github.com/Drakkar-Software/OctoBot-Binary/releases) and your OctoBot is ready ! 
+To install OctoBot with its tentacles, just use the [latest release for your system](https://github.com/Drakkar-Software/OctoBot/releases/latest) and your OctoBot is ready ! 
 
 ## Your Octobot
 <a href="https://www.octobot.online/guides/#telegram"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>
@@ -49,7 +49,7 @@ OctoBot's installation is **very simple**... because **very documented** ! See t
 Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
 
 In short:
-- Use the latest release on the [release page](https://github.com/Drakkar-Software/OctoBot-Binary/releases)
+- Use the latest release on the [release page](https://github.com/Drakkar-Software/OctoBot/releases/latest)
 
 #### [With Docker](https://docs.octobot.online/pages/With-Docker.html)
 Follow the [docker installation guide](https://www.octobot.online/docker_installation/) 
