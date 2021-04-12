@@ -170,14 +170,14 @@ def start_octobot(args):
         # Add tentacles folder to Python path
         sys.path.append(os.path.realpath(os.getcwd()))
 
-        if not (os.path.isfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH) and
-                tentacles_manager_api.load_tentacles(verbose=True)):
-            logger.info("OctoBot tentacles can't be found or are damaged. Installing default tentacles ...")
-            commands.run_tentacles_installation()
-            # reload profiles
+        if os.path.isfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH):
             config.load_profiles()
-            # reload tentacles
-            tentacles_manager_api.load_tentacles(verbose=True)
+            tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
+                config.get_tentacles_config_path())
+            commands.run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config)
+        else:
+            logger.info("OctoBot tentacles can't be found. Installing default tentacles ...")
+            commands.run_tentacles_install_or_update(config)
 
         # Clear community cache
         bot.community_auth.clear_cache()
