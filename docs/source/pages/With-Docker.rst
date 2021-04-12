@@ -74,8 +74,10 @@ How to update OctoBot ?
 
 .. code-block:: bash
 
+   docker pull drakkarsoftware/octobot:stable
    docker stop OctoBot
    docker rm OctoBot
+   docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable
 
 Running with docker-compose
 ---------------------------
