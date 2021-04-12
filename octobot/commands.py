@@ -77,8 +77,32 @@ def start_strategy_optimizer(config, commands):
         strategy_optimizer_api.print_optimizer_report(optimizer)
 
 
-def run_tentacles_installation():
-    asyncio.run(install_all_tentacles())
+def run_tentacles_install_or_update(config):
+    asyncio.run(install_or_update_tentacles(config))
+
+
+def run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config):
+    asyncio.run(update_or_repair_tentacles_if_necessary(tentacles_setup_config, config))
+
+
+async def update_or_repair_tentacles_if_necessary(tentacles_setup_config, config):
+    if not tentacles_manager_api.are_tentacles_up_to_date(tentacles_setup_config, constants.VERSION):
+        logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are not up to date. Updating tentacles...")
+        if await install_or_update_tentacles(config):
+            logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are now up to date.")
+    elif tentacles_manager_api.load_tentacles(verbose=True):
+        logging.get_logger(COMMANDS_LOGGER_NAME).debug("OctoBot tentacles are up to date.")
+    else:
+        logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are damaged. Installing default tentacles ...")
+        await install_or_update_tentacles(config)
+
+
+async def install_or_update_tentacles(config):
+    await install_all_tentacles()
+    # reload profiles
+    config.load_profiles()
+    # reload tentacles
+    return tentacles_manager_api.load_tentacles(verbose=True)
 
 
 async def install_all_tentacles(tentacles_url=None):
