@@ -2,7 +2,7 @@
    :format: html
 
 
-Developer
+Developer startup guide
 =========
 
 Note: this page is referring to OctoBot in versions superior to 0.4.0.
