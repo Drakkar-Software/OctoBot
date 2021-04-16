@@ -1,8 +1,8 @@
 Tentacle development
-==============
+===============================
 
 Intro
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This page covers tentacle development.
 

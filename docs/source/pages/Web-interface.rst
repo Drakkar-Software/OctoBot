@@ -1,5 +1,5 @@
 Web interface
-=============
+===============================
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/home.jpg
    :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/home.jpg
@@ -14,7 +14,7 @@ OctoBot provides a web interface for the following purposes:
 * Configure OctoBot
 
 Web service configuration
--------------------------
+-------------------------------
 
 Add in **user/config.json** in the services key :
 
@@ -44,7 +44,7 @@ Add in **user/config.json** in the services key :
 * **port** is the port you want the web interface to be accessible from
 
 Protect your web interface
---------------------------
+-------------------------------
 
 Using an authentication password
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -58,7 +58,7 @@ You can activate the password authentication from the web interface configuratio
 Any IP will be automatically **blocked after 10 authentication failures in a row**. IPs will remain blocked until your OctoBot restarts. If you accidentally block your IP, you can just restart your OctoBot.
 
 How to set it up ?
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Go to "Accounts" page
 - Select "Interfaces" on the left menu
@@ -68,7 +68,7 @@ How to set it up ?
 - Click on "SAVE AND RESTART" red button on the left menu
 
 You forgot your password
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you forgot your password, go to your **user/config.json** file and change:
 

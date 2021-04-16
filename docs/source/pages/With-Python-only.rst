@@ -1,12 +1,12 @@
 With Python only
-============================================================
+===============================
 
 Requirements
-------------
+-------------------------------
 * Packages installed : Python3.8.X, Python3.8.X-dev, Python3.8.X-pip, git
 
 Installation
-------------
+-------------------------------
 **First, make sure you have python3.8 and python3.8-dev and python3.8-pip installed on your computer.**
 
 Using the current stable version (master branch)
@@ -98,6 +98,7 @@ You need the number from the start of the window name to reattach it. If you for
 
    $ screen -ls
    $ screen -r 23167
+
 (23167 is an example value)
 
 OctoBot has been working away in the background is now brought back to your terminal window as if it had never left.

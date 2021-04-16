@@ -1,15 +1,15 @@
 With Docker on Android
-===========
+===============================
 .. WARNING:: Experimental installation
 
 Install Termux
------------------
+-------------------------------
 
 - Install `Termux <https://termux.com/>`_ from `Google play store <https://play.google.com/store/apps/details?id=com.termux>`_ or from `F-Droid <https://f-droid.org/en/packages/com.termux/>`_.
 - Open Termux when installed
 
 Installing alpine on Termux
------------------
+-------------------------------
 
 Run the following command to create an alpine file system on Termux
 
@@ -20,7 +20,7 @@ Run the following command to create an alpine file system on Termux
     startalpine
 
 Installing udocker
------------------
+-------------------------------
 
 Install udocker to run OctoBot's docker container on alpine without root
 
@@ -36,7 +36,7 @@ Install udocker to run OctoBot's docker container on alpine without root
     udocker install
 
 Running stable OctoBot
-----------------------
+-------------------------------
 
 Start OctoBot container
 

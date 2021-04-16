@@ -1,18 +1,18 @@
 Developer installation
-======================
+===============================
 
 Requirements
-------------
+-------------------------------
 
 
 * Python 3.8 (\ `download <https://www.python.org/downloads/>`_\ )
 * Git (\ `Download <https://git-scm.com/downloads>`_\ )
 
 Instructions
-------------
+-------------------------------
 
 Windows
-^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Python3.8 has to be in environment variable** :
 
@@ -35,7 +35,7 @@ Update OctoBot with python only when using OctoBot code directly from dev branch
 --------------------------------------------------------------------------------
 
 Requirements
-^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Python3.8.X**\ , **git** and an installed and **functional OctoBot setup** cloned from `OctoBot github repository <https://github.com/Drakkar-Software/OctoBot>`
 
@@ -46,13 +46,13 @@ Requirements
    $ python3 start.py tentacles --install --all
 
 Python3
-^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There **python3** is refering to your **Python3.8.X** installation, just adapt the commands to match your setup if any different (might be python, python3, python3.8, etc: it depends on your environment).
 
 
 With Repo
-------------
+-------------------------------
 Repo is a tool built on top of Git. Repo helps manage many Git repositories.
 
 To create a development OctoBot environment, repo can be used as following :
