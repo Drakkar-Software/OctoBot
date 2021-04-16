@@ -1,15 +1,15 @@
 Tentacle package development
-==============
+===============================
 
 Intro
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This page covers tentacle package creation.
 
 A tentacle package contains one or multiple `tentacles <Tentacle-Development.html>`_.
 
 The tentacle package folder
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A tentacle package is defined by a folder placed at :
 
@@ -24,7 +24,7 @@ A tentacle package is defined by a folder placed at :
 - **YOUR_TENTACLE_PACKAGE_NAME** is the name of your tentacle package, shouldn't use an existing tentacle package name
 
 Description file
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A tentacle package contains metadata described in metadata.json file. This file is used to properly install the tentacle and should be carefully written.
 It's located at the root path of the tentacle package :
@@ -63,7 +63,7 @@ Example *DailyTradingMode/metadata.json* :
     }
 
 Tentacle modules
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 `Tentacle <Tentacle-Development.html>`_ python modules should be placed at the root path of the tentacle package (can be 1 or more).
 
@@ -85,7 +85,7 @@ Example with *momentum_evaluator*'s __init__.py :
     KlingerOscillatorReversalConfirmationMomentumEvaluator
 
 Config
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A tentacle package can contain tentacle config. Config files are located in *config/* folder at :
 
@@ -109,7 +109,7 @@ Below an example for *MyAwesomeTentacle* :
 
 
 Resources
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Tentacle package resources are located in the `resources` folder of your tentacle package.
 
@@ -132,6 +132,6 @@ Example *DailyTradingMode/resources/DailyTradingMode.md* :
 
 
 Tests
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Tentacle should be tested. Tests file are usually located in the `tests` folder of the tentacle package.
