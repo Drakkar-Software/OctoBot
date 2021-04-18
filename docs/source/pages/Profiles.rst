@@ -7,6 +7,10 @@ Profiles
 OctoBot's trading configuration is using profiles (located into user/profiles).
 This allows for quick switches between previously set configurations.
 
+.. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/profile.jpg
+   :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/profile.jpg
+   :alt: exchanges
+
 Profiles include:
 
 
