@@ -82,11 +82,11 @@ based on ``tentacles/Evaluator/Strategies/mixed_strategies_evaluator`` and start
                                  cryptocurrency,
                                  symbol,
                                  time_frame):
-       final_evaluation = 0
-       # some advanced computations to set final_evaluation value
+           final_evaluation = 0
+           # some advanced computations to set final_evaluation value
 
-       # update self.eval_note to store the strategy result
-       self.eval_note = final_evaluation
-       # finally, call self.strategy_completed to notify that
-       # trading modes should wake up after this update
-       await self.strategy_completed(cryptocurrency, symbol)
+           # update self.eval_note to store the strategy result
+           self.eval_note = final_evaluation
+           # finally, call self.strategy_completed to notify that
+           # trading modes should wake up after this update
+           await self.strategy_completed(cryptocurrency, symbol)
