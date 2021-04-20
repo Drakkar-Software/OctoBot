@@ -13,11 +13,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import octobot.strategy_optimizer as optimizer
+from octobot.strategy_optimizer.strategy_optimizer import StrategyOptimizer
 
 
-def create_strategy_optimizer(config, tentacles_setup_config, strategy_name) -> optimizer.StrategyOptimizer:
-    return optimizer.StrategyOptimizer(config, tentacles_setup_config, strategy_name)
+def create_strategy_optimizer(config, tentacles_setup_config, strategy_name) -> StrategyOptimizer:
+    return StrategyOptimizer(config, tentacles_setup_config, strategy_name)
 
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
