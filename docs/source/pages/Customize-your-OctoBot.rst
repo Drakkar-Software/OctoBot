@@ -28,7 +28,7 @@ You can re-install them anytime using the following command options to your Octo
 
 It is also possible to install a tentacles package using the web interface Tentacles tab.
 
-Installing a tentacles
+Installing tentacles
 ^^^^^^^^^^^^^^^^^^^^^^
 
 To install tentacles, OctoBot can either install a tentacle package (zipped bundle of tentacles) or a single tentacle from a local folder.
