@@ -49,6 +49,7 @@ A tentacle package metadata.json contains :
 - **YOUR_TP_ORIGIN_PACKAGE** is the author or the origin repository of the tentacle package
 - **YOUR_TP_TENTACLE_1** and **YOUR_TP_TENTACLE_2** are names of your tentacle package tentacles (can have 1 or more).
 - **YOUR_TP_TP_REQUIREMENT_1** and **YOUR_TP_TP_REQUIREMENT_2** are the names of required tentacle packages to have installed to run your tentacle package (can have 0 or more)
+
 .. NOTE:: **YOUR_TP_TENTACLE_X** should match python classes to be exposed in the tentacle
 
 Example *DailyTradingMode/metadata.json* :
@@ -119,7 +120,7 @@ A tentacle package can also contain many resources that can be binary files, ima
 
 Example *DailyTradingMode/resources/DailyTradingMode.md* :
 
-.. code-block:: markdown
+.. code-block:: md
 
     DailyTradingMode is a **low risk versatile trading mode** that reacts only the its state changes to
     a state that is different from the previous one and that is not NEUTRAL.
@@ -135,3 +136,10 @@ Tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Tentacle should be tested. Tests file are usually located in the `tests` folder of the tentacle package.
+
+
+Installation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Follow the `tentacles installation guide <Customize-your-OctoBot.html#installing-tentacles>`_ to
+install your custom tentacle package.
