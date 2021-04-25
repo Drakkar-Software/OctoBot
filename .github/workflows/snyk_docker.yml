@@ -21,7 +21,6 @@ jobs:
         image: drakkarsoftware/octobot:latest
         args:
           --file=Dockerfile
-          --json=true
     - name: Upload result to GitHub Code Scanning
       uses: github/codeql-action/upload-sarif@v1
       with:
