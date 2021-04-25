@@ -1,4 +1,4 @@
-name: Snyk analysis
+name: Snyk Python Analysis
 on: push
 jobs:
   security:
@@ -9,3 +9,5 @@ jobs:
         uses: snyk/actions/python-3.8@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: json
