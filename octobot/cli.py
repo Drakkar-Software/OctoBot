@@ -97,6 +97,55 @@ def _disable_interface_from_param(interface_identifier, param_value, logger):
             logger.info(interface_identifier.capitalize() + " interface disabled")
 
 
+def _log_environment(logger):
+    try:
+        logger.debug(f"Running on {os_util.get_current_platform()} with {os_util.get_octobot_type()}")
+    except Exception as e:
+        logger.error(f"Impossible to identify the current running environment: {e}")
+
+
+def _create_startup_config(logger):
+    logger.info("Loading config files...")
+    config_path = configuration.get_user_config()
+    config = configuration.Configuration(config_path,
+                                         common_constants.USER_PROFILES_FOLDER,
+                                         constants.CONFIG_FILE_SCHEMA,
+                                         constants.PROFILE_FILE_SCHEMA)
+    if config.is_config_file_empty_or_missing():
+        logger.info("No configuration found creating default configuration...")
+        configuration_manager.init_config()
+        config.read(should_raise=False)
+    else:
+        config.read(should_raise=False, fill_missing_fields=True)
+        try:
+            config.validate()
+        except Exception as err:
+            if configuration_manager.migrate_from_previous_config(config):
+                logger.info("Your configuration has been migrated into the newest format.")
+            else:
+                logger.error("OctoBot can't repair your config.json file: invalid format: " + str(err))
+                raise errors.ConfigError from err
+
+    return config
+
+
+def _load_or_create_tentacles(config, logger):
+    # add tentacles folder to Python path
+    sys.path.append(os.path.realpath(os.getcwd()))
+
+    # when tentacles folder already exists
+    if os.path.isfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH):
+        config.load_profiles_if_possible_and_necessary()
+        tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
+            config.get_tentacles_config_path())
+        commands.run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config)
+    else:
+        # when no tentacles folder has been found
+        logger.info("OctoBot tentacles can't be found. Installing default tentacles ...")
+        commands.run_tentacles_install_or_update(config)
+        config.load_profiles_if_possible_and_necessary()
+
+
 def start_octobot(args):
     logger = None
     try:
@@ -110,77 +159,52 @@ def start_octobot(args):
         logger.info("Version : {0}".format(constants.LONG_VERSION))
 
         # Current running environment
-        try:
-            logger.debug(f"Running on {os_util.get_current_platform()} with {os_util.get_octobot_type()}")
-        except Exception as e:
-            logger.error(f"Impossible to identify the current running environment: {e}")
+        _log_environment(logger)
 
         # _check_public_announcements(logger)
 
-        logger.info("Loading config files...")
-
-        # configuration loading
-        config_path = configuration.get_user_config()
-        config = configuration.Configuration(config_path, common_constants.USER_PROFILES_FOLDER,
-                                             constants.CONFIG_FILE_SCHEMA, constants.PROFILE_FILE_SCHEMA)
-        if config.are_profiles_empty_or_missing():
-            logger.info("No profile found creating default profile...")
-            configuration_manager.init_default_profile()
-        if config.is_config_file_empty_or_missing():
-            logger.info("No configuration found creating default configuration...")
-            configuration_manager.init_config()
-            config.read(should_raise=False)
-        else:
-            config.read(should_raise=False, fill_missing_fields=True)
-            try:
-                config.validate()
-            except Exception as err:
-                if configuration_manager.migrate_from_previous_config(config):
-                    logger.info("Your configuration has been migrated into the newest format.")
-                else:
-                    logger.error("OctoBot can't repair your config.json file: invalid format: " + str(err))
-                    raise errors.ConfigError from err
+        # load configuration
+        config = _create_startup_config(logger)
         configuration_manager.config_health_check(config, args.backtesting)
 
+        # check config loading
         if not config.is_loaded():
             raise errors.ConfigError
 
-        # Handle utility methods before bot initializing if possible
+        # handle utility methods before bot initializing if possible
         if args.encrypter:
             commands.exchange_keys_encrypter()
             return
+
+        # add args to config
         update_config_with_args(args, config, logger)
 
+        # show terms
+        _log_terms_if_unaccepted(config, logger)
+
+        # tries to load, install or repair tentacles
+        _load_or_create_tentacles(config, logger)
+
+        # create OctoBot instance
         if args.backtesting:
             bot = octobot_backtesting.OctoBotBacktestingFactory(config,
                                                                 run_on_common_part_only=not args.whole_data_range,
                                                                 enable_join_timeout=args.enable_backtesting_timeout)
         else:
             bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history)
+
+        # set global bot instance
         octobot.set_bot(bot)
+
+        # Clear community cache
+        bot.community_auth.clear_cache()
+
         if args.identifier:
             # set community identifier
             bot.community_auth.identifier = args.identifier[0]
 
         if args.update:
             return commands.update_bot(bot.octobot_api)
-
-        _log_terms_if_unaccepted(config, logger)
-
-        # Add tentacles folder to Python path
-        sys.path.append(os.path.realpath(os.getcwd()))
-
-        if os.path.isfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH):
-            config.load_profiles()
-            tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
-                config.get_tentacles_config_path())
-            commands.run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config)
-        else:
-            logger.info("OctoBot tentacles can't be found. Installing default tentacles ...")
-            commands.run_tentacles_install_or_update(config)
-
-        # Clear community cache
-        bot.community_auth.clear_cache()
 
         if args.strategy_optimizer:
             commands.start_strategy_optimizer(config, args.strategy_optimizer)
@@ -318,7 +342,7 @@ def start_background_octobot_with_args(version=False,
                               simulate=simulate,
                               risk=risk)
     if in_subprocess:
-        bot_process = multiprocessing.Process(target=start_octobot, args=(args, ))
+        bot_process = multiprocessing.Process(target=start_octobot, args=(args,))
         bot_process.start()
         return bot_process
     else:
