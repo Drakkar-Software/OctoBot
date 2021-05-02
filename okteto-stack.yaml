@@ -1,0 +1,14 @@
+services:
+  octobot:
+    public: true
+    image: drakkarsoftware/octobot:stable
+    replicas: 1
+    ports:
+      - 5001
+    resources:
+      cpu: 2
+      memory: 4Gi
+      storage: 1Gi
+    volumes:
+      - /octobot/user
+      - /octobot/tentacles

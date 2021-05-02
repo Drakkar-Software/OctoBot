@@ -78,7 +78,11 @@ In short :
 
 [![Deploy to DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/Drakkar-Software/OctoBot/tree/master&refcode=40c9737100b1)
 
-Get 60-day free hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
+- Get 60-day free Digital Ocean hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
+
+[![Develop on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot)
+
+- Free 24-hour demo repeatable indefinitely on Okteto simply using your Github account
 
 ## Exchanges
 [![Binance](../assets/binance-logo.png)](https://www.binance.com)
