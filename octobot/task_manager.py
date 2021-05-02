@@ -16,6 +16,7 @@
 import asyncio
 import threading
 import concurrent.futures as thread 
+import traceback
 
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.logging as logging
@@ -95,6 +96,10 @@ class TaskManager:
     def _loop_exception_handler(self, loop, context):
         loop_str = "bot main async" if loop is self.async_loop else {loop}
         message = f"Error in {loop_str} loop: {context}"
+        exception = context.get('exception')
+        if exception is not None:
+            formatted_traceback = "\n".join(traceback.format_tb(exception.__traceback__))
+            message = f"{message}:\n{formatted_traceback}"
         self.logger.warning(message)
 
     def _create_new_asyncio_main_loop(self):
