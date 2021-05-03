@@ -22,6 +22,7 @@ from octobot.community.community_fields import (
 from octobot.community import community_analysis
 from octobot.community import community_manager
 from octobot.community import authentication
+from octobot.community import community_tentacles_package
 
 from octobot.community.community_analysis import (
     get_community_metrics,
@@ -37,6 +38,9 @@ from octobot.community.authentication import (
     AuthenticationError,
     AuthenticationRequired,
 )
+from octobot.community.community_tentacles_package import (
+    CommunityTentaclesPackage
+)
 
 __all__ = [
     "CommunityFields",
@@ -48,4 +52,5 @@ __all__ = [
     "FailedAuthentication",
     "AuthenticationError",
     "AuthenticationRequired",
+    "CommunityTentaclesPackage",
 ]
