@@ -58,6 +58,9 @@ class CommunityAuthentication:
     def get_logged_in_email(self):
         return self.get(constants.OCTOBOT_COMMUNITY_ACCOUNT_URL).json()["data"]["attributes"]["email"]
 
+    def get_packages(self):
+        return self.get(constants.OCTOBOT_COMMUNITY_PACKAGES_URL).json()["data"]
+
     def login(self, username, password):
         self._reset_tokens()
         params = {
