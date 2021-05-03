@@ -15,7 +15,7 @@
 #  License along with this library.
 import asyncio
 import threading
-import concurrent.futures as thread 
+import concurrent.futures as thread
 import traceback
 
 import octobot_commons.asyncio_tools as asyncio_tools
@@ -63,6 +63,7 @@ class TaskManager:
         self.init_async_loop()
         self.bot_main_task = self.async_loop.create_task(coroutine)
         self.async_loop.run_forever()
+        self.logger.debug("Stopped OctoBot main loop")
 
     def run_forever(self, coroutine):
         self.loop_forever_thread = threading.Thread(target=self.run_bot_in_thread, args=(coroutine,),
@@ -80,9 +81,15 @@ class TaskManager:
         if self.octobot.community_handler:
             stop_coroutines.append(self.octobot.community_handler.stop_task())
 
-        self.async_loop.call_soon_threadsafe(asyncio.gather(*stop_coroutines, loop=self.async_loop))
+        async def _await_gather(tasks):
+            # await this gather to be sure to complete the each stop call
+            await asyncio.gather(*tasks)
 
+        asyncio_tools.run_coroutine_in_asyncio_loop(_await_gather(stop_coroutines), self.async_loop)
         self.async_loop.stop()
+        # ensure there is at least one element in the event loop tasks
+        # not to block on base_event.py#self._selector.select(timeout) which prevents run_forever() from completing
+        asyncio.run_coroutine_threadsafe(asyncio_tools.wait_asyncio_next_cycle(), self.async_loop)
 
         self.logger.info("Tasks stopped.")
 
