@@ -104,29 +104,53 @@ def _log_environment(logger):
         logger.error(f"Impossible to identify the current running environment: {e}")
 
 
-def _create_startup_config(logger):
-    logger.info("Loading config files...")
+def _create_configuration():
     config_path = configuration.get_user_config()
     config = configuration.Configuration(config_path,
                                          common_constants.USER_PROFILES_FOLDER,
                                          constants.CONFIG_FILE_SCHEMA,
                                          constants.PROFILE_FILE_SCHEMA)
+    return config
+
+
+def _create_startup_config(logger):
+    logger.info("Loading config files...")
+    config = _create_configuration()
     if config.is_config_file_empty_or_missing():
         logger.info("No configuration found creating default configuration...")
         configuration_manager.init_config()
         config.read(should_raise=False)
     else:
-        config.read(should_raise=False, fill_missing_fields=True)
-        try:
-            config.validate()
-        except Exception as err:
-            if configuration_manager.migrate_from_previous_config(config):
-                logger.info("Your configuration has been migrated into the newest format.")
-            else:
-                logger.error("OctoBot can't repair your config.json file: invalid format: " + str(err))
-                raise errors.ConfigError from err
-
+        _read_config(config, logger)
+        _validate_config(config, logger)
     return config
+
+
+def _read_config(config, logger):
+    try:
+        config.read(should_raise=False, fill_missing_fields=True)
+    except errors.NoProfileError:
+        _repair_with_default_profile(config, logger)
+        config = _create_configuration()
+        config.read(should_raise=False, fill_missing_fields=True)
+
+
+def _validate_config(config, logger):
+    try:
+        config.validate()
+    except Exception as err:
+        if configuration_manager.migrate_from_previous_config(config):
+            logger.info("Your configuration has been migrated into the newest format.")
+        else:
+            logger.error("OctoBot can't repair your config.json file: invalid format: " + str(err))
+            raise errors.ConfigError from err
+
+
+def _repair_with_default_profile(config, logger):
+    logger.error("OctoBot can't start without a valid profile configuration. Installing default profiles...")
+    commands.run_tentacles_install_or_update(config)
+    configuration_manager.set_default_profile(config)
+    config.load_profiles_if_possible_and_necessary()
 
 
 def _load_or_create_tentacles(config, logger):
@@ -223,8 +247,7 @@ def start_octobot(args):
         os._exit(-1)
 
     except errors.NoProfileError:
-        logger.error("OctoBot can't start without a valid default profile configuration\nYou can use " +
-                     constants.DEFAULT_PROFILE_FILE + " as an example to fix it.")
+        logger.error("OctoBot can't start without a valid default profile configuration.")
         os._exit(-1)
 
     except ModuleNotFoundError as e:
