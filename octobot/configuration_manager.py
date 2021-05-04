@@ -16,6 +16,7 @@
 import copy
 import os
 import shutil
+import json
 
 import octobot.constants as constants
 import octobot_commons.configuration as configuration
@@ -128,16 +129,18 @@ def init_config(
         raise Exception(f"Can't init config file {global_exception}")
 
 
-def init_default_profile():
-    profile_folder = os.path.join(common_constants.USER_PROFILES_FOLDER,
-                                  common_constants.DEFAULT_PROFILE)
-    if not os.path.exists(profile_folder):
-        os.makedirs(profile_folder)
-    shutil.copyfile(constants.DEFAULT_PROFILE_FILE,
-                    os.path.join(profile_folder, common_constants.DEFAULT_PROFILE_FILE))
-    shutil.copyfile(constants.DEFAULT_PROFILE_AVATAR,
-                    os.path.join(profile_folder, constants.DEFAULT_PROFILE_AVATAR_FILE_NAME))
-    load_default_tentacles_config(profile_folder)
+def set_default_profile(config, from_default_config_file=constants.DEFAULT_CONFIG_FILE):
+    """
+    Set current selected profile to default one based on :from_default_config_file: file content
+    :param config: the current configuration
+    :param from_default_config_file: the config file containing the default profile id to use
+    :return: None
+    """
+    with open(from_default_config_file, "r") as default_config_file:
+        default_config = json.loads(default_config_file.read())
+    default_profile_id = default_config.get(common_constants.CONFIG_PROFILE)
+    config.select_profile(default_profile_id)
+    config.save()
 
 
 def get_default_tentacles_url(version=None):
