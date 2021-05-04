@@ -49,8 +49,8 @@ def call_tentacles_manager(command_args):
     ]
     sys.exit(tentacles_manager_cli.handle_tentacles_manager_command(command_args,
                                                                     tentacles_urls=tentacles_urls,
-                                                                    bot_install_dir=constants.OCTOBOT_FOLDER))
-
+                                                                    bot_install_dir=os.getcwd()))
+    
 
 def exchange_keys_encrypter(catch=False):
     try:
@@ -111,7 +111,7 @@ async def install_all_tentacles(tentacles_url=None):
     async with aiohttp.ClientSession() as aiohttp_session:
         await tentacles_manager_api.install_all_tentacles(tentacles_url,
                                                           aiohttp_session=aiohttp_session,
-                                                          bot_install_dir=constants.OCTOBOT_FOLDER)
+                                                          bot_install_dir=os.getcwd())
         # compiled_tentacles_url = tentacles_manager_api.get_compiled_tentacles_url(
         #     constants.DEFAULT_COMPILED_TENTACLES_URL,
         #     constants.TENTACLES_REQUIRED_VERSION
@@ -143,9 +143,8 @@ async def start_bot(bot, logger, catch=False):
         # load tentacles details
         tentacles_manager_api.reload_tentacle_info()
         # ensure tentacles config exists or create a new one
-        await tentacles_manager_api.ensure_setup_configuration(bot_install_dir=constants.OCTOBOT_FOLDER)
+        await tentacles_manager_api.ensure_setup_configuration(bot_install_dir=os.getcwd())
 
-        # start
         try:
             await bot.initialize()
         except asyncio.CancelledError:
