@@ -1,14 +1,14 @@
 # Setup requirements
-cython==0.29.22
+cython==0.29.23
 
 # Drakkar-Software requirements
-OctoBot-Commons==1.5.19
-OctoBot-Trading==1.12.8
-OctoBot-Evaluators==1.6.15
-OctoBot-Tentacles-Manager==2.4.13
+OctoBot-Commons==1.6.2
+OctoBot-Trading==1.12.9
+OctoBot-Evaluators==1.6.16
+OctoBot-Tentacles-Manager==2.5.1
 OctoBot-Services==1.2.19
-OctoBot-Backtesting==1.6.16
-Async-Channel==2.0.9
+OctoBot-Backtesting==1.6.17
+Async-Channel==2.0.10
 
 ## Others
 colorlog==4.7.2
