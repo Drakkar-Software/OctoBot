@@ -18,20 +18,28 @@ import octobot.constants as constants
 
 
 class CommunityTentaclesPackage:
-    def __init__(self, name, url, activated, images, download_url):
+    def __init__(self, name, description, url, activated, images, download_url):
         self.name: str = name
+        self.description: str = description
         self.url: str = url
         self.activated: bool = activated
         self.images: typing.List[str] = images
         self.download_url: str = download_url
+        self.uninstalled: bool = not self.is_installed()
 
     @staticmethod
     def from_community_dict(data):
         data_attributes = data["attributes"]
         return CommunityTentaclesPackage(
-            data_attributes["name"],
-            f"{constants.OCTOBOT_COMMUNITY_URL}products/{data_attributes['product_slug']}",
-            data_attributes["activated"],
-            data["relationships"]['images']['data'],
-            data_attributes["url"],
+            data_attributes.get("name"),
+            data_attributes.get("description"),
+            f"{constants.OCTOBOT_COMMUNITY_URL}products/{data_attributes.get('product_slug')}",
+            data_attributes.get("activated"),
+            data["relationships"].get('images')['data'],
+            data_attributes.get("url")
         )
+
+    def is_installed(self):
+        #TODO tmp
+        import random
+        return random.choice((True, False))

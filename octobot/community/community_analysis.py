@@ -13,28 +13,57 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
+import asyncio
+import aiohttp
 import requests
 import json
 from datetime import datetime, timedelta
 
 import octobot_commons.logging as logging
 import octobot_commons.constants as constants
+import octobot_commons.asyncio_tools as asyncio_tools
 
 import octobot.community.community_fields as community_fields
 
 LOGGER = logging.get_logger("CommunityAnalysis")
 
 
+async def get_current_octobots_stats():
+    logger = logging.get_logger("CommunityAnalysis")
+    bots_stats = {}
+    bot_metrics_url = f"{constants.METRICS_URL}metrics/community/count/"
+    async with aiohttp.ClientSession() as session:
+        async def get_stats(url, stats_key):
+            try:
+                async with session.get(url) as resp:
+                    if resp.status != 200:
+                        logger.error(f"Error when getting community status : error code={resp.status}")
+                    else:
+                        bots_stats[stats_key] = (await resp.json())["total"]
+            except Exception as e:
+                logger.exception(e, True, f"Error when getting community status : {e}")
+        await asyncio.gather(
+            get_stats(f"{bot_metrics_url}0/0/-1", "daily"),
+            get_stats(f"{bot_metrics_url}0/-1/0", "monthly"),
+            get_stats(f"{bot_metrics_url}0/0/0", "all")
+        )
+    # ugly workaround to prevent some of these current asyncio version warnings:
+    # "unclosed transport {'_pending_data': None, '_paused': False, '_sock': <socket.socket fd=-1,
+    # family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6>,"
+    await asyncio.sleep(0.01)
+    return bots_stats
+
+
 def get_community_metrics():
+    logger = logging.get_logger("CommunityAnalysis")
     try:
         resp = requests.get(f"{constants.METRICS_URL}{constants.METRICS_ROUTE_COMMUNITY}")
         if resp.status_code != 200:
-            LOGGER.error(f"Error when getting community data : error code={resp.status_code}")
+            logger.error(f"Error when getting community data : error code={resp.status_code}")
         else:
             return _format_community_data(json.loads(resp.text))
     except Exception as e:
-        LOGGER.error(f"Error when getting metrics: {e}")
+        logger.error(f"Error when getting metrics: {e}")
 
 
 def can_read_metrics(config):
