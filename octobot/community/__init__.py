@@ -26,6 +26,7 @@ from octobot.community import community_tentacles_package
 
 from octobot.community.community_analysis import (
     get_community_metrics,
+    get_current_octobots_stats,
     can_read_metrics,
 )
 from octobot.community.community_manager import (
@@ -45,6 +46,7 @@ from octobot.community.community_tentacles_package import (
 __all__ = [
     "CommunityFields",
     "get_community_metrics",
+    "get_current_octobots_stats",
     "can_read_metrics",
     "CommunityManager",
     "authenticated",
