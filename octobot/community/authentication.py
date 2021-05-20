@@ -16,6 +16,7 @@
 import functools
 import time
 import requests
+import aiohttp
 
 import octobot.constants as constants
 import octobot_commons.constants as commons_constants
@@ -50,6 +51,7 @@ class CommunityAuthentication:
         self._auth_token = None
         self._expire_at = None
         self._session = requests.Session()
+        self._aiohttp_session = None
         self._cache = {}
 
         if username and password:
@@ -109,6 +111,16 @@ class CommunityAuthentication:
         self._save_login_token("")
         self.logger.debug("Removed community login data")
 
+    def get_aiohttp_session(self):
+        if self._aiohttp_session is None:
+            self._aiohttp_session = aiohttp.ClientSession()
+            self._update_aiohttp_session_headers()
+        return self._aiohttp_session
+
+    async def stop(self):
+        if self._aiohttp_session is not None:
+            await self._aiohttp_session.close()
+
     def _save_login_token(self, value):
         if self.edited_config is not None:
             self.edited_config.config[commons_constants.CONFIG_COMMUNITY_TOKEN] = value
@@ -156,6 +168,17 @@ class CommunityAuthentication:
             {
                 CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {self._auth_token}",
                 CommunityAuthentication.IDENTIFIER_HEADER: self.identifier
+            }
+        )
+
+        if self._aiohttp_session is not None:
+            self._update_aiohttp_session_headers()
+
+    def _update_aiohttp_session_headers(self):
+        self._aiohttp_session.headers.update(
+            {
+                CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {self._auth_token}",
+                # CommunityAuthentication.IDENTIFIER_HEADER: self.identifier
             }
         )
 
