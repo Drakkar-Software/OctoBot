@@ -19,6 +19,7 @@ import json
 import requests
 import threading
 
+import octobot_commons
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
 import octobot_commons.os_util as os_util
@@ -34,6 +35,7 @@ import octobot_services.constants as service_constants
 import octobot_trading.api as trading_api
 
 import octobot.community.community_fields as community_fields
+import octobot.constants as constants
 
 
 class CommunityManager:
@@ -143,6 +145,7 @@ class CommunityManager:
             community_fields.CommunityFields.CURRENT_SESSION.value: {
                 community_fields.CommunityFields.STARTED_AT.value: int(self.octobot_api.get_start_time()),
                 community_fields.CommunityFields.UP_TIME.value: int(time.time() - self.octobot_api.get_start_time()),
+                community_fields.CommunityFields.VERSION.value: constants.LONG_VERSION,
                 community_fields.CommunityFields.SIMULATOR.value: self.has_simulator,
                 community_fields.CommunityFields.TRADER.value: self.has_real_trader,
                 community_fields.CommunityFields.EVAL_CONFIG.value: self._get_eval_config(),
