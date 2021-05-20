@@ -21,6 +21,7 @@ class CommunityFields(enum.Enum):
     CURRENT_SESSION = "currentsession"
     STARTED_AT = "startedat"
     UP_TIME = "uptime"
+    VERSION = "version"
     SIMULATOR = "simulator"
     TRADER = "trader"
     EVAL_CONFIG = "evalconfig"
