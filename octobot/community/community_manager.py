@@ -22,6 +22,7 @@ import threading
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
 import octobot_commons.os_util as os_util
+import octobot_commons.symbol_util as symbol_util
 
 import octobot_commons.constants as common_constants
 
@@ -71,7 +72,7 @@ class CommunityManager:
                     # send a keepalive at periodic intervals
                     await asyncio.sleep(common_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
                     try:
-                        await self._update_uptime_and_profitability()
+                        await self._update_session()
                     except Exception as e:
                         self.logger.debug(f"Exception when handling community data : {e}")
             except asyncio.CancelledError:
@@ -121,11 +122,13 @@ class CommunityManager:
         self.current_config = await self._get_current_community_config()
         await self._post_community_data(common_constants.METRICS_ROUTE_REGISTER, self.current_config, retry_on_error)
 
-    async def _update_uptime_and_profitability(self, retry_on_error=True):
+    async def _update_session(self, retry_on_error=True):
         self.current_config[community_fields.CommunityFields.CURRENT_SESSION.value][
             community_fields.CommunityFields.UP_TIME.value] = int(time.time() - self.octobot_api.get_start_time())
         self.current_config[community_fields.CommunityFields.CURRENT_SESSION.value][
             community_fields.CommunityFields.PROFITABILITY.value] = self._get_profitability()
+        self.current_config[community_fields.CommunityFields.CURRENT_SESSION.value][
+            community_fields.CommunityFields.TRADED_VOLUMES.value] = self._get_traded_volumes()
         await self._post_community_data(common_constants.METRICS_ROUTE_UPTIME, self.current_config, retry_on_error)
 
     async def _get_current_community_config(self):
@@ -150,7 +153,8 @@ class CommunityManager:
                 community_fields.CommunityFields.PLATFORM.value: os_util.get_current_platform(),
                 community_fields.CommunityFields.REFERENCE_MARKET.value: self.reference_market,
                 community_fields.CommunityFields.PORTFOLIO_VALUE.value: self._get_real_portfolio_value(),
-                community_fields.CommunityFields.PROFITABILITY.value: self._get_profitability()
+                community_fields.CommunityFields.PROFITABILITY.value: self._get_profitability(),
+                community_fields.CommunityFields.TRADED_VOLUMES.value: self._get_traded_volumes()
             }
         }
 
@@ -164,6 +168,21 @@ class CommunityManager:
             total_origin_values += trading_api.get_current_portfolio_value(exchange_manager)
 
         return total_profitability * 100 / total_origin_values if total_origin_values > 0 else 0
+
+    def _get_traded_volumes(self):
+        volume_by_currency = {}
+        if self.has_real_trader:
+            trades = []
+            for exchange_manager in self.exchange_managers:
+                trades += trading_api.get_trade_history(exchange_manager, since=self.octobot_api.get_start_time())
+            for trade in trades:
+                # cost is in quote currency for a traded pair
+                currency = symbol_util.split_symbol(trade.symbol)[-1]
+                if currency in volume_by_currency:
+                    volume_by_currency[currency] += trade.total_cost
+                else:
+                    volume_by_currency[currency] = trade.total_cost
+        return volume_by_currency
 
     def _get_real_portfolio_value(self):
         if self.has_real_trader:
