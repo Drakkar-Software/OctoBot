@@ -32,3 +32,4 @@ class CommunityFields(enum.Enum):
     REFERENCE_MARKET = "referencemarket"
     PORTFOLIO_VALUE = "portfoliovalue"
     PROFITABILITY = "profitability"
+    TRADED_VOLUMES = "tradedvolumes"
