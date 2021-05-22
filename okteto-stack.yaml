@@ -6,8 +6,8 @@ services:
     ports:
       - 5001
     resources:
-      cpu: 2
-      memory: 4Gi
+      cpu: 1
+      memory: 3Gi
       storage: 1Gi
     volumes:
       - /octobot/user
