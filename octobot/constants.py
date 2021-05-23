@@ -63,6 +63,7 @@ DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 
 # logs
 LOGS_FOLDER = "logs"
+ENV_ENABLE_DEBUG_LOGS = "ENABLE_DEBUG_LOGS"
 
 # config types keys
 CONFIG_KEY = "config"
