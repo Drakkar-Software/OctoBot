@@ -20,17 +20,17 @@ Welcome to OctoBot's documentation!
    :maxdepth: 1
    :caption: Configuration
 
-   pages/Configuration
    pages/Profiles
+   pages/Profile-Configuration
+   pages/Accounts
+   pages/Custom-Profile
 
 .. toctree::
    :maxdepth: 1
    :caption: Usage
 
-   pages/Trader
    pages/Simulator
    pages/Exchanges
-   pages/Notifications
    pages/Understanding-profitability
    pages/Frequently-asked-questions-(FAQ)
 
