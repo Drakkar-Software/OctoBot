@@ -63,7 +63,11 @@ class CommunityAuthentication:
     def get_packages(self):
         return self.get(constants.OCTOBOT_COMMUNITY_PACKAGES_URL).json()["data"]
 
+    def can_authenticate(self):
+        return constants.DEFAULT_COMMUNITY_URL not in self.authentication_url
+
     def login(self, username, password):
+        self._ensure_community_url()
         self._reset_tokens()
         params = {
             "username": username,
@@ -139,6 +143,8 @@ class CommunityAuthentication:
             self._refresh_auth()
         except FailedAuthentication:
             self.logout()
+        except UnavailableError:
+            raise
         except Exception as e:
             self.logger.exception(e, True, f"Error when trying to refresh community login: {e}")
 
@@ -147,8 +153,16 @@ class CommunityAuthentication:
             CommunityAuthentication.REFRESH_TOKEN: self.refresh_token,
             CommunityAuthentication.GRANT_TYPE: CommunityAuthentication.REFRESH_TOKEN,
         }
-        resp = requests.post(self.authentication_url, params=params)
-        self._handle_auth_result(resp)
+        self._ensure_community_url()
+        try:
+            resp = requests.post(self.authentication_url, params=params)
+            self._handle_auth_result(resp)
+        except requests.ConnectionError as e:
+            raise UnavailableError from e
+
+    def _ensure_community_url(self):
+        if not self.can_authenticate():
+            raise UnavailableError("Community url required")
 
     def _handle_auth_result(self, resp):
         if resp.status_code == 200:
@@ -178,7 +192,7 @@ class CommunityAuthentication:
         self._aiohttp_session.headers.update(
             {
                 CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {self._auth_token}",
-                # CommunityAuthentication.IDENTIFIER_HEADER: self.identifier
+                CommunityAuthentication.IDENTIFIER_HEADER: self.identifier
             }
         )
 
@@ -192,6 +206,12 @@ class CommunityAuthentication:
 class FailedAuthentication(Exception):
     """
     Raised upon authentication failure
+    """
+
+
+class UnavailableError(Exception):
+    """
+    Raised upon website availability issues failure
     """
 
 
