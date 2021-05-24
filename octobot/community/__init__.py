@@ -37,6 +37,7 @@ from octobot.community.authentication import (
     CommunityAuthentication,
     FailedAuthentication,
     AuthenticationError,
+    UnavailableError,
     AuthenticationRequired,
 )
 from octobot.community.community_tentacles_package import (
@@ -53,6 +54,7 @@ __all__ = [
     "CommunityAuthentication",
     "FailedAuthentication",
     "AuthenticationError",
+    "UnavailableError",
     "AuthenticationRequired",
     "CommunityTentaclesPackage",
 ]

@@ -18,7 +18,9 @@ import mock
 import requests
 import time
 import os
+import aiohttp
 
+import octobot.constants as constants
 import octobot.community as community
 import octobot_commons.configuration
 import octobot_commons.constants as commons_constants
@@ -107,7 +109,8 @@ def test_reset_tokens(auth):
     assert community.CommunityAuthentication.IDENTIFIER_HEADER in auth._session.headers
 
 
-def test_refresh_session(auth):
+@pytest.mark.asyncio
+async def test_refresh_session(auth):
     auth._auth_token = "1"
     auth._session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] = "3"
     auth.identifier = "4"
@@ -115,6 +118,24 @@ def test_refresh_session(auth):
     auth._refresh_session()
     assert auth._session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == f"Bearer 1"
     assert auth._session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] == "4"
+    assert auth._aiohttp_session is None
+    auth._aiohttp_session = aiohttp.ClientSession()
+    with mock.patch.object(auth, "_update_aiohttp_session_headers", mock.Mock()) as update_aiohttp_session_headers_mock:
+        auth._refresh_session()
+        update_aiohttp_session_headers_mock.assert_called_once()
+    await auth._aiohttp_session.close()
+
+
+@pytest.mark.asyncio
+async def test_update_aiohttp_session_headers(auth):
+    auth._aiohttp_session = aiohttp.ClientSession()
+    auth._auth_token = "1"
+    auth._aiohttp_session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] = "3"
+    auth.identifier = "4"
+    auth._update_aiohttp_session_headers()
+    assert auth._aiohttp_session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == f"Bearer 1"
+    assert auth._aiohttp_session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] == "4"
+    await auth._aiohttp_session.close()
 
 
 def test_get_logged_in_email_authenticated(logged_in_auth):
@@ -130,9 +151,39 @@ def test_get_logged_in_email_unauthenticated(auth):
         auth.get_logged_in_email()
 
 
+def test_can_authenticate(auth):
+    assert auth.can_authenticate()
+    auth.authentication_url = constants.DEFAULT_COMMUNITY_URL + auth.authentication_url
+    assert auth.can_authenticate() is False
+
+
 def test_get_unauthenticated(auth):
     with pytest.raises(community.AuthenticationRequired):
         auth.get("url")
+
+
+@pytest.mark.asyncio
+async def test_get_aiohttp_session(auth):
+    assert auth._aiohttp_session is None
+    with mock.patch.object(auth, "_update_aiohttp_session_headers", mock.Mock()) as \
+         _update_aiohttp_session_headers_mock:
+        session = auth.get_aiohttp_session()
+        assert isinstance(auth._aiohttp_session, aiohttp.ClientSession)
+        _update_aiohttp_session_headers_mock.assert_called_once()
+        assert auth._aiohttp_session is session
+        session_2 = auth.get_aiohttp_session()
+        assert session_2 is session
+        await session.close()
+
+
+def test_ensure_community_url(auth):
+    with mock.patch.object(auth, "can_authenticate", mock.Mock(return_value=False)) as can_authenticate_mock:
+        with pytest.raises(community.UnavailableError):
+            auth._ensure_community_url()
+        can_authenticate_mock.assert_called_once()
+    with mock.patch.object(auth, "can_authenticate", mock.Mock(return_value=True)) as can_authenticate_mock:
+        auth._ensure_community_url()
+        can_authenticate_mock.assert_called_once()
 
 
 def test_get_authenticated(logged_in_auth):
