@@ -13,25 +13,17 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import functools
 import time
 import requests
 import aiohttp
 
 import octobot.constants as constants
 import octobot_commons.constants as commons_constants
+import octobot_commons.authentication as authentication
 import octobot_commons.logging as bot_logging
 
 
-def authenticated(func):
-    @functools.wraps(func)
-    def wrapped(self, *args, **kwargs):
-        self.ensure_token_validity()
-        return func(self, *args, **kwargs)
-    return wrapped
-
-
-class CommunityAuthentication:
+class CommunityAuthentication(authentication.Authenticator):
     """
     Authentication utility
     """
@@ -85,7 +77,7 @@ class CommunityAuthentication:
     def clear_cache(self):
         self._cache = {}
 
-    @authenticated
+    @authentication.authenticated
     def get(self, url, params=None, allow_cache=False, **kwargs):
         if allow_cache:
             if url not in self._cache:
@@ -94,7 +86,7 @@ class CommunityAuthentication:
         else:
             return self._session.get(url, params=params, **kwargs)
 
-    @authenticated
+    @authentication.authenticated
     def post(self, url, data=None, json=None, **kwargs):
         return self._session.post(url, data=data, json=json, **kwargs)
 
@@ -107,7 +99,7 @@ class CommunityAuthentication:
             self._try_auto_login()
             if not self.is_logged_in():
                 # still not logged in: raise
-                raise AuthenticationRequired()
+                raise authentication.AuthenticationRequired()
         if time.time() >= self._expire_at:
             self._refresh_auth()
 
@@ -141,9 +133,9 @@ class CommunityAuthentication:
         self.refresh_token = token
         try:
             self._refresh_auth()
-        except FailedAuthentication:
+        except authentication.FailedAuthentication:
             self.logout()
-        except UnavailableError:
+        except authentication.UnavailableError:
             raise
         except Exception as e:
             self.logger.exception(e, True, f"Error when trying to refresh community login: {e}")
@@ -158,11 +150,11 @@ class CommunityAuthentication:
             resp = requests.post(self.authentication_url, params=params)
             self._handle_auth_result(resp)
         except requests.ConnectionError as e:
-            raise UnavailableError from e
+            raise authentication.UnavailableError from e
 
     def _ensure_community_url(self):
         if not self.can_authenticate():
-            raise UnavailableError("Community url required")
+            raise authentication.UnavailableError("Community url required")
 
     def _handle_auth_result(self, resp):
         if resp.status_code == 200:
@@ -173,9 +165,9 @@ class CommunityAuthentication:
             self._refresh_session()
             self._save_login_token(self.refresh_token)
         elif resp.status_code == 400:
-            raise FailedAuthentication("Invalid username or password.")
+            raise authentication.FailedAuthentication("Invalid username or password.")
         else:
-            raise AuthenticationError(f"Error code: {resp.status_code}")
+            raise authentication.AuthenticationError(f"Error code: {resp.status_code}")
 
     def _refresh_session(self):
         self._session.headers.update(
@@ -201,27 +193,3 @@ class CommunityAuthentication:
         self.refresh_token = None
         self._expire_at = None
         self._session.headers.pop(CommunityAuthentication.AUTHORIZATION_HEADER, None)
-
-
-class FailedAuthentication(Exception):
-    """
-    Raised upon authentication failure
-    """
-
-
-class UnavailableError(Exception):
-    """
-    Raised upon website availability issues failure
-    """
-
-
-class AuthenticationError(Exception):
-    """
-    Raised upon authentication technical error, not on login/password issues
-    """
-
-
-class AuthenticationRequired(Exception):
-    """
-    Raised when an authentication is required
-    """
