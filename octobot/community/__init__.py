@@ -33,12 +33,7 @@ from octobot.community.community_manager import (
     CommunityManager,
 )
 from octobot.community.authentication import (
-    authenticated,
     CommunityAuthentication,
-    FailedAuthentication,
-    AuthenticationError,
-    UnavailableError,
-    AuthenticationRequired,
 )
 from octobot.community.community_tentacles_package import (
     CommunityTentaclesPackage
@@ -50,11 +45,6 @@ __all__ = [
     "get_current_octobots_stats",
     "can_read_metrics",
     "CommunityManager",
-    "authenticated",
     "CommunityAuthentication",
-    "FailedAuthentication",
-    "AuthenticationError",
-    "UnavailableError",
-    "AuthenticationRequired",
     "CommunityTentaclesPackage",
 ]

@@ -147,11 +147,11 @@ def _is_of_trader_type(item, trader_type):
     else:
         session = item.get(community_fields.CommunityFields.CURRENT_SESSION.value, {})
         if trader_type is TraderTypes.REAL \
-                and session.get(community_fields.CommunityFields.TRADER.value, False) is True:
+                and session.get(community_fields.CommunityFields.TRADER.value, False):
             return True
         elif trader_type is TraderTypes.SIMULATED \
-                and session.get(community_fields.CommunityFields.TRADER.value, False) is False \
-                and session.get(community_fields.CommunityFields.SIMULATOR.value, False) is True:
+                and not session.get(community_fields.CommunityFields.TRADER.value, False) \
+                and session.get(community_fields.CommunityFields.SIMULATOR.value, False):
             return True
         return False
 
