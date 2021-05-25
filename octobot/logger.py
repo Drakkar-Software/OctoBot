@@ -126,6 +126,10 @@ async def init_exchange_chan_logger(exchange_id):
                                          exchange_id).new_consumer(
             funding_callback, priority_level=LOGGER_PRIORITY_LEVEL
         )
+        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
+                                         exchange_id).new_consumer(
+            mark_price_callback, priority_level=LOGGER_PRIORITY_LEVEL
+        )
     await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.BALANCE_CHANNEL.value,
                                      exchange_id).new_consumer(
         balance_callback, priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
@@ -149,10 +153,6 @@ async def init_exchange_chan_logger(exchange_id):
     await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.ORDERS_CHANNEL.value,
                                      exchange_id).new_consumer(
         orders_callback, priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
-    )
-    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
-                                     exchange_id).new_consumer(
-        mark_price_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
 
 
