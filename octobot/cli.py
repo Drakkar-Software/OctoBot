@@ -189,7 +189,6 @@ def start_octobot(args):
 
         # load configuration
         config = _create_startup_config(logger)
-        configuration_manager.config_health_check(config, args.backtesting)
 
         # check config loading
         if not config.is_loaded():
@@ -208,6 +207,9 @@ def start_octobot(args):
 
         # tries to load, install or repair tentacles
         _load_or_create_tentacles(config, logger)
+
+        # Can now perform config health check (some checks require a loaded profile)
+        configuration_manager.config_health_check(config, args.backtesting)
 
         # create OctoBot instance
         if args.backtesting:
