@@ -29,22 +29,23 @@ async def get_current_octobots_stats():
     logger = logging.get_logger("CommunityAnalysis")
     bots_stats = {}
     bot_metrics_url = f"{constants.METRICS_URL}metrics/community/count/"
-    async with aiohttp.ClientSession() as session:
-        async def get_stats(url, stats_key):
-            try:
+
+    async def get_stats(url, stats_key):
+        try:
+            async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
                     if resp.status != 200:
                         logger.error(f"Error when getting community status : error code={resp.status}")
                     else:
                         bots_stats[stats_key] = (await resp.json())["total"]
-            except Exception as e:
-                logger.exception(e, True, f"Error when getting community status : {e}")
+        except Exception as e:
+            logger.exception(e, True, f"Error when getting community status : {e}")
 
-        await asyncio.gather(
-            get_stats(f"{bot_metrics_url}0/0/-1", "daily"),
-            get_stats(f"{bot_metrics_url}0/-1/0", "monthly"),
-            get_stats(f"{bot_metrics_url}0/0/0", "all")
-        )
+    await asyncio.gather(
+        get_stats(f"{bot_metrics_url}0/0/-1", "daily"),
+        get_stats(f"{bot_metrics_url}0/-1/0", "monthly"),
+        get_stats(f"{bot_metrics_url}0/0/0", "all")
+    )
     # ugly workaround to prevent some of these current aiohttp version warnings:
     # "unclosed transport {'_pending_data': None, '_paused': False, '_sock': <socket.socket fd=-1,
     # family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6>,"
