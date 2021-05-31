@@ -24,8 +24,6 @@ import octobot_commons.constants as constants
 
 import octobot.community.community_fields as community_fields
 
-LOGGER = logging.get_logger("CommunityAnalysis")
-
 
 async def get_current_octobots_stats():
     logger = logging.get_logger("CommunityAnalysis")
