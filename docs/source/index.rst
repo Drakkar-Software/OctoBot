@@ -20,17 +20,17 @@ Welcome to OctoBot's documentation!
    :maxdepth: 1
    :caption: Configuration
 
-   pages/Configuration
    pages/Profiles
+   pages/Profile-Configuration
+   pages/Accounts
+   pages/Custom-Profile
 
 .. toctree::
    :maxdepth: 1
    :caption: Usage
 
-   pages/Trader
    pages/Simulator
    pages/Exchanges
-   pages/Notifications
    pages/Understanding-profitability
    pages/Frequently-asked-questions-(FAQ)
 
@@ -48,15 +48,9 @@ Welcome to OctoBot's documentation!
    :maxdepth: 1
    :caption: Advanced Usage
 
-   pages/Customize-your-OctoBot
    pages/Tentacle-Manager
    pages/Backtesting-and-strategy-optimization
    pages/OctoBot-0.4
-   pages/Tests
-   pages/Contribution
-   pages/Developer-Guide
-   pages/Developers-tips
-   pages/With-Docker-on-Android
 
 .. toctree::
    :maxdepth: 1
@@ -64,3 +58,15 @@ Welcome to OctoBot's documentation!
 
    pages/TradingView-webhook
    pages/Using-a-webhook-with-OctoBot
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Developers
+
+   pages/Customize-your-OctoBot
+   pages/Developer-Guide
+   pages/Tentacle-Package-Development
+   pages/Tentacle-Development
+   pages/Tests
+   pages/Developers-tips
+   pages/Contribution

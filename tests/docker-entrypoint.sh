@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# check python libs
+python -m pip freeze
+
 # install tentacles
 if ./OctoBot tentacles --install -a ; then
     echo "Tentacles successfully installed"

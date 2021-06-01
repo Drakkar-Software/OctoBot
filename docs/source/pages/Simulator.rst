@@ -65,5 +65,3 @@ Real trader
 -----------
 
 Additionally to the simulated trading system, a real trader is available in OctoBot.
-
-`Here is the article describing the real trader feature of OctoBot <Trader.html>`_

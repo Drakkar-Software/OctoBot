@@ -2,13 +2,13 @@
    :format: html
 
 
-Developer
-=========
+Developer startup guide
+===============================
 
 Note: this page is referring to OctoBot in versions superior to 0.4.0.
 
 Environment setup
------------------
+-------------------------------
 
 We recommand using `PyCharm <https://www.jetbrains.com/pycharm/>`_ to navigate through the OctoBot projects. This IDE will allow you to open and navigate through the multiple OctoBot repositories and make your OctoBot run setup use the code directly from the clonned repos using the project dependencies.
 
@@ -29,12 +29,12 @@ Additionally, in order to save CPU time, as little threads as possible are use b
 As a final touch, each CPU or memory intensive task is further optimized using `Cython <https://cython.org/>`_. The python code of these tasks is translated into highly optimized C code that allows for less instructions to process and optimized memory representation ending up with a huge performance increase.
 
 Overview
-^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The OctoBot code is split into `several repository <Developer-Guide.html#id1>`_. Each module is handled as an independent python module and is available on the `official python package repository <https://pypi.org/>`_ (used in ``pip`` commands). Modules are made available as python source modules as well as as compiled modules which includes cython optimizations. Installing a module on a platform which as not already been built and made available on `pypi.org <https://pypi.org/>`_ will take much more time as ``pip`` will cythonize and compile the given module, which also requires a cpp compiler.
 
 OctoBot
-^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/octobot_arch.svg
@@ -46,7 +46,7 @@ Simplified view of the OctoBot core components.
 Note: Inside the OctoBot part, each arrow is an async channel.
 
 OctoBot tentacles
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Tentacles are OctoBot's extensions, they are meant to be easily customizable, can be activated or not and do any specific action within OctoBot.
 
