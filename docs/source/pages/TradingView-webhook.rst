@@ -59,7 +59,9 @@ Create an alert
      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tradingview-alert-webhook-url.png
      :alt: set-webhook-url
 
-  You can find OctoBot's webhook on your OctoBot's configuration page or in OctoBot's starting logs if you activated a webhook requiring tentacle (like trading view signals trading mode). It should be an url like http://XXXXXXXX.ngrok.io/webhook/trading_view.
+  You can find OctoBot's webhook on your OctoBot's configuration page or in OctoBot's starting logs. It should be an url like http://XXXXXXXX.ngrok.io/webhook/trading_view.
+
+  WARNING: To improve performances, webhooks are started only when required, this means that **you need to activate a webhook related tentacle to get the webhook url** (a tentacle such as the **trading view signals trading mode**)
 
   .. image:: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/webhook_config.jpg
      :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/webhook_config.jpg

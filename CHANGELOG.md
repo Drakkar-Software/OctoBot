@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.0-beta9] - 2021-04-31
+### Added
+- [WebInterface] Advanced OctoBot statistics
+- [Exchanges] Beta websocket connexions
+- [Profiles] Default profiles for each trading mode
+- [Profiles] Read-only profiles
+
+### Fixed
+- Stop command
+
 ## [0.4.0-beta8] - 2021-04-06
 ### Added
 - [WebInterface] Starting tutorial

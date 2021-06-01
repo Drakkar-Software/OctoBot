@@ -1,4 +1,4 @@
-# OctoBot [0.4.0-beta8](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
+# OctoBot [0.4.0-beta9](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
@@ -78,7 +78,11 @@ In short :
 
 [![Deploy to DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/Drakkar-Software/OctoBot/tree/master&refcode=40c9737100b1)
 
-Get 60-day free hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
+- Get 60-day free Digital Ocean hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
+
+[![Develop on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot)
+
+- Free 24-hour demo repeatable indefinitely on Okteto simply using your Github account
 
 ## Exchanges
 [![Binance](../assets/binance-logo.png)](https://www.binance.com)

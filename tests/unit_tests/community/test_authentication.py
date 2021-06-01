@@ -18,8 +18,11 @@ import mock
 import requests
 import time
 import os
+import aiohttp
 
+import octobot.constants as constants
 import octobot.community as community
+import octobot_commons.authentication as authentication
 import octobot_commons.configuration
 import octobot_commons.constants as commons_constants
 
@@ -107,7 +110,8 @@ def test_reset_tokens(auth):
     assert community.CommunityAuthentication.IDENTIFIER_HEADER in auth._session.headers
 
 
-def test_refresh_session(auth):
+@pytest.mark.asyncio
+async def test_refresh_session(auth):
     auth._auth_token = "1"
     auth._session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] = "3"
     auth.identifier = "4"
@@ -115,6 +119,24 @@ def test_refresh_session(auth):
     auth._refresh_session()
     assert auth._session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == f"Bearer 1"
     assert auth._session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] == "4"
+    assert auth._aiohttp_session is None
+    auth._aiohttp_session = aiohttp.ClientSession()
+    with mock.patch.object(auth, "_update_aiohttp_session_headers", mock.Mock()) as update_aiohttp_session_headers_mock:
+        auth._refresh_session()
+        update_aiohttp_session_headers_mock.assert_called_once()
+    await auth._aiohttp_session.close()
+
+
+@pytest.mark.asyncio
+async def test_update_aiohttp_session_headers(auth):
+    auth._aiohttp_session = aiohttp.ClientSession()
+    auth._auth_token = "1"
+    auth._aiohttp_session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] = "3"
+    auth.identifier = "4"
+    auth._update_aiohttp_session_headers()
+    assert auth._aiohttp_session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == f"Bearer 1"
+    assert auth._aiohttp_session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] == "4"
+    await auth._aiohttp_session.close()
 
 
 def test_get_logged_in_email_authenticated(logged_in_auth):
@@ -126,13 +148,43 @@ def test_get_logged_in_email_authenticated(logged_in_auth):
 
 
 def test_get_logged_in_email_unauthenticated(auth):
-    with pytest.raises(community.AuthenticationRequired):
+    with pytest.raises(authentication.AuthenticationRequired):
         auth.get_logged_in_email()
 
 
+def test_can_authenticate(auth):
+    assert auth.can_authenticate()
+    auth.authentication_url = constants.DEFAULT_COMMUNITY_URL + auth.authentication_url
+    assert auth.can_authenticate() is False
+
+
 def test_get_unauthenticated(auth):
-    with pytest.raises(community.AuthenticationRequired):
+    with pytest.raises(authentication.AuthenticationRequired):
         auth.get("url")
+
+
+@pytest.mark.asyncio
+async def test_get_aiohttp_session(auth):
+    assert auth._aiohttp_session is None
+    with mock.patch.object(auth, "_update_aiohttp_session_headers", mock.Mock()) as \
+         _update_aiohttp_session_headers_mock:
+        session = auth.get_aiohttp_session()
+        assert isinstance(auth._aiohttp_session, aiohttp.ClientSession)
+        _update_aiohttp_session_headers_mock.assert_called_once()
+        assert auth._aiohttp_session is session
+        session_2 = auth.get_aiohttp_session()
+        assert session_2 is session
+        await session.close()
+
+
+def test_ensure_community_url(auth):
+    with mock.patch.object(auth, "can_authenticate", mock.Mock(return_value=False)) as can_authenticate_mock:
+        with pytest.raises(authentication.UnavailableError):
+            auth._ensure_community_url()
+        can_authenticate_mock.assert_called_once()
+    with mock.patch.object(auth, "can_authenticate", mock.Mock(return_value=True)) as can_authenticate_mock:
+        auth._ensure_community_url()
+        can_authenticate_mock.assert_called_once()
 
 
 def test_get_authenticated(logged_in_auth):
@@ -195,7 +247,7 @@ def test_get_authenticated_with_cache(logged_in_auth):
 
 
 def test_post_unauthenticated(auth):
-    with pytest.raises(community.AuthenticationRequired):
+    with pytest.raises(authentication.AuthenticationRequired):
         auth.post("url")
 
 
@@ -220,15 +272,15 @@ def test_is_logged_in(auth):
 
 
 def test_ensure_token_validity():
-    with pytest.raises(community.AuthenticationRequired):
+    with pytest.raises(authentication.AuthenticationRequired):
         community.CommunityAuthentication(AUTH_URL).ensure_token_validity()
-    with pytest.raises(community.AuthenticationRequired):
+    with pytest.raises(authentication.AuthenticationRequired):
         auth = community.CommunityAuthentication(AUTH_URL)
         auth._auth_token = "1"
         auth.refresh_token = "1"
         auth._expire_at = None
         community.CommunityAuthentication(AUTH_URL).ensure_token_validity()
-    with pytest.raises(community.AuthenticationRequired):
+    with pytest.raises(authentication.AuthenticationRequired):
         auth = community.CommunityAuthentication(AUTH_URL)
         auth._auth_token = "1"
         auth.refresh_token = "1"
@@ -238,12 +290,12 @@ def test_ensure_token_validity():
     auth = community.CommunityAuthentication(AUTH_URL)
     with mock.patch.object(auth, "is_logged_in", mock.Mock(return_value=False)) as is_logged_in_mock, \
          mock.patch.object(auth, "_try_auto_login", mock.Mock()) as _try_auto_login_mock:
-        with pytest.raises(community.AuthenticationRequired):
+        with pytest.raises(authentication.AuthenticationRequired):
             auth.ensure_token_validity()
         assert is_logged_in_mock.call_count == 2
         _try_auto_login_mock.assert_called_once()
     with mock.patch.object(auth, "_try_auto_login", mock.Mock()) as _try_auto_login_mock:
-        with pytest.raises(community.AuthenticationRequired):
+        with pytest.raises(authentication.AuthenticationRequired):
             auth.ensure_token_validity()
         _try_auto_login_mock.assert_called_once()
     auth = community.CommunityAuthentication(AUTH_URL)
@@ -301,7 +353,7 @@ def test_auto_login(auth):
         assert auth.refresh_token == "1"
         _refresh_auth_mock.assert_called_once()
     auth.refresh_token = None
-    with mock.patch.object(auth, "_refresh_auth", mock.Mock(side_effect=community.FailedAuthentication())) as \
+    with mock.patch.object(auth, "_refresh_auth", mock.Mock(side_effect=authentication.FailedAuthentication())) as \
             _refresh_auth_mock, \
          mock.patch.object(auth, "logout", mock.Mock()) as logout_mock:
         auth._auto_login("1")
@@ -329,10 +381,10 @@ def test_refresh_auth(auth):
 
 def test_handle_auth_result(auth):
     with mock.patch.object(auth, "_refresh_session", mock.Mock()) as refresh_mock:
-        with pytest.raises(community.FailedAuthentication):
+        with pytest.raises(authentication.FailedAuthentication):
             auth._handle_auth_result(MockedResponse(status_code=400))
         refresh_mock.assert_not_called()
-        with pytest.raises(community.AuthenticationError):
+        with pytest.raises(authentication.AuthenticationError):
             auth._handle_auth_result(MockedResponse(status_code=500))
         refresh_mock.assert_not_called()
         with mock.patch.object(time, "time", mock.Mock(return_value=10)):
@@ -345,7 +397,7 @@ def test_handle_auth_result(auth):
 
 
 def test_authenticated(auth):
-    @community.authenticated
+    @authentication.authenticated
     def mock_func(*_):
         pass
     with mock.patch.object(auth, "ensure_token_validity", mock.Mock()) as ensure_token_validity_mock:

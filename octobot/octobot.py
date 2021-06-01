@@ -128,9 +128,11 @@ class OctoBot:
                                             markdown_format=enums.MarkdownFormat.ITALIC))
 
     async def stop(self):
+        await self.exchange_producer.stop()
         await self.service_feed_producer.stop()
         service_api.stop_services()
         await self.interface_producer.stop()
+        await self.community_auth.stop()
         self.logger.info("Shutting down.")
 
     async def _start_tools_tasks(self):

@@ -22,30 +22,29 @@ from octobot.community.community_fields import (
 from octobot.community import community_analysis
 from octobot.community import community_manager
 from octobot.community import authentication
+from octobot.community import community_tentacles_package
 
 from octobot.community.community_analysis import (
     get_community_metrics,
+    get_current_octobots_stats,
     can_read_metrics,
 )
 from octobot.community.community_manager import (
     CommunityManager,
 )
 from octobot.community.authentication import (
-    authenticated,
     CommunityAuthentication,
-    FailedAuthentication,
-    AuthenticationError,
-    AuthenticationRequired,
+)
+from octobot.community.community_tentacles_package import (
+    CommunityTentaclesPackage
 )
 
 __all__ = [
     "CommunityFields",
     "get_community_metrics",
+    "get_current_octobots_stats",
     "can_read_metrics",
     "CommunityManager",
-    "authenticated",
     "CommunityAuthentication",
-    "FailedAuthentication",
-    "AuthenticationError",
-    "AuthenticationRequired",
+    "CommunityTentaclesPackage",
 ]

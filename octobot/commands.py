@@ -49,8 +49,8 @@ def call_tentacles_manager(command_args):
     ]
     sys.exit(tentacles_manager_cli.handle_tentacles_manager_command(command_args,
                                                                     tentacles_urls=tentacles_urls,
-                                                                    bot_install_dir=constants.OCTOBOT_FOLDER))
-
+                                                                    bot_install_dir=os.getcwd()))
+    
 
 def exchange_keys_encrypter(catch=False):
     try:
@@ -77,8 +77,32 @@ def start_strategy_optimizer(config, commands):
         strategy_optimizer_api.print_optimizer_report(optimizer)
 
 
-def run_tentacles_installation():
-    asyncio.run(install_all_tentacles())
+def run_tentacles_install_or_update(config):
+    asyncio.run(install_or_update_tentacles(config))
+
+
+def run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config):
+    asyncio.run(update_or_repair_tentacles_if_necessary(tentacles_setup_config, config))
+
+
+async def update_or_repair_tentacles_if_necessary(tentacles_setup_config, config):
+    if not tentacles_manager_api.are_tentacles_up_to_date(tentacles_setup_config, constants.VERSION):
+        logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are not up to date. Updating tentacles...")
+        if await install_or_update_tentacles(config):
+            logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are now up to date.")
+    elif tentacles_manager_api.load_tentacles(verbose=True):
+        logging.get_logger(COMMANDS_LOGGER_NAME).debug("OctoBot tentacles are up to date.")
+    else:
+        logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are damaged. Installing default tentacles ...")
+        await install_or_update_tentacles(config)
+
+
+async def install_or_update_tentacles(config):
+    await install_all_tentacles()
+    # reload profiles
+    config.load_profiles()
+    # reload tentacles
+    return tentacles_manager_api.load_tentacles(verbose=True)
 
 
 async def install_all_tentacles(tentacles_url=None):
@@ -87,7 +111,7 @@ async def install_all_tentacles(tentacles_url=None):
     async with aiohttp.ClientSession() as aiohttp_session:
         await tentacles_manager_api.install_all_tentacles(tentacles_url,
                                                           aiohttp_session=aiohttp_session,
-                                                          bot_install_dir=constants.OCTOBOT_FOLDER)
+                                                          bot_install_dir=os.getcwd())
         # compiled_tentacles_url = tentacles_manager_api.get_compiled_tentacles_url(
         #     constants.DEFAULT_COMPILED_TENTACLES_URL,
         #     constants.TENTACLES_REQUIRED_VERSION
@@ -119,9 +143,8 @@ async def start_bot(bot, logger, catch=False):
         # load tentacles details
         tentacles_manager_api.reload_tentacle_info()
         # ensure tentacles config exists or create a new one
-        await tentacles_manager_api.ensure_setup_configuration(bot_install_dir=constants.OCTOBOT_FOLDER)
+        await tentacles_manager_api.ensure_setup_configuration(bot_install_dir=os.getcwd())
 
-        # start
         try:
             await bot.initialize()
         except asyncio.CancelledError:
