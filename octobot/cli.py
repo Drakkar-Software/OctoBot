@@ -54,6 +54,11 @@ def update_config_with_args(starting_args, config: configuration.Configuration, 
             "Can't start backtesting without the octobot_backtesting package properly installed.")
         raise e
 
+    if common_constants.CONFIG_TRADER not in config.config:
+        config.config[common_constants.CONFIG_TRADER] = {}
+    if common_constants.CONFIG_SIMULATOR not in config.config:
+        config.config[common_constants.CONFIG_SIMULATOR] = {}
+
     if starting_args.backtesting:
         if starting_args.backtesting_files:
             config.config[backtesting_constants.CONFIG_BACKTESTING][
