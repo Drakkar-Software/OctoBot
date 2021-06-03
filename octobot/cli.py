@@ -147,8 +147,7 @@ def _validate_config(config, logger):
 
 
 def _repair_with_default_profile(config, logger):
-    logger.error("OctoBot can't start without a valid profile configuration. Installing default profiles...")
-    commands.run_tentacles_install_or_update(config)
+    logger.error("OctoBot can't start without a valid profile configuration. Selecting default profile ...")
     configuration_manager.set_default_profile(config)
     config.load_profiles_if_possible_and_necessary()
 
