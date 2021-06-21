@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.0-beta11] - 2021-XX-XX
+### Note
+Thanks to @valouvaliavlo for his work in this version !
+
+### Fixed
+- XX
+
+### Added
+- XX
+
 ## [0.4.0-beta10] - 2021-06-05
 ### Fixed
 - [Websockets] Properly handle websockets errors
