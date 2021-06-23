@@ -325,16 +325,12 @@ async def positions_callback(
     cryptocurrency: str,
     symbol: str,
     position,
-    is_closed: bool,
     is_updated: bool,
-    is_liquidated: bool,
-    is_from_bot: bool,
+    is_liquidated: bool
 ):
     BOT_CHANNEL_LOGGER.info(
         f"POSITIONS : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} "
-        f"|| SYMBOL = {symbol} || POSITIONS = {position}"
-        f"|| CLOSED = {is_closed} || UPDATED = {is_updated} || LIQUIDATED = {is_liquidated} "
-        f"|| FROM_BOT = {is_from_bot}"
+        f"|| SYMBOL = {symbol} || POSITIONS = {position} || UPDATED = {is_updated} || LIQUIDATED = {is_liquidated} "
     )
 
 
@@ -349,7 +345,7 @@ async def funding_callback(
 ):
     BOT_CHANNEL_LOGGER.info(
         f"FUNDING : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} "
-        f"|| RATE = {str(funding_rate)}"
+        f"|| RATE = {str(funding_rate)} "
         f"|| NEXT TIME = {str(next_funding_time)} || TIMESTAMP = {str(timestamp)}"
     )
 
