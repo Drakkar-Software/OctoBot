@@ -1,7 +1,11 @@
 services:
   octobot:
     public: true
-    image: drakkarsoftware/octobot:stable
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - TENTACLES_URL_TAG=${OKTETO_GIT_BRANCH////_}
     replicas: 1
     ports:
       - 5001
