@@ -11,7 +11,11 @@ Setting up your OctoBot's webhook
 
 
 #. In OctoBot configuration, add the webhook service.
-#. To get your OctoBot's webhook address (the url other websites will use to send messages to your OctoBot), create an account on https://ngrok.com/ and enter your ngrok token into your webhook service configuration.
+#. To setting up you webhook through internet
+
+   * Option 1: If your octobot is not exposed to internet you have to enable ngrok and create an account on https://ngrok.com/ and enter your ngrok token into your webhook service configuration.
+   * Option 2: If your octobot is exposed to internet you can disable ngrok and set the listening port and ip for the webhook
+
 #. Activate a tentacle using a webhook service (like the trading view signals trading mode).
 #. Restart your OctoBot.
 #. The webhook address will be displayed on your OctoBot configuration and printed in your logs.
@@ -26,4 +30,4 @@ Setting up your OctoBot's webhook
       :alt: webhook log
 
    ## About ngrok.com
-   You can use ngrok with a free account, the only drawback of having a free version is that your webhoob address will change at every OctoBot restart, you will have to update it on your message sender (like https://www.tradingview.com)
+   You can use ngrok with a free account, the only drawback of having a free version is that your webhook address will change at every OctoBot restart, you will have to update it on your message sender (like https://www.tradingview.com)
