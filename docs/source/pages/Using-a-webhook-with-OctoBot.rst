@@ -11,10 +11,13 @@ Setting up your OctoBot's webhook
 
 
 #. In OctoBot configuration, add the webhook service.
-#. To setting up you webhook through internet
+#. To set up you webhook through internet
 
-   * Option 1: If your octobot is not exposed to internet you have to enable ngrok and create an account on https://ngrok.com/ and enter your ngrok token into your webhook service configuration.
-   * Option 2: If your octobot is exposed to internet you can disable ngrok and set the listening port and ip for the webhook
+   * Option 1: If your OctoBot is not exposed to the Internet you have to : 
+    - enable ngrok
+    - create an account on https://ngrok.com/
+    - enter your ngrok token into your OctoBot's webhook service configuration.
+   * Option 2: If your OctoBot is exposed to the Internet you can disable ngrok and set the listening port and ip for the webhook
 
 #. Activate a tentacle using a webhook service (like the trading view signals trading mode).
 #. Restart your OctoBot.
