@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Note
 Thanks to @valouvaliavlo for his work in this version !
 
+### Updated
+- [Documentation] Update webhook documentation
+
 ### Fixed
 - XX
 
