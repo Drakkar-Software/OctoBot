@@ -1,0 +1,21 @@
+name: OctoBot-Comment-PR
+on:
+  pull_request:
+    types: [ opened ]
+
+jobs:
+  okteto_button_comment_pr:
+    runs-on: ubuntu-latest
+    name: Okteto deploy button comment
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Set Environment Variables
+        run: echo "GIT_BRANCH=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@master
+        with:
+          message: '[![Deploy PR on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot&branch=${{ env.GIT_BRANCH }})'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
