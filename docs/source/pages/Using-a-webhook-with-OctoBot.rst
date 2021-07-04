@@ -11,7 +11,7 @@ Setting up your OctoBot's webhook
 
 
 #. In OctoBot configuration, add the webhook service.
-#. To set up you webhook through internet
+#. To set up your webhook configuration
 
    * Option 1: If your OctoBot is not exposed to the Internet you have to : 
     - enable ngrok
