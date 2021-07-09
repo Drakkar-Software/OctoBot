@@ -49,7 +49,7 @@ Time synchronization
 
 This issue happens when error messages such as ``'recvWindow' must be less than ...`` appear.
 
-Open an administrator terminal and type:
+Open an administrator terminal (``Win + X`` then ``A``) and type:
 
 .. code-block:: bash
 
