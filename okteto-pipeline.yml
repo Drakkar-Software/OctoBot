@@ -1,3 +1,4 @@
 icon: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/octopus.png
 deploy:
+  - export TENTACLES_URL_TAG=${OKTETO_GIT_BRANCH////_}
   - okteto stack deploy --build --wait
