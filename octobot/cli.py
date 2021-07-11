@@ -348,7 +348,8 @@ def start_background_octobot_with_args(version=False,
                                        enable_backtesting_timeout=True,
                                        simulate=True,
                                        risk=None,
-                                       in_subprocess=False):
+                                       in_subprocess=False,
+                                       reset_trading_history=False):
     if backtesting_files is None:
         backtesting_files = []
     args = argparse.Namespace(version=version,
@@ -364,7 +365,8 @@ def start_background_octobot_with_args(version=False,
                               whole_data_range=whole_data_range,
                               enable_backtesting_timeout=enable_backtesting_timeout,
                               simulate=simulate,
-                              risk=risk)
+                              risk=risk,
+                              reset_trading_history=reset_trading_history)
     if in_subprocess:
         bot_process = multiprocessing.Process(target=start_octobot, args=(args,))
         bot_process.start()

@@ -8,6 +8,6 @@ ENV CYTHON_IGNORE=true
 
 COPY dev_requirements.txt .
 COPY tests tests
-RUN pip freeze && pip install --extra-index-url https://www.piwheels.org/simple --prefer-binary -r dev_requirements.txt
+RUN pip freeze && pip install --prefer-binary -r dev_requirements.txt
 
 ENTRYPOINT ["./tests/docker-entrypoint.sh"]

@@ -22,3 +22,40 @@ Usage
 .. code-block::
 
    $ OctoBot
+
+
+Start multiple OctoBots
+---------------------------------------
+
+To run a second OctoBot on the same computer :
+
+1. Create a new directory and enter it
+
+2. Start OctoBot and stop it after 1-2min to let it create default files
+
+3. Open user/config.json file
+
+4. Change web config lines
+
+FROM
+
+.. code-block:: json
+
+        "web": {
+            "auto-open-in-web-browser": true
+        }
+
+TO
+
+.. code-block:: json
+
+        "web": {
+            "auto-open-in-web-browser": true,
+            "port": 8000
+        }
+
+In this example, the second OctoBot's web interface is accessible at http://127.0.0.1:8000.
+
+Any port can be used except those already used by another OctoBot or any software on your system.
+
+5. Start the new OctoBot

@@ -1,0 +1,24 @@
+icon: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/octopus.png
+deploy:
+  - echo "" >> .env
+  - |
+    if [[ "$OKTETO_GIT_BRANCH" == "master" ]] ;  then
+      DOCKER_IMAGE=drakkarsoftware/octobot:stable
+      echo "DOCKER_IMAGE=drakkarsoftware/octobot:stable" >> .env
+    fi
+  - |
+    if [[ "$OKTETO_GIT_BRANCH" == "dev" ]] ;  then
+      echo "TENTACLES_URL_TAG=latest" >> .env
+    fi
+  - |
+    if [[ "$OKTETO_GIT_BRANCH" != "master" ]] && [[ "$OKTETO_GIT_BRANCH" != "dev" ]] ;  then
+      echo "TENTACLES_REPOSITORY=dev-tentacles" >> .env
+      echo "TENTACLES_URL_TAG=${OKTETO_GIT_BRANCH////_}" >> .env
+    fi
+  - |
+    if [[ -z "$DOCKER_IMAGE" ]] ;  then
+      DOCKER_IMAGE=okteto.dev/octobot:latest
+      echo "DOCKER_IMAGE=okteto.dev/octobot:latest" >> .env
+      okteto build -t $DOCKER_IMAGE
+    fi
+  - okteto stack deploy --wait

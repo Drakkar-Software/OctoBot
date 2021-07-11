@@ -47,8 +47,7 @@ Example with Binance and Coinbase Pro :
    "exchanges": {
        "binance": {
            "api-key": "YOUR_BINANCE_API_KEY_ENCRYPTED",
-           "api-secret": "YOUR_BINANCE_API_SECRET_ENCRYPTED",
-           "web-socket": true
+           "api-secret": "YOUR_BINANCE_API_SECRET_ENCRYPTED"
        },
        "coinbasepro": {
            "api-key": "YOUR_EXCHANGE_API_KEY_ENCRYPTED",
@@ -61,7 +60,6 @@ Example with Binance and Coinbase Pro :
 * **api-key** is your exchange account API key
 * **api-secret** is your exchange account API secret
 * **api-password** is your exchange account API password if this exchange is requiring a password. Leave empty otherwise
-* **web-socket** is a setting telling OctoBot whether or not to try to use websockets interfaces (websockets are used to get close to real-time data update but it's using more bandwidth). Moreover, RealTime evaluators are much better with websockets enabled.
 
 OctoBot officially supported exchanges
 --------------------------------------
