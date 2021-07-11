@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.0-beta11] - 2021-XX-XX
+### Note
+Thanks to @valouvaliavlo for his work in this version !
+
+### Added
+- [Backtesting] (@valouvaliavlo) : Collect historical data based on a date range
+- [Webhooks] (@valouvaliavlo) : Webhooks can now be setup without Ngrok
+- [Exchanges] : Support OctoBot by using Binance without referral
+- [Binance websocket] : Rate limit related bans shouldn't happen now (only available for accounts without referral)
+
+### Updated
+- [Documentation] Update webhook documentation
+- [Configuration] Improved exchanges accounts configuration
+- [Future trading] Now close to be supported on real trading
+
 ## [0.4.0-beta10] - 2021-06-05
 ### Fixed
 - [Websockets] Properly handle websockets errors

@@ -132,7 +132,10 @@ def _signal_handler(_, __):
 
 def run_bot(bot, logger):
     # handle CTRL+C signal
-    signal.signal(signal.SIGINT, _signal_handler)
+    try:
+        signal.signal(signal.SIGINT, _signal_handler)
+    except ValueError as e:
+        logger.warning(f"Can't setup signal handler : {e}")
 
     # start bot
     bot.task_manager.run_forever(start_bot(bot, logger))

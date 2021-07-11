@@ -97,6 +97,23 @@ A simple way to run a docker image is to use docker-compose :
 
 You can now open the OctoBot web interface at https://YOUR_IP_ADDRESS.
 
+Start multiple OctoBots with docker
+---------------------------------------
+
+To run a second OctoBot on the same computer :
+
+1. Create a new directory and enter it
+
+2. Start OctoBot's web interface on a new port by changing "-p" option
+
+.. code-block:: bash
+
+   docker run -itd --name OctoBot -p 8000:5001 -v $(pwd)/user:/octobot/user -v $(pwd)/tentacles:/octobot/tentacles -v $(pwd)/logs:/octobot/logs drakkarsoftware/octobot:stable
+
+In this example, the second OctoBot's web interface is accessible at http://127.0.0.1:8000.
+
+Any port can be used except those already used by another OctoBot or any software on your system.
+
 Start OctoBot with docker managed files
 ---------------------------------------
 .. WARNING:: It's easier to use but it will not be possible to update it without deleting its files.

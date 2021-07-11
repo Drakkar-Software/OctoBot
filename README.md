@@ -1,4 +1,4 @@
-# OctoBot [0.4.0-beta10](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
+# OctoBot [0.4.0-beta11](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
@@ -115,5 +115,9 @@ Do not hesitate to read the source code and understand the mechanism of this bot
 <tr>
 <td>Special thanks to <a href="https://m.do.co/c/40c9737100b1" target="_blank">DigitalOcean</a> for hosting OctoBot's open source tentacles and community websites.</td>
 <td><a href="https://m.do.co/c/40c9737100b1" target="_blank"><p align="center"><img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/PNG/DO_Logo_Horizontal_Blue.png?utm_medium=opensource&utm_source=OctoBot"></p></a></td>
+</tr>
+<tr>
+<td>Thanks to <a href="https://okteto.com/" target="_blank">Okteto</a> for allowing OctoBot developers to test their changes online with a simple button.</td>
+<td><a href="https://okteto.com/" target="_blank"><p align="center"><img src="https://github.com/Drakkar-Software/OctoBot/blob/assets/okteto.png?raw=true"></p></a></td>
 </tr>
 </table>
