@@ -80,8 +80,11 @@ class BinaryUpdater(updater_class.Updater):
 
     def _parse_latest_version(self, latest_release_data):
         try:
-            return latest_release_data["tag_name"]
-        except KeyError as e:
+            if latest_release_data.get("draft", False) or latest_release_data.get("prerelease", False):
+                return None
+            else:
+                return latest_release_data["tag_name"]
+        except (KeyError, AttributeError) as e:
             self.logger.debug(f"Error when parsing latest binary version : {e}")
         return None
 

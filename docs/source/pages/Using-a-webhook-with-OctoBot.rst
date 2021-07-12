@@ -32,5 +32,6 @@ Setting up your OctoBot's webhook
       :target: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/webhook_log.jpg
       :alt: webhook log
 
-   ## About ngrok.com
-   You can use ngrok with a free account, the only drawback of having a free version is that your webhook address will change at every OctoBot restart, you will have to update it on your message sender (like https://www.tradingview.com)
+About ngrok.com
+---------------
+You can use ngrok with a free account, the only drawback of having a free version is that your webhook address will change at every OctoBot restart, you will have to update it on your message sender (like https://www.tradingview.com)
