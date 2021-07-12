@@ -61,6 +61,25 @@ Example with Binance and Coinbase Pro :
 * **api-secret** is your exchange account API secret
 * **api-password** is your exchange account API password if this exchange is requiring a password. Leave empty otherwise
 
+Partner exchanges - Support OctoBot
+-----------------------------------
+
+As the OctoBot team, **our goal is to keep providing OctoBot for free**.
+However developing and maintaining the project comes at a cost. Therefore we rely
+on exchanges partnerships to propose the most convenient way to support OctoBot.
+
+By using OctoBot on real trading with our partner exchanges, you contribute to
+support the project and it won't cost you any money.
+
+Depending on the exchange, there can be accounts requirements: for example
+Binance requires a relatively new (after july 1st 2021) account that doesn't have a
+referral code.
+
+If your current account is not meeting the partner exchange requirement, you will
+see an error message: this doesn't prevent your from using OctoBot.
+However the OctoBot team would greatly appreciate if you could create a
+new account that meets the exchange's requirements to support the project.
+
 OctoBot officially supported exchanges
 --------------------------------------
 
