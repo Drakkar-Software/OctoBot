@@ -75,7 +75,7 @@ Depending on the exchange, there can be accounts requirements: for example
 Binance requires a relatively new (after july 1st 2021) account that doesn't have a
 referral code.
 
-If your current account is not meeting the partner exchange requirement, you will
+If an account you are using is not meeting a partner exchange requirement, you will
 see an error message: this doesn't prevent your from using OctoBot.
 However the OctoBot team would greatly appreciate if you could create a
 new account that meets the exchange's requirements to support the project.

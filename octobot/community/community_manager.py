@@ -157,7 +157,8 @@ class CommunityManager:
                 community_fields.CommunityFields.REFERENCE_MARKET.value: self.reference_market,
                 community_fields.CommunityFields.PORTFOLIO_VALUE.value: self._get_real_portfolio_value(),
                 community_fields.CommunityFields.PROFITABILITY.value: self._get_profitability(),
-                community_fields.CommunityFields.TRADED_VOLUMES.value: self._get_traded_volumes()
+                community_fields.CommunityFields.TRADED_VOLUMES.value: self._get_traded_volumes(),
+                community_fields.CommunityFields.SUPPORTS.value: self._get_supports()
             }
         }
 
@@ -186,6 +187,18 @@ class CommunityManager:
                 else:
                     volume_by_currency[currency] = trade.total_cost
         return volume_by_currency
+
+    def _get_supports(self):
+        supporting_exchanges = []
+        for exchange_manager in self.exchange_managers:
+            exchange_name = trading_api.get_exchange_name(exchange_manager)
+            if self.has_real_trader \
+               and trading_api.is_sponsoring(exchange_name) \
+               and trading_api.is_valid_account(exchange_manager):
+                supporting_exchanges.append(exchange_name)
+        return {
+            community_fields.CommunityFields.EXCHANGES.value: supporting_exchanges
+        }
 
     def _get_real_portfolio_value(self):
         if self.has_real_trader:
