@@ -13,7 +13,7 @@ deploy:
   - |
     if [[ "$OKTETO_GIT_BRANCH" != "master" ]] && [[ "$OKTETO_GIT_BRANCH" != "dev" ]] ;  then
       echo "TENTACLES_REPOSITORY=dev-tentacles" >> .env
-      echo "TENTACLES_URL_TAG=${OKTETO_GIT_BRANCH////_}" >> .env
+      echo "TENTACLES_URL_TAG=${OKTETO_GIT_BRANCH##*/}" >> .env
     fi
   - |
     if [[ -z "$DOCKER_IMAGE" ]] ;  then
