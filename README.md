@@ -121,3 +121,4 @@ Do not hesitate to read the source code and understand the mechanism of this bot
 <td><a href="https://okteto.com/" target="_blank"><p align="center"><img src="https://github.com/Drakkar-Software/OctoBot/blob/assets/okteto.png?raw=true"></p></a></td>
 </tr>
 </table>
+
