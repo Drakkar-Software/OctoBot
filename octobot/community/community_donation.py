@@ -23,6 +23,9 @@ class CommunityDonation:
         self.transaction_id = transaction_id
         self.address_to = address_to
 
+    def __str__(self):
+        return f"{self.amount} {self.currency} on {self.blockchain} ({self.transaction_id})"
+
     @staticmethod
     def from_community_dict(data):
         data_attributes = data["attributes"]
