@@ -28,7 +28,7 @@ class CommunityDonation:
 
     @staticmethod
     def from_community_dict(data):
-        data_attributes = data["attributes"]
+        data_attributes = data.get("attributes", {})
         return CommunityDonation(
             data_attributes.get("amount"),
             data_attributes.get("currency"),
