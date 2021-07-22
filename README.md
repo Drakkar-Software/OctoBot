@@ -80,7 +80,7 @@ In short :
 
 - Get 60-day free Digital Ocean hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
 
-[![Develop on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot)
+[![Develop on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot&branch=master)
 
 - Free 24-hour demo repeatable indefinitely on Okteto simply using your Github account
 
