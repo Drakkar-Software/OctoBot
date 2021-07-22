@@ -12,6 +12,3 @@ services:
       cpu: 1
       memory: 3Gi
       storage: 1Gi
-    volumes:
-      - /octobot/user
-      - /octobot/tentacles
