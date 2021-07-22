@@ -60,26 +60,6 @@ class CommunityAuthentication(authentication.Authenticator):
     def get_packages(self):
         return self.get(constants.OCTOBOT_COMMUNITY_PACKAGES_URL).json()["data"]
 
-    def _update_supports(self, resp_status, json_data):
-        if resp_status == 200:
-            self.supports = community_supports.CommunitySupports.from_community_dict(json_data)
-            self.logger.debug(f"Fetched supports data.")
-        else:
-            self.logger.error(f"Error when fetching community support, "
-                              f"error code: {resp_status}")
-
-    async def _auth_and_fetch_supports(self):
-        try:
-            await self._async_try_auto_login()
-            if not self.is_logged_in():
-                return
-            async with self._aiohttp_session.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL) as resp:
-                self._update_supports(resp.status, await resp.json())
-        except Exception as e:
-            self.logger.exception(e, True, f"Error when fetching community supports: {e})")
-        finally:
-            self.initialized_event.set()
-
     def update_supports(self):
         resp = self.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL)
         self._update_supports(resp.status_code, resp.json())
@@ -92,7 +72,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._fetch_supports_task = asyncio.create_task(self._auth_and_fetch_supports())
 
     def can_authenticate(self):
-        return constants.DEFAULT_COMMUNITY_URL not in self.authentication_url
+        return "todo" not in self.authentication_url
 
     def login(self, username, password):
         self._ensure_community_url()
@@ -107,7 +87,8 @@ class CommunityAuthentication(authentication.Authenticator):
             self._handle_auth_result(resp.status_code, resp.json())
         except json.JSONDecodeError as e:
             raise authentication.FailedAuthentication(e)
-        self.update_supports()
+        if self.is_logged_in():
+            self.update_supports()
 
     def logout(self):
         self._reset_tokens()
@@ -159,6 +140,26 @@ class CommunityAuthentication(authentication.Authenticator):
             self._fetch_supports_task.cancel()
         if self._aiohttp_session is not None:
             await self._aiohttp_session.close()
+
+    def _update_supports(self, resp_status, json_data):
+        if resp_status == 200:
+            self.supports = community_supports.CommunitySupports.from_community_dict(json_data)
+            self.logger.debug(f"Fetched supports data.")
+        else:
+            self.logger.error(f"Error when fetching community support, "
+                              f"error code: {resp_status}")
+
+    async def _auth_and_fetch_supports(self):
+        try:
+            await self._async_try_auto_login()
+            if not self.is_logged_in():
+                return
+            async with self._aiohttp_session.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL) as resp:
+                self._update_supports(resp.status, await resp.json())
+        except Exception as e:
+            self.logger.exception(e, True, f"Error when fetching community supports: {e})")
+        finally:
+            self.initialized_event.set()
 
     def _save_login_token(self, value):
         if self.edited_config is not None:
