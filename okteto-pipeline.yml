@@ -2,28 +2,21 @@ icon: https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/octopus.
 deploy:
   - echo "" >> .env
   - |
-    if [[ -z "$OKTETO_GIT_BRANCH" ]] || [[ "$OKTETO_GIT_BRANCH" == "master" ]] ;  then
-      TENTACLES_REPOSITORY=tentacles
-      DOCKER_IMAGE=drakkarsoftware/octobot:stable
+    if [[ -z "$OKTETO_GIT_BRANCH" ]] ;  then
       echo "DOCKER_IMAGE=drakkarsoftware/octobot:stable" >> .env
       echo "TENTACLES_REPOSITORY=tentacles" >> .env
-    fi
-  - |
-    if [[ "$OKTETO_GIT_BRANCH" == "dev" ]] ;  then
-      TENTACLES_REPOSITORY=tentacles
+      echo "TENTACLES_URL_TAG=" >> .env
+      okteto stack deploy --wait
+    elif [[ "$OKTETO_GIT_BRANCH" == "dev" ]] ;  then
+      echo "TENTACLES_REPOSITORY=tentacles" >> .env
       echo "TENTACLES_URL_TAG=latest" >> .env
-    fi
-  - |
-    if [[ -z "$TENTACLES_REPOSITORY" ]] ;  then
+      echo "DOCKER_IMAGE=okteto.dev/octobot:latest" >> .env
+      okteto build -t okteto.dev/octobot:latest
+      okteto stack deploy --wait
+    else
       echo "TENTACLES_REPOSITORY=dev-tentacles" >> .env
       echo "TENTACLES_URL_TAG=${OKTETO_GIT_BRANCH##*/}" >> .env
-    else
-      echo "TENTACLES_REPOSITORY=tentacles" >> .env
-    fi
-  - |
-    if [[ -z "$DOCKER_IMAGE" ]] ;  then
-      DOCKER_IMAGE=okteto.dev/octobot:latest
       echo "DOCKER_IMAGE=okteto.dev/octobot:latest" >> .env
-      okteto build -t $DOCKER_IMAGE
+      okteto build -t okteto.dev/octobot:latest
+      okteto stack deploy --wait
     fi
-  - okteto stack deploy --wait
