@@ -17,5 +17,11 @@ jobs:
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@master
         with:
-          message: '[![Deploy PR on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot&branch=${{ env.GIT_BRANCH }})'
+          message: |
+            To test OctoBot with tentacles from this branch (uploaded from OctoBot-Tentacles with the same branch name), press the following deploy button when the upload job is completed.
+            [![Deploy PR on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot&branch=${{ env.GIT_BRANCH }})
+
+
+            If there is no branch with this name in OctoBot-Tentacles, press the following button to deploy dev branch.
+            [![Deploy PR on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot&branch=dev)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

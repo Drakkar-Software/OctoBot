@@ -71,14 +71,26 @@ on exchanges partnerships to propose the most convenient way to support OctoBot.
 By using OctoBot on real trading with our partner exchanges, you contribute to
 support the project and it won't cost you any money.
 
-Depending on the exchange, there can be accounts requirements: for example
-Binance requires a relatively new (after july 1st 2021) account that doesn't have a
-referral code.
-
 If an account you are using is not meeting a partner exchange requirement, you will
 see an error message: this doesn't prevent your from using OctoBot.
 However the OctoBot team would greatly appreciate if you could create a
 new account that meets the exchange's requirements to support the project.
+
+Here are the current partners:
+
+Binance
+^^^^^^^
+Binance has 2 accounts requirements to support OctoBot:
+
+* A relatively new account (after july 1st 2021)
+* No referral code on the account
+
+In case your current account is not meeting these criteria, you can
+support OctoBot by creating a new account (without adding any referral id)
+on https://www.binance.com/.
+
+Please note that thanks to `Internal Transfers <https://www.binance.com/en-NG/support/faq/360037037312>`_,
+you can move your funds quickly and for free between Binance accounts.
 
 OctoBot officially supported exchanges
 --------------------------------------

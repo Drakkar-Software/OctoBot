@@ -31,3 +31,7 @@ Donate
 Bitcoin : 1DHfjxD3C4e2Xi37FsoTbVJ6e4zNtesiwf
 
 Ethereum : 0xF154aA84B66e2bCacd74e201496D9ac3f81234D5
+
+Binance Chain : bnb1ajj4dupn8xadrueuemm7gvdyp0pgslqs7zxmmv
+
+Binance Smart Chain : 0x26927FC73d0c474D064ac3ae2E02A209c32C03e1

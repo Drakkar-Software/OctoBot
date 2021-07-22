@@ -2,10 +2,10 @@ name: OctoBot-Documentation
 on:
   push:
     branches:
-      - 'dev'
+      - 'master'
   pull_request:
     branches:
-      - 'dev'
+      - 'master'
 
 jobs:
   docs:
