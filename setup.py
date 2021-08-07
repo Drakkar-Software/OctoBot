@@ -36,7 +36,7 @@ from setuptools import find_packages
 from setuptools import setup, Extension
 from octobot.constants import PROJECT_NAME, VERSION
 
-PACKAGES = find_packages(exclude=["tentacles*"])
+PACKAGES = find_packages(exclude=["tentacles*", "tests", ])
 
 packages_list = [
     "octobot.configuration_manager",
