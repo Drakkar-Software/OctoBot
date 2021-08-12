@@ -23,6 +23,8 @@ from octobot.community import community_analysis
 from octobot.community import community_manager
 from octobot.community import authentication
 from octobot.community import community_tentacles_package
+from octobot.community import community_supports
+from octobot.community import community_donation
 
 from octobot.community.community_analysis import (
     get_community_metrics,
@@ -38,6 +40,12 @@ from octobot.community.authentication import (
 from octobot.community.community_tentacles_package import (
     CommunityTentaclesPackage
 )
+from octobot.community.community_supports import (
+    CommunitySupports
+)
+from octobot.community.community_donation import (
+    CommunityDonation
+)
 
 __all__ = [
     "CommunityFields",
@@ -47,4 +55,6 @@ __all__ = [
     "CommunityManager",
     "CommunityAuthentication",
     "CommunityTentaclesPackage",
+    "CommunitySupports",
+    "CommunityDonation",
 ]

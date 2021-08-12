@@ -48,6 +48,8 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
                         data={
                             trading_channel_consumer.OctoBotChannelTradingDataKeys.TENTACLES_SETUP_CONFIG.value:
                                 self.octobot.tentacles_setup_config,
+                            trading_channel_consumer.OctoBotChannelTradingDataKeys.AUTHENTICATOR.value:
+                                self.octobot.community_auth,
                             trading_channel_consumer.OctoBotChannelTradingDataKeys.MATRIX_ID.value:
                                 self.octobot.evaluator_producer.matrix_id,
                             trading_channel_consumer.OctoBotChannelTradingDataKeys.BACKTESTING.value: backtesting,

@@ -16,7 +16,7 @@
 import os
 from setuptools import dist
 
-dist.Distribution().fetch_build_eggs(['Cython==0.29.23'])
+dist.Distribution().fetch_build_eggs(['Cython==0.29.24'])
 
 try:
     from Cython.Distutils import build_ext
@@ -36,7 +36,7 @@ from setuptools import find_packages
 from setuptools import setup, Extension
 from octobot.constants import PROJECT_NAME, VERSION
 
-PACKAGES = find_packages(exclude=["tentacles*"])
+PACKAGES = find_packages(exclude=["tentacles*", "tests", ])
 
 packages_list = [
     "octobot.configuration_manager",

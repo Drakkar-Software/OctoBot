@@ -196,8 +196,11 @@ class CommunityManager:
                and trading_api.is_sponsoring(exchange_name) \
                and trading_api.is_valid_account(exchange_manager):
                 supporting_exchanges.append(exchange_name)
+        supports = self.octobot_api.get_community_auth().supports
         return {
-            community_fields.CommunityFields.EXCHANGES.value: supporting_exchanges
+            community_fields.CommunityFields.EXCHANGES.value: supporting_exchanges,
+            community_fields.CommunityFields.ROLES.value: [supports.support_role],
+            community_fields.CommunityFields.DONATIONS.value: [str(donation) for donation in supports.donations]
         }
 
     def _get_real_portfolio_value(self):

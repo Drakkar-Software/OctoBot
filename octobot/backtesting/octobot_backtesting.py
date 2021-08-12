@@ -182,7 +182,7 @@ class OctoBotBacktesting:
                 bot_id=self.bot_id,
                 symbols_by_crypto_currencies=exchange_configuration.symbols_by_crypto_currencies,
                 symbols=exchange_configuration.symbols,
-                time_frames=exchange_configuration.time_frames_without_real_time,
+                time_frames=exchange_configuration.available_required_time_frames,
                 real_time_time_frames=exchange_configuration.real_time_time_frames)
 
     async def _create_service_feeds(self):

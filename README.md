@@ -1,4 +1,4 @@
-# OctoBot [0.4.0-beta12](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
+# OctoBot [0.4.0-beta13](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
@@ -30,7 +30,7 @@ To install OctoBot with its tentacles, just use the [latest release for your sys
 
 ## Your Octobot
 <a href="https://www.octobot.online/guides/#telegram"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>
-[![Twitter Interface](../assets/twitter-interface.png)](https://docs.octobot.online/pages/Twitter-interface.html)
+[![Twitter Interface](../assets/twitter-interface.png)](https://docs.octobot.online/interfaces/twitter-interface)
 
 OctoBot is highly customizable using its configuration and tentacles system. 
 You can build your own bot using the infinite [configuration](https://www.octobot.online/guides/#trading_modes) possibilities such as 
@@ -39,8 +39,8 @@ You can build your own bot using the infinite [configuration](https://www.octobo
 OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or
 any other lib and take advantage of all the available data and create a very powerful trading strategy. 
 
-Octobot's main feature is **evolution** : you can [install](https://docs.octobot.online/pages/Tentacle-Manager.html), 
-[modify](https://docs.octobot.online/pages/Customize-your-OctoBot.html) and even [create](https://docs.octobot.online/pages/Customize-your-OctoBot.html#tentacle-customization-octobot-v0-3) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
+Octobot's main feature is **evolution** : you can [install](https://docs.octobot.online/advanced_usage/tentacle-manager), 
+[modify](https://developer.docs.octobot.online/guides/customize-your-octobot) and even [create](https://developer.docs.octobot.online/guides/developer-guide) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
 
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
@@ -51,7 +51,7 @@ Follow the [2 steps installation guide](https://www.octobot.online/executable_in
 In short:
 - Use the latest release on the [release page](https://github.com/Drakkar-Software/OctoBot/releases/latest)
 
-#### [With Docker](https://docs.octobot.online/pages/With-Docker.html)
+#### [With Docker](https://docs.octobot.online/installation/with-docker)
 Follow the [docker installation guide](https://www.octobot.online/docker_installation/) 
 
 In short :
@@ -60,7 +60,7 @@ docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)
 ```
 And then open [http://localhost](http://localhost).
 
-#### [With python sources](https://docs.octobot.online/pages/With-Python-only.html)
+#### [With python sources](https://docs.octobot.online/installation/with-docker)
 Follow the [python installation guide](https://www.octobot.online/python_installation/) 
 
 In short :
@@ -93,7 +93,7 @@ In short :
 [![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
 [![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
 
-Octobot supports many [exchanges](https://docs.octobot.online/pages/Exchanges.html#octobot-officially-supported-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
+Octobot supports many [exchanges](https://exchanges.docs.octobot.online/) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, just configure OctoBot with your api keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
 
 ## Disclaimer
