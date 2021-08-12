@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.0-beta13] - 2021-08-12
+### Added
+- [Community website] 
+   - Create and link your account in OctoBot
+   - Let us know that you have made a donation to unlock access to websockets without any exchange requirement
+- [New docs websites] 
+   - New design for docs.octobot.online
+   - Developer.docs.octobot.online
+   - Exchanges.docs.octobot.online
+- [Data collector] (@valouvaliavlo) : can now collect multiple symbols datafiles 
+- [Websockets] FTX & OKEx websockets are now available
+### Fixed
+- [Backtesting] Multiple backtesting bugs related to real time evaluators
+- [TA] Technical evaluators can now use the real time time frame
+
 ## [0.4.0-beta12] - 2021-07-12
 ### Fixed
 - [WebInterface] Exchanges & Webhook configuration

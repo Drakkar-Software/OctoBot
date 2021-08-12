@@ -108,21 +108,23 @@ octobot/creator_temp/
 creator_temp/
 
 # Data
-backtesting/collector/data/**
-logs/matrix_history\.data
-logs/OctoBot\.log\.*
+backtesting/collector/data/
+backtesting/data/
 
 # Tentacles
 tentacles
+downloaded_temp_tentacles
 
 # User config
 user/
+temp_config.json
 
 *.csv
 *.ods
 *.c
 
-temp_config.json
+# OctoBot logs
 logs
-backtesting/data/
+
+# Debug
 cython_debug/

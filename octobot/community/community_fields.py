@@ -35,3 +35,5 @@ class CommunityFields(enum.Enum):
     PROFITABILITY = "profitability"
     TRADED_VOLUMES = "tradedvolumes"
     SUPPORTS = "supports"
+    ROLES = "roles"
+    DONATIONS = "donations"

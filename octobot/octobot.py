@@ -97,6 +97,7 @@ class OctoBot:
         self.async_loop = None
 
     async def initialize(self):
+        self.community_auth.init_supports()
         await self.initializer.create()
         await self._start_tools_tasks()
         await logger.init_octobot_chan_logger(self.bot_id)
