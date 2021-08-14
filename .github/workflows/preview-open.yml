@@ -1,0 +1,22 @@
+name: OctoBot-Tentacles-Preview-Open
+on:
+  pull_request:
+    types: [ opened ]
+
+jobs:
+  okteto_preview-open:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login
+        uses: okteto/login@master
+        with:
+          token: ${{ secrets.OKTETO_TOKEN }}
+
+      - name: Deploy preview environment
+        uses: okteto/deploy-preview@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: pr-${{ github.event.number }}-octobot-drakkarsoftware
+          scope: personal
+          timeout: 15m
