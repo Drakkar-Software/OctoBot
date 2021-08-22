@@ -70,6 +70,11 @@ DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 LOGS_FOLDER = "logs"
 ENV_ENABLE_DEBUG_LOGS = "ENABLE_DEBUG_LOGS"
 
+# errors
+ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.online/")
+UPLOAD_ERRORS = bool(not os.getenv("UPLOAD_ERRORS", "True").lower == "false")
+DEFAULT_METRICS_ID = "UNSET"
+
 # config types keys
 CONFIG_KEY = "config"
 TENTACLES_SETUP_CONFIG_KEY = "tentacles_setup"
