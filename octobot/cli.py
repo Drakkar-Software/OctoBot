@@ -16,7 +16,6 @@
 # prevents distutils_patch.py:26: UserWarning: Distutils was imported before Setuptools. This usage is discouraged
 # and may exhibit undesirable behaviors or errors. Please use Setuptools' objects directly or at least import Setuptools
 # first
-import setuptools
 from distutils.version import LooseVersion
 
 import argparse
@@ -44,6 +43,7 @@ import octobot.octobot_backtesting_factory as octobot_backtesting
 import octobot.constants as constants
 import octobot.disclaimer as disclaimer
 import octobot.logger as octobot_logger
+import octobot.community as octobot_community
 
 
 def update_config_with_args(starting_args, config: configuration.Configuration, logger):
@@ -209,6 +209,9 @@ def start_octobot(args):
 
         # Can now perform config health check (some checks require a loaded profile)
         configuration_manager.config_health_check(config, args.backtesting)
+
+        # Keep track of errors if any
+        octobot_community.register_error_uploader(f"{constants.ERRORS_URL}error", config)
 
         # create OctoBot instance
         if args.backtesting:
