@@ -19,7 +19,6 @@ import json
 import requests
 import threading
 
-import octobot_commons
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
 import octobot_commons.os_util as os_util
@@ -45,12 +44,15 @@ class CommunityManager:
         self.octobot_api = octobot_api
         self.edited_config: configuration.Configuration = octobot_api.get_edited_config(dict_only=False)
         self.enabled = self.edited_config.get_metrics_enabled()
-        self.bot_id = self._init_config_bot_id(self.edited_config.config)
         self.reference_market = trading_api.get_reference_market(self.edited_config.config)
         self.logger = logging.get_logger(self.__class__.__name__)
         self.current_config = None
         self.keep_running = True
         self.session = octobot_api.get_aiohttp_session()
+        try:
+            self.bot_id = self.edited_config.get_metrics_id()
+        except KeyError:
+            self.bot_id = None
 
         # these attributes will be set at the last moment to ensure relevance and let time for everything to startup
         self.has_real_trader = None
@@ -88,8 +90,11 @@ class CommunityManager:
 
     @staticmethod
     def should_register_bot(config: configuration.Configuration):
-        existing_id = CommunityManager._init_config_bot_id(config.config)
-        return not existing_id
+        try:
+            config.get_metrics_id()
+            return True
+        except KeyError:
+            return False
 
     @staticmethod
     def background_get_id_and_register_bot(octobot_api):
@@ -111,14 +116,6 @@ class CommunityManager:
                               json=community, headers=self._headers)
         except Exception as e:
             self.logger.debug(f"Error when handling community: {e}")
-
-    @staticmethod
-    def _init_config_bot_id(config):
-        if common_constants.CONFIG_METRICS in config and config[common_constants.CONFIG_METRICS] and \
-                common_constants.CONFIG_METRICS_BOT_ID in config[common_constants.CONFIG_METRICS]:
-            return config[common_constants.CONFIG_METRICS][common_constants.CONFIG_METRICS_BOT_ID]
-        else:
-            return None
 
     async def register_session(self, retry_on_error=True):
         self.current_config = await self._get_current_community_config()
