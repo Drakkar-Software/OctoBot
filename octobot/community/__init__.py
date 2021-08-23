@@ -63,7 +63,7 @@ __all__ = [
     "CommunityTentaclesPackage",
     "CommunitySupports",
     "CommunityDonation",
-    register_error_uploader,
-    Error,
-    ErrorsUploader,
+    "register_error_uploader",
+    "Error",
+    "ErrorsUploader",
 ]

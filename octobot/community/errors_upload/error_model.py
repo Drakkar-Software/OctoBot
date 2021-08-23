@@ -24,7 +24,7 @@ class Error:
     def __init__(self, error: Exception, title: str, timestamp: float, metrics_id: str):
         self.error: Exception = error
         self.title: str = title
-        self.timestamp: float = timestamp
+        self.timestamps: list = [timestamp]
         self.metrics_id: str = metrics_id
         self.type: str = self.error.__class__.__name__ if self.error else ""
         self.stacktrace: list = traceback.format_exception(
@@ -39,6 +39,16 @@ class Error:
             "title": self.title,
             "type": self.type,
             "stacktrace": self.stacktrace,
-            "timestamp": self.timestamp,
+            "timestamps": self.timestamps,
             "metricsid": self.metrics_id,
         }
+
+    def is_equivalent(self, other) -> bool:
+        return self.error == other.error and \
+               self.title == other.title and \
+               self.metrics_id == other.metrics_id and \
+               self.type == other.type and \
+               self.stacktrace == other.stacktrace
+
+    def merge_equivalent(self, other):
+        self.timestamps += other.timestamps
