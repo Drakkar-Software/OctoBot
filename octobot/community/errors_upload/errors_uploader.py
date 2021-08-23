@@ -27,7 +27,7 @@ class ErrorsUploader:
     def __init__(self, upload_url):
         self.upload_url = upload_url
         self.loop = None
-        self.upload_delay = 1
+        self.upload_delay = 5
 
         self._to_upload_errors = []
         self._upload_task = None
@@ -39,8 +39,16 @@ class ErrorsUploader:
         Called to schedule an error upload
         :param error: the octobot_commons.logging.error_model.Error to upload
         """
-        self._to_upload_errors.append(error)
+        self._add_error(error)
         self._ensure_upload_task()
+
+    def _add_error(self, error):
+        for existing_error in self._to_upload_errors:
+            # first check if error is equivalent to an existing one
+            if existing_error.is_equivalent(error):
+                existing_error.merge_equivalent(error)
+                return
+        self._to_upload_errors.append(error)
 
     def _ensure_upload_task(self):
         try:
@@ -57,13 +65,14 @@ class ErrorsUploader:
     async def _upload_error(self, session, errors):
         async with session.post(self.upload_url, json=self._get_formatted_errors(errors)) as resp:
             if resp.status != 200:
-                self.logger.debug(
-                    f"Impossible to upload error : status code: {resp.status}, text: {await resp.text()}"
+                self.logger.error(
+                    f"Impossible to upload error : status code: {resp.status}, text: {await resp.text()}",
+                    skip_post_callback=True
                 )
 
     @staticmethod
     def _get_formatted_errors(errors):
-        return [{"_data": error.to_dict()} for error in errors]
+        return [error.to_dict() for error in errors]
 
     def _schedule_upload(self):
         self._upload_task = self.loop.create_task(
