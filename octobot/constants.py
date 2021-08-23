@@ -72,6 +72,7 @@ ENV_ENABLE_DEBUG_LOGS = "ENABLE_DEBUG_LOGS"
 
 # errors
 ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.online/")
+ERRORS_POST_ENDPOINT = f"{ERRORS_URL}errors"
 UPLOAD_ERRORS = bool(not os.getenv("UPLOAD_ERRORS", "True").lower == "false")
 DEFAULT_METRICS_ID = "UNSET"
 

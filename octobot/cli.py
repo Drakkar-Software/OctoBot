@@ -211,7 +211,7 @@ def start_octobot(args):
         configuration_manager.config_health_check(config, args.backtesting)
 
         # Keep track of errors if any
-        octobot_community.register_error_uploader(f"{constants.ERRORS_URL}error", config)
+        octobot_community.register_error_uploader(constants.ERRORS_POST_ENDPOINT, config)
 
         # create OctoBot instance
         if args.backtesting:
