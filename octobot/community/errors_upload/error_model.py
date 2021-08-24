@@ -44,7 +44,9 @@ class Error:
         }
 
     def is_equivalent(self, other) -> bool:
-        return self.error == other.error and \
+        return (self.error is other.error or
+                (type(self.error) is type(other.error)
+                 and self.error.args == other.error.args)) and \
                self.title == other.title and \
                self.metrics_id == other.metrics_id and \
                self.type == other.type and \

@@ -52,7 +52,7 @@ class ErrorsUploader:
 
     def _ensure_upload_task(self):
         try:
-            if self._ensure_event_loop() and self._upload_task is None or self._upload_task.done():
+            if self._ensure_event_loop() and (self._upload_task is None or self._upload_task.done()):
                 self._schedule_upload()
         except Exception as err:
             self.logger.exception(
@@ -62,7 +62,7 @@ class ErrorsUploader:
                 skip_post_callback=True,
             )
 
-    async def _upload_error(self, session, errors):
+    async def _upload_errors(self, session, errors):
         async with session.post(self.upload_url, json=self._get_formatted_errors(errors)) as resp:
             if resp.status != 200:
                 self.logger.error(
@@ -83,11 +83,12 @@ class ErrorsUploader:
         try:
             await asyncio.sleep(self.upload_delay)
 
-            async with aiohttp.ClientSession() as session:
-                errors = self._to_upload_errors
-                self._to_upload_errors = []
-                await self._upload_error(session, errors)
-                self.logger.debug(f"Uploaded {len(errors)} errors")
+            if self._to_upload_errors:
+                async with aiohttp.ClientSession() as session:
+                    errors = self._to_upload_errors
+                    self._to_upload_errors = []
+                    await self._upload_errors(session, errors)
+                    self.logger.debug(f"Uploaded {len(errors)} errors")
         except Exception as err:
             self.logger.exception(
                 err, True, f"Error when uploading exception: {err}", skip_post_callback=True
