@@ -22,7 +22,9 @@ from tests.unit_tests.community.errors_upload import basic_error, exception_erro
 def test_constructor_with_basic_error(basic_error):
     assert basic_error.error is None
     assert basic_error.title is ERROR_TITLE
-    assert basic_error.timestamps == [ERROR_TIME]
+    assert basic_error.first_timestamp == ERROR_TIME
+    assert basic_error.last_timestamp == ERROR_TIME
+    assert basic_error.count == 1
     assert basic_error.metrics_id is ERROR_METRICS_ID
     assert basic_error.type == ""
     assert basic_error.stacktrace == []
@@ -31,7 +33,9 @@ def test_constructor_with_basic_error(basic_error):
 def test_constructor_with_exception_error(exception_error):
     assert isinstance(exception_error.error, ZeroDivisionError)
     assert exception_error.title is ERROR_TITLE
-    assert exception_error.timestamps == [ERROR_TIME]
+    assert exception_error.first_timestamp == ERROR_TIME
+    assert exception_error.last_timestamp == ERROR_TIME
+    assert exception_error.count == 1
     assert exception_error.metrics_id is ERROR_METRICS_ID
     assert exception_error.type == ZeroDivisionError.__name__
     assert len(exception_error.stacktrace) == 5
@@ -39,7 +43,7 @@ def test_constructor_with_exception_error(exception_error):
 
 def test_to_dict(exception_error):
     dict_repr = exception_error.to_dict()
-    assert len(dict_repr) == 5
+    assert len(dict_repr) == 7
     assert all(bool(v) for v in dict_repr.values())
 
 
@@ -52,7 +56,7 @@ def test_is_equivalent(basic_error, exception_error):
     exception_error2 = copy.deepcopy(exception_error)
     basic_error2 = copy.deepcopy(basic_error)
 
-    exception_error2.timestamps += [1.02]
+    exception_error2.count += 1
     assert exception_error.is_equivalent(exception_error2)
     exception_error2.title += "1"
     assert not exception_error.is_equivalent(exception_error2)
@@ -62,7 +66,12 @@ def test_is_equivalent(basic_error, exception_error):
 
 
 def test_merge_equivalent(basic_error, exception_error):
+    exception_error.last_timestamp = ERROR_TIME + 1
     basic_error.merge_equivalent(exception_error)
-    assert basic_error.timestamps == [ERROR_TIME, ERROR_TIME]
+    assert basic_error.first_timestamp == ERROR_TIME
+    assert basic_error.last_timestamp == ERROR_TIME + 1
+    assert basic_error.count == 2
     exception_error.merge_equivalent(basic_error)
-    assert exception_error.timestamps == [ERROR_TIME, ERROR_TIME, ERROR_TIME]
+    assert exception_error.first_timestamp == ERROR_TIME
+    assert exception_error.last_timestamp == ERROR_TIME + 1
+    assert exception_error.count == 3
