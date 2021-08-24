@@ -24,7 +24,9 @@ class Error:
     def __init__(self, error: Exception, title: str, timestamp: float, metrics_id: str):
         self.error: Exception = error
         self.title: str = title
-        self.timestamps: list = [timestamp]
+        self.first_timestamp: float = timestamp
+        self.last_timestamp: float = timestamp
+        self.count: int = 1
         self.metrics_id: str = metrics_id
         self.type: str = self.error.__class__.__name__ if self.error else ""
         self.stacktrace: list = traceback.format_exception(
@@ -39,7 +41,9 @@ class Error:
             "title": self.title,
             "type": self.type,
             "stacktrace": self.stacktrace,
-            "timestamps": self.timestamps,
+            "firsttimestamp": self.first_timestamp,
+            "lasttimestamp": self.last_timestamp,
+            "count": self.count,
             "metricsid": self.metrics_id,
         }
 
@@ -53,4 +57,6 @@ class Error:
                self.stacktrace == other.stacktrace
 
     def merge_equivalent(self, other):
-        self.timestamps += other.timestamps
+        self.count += other.count
+        if other.last_timestamp > self.last_timestamp:
+            self.last_timestamp = other.last_timestamp
