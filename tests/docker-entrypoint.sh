@@ -7,7 +7,7 @@ python -m pip freeze
 if ./OctoBot tentacles --install -a ; then
     echo "Tentacles successfully installed"
 else
-    export TENTACLES_PACKAGES_SOURCE=officials
+    unset TENTACLES_REPOSITORY
     export TENTACLES_URL_TAG=latest
     ./OctoBot tentacles --install -a
 fi

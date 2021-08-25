@@ -164,6 +164,7 @@ async def test_upload_soon(error_uploader, basic_error):
             # errors to upload
             error_uploader._to_upload_errors = [basic_error]
             await error_uploader._upload_soon()
+            assert error_uploader._to_upload_errors == []
             sleep_mock.assert_called_once_with(error_uploader.upload_delay)
             _session_mock.assert_called_once()
             _upload_errors_mock.assert_called_once_with("plop", [basic_error])
