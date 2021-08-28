@@ -118,7 +118,7 @@ jobs:
         DISABLE_SENTRY: True
       run: |
         pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
-        pytest --durations=0 -rw tentacles
+        pytest --durations=0 -rw --ignore=tentacles/Trading/Exchange tentacles
 
     - name: Pytests
       env:
@@ -126,7 +126,7 @@ jobs:
       if: matrix.type != 'cython'
       run: |
         pytest --cov=. --cov-config=.coveragerc --durations=0 -rw tests
-        pytest --durations=0 -rw tentacles
+        pytest --durations=0 -rw --ignore=tentacles/Trading/Exchange tentacles
 
     - name: Publish coverage
       if: matrix.type == 'sources' && github.event_name == 'push'

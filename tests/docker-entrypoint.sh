@@ -13,4 +13,4 @@ else
 fi
 
 # run tests
-pytest -rw tests tentacles
+pytest -rw --ignore=tentacles/Trading/Exchange tests tentacles
