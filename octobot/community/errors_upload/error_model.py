@@ -23,7 +23,7 @@ class Error:
 
     def __init__(self, error: Exception, title: str, timestamp: float, metrics_id: str):
         self.error: Exception = error
-        self.title: str = title
+        self.title: str = str(title)
         self.first_timestamp: float = timestamp
         self.last_timestamp: float = timestamp
         self.count: int = 1
