@@ -93,43 +93,44 @@ def _load_logger_config():
 
 
 async def init_exchange_chan_logger(exchange_id):
-    if os.getenv(constants.ENV_ENABLE_DEBUG_LOGS, False):
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.TICKER_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MINI_TICKER_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            mini_ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.RECENT_TRADES_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            recent_trades_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.ORDER_BOOK_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            order_book_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.ORDER_BOOK_TICKER_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            order_book_ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.KLINE_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            kline_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.OHLCV_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            ohlcv_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.FUNDING_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            funding_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
-        await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
-                                         exchange_id).new_consumer(
-            mark_price_callback, priority_level=LOGGER_PRIORITY_LEVEL
-        )
+    if not are_channel_logs_enabled():
+        return
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.TICKER_CHANNEL.value,
+                                     exchange_id).new_consumer(
+        ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MINI_TICKER_CHANNEL.value,
+                                     exchange_id).new_consumer(
+        mini_ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.RECENT_TRADES_CHANNEL.value,
+                                     exchange_id).new_consumer(
+        recent_trades_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.ORDER_BOOK_CHANNEL.value,
+                                     exchange_id).new_consumer(
+        order_book_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.ORDER_BOOK_TICKER_CHANNEL.value,
+                                     exchange_id).new_consumer(
+        order_book_ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.KLINE_CHANNEL.value,
+                                     exchange_id).new_consumer(
+        kline_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.OHLCV_CHANNEL.value,
+                                     exchange_id).new_consumer(
+        ohlcv_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.FUNDING_CHANNEL.value,
+                                     exchange_id).new_consumer(
+        funding_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
+    await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.MARK_PRICE_CHANNEL.value,
+                                     exchange_id).new_consumer(
+        mark_price_callback, priority_level=LOGGER_PRIORITY_LEVEL
+    )
     await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.BALANCE_CHANNEL.value,
                                      exchange_id).new_consumer(
         balance_callback, priority_level=channel_enums.ChannelConsumerPriorityLevels.MEDIUM.value
@@ -157,6 +158,8 @@ async def init_exchange_chan_logger(exchange_id):
 
 
 async def init_evaluator_chan_logger(matrix_id: str):
+    if not are_channel_logs_enabled():
+        return
     await evaluator_channels.get_chan(channels_name.OctoBotEvaluatorsChannelsName.MATRIX_CHANNEL.value,
                                       matrix_id).new_consumer(
         matrix_callback, priority_level=LOGGER_PRIORITY_LEVEL
@@ -165,6 +168,10 @@ async def init_evaluator_chan_logger(matrix_id: str):
                                       matrix_id).new_consumer(
         evaluators_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
+
+
+def are_channel_logs_enabled():
+    return os.getenv(constants.ENV_ENABLE_DEBUG_LOGS, "false").lower() == "true"
 
 
 async def init_octobot_chan_logger(bot_id: str):
