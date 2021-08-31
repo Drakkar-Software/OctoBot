@@ -93,8 +93,6 @@ In short :
 [![Bitmax](../assets/ascendex-logo.png)](https://ascendex.com/en-us/register?inviteCode=ULWCFWL6G)
 [![Coinbase](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
 [![Kucoin](../assets/kucoin-logo.png)](https://www.kucoin.com)
-[![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
-[![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
 [![Bitmex](../assets/bitmex-logo.png)](https://bitmex.com)
 
 Octobot supports many [exchanges](https://exchanges.docs.octobot.online/) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
