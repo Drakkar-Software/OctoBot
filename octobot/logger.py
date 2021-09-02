@@ -93,8 +93,6 @@ def _load_logger_config():
 
 
 async def init_exchange_chan_logger(exchange_id):
-    if not are_channel_logs_enabled():
-        return
     await exchanges_channel.get_chan(channels_name.OctoBotTradingChannelsName.TICKER_CHANNEL.value,
                                      exchange_id).new_consumer(
         ticker_callback, priority_level=LOGGER_PRIORITY_LEVEL
@@ -158,8 +156,6 @@ async def init_exchange_chan_logger(exchange_id):
 
 
 async def init_evaluator_chan_logger(matrix_id: str):
-    if not are_channel_logs_enabled():
-        return
     await evaluator_channels.get_chan(channels_name.OctoBotEvaluatorsChannelsName.MATRIX_CHANNEL.value,
                                       matrix_id).new_consumer(
         matrix_callback, priority_level=LOGGER_PRIORITY_LEVEL
@@ -168,10 +164,6 @@ async def init_evaluator_chan_logger(matrix_id: str):
                                       matrix_id).new_consumer(
         evaluators_callback, priority_level=LOGGER_PRIORITY_LEVEL
     )
-
-
-def are_channel_logs_enabled():
-    return os.getenv(constants.ENV_ENABLE_DEBUG_LOGS, "false").lower() == "true"
 
 
 async def init_octobot_chan_logger(bot_id: str):
@@ -271,14 +263,14 @@ async def kline_callback(
 async def mark_price_callback(
     exchange: str, exchange_id: str, cryptocurrency: str, symbol: str, mark_price
 ):
-    BOT_CHANNEL_LOGGER.info(
+    BOT_CHANNEL_LOGGER.debug(
         f"MARK PRICE : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} "
         f"|| SYMBOL = {symbol} || MARK PRICE = {mark_price}"
     )
 
 
 async def balance_callback(exchange: str, exchange_id: str, balance):
-    BOT_CHANNEL_LOGGER.info(f"BALANCE : EXCHANGE = {exchange} || BALANCE = {balance}")
+    BOT_CHANNEL_LOGGER.debug(f"BALANCE : EXCHANGE = {exchange} || BALANCE = {balance}")
 
 
 async def balance_profitability_callback(
@@ -289,7 +281,7 @@ async def balance_profitability_callback(
     market_profitability_percent,
     initial_portfolio_current_profitability,
 ):
-    BOT_CHANNEL_LOGGER.info(
+    BOT_CHANNEL_LOGGER.debug(
         f"BALANCE PROFITABILITY : EXCHANGE = {exchange} || PROFITABILITY = "
         f"{pretty_printer.portfolio_profitability_pretty_print(profitability, profitability_percent, 'USDT')}"
     )
@@ -303,7 +295,7 @@ async def trades_callback(
     trade: dict,
     old_trade: bool,
 ):
-    BOT_CHANNEL_LOGGER.info(
+    BOT_CHANNEL_LOGGER.debug(
         f"TRADES : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} "
         f"|| TRADE = {trade} "
         f"|| OLD_TRADE = {old_trade}"
@@ -323,7 +315,7 @@ async def orders_callback(
                    f"{pretty_printer.open_order_pretty_printer(exchange, order)} || " \
                    f"status = {order.get(trading_enums.ExchangeConstantsOrderColumns.STATUS.value, None)} || " \
                    f"CREATED = {is_new} || FROM_BOT = {is_from_bot}"
-    BOT_CHANNEL_LOGGER.info(order_string)
+    BOT_CHANNEL_LOGGER.debug(order_string)
 
 
 async def positions_callback(
@@ -335,7 +327,7 @@ async def positions_callback(
     is_updated: bool,
     is_liquidated: bool
 ):
-    BOT_CHANNEL_LOGGER.info(
+    BOT_CHANNEL_LOGGER.debug(
         f"POSITIONS : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} "
         f"|| SYMBOL = {symbol} || POSITIONS = {position} || UPDATED = {is_updated} || LIQUIDATED = {is_liquidated} "
     )
@@ -350,7 +342,7 @@ async def funding_callback(
     next_funding_time,
     timestamp,
 ):
-    BOT_CHANNEL_LOGGER.info(
+    BOT_CHANNEL_LOGGER.debug(
         f"FUNDING : EXCHANGE = {exchange} || CRYPTOCURRENCY = {cryptocurrency} || SYMBOL = {symbol} "
         f"|| RATE = {str(funding_rate)} "
         f"|| NEXT TIME = {str(next_funding_time)} || TIMESTAMP = {str(timestamp)}"
