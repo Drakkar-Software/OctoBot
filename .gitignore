@@ -122,6 +122,7 @@ temp_config.json
 *.csv
 *.ods
 *.c
+*.h
 
 # OctoBot logs
 logs
