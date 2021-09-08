@@ -18,6 +18,7 @@ import math
 import octobot_commons.constants as commons_constants
 import octobot_trading.api as trading_api
 import octobot_trading.enums as trading_enum
+import octobot_trading.constants as trading_constants
 import octobot_trading.personal_data as trading_personal_data
 
 
@@ -87,14 +88,14 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
                     assert order.simulated is True
                     assert order.linked_to is None
                     assert order.fee
-                    assert order.filled_price > 0
+                    assert order.filled_price > trading_constants.ZERO
                     assert order.filled_quantity == order.origin_quantity
                 else:
                     assert order.status == trading_enum.OrderStatus.OPEN
                     assert order.simulated is True
                     assert order.linked_to is None
                     assert order.fee is None
-                    assert order.filled_price == 0
+                    assert order.filled_price == trading_constants.ZERO
                     assert order.filled_quantity == order.origin_quantity
 
                 if state == trading_enum.EvaluatorStates.VERY_SHORT.value:
@@ -119,8 +120,8 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
 
 def check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False):
     if orders:
-        orders_market_amount = 0
-        orders_currency_amount = 0
+        orders_market_amount = trading_constants.ZERO
+        orders_currency_amount = trading_constants.ZERO
         market = orders[0].market
         order_symbol = orders[0].currency
         for order in orders:
@@ -131,8 +132,8 @@ def check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False)
             else:
                 orders_currency_amount += order.origin_quantity
             for symbol in portfolio:
-                assert portfolio[symbol][commons_constants.PORTFOLIO_TOTAL] >= 0
-                assert portfolio[symbol][commons_constants.PORTFOLIO_AVAILABLE] >= 0
+                assert portfolio[symbol][commons_constants.PORTFOLIO_TOTAL] >= trading_constants.ZERO
+                assert portfolio[symbol][commons_constants.PORTFOLIO_AVAILABLE] >= trading_constants.ZERO
                 if not only_positivity:
                     if order.order_type in (
                     trading_enum.TraderOrderType.SELL_MARKET, trading_enum.TraderOrderType.BUY_MARKET):
