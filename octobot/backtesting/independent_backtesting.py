@@ -205,10 +205,10 @@ class IndependentBacktesting:
                     "exchange_name": exchange_name,
                     "time_frame": min_timeframe.value
                 })
-            profitabilities[exchange_name] = profitability
-            market_average_profitabilities[exchange_name] = market_average_profitability
-            starting_portfolios[exchange_name] = trading_api.get_origin_portfolio(exchange_manager)
-            end_portfolios[exchange_name] = trading_api.get_portfolio(exchange_manager)
+            profitabilities[exchange_name] = float(profitability)
+            market_average_profitabilities[exchange_name] = float(market_average_profitability)
+            starting_portfolios[exchange_name] = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
+            end_portfolios[exchange_name] = trading_api.get_portfolio(exchange_manager, as_decimal=False)
 
         report[BOT_REPORT] = {
             "profitability": profitabilities,
