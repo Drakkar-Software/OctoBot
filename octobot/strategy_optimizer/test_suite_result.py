@@ -42,7 +42,7 @@ class TestSuiteResult:
 
     def get_average_score(self):
         bot_profitabilities = [
-            profitability_result[self.BOT_PROFITABILITY] - profitability_result[self.MARKET_PROFITABILITY]
+            float(profitability_result[self.BOT_PROFITABILITY] - profitability_result[self.MARKET_PROFITABILITY])
             for profitability_result in self.run_profitabilities]
         return data_util.mean(bot_profitabilities)
 
