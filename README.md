@@ -1,4 +1,4 @@
-# OctoBot [0.4.0-beta13](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
+# OctoBot [0.4.0-beta14](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
@@ -85,13 +85,15 @@ In short :
 - Free 24-hour demo repeatable indefinitely on Okteto simply using your Github account
 
 ## Exchanges
-[![Binance](../assets/binance-logo.png)](https://www.binance.com)
-[![Bitmex](../assets/bitmex-logo.png)](https://bitmex.com)
-[![Bitmax](../assets/bitmax-logo.png)](https://bitmax.io)
+[![Binance](../assets/binance-logo.png)](https://accounts.binance.com/en/register?ref=135007948)
+[![Binance](../assets/ftx-logo.png)](https://ftx.com/#a=2525542)
+[![Binance](../assets/okex-logo.png)](https://www.okex.com/join/9403477)
+[![Binance](../assets/gateio-logo.png)](https://www.gate.io/signup/6206289)
+[![Binance](../assets/huobi-logo.png)](https://www.huobi.com/en-us/topic/double-reward/?invite_code=nwcu2223)
+[![Bitmax](../assets/ascendex-logo.png)](https://ascendex.com/en-us/register?inviteCode=ULWCFWL6G)
 [![Coinbase](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
 [![Kucoin](../assets/kucoin-logo.png)](https://www.kucoin.com)
-[![Bitfinex](../assets/bitfinex-logo.png)](https://www.bitfinex.com)
-[![Bittrex](../assets/bittrex-logo.png)](https://bittrex.com)
+[![Bitmex](../assets/bitmex-logo.png)](https://bitmex.com)
 
 Octobot supports many [exchanges](https://exchanges.docs.octobot.online/) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, just configure OctoBot with your api keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).

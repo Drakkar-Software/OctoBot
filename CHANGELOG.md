@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.0-beta14] - 2021-09-09
+### Added
+- [Web Interface] 
+   - Progress in historical data collector
+- [Websockets] Huobi & GateIO websockets are now available
+### Fixed
+- [Trader] 
+   - Fixed multiple rounding issues
+   - Fixed multiple NegativePortfolio error issues
+   - Removed the 2000 limit of orders
+- [Websockets] 
+   - Optimize feed subscription
+- [Evaluators] 
+   - Fixed non traded pairs unwanted evaluations when using websockets
+- 
 ## [0.4.0-beta13] - 2021-08-12
 ### Added
 - [Community website] 

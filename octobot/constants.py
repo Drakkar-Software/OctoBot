@@ -21,7 +21,7 @@ AUTHOR = "DrakkarSoftware"
 SHORT_VERSION = "0.4.0"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
 VERSION_DEV_PHASE = "b"  # alpha : a / beta : b / release candidate : rc
-VERSION_PHASE = "13"  # XX
+VERSION_PHASE = "14"  # XX
 VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 
@@ -69,6 +69,12 @@ DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 # logs
 LOGS_FOLDER = "logs"
 ENV_ENABLE_DEBUG_LOGS = "ENABLE_DEBUG_LOGS"
+
+# errors
+ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.online/")
+ERRORS_POST_ENDPOINT = f"{ERRORS_URL}errors"
+UPLOAD_ERRORS = bool(not os.getenv("UPLOAD_ERRORS", "True").lower() == "false")
+DEFAULT_METRICS_ID = "UNSET"
 
 # config types keys
 CONFIG_KEY = "config"
