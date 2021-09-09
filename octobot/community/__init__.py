@@ -25,6 +25,7 @@ from octobot.community import authentication
 from octobot.community import community_tentacles_package
 from octobot.community import community_supports
 from octobot.community import community_donation
+from octobot.community import errors_upload
 
 from octobot.community.community_analysis import (
     get_community_metrics,
@@ -46,6 +47,11 @@ from octobot.community.community_supports import (
 from octobot.community.community_donation import (
     CommunityDonation
 )
+from octobot.community.errors_upload import (
+    register_error_uploader,
+    Error,
+    ErrorsUploader,
+)
 
 __all__ = [
     "CommunityFields",
@@ -57,4 +63,7 @@ __all__ = [
     "CommunityTentaclesPackage",
     "CommunitySupports",
     "CommunityDonation",
+    "register_error_uploader",
+    "Error",
+    "ErrorsUploader",
 ]
