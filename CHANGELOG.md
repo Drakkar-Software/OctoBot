@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0-beta14] - 2021-09-09
 ### Added
+- [New tentacle] 
+   - Art's IA signal evaluator
 - [Web Interface] 
    - Progress in historical data collector
 - [Websockets] Huobi & GateIO websockets are now available
