@@ -24,8 +24,10 @@ import octobot.updater.python_updater as python_updater
 def create_updater():
     bot_type = os_util.get_octobot_type()
 
+    if bot_type == commons_enums.OctoBotTypes.DOCKER.value:
+        return None
     if bot_type == commons_enums.OctoBotTypes.BINARY.value:
         return binary_updater.BinaryUpdater()
-    if bot_type == commons_enums.OctoBotTypes.PYTHON.value or bot_type == commons_enums.OctoBotTypes.DOCKER.value:
+    if bot_type == commons_enums.OctoBotTypes.PYTHON.value:
         return python_updater.PythonUpdater()
     return None
