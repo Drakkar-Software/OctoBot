@@ -45,7 +45,7 @@ Octobot's main feature is **evolution** : you can [install](https://docs.octobot
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
 
-#### With executable
+#### [With executable](https://docs.octobot.online/installation/with-binary)
 Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
 
 In short:
