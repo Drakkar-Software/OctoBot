@@ -60,7 +60,7 @@ docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)
 ```
 And then open [http://localhost](http://localhost).
 
-#### [With python sources](https://docs.octobot.online/installation/with-docker)
+#### [With python sources](https://docs.octobot.online/installation/with-python-only)
 Follow the [python installation guide](https://www.octobot.online/python_installation/) 
 
 In short :
