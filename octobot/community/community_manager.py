@@ -165,8 +165,8 @@ class CommunityManager:
 
         for exchange_manager in self.exchange_managers:
             profitability, _, _, _, _ = trading_api.get_profitability_stats(exchange_manager)
-            total_profitability += profitability
-            total_origin_values += trading_api.get_current_portfolio_value(exchange_manager)
+            total_profitability += float(profitability)
+            total_origin_values += float(trading_api.get_current_portfolio_value(exchange_manager))
 
         return total_profitability * 100 / total_origin_values if total_origin_values > 0 else 0
 
@@ -180,9 +180,9 @@ class CommunityManager:
                 # cost is in quote currency for a traded pair
                 currency = symbol_util.split_symbol(trade.symbol)[-1]
                 if currency in volume_by_currency:
-                    volume_by_currency[currency] += trade.total_cost
+                    volume_by_currency[currency] += float(trade.total_cost)
                 else:
-                    volume_by_currency[currency] = trade.total_cost
+                    volume_by_currency[currency] = float(trade.total_cost)
         return volume_by_currency
 
     def _get_supports(self):
@@ -209,7 +209,7 @@ class CommunityManager:
                 if current_value == 0:
                     current_value = trading_api.get_origin_portfolio_value(exchange_manager)
                 total_value += current_value
-            return total_value
+            return float(total_value)
         else:
             return 0
 
