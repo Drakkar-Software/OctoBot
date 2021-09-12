@@ -60,6 +60,14 @@ docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)
 ```
 And then open [http://localhost](http://localhost).
 
+#### [With pip](https://docs.octobot.online/installation/with-pip)
+
+In short :
+```
+pip install OctoBot>=0.4.0b14
+Octobot
+```
+
 #### [With python sources](https://docs.octobot.online/installation/with-python-only)
 Follow the [python installation guide](https://www.octobot.online/python_installation/) 
 
