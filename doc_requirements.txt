@@ -1,6 +1,0 @@
-# Sphinx
-sphinx==3.4.1
-asteroid-sphinx-theme==0.0.3
-
-# Markdown to reStructuredText converter
-m2r==0.2.1

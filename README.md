@@ -1,4 +1,4 @@
-# OctoBot [0.4.0-beta14](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
+# OctoBot [0.4.0-beta15](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
@@ -45,7 +45,7 @@ Octobot's main feature is **evolution** : you can [install](https://docs.octobot
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
 
-#### With executable
+#### [With executable](https://docs.octobot.online/installation/with-binary)
 Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
 
 In short:
@@ -60,7 +60,15 @@ docker run -itd --name OctoBot -p 80:5001 -v $(pwd)/user:/octobot/user -v $(pwd)
 ```
 And then open [http://localhost](http://localhost).
 
-#### [With python sources](https://docs.octobot.online/installation/with-docker)
+#### [With pip](https://docs.octobot.online/installation/with-pip)
+
+In short :
+```
+pip install OctoBot>=0.4.0b14
+Octobot
+```
+
+#### [With python sources](https://docs.octobot.online/installation/with-python-only)
 Follow the [python installation guide](https://www.octobot.online/python_installation/) 
 
 In short :
