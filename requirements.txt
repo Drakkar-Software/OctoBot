@@ -5,7 +5,7 @@ cython==0.29.24
 OctoBot-Commons==1.6.12
 OctoBot-Trading==1.13.20
 OctoBot-Evaluators==1.6.20
-OctoBot-Tentacles-Manager==2.5.2
+OctoBot-Tentacles-Manager==2.5.3
 OctoBot-Services==1.2.24
 OctoBot-Backtesting==1.6.23
 Async-Channel==2.0.12
