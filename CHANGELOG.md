@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.1] - 2021-10-15
+### Added
+- [Interface] Telegram
+    - Restart OctoBot
+    - Set auth_code for telegram API
+- [Interface][Web] DataCollector stop button
+- [Evaluator] Death and golden cross
+- [Exchanges][Partners] Ascendex
+
+### Updated
+- [Websockets] Cryptofeed from < 2.0.0 to 2.0.1
+
+### Fixed
+- Websockets multiple issues
+
+### Removed
+- [Infra] Nexus
+
 ## [0.4.0-beta17] - 2021-09-15
 ### Fixed
 - Portfolio holdings market valuation issues
