@@ -15,6 +15,7 @@
 #  License along with this library.
 import os
 import pathlib
+import octobot_commons.os_util as os_util
 
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
@@ -72,7 +73,7 @@ ENV_ENABLE_DEBUG_LOGS = "ENABLE_DEBUG_LOGS"
 # errors
 ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.online/")
 ERRORS_POST_ENDPOINT = f"{ERRORS_URL}errors"
-UPLOAD_ERRORS = bool(not os.getenv("UPLOAD_ERRORS", "True").lower() == "false")
+UPLOAD_ERRORS = os_util.parse_boolean_environment_var("UPLOAD_ERRORS", "True")
 DEFAULT_METRICS_ID = "UNSET"
 
 # config types keys
@@ -86,7 +87,7 @@ CONFIG_ACCEPTED_TERMS = "accepted_terms"
 CONFIG_DEBUG_OPTION = "DEV-MODE"
 FORCE_ASYNCIO_DEBUG_OPTION = False
 
-IS_DEMO = False
+IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 
 # Files
 # Store the path of the octobot directory from this file since it can change depending on the installation path
