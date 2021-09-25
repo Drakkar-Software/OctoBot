@@ -86,6 +86,8 @@ CONFIG_ACCEPTED_TERMS = "accepted_terms"
 CONFIG_DEBUG_OPTION = "DEV-MODE"
 FORCE_ASYNCIO_DEBUG_OPTION = False
 
+IS_DEMO = False
+
 # Files
 # Store the path of the octobot directory from this file since it can change depending on the installation path
 # (local sources, python site-packages, ...)
