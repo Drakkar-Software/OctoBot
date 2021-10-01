@@ -19,7 +19,7 @@
 
 ![Web Interface](../assets/web-interface.gif)
 ## Description
-[Octobot](https://www.octobot.online/) is a powerful fully modular open-source cryptocurrency trading robot.
+[Octobot](https://www.octobot.online/) is a powerful, fully modular open-source cryptocurrency trading robot.
 
 See the [Octobot official website](https://www.octobot.online/).
 
@@ -40,7 +40,7 @@ OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy t
 any other lib and take advantage of all the available data and create a very powerful trading strategy. 
 
 Octobot's main feature is **evolution** : you can [install](https://docs.octobot.online/advanced_usage/tentacle-manager), 
-[modify](https://developer.docs.octobot.online/guides/customize-your-octobot) and even [create](https://developer.docs.octobot.online/guides/developer-guide) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
+[modify](https://developer.docs.octobot.online/guides/customize-your-octobot) and even [create](https://developer.docs.octobot.online/guides/developer-guide) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions!
 
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
