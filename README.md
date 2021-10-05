@@ -44,6 +44,11 @@ any other lib and take advantage of all the available data and create a very pow
 Octobot's main feature is **evolution** : you can [install](https://docs.octobot.online/advanced_usage/tentacle-manager), 
 [modify](https://developer.docs.octobot.online/guides/customize-your-octobot) and even [create](https://developer.docs.octobot.online/guides/developer-guide) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
 
+## Hardware requirements
+- CPU : 1 Core / 1GHz
+- RAM : 250 Mo
+- Disk : 1 Go
+
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
 
