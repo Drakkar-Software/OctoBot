@@ -28,6 +28,8 @@ This repository contains all the features of the bot (trading tools, evaluation 
 
 To install OctoBot with its tentacles, just use the [latest release for your system](https://github.com/Drakkar-Software/OctoBot/releases/latest) and your OctoBot is ready ! 
 
+Find the answers to the most common questions in [our FAQ](https://docs.octobot.online/usage/frequently-asked-questions-faq).
+
 ## Your Octobot
 <a href="https://www.octobot.online/guides/#telegram"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>
 [![Twitter Interface](../assets/twitter-interface.png)](https://docs.octobot.online/interfaces/twitter-interface)
