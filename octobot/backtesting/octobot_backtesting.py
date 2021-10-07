@@ -40,7 +40,9 @@ class OctoBotBacktesting:
                  tentacles_setup_config,
                  symbols_to_create_exchange_classes,
                  backtesting_files,
-                 run_on_common_part_only):
+                 run_on_common_part_only,
+                 start_timestamp=None,
+                 end_timestamp=None):
         self.logger = logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -53,6 +55,8 @@ class OctoBotBacktesting:
         self.backtesting_files = backtesting_files
         self.backtesting = None
         self.run_on_common_part_only = run_on_common_part_only
+        self.start_timestamp = start_timestamp
+        self.end_timestamp = end_timestamp
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -74,9 +78,9 @@ class OctoBotBacktesting:
 
     async def stop(self, memory_check=False, should_raise=False):
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
+        exchange_managers = []
         try:
             await backtesting_api.stop_backtesting(self.backtesting)
-            exchange_managers = []
             try:
                 for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids):
                     exchange_managers.append(exchange_manager)
@@ -201,7 +205,9 @@ class OctoBotBacktesting:
         await backtesting_api.adapt_backtesting_channels(self.backtesting,
                                                          self.backtesting_config,
                                                          importers.ExchangeDataImporter,
-                                                         run_on_common_part_only=self.run_on_common_part_only)
+                                                         run_on_common_part_only=self.run_on_common_part_only,
+                                                         start_timestamp=self.start_timestamp,
+                                                         end_timestamp=self.end_timestamp)
 
         for exchange_class_string in self.symbols_to_create_exchange_classes.keys():
             exchange_builder = trading_api.create_exchange_builder(self.backtesting_config, exchange_class_string) \
