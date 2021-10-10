@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import octobot.community.community_donation as community_donation
+import octobot.community.supports.community_donation as community_donation
 import octobot_commons.support as support
 
 

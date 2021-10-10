@@ -33,7 +33,7 @@ import octobot_services.constants as service_constants
 
 import octobot_trading.api as trading_api
 
-import octobot.community.community_fields as community_fields
+import octobot.community.analysis.community_fields as community_fields
 import octobot.constants as constants
 
 

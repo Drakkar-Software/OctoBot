@@ -21,7 +21,7 @@ import requests
 import aiohttp
 
 import octobot.constants as constants
-import octobot.community.community_supports as community_supports
+import octobot.community.supports.community_supports as community_supports
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
 

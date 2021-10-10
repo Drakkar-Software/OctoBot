@@ -14,43 +14,42 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from octobot.community import community_fields
-from octobot.community.community_fields import (
+from octobot.community.analysis import (
     CommunityFields,
-)
-
-from octobot.community import community_analysis
-from octobot.community import community_manager
-from octobot.community import authentication
-from octobot.community import community_tentacles_package
-from octobot.community import community_supports
-from octobot.community import community_donation
-from octobot.community import errors_upload
-
-from octobot.community.community_analysis import (
+    CommunityManager,
     get_community_metrics,
     get_current_octobots_stats,
     can_read_metrics,
 )
-from octobot.community.community_manager import (
-    CommunityManager,
-)
+
+from octobot.community import analysis
+from octobot.community import configuration
+from octobot.community import authentication
+from octobot.community import tentacles_packages
+from octobot.community import supports
+from octobot.community import errors_upload
+
 from octobot.community.authentication import (
     CommunityAuthentication,
 )
-from octobot.community.community_tentacles_package import (
-    CommunityTentaclesPackage
+
+from octobot.community.configuration import (
+    CommunityConfiguration,
 )
-from octobot.community.community_supports import (
-    CommunitySupports
-)
-from octobot.community.community_donation import (
-    CommunityDonation
-)
+
 from octobot.community.errors_upload import (
     register_error_uploader,
     Error,
     ErrorsUploader,
+)
+
+from octobot.community.supports import (
+    CommunitySupports,
+    CommunityDonation,
+)
+
+from octobot.community.tentacles_packages import (
+    CommunityTentaclesPackage,
 )
 
 __all__ = [

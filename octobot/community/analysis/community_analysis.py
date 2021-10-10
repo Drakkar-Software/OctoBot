@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 import octobot_commons.logging as logging
 import octobot_commons.constants as constants
 
-import octobot.community.community_fields as community_fields
+import octobot.community.analysis.community_fields as community_fields
 
 
 async def get_current_octobots_stats():
