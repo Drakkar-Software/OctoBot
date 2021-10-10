@@ -16,12 +16,24 @@
 
 
 class CommunityConfiguration:
-    def __init__(self, identifier: str, name: str, config_archive: str, created_at: str, updated_at: str):
+    def __init__(self,
+                 identifier: str = None,
+                 name: str = None,
+                 config_archive: str = None,
+                 created_at: str = None,
+                 updated_at: str = None):
         self.identifier: str = identifier
         self.name: str = name
         self.config_archive: str = config_archive
         self.created_at: str = created_at
         self.updated_at: str = updated_at
+
+    def to_dict(self, with_archive=True):
+        data = {"name": self.name}
+        if with_archive:
+            # TODO
+            data["config_archive"] = self.config_archive
+        return data
 
     def __str__(self):
         return f"{self.name}, created_at: {self.created_at}, updated_at: {self.updated_at} " \
@@ -35,5 +47,5 @@ class CommunityConfiguration:
             data_attributes.get("name"),
             None,
             data_attributes.get("created_at"),
-            data_attributes.get("updated_at")
+            data_attributes.get("updated_at"),
         )

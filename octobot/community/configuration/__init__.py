@@ -20,6 +20,13 @@ from octobot.community.configuration.community_configuration import (
     CommunityConfiguration,
 )
 
+from octobot.community.configuration import configuration_synchronizer
+
+from octobot.community.configuration.configuration_synchronizer import (
+    ConfigurationSynchronizer,
+)
+
 __all__ = [
     "CommunityConfiguration",
+    "ConfigurationSynchronizer",
 ]

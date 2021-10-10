@@ -14,8 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import octobot.community.community_analysis as community_analysis
+import octobot.community as community
 
 
 def test_get_community_metrics():
-    assert community_analysis.get_community_metrics()
+    assert community.get_community_metrics()

@@ -35,6 +35,7 @@ from octobot.community.authentication import (
 
 from octobot.community.configuration import (
     CommunityConfiguration,
+    ConfigurationSynchronizer,
 )
 
 from octobot.community.errors_upload import (
@@ -62,6 +63,8 @@ __all__ = [
     "CommunityTentaclesPackage",
     "CommunitySupports",
     "CommunityDonation",
+    "CommunityConfiguration",
+    "ConfigurationSynchronizer",
     "register_error_uploader",
     "Error",
     "ErrorsUploader",

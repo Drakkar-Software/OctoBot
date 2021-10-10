@@ -13,6 +13,17 @@
     "accepted_terms": {
       "type": "boolean"
     },
+    "community_configuration": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
     "profile": {
       "type": "string"
     },
