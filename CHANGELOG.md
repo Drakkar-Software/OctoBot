@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [Interface][Telegram]
     - Restart OctoBot
-    - Set auth_code for telegram API
 - [Interface][Web] 
     - DataCollector stop button
     - Backtesting Date selection

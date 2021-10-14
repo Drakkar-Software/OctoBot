@@ -19,10 +19,10 @@ import octobot_commons.os_util as os_util
 
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
-SHORT_VERSION = "0.4.0"  # major.minor.revision
+SHORT_VERSION = "0.4.1"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
-VERSION_DEV_PHASE = "b"  # alpha : a / beta : b / release candidate : rc
-VERSION_PHASE = "17"  # XX
+VERSION_DEV_PHASE = ""  # alpha : a / beta : b / release candidate : rc
+VERSION_PHASE = ""  # XX
 VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 
