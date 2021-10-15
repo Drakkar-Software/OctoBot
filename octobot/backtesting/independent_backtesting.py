@@ -42,7 +42,9 @@ class IndependentBacktesting:
                  backtesting_files,
                  data_file_path=backtesting_constants.BACKTESTING_FILE_PATH,
                  run_on_common_part_only=True,
-                 join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT):
+                 join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
+                 start_timestamp=None,
+                 end_timestamp=None):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -62,7 +64,9 @@ class IndependentBacktesting:
                                                                   self.tentacles_setup_config,
                                                                   self.symbols_to_create_exchange_classes,
                                                                   self.backtesting_files,
-                                                                  run_on_common_part_only)
+                                                                  run_on_common_part_only,
+                                                                  start_timestamp=start_timestamp,
+                                                                  end_timestamp=end_timestamp)
 
     async def initialize_and_run(self, log_errors=True):
         try:

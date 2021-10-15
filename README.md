@@ -1,4 +1,4 @@
-# OctoBot [0.4.0-beta17](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
+# OctoBot [0.4.1](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
@@ -19,7 +19,7 @@
 
 ![Web Interface](../assets/web-interface.gif)
 ## Description
-[Octobot](https://www.octobot.online/) is a powerful fully modular open-source cryptocurrency trading robot.
+[Octobot](https://www.octobot.online/) is a powerful, fully modular open-source cryptocurrency trading robot.
 
 See the [Octobot official website](https://www.octobot.online/).
 
@@ -27,6 +27,8 @@ This repository contains all the features of the bot (trading tools, evaluation 
 [Octobot's tentacles](https://github.com/Drakkar-Software/OctoBot-tentacles) contains the bot's strategies and user interfaces.
 
 To install OctoBot with its tentacles, just use the [latest release for your system](https://github.com/Drakkar-Software/OctoBot/releases/latest) and your OctoBot is ready ! 
+
+Find the answers to the most common questions in [our FAQ](https://docs.octobot.online/usage/frequently-asked-questions-faq).
 
 ## Your Octobot
 <a href="https://www.octobot.online/guides/#telegram"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>
@@ -40,7 +42,12 @@ OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy t
 any other lib and take advantage of all the available data and create a very powerful trading strategy. 
 
 Octobot's main feature is **evolution** : you can [install](https://docs.octobot.online/advanced_usage/tentacle-manager), 
-[modify](https://developer.docs.octobot.online/guides/customize-your-octobot) and even [create](https://developer.docs.octobot.online/guides/developer-guide) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions !
+[modify](https://developer.docs.octobot.online/guides/customize-your-octobot) and even [create](https://developer.docs.octobot.online/guides/developer-guide) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions!
+
+## Hardware requirements
+- CPU : 1 Core / 1GHz
+- RAM : 250 Mo
+- Disk : 1 Go
 
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
