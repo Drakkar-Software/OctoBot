@@ -81,5 +81,9 @@ def get_independent_backtesting_exchange_manager_ids(independent_backtesting) ->
     return independent_backtesting.octobot_backtesting.exchange_manager_ids
 
 
+def get_independent_backtesting_bot_id(independent_backtesting) -> str:
+    return independent_backtesting.octobot_backtesting.bot_id
+
+
 def log_independent_backtesting_report(independent_backtesting) -> None:
     independent_backtesting.log_report()
