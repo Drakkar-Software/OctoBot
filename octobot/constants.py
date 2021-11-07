@@ -108,6 +108,7 @@ LOG_FILE = f"{LOGS_FOLDER}/{PROJECT_NAME}.log"
 # Optimizer
 OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION = False
 OPTIMIZER_DATA_FILES_FOLDER = f"{OCTOBOT_FOLDER}/strategy_optimizer/optimizer_data_files"
+OPTIMIZER_RUNS_SCHEDULE_DB = "runs_schedule.json"
 
 # Channel
 OCTOBOT_CHANNEL = "OctoBot"

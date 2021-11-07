@@ -69,6 +69,8 @@ class StrategyOptimizer:
         self.run_id = 0
         self.total_nb_runs = 0
 
+        self.keep_running = True
+
         if not self.strategy_class:
             self.logger.error(f"Impossible to find a strategy matching class name: {strategy_name} in installed "
                               f"strategies. Please make sure to enter the name of the class, "
@@ -150,6 +152,8 @@ class StrategyOptimizer:
                                 for nb_time_frames in range(1, nb_TFs + 1):
                                     # test different configurations
                                     for _ in range(nb_TFs):
+                                        if not self.keep_running:
+                                            return
                                         self._run_on_config(risk, current_forced_time_frame, nb_time_frames,
                                                             time_frames_conf_history, activated_evaluators)
 
@@ -244,6 +248,9 @@ class StrategyOptimizer:
 
     def is_in_progress(self):
         return self.get_overall_progress() != 100
+
+    def cancel(self):
+        self.keep_running = False
 
     def get_current_test_suite_progress(self):
         return self.current_test_suite.current_progress if self.current_test_suite else 0
