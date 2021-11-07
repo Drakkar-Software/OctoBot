@@ -53,6 +53,7 @@ packages_list = [
     "octobot.strategy_optimizer.strategy_test_suite",
     "octobot.strategy_optimizer.test_suite_result",
     "octobot.strategy_optimizer.strategy_optimizer",
+    "octobot.strategy_optimizer.strategy_design_optimizer",
     "octobot.producers.interface_producer",
     "octobot.producers.service_feed_producer",
     "octobot.producers.evaluator_producer",

@@ -14,10 +14,15 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 from octobot.strategy_optimizer.strategy_optimizer import StrategyOptimizer
+from octobot.strategy_optimizer.strategy_design_optimizer import StrategyDesignOptimizer
 
 
 def create_strategy_optimizer(config, tentacles_setup_config, strategy_name) -> StrategyOptimizer:
     return StrategyOptimizer(config, tentacles_setup_config, strategy_name)
+
+
+def create_design_strategy_optimizer(trading_mode) -> StrategyDesignOptimizer:
+    return StrategyDesignOptimizer(trading_mode)
 
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
