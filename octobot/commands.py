@@ -15,7 +15,6 @@
 #  License along with this library.
 
 import os
-
 import aiohttp
 import sys
 import asyncio
@@ -85,15 +84,24 @@ def run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config):
     asyncio.run(update_or_repair_tentacles_if_necessary(tentacles_setup_config, config))
 
 
+def _check_tentacles_install_exit():
+    if constants.EXIT_BEFORE_TENTACLES_AUTO_REINSTALL:
+        logging.get_logger(COMMANDS_LOGGER_NAME).info(
+            "Exiting OctoBot before re-installing tentacles as EXIT_BEFORE_TENTACLES_AUTO_REINSTALL is True")
+        sys.exit(0)
+
+
 async def update_or_repair_tentacles_if_necessary(tentacles_setup_config, config):
     if not tentacles_manager_api.are_tentacles_up_to_date(tentacles_setup_config, constants.VERSION):
         logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are not up to date. Updating tentacles...")
+        _check_tentacles_install_exit()
         if await install_or_update_tentacles(config):
             logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are now up to date.")
     elif tentacles_manager_api.load_tentacles(verbose=True):
         logging.get_logger(COMMANDS_LOGGER_NAME).debug("OctoBot tentacles are up to date.")
     else:
         logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are damaged. Installing default tentacles ...")
+        _check_tentacles_install_exit()
         await install_or_update_tentacles(config)
 
 
