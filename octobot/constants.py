@@ -86,6 +86,7 @@ CONFIG_ACCEPTED_TERMS = "accepted_terms"
 # DEBUG
 CONFIG_DEBUG_OPTION = "DEV-MODE"
 FORCE_ASYNCIO_DEBUG_OPTION = False
+EXIT_BEFORE_TENTACLES_AUTO_REINSTALL = os_util.parse_boolean_environment_var("EXIT_BEFORE_TENTACLES_AUTO_REINSTALL", "False")
 
 IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 
