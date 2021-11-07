@@ -21,12 +21,25 @@ def create_strategy_optimizer(config, tentacles_setup_config, strategy_name) -> 
     return StrategyOptimizer(config, tentacles_setup_config, strategy_name)
 
 
-def create_design_strategy_optimizer(trading_mode) -> StrategyDesignOptimizer:
-    return StrategyDesignOptimizer(trading_mode)
+def create_design_strategy_optimizer(trading_mode, config=None, tentacles_setup_config=None,
+                                     optimizer_config=None, data_files=None) -> StrategyDesignOptimizer:
+    return StrategyDesignOptimizer(trading_mode, config, tentacles_setup_config, optimizer_config, data_files)
+
+
+async def initialize_design_strategy_optimizer(strategy_optimizer):
+    return await strategy_optimizer.initialize()
 
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
     strategy_optimizer.find_optimal_configuration(TAs=TAs, time_frames=time_frames, risks=risks)
+
+
+async def start_design_strategy_optimizer(strategy_optimizer, randomly_chose_runs):
+    await strategy_optimizer.find_optimal_configuration(randomly_chose_runs=randomly_chose_runs)
+
+
+def cancel_strategy_optimizer(strategy_optimizer):
+    strategy_optimizer.cancel()
 
 
 def print_optimizer_report(strategy_optimizer) -> None:
