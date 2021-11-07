@@ -56,6 +56,7 @@ class IndependentBacktesting:
         self.starting_portfolio = {}
         self.fees_config = {}
         self.forced_time_frames = []
+        self.optimizer_id = None
         self._init_default_config_values()
         self.stopped = False
         self.post_backtesting_task = None
@@ -161,6 +162,7 @@ class IndependentBacktesting:
         if evaluator_constants.CONFIG_FORCED_TIME_FRAME in self.octobot_origin_config:
             self.forced_time_frames = copy.deepcopy(self.octobot_origin_config[
                                                         evaluator_constants.CONFIG_FORCED_TIME_FRAME])
+        self.optimizer_id = self.octobot_origin_config.get(common_constants.CONFIG_OPTIMIZER_ID)
         self.backtesting_config = {
             backtesting_constants.CONFIG_BACKTESTING: {},
             common_constants.CONFIG_CRYPTO_CURRENCIES: {},
@@ -278,6 +280,7 @@ class IndependentBacktesting:
             common_constants.CONFIG_STARTING_PORTFOLIO] = self.starting_portfolio
         self.backtesting_config[common_constants.CONFIG_SIMULATOR][
             common_constants.CONFIG_SIMULATOR_FEES] = self.fees_config
+        self.backtesting_config[common_constants.CONFIG_OPTIMIZER_ID] = self.optimizer_id
         if self.forced_time_frames:
             self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = self.forced_time_frames
         self._add_config_default_backtesting_values()
