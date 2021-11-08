@@ -104,7 +104,7 @@ class StrategyDesignOptimizer:
         return int((self.current_run_id - 1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
 
     def is_in_progress(self):
-        return self.get_overall_progress() != 100
+        return self.get_overall_progress() != 100 and self.is_computing
 
     def get_current_test_suite_progress(self):
         return 0
@@ -161,6 +161,9 @@ class StrategyDesignOptimizer:
         except Exception as e:
             self.logger.exception(e, True, str(e))
             return independent_backtesting
+        finally:
+            if independent_backtesting is not None:
+                await independent_backtesting.stop()
 
     def _update_config_for_optimizer(self):
         self.config[commons_constants.CONFIG_OPTIMIZER_ID] = self.optimizer_id
