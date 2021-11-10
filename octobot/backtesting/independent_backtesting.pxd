@@ -41,6 +41,7 @@ cdef class IndependentBacktesting:
     cdef public octobot_backtesting.OctoBotBacktesting octobot_backtesting
 
     cpdef bint is_in_progress(self)
+    cpdef bint has_finished(self)
     cpdef double get_progress(self)
     cpdef void log_report(self)
 

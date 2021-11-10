@@ -105,6 +105,12 @@ class IndependentBacktesting:
         else:
             return False
 
+    def has_finished(self):
+        if self.octobot_backtesting.backtesting:
+            return self.octobot_backtesting.backtesting.has_finished()
+        else:
+            return False
+
     def get_progress(self):
         if self.octobot_backtesting.backtesting:
             return self.octobot_backtesting.backtesting.get_progress()
