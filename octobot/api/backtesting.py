@@ -66,7 +66,7 @@ def get_independent_backtesting_progress(independent_backtesting) -> float:
 
 
 def is_independent_backtesting_finished(independent_backtesting) -> bool:
-    return independent_backtesting.get_progress() == 1.0
+    return independent_backtesting.get_progress() >= 1.0
 
 
 def is_independent_backtesting_stopped(independent_backtesting) -> bool:
