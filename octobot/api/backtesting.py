@@ -24,13 +24,15 @@ def create_independent_backtesting(config,
                                    join_backtesting_timeout=constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
                                    run_on_common_part_only=True,
                                    start_timestamp=None,
-                                   end_timestamp=None) -> backtesting.IndependentBacktesting:
+                                   end_timestamp=None,
+                                   enable_logs=True) -> backtesting.IndependentBacktesting:
     return backtesting.IndependentBacktesting(config, tentacles_setup_config, data_files,
                                               data_file_path,
                                               run_on_common_part_only=run_on_common_part_only,
                                               join_backtesting_timeout=join_backtesting_timeout,
                                               start_timestamp=start_timestamp,
-                                              end_timestamp=end_timestamp)
+                                              end_timestamp=end_timestamp,
+                                              enable_logs=enable_logs)
 
 
 async def initialize_and_run_independent_backtesting(independent_backtesting, log_errors=True) -> None:
