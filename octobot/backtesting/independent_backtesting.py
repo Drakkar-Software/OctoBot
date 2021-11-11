@@ -15,12 +15,13 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import copy
+import logging
 import os.path as path
 
 import octobot_commons.constants as common_constants
 import octobot_commons.enums as enums
 import octobot_commons.errors as errors
-import octobot_commons.logging as logging
+import octobot_commons.logging as commons_logging
 import octobot_commons.pretty_printer as pretty_printer
 import octobot_commons.symbol_util as symbol_util
 import octobot_commons.time_frame_manager as time_frame_manager
@@ -44,12 +45,13 @@ class IndependentBacktesting:
                  run_on_common_part_only=True,
                  join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
                  start_timestamp=None,
-                 end_timestamp=None):
+                 end_timestamp=None,
+                 enable_logs=True):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
         self.backtesting_files = backtesting_files
-        self.logger = logging.get_logger(self.__class__.__name__)
+        self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.data_file_path = data_file_path
         self.symbols_to_create_exchange_classes = {}
         self.risk = 0.1
@@ -61,6 +63,8 @@ class IndependentBacktesting:
         self.stopped = False
         self.post_backtesting_task = None
         self.join_backtesting_timeout = join_backtesting_timeout
+        self.enable_logs = enable_logs
+        self.previous_log_level = commons_logging.get_global_logger_level()
         self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
                                                                   self.tentacles_setup_config,
                                                                   self.symbols_to_create_exchange_classes,
@@ -71,6 +75,8 @@ class IndependentBacktesting:
 
     async def initialize_and_run(self, log_errors=True):
         try:
+            if not self.enable_logs:
+                commons_logging.set_global_logger_level(logging.ERROR)
             await self.initialize_config()
             self._add_crypto_currencies_config()
             await self.octobot_backtesting.initialize_and_run()
@@ -98,6 +104,8 @@ class IndependentBacktesting:
                 await self.octobot_backtesting.stop(memory_check=memory_check, should_raise=should_raise)
         finally:
             self.stopped = True
+            if not self.enable_logs:
+                commons_logging.set_global_logger_level(self.previous_log_level)
 
     def is_in_progress(self):
         if self.octobot_backtesting.backtesting:
@@ -118,8 +126,8 @@ class IndependentBacktesting:
             return 0
 
     def _post_backtesting_start(self):
-        logging.reset_backtesting_errors()
-        logging.set_error_publication_enabled(False)
+        commons_logging.reset_backtesting_errors()
+        commons_logging.set_error_publication_enabled(False)
         self.post_backtesting_task = asyncio.create_task(self._register_post_backtesting_end_callback())
 
     async def _register_post_backtesting_end_callback(self):
@@ -128,7 +136,7 @@ class IndependentBacktesting:
 
     async def _post_backtesting_end_callback(self):
         # re enable logs
-        logging.set_error_publication_enabled(True)
+        commons_logging.set_error_publication_enabled(True)
         # stop backtesting importers to release database files
         await self.octobot_backtesting.stop_importers()
 
@@ -197,7 +205,7 @@ class IndependentBacktesting:
             SYMBOL_REPORT: [],
             BOT_REPORT: {},
             CHART_IDENTIFIERS: [],
-            ERRORS_COUNT: logging.get_backtesting_errors_count()
+            ERRORS_COUNT: commons_logging.get_backtesting_errors_count()
         }
         profitabilities = {}
         market_average_profitabilities = {}
