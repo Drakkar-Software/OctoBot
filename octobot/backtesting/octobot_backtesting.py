@@ -42,7 +42,8 @@ class OctoBotBacktesting:
                  backtesting_files,
                  run_on_common_part_only,
                  start_timestamp=None,
-                 end_timestamp=None):
+                 end_timestamp=None,
+                 enable_logs=True):
         self.logger = logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -57,6 +58,7 @@ class OctoBotBacktesting:
         self.run_on_common_part_only = run_on_common_part_only
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
+        self.enable_logs = enable_logs
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -66,7 +68,7 @@ class OctoBotBacktesting:
         await self._create_evaluators()
         await self._create_service_feeds()
         await backtesting_api.start_backtesting(self.backtesting)
-        if logger.BOT_CHANNEL_LOGGER is not None:
+        if logger.BOT_CHANNEL_LOGGER is not None and self.enable_logs:
             await self.start_loggers()
 
     async def stop_importers(self):
