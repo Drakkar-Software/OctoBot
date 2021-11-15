@@ -26,7 +26,8 @@ def create_design_strategy_optimizer(trading_mode, config=None, tentacles_setup_
     return StrategyDesignOptimizer(trading_mode, config, tentacles_setup_config, optimizer_config, data_files)
 
 
-async def initialize_design_strategy_optimizer(strategy_optimizer):
+async def initialize_design_strategy_optimizer(strategy_optimizer, is_computing=False):
+    strategy_optimizer.is_computing = is_computing
     return await strategy_optimizer.initialize()
 
 
@@ -35,7 +36,7 @@ def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, r
 
 
 async def start_design_strategy_optimizer(strategy_optimizer, randomly_chose_runs):
-    await strategy_optimizer.find_optimal_configuration(randomly_chose_runs=randomly_chose_runs)
+    await strategy_optimizer.multi_processed_optimize(randomly_chose_runs=randomly_chose_runs)
 
 
 def cancel_strategy_optimizer(strategy_optimizer):
@@ -54,12 +55,12 @@ def get_optimizer_results(strategy_optimizer) -> list:
     return strategy_optimizer.run_results
 
 
-def get_optimizer_overall_progress(strategy_optimizer) -> int:
-    return strategy_optimizer.get_overall_progress()
+async def get_optimizer_overall_progress(strategy_optimizer) -> int:
+    return await strategy_optimizer.get_overall_progress()
 
 
-def is_optimizer_in_progress(strategy_optimizer) -> bool:
-    return strategy_optimizer.is_in_progress()
+async def is_optimizer_in_progress(strategy_optimizer) -> bool:
+    return await strategy_optimizer.is_in_progress()
 
 
 def is_optimizer_computing(strategy_optimizer) -> bool:
