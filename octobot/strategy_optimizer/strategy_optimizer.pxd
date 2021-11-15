@@ -38,8 +38,6 @@ cdef class StrategyOptimizer:
 
     cpdef void find_optimal_configuration(self, list TAs=*, list time_frames=*, list risks=*)
     cpdef void print_report(self)
-    cpdef int get_overall_progress(self)
-    cpdef bint is_in_progress(self)
     cpdef int get_current_test_suite_progress(self)
     cpdef list get_report(self)
     cpdef object get_errors_description(self)

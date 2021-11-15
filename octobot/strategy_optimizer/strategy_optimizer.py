@@ -243,10 +243,10 @@ class StrategyOptimizer:
         self.logger.info(f"{best_result[CONFIG].get_result_string()} "
                          f"average trades count: {best_result[TRADES_IN_RESULT]:f}")
 
-    def get_overall_progress(self):
+    async def get_overall_progress(self):
         return int((self.run_id - 1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
 
-    def is_in_progress(self):
+    async def is_in_progress(self):
         return self.get_overall_progress() != 100
 
     def cancel(self):
