@@ -13,18 +13,24 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import multiprocessing
 import os
 import itertools
 import enum
 import random
 import copy
+import asyncio
+import concurrent.futures
+import time
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as commons_logging
 import octobot_commons.tentacles_management as tentacles_management
+import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot.constants as constants
 import octobot_trading.modes.scripting_library as scripting_library
 import octobot_trading.modes as trading_modes
+import octobot_trading.enums as trading_enums
 import octobot.api.backtesting as octobot_backtesting_api
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
@@ -74,6 +80,7 @@ class StrategyDesignOptimizer:
         self.current_run_id = 0
         self.total_nb_runs = 0
         self.keep_running = True
+        self.process_pool_handle = None
 
     async def initialize(self):
         self.optimizer_id = self._get_new_optimizer_id()
@@ -82,29 +89,71 @@ class StrategyDesignOptimizer:
     def get_name(self) -> str:
         return f"{self.trading_mode.get_name()}_{self.__class__.__name__}"
 
-    async def find_optimal_configuration(self, randomly_chose_runs=False):
+    async def multi_processed_optimize(self, randomly_chose_runs=False):
+        self.is_computing = True
+        global_t0 = time.time()
+        lock = multiprocessing.RLock()
         try:
-            self.is_computing = True
             self.current_run_id = 1
-            self.total_nb_runs = None
+            with multiprocessing_util.registered_lock(trading_enums.MultiprocessingLocks.DBLock.value, lock),\
+                 concurrent.futures.ProcessPoolExecutor(
+                    initializer=multiprocessing_util.register_lock,
+                    initargs=(trading_enums.MultiprocessingLocks.DBLock.value, lock)) as pool:
+                self.logger.info(f"Dispatching optimizer backtesting runs into {pool._max_workers} parallel processes "
+                                 f"(based on the current computer physical processors).")
+                coros = []
+                for _ in range(pool._max_workers):
+                    coros.append(
+                        asyncio.get_event_loop().run_in_executor(
+                            pool,
+                            self.find_optimal_configuration_wrapper,
+                            randomly_chose_runs
+                        )
+                    )
+                self.process_pool_handle = await asyncio.gather(*coros)
+        except Exception as e:
+            self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
+        finally:
+            self.process_pool_handle = None
+            self.is_computing = False
+        self.logger.info(f"Optimizer runs complete in {time.time() - global_t0} seconds.")
+
+    def find_optimal_configuration_wrapper(self, randomly_chose_runs=False):
+        asyncio.run(self.find_optimal_configuration(randomly_chose_runs=randomly_chose_runs))
+
+    async def find_optimal_configuration(self, randomly_chose_runs=False):
+        # need to load tentacles when in new process
+        tentacles_manager_api.reload_tentacle_info()
+        try:
             while self.keep_running:
                 await self.run_single_iteration(randomly_chose_runs=randomly_chose_runs)
-                self.current_run_id += 1
         except NoMoreRunError:
-            async with scripting_library.DBWriter.database(self._get_run_schedule_db()) as writer:
+            async with scripting_library.DBWriter.database(self._get_run_schedule_db(), with_lock=True) as writer:
                 query = await writer.search()
                 await writer.delete(self.RUN_SCHEDULE_TABLE, query.id == self.optimizer_id)
-        finally:
-            self.is_computing = False
+        except concurrent.futures.CancelledError:
+            self.logger.info("Cancelled run")
 
     def cancel(self):
         self.keep_running = False
+        self.process_pool_handle.cancel()
 
-    def get_overall_progress(self):
-        return int((self.current_run_id - 1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
+    async def _get_remaining_runs_count_from_db(self):
+        async with scripting_library.DBReader.database(self._get_run_schedule_db(), with_lock=True) as reader:
+            run_data = await self._get_run_data_from_db(reader)
+        if run_data and run_data[0][self.CONFIG_RUNS]:
+            return len(run_data[0][self.CONFIG_RUNS])
+        return 0
 
-    def is_in_progress(self):
-        return self.get_overall_progress() != 100 and self.is_computing
+    async def get_overall_progress(self):
+        remaining_runs = await self._get_remaining_runs_count_from_db()
+        if self.is_computing and remaining_runs == 0:
+            remaining_runs = 1
+        done_runs = self.total_nb_runs - remaining_runs
+        return int(done_runs / self.total_nb_runs * 100) if self.total_nb_runs else 0
+
+    async def is_in_progress(self):
+        return self.is_computing
 
     def get_current_test_suite_progress(self):
         return 0
@@ -112,30 +161,33 @@ class StrategyDesignOptimizer:
     def get_errors_description(self):
         return ""
 
+    async def _get_run_data_from_db(self, reader):
+        if self.optimizer_id is None:
+            raise RuntimeError("No optimizer id")
+        query = await reader.search()
+        return await reader.select(self.RUN_SCHEDULE_TABLE, query.id == self.optimizer_id)
+
     async def run_single_iteration(self, randomly_chose_runs=False):
         data_files = run_data = run_id = run_details = None
-        async with scripting_library.DBReader.database(self._get_run_schedule_db()) as reader:
-            if self.optimizer_id is None:
-                raise RuntimeError("No optimizer id")
+        async with scripting_library.DBWriterReader.database(self._get_run_schedule_db(), with_lock=True) \
+                as writer_reader:
+            run_data = await self._get_run_data_from_db(writer_reader)
             self._update_config_for_optimizer()
-            query = await reader.search()
-            run_data = await reader.select(self.RUN_SCHEDULE_TABLE, query.id == self.optimizer_id)
             if run_data and run_data[0][self.CONFIG_RUNS]:
                 runs = run_data[0][self.CONFIG_RUNS]
                 data_files = run_data[0][self.CONFIG_DATA_FILES]
                 run_ids = list(runs)
                 run_count = len(run_ids)
-                if self.total_nb_runs is None:
-                    self.total_nb_runs = run_count
                 run_id = random.randrange(run_count) if randomly_chose_runs else run_ids[0]
                 run_details = runs.pop(run_id)
-        if data_files:
-            async with scripting_library.DBWriter.database(self._get_run_schedule_db()) as writer:
-                query = await writer.search()
+            if data_files:
+                query = await writer_reader.search()
                 updated_data = {
                     self.CONFIG_RUNS: run_data[0][self.CONFIG_RUNS]
                 }
-                await writer.update(self.RUN_SCHEDULE_TABLE, updated_data, query.id == self.optimizer_id)
+                await writer_reader.update(self.RUN_SCHEDULE_TABLE, updated_data, query.id == self.optimizer_id)
+
+        if data_files and run_details:
             return await self._run_with_config(data_files, run_id, run_details)
         raise NoMoreRunError("Nothing to run")
 
@@ -286,7 +338,8 @@ class StrategyDesignOptimizer:
             self.CONFIG_DATA_FILES: self.data_files,
             self.CONFIG_ID: self.optimizer_id
         }
-        async with scripting_library.DBWriter.database(self._get_run_schedule_db()) as writer:
+        self.total_nb_runs = len(runs)
+        async with scripting_library.DBWriter.database(self._get_run_schedule_db(), with_lock=True) as writer:
             await writer.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
 
     def _get_run_schedule_db(self):
