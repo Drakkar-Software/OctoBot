@@ -24,13 +24,13 @@ import concurrent.futures
 import time
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.logging as commons_logging
 import octobot_commons.tentacles_management as tentacles_management
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot.constants as constants
 import octobot_trading.modes.scripting_library as scripting_library
 import octobot_trading.modes as trading_modes
-import octobot_trading.enums as trading_enums
 import octobot.api.backtesting as octobot_backtesting_api
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
@@ -95,10 +95,10 @@ class StrategyDesignOptimizer:
         lock = multiprocessing.RLock()
         try:
             self.current_run_id = 1
-            with multiprocessing_util.registered_lock(trading_enums.MultiprocessingLocks.DBLock.value, lock),\
+            with multiprocessing_util.registered_lock(commons_enums.MultiprocessingLocks.DBLock.value, lock),\
                  concurrent.futures.ProcessPoolExecutor(
                     initializer=multiprocessing_util.register_lock,
-                    initargs=(trading_enums.MultiprocessingLocks.DBLock.value, lock)) as pool:
+                    initargs=(commons_enums.MultiprocessingLocks.DBLock.value, lock)) as pool:
                 self.logger.info(f"Dispatching optimizer backtesting runs into {pool._max_workers} parallel processes "
                                  f"(based on the current computer physical processors).")
                 coros = []
