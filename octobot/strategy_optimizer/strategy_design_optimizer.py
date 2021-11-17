@@ -28,6 +28,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.logging as commons_logging
 import octobot_commons.tentacles_management as tentacles_management
 import octobot_commons.multiprocessing_util as multiprocessing_util
+import octobot_commons.databases as databases
 import octobot.constants as constants
 import octobot_trading.modes.scripting_library as scripting_library
 import octobot_trading.modes as trading_modes
@@ -128,7 +129,7 @@ class StrategyDesignOptimizer:
             while self.keep_running:
                 await self.run_single_iteration(randomly_chose_runs=randomly_chose_runs)
         except NoMoreRunError:
-            async with scripting_library.DBWriter.database(self._get_run_schedule_db(), with_lock=True) as writer:
+            async with databases.DBWriter.database(self._get_run_schedule_db(), with_lock=True) as writer:
                 query = await writer.search()
                 await writer.delete(self.RUN_SCHEDULE_TABLE, query.id == self.optimizer_id)
         except concurrent.futures.CancelledError:
@@ -139,7 +140,7 @@ class StrategyDesignOptimizer:
         self.process_pool_handle.cancel()
 
     async def _get_remaining_runs_count_from_db(self):
-        async with scripting_library.DBReader.database(self._get_run_schedule_db(), with_lock=True) as reader:
+        async with databases.DBReader.database(self._get_run_schedule_db(), with_lock=True) as reader:
             run_data = await self._get_run_data_from_db(reader)
         if run_data and run_data[0][self.CONFIG_RUNS]:
             return len(run_data[0][self.CONFIG_RUNS])
@@ -339,7 +340,7 @@ class StrategyDesignOptimizer:
             self.CONFIG_ID: self.optimizer_id
         }
         self.total_nb_runs = len(runs)
-        async with scripting_library.DBWriter.database(self._get_run_schedule_db(), with_lock=True) as writer:
+        async with databases.DBWriter.database(self._get_run_schedule_db(), with_lock=True) as writer:
             await writer.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
 
     def _get_run_schedule_db(self):
