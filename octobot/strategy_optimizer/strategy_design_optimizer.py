@@ -271,7 +271,12 @@ class StrategyDesignOptimizer:
             tentacles_Evaluator.TA, tentacles_management.evaluator_parent_inspection)
         if tentacle_class:
             return tentacle_class
-        raise RuntimeError(f"Can't fine tentacle: {tentacle}")
+        tentacle_class = tentacles_management.get_class_from_string(
+            tentacle, evaluators.ScriptedEvaluator,
+            tentacles_Evaluator.Scripted, tentacles_management.evaluator_parent_inspection)
+        if tentacle_class:
+            return tentacle_class
+        raise RuntimeError(f"Can't find tentacle: {tentacle}")
 
     async def _store_backtesting_runs_schedule(self):
         runs = self._generate_runs()
