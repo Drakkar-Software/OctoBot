@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
-## [0.4.2] - 2021-11-18
+## [0.4.2] - 2021-11-21
 ### Added
 - [WebInterface]
     - Add filter in evaluation matrix
@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Import / Export currencies list
     - Option to change reference market on configured pairs
     - Info message on DataCollector and Backtesting
+    - Sort currencies by marketcap
 - [Evaluators] SuperTrend
 
 ### Updated
