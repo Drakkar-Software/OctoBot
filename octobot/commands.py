@@ -1,21 +1,20 @@
-#  Drakkar-Software OctoBot
-#  Copyright (c) Drakkar-Software, All rights reserved.
+#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
+#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
 #
-#  This library is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU Lesser General Public
-#  License as published by the Free Software Foundation; either
+#  OctoBot is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either
 #  version 3.0 of the License, or (at your option) any later version.
 #
-#  This library is distributed in the hope that it will be useful,
+#  OctoBot is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  Lesser General Public License for more details.
+#  General Public License for more details.
 #
-#  You should have received a copy of the GNU Lesser General Public
-#  License along with this library.
+#  You should have received a copy of the GNU General Public
+#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import os
-
 import aiohttp
 import sys
 import asyncio
@@ -85,15 +84,24 @@ def run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config):
     asyncio.run(update_or_repair_tentacles_if_necessary(tentacles_setup_config, config))
 
 
+def _check_tentacles_install_exit():
+    if constants.EXIT_BEFORE_TENTACLES_AUTO_REINSTALL:
+        logging.get_logger(COMMANDS_LOGGER_NAME).info(
+            "Exiting OctoBot before re-installing tentacles as EXIT_BEFORE_TENTACLES_AUTO_REINSTALL is True")
+        sys.exit(0)
+
+
 async def update_or_repair_tentacles_if_necessary(tentacles_setup_config, config):
     if not tentacles_manager_api.are_tentacles_up_to_date(tentacles_setup_config, constants.VERSION):
         logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are not up to date. Updating tentacles...")
+        _check_tentacles_install_exit()
         if await install_or_update_tentacles(config):
             logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are now up to date.")
     elif tentacles_manager_api.load_tentacles(verbose=True):
         logging.get_logger(COMMANDS_LOGGER_NAME).debug("OctoBot tentacles are up to date.")
     else:
         logging.get_logger(COMMANDS_LOGGER_NAME).info("OctoBot tentacles are damaged. Installing default tentacles ...")
+        _check_tentacles_install_exit()
         await install_or_update_tentacles(config)
 
 
