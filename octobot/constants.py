@@ -1,25 +1,25 @@
-#  Drakkar-Software OctoBot
-#  Copyright (c) Drakkar-Software, All rights reserved.
+#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
+#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
 #
-#  This library is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU Lesser General Public
-#  License as published by the Free Software Foundation; either
+#  OctoBot is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either
 #  version 3.0 of the License, or (at your option) any later version.
 #
-#  This library is distributed in the hope that it will be useful,
+#  OctoBot is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  Lesser General Public License for more details.
+#  General Public License for more details.
 #
-#  You should have received a copy of the GNU Lesser General Public
-#  License along with this library.
+#  You should have received a copy of the GNU General Public
+#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import os
 import pathlib
 import octobot_commons.os_util as os_util
 
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
-SHORT_VERSION = "0.4.1"  # major.minor.revision
+SHORT_VERSION = "0.4.2"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
 VERSION_DEV_PHASE = ""  # alpha : a / beta : b / release candidate : rc
 VERSION_PHASE = ""  # XX
@@ -86,6 +86,7 @@ CONFIG_ACCEPTED_TERMS = "accepted_terms"
 # DEBUG
 CONFIG_DEBUG_OPTION = "DEV-MODE"
 FORCE_ASYNCIO_DEBUG_OPTION = False
+EXIT_BEFORE_TENTACLES_AUTO_REINSTALL = os_util.parse_boolean_environment_var("EXIT_BEFORE_TENTACLES_AUTO_REINSTALL", "False")
 
 IS_DEMO = os_util.parse_boolean_environment_var("IS_DEMO", "False")
 
