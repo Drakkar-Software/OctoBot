@@ -173,7 +173,6 @@ class StrategyDesignOptimizer:
         async with scripting_library.DBWriterReader.database(self._get_run_schedule_db(), with_lock=True) \
                 as writer_reader:
             run_data = await self._get_run_data_from_db(writer_reader)
-            self._update_config_for_optimizer()
             if run_data and run_data[0][self.CONFIG_RUNS]:
                 runs = run_data[0][self.CONFIG_RUNS]
                 data_files = run_data[0][self.CONFIG_DATA_FILES]
@@ -195,6 +194,7 @@ class StrategyDesignOptimizer:
     async def _run_with_config(self, data_files, run_id, run_config):
         self.logger.debug(f"Running optimizer with id {self.optimizer_id} "
                           f"on backtesting {run_id} with config {run_config}")
+        self._update_config_for_optimizer(run_id)
         tentacles_setup_config = self._get_custom_tentacles_setup_config(run_id, run_config)
         independent_backtesting = None
         try:
@@ -218,8 +218,9 @@ class StrategyDesignOptimizer:
             if independent_backtesting is not None:
                 await independent_backtesting.stop()
 
-    def _update_config_for_optimizer(self):
+    def _update_config_for_optimizer(self, run_id):
         self.config[commons_constants.CONFIG_OPTIMIZER_ID] = self.optimizer_id
+        self.config[commons_constants.CONFIG_BACKTESTING_ID] = run_id
 
     def _get_custom_tentacles_setup_config(self, run_id, run_config):
         local_tentacles_setup_config = copy.deepcopy(self.base_tentacles_setup_config)
