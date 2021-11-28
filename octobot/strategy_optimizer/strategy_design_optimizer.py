@@ -26,17 +26,14 @@ import time
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.logging as commons_logging
-import octobot_commons.tentacles_management as tentacles_management
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_commons.databases as databases
 import octobot.constants as constants
 import octobot_trading.modes.scripting_library as scripting_library
-import octobot_trading.modes as trading_modes
 import octobot.api.backtesting as octobot_backtesting_api
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.constants as tentacles_manager_constants
-import octobot_evaluators.evaluators as evaluators
 
 
 class ConfigTypes(enum.Enum):
@@ -236,7 +233,7 @@ class StrategyDesignOptimizer:
                 input_config[self.CONFIG_VALUE]
         self._ensure_local_config_folders(run_folder)
         for tentacle, updated_values in tentacles_updates.items():
-            tentacle_class = self._find_tentacle_class(tentacle)
+            tentacle_class = tentacles_manager_api.get_tentacle_class_from_string(tentacle)
             current_config = tentacles_manager_api.get_tentacle_config(self.base_tentacles_setup_config,
                                                                        tentacle_class)
             current_config.update(updated_values)
@@ -251,33 +248,6 @@ class StrategyDesignOptimizer:
                                                         tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
         if not os.path.exists(tentacles_specific_config_folder):
             os.mkdir(tentacles_specific_config_folder)
-
-    @staticmethod
-    def _find_tentacle_class(tentacle):
-        # Lazy import of tentacles to let tentacles manager handle imports
-        import tentacles.Trading as tentacles_trading
-        tentacle_class = tentacles_management.get_class_from_string(
-            tentacle, trading_modes.AbstractTradingMode,
-            tentacles_trading.Mode, tentacles_management.trading_mode_parent_inspection)
-        if tentacle_class:
-            return tentacle_class
-        import tentacles.Evaluator as tentacles_Evaluator
-        tentacle_class = tentacles_management.get_class_from_string(
-            tentacle, evaluators.StrategyEvaluator,
-            tentacles_Evaluator.Strategies, tentacles_management.evaluator_parent_inspection)
-        if tentacle_class:
-            return tentacle_class
-        tentacle_class = tentacles_management.get_class_from_string(
-            tentacle, evaluators.TAEvaluator,
-            tentacles_Evaluator.TA, tentacles_management.evaluator_parent_inspection)
-        if tentacle_class:
-            return tentacle_class
-        tentacle_class = tentacles_management.get_class_from_string(
-            tentacle, evaluators.ScriptedEvaluator,
-            tentacles_Evaluator.Scripted, tentacles_management.evaluator_parent_inspection)
-        if tentacle_class:
-            return tentacle_class
-        raise RuntimeError(f"Can't find tentacle: {tentacle}")
 
     async def _store_backtesting_runs_schedule(self):
         runs = self._generate_runs()
