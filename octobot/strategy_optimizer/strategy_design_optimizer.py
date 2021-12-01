@@ -28,7 +28,6 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.logging as commons_logging
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_commons.databases as databases
-import octobot.constants as constants
 import octobot_trading.modes.scripting_library as scripting_library
 import octobot.api.backtesting as octobot_backtesting_api
 import octobot_backtesting.errors as backtesting_errors
@@ -73,6 +72,7 @@ class StrategyDesignOptimizer:
         self.current_backtesting_id = None
         self.runs_schedule = None
         self.logger = commons_logging.get_logger(self.__class__.__name__)
+        self.database_manager = databases.DatabaseManager(self.trading_mode)
 
         self.is_computing = False
         self.current_run_id = 0
@@ -81,7 +81,9 @@ class StrategyDesignOptimizer:
         self.process_pool_handle = None
 
     async def initialize(self):
-        self.optimizer_id = self._get_new_optimizer_id()
+        self.optimizer_id = await self.database_manager.generate_new_optimizer_id()
+        self.database_manager.optimizer_id = self.optimizer_id
+        await self.database_manager.initialize()
         await self._store_backtesting_runs_schedule()
 
     def get_name(self) -> str:
@@ -126,7 +128,8 @@ class StrategyDesignOptimizer:
             while self.keep_running:
                 await self.run_single_iteration(randomly_chose_runs=randomly_chose_runs)
         except NoMoreRunError:
-            async with databases.DBWriter.database(self._get_run_schedule_db(), with_lock=True) as writer:
+            async with databases.DBWriter.database(self.database_manager.get_optimizer_runs_schedule_identifier(),
+                                                   with_lock=True) as writer:
                 query = await writer.search()
                 await writer.delete(self.RUN_SCHEDULE_TABLE, query.id == self.optimizer_id)
         except concurrent.futures.CancelledError:
@@ -137,7 +140,8 @@ class StrategyDesignOptimizer:
         self.process_pool_handle.cancel()
 
     async def _get_remaining_runs_count_from_db(self):
-        async with databases.DBReader.database(self._get_run_schedule_db(), with_lock=True) as reader:
+        async with databases.DBReader.database(self.database_manager.get_optimizer_runs_schedule_identifier(),
+                                               with_lock=True) as reader:
             run_data = await self._get_run_data_from_db(reader)
         if run_data and run_data[0][self.CONFIG_RUNS]:
             return len(run_data[0][self.CONFIG_RUNS])
@@ -167,7 +171,8 @@ class StrategyDesignOptimizer:
 
     async def run_single_iteration(self, randomly_chose_runs=False):
         data_files = run_data = run_id = run_details = None
-        async with scripting_library.DBWriterReader.database(self._get_run_schedule_db(), with_lock=True) \
+        async with scripting_library.DBWriterReader.database(
+                self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) \
                 as writer_reader:
             run_data = await self._get_run_data_from_db(writer_reader)
             if run_data and run_data[0][self.CONFIG_RUNS]:
@@ -221,7 +226,9 @@ class StrategyDesignOptimizer:
 
     def _get_custom_tentacles_setup_config(self, run_id, run_config):
         local_tentacles_setup_config = copy.deepcopy(self.base_tentacles_setup_config)
-        run_folder = self._get_optimizer_run_folder(self.optimizer_id, run_id)
+        run_db_manager = databases.DatabaseManager(self.trading_mode,
+                                                   optimizer_id=self.optimizer_id, backtesting_id=run_id)
+        run_folder = run_db_manager.get_backtesting_run_folder()
         tentacles_setup_config_path = os.path.join(run_folder, commons_constants.CONFIG_TENTACLES_FILE)
         tentacles_manager_api.set_tentacles_setup_configuration_path(local_tentacles_setup_config,
                                                                      tentacles_setup_config_path)
@@ -316,29 +323,6 @@ class StrategyDesignOptimizer:
             self.CONFIG_ID: self.optimizer_id
         }
         self.total_nb_runs = len(runs)
-        async with databases.DBWriter.database(self._get_run_schedule_db(), with_lock=True) as writer:
+        async with databases.DBWriter.database(self.database_manager.get_optimizer_runs_schedule_identifier(),
+                                               with_lock=True) as writer:
             await writer.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
-
-    def _get_run_schedule_db(self):
-        return os.path.join(self._get_optimizer_run_folder(), constants.OPTIMIZER_RUNS_SCHEDULE_DB)
-
-    def _get_optimizer_run_folder(self, optimizer_id=None, backtesting_run_id=None):
-        folder = os.path.join(commons_constants.USER_FOLDER, self.trading_mode.get_name(),
-                              commons_constants.OPTIMIZER_RUNS_FOLDER)
-        if optimizer_id is not None:
-            folder = os.path.join(folder, str(optimizer_id))
-        if backtesting_run_id is not None:
-            folder = os.path.join(folder, str(backtesting_run_id))
-        return folder
-
-    def _get_new_optimizer_id(self):
-        index = 1
-        name_candidate = self._get_optimizer_run_folder(index)
-        while index < self.MAX_OPTIMIZER_RUNS:
-            if os.path.exists(name_candidate):
-                index += 1
-                name_candidate = self._get_optimizer_run_folder(index)
-            else:
-                os.makedirs(name_candidate)
-                return index
-        raise RuntimeError(f"Can't find any optimizer run id")
