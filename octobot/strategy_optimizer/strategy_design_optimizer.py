@@ -95,6 +95,7 @@ class StrategyDesignOptimizer:
         lock = multiprocessing.RLock()
         try:
             self.current_run_id = 1
+            multiprocessing_util.register_lock(commons_enums.MultiprocessingLocks.DBLock.value, lock)
             with multiprocessing_util.registered_lock(commons_enums.MultiprocessingLocks.DBLock.value, lock),\
                  concurrent.futures.ProcessPoolExecutor(
                     initializer=multiprocessing_util.register_lock,
@@ -168,6 +169,35 @@ class StrategyDesignOptimizer:
             raise RuntimeError("No optimizer id")
         query = await reader.search()
         return await reader.select(self.RUN_SCHEDULE_TABLE, query.id == self.optimizer_id)
+
+    @classmethod
+    async def get_run_queue(cls, trading_mode):
+        db_manager = databases.DatabaseManager(trading_mode)
+        async with databases.DBReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
+                                               with_lock=True) as reader:
+            return await reader.all(cls.RUN_SCHEDULE_TABLE)
+
+    @classmethod
+    async def update_run_queue(cls, trading_mode, updated_queue):
+        db_manager = databases.DatabaseManager(trading_mode)
+        async with databases.DBWriterReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
+                                                     with_lock=True) as reader_writer:
+            current_queue = await reader_writer.all(cls.RUN_SCHEDULE_TABLE)
+            for run_id, run_data in current_queue.items():
+                # add runs that might have been added after updated_queue was initialized
+                if run_id not in updated_queue:
+                    updated_queue[run_id] = run_data
+            # remove deleted runs
+            deleted_ids = []
+            for run_id, run_data in updated_queue.items():
+                if run_data.get("deleted", False):
+                    deleted_ids.append(run_id)
+            for run_id in deleted_ids:
+                updated_queue.pop(run_id)
+            # replace queue by updated one to keep order
+            await reader_writer.delete_all(cls.RUN_SCHEDULE_TABLE)
+            await reader_writer.log(cls.RUN_SCHEDULE_TABLE, updated_queue)
+            return updated_queue
 
     async def run_single_iteration(self, randomly_chose_runs=False):
         data_files = run_data = run_id = run_details = None
