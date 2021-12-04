@@ -190,7 +190,9 @@ class StrategyDesignOptimizer:
                 await writer_reader.update(self.RUN_SCHEDULE_TABLE, updated_data, query.id == self.optimizer_id)
 
         if data_files and run_details:
-            return await self._run_with_config(data_files, run_id, run_details)
+            # start backtesting run ids at 1
+            backtesting_run_id = int(run_id) + 1
+            return await self._run_with_config(data_files, backtesting_run_id, run_details)
         raise NoMoreRunError("Nothing to run")
 
     async def _run_with_config(self, data_files, run_id, run_config):
