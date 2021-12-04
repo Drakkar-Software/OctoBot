@@ -59,6 +59,14 @@ async def get_optimizer_overall_progress(strategy_optimizer) -> int:
     return await strategy_optimizer.get_overall_progress()
 
 
+async def get_design_strategy_optimizer_queue(trading_mode) -> list:
+    return await StrategyDesignOptimizer.get_run_queue(trading_mode)
+
+
+async def update_design_strategy_optimizer_queue(trading_mode, updated_queue) -> list:
+    return await StrategyDesignOptimizer.update_run_queue(trading_mode)
+
+
 async def is_optimizer_in_progress(strategy_optimizer) -> bool:
     return await strategy_optimizer.is_in_progress()
 
