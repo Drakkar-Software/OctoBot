@@ -180,7 +180,7 @@ class StrategyDesignOptimizer:
 
     @classmethod
     def _contains_run(cls, optimizer_run, run_data):
-        for run in optimizer_run.get(cls.CONFIG_RUNS):
+        for run in optimizer_run.get(cls.CONFIG_RUNS).values():
             if len(run) != len(run_data):
                 return False
             all_equal = True
@@ -220,7 +220,11 @@ class StrategyDesignOptimizer:
                             run_input.pop(cls.CONFIG_DELETED)
                     else:
                         runs.remove(run_data)
-
+                # ensure runs are a dict
+                updated_queue[cls.CONFIG_RUNS] = {
+                    index: run
+                    for index, run in enumerate(runs)
+                }
                 # replace queue by updated one to keep order
                 query = await writer_reader.search()
                 if runs:
