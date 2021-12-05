@@ -61,6 +61,7 @@ class StrategyDesignOptimizer:
     CONFIG_RUNS = "runs"
     CONFIG_DATA_FILES = "data_files"
     CONFIG_ID = "id"
+    CONFIG_DELETED = "deleted"
 
     def __init__(self, trading_mode, config, tentacles_setup_config, optimizer_config, data_files):
         self.config = config
@@ -178,24 +179,57 @@ class StrategyDesignOptimizer:
             return await reader.all(cls.RUN_SCHEDULE_TABLE)
 
     @classmethod
+    def _contains_run(cls, optimizer_run, run_data):
+        for run in optimizer_run.get(cls.CONFIG_RUNS):
+            if len(run) != len(run_data):
+                return False
+            all_equal = True
+            for reference_run_input_details in run:
+                found_input_detail = False
+                for run_input_details in run_data:
+                    try:
+                        if all(run_input_details[key] == val for key, val in reference_run_input_details.items()):
+                            found_input_detail = True
+                            break
+                    except KeyError:
+                        pass
+                if not found_input_detail:
+                    all_equal = False
+                    break
+            if all_equal:
+                return True
+        return False
+
+    @classmethod
     async def update_run_queue(cls, trading_mode, updated_queue):
         db_manager = databases.DatabaseManager(trading_mode)
-        async with databases.DBWriter.database(db_manager.get_optimizer_runs_schedule_identifier(),
-                                               with_lock=True) as writer:
-            runs = updated_queue["runs"]
-            # remove deleted runs
-            for index, run_data in enumerate(copy.copy(runs)):
-                for run_input in run_data:
-                    if run_input.get("deleted", False):
+        async with databases.DBWriterReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
+                                                     with_lock=True) as writer_reader:
+            query = await writer_reader.search()
+            try:
+                db_optimizer_run = \
+                    (await writer_reader.select(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue[cls.CONFIG_ID]))[0]
+                runs = updated_queue[cls.CONFIG_RUNS]
+                # remove deleted runs and runs that are not in the queue anymore (already running or done)
+                for run_data in copy.copy(runs):
+                    if cls._contains_run(db_optimizer_run, run_data):
+                        for run_input in run_data:
+                            if run_input.get(cls.CONFIG_DELETED, False):
+                                runs.remove(run_data)
+                                break
+                            run_input.pop(cls.CONFIG_DELETED)
+                    else:
                         runs.remove(run_data)
-                        break
-                    run_input.pop("deleted")
-            # replace queue by updated one to keep order
-            query = await writer.search()
-            if runs:
-                await writer.update(cls.RUN_SCHEDULE_TABLE, updated_queue, query.id == updated_queue["id"])
-            else:
-                await writer.delete(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue["id"])
+
+                # replace queue by updated one to keep order
+                query = await writer_reader.search()
+                if runs:
+                    await writer_reader.update(cls.RUN_SCHEDULE_TABLE, updated_queue, query.id == updated_queue["id"])
+                else:
+                    await writer_reader.delete(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue["id"])
+            except IndexError:
+                # optimizer run not in db anymore
+                pass
             return updated_queue
 
     async def run_single_iteration(self, randomly_chose_runs=False):
