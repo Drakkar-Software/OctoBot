@@ -180,23 +180,22 @@ class StrategyDesignOptimizer:
     @classmethod
     async def update_run_queue(cls, trading_mode, updated_queue):
         db_manager = databases.DatabaseManager(trading_mode)
-        async with databases.DBWriterReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
-                                                     with_lock=True) as reader_writer:
-            current_queue = await reader_writer.all(cls.RUN_SCHEDULE_TABLE)
-            for run_id, run_data in current_queue.items():
-                # add runs that might have been added after updated_queue was initialized
-                if run_id not in updated_queue:
-                    updated_queue[run_id] = run_data
+        async with databases.DBWriter.database(db_manager.get_optimizer_runs_schedule_identifier(),
+                                               with_lock=True) as writer:
+            runs = updated_queue["runs"]
             # remove deleted runs
-            deleted_ids = []
-            for run_id, run_data in updated_queue.items():
-                if run_data.get("deleted", False):
-                    deleted_ids.append(run_id)
-            for run_id in deleted_ids:
-                updated_queue.pop(run_id)
+            for index, run_data in enumerate(copy.copy(runs)):
+                for run_input in run_data:
+                    if run_input.get("deleted", False):
+                        runs.remove(run_data)
+                        break
+                    run_input.pop("deleted")
             # replace queue by updated one to keep order
-            await reader_writer.delete_all(cls.RUN_SCHEDULE_TABLE)
-            await reader_writer.log(cls.RUN_SCHEDULE_TABLE, updated_queue)
+            query = await writer.search()
+            if runs:
+                await writer.update(cls.RUN_SCHEDULE_TABLE, updated_queue, query.id == updated_queue["id"])
+            else:
+                await writer.delete(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue["id"])
             return updated_queue
 
     async def run_single_iteration(self, randomly_chose_runs=False):
