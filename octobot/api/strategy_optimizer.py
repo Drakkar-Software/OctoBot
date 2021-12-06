@@ -26,9 +26,14 @@ def create_design_strategy_optimizer(trading_mode, config=None, tentacles_setup_
     return StrategyDesignOptimizer(trading_mode, config, tentacles_setup_config, optimizer_config, data_files)
 
 
-async def initialize_design_strategy_optimizer(strategy_optimizer, is_computing=False):
+async def initialize_design_strategy_optimizer(strategy_optimizer, is_resuming, is_computing=False):
     strategy_optimizer.is_computing = is_computing
-    return await strategy_optimizer.initialize()
+    return await strategy_optimizer.initialize(is_resuming)
+
+
+async def resume_design_strategy_optimizer(optimizer, randomly_chose_runs, optimizer_ids=None):
+    optimizer_ids = optimizer_ids or await optimizer.get_queued_optimizer_ids()
+    return await optimizer.resume(optimizer_ids, randomly_chose_runs)
 
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
