@@ -81,16 +81,19 @@ class StrategyDesignOptimizer:
         self.keep_running = True
         self.process_pool_handle = None
 
-    async def initialize(self):
-        self.optimizer_id = await self.database_manager.generate_new_optimizer_id()
-        self.database_manager.optimizer_id = self.optimizer_id
-        await self.database_manager.initialize()
-        await self._store_backtesting_runs_schedule()
+    async def initialize(self, is_resuming):
+        if not is_resuming:
+            taken_ids = await self.get_queued_optimizer_ids()
+            self.optimizer_id = await self.database_manager.generate_new_optimizer_id(taken_ids)
+            self.database_manager.optimizer_id = self.optimizer_id
+            await self.database_manager.initialize()
+            await self._store_backtesting_runs_schedule()
 
     def get_name(self) -> str:
         return f"{self.trading_mode.get_name()}_{self.__class__.__name__}"
 
-    async def multi_processed_optimize(self, randomly_chose_runs=False):
+    async def multi_processed_optimize(self, optimizer_ids=None, randomly_chose_runs=False):
+        optimizer_ids = optimizer_ids or [self.optimizer_id]
         self.is_computing = True
         global_t0 = time.time()
         lock = multiprocessing.RLock()
@@ -109,6 +112,7 @@ class StrategyDesignOptimizer:
                         asyncio.get_event_loop().run_in_executor(
                             pool,
                             self.find_optimal_configuration_wrapper,
+                            optimizer_ids,
                             randomly_chose_runs
                         )
                     )
@@ -120,37 +124,51 @@ class StrategyDesignOptimizer:
             self.is_computing = False
         self.logger.info(f"Optimizer runs complete in {time.time() - global_t0} seconds.")
 
-    def find_optimal_configuration_wrapper(self, randomly_chose_runs=False):
-        asyncio.run(self.find_optimal_configuration(randomly_chose_runs=randomly_chose_runs))
+    def find_optimal_configuration_wrapper(self, optimizer_ids, randomly_chose_runs=False):
+        asyncio.run(self.find_optimal_configuration(optimizer_ids, randomly_chose_runs=randomly_chose_runs))
 
-    async def find_optimal_configuration(self, randomly_chose_runs=False):
+    async def find_optimal_configuration(self, optimizer_ids, randomly_chose_runs=False):
         # need to load tentacles when in new process
         tentacles_manager_api.reload_tentacle_info()
         try:
-            while self.keep_running:
-                await self.run_single_iteration(randomly_chose_runs=randomly_chose_runs)
-        except NoMoreRunError:
-            async with databases.DBWriter.database(self.database_manager.get_optimizer_runs_schedule_identifier(),
-                                                   with_lock=True) as writer:
-                query = await writer.search()
-                await writer.delete(self.RUN_SCHEDULE_TABLE, query.id == self.optimizer_id)
+            for optimizer_id in optimizer_ids:
+                if optimizer_id is None:
+                    # should not happen but in case it does, drop the run
+                    await self.drop_optimizer_run_from_queue(optimizer_id)
+                    continue
+                try:
+                    while self.keep_running:
+                        await self.run_single_iteration(optimizer_id, randomly_chose_runs=randomly_chose_runs)
+                except NoMoreRunError:
+                    await self.drop_optimizer_run_from_queue(optimizer_id)
         except concurrent.futures.CancelledError:
             self.logger.info("Cancelled run")
+            raise
+
+    async def drop_optimizer_run_from_queue(self, optimizer_id):
+        async with databases.DBWriter.database(
+                self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) as writer:
+            query = await writer.search()
+            await writer.delete(self.RUN_SCHEDULE_TABLE, query.id == optimizer_id)
 
     def cancel(self):
         self.keep_running = False
-        self.process_pool_handle.cancel()
+        if self.process_pool_handle is not None:
+            self.process_pool_handle.cancel()
 
-    async def _get_remaining_runs_count_from_db(self):
+    async def _get_remaining_runs_count_from_db(self, optimizer_id):
         async with databases.DBReader.database(self.database_manager.get_optimizer_runs_schedule_identifier(),
                                                with_lock=True) as reader:
-            run_data = await self._get_run_data_from_db(reader)
+            run_data = await self._get_run_data_from_db(optimizer_id, reader)
         if run_data and run_data[0][self.CONFIG_RUNS]:
             return len(run_data[0][self.CONFIG_RUNS])
         return 0
 
     async def get_overall_progress(self):
-        remaining_runs = await self._get_remaining_runs_count_from_db()
+        if self.optimizer_id is None:
+            remaining_runs = len(await self.get_run_queue(self.trading_mode))
+        else:
+            remaining_runs = await self._get_remaining_runs_count_from_db(self.optimizer_id)
         if self.is_computing and remaining_runs == 0:
             remaining_runs = 1
         done_runs = self.total_nb_runs - remaining_runs
@@ -165,11 +183,21 @@ class StrategyDesignOptimizer:
     def get_errors_description(self):
         return ""
 
-    async def _get_run_data_from_db(self, reader):
-        if self.optimizer_id is None:
+    async def _get_run_data_from_db(self, optimizer_id, reader):
+        if optimizer_id is None:
             raise RuntimeError("No optimizer id")
         query = await reader.search()
-        return await reader.select(self.RUN_SCHEDULE_TABLE, query.id == self.optimizer_id)
+        return await reader.select(self.RUN_SCHEDULE_TABLE, query.id == optimizer_id)
+
+    async def get_queued_optimizer_ids(self):
+        return [
+            run.get(self.CONFIG_ID, None)
+            for run in (await self.get_run_queue(self.trading_mode))
+        ]
+
+    async def resume(self, optimizer_ids, randomly_chose_runs):
+        self.total_nb_runs = len(optimizer_ids)
+        await self.multi_processed_optimize(optimizer_ids=optimizer_ids, randomly_chose_runs=randomly_chose_runs)
 
     @classmethod
     async def get_run_queue(cls, trading_mode):
@@ -236,12 +264,12 @@ class StrategyDesignOptimizer:
                 pass
             return updated_queue
 
-    async def run_single_iteration(self, randomly_chose_runs=False):
+    async def run_single_iteration(self, optimizer_id, randomly_chose_runs=False):
         data_files = run_data = run_id = run_details = None
         async with scripting_library.DBWriterReader.database(
                 self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) \
                 as writer_reader:
-            run_data = await self._get_run_data_from_db(writer_reader)
+            run_data = await self._get_run_data_from_db(optimizer_id, writer_reader)
             if run_data and run_data[0][self.CONFIG_RUNS]:
                 runs = run_data[0][self.CONFIG_RUNS]
                 data_files = run_data[0][self.CONFIG_DATA_FILES]
@@ -254,19 +282,19 @@ class StrategyDesignOptimizer:
                 updated_data = {
                     self.CONFIG_RUNS: run_data[0][self.CONFIG_RUNS]
                 }
-                await writer_reader.update(self.RUN_SCHEDULE_TABLE, updated_data, query.id == self.optimizer_id)
+                await writer_reader.update(self.RUN_SCHEDULE_TABLE, updated_data, query.id == optimizer_id)
 
         if data_files and run_details:
             # start backtesting run ids at 1
             backtesting_run_id = int(run_id) + 1
-            return await self._run_with_config(data_files, backtesting_run_id, run_details)
+            return await self._run_with_config(optimizer_id, data_files, backtesting_run_id, run_details)
         raise NoMoreRunError("Nothing to run")
 
-    async def _run_with_config(self, data_files, run_id, run_config):
-        self.logger.debug(f"Running optimizer with id {self.optimizer_id} "
+    async def _run_with_config(self, optimizer_id, data_files, run_id, run_config):
+        self.logger.debug(f"Running optimizer with id {optimizer_id} "
                           f"on backtesting {run_id} with config {run_config}")
-        self._update_config_for_optimizer(run_id)
-        tentacles_setup_config = self._get_custom_tentacles_setup_config(run_id, run_config)
+        self._update_config_for_optimizer(optimizer_id, run_id)
+        tentacles_setup_config = self._get_custom_tentacles_setup_config(optimizer_id, run_id, run_config)
         independent_backtesting = None
         try:
             config_to_use = copy.deepcopy(self.config)
@@ -289,14 +317,14 @@ class StrategyDesignOptimizer:
             if independent_backtesting is not None:
                 await independent_backtesting.stop()
 
-    def _update_config_for_optimizer(self, run_id):
-        self.config[commons_constants.CONFIG_OPTIMIZER_ID] = self.optimizer_id
+    def _update_config_for_optimizer(self, optimizer_id, run_id):
+        self.config[commons_constants.CONFIG_OPTIMIZER_ID] = optimizer_id
         self.config[commons_constants.CONFIG_BACKTESTING_ID] = run_id
 
-    def _get_custom_tentacles_setup_config(self, run_id, run_config):
+    def _get_custom_tentacles_setup_config(self, optimizer_id, run_id, run_config):
         local_tentacles_setup_config = copy.deepcopy(self.base_tentacles_setup_config)
         run_db_manager = databases.DatabaseManager(self.trading_mode,
-                                                   optimizer_id=self.optimizer_id, backtesting_id=run_id)
+                                                   optimizer_id=optimizer_id, backtesting_id=run_id)
         run_folder = run_db_manager.get_backtesting_run_folder()
         tentacles_setup_config_path = os.path.join(run_folder, commons_constants.CONFIG_TENTACLES_FILE)
         tentacles_manager_api.set_tentacles_setup_configuration_path(local_tentacles_setup_config,
