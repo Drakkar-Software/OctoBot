@@ -28,7 +28,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.logging as commons_logging
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_commons.databases as databases
-import octobot_trading.modes.scripting_library as scripting_library
+import octobot_trading.modes.scripting_library as scripting_library # TODO remove
 import octobot.api.backtesting as octobot_backtesting_api
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
@@ -266,7 +266,7 @@ class StrategyDesignOptimizer:
 
     async def run_single_iteration(self, optimizer_id, randomly_chose_runs=False):
         data_files = run_data = run_id = run_details = None
-        async with scripting_library.DBWriterReader.database(
+        async with databases.DBWriterReader.database(
                 self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) \
                 as writer_reader:
             run_data = await self._get_run_data_from_db(optimizer_id, writer_reader)
@@ -329,7 +329,13 @@ class StrategyDesignOptimizer:
         tentacles_setup_config_path = os.path.join(run_folder, commons_constants.CONFIG_TENTACLES_FILE)
         tentacles_manager_api.set_tentacles_setup_configuration_path(local_tentacles_setup_config,
                                                                      tentacles_setup_config_path)
-        tentacles_updates = {}
+        # save updated config for each custom parameter tentacle
+        # and import config of remaining tentacles: add missing tentacles into tentacles_updates with nothing to update
+        tentacles_updates = {
+            tentacle: {}
+            for tentacle in tentacles_manager_api.get_activated_tentacles(self.base_tentacles_setup_config)
+            if tentacles_manager_api.has_profile_local_configuration(self.base_tentacles_setup_config, tentacle)
+        }
         for input_config in run_config:
             if input_config[self.CONFIG_TENTACLE] not in tentacles_updates:
                 tentacles_updates[input_config[self.CONFIG_TENTACLE]] = {}
