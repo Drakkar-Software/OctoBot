@@ -22,6 +22,7 @@ import copy
 import asyncio
 import concurrent.futures
 import time
+import numpy
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
@@ -377,20 +378,23 @@ class StrategyDesignOptimizer:
         if not config_element:
             return {}
         values = []
-        if config_element[self.CONFIG_ENABLED]:
-            if config_element[self.CONFIG_TYPE] in (ConfigTypes.OPTIONS, ConfigTypes.BOOLEAN):
-                values = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
-            if config_element[self.CONFIG_TYPE] is ConfigTypes.NUMBER:
-                config = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
-                values = range(config[self.CONFIG_MIN], config[self.CONFIG_MAX], config[self.CONFIG_STEP])
-        return [
-            {
-                self.CONFIG_USER_INPUT: config_element[self.CONFIG_KEY],
-                self.CONFIG_TENTACLE: config_element[self.CONFIG_VALUE][self.CONFIG_TENTACLE],
-                self.CONFIG_VALUE: value
-            }
-            for value in values
-        ]
+        try:
+            if config_element[self.CONFIG_ENABLED]:
+                if config_element[self.CONFIG_TYPE] in (ConfigTypes.OPTIONS, ConfigTypes.BOOLEAN):
+                    values = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
+                if config_element[self.CONFIG_TYPE] is ConfigTypes.NUMBER:
+                    config = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
+                    values = numpy.arange(config[self.CONFIG_MIN], config[self.CONFIG_MAX], config[self.CONFIG_STEP])
+            return [
+                {
+                    self.CONFIG_USER_INPUT: config_element[self.CONFIG_KEY],
+                    self.CONFIG_TENTACLE: config_element[self.CONFIG_VALUE][self.CONFIG_TENTACLE],
+                    self.CONFIG_VALUE: value
+                }
+                for value in values
+            ]
+        except ZeroDivisionError as e:
+            raise ZeroDivisionError("Step value has to be greater than 0") from e
 
     def _get_config_elements(self):
         for key, val in self.optimizer_config.items():
