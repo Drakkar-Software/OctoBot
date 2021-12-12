@@ -389,7 +389,7 @@ class StrategyDesignOptimizer:
                 {
                     self.CONFIG_USER_INPUT: config_element[self.CONFIG_KEY],
                     self.CONFIG_TENTACLE: config_element[self.CONFIG_VALUE][self.CONFIG_TENTACLE],
-                    self.CONFIG_VALUE: value
+                    self.CONFIG_VALUE: float(value)
                 }
                 for value in values
             ]
