@@ -181,7 +181,7 @@ class OctoBotBacktesting:
     async def _create_evaluators(self):
         for exchange_id in self.exchange_manager_ids:
             exchange_configuration = trading_api.get_exchange_configuration_from_exchange_id(exchange_id)
-            self.evaluators = await evaluator_api.create_all_type_evaluators(
+            self.evaluators = await evaluator_api.create_and_start_all_type_evaluators(
                 self.tentacles_setup_config,
                 matrix_id=self.matrix_id,
                 exchange_name=exchange_configuration.exchange_name,
