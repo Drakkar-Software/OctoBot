@@ -23,6 +23,7 @@ import asyncio
 import concurrent.futures
 import time
 import numpy
+import logging
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
@@ -125,7 +126,16 @@ class StrategyDesignOptimizer:
             self.is_computing = False
         self.logger.info(f"Optimizer runs complete in {time.time() - global_t0} seconds.")
 
+    def _init_optimizer_process_logger(self):
+        # init basic logger
+        logging.basicConfig(
+            format=f'[{self.__class__.__name__} %(process)d] %(levelname)-6s %(name)-20s '
+                   f'%(filename)-s:%(lineno)-8s %(message)s',
+            level=logging.ERROR
+        )
+
     def find_optimal_configuration_wrapper(self, optimizer_ids, randomly_chose_runs=False):
+        self._init_optimizer_process_logger()
         asyncio.run(self.find_optimal_configuration(optimizer_ids, randomly_chose_runs=randomly_chose_runs))
 
     async def find_optimal_configuration(self, optimizer_ids, randomly_chose_runs=False):
@@ -387,7 +397,7 @@ class StrategyDesignOptimizer:
                     values = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
                 if config_element[self.CONFIG_TYPE] is ConfigTypes.NUMBER:
                     config = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
-                    values = [float(v)
+                    values = [v.item()
                               for v in numpy.arange(config[self.CONFIG_MIN],
                                                     config[self.CONFIG_MAX],
                                                     config[self.CONFIG_STEP])]
