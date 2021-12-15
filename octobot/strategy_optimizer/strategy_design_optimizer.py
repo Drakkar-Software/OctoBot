@@ -110,14 +110,14 @@ class StrategyDesignOptimizer:
                 coros = []
                 for _ in range(pool._max_workers):
                     coros.append(
-                        asyncio.get_event_loop().run_in_executor(
-                            pool,
-                            self.find_optimal_configuration_wrapper,
-                            optimizer_ids,
-                            randomly_chose_runs
+                            asyncio.get_event_loop().run_in_executor(
+                                pool,
+                                self.find_optimal_configuration_wrapper,
+                                optimizer_ids,
+                                randomly_chose_runs
+                            )
                         )
-                    )
-                self.process_pool_handle = await asyncio.gather(*coros)
+                    self.process_pool_handle = await asyncio.gather(*coros)
         except Exception as e:
             self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
         finally:
@@ -363,10 +363,13 @@ class StrategyDesignOptimizer:
     async def _store_backtesting_runs_schedule(self):
         runs = self._generate_runs()
         await self._save_run_schedule(runs)
+        return runs
 
     def _generate_runs(self):
         iterations = [i for i in self._get_config_possible_iterations() if i]
-        return {index: run for index, run in enumerate(itertools.product(*iterations))}
+        if iterations:
+            return {index: run for index, run in enumerate(itertools.product(*iterations))}
+        raise RuntimeError("No optimizer run to schedule with this configuration")
 
     def _get_config_possible_iterations(self):
         return [
@@ -384,12 +387,15 @@ class StrategyDesignOptimizer:
                     values = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
                 if config_element[self.CONFIG_TYPE] is ConfigTypes.NUMBER:
                     config = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
-                    values = numpy.arange(config[self.CONFIG_MIN], config[self.CONFIG_MAX], config[self.CONFIG_STEP])
+                    values = [float(v)
+                              for v in numpy.arange(config[self.CONFIG_MIN],
+                                                    config[self.CONFIG_MAX],
+                                                    config[self.CONFIG_STEP])]
             return [
                 {
-                    self.CONFIG_USER_INPUT: config_element[self.CONFIG_KEY],
+                    self.CONFIG_USER_INPUT: config_element[self.CONFIG_USER_INPUT],
                     self.CONFIG_TENTACLE: config_element[self.CONFIG_VALUE][self.CONFIG_TENTACLE],
-                    self.CONFIG_VALUE: float(value)
+                    self.CONFIG_VALUE: value
                 }
                 for value in values
             ]
@@ -401,6 +407,7 @@ class StrategyDesignOptimizer:
             yield {
                 self.CONFIG_KEY: key,
                 self.CONFIG_ENABLED: val[self.CONFIG_ENABLED],
+                self.CONFIG_USER_INPUT: val[self.CONFIG_USER_INPUT],
                 self.CONFIG_VALUE: val,
                 self.CONFIG_TYPE: self._get_config_type(val)
             }
