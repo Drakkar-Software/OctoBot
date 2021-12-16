@@ -118,7 +118,7 @@ class StrategyDesignOptimizer:
                                 randomly_chose_runs
                             )
                         )
-                    self.process_pool_handle = await asyncio.gather(*coros)
+                self.process_pool_handle = await asyncio.gather(*coros)
         except Exception as e:
             self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
         finally:
