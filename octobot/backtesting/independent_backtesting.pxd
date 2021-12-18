@@ -28,6 +28,8 @@ cdef class IndependentBacktesting:
 
     cdef object logger
     cdef object join_backtesting_timeout
+    cdef bint enable_logs
+    cdef bint stop_when_finished
 
     cdef public str data_file_path
     cdef public dict symbols_to_create_exchange_classes
@@ -37,6 +39,7 @@ cdef class IndependentBacktesting:
     cdef public bint stopped
 
     cdef public object post_backtesting_task
+    cdef public object stopped_event
 
     cdef public octobot_backtesting.OctoBotBacktesting octobot_backtesting
 

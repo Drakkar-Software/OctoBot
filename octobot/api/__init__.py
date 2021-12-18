@@ -33,6 +33,7 @@ from octobot.api.backtesting import (
     join_independent_backtesting,
     initialize_independent_backtesting_config,
     stop_independent_backtesting,
+    join_independent_backtesting_stop,
     get_independent_backtesting_report,
 )
 from octobot.api.strategy_optimizer import (
@@ -79,6 +80,7 @@ __all__ = [
     "join_independent_backtesting",
     "initialize_independent_backtesting_config",
     "stop_independent_backtesting",
+    "join_independent_backtesting_stop",
     "get_independent_backtesting_report",
     "create_strategy_optimizer",
     "create_design_strategy_optimizer",
