@@ -308,6 +308,8 @@ class StrategyDesignOptimizer:
         tentacles_setup_config = self._get_custom_tentacles_setup_config(optimizer_id, run_id, run_config)
         independent_backtesting = None
         try:
+            # reset possible remaining caches
+            await databases.CacheManager().reset()
             config_to_use = copy.deepcopy(self.config)
             independent_backtesting = octobot_backtesting_api.create_independent_backtesting(
                 config_to_use,

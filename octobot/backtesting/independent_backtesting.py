@@ -46,7 +46,8 @@ class IndependentBacktesting:
                  join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
                  start_timestamp=None,
                  end_timestamp=None,
-                 enable_logs=True):
+                 enable_logs=True,
+                 stop_when_finished=False):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -62,9 +63,11 @@ class IndependentBacktesting:
         self.backtesting_id = None
         self._init_default_config_values()
         self.stopped = False
+        self.stopped_event = None
         self.post_backtesting_task = None
         self.join_backtesting_timeout = join_backtesting_timeout
         self.enable_logs = enable_logs
+        self.stop_when_finished = stop_when_finished
         self.previous_log_level = commons_logging.get_global_logger_level()
         self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
                                                                   self.tentacles_setup_config,
@@ -77,6 +80,9 @@ class IndependentBacktesting:
 
     async def initialize_and_run(self, log_errors=True):
         try:
+            # create stopped_event here only to be sure to create it in the same loop as the one of the
+            # backtesting run
+            self.stopped_event = asyncio.Event()
             if not self.enable_logs:
                 commons_logging.set_global_logger_level(logging.ERROR)
             await self.initialize_config()
@@ -96,6 +102,11 @@ class IndependentBacktesting:
         self._adapt_config()
         return self.backtesting_config
 
+    async def join_stop_event(self, timeout=None):
+        if self.stopped_event is None:
+            return
+        await asyncio.wait_for(self.stopped_event.wait(), timeout)
+
     async def join_backtesting_updater(self, timeout=None):
         if self.octobot_backtesting.backtesting is not None:
             await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
@@ -106,6 +117,7 @@ class IndependentBacktesting:
                 await self.octobot_backtesting.stop(memory_check=memory_check, should_raise=should_raise)
         finally:
             self.stopped = True
+            self.stopped_event.set()
             if not self.enable_logs:
                 commons_logging.set_global_logger_level(self.previous_log_level)
 
@@ -139,8 +151,11 @@ class IndependentBacktesting:
     async def _post_backtesting_end_callback(self):
         # re enable logs
         commons_logging.set_error_publication_enabled(True)
-        # stop backtesting importers to release database files
-        await self.octobot_backtesting.stop_importers()
+        if self.stop_when_finished:
+            await self.stop()
+        else:
+            # stop backtesting importers to release database files
+            await self.octobot_backtesting.stop_importers()
 
     @staticmethod
     def _get_market_delta(symbol, exchange_manager, min_timeframe):
