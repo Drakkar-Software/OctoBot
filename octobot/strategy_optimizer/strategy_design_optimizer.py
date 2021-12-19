@@ -27,6 +27,7 @@ import logging
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
+import octobot_commons.errors as commons_errors
 import octobot_commons.logging as commons_logging
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_commons.databases as databases
@@ -213,9 +214,12 @@ class StrategyDesignOptimizer:
     @classmethod
     async def get_run_queue(cls, trading_mode):
         db_manager = databases.DatabaseManager(trading_mode)
-        async with databases.DBReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
-                                               with_lock=True) as reader:
-            return await reader.all(cls.RUN_SCHEDULE_TABLE)
+        try:
+            async with databases.DBReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
+                                                   with_lock=True) as reader:
+                return await reader.all(cls.RUN_SCHEDULE_TABLE)
+        except commons_errors.DatabaseNotFoundError:
+            return []
 
     @classmethod
     def _contains_run(cls, optimizer_run, run_data):
