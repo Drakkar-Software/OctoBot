@@ -82,7 +82,8 @@ class IndependentBacktesting:
         try:
             # create stopped_event here only to be sure to create it in the same loop as the one of the
             # backtesting run
-            self.stopped_event = asyncio.Event()
+            if self.stop_when_finished:
+                self.stopped_event = asyncio.Event()
             if not self.enable_logs:
                 commons_logging.set_global_logger_level(logging.ERROR)
             await self.initialize_config()
@@ -117,7 +118,8 @@ class IndependentBacktesting:
                 await self.octobot_backtesting.stop(memory_check=memory_check, should_raise=should_raise)
         finally:
             self.stopped = True
-            self.stopped_event.set()
+            if self.stopped_event is not None:
+                self.stopped_event.set()
             if not self.enable_logs:
                 commons_logging.set_global_logger_level(self.previous_log_level)
 
