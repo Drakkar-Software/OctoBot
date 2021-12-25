@@ -24,6 +24,7 @@ import concurrent.futures
 import time
 import numpy
 import logging
+import ctypes
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
@@ -51,6 +52,8 @@ class NoMoreRunError(Exception):
 
 class StrategyDesignOptimizer:
     MAX_OPTIMIZER_RUNS = 100000
+    SHARED_KEEP_RUNNING_KEY = "keep_running"
+
     RUN_SCHEDULE_TABLE = "schedule"
     CONFIG_KEY = "key"
     CONFIG_USER_INPUT = "user_input"
@@ -100,13 +103,16 @@ class StrategyDesignOptimizer:
         self.is_computing = True
         global_t0 = time.time()
         lock = multiprocessing.RLock()
+        shared_keep_running = multiprocessing.Value(ctypes.c_bool, True)
         try:
             self.current_run_id = 1
-            multiprocessing_util.register_lock(commons_enums.MultiprocessingLocks.DBLock.value, lock)
-            with multiprocessing_util.registered_lock(commons_enums.MultiprocessingLocks.DBLock.value, lock),\
+            with multiprocessing_util.registered_lock_and_shared_elements(
+                    commons_enums.MultiprocessingLocks.DBLock.value, lock,
+                    {self.SHARED_KEEP_RUNNING_KEY: shared_keep_running}),\
                  concurrent.futures.ProcessPoolExecutor(
-                    initializer=multiprocessing_util.register_lock,
-                    initargs=(commons_enums.MultiprocessingLocks.DBLock.value, lock)) as pool:
+                    initializer=multiprocessing_util.register_lock_and_shared_elements,
+                    initargs=(commons_enums.MultiprocessingLocks.DBLock.value,
+                              lock, {self.SHARED_KEEP_RUNNING_KEY: shared_keep_running})) as pool:
                 self.logger.info(f"Dispatching optimizer backtesting runs into {pool._max_workers} parallel processes "
                                  f"(based on the current computer physical processors).")
                 coros = []
@@ -149,7 +155,7 @@ class StrategyDesignOptimizer:
                     await self.drop_optimizer_run_from_queue(optimizer_id)
                     continue
                 try:
-                    while self.keep_running:
+                    while self._should_keep_running():
                         await self.run_single_iteration(optimizer_id, randomly_chose_runs=randomly_chose_runs)
                 except NoMoreRunError:
                     await self.drop_optimizer_run_from_queue(optimizer_id)
@@ -163,8 +169,18 @@ class StrategyDesignOptimizer:
             query = await writer.search()
             await writer.delete(self.RUN_SCHEDULE_TABLE, query.id == optimizer_id)
 
+    def _should_keep_running(self):
+        try:
+            return multiprocessing_util.get_shared_element(self.SHARED_KEEP_RUNNING_KEY).value
+        except KeyError:
+            return self.keep_running
+
     def cancel(self):
         self.keep_running = False
+        try:
+            multiprocessing_util.get_shared_element(self.SHARED_KEEP_RUNNING_KEY).value = False
+        except KeyError:
+            pass
         if self.process_pool_handle is not None:
             self.process_pool_handle.cancel()
 
