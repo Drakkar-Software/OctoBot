@@ -129,6 +129,11 @@ expect.
 
 Do not hesitate to read the source code and understand the mechanism of this bot.
 
+## License
+GNU General Public License v3.0 or later.
+
+See [LICENSE](https://github.com/Drakkar-Software/OctoBot/blob/master/LICENSE) to see the full text.
+
 ## Sponsors
 <table>
 <tr>
