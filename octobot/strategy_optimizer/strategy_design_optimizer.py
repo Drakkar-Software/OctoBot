@@ -32,6 +32,7 @@ import octobot_commons.errors as commons_errors
 import octobot_commons.logging as commons_logging
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_commons.databases as databases
+import octobot_commons.dict_util as dict_util
 import octobot_trading.modes.scripting_library as scripting_library # TODO remove
 import octobot.api.backtesting as octobot_backtesting_api
 import octobot_backtesting.errors as backtesting_errors
@@ -59,6 +60,7 @@ class StrategyDesignOptimizer:
     CONFIG_USER_INPUT = "user_input"
     CONFIG_VALUE = "value"
     CONFIG_TENTACLE = "tentacle"
+    CONFIG_NESTED_TENTACLE_SEPARATOR = "_-_"
     CONFIG_TYPE = "type"
     CONFIG_ENABLED = "enabled"
     CONFIG_MIN = "min"
@@ -354,6 +356,15 @@ class StrategyDesignOptimizer:
         self.config[commons_constants.CONFIG_OPTIMIZER_ID] = optimizer_id
         self.config[commons_constants.CONFIG_BACKTESTING_ID] = run_id
 
+    def _updated_nested_tentacle_config(self, nested_tentacles, user_input, config_value, local_tentacle_config):
+        if nested_tentacles[0] not in local_tentacle_config:
+            local_tentacle_config[nested_tentacles[0]] = {}
+        if len(nested_tentacles) == 1:
+            local_tentacle_config[nested_tentacles[0]][user_input] = config_value
+        else:
+            self._updated_nested_tentacle_config(nested_tentacles[1:], user_input, config_value,
+                                                 local_tentacle_config[nested_tentacles[0]])
+
     def _get_custom_tentacles_setup_config(self, optimizer_id, run_id, run_config):
         local_tentacles_setup_config = copy.deepcopy(self.base_tentacles_setup_config)
         run_db_manager = databases.DatabaseManager(self.trading_mode,
@@ -370,16 +381,16 @@ class StrategyDesignOptimizer:
             if tentacles_manager_api.has_profile_local_configuration(self.base_tentacles_setup_config, tentacle)
         }
         for input_config in run_config:
-            if input_config[self.CONFIG_TENTACLE] not in tentacles_updates:
-                tentacles_updates[input_config[self.CONFIG_TENTACLE]] = {}
-            tentacles_updates[input_config[self.CONFIG_TENTACLE]][input_config[self.CONFIG_USER_INPUT]] = \
-                input_config[self.CONFIG_VALUE]
+            self._updated_nested_tentacle_config(input_config[self.CONFIG_TENTACLE],
+                                                 input_config[self.CONFIG_USER_INPUT],
+                                                 input_config[self.CONFIG_VALUE],
+                                                 tentacles_updates)
         self._ensure_local_config_folders(run_folder)
         for tentacle, updated_values in tentacles_updates.items():
             tentacle_class = tentacles_manager_api.get_tentacle_class_from_string(tentacle)
             current_config = tentacles_manager_api.get_tentacle_config(self.base_tentacles_setup_config,
                                                                        tentacle_class)
-            current_config.update(updated_values)
+            dict_util.nested_update_dict(current_config, updated_values)
             tentacles_manager_api.update_tentacle_config(local_tentacles_setup_config, tentacle_class, current_config)
         return local_tentacles_setup_config
 
@@ -426,7 +437,8 @@ class StrategyDesignOptimizer:
             return [
                 {
                     self.CONFIG_USER_INPUT: config_element[self.CONFIG_USER_INPUT],
-                    self.CONFIG_TENTACLE: config_element[self.CONFIG_VALUE][self.CONFIG_TENTACLE],
+                    self.CONFIG_TENTACLE: config_element[self.CONFIG_VALUE][self.CONFIG_TENTACLE]
+                        .split(self.CONFIG_NESTED_TENTACLE_SEPARATOR),
                     self.CONFIG_VALUE: value
                 }
                 for value in values
