@@ -76,7 +76,7 @@ class IndependentBacktesting:
                                                                   run_on_common_part_only,
                                                                   start_timestamp=start_timestamp,
                                                                   end_timestamp=end_timestamp,
-                                                                  enable_logs=enable_logs)
+                                                                  enable_logs=self.enable_logs)
 
     async def initialize_and_run(self, log_errors=True):
         try:
