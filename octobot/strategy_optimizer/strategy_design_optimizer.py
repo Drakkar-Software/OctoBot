@@ -33,7 +33,6 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_commons.databases as databases
 import octobot_commons.dict_util as dict_util
-import octobot_trading.modes.scripting_library as scripting_library # TODO remove
 import octobot.api.backtesting as octobot_backtesting_api
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
