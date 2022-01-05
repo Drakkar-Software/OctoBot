@@ -248,7 +248,9 @@ class StrategyDesignOptimizer:
                 found_input_detail = False
                 for run_input_details in run_data:
                     try:
-                        if all(run_input_details[key] == val for key, val in reference_run_input_details.items()):
+                        if all(
+                                val == run_input_details[key]
+                                for key, val in reference_run_input_details.items()):
                             found_input_detail = True
                             break
                     except KeyError:
@@ -357,9 +359,9 @@ class StrategyDesignOptimizer:
 
     def _updated_nested_tentacle_config(self, nested_tentacles, user_input, config_value, local_tentacle_config):
         if nested_tentacles[0] not in local_tentacle_config:
-            local_tentacle_config[nested_tentacles[0]] = {}
+            local_tentacle_config[nested_tentacles[0].replace(" ", "_")] = {}
         if len(nested_tentacles) == 1:
-            local_tentacle_config[nested_tentacles[0]][user_input] = config_value
+            local_tentacle_config[nested_tentacles[0].replace(" ", "_")][user_input.replace(" ", "_")] = config_value
         else:
             self._updated_nested_tentacle_config(nested_tentacles[1:], user_input, config_value,
                                                  local_tentacle_config[nested_tentacles[0]])
