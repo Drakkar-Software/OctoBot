@@ -99,7 +99,11 @@ class StrategyDesignOptimizer:
     def get_name(self) -> str:
         return f"{self.trading_mode.get_name()}_{self.__class__.__name__}"
 
-    async def multi_processed_optimize(self, optimizer_ids=None, randomly_chose_runs=False):
+    async def multi_processed_optimize(self,
+                                       optimizer_ids=None,
+                                       randomly_chose_runs=False,
+                                       start_timestamp=None,
+                                       end_timestamp=None):
         optimizer_ids = optimizer_ids or [self.optimizer_id]
         self.is_computing = True
         global_t0 = time.time()
@@ -123,7 +127,9 @@ class StrategyDesignOptimizer:
                                 pool,
                                 self.find_optimal_configuration_wrapper,
                                 optimizer_ids,
-                                randomly_chose_runs
+                                randomly_chose_runs,
+                                start_timestamp,
+                                end_timestamp
                             )
                         )
                 self.process_pool_handle = await asyncio.gather(*coros)
@@ -142,11 +148,21 @@ class StrategyDesignOptimizer:
             level=logging.ERROR
         )
 
-    def find_optimal_configuration_wrapper(self, optimizer_ids, randomly_chose_runs=False):
+    def find_optimal_configuration_wrapper(self,
+                                           optimizer_ids,
+                                           randomly_chose_runs=False,
+                                           start_timestamp=None,
+                                           end_timestamp=None):
         self._init_optimizer_process_logger()
-        asyncio.run(self.find_optimal_configuration(optimizer_ids, randomly_chose_runs=randomly_chose_runs))
+        asyncio.run(self.find_optimal_configuration(optimizer_ids,
+                                                    randomly_chose_runs=randomly_chose_runs,
+                                                    start_timestamp=start_timestamp,
+                                                    end_timestamp=end_timestamp))
 
-    async def find_optimal_configuration(self, optimizer_ids, randomly_chose_runs=False):
+    async def find_optimal_configuration(self, optimizer_ids,
+                                         randomly_chose_runs=False,
+                                         start_timestamp=None,
+                                         end_timestamp=None):
         # need to load tentacles when in new process
         tentacles_manager_api.reload_tentacle_info()
         try:
@@ -157,7 +173,10 @@ class StrategyDesignOptimizer:
                     continue
                 try:
                     while self._should_keep_running():
-                        await self.run_single_iteration(optimizer_id, randomly_chose_runs=randomly_chose_runs)
+                        await self.run_single_iteration(optimizer_id,
+                                                        randomly_chose_runs=randomly_chose_runs,
+                                                        start_timestamp=start_timestamp,
+                                                        end_timestamp=end_timestamp)
                 except NoMoreRunError:
                     await self.drop_optimizer_run_from_queue(optimizer_id)
         except concurrent.futures.CancelledError:
@@ -224,9 +243,14 @@ class StrategyDesignOptimizer:
             for run in (await self.get_run_queue(self.trading_mode))
         ]
 
-    async def resume(self, optimizer_ids, randomly_chose_runs):
+    async def resume(self, optimizer_ids, randomly_chose_runs,
+                     start_timestamp=None,
+                     end_timestamp=None):
         self.total_nb_runs = len(optimizer_ids)
-        await self.multi_processed_optimize(optimizer_ids=optimizer_ids, randomly_chose_runs=randomly_chose_runs)
+        await self.multi_processed_optimize(optimizer_ids=optimizer_ids,
+                                            randomly_chose_runs=randomly_chose_runs,
+                                            start_timestamp=start_timestamp,
+                                            end_timestamp=end_timestamp)
 
     @classmethod
     async def get_run_queue(cls, trading_mode):
@@ -298,7 +322,11 @@ class StrategyDesignOptimizer:
                 pass
             return updated_queue
 
-    async def run_single_iteration(self, optimizer_id, randomly_chose_runs=False):
+    async def run_single_iteration(self,
+                                   optimizer_id,
+                                   randomly_chose_runs=False,
+                                   start_timestamp=None,
+                                   end_timestamp=None):
         data_files = run_data = run_id = run_details = None
         async with databases.DBWriterReader.database(
                 self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) \
@@ -321,10 +349,12 @@ class StrategyDesignOptimizer:
         if data_files and run_details:
             # start backtesting run ids at 1
             backtesting_run_id = int(run_id) + 1
-            return await self._run_with_config(optimizer_id, data_files, backtesting_run_id, run_details)
+            return await self._run_with_config(optimizer_id, data_files, backtesting_run_id, run_details,
+                                               start_timestamp=start_timestamp, end_timestamp=end_timestamp)
         raise NoMoreRunError("Nothing to run")
 
-    async def _run_with_config(self, optimizer_id, data_files, run_id, run_config):
+    async def _run_with_config(self, optimizer_id, data_files, run_id, run_config,
+                               start_timestamp=None, end_timestamp=None):
         self.logger.debug(f"Running optimizer with id {optimizer_id} "
                           f"on backtesting {run_id} with config {run_config}")
         self._update_config_for_optimizer(optimizer_id, run_id)
@@ -338,6 +368,8 @@ class StrategyDesignOptimizer:
                 config_to_use,
                 tentacles_setup_config,
                 data_files,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp
             )
             await octobot_backtesting_api.initialize_and_run_independent_backtesting(independent_backtesting,
                                                                                      log_errors=False)
