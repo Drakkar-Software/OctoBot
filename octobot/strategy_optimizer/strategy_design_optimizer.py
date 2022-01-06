@@ -358,13 +358,14 @@ class StrategyDesignOptimizer:
         self.config[commons_constants.CONFIG_BACKTESTING_ID] = run_id
 
     def _updated_nested_tentacle_config(self, nested_tentacles, user_input, config_value, local_tentacle_config):
-        if nested_tentacles[0] not in local_tentacle_config:
-            local_tentacle_config[nested_tentacles[0].replace(" ", "_")] = {}
+        cleaned_tentacle_name = nested_tentacles[0].replace(" ", "_")
+        if cleaned_tentacle_name not in local_tentacle_config:
+            local_tentacle_config[cleaned_tentacle_name] = {}
         if len(nested_tentacles) == 1:
-            local_tentacle_config[nested_tentacles[0].replace(" ", "_")][user_input.replace(" ", "_")] = config_value
+            local_tentacle_config[cleaned_tentacle_name][user_input.replace(" ", "_")] = config_value
         else:
             self._updated_nested_tentacle_config(nested_tentacles[1:], user_input, config_value,
-                                                 local_tentacle_config[nested_tentacles[0]])
+                                                 local_tentacle_config[cleaned_tentacle_name])
 
     def _get_custom_tentacles_setup_config(self, optimizer_id, run_id, run_config):
         local_tentacles_setup_config = copy.deepcopy(self.base_tentacles_setup_config)
