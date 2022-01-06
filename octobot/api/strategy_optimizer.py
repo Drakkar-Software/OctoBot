@@ -31,17 +31,22 @@ async def initialize_design_strategy_optimizer(strategy_optimizer, is_resuming, 
     return await strategy_optimizer.initialize(is_resuming)
 
 
-async def resume_design_strategy_optimizer(optimizer, randomly_chose_runs, optimizer_ids=None):
+async def resume_design_strategy_optimizer(optimizer, randomly_chose_runs, start_timestamp, end_timestamp,
+                                           optimizer_ids=None):
     optimizer_ids = optimizer_ids or await optimizer.get_queued_optimizer_ids()
-    return await optimizer.resume(optimizer_ids, randomly_chose_runs)
+    return await optimizer.resume(optimizer_ids, randomly_chose_runs,
+                                  start_timestamp=start_timestamp,
+                                  end_timestamp=end_timestamp)
 
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
     strategy_optimizer.find_optimal_configuration(TAs=TAs, time_frames=time_frames, risks=risks)
 
 
-async def start_design_strategy_optimizer(strategy_optimizer, randomly_chose_runs):
-    await strategy_optimizer.multi_processed_optimize(randomly_chose_runs=randomly_chose_runs)
+async def start_design_strategy_optimizer(strategy_optimizer, randomly_chose_runs, start_timestamp, end_timestamp):
+    await strategy_optimizer.multi_processed_optimize(randomly_chose_runs=randomly_chose_runs,
+                                                      start_timestamp=start_timestamp,
+                                                      end_timestamp=end_timestamp)
 
 
 def cancel_strategy_optimizer(strategy_optimizer):
