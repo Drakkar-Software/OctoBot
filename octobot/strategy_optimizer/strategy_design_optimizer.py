@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import decimal
 import multiprocessing
 import os
 import itertools
@@ -57,6 +58,8 @@ class StrategyDesignOptimizer:
     RUN_SCHEDULE_TABLE = "schedule"
     CONFIG_KEY = "key"
     CONFIG_USER_INPUT = "user_input"
+    CONFIG_USER_INPUTS = "user_inputs"
+    CONFIG_FILTER_SETTINGS = "filters_settings"
     CONFIG_VALUE = "value"
     CONFIG_TENTACLE = "tentacle"
     CONFIG_NESTED_TENTACLE_SEPARATOR = "_-_"
@@ -69,6 +72,7 @@ class StrategyDesignOptimizer:
     CONFIG_DATA_FILES = "data_files"
     CONFIG_ID = "id"
     CONFIG_DELETED = "deleted"
+    CONFIG_ROLE = "role"
 
     def __init__(self, trading_mode, config, tentacles_setup_config, optimizer_config, data_files):
         self.config = config
@@ -444,9 +448,62 @@ class StrategyDesignOptimizer:
 
     def _generate_runs(self):
         iterations = [i for i in self._get_config_possible_iterations() if i]
-        if iterations:
-            return {index: run for index, run in enumerate(itertools.product(*iterations))}
+        runs = {
+            index: run
+            for index, run in enumerate(itertools.product(*iterations))
+            if self._is_run_allowed(run)
+        }
+        if runs:
+            return runs
         raise RuntimeError("No optimizer run to schedule with this configuration")
+
+    def _is_run_allowed(self, run):
+        for run_filter_config in self.optimizer_config[self.CONFIG_FILTER_SETTINGS]:
+            if self._is_filtered(run, run_filter_config):
+                return False
+        return True
+
+    def _is_filtered(self, run, run_filter_config):
+        left_operand, operator, right_operand = self._parse_filter_entry(run, run_filter_config)
+        if not (left_operand and right_operand):
+            return False
+        try:
+            left_operand = decimal.Decimal(left_operand)
+        except decimal.InvalidOperation:
+            left_operand = str(left_operand)
+        try:
+            right_operand = decimal.Decimal(right_operand)
+        except decimal.InvalidOperation:
+            right_operand = str(right_operand)
+
+        if operator == "higher_than":
+            return left_operand > right_operand
+        if operator == "lower_than":
+            return left_operand < right_operand
+        if operator == "lower_or_equal_to":
+            return left_operand >= right_operand
+        if operator == "higher_or_equal_to":
+            return left_operand <= right_operand
+        if operator == "equal_to":
+            return left_operand == right_operand
+        if operator == "different_from":
+            return left_operand != right_operand
+        raise RuntimeError(f"Unknown operator: {operator}")
+
+    def _parse_filter_entry(self, run, run_filter_config):
+        user_input_left_operand_key = run_filter_config["user_input_left_operand"][self.CONFIG_VALUE]
+        user_input_right_operand_key = run_filter_config["user_input_right_operand"][self.CONFIG_VALUE]
+
+        left_operand = user_input_right_operand = None
+        text_right_operand = run_filter_config["text_right_operand"][self.CONFIG_VALUE]
+        operator = run_filter_config["operator"][self.CONFIG_VALUE]
+        for user_input in run:
+            if user_input[self.CONFIG_KEY] == user_input_left_operand_key:
+                left_operand = user_input[self.CONFIG_VALUE]
+            if user_input[self.CONFIG_KEY] == user_input_right_operand_key:
+                user_input_right_operand = user_input[self.CONFIG_VALUE]
+        right_operand = user_input_right_operand if text_right_operand in ("null", "") else text_right_operand
+        return left_operand, operator, right_operand
 
     def _get_config_possible_iterations(self):
         return [
@@ -474,7 +531,8 @@ class StrategyDesignOptimizer:
                     self.CONFIG_USER_INPUT: config_element[self.CONFIG_USER_INPUT],
                     self.CONFIG_TENTACLE: config_element[self.CONFIG_VALUE][self.CONFIG_TENTACLE]
                         .split(self.CONFIG_NESTED_TENTACLE_SEPARATOR),
-                    self.CONFIG_VALUE: value
+                    self.CONFIG_VALUE: value,
+                    self.CONFIG_KEY: config_element[self.CONFIG_KEY]
                 }
                 for value in values
             ]
@@ -482,7 +540,7 @@ class StrategyDesignOptimizer:
             raise ZeroDivisionError("Step value has to be greater than 0") from e
 
     def _get_config_elements(self):
-        for key, val in self.optimizer_config.items():
+        for key, val in self.optimizer_config[self.CONFIG_USER_INPUTS].items():
             yield {
                 self.CONFIG_KEY: key,
                 self.CONFIG_ENABLED: val[self.CONFIG_ENABLED],
