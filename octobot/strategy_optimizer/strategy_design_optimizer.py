@@ -98,7 +98,7 @@ class StrategyDesignOptimizer:
             self.optimizer_id = await self.database_manager.generate_new_optimizer_id(taken_ids)
             self.database_manager.optimizer_id = self.optimizer_id
             await self.database_manager.initialize()
-            await self._store_backtesting_runs_schedule()
+            return await self._store_backtesting_runs_schedule()
 
     def get_name(self) -> str:
         return f"{self.trading_mode.get_name()}_{self.__class__.__name__}"
@@ -476,14 +476,14 @@ class StrategyDesignOptimizer:
         except decimal.InvalidOperation:
             right_operand = str(right_operand)
 
-        if operator == "higher_than":
-            return left_operand > right_operand
         if operator == "lower_than":
             return left_operand < right_operand
+        if operator == "higher_than":
+            return left_operand > right_operand
         if operator == "lower_or_equal_to":
-            return left_operand >= right_operand
-        if operator == "higher_or_equal_to":
             return left_operand <= right_operand
+        if operator == "higher_or_equal_to":
+            return left_operand >= right_operand
         if operator == "equal_to":
             return left_operand == right_operand
         if operator == "different_from":
