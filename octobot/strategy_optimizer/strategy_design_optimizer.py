@@ -521,11 +521,13 @@ class StrategyDesignOptimizer:
                     values = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
                 if config_element[self.CONFIG_TYPE] is ConfigTypes.NUMBER:
                     config = config_element[self.CONFIG_VALUE][self.CONFIG_VALUE]
-                    # Add step to max to include the max value in generated interval
+                    addition = 1 if config[self.CONFIG_STEP] > 1 else config[self.CONFIG_STEP]
+                    # Add 1 or step to max to include the max value in generated interval
                     values = [v.item()
                               for v in numpy.arange(config[self.CONFIG_MIN],
-                                                    config[self.CONFIG_MAX] + config[self.CONFIG_STEP],
-                                                    config[self.CONFIG_STEP])]
+                                                    config[self.CONFIG_MAX] + addition,
+                                                    config[self.CONFIG_STEP])
+                              if v.item() <= config[self.CONFIG_MAX]]
             return [
                 {
                     self.CONFIG_USER_INPUT: config_element[self.CONFIG_USER_INPUT],
