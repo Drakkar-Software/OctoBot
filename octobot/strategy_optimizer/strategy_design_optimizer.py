@@ -107,7 +107,8 @@ class StrategyDesignOptimizer:
                                        optimizer_ids=None,
                                        randomly_chose_runs=False,
                                        start_timestamp=None,
-                                       end_timestamp=None):
+                                       end_timestamp=None,
+                                       required_idle_cores=0):
         optimizer_ids = optimizer_ids or [self.optimizer_id]
         self.is_computing = True
         global_t0 = time.time()
@@ -122,10 +123,17 @@ class StrategyDesignOptimizer:
                     initializer=multiprocessing_util.register_lock_and_shared_elements,
                     initargs=(commons_enums.MultiprocessingLocks.DBLock.value,
                               lock, {self.SHARED_KEEP_RUNNING_KEY: shared_keep_running})) as pool:
-                self.logger.info(f"Dispatching optimizer backtesting runs into {pool._max_workers} parallel processes "
-                                 f"(based on the current computer physical processors).")
                 coros = []
-                for _ in range(pool._max_workers):
+                workers_count = pool._max_workers - required_idle_cores
+                self.logger.info(f"Dispatching optimizer backtesting runs into {workers_count} parallel processes "
+                                 f"(based on the current computer physical processors).")
+                if workers_count < 1:
+                    idle_cores_message = f"Requiring to leave {required_idle_cores} idle core. " \
+                        if required_idle_cores else ""
+                    raise RuntimeError(f"{idle_cores_message}At lease one core is required to "
+                                       f"start a strategy optimizer. "
+                                       f"There are {pool._max_workers} total available cores on this computer.")
+                for _ in range(workers_count):
                     coros.append(
                             asyncio.get_event_loop().run_in_executor(
                                 pool,
@@ -249,12 +257,14 @@ class StrategyDesignOptimizer:
 
     async def resume(self, optimizer_ids, randomly_chose_runs,
                      start_timestamp=None,
-                     end_timestamp=None):
+                     end_timestamp=None,
+                     required_idle_cores=0):
         self.total_nb_runs = len(optimizer_ids)
         await self.multi_processed_optimize(optimizer_ids=optimizer_ids,
                                             randomly_chose_runs=randomly_chose_runs,
                                             start_timestamp=start_timestamp,
-                                            end_timestamp=end_timestamp)
+                                            end_timestamp=end_timestamp,
+                                            required_idle_cores=required_idle_cores)
 
     @classmethod
     async def get_run_queue(cls, trading_mode):
