@@ -32,12 +32,13 @@ async def initialize_design_strategy_optimizer(strategy_optimizer, is_resuming, 
 
 
 async def resume_design_strategy_optimizer(optimizer, randomly_chose_runs, start_timestamp, end_timestamp,
-                                           required_idle_cores, optimizer_ids=None):
+                                           required_idle_cores, notify_when_complete=False, optimizer_ids=None):
     optimizer_ids = optimizer_ids or await optimizer.get_queued_optimizer_ids()
     return await optimizer.resume(optimizer_ids, randomly_chose_runs,
                                   start_timestamp=start_timestamp,
                                   end_timestamp=end_timestamp,
-                                  required_idle_cores=required_idle_cores)
+                                  required_idle_cores=required_idle_cores,
+                                  notify_when_complete=notify_when_complete)
 
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
@@ -45,11 +46,13 @@ def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, r
 
 
 async def start_design_strategy_optimizer(strategy_optimizer, randomly_chose_runs,
-                                          start_timestamp, end_timestamp, required_idle_cores,):
+                                          start_timestamp, end_timestamp,
+                                          required_idle_cores, notify_when_complete):
     await strategy_optimizer.multi_processed_optimize(randomly_chose_runs=randomly_chose_runs,
                                                       start_timestamp=start_timestamp,
                                                       end_timestamp=end_timestamp,
-                                                      required_idle_cores=required_idle_cores)
+                                                      required_idle_cores=required_idle_cores,
+                                                      notify_when_complete=notify_when_complete)
 
 
 def cancel_strategy_optimizer(strategy_optimizer):
