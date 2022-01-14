@@ -38,6 +38,7 @@ import octobot.api.backtesting as octobot_backtesting_api
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.constants as tentacles_manager_constants
+import octobot_services.api as service_api
 
 
 class ConfigTypes(enum.Enum):
@@ -108,7 +109,8 @@ class StrategyDesignOptimizer:
                                        randomly_chose_runs=False,
                                        start_timestamp=None,
                                        end_timestamp=None,
-                                       required_idle_cores=0):
+                                       required_idle_cores=0,
+                                       notify_when_complete=False):
         optimizer_ids = optimizer_ids or [self.optimizer_id]
         self.is_computing = True
         global_t0 = time.time()
@@ -148,6 +150,10 @@ class StrategyDesignOptimizer:
         except Exception as e:
             self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
         finally:
+            if notify_when_complete:
+                await service_api.send_notification(
+                    service_api.create_notification(f"Your strategy optimizer just finished.")
+                )
             self.process_pool_handle = None
             self.is_computing = False
         self.logger.info(f"Optimizer runs complete in {time.time() - global_t0} seconds.")
@@ -258,13 +264,15 @@ class StrategyDesignOptimizer:
     async def resume(self, optimizer_ids, randomly_chose_runs,
                      start_timestamp=None,
                      end_timestamp=None,
-                     required_idle_cores=0):
+                     required_idle_cores=0,
+                     notify_when_complete=False):
         self.total_nb_runs = len(optimizer_ids)
         await self.multi_processed_optimize(optimizer_ids=optimizer_ids,
                                             randomly_chose_runs=randomly_chose_runs,
                                             start_timestamp=start_timestamp,
                                             end_timestamp=end_timestamp,
-                                            required_idle_cores=required_idle_cores)
+                                            required_idle_cores=required_idle_cores,
+                                            notify_when_complete=notify_when_complete)
 
     @classmethod
     async def get_run_queue(cls, trading_mode):
