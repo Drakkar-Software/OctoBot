@@ -98,11 +98,7 @@ class StrategyDesignOptimizer:
 
     async def initialize(self, is_resuming):
         if not is_resuming:
-            taken_ids = await self.get_queued_optimizer_ids()
-            self.optimizer_id = await self.database_manager.generate_new_optimizer_id(taken_ids)
-            self.database_manager.optimizer_id = self.optimizer_id
-            await self.database_manager.initialize()
-            return await self._store_backtesting_runs_schedule()
+            await self.generate_and_save_run()
 
     def get_name(self) -> str:
         return f"{self.trading_mode.get_name()}_{self.__class__.__name__}"
@@ -317,6 +313,13 @@ class StrategyDesignOptimizer:
                                             required_idle_cores=required_idle_cores,
                                             notify_when_complete=notify_when_complete)
 
+    async def generate_and_save_run(self):
+        taken_ids = await self.get_queued_optimizer_ids()
+        self.optimizer_id = await self.database_manager.generate_new_optimizer_id(taken_ids)
+        self.database_manager.optimizer_id = self.optimizer_id
+        await self.database_manager.initialize()
+        return await self._generate_and_store_backtesting_runs_schedule()
+
     @classmethod
     async def get_run_queue(cls, trading_mode):
         db_manager = databases.DatabaseManager(trading_mode)
@@ -337,9 +340,12 @@ class StrategyDesignOptimizer:
                 found_input_detail = False
                 for run_input_details in run_data:
                     try:
-                        if all(
-                                val == run_input_details[key]
-                                for key, val in reference_run_input_details.items()):
+                        found_difference = False
+                        for key, val in reference_run_input_details.items():
+                            if key != cls.CONFIG_KEY and val != run_input_details[key]:
+                                found_difference = True
+                                break
+                        if not found_difference:
                             found_input_detail = True
                             break
                     except KeyError:
@@ -362,11 +368,11 @@ class StrategyDesignOptimizer:
                     (await writer_reader.select(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue[cls.CONFIG_ID]))[0]
                 runs = updated_queue[cls.CONFIG_RUNS]
                 # remove deleted runs and runs that are not in the queue anymore (already running or done)
-                for run_data in copy.copy(runs):
+                for run_index, run_data in enumerate(copy.copy(runs)):
                     if cls._contains_run(db_optimizer_run, run_data):
                         for run_input in run_data:
                             if run_input.get(cls.CONFIG_DELETED, False):
-                                runs.remove(run_data)
+                                runs.pop(run_index)
                                 break
                             run_input.pop(cls.CONFIG_DELETED)
                     else:
@@ -379,7 +385,8 @@ class StrategyDesignOptimizer:
                 # replace queue by updated one to keep order
                 query = await writer_reader.search()
                 if runs:
-                    await writer_reader.update(cls.RUN_SCHEDULE_TABLE, updated_queue, query.id == updated_queue["id"])
+                    await writer_reader.update(cls.RUN_SCHEDULE_TABLE, updated_queue,
+                                               query.id == updated_queue["id"])
                 else:
                     await writer_reader.delete(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue["id"])
             except IndexError:
@@ -502,7 +509,7 @@ class StrategyDesignOptimizer:
         if not os.path.exists(tentacles_specific_config_folder):
             os.mkdir(tentacles_specific_config_folder)
 
-    async def _store_backtesting_runs_schedule(self):
+    async def _generate_and_store_backtesting_runs_schedule(self):
         runs = self._generate_runs()
         await self._save_run_schedule(runs)
         return runs
