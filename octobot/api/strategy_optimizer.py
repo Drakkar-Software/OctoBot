@@ -31,6 +31,11 @@ async def initialize_design_strategy_optimizer(strategy_optimizer, is_resuming, 
     return await strategy_optimizer.initialize(is_resuming)
 
 
+async def update_strategy_optimizer_total_runs(optimizer, runs) -> list:
+    if optimizer.empty_the_queue:
+        optimizer.total_nb_runs += len(runs)
+
+
 async def generate_and_save_strategy_optimizer_runs(trading_mode, tentacles_setup_config,
                                                     optimizer_config, data_files) -> list:
     optimizer = StrategyDesignOptimizer(trading_mode, None, tentacles_setup_config, optimizer_config, data_files)
@@ -39,10 +44,12 @@ async def generate_and_save_strategy_optimizer_runs(trading_mode, tentacles_setu
 
 async def resume_design_strategy_optimizer(optimizer, randomly_chose_runs, start_timestamp, end_timestamp,
                                            required_idle_cores, notify_when_complete=False, optimizer_ids=None):
+    empty_the_queue = optimizer_ids is None  # continue till the queue is empty if no optimizer id is specified
     optimizer_ids = optimizer_ids or await optimizer.get_queued_optimizer_ids()
     return await optimizer.resume(optimizer_ids, randomly_chose_runs,
                                   start_timestamp=start_timestamp,
                                   end_timestamp=end_timestamp,
+                                  empty_the_queue=empty_the_queue,
                                   required_idle_cores=required_idle_cores,
                                   notify_when_complete=notify_when_complete)
 
