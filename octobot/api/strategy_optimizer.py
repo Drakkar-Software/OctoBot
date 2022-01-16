@@ -71,7 +71,7 @@ def get_optimizer_results(strategy_optimizer) -> list:
     return strategy_optimizer.run_results
 
 
-async def get_optimizer_overall_progress(strategy_optimizer) -> int:
+async def get_optimizer_overall_progress(strategy_optimizer) -> (int, float):
     return await strategy_optimizer.get_overall_progress()
 
 
