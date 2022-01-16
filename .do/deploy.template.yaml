@@ -5,5 +5,5 @@ spec:
     git:
       branch: master
       repo_clone_url: https://github.com/Drakkar-Software/OctoBot
-    name: octobot
+    name: octobot-web
     http_port: 5001
