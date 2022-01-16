@@ -31,6 +31,12 @@ async def initialize_design_strategy_optimizer(strategy_optimizer, is_resuming, 
     return await strategy_optimizer.initialize(is_resuming)
 
 
+async def generate_and_save_strategy_optimizer_runs(trading_mode, tentacles_setup_config,
+                                                    optimizer_config, data_files) -> list:
+    optimizer = StrategyDesignOptimizer(trading_mode, None, tentacles_setup_config, optimizer_config, data_files)
+    return await optimizer.generate_and_save_run()
+
+
 async def resume_design_strategy_optimizer(optimizer, randomly_chose_runs, start_timestamp, end_timestamp,
                                            required_idle_cores, notify_when_complete=False, optimizer_ids=None):
     optimizer_ids = optimizer_ids or await optimizer.get_queued_optimizer_ids()
