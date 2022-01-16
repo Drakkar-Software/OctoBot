@@ -55,6 +55,7 @@ class NoMoreRunError(Exception):
 class StrategyDesignOptimizer:
     MAX_OPTIMIZER_RUNS = 100000
     SHARED_KEEP_RUNNING_KEY = "keep_running"
+    SHARED_RUN_TIMES_KEY = "run_times"
 
     RUN_SCHEDULE_TABLE = "schedule"
     CONFIG_KEY = "key"
@@ -90,8 +91,10 @@ class StrategyDesignOptimizer:
         self.is_computing = False
         self.current_run_id = 0
         self.total_nb_runs = 0
+        self.active_processes_count = 0
         self.keep_running = True
         self.process_pool_handle = None
+        self.average_run_time = 0
 
     async def initialize(self, is_resuming):
         if not is_resuming:
@@ -116,26 +119,36 @@ class StrategyDesignOptimizer:
         global_t0 = time.time()
         lock = multiprocessing.RLock()
         shared_keep_running = multiprocessing.Value(ctypes.c_bool, True)
+        self.average_run_time = 0
+        self.active_processes_count = multiprocessing.cpu_count() - abs(required_idle_cores)
+        shared_run_time = multiprocessing.Array(ctypes.c_float, [0.0 for _ in range(self.active_processes_count)])
         try:
             self.current_run_id = 1
             with multiprocessing_util.registered_lock_and_shared_elements(
-                    commons_enums.MultiprocessingLocks.DBLock.value, lock,
-                    {self.SHARED_KEEP_RUNNING_KEY: shared_keep_running}),\
+                    commons_enums.MultiprocessingLocks.DBLock.value,
+                    lock,
+                    {
+                        self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
+                        self.SHARED_RUN_TIMES_KEY: shared_run_time
+                    }),\
                  concurrent.futures.ProcessPoolExecutor(
                     initializer=multiprocessing_util.register_lock_and_shared_elements,
                     initargs=(commons_enums.MultiprocessingLocks.DBLock.value,
-                              lock, {self.SHARED_KEEP_RUNNING_KEY: shared_keep_running})) as pool:
+                              lock,
+                              {
+                                  self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
+                                  self.SHARED_RUN_TIMES_KEY: shared_run_time
+                              })) as pool:
                 coros = []
-                workers_count = pool._max_workers - required_idle_cores
-                self.logger.info(f"Dispatching optimizer backtesting runs into {workers_count} parallel processes "
-                                 f"(based on the current computer physical processors).")
-                if workers_count < 1:
+                self.logger.info(f"Dispatching optimizer backtesting runs into {self.active_processes_count} "
+                                 f"parallel processes (based on the current computer physical processors).")
+                if self.active_processes_count < 1:
                     idle_cores_message = f"Requiring to leave {required_idle_cores} idle core. " \
                         if required_idle_cores else ""
                     raise RuntimeError(f"{idle_cores_message}At lease one core is required to "
                                        f"start a strategy optimizer. "
                                        f"There are {pool._max_workers} total available cores on this computer.")
-                for _ in range(workers_count):
+                for _ in range(self.active_processes_count):
                     coros.append(
                             asyncio.get_event_loop().run_in_executor(
                                 pool,
@@ -183,6 +196,8 @@ class StrategyDesignOptimizer:
                                          end_timestamp=None):
         # need to load tentacles when in new process
         tentacles_manager_api.reload_tentacle_info()
+        first_iteration = True
+        t_start = time.time()
         try:
             for optimizer_id in optimizer_ids:
                 if optimizer_id is None:
@@ -195,6 +210,9 @@ class StrategyDesignOptimizer:
                                                         randomly_chose_runs=randomly_chose_runs,
                                                         start_timestamp=start_timestamp,
                                                         end_timestamp=end_timestamp)
+                        if first_iteration:
+                            self._register_run_time(time.time() - t_start)
+                            first_iteration = False
                 except NoMoreRunError:
                     await self.drop_optimizer_run_from_queue(optimizer_id)
         except concurrent.futures.CancelledError:
@@ -212,6 +230,29 @@ class StrategyDesignOptimizer:
             return multiprocessing_util.get_shared_element(self.SHARED_KEEP_RUNNING_KEY).value
         except KeyError:
             return self.keep_running
+
+    def _register_run_time(self, run_time):
+        try:
+            shared_run_times = multiprocessing_util.get_shared_element(self.SHARED_RUN_TIMES_KEY)
+            with shared_run_times:
+                for index, value in enumerate(shared_run_times):
+                    if value == 0.0:
+                        shared_run_times[index] = run_time
+                        return
+        except KeyError:
+            pass
+
+    def get_average_run_time(self):
+        if self.average_run_time == 0:
+            run_times = [v for v in multiprocessing_util.get_shared_element(self.SHARED_RUN_TIMES_KEY)]
+            set_run_times = [run_time for run_time in run_times if run_time > 0]
+            if not set_run_times:
+                return 0
+            average_run_time = numpy.average(set_run_times)
+            if len(set_run_times) >= self.active_processes_count:
+                self.average_run_time = average_run_time
+            return average_run_time
+        return self.average_run_time
 
     def cancel(self):
         self.keep_running = False
@@ -238,7 +279,9 @@ class StrategyDesignOptimizer:
         if self.is_computing and remaining_runs == 0:
             remaining_runs = 1
         done_runs = self.total_nb_runs - remaining_runs
-        return int(done_runs / self.total_nb_runs * 100) if self.total_nb_runs else 0
+        remaining_time = remaining_runs * self.get_average_run_time() / self.active_processes_count \
+            if self.active_processes_count else 0
+        return int(done_runs / self.total_nb_runs * 100) if self.total_nb_runs else 0, remaining_time
 
     async def is_in_progress(self):
         return self.is_computing

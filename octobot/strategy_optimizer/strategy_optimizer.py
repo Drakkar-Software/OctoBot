@@ -244,7 +244,7 @@ class StrategyOptimizer:
                          f"average trades count: {best_result[TRADES_IN_RESULT]:f}")
 
     async def get_overall_progress(self):
-        return int((self.run_id - 1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
+        return int((self.run_id - 1) / self.total_nb_runs * 100) if self.total_nb_runs else 0, 0
 
     async def is_in_progress(self):
         return self.get_overall_progress() != 100
