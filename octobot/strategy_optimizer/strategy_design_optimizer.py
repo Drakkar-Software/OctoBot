@@ -91,10 +91,13 @@ class StrategyDesignOptimizer:
         self.is_computing = False
         self.current_run_id = 0
         self.total_nb_runs = 0
+        self.prioritized_optimizer_ids = []
+        self.empty_the_queue = False
         self.active_processes_count = 0
         self.keep_running = True
         self.process_pool_handle = None
         self.average_run_time = 0
+        self.first_iteration_time = 0
 
     async def initialize(self, is_resuming):
         if not is_resuming:
@@ -108,6 +111,7 @@ class StrategyDesignOptimizer:
                                        randomly_chose_runs=False,
                                        start_timestamp=None,
                                        end_timestamp=None,
+                                       empty_the_queue=False,
                                        required_idle_cores=0,
                                        notify_when_complete=False):
         optimizer_ids = optimizer_ids or [self.optimizer_id]
@@ -152,7 +156,8 @@ class StrategyDesignOptimizer:
                                 optimizer_ids,
                                 randomly_chose_runs,
                                 start_timestamp,
-                                end_timestamp
+                                end_timestamp,
+                                empty_the_queue
                             )
                         )
                 self.process_pool_handle = await asyncio.gather(*coros)
@@ -179,41 +184,62 @@ class StrategyDesignOptimizer:
                                            optimizer_ids,
                                            randomly_chose_runs=False,
                                            start_timestamp=None,
-                                           end_timestamp=None):
+                                           end_timestamp=None,
+                                           empty_the_queue=False):
         self._init_optimizer_process_logger()
         asyncio.run(self.find_optimal_configuration(optimizer_ids,
                                                     randomly_chose_runs=randomly_chose_runs,
                                                     start_timestamp=start_timestamp,
-                                                    end_timestamp=end_timestamp))
+                                                    end_timestamp=end_timestamp,
+                                                    empty_the_queue=empty_the_queue))
 
-    async def find_optimal_configuration(self, optimizer_ids,
+    async def find_optimal_configuration(self,
+                                         optimizer_ids,
                                          randomly_chose_runs=False,
                                          start_timestamp=None,
-                                         end_timestamp=None):
+                                         end_timestamp=None,
+                                         empty_the_queue=False):
         # need to load tentacles when in new process
         tentacles_manager_api.reload_tentacle_info()
-        first_iteration = True
-        t_start = time.time()
         try:
-            for optimizer_id in optimizer_ids:
-                if optimizer_id is None:
-                    # should not happen but in case it does, drop the run
-                    await self.drop_optimizer_run_from_queue(optimizer_id)
-                    continue
-                try:
-                    while self._should_keep_running():
-                        await self.run_single_iteration(optimizer_id,
-                                                        randomly_chose_runs=randomly_chose_runs,
-                                                        start_timestamp=start_timestamp,
-                                                        end_timestamp=end_timestamp)
-                        if first_iteration:
-                            self._register_run_time(time.time() - t_start)
-                            first_iteration = False
-                except NoMoreRunError:
-                    await self.drop_optimizer_run_from_queue(optimizer_id)
+            async for optimizer_id in self._all_optimizer_ids(optimizer_ids, empty_the_queue):
+                await self._execute_optimizer_run(optimizer_id, randomly_chose_runs,
+                                                  start_timestamp, end_timestamp)
+
         except concurrent.futures.CancelledError:
             self.logger.info("Cancelled run")
             raise
+
+    async def _all_optimizer_ids(self, prioritized_ids, empty_the_queue):
+        if prioritized_ids:
+            for prioritized_id in prioritized_ids:
+                yield prioritized_id
+        if empty_the_queue:
+            updated_ids = await self.get_queued_optimizer_ids()
+            while self._should_keep_running() and updated_ids:
+                # reselect from database in case new runs were added
+                for optimizer_id in await self.get_queued_optimizer_ids():
+                    yield optimizer_id
+                updated_ids = await self.get_queued_optimizer_ids()
+
+    async def _execute_optimizer_run(self, optimizer_id, randomly_chose_runs,
+                                     start_timestamp, end_timestamp):
+        if optimizer_id is None:
+            # should not happen but in case it does, drop the run
+            await self.drop_optimizer_run_from_queue(optimizer_id)
+            return
+        try:
+            t_start = time.time()
+            while self._should_keep_running():
+                await self.run_single_iteration(optimizer_id,
+                                                randomly_chose_runs=randomly_chose_runs,
+                                                start_timestamp=start_timestamp,
+                                                end_timestamp=end_timestamp)
+                if self.first_iteration_time == 0:
+                    self.first_iteration_time = time.time() - t_start
+                    self._register_run_time(self.first_iteration_time)
+        except NoMoreRunError:
+            await self.drop_optimizer_run_from_queue(optimizer_id)
 
     async def drop_optimizer_run_from_queue(self, optimizer_id):
         async with databases.DBWriter.database(
@@ -269,7 +295,7 @@ class StrategyDesignOptimizer:
 
     async def get_overall_progress(self):
         if self.optimizer_id is None:
-            remaining_runs = len(await self.get_run_queue(self.trading_mode))
+            remaining_runs = await self._get_total_nb_runs(self.prioritized_optimizer_ids)
         else:
             remaining_runs = await self._get_remaining_runs_count_from_db(self.optimizer_id)
         if self.is_computing and remaining_runs == 0:
@@ -303,15 +329,25 @@ class StrategyDesignOptimizer:
     async def resume(self, optimizer_ids, randomly_chose_runs,
                      start_timestamp=None,
                      end_timestamp=None,
+                     empty_the_queue=False,
                      required_idle_cores=0,
                      notify_when_complete=False):
-        self.total_nb_runs = len(optimizer_ids)
+        self.empty_the_queue = empty_the_queue
+        self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
+        self.prioritized_optimizer_ids = optimizer_ids
         await self.multi_processed_optimize(optimizer_ids=optimizer_ids,
                                             randomly_chose_runs=randomly_chose_runs,
                                             start_timestamp=start_timestamp,
                                             end_timestamp=end_timestamp,
+                                            empty_the_queue=empty_the_queue,
                                             required_idle_cores=required_idle_cores,
                                             notify_when_complete=notify_when_complete)
+
+    async def _get_total_nb_runs(self, optimizer_ids):
+        full_queue = await self.get_run_queue(self.trading_mode)
+        if self.empty_the_queue:
+            return sum(len(run[self.CONFIG_RUNS]) for run in full_queue)
+        return sum(len(run[self.CONFIG_RUNS]) for run in full_queue if run[self.CONFIG_ID] in optimizer_ids)
 
     async def generate_and_save_run(self):
         taken_ids = await self.get_queued_optimizer_ids()
