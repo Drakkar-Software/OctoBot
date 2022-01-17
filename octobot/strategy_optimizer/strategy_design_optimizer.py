@@ -34,7 +34,6 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_commons.databases as databases
 import octobot_commons.dict_util as dict_util
-import octobot.api.backtesting as octobot_backtesting_api
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.constants as tentacles_manager_constants
@@ -469,6 +468,7 @@ class StrategyDesignOptimizer:
         tentacles_setup_config = self._get_custom_tentacles_setup_config(optimizer_id, run_id, run_config)
         independent_backtesting = None
         try:
+            import octobot.api.backtesting as octobot_backtesting_api
             # reset possible remaining caches
             await databases.CacheManager().reset()
             config_to_use = copy.deepcopy(self.config)
