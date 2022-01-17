@@ -27,6 +27,7 @@ import numpy
 import logging
 import ctypes
 
+import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.errors as commons_errors
@@ -85,7 +86,10 @@ class StrategyDesignOptimizer:
         self.current_backtesting_id = None
         self.runs_schedule = None
         self.logger = commons_logging.get_logger(self.__class__.__name__)
-        self.database_manager = databases.DatabaseManager(self.trading_mode)
+        self.optimization_campaign_name = optimization_campaign.OptimizationCampaign.get_campaign_name(
+            tentacles_setup_config
+        )
+        self.database_manager = databases.DatabaseManager(self.trading_mode, self.optimization_campaign_name)
 
         self.is_computing = False
         self.current_run_id = 0
@@ -322,7 +326,7 @@ class StrategyDesignOptimizer:
     async def get_queued_optimizer_ids(self):
         return [
             run.get(self.CONFIG_ID, None)
-            for run in (await self.get_run_queue(self.trading_mode))
+            for run in (await self.get_run_queue(self.trading_mode, self.optimization_campaign_name))
         ]
 
     async def resume(self, optimizer_ids, randomly_chose_runs,
@@ -356,8 +360,9 @@ class StrategyDesignOptimizer:
         return await self._generate_and_store_backtesting_runs_schedule()
 
     @classmethod
-    async def get_run_queue(cls, trading_mode):
-        db_manager = databases.DatabaseManager(trading_mode)
+    async def get_run_queue(cls, trading_mode, campaign_name=None):
+        campaign_name = campaign_name or optimization_campaign.OptimizationCampaign.get_campaign_name()
+        db_manager = databases.DatabaseManager(trading_mode, campaign_name)
         try:
             async with databases.DBReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
                                                    with_lock=True) as reader:
@@ -394,7 +399,8 @@ class StrategyDesignOptimizer:
 
     @classmethod
     async def update_run_queue(cls, trading_mode, updated_queue):
-        db_manager = databases.DatabaseManager(trading_mode)
+        db_manager = databases.DatabaseManager(trading_mode,
+                                               optimization_campaign.OptimizationCampaign.get_campaign_name())
         async with databases.DBWriterReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
                                                      with_lock=True) as writer_reader:
             query = await writer_reader.search()
@@ -509,7 +515,7 @@ class StrategyDesignOptimizer:
 
     def _get_custom_tentacles_setup_config(self, optimizer_id, run_id, run_config):
         local_tentacles_setup_config = copy.deepcopy(self.base_tentacles_setup_config)
-        run_db_manager = databases.DatabaseManager(self.trading_mode,
+        run_db_manager = databases.DatabaseManager(self.trading_mode, self.optimization_campaign_name,
                                                    optimizer_id=optimizer_id, backtesting_id=run_id)
         run_folder = run_db_manager.get_backtesting_run_folder()
         tentacles_setup_config_path = os.path.join(run_folder, commons_constants.CONFIG_TENTACLES_FILE)
