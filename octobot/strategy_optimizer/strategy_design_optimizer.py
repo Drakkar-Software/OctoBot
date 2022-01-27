@@ -408,16 +408,19 @@ class StrategyDesignOptimizer:
                 db_optimizer_run = \
                     (await writer_reader.select(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue[cls.CONFIG_ID]))[0]
                 runs = updated_queue[cls.CONFIG_RUNS]
+                to_remove_indexes = []
                 # remove deleted runs and runs that are not in the queue anymore (already running or done)
                 for run_index, run_data in enumerate(copy.copy(runs)):
                     if cls._contains_run(db_optimizer_run, run_data):
                         for run_input in run_data:
                             if run_input.get(cls.CONFIG_DELETED, False):
-                                runs.pop(run_index)
+                                to_remove_indexes.append(run_index)
                                 break
                             run_input.pop(cls.CONFIG_DELETED)
                     else:
                         runs.remove(run_data)
+                for index in reversed(to_remove_indexes):
+                    runs.pop(index)
                 # ensure runs are a dict
                 updated_queue[cls.CONFIG_RUNS] = {
                     index: run
@@ -425,12 +428,12 @@ class StrategyDesignOptimizer:
                 }
                 # replace queue by updated one to keep order
                 query = await writer_reader.search()
-                if runs:
+                if runs and runs[0]:
                     await writer_reader.update(cls.RUN_SCHEDULE_TABLE, updated_queue,
                                                query.id == updated_queue["id"])
                 else:
                     await writer_reader.delete(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue["id"])
-            except IndexError:
+            except IndexError as e:
                 # optimizer run not in db anymore
                 pass
             return updated_queue
