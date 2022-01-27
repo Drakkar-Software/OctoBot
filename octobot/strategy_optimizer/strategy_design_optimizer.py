@@ -38,7 +38,8 @@ import octobot_commons.dict_util as dict_util
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.constants as tentacles_manager_constants
-import octobot_services.api as service_api
+import octobot_services.api as services_api
+import octobot_services.enums as services_enums
 
 
 class ConfigTypes(enum.Enum):
@@ -168,8 +169,9 @@ class StrategyDesignOptimizer:
             self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
         finally:
             if notify_when_complete:
-                await service_api.send_notification(
-                    service_api.create_notification(f"Your strategy optimizer just finished.")
+                await services_api.send_notification(
+                    services_api.create_notification(f"Your strategy optimizer just finished.",
+                                                     category=services_enums.NotificationCategory.OTHER)
                 )
             self.process_pool_handle = None
             self.is_computing = False
