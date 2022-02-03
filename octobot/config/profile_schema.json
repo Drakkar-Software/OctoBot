@@ -95,12 +95,12 @@
               "properties": {
                 "maker": {
                   "type": "number",
-                  "minimum": 0,
+                  "minimum": -100,
                   "maximum": 100
                 },
                 "taker": {
                   "type": "number",
-                  "minimum": 0,
+                  "minimum": -100,
                   "maximum": 100
                 }
               },

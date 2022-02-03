@@ -33,7 +33,6 @@ import octobot_evaluators.evaluators.channel as evaluator_channels
 
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.enums as trading_enums
-import octobot_trading.api as trading_api
 
 import octobot.constants as constants
 import octobot.configuration_manager as configuration_manager
@@ -271,8 +270,7 @@ async def mark_price_callback(
 
 
 async def balance_callback(exchange: str, exchange_id: str, balance):
-    BOT_CHANNEL_LOGGER.debug(f"BALANCE : EXCHANGE = {exchange} || BALANCE = "
-                             f"{trading_api.format_portfolio(balance, as_decimal=False)}")
+    BOT_CHANNEL_LOGGER.debug(f"BALANCE : EXCHANGE = {exchange} || BALANCE = {balance}")
 
 
 async def balance_profitability_callback(
