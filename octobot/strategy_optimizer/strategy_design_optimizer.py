@@ -492,7 +492,7 @@ class StrategyDesignOptimizer:
             )
             await octobot_backtesting_api.initialize_and_run_independent_backtesting(independent_backtesting,
                                                                                      log_errors=False)
-            await octobot_backtesting_api.join_independent_backtesting(independent_backtesting)
+            await octobot_backtesting_api.join_independent_backtesting(independent_backtesting, timeout=None)
             return independent_backtesting
         except backtesting_errors.MissingTimeFrame:
             # ignore this exception: is due to missing of the only required time frame
