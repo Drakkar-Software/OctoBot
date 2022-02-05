@@ -131,31 +131,31 @@ def check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False)
                 orders_market_amount += order.origin_quantity * order.origin_price
             else:
                 orders_currency_amount += order.origin_quantity
-            for symbol in portfolio:
-                assert portfolio[symbol][commons_constants.PORTFOLIO_TOTAL] >= trading_constants.ZERO
-                assert portfolio[symbol][commons_constants.PORTFOLIO_AVAILABLE] >= trading_constants.ZERO
+            for symbol in portfolio.portfolio.keys():
+                assert portfolio.get_currency_portfolio(symbol).total >= trading_constants.ZERO
+                assert portfolio.get_currency_portfolio(symbol).available >= trading_constants.ZERO
                 if not only_positivity:
                     if order.order_type in (
-                    trading_enum.TraderOrderType.SELL_MARKET, trading_enum.TraderOrderType.BUY_MARKET):
+                    trading_enum.TraderOrderType.SELL_MARKET, trading_enum.TraderOrderType.BUY_MARKET) and \
+                            symbol in [order.market, order.currency]:
                         # order is filled
-                        assert initial_portfolio[symbol][commons_constants.PORTFOLIO_TOTAL] != portfolio[symbol][
-                            commons_constants.PORTFOLIO_TOTAL]
-                        assert initial_portfolio[symbol][commons_constants.PORTFOLIO_AVAILABLE] != portfolio[symbol][
-                            commons_constants.PORTFOLIO_AVAILABLE]
+                        assert initial_portfolio.get_currency_portfolio(symbol).total != \
+                               portfolio.get_currency_portfolio(symbol).total
+                        assert initial_portfolio.get_currency_portfolio(symbol).available != \
+                               portfolio.get_currency_portfolio(symbol).available
                     else:
                         if order_symbol == symbol:
-                            assert initial_portfolio[symbol][commons_constants.PORTFOLIO_TOTAL] == portfolio[symbol][
-                                commons_constants.PORTFOLIO_TOTAL]
+                            assert initial_portfolio.get_currency_portfolio(symbol).total == \
+                                   portfolio.get_currency_portfolio(symbol).total
                             assert "{:f}".format(
-                                initial_portfolio[symbol][
-                                    commons_constants.PORTFOLIO_AVAILABLE] - orders_currency_amount) == \
-                                   "{:f}".format(portfolio[symbol][commons_constants.PORTFOLIO_AVAILABLE])
+                                initial_portfolio.get_currency_portfolio(symbol).available - orders_currency_amount) == \
+                                   "{:f}".format(portfolio.get_currency_portfolio(symbol).available)
                         elif market == symbol:
-                            assert initial_portfolio[market][commons_constants.PORTFOLIO_TOTAL] == portfolio[market][
-                                commons_constants.PORTFOLIO_TOTAL]
+                            assert initial_portfolio.get_currency_portfolio(market).total == \
+                                   portfolio.get_currency_portfolio(market).total
                             assert "{:f}".format(
-                                initial_portfolio[market][commons_constants.PORTFOLIO_AVAILABLE] - orders_market_amount) \
-                                   == "{:f}".format(portfolio[market][commons_constants.PORTFOLIO_AVAILABLE])
+                                initial_portfolio.get_currency_portfolio(market).available - orders_market_amount) \
+                                   == "{:f}".format(portfolio.get_currency_portfolio(market).available)
 
 
 async def fill_orders(orders, trader):
@@ -165,6 +165,6 @@ async def fill_orders(orders, trader):
             order.filled_price = order.origin_price
             order.filled_quantity = order.origin_quantity
             await order.on_fill(force_fill=True)
-            check_portfolio(trader.exchange_manager.exchange_personal_data.portfolio_manager.portfolio.portfolio,
+            check_portfolio(trader.exchange_manager.exchange_personal_data.portfolio_manager.portfolio,
                             None, orders, True)
         assert len(trading_api.get_open_orders(trader.exchange_manager)) == 0
