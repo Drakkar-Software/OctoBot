@@ -75,6 +75,7 @@ class StrategyDesignOptimizer:
     CONFIG_DATA_FILES = "data_files"
     CONFIG_ID = "id"
     CONFIG_DELETED = "deleted"
+    CONFIG_DELETE_EVERY_RUN = "delete_every_run"
     CONFIG_ROLE = "role"
 
     def __init__(self, trading_mode, config, tentacles_setup_config, optimizer_config, data_files):
@@ -407,9 +408,13 @@ class StrategyDesignOptimizer:
                                                      with_lock=True) as writer_reader:
             query = await writer_reader.search()
             try:
+                runs = updated_queue[cls.CONFIG_RUNS]
+                if updated_queue[cls.CONFIG_DELETE_EVERY_RUN]:
+                    # delete every run, just delete the whole optimizer run
+                    await writer_reader.delete(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue["id"])
+                    return updated_queue
                 db_optimizer_run = \
                     (await writer_reader.select(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue[cls.CONFIG_ID]))[0]
-                runs = updated_queue[cls.CONFIG_RUNS]
                 to_remove_indexes = []
                 # remove deleted runs and runs that are not in the queue anymore (already running or done)
                 for run_index, run_data in enumerate(copy.copy(runs)):
