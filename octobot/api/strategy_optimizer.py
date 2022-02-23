@@ -31,7 +31,7 @@ async def initialize_design_strategy_optimizer(strategy_optimizer, is_resuming, 
     return await strategy_optimizer.initialize(is_resuming)
 
 
-async def update_strategy_optimizer_total_runs(optimizer, runs) -> list:
+async def update_strategy_optimizer_total_runs(optimizer, runs):
     if optimizer.empty_the_queue:
         optimizer.total_nb_runs += len(runs)
 
@@ -102,6 +102,10 @@ async def is_optimizer_in_progress(strategy_optimizer) -> bool:
 
 def is_optimizer_computing(strategy_optimizer) -> bool:
     return strategy_optimizer.is_computing
+
+
+def is_optimizer_finished(strategy_optimizer) -> bool:
+    return strategy_optimizer.is_finished
 
 
 def get_optimizer_errors_description(strategy_optimizer) -> str:

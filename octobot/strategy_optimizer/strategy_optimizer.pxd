@@ -34,6 +34,7 @@ cdef class StrategyOptimizer:
     cdef public list all_TAs
     cdef public list risks
     cdef public bint is_computing
+    cdef public bint is_finished
     cdef public list run_results
 
     cpdef void find_optimal_configuration(self, list TAs=*, list time_frames=*, list risks=*)
