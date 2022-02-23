@@ -94,6 +94,7 @@ class StrategyDesignOptimizer:
         self.database_manager = databases.DatabaseManager(self.trading_mode, self.optimization_campaign_name)
 
         self.is_computing = False
+        self.is_finished = False
         self.current_run_id = 0
         self.total_nb_runs = 0
         self.prioritized_optimizer_ids = []
@@ -121,6 +122,7 @@ class StrategyDesignOptimizer:
                                        notify_when_complete=False):
         optimizer_ids = optimizer_ids or [self.optimizer_id]
         self.is_computing = True
+        self.is_finished = False
         global_t0 = time.time()
         lock = multiprocessing.RLock()
         shared_keep_running = multiprocessing.Value(ctypes.c_bool, True)
@@ -176,6 +178,7 @@ class StrategyDesignOptimizer:
                 )
             self.process_pool_handle = None
             self.is_computing = False
+            self.is_finished = True
         self.logger.info(f"Optimizer runs complete in {time.time() - global_t0} seconds.")
 
     def _init_optimizer_process_logger(self):

@@ -66,6 +66,7 @@ class StrategyOptimizer:
         self.errors = set()
 
         self.is_computing = False
+        self.is_finished = False
         self.run_id = 0
         self.total_nb_runs = 0
 
@@ -119,6 +120,7 @@ class StrategyOptimizer:
                 self.current_test_suite = None
                 common_logging.set_global_logger_level(previous_log_level)
                 self.is_computing = False
+                self.is_finished = True
                 self.logger.info(f"{self.get_name()} finished computation.")
                 self.logger.info("Logging level restored.")
         else:
