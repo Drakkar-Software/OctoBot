@@ -82,7 +82,10 @@ class OctoBotBacktesting:
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
         exchange_managers = []
         try:
-            await backtesting_api.stop_backtesting(self.backtesting)
+            if self.backtesting is None:
+                self.logger.warning("No backtesting to stop, there was probably an issue when starting the backtesting")
+            else:
+                await backtesting_api.stop_backtesting(self.backtesting)
             try:
                 for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids):
                     exchange_managers.append(exchange_manager)
@@ -96,7 +99,12 @@ class OctoBotBacktesting:
                     # evaluator instance
                     if evaluator is not None:
                         await evaluator_api.stop_evaluator(evaluator)
-            await evaluator_api.stop_all_evaluator_channels(self.matrix_id)
+            try:
+                await evaluator_api.stop_all_evaluator_channels(self.matrix_id)
+            except KeyError:
+                if self.evaluators:
+                    raise
+                # matrix not created (and no evaluator, KeyError is expected)
             evaluator_api.del_evaluator_channels(self.matrix_id)
             evaluator_api.del_matrix(self.matrix_id)
             for service_feed in self.service_feeds:
