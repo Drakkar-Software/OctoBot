@@ -454,6 +454,7 @@ class StrategyDesignOptimizer:
                                    start_timestamp=None,
                                    end_timestamp=None):
         data_files = run_data = run_id = run_details = None
+        start_run = False
         async with databases.DBWriterReader.database(
                 self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) \
                 as writer_reader:
@@ -472,9 +473,18 @@ class StrategyDesignOptimizer:
                 }
                 await writer_reader.update(self.RUN_SCHEDULE_TABLE, updated_data, query.id == optimizer_id)
 
-        if data_files and run_details:
-            # start backtesting run ids at 1
-            backtesting_run_id = int(run_id) + 1
+            if data_files and run_details:
+                # start backtesting run ids at 1
+                backtesting_run_id = int(run_id) + 1
+                # always ensure backtesting id is unique
+                db_manager = databases.DatabaseManager(
+                    self.trading_mode, self.optimization_campaign_name,
+                    optimizer_id=optimizer_id, backtesting_id=backtesting_run_id
+                )
+                backtesting_run_id = await db_manager.generate_new_backtesting_id()
+                await db_manager.initialize()
+                start_run = True
+        if start_run:
             return await self._run_with_config(optimizer_id, data_files, backtesting_run_id, run_details,
                                                start_timestamp=start_timestamp, end_timestamp=end_timestamp)
         raise NoMoreRunError("Nothing to run")
