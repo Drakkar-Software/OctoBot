@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import decimal
+import hashlib
+import json
 import multiprocessing
 import os
 import itertools
@@ -377,31 +379,16 @@ class StrategyDesignOptimizer:
             return []
 
     @classmethod
-    def _contains_run(cls, optimizer_run, run_data):
-        for run in optimizer_run.get(cls.CONFIG_RUNS).values():
-            if len(run) != len(run_data):
-                return False
-            all_equal = True
-            for reference_run_input_details in run:
-                found_input_detail = False
-                for run_input_details in run_data:
-                    try:
-                        found_difference = False
-                        for key, val in reference_run_input_details.items():
-                            if key != cls.CONFIG_KEY and val != run_input_details[key]:
-                                found_difference = True
-                                break
-                        if not found_difference:
-                            found_input_detail = True
-                            break
-                    except KeyError:
-                        pass
-                if not found_input_detail:
-                    all_equal = False
-                    break
-            if all_equal:
-                return True
-        return False
+    def get_run_hash(cls, run_data):
+        return hashlib.sha256(json.dumps([
+            {
+                cls.CONFIG_USER_INPUT: run_data_item[cls.CONFIG_USER_INPUT],
+                cls.CONFIG_TENTACLE: run_data_item[cls.CONFIG_TENTACLE],
+                cls.CONFIG_VALUE: float(run_data_item[cls.CONFIG_VALUE])
+                if isinstance(run_data_item[cls.CONFIG_VALUE], int) else run_data_item[cls.CONFIG_VALUE]
+            }
+            for run_data_item in run_data
+        ]).encode()).hexdigest()
 
     @classmethod
     async def update_run_queue(cls, trading_mode, updated_queue):
@@ -418,10 +405,14 @@ class StrategyDesignOptimizer:
                     return updated_queue
                 db_optimizer_run = \
                     (await writer_reader.select(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue[cls.CONFIG_ID]))[0]
+                existing_runs = set(
+                    cls.get_run_hash(run_data)
+                    for run_data in db_optimizer_run.get(cls.CONFIG_RUNS).values()
+                )
                 to_remove_indexes = []
                 # remove deleted runs and runs that are not in the queue anymore (already running or done)
                 for run_index, run_data in enumerate(copy.copy(runs)):
-                    if cls._contains_run(db_optimizer_run, run_data):
+                    if cls.get_run_hash(run_data) in existing_runs:
                         for run_input in run_data:
                             if run_input.get(cls.CONFIG_DELETED, False):
                                 to_remove_indexes.append(run_index)
@@ -587,6 +578,10 @@ class StrategyDesignOptimizer:
             if self._is_run_allowed(run)
         }
         if runs:
+            for run in runs.values():
+                for run_input in run:
+                    # do not store self.CONFIG_KEY
+                    run_input.pop(self.CONFIG_KEY, None)
             return runs
         raise RuntimeError("No optimizer run to schedule with this configuration")
 
