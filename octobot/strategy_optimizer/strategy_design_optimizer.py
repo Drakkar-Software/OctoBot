@@ -20,7 +20,7 @@ import multiprocessing
 import os
 import itertools
 import enum
-import random
+import queue
 import copy
 import asyncio
 import concurrent.futures
@@ -59,6 +59,10 @@ class StrategyDesignOptimizer:
     MAX_OPTIMIZER_RUNS = 100000
     SHARED_KEEP_RUNNING_KEY = "keep_running"
     SHARED_RUN_TIMES_KEY = "run_times"
+    SHARED_RUNS_QUEUES_KEY = "runs_queues"
+    START_QUEUE_KEY = "start_queue"
+    DONE_QUEUE_KEY = "done_queue"
+    DB_UPDATE_PERIOD = 15   # update run database at the end of each period
 
     RUN_SCHEDULE_TABLE = "schedule"
     CONFIG_KEY = "key"
@@ -114,6 +118,17 @@ class StrategyDesignOptimizer:
     def get_name(self) -> str:
         return f"{self.trading_mode.get_name()}_{self.__class__.__name__}"
 
+    async def _create_run_queues(self, optimizer_id):
+        run_data, run_data_by_hash = await self._get_optimizer_runs_details_and_hashes(optimizer_id)
+        start_queue = multiprocessing.Queue(len(run_data_by_hash))
+        done_queue = multiprocessing.Queue(len(run_data_by_hash))
+        for run_hash in run_data_by_hash:
+            start_queue.put(run_hash)
+        return {
+            self.START_QUEUE_KEY: start_queue,
+            self.DONE_QUEUE_KEY: done_queue
+        }
+
     async def multi_processed_optimize(self,
                                        optimizer_ids=None,
                                        randomly_chose_runs=False,
@@ -132,44 +147,61 @@ class StrategyDesignOptimizer:
         self.active_processes_count = multiprocessing.cpu_count() - abs(required_idle_cores)
         shared_run_time = multiprocessing.Array(ctypes.c_float, [0.0 for _ in range(self.active_processes_count)])
         try:
-            self.current_run_id = 1
-            with multiprocessing_util.registered_lock_and_shared_elements(
-                    commons_enums.MultiprocessingLocks.DBLock.value,
-                    lock,
-                    {
-                        self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
-                        self.SHARED_RUN_TIMES_KEY: shared_run_time
-                    }),\
-                 concurrent.futures.ProcessPoolExecutor(
-                    initializer=multiprocessing_util.register_lock_and_shared_elements,
-                    initargs=(commons_enums.MultiprocessingLocks.DBLock.value,
-                              lock,
-                              {
-                                  self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
-                                  self.SHARED_RUN_TIMES_KEY: shared_run_time
-                              })) as pool:
-                coros = []
-                self.logger.info(f"Dispatching optimizer backtesting runs into {self.active_processes_count} "
-                                 f"parallel processes (based on the current computer physical processors).")
-                if self.active_processes_count < 1:
-                    idle_cores_message = f"Requiring to leave {required_idle_cores} idle core. " \
-                        if required_idle_cores else ""
-                    raise RuntimeError(f"{idle_cores_message}At lease one core is required to "
-                                       f"start a strategy optimizer. "
-                                       f"There are {pool._max_workers} total available cores on this computer.")
-                for _ in range(self.active_processes_count):
-                    coros.append(
-                            asyncio.get_event_loop().run_in_executor(
-                                pool,
-                                self.find_optimal_configuration_wrapper,
-                                optimizer_ids,
-                                randomly_chose_runs,
-                                start_timestamp,
-                                end_timestamp,
-                                empty_the_queue
-                            )
-                        )
-                self.process_pool_handle = await asyncio.gather(*coros)
+            async for selected_optimizer_ids in self._all_optimizer_ids(optimizer_ids, empty_the_queue):
+                run_queues_by_optimizer_id = {
+                    optimizer_id: await self._create_run_queues(optimizer_id)
+                    for optimizer_id in selected_optimizer_ids
+                }
+                self.current_run_id = 1
+                try:
+                    with multiprocessing_util.registered_lock_and_shared_elements(
+                            commons_enums.MultiprocessingLocks.DBLock.value,
+                            lock,
+                            {
+                                self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
+                                self.SHARED_RUN_TIMES_KEY: shared_run_time,
+                                self.SHARED_RUNS_QUEUES_KEY: run_queues_by_optimizer_id,
+                            }),\
+                         concurrent.futures.ProcessPoolExecutor(
+                            initializer=multiprocessing_util.register_lock_and_shared_elements,
+                            initargs=(commons_enums.MultiprocessingLocks.DBLock.value,
+                                      lock,
+                                      {
+                                          self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
+                                          self.SHARED_RUN_TIMES_KEY: shared_run_time,
+                                          self.SHARED_RUNS_QUEUES_KEY: run_queues_by_optimizer_id,
+                                      })) as pool:
+                        coros = []
+                        self.logger.info(f"Dispatching optimizer backtesting runs into {self.active_processes_count} "
+                                         f"parallel processes (based on the current computer physical processors).")
+                        if self.active_processes_count < 1:
+                            idle_cores_message = f"Requiring to leave {required_idle_cores} idle core. " \
+                                if required_idle_cores else ""
+                            raise RuntimeError(f"{idle_cores_message}At lease one core is required to "
+                                               f"start a strategy optimizer. "
+                                               f"There are {pool._max_workers} total available cores on this computer.")
+                        for index in range(self.active_processes_count):
+                            coros.append(
+                                    asyncio.get_event_loop().run_in_executor(
+                                        pool,
+                                        self.find_optimal_configuration_wrapper,
+                                        index == 0,
+                                        start_timestamp,
+                                        end_timestamp
+                                    )
+                                )
+                        self.process_pool_handle = await asyncio.gather(*coros)
+                finally:
+                    t0 = time.time()
+                    # properly empty and close queues to avoid underlying thread issues
+                    for run_queues in run_queues_by_optimizer_id.values():
+                        for run_queue in run_queues.values():
+                            # empty queues
+                            while not run_queue.empty():
+                                run_queue.get()
+                            run_queue.close()
+                            run_queue.cancel_join_thread()
+                    self.logger.info(f"close done in {time.time()-t0}s")
         except Exception as e:
             self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
         finally:
@@ -183,6 +215,16 @@ class StrategyDesignOptimizer:
             self.is_finished = True
         self.logger.info(f"Optimizer runs complete in {time.time() - global_t0} seconds.")
 
+    async def _all_optimizer_ids(self, prioritized_ids, empty_the_queue):
+        if prioritized_ids:
+            yield prioritized_ids
+        if empty_the_queue:
+            updated_ids = await self.get_queued_optimizer_ids()
+            while self._should_keep_running() and updated_ids:
+                # reselect from database in case new runs were added
+                yield updated_ids
+                updated_ids = await self.get_queued_optimizer_ids()
+
     def _init_optimizer_process_logger(self):
         # init basic logger
         logging.basicConfig(
@@ -192,65 +234,106 @@ class StrategyDesignOptimizer:
         )
 
     def find_optimal_configuration_wrapper(self,
-                                           optimizer_ids,
-                                           randomly_chose_runs=False,
+                                           update_database=False,
                                            start_timestamp=None,
-                                           end_timestamp=None,
-                                           empty_the_queue=False):
+                                           end_timestamp=None):
         self._init_optimizer_process_logger()
-        asyncio.run(self.find_optimal_configuration(optimizer_ids,
-                                                    randomly_chose_runs=randomly_chose_runs,
+        run_queues_by_optimizer_id = multiprocessing_util.get_shared_element(self.SHARED_RUNS_QUEUES_KEY)
+        asyncio.run(self.find_optimal_configuration(run_queues_by_optimizer_id,
+                                                    update_database=update_database,
                                                     start_timestamp=start_timestamp,
-                                                    end_timestamp=end_timestamp,
-                                                    empty_the_queue=empty_the_queue))
+                                                    end_timestamp=end_timestamp))
 
     async def find_optimal_configuration(self,
-                                         optimizer_ids,
-                                         randomly_chose_runs=False,
+                                         run_queues_by_optimizer_id,
+                                         update_database=False,
                                          start_timestamp=None,
-                                         end_timestamp=None,
-                                         empty_the_queue=False):
+                                         end_timestamp=None):
         # need to load tentacles when in new process
         tentacles_manager_api.reload_tentacle_info()
+        run_queues = optimizer_id = None
         try:
-            async for optimizer_id in self._all_optimizer_ids(optimizer_ids, empty_the_queue):
-                await self._execute_optimizer_run(optimizer_id, randomly_chose_runs,
+            for optimizer_id, run_queues in run_queues_by_optimizer_id.items():
+                await self._execute_optimizer_run(optimizer_id, run_queues, update_database,
                                                   start_timestamp, end_timestamp)
 
         except concurrent.futures.CancelledError:
             self.logger.info("Cancelled run")
+            if update_database and run_queues is not None and optimizer_id is not None:
+                # stopped run: update queue
+                await self._update_runs_from_done_queue(run_queues, optimizer_id)
             raise
+        # let done queue push thread finish
+        # time.sleep(0.1)
 
-    async def _all_optimizer_ids(self, prioritized_ids, empty_the_queue):
-        if prioritized_ids:
-            for prioritized_id in prioritized_ids:
-                yield prioritized_id
-        if empty_the_queue:
-            updated_ids = await self.get_queued_optimizer_ids()
-            while self._should_keep_running() and updated_ids:
-                # reselect from database in case new runs were added
-                for optimizer_id in await self.get_queued_optimizer_ids():
-                    yield optimizer_id
-                updated_ids = await self.get_queued_optimizer_ids()
+    async def _get_optimizer_runs_details_and_hashes(self, optimizer_id):
+        async with databases.DBReader.database(self.database_manager.get_optimizer_runs_schedule_identifier()) \
+                as reader:
+            run_data = await self._get_run_data_from_db(optimizer_id, reader)
+        return run_data, {
+            self.get_run_hash(run_details): run_details
+            for run_details in run_data[0][self.CONFIG_RUNS].values()
+        }
 
-    async def _execute_optimizer_run(self, optimizer_id, randomly_chose_runs,
+    async def _execute_optimizer_run(self, optimizer_id, run_queues, update_database,
                                      start_timestamp, end_timestamp):
-        if optimizer_id is None:
+        if update_database and optimizer_id is None:
             # should not happen but in case it does, drop the run
             await self.drop_optimizer_run_from_queue(optimizer_id)
             return
         try:
+            # TODO: fix reading time on 10k runs
+            t0 = time.time()
+            run_data, run_data_by_hash = await self._get_optimizer_runs_details_and_hashes(optimizer_id)
+            self.logger.error(f"run_data_by_hash {time.time()-t0}")
             t_start = time.time()
+            last_db_update_time = t_start
             while self._should_keep_running():
                 await self.run_single_iteration(optimizer_id,
-                                                randomly_chose_runs=randomly_chose_runs,
+                                                run_queues,
+                                                run_data_by_hash,
+                                                run_data,
                                                 start_timestamp=start_timestamp,
                                                 end_timestamp=end_timestamp)
                 if self.first_iteration_time == 0:
                     self.first_iteration_time = time.time() - t_start
                     self._register_run_time(self.first_iteration_time)
+                if update_database and time.time() - last_db_update_time > self.DB_UPDATE_PERIOD:
+                    self.logger.error("updating queue")
+                    t0 = time.time()
+                    await self._update_runs_from_done_queue(run_queues, optimizer_id)
+                    self.logger.error(f"updated in {time.time()-t0}")
+                    last_db_update_time = time.time()
+            if update_database:
+                # stopped run: update queue
+                await self._update_runs_from_done_queue(run_queues, optimizer_id)
         except NoMoreRunError:
             await self.drop_optimizer_run_from_queue(optimizer_id)
+        except Exception as e:
+            self.logger.exception(e, True, f"Error while running iteration: {e}")
+
+    async def _update_runs_from_done_queue(self, run_queues, optimizer_id):
+        completed_run_hashes = set()
+        while not run_queues[self.DONE_QUEUE_KEY].empty():
+            completed_run_hashes.add(run_queues[self.DONE_QUEUE_KEY].get(timeout=0.1))
+        if not completed_run_hashes:
+            return
+        async with databases.DBWriterReader.database(
+                self.database_manager.get_optimizer_runs_schedule_identifier()) \
+                as writer_reader:
+            run_data = await self._get_run_data_from_db(optimizer_id, writer_reader)
+            updated_queue = run_data[0]
+            runs = [run_details
+                    for run_details in updated_queue[self.CONFIG_RUNS].values()
+                    if self.get_run_hash(run_details) not in completed_run_hashes]
+            updated_queue[self.CONFIG_RUNS] = {
+                index: run
+                for index, run in enumerate(runs)
+            }
+            query = await writer_reader.search()
+            if runs and runs[0]:
+                await writer_reader.update(self.RUN_SCHEDULE_TABLE, updated_queue,
+                                           query.id == updated_queue["id"])
 
     async def drop_optimizer_run_from_queue(self, optimizer_id):
         async with databases.DBWriter.database(
@@ -277,7 +360,10 @@ class StrategyDesignOptimizer:
 
     def get_average_run_time(self):
         if self.average_run_time == 0:
-            run_times = [v for v in multiprocessing_util.get_shared_element(self.SHARED_RUN_TIMES_KEY)]
+            try:
+                run_times = [v for v in multiprocessing_util.get_shared_element(self.SHARED_RUN_TIMES_KEY)]
+            except KeyError:
+                run_times = []
             set_run_times = [run_time for run_time in run_times if run_time > 0]
             if not set_run_times:
                 return 0
@@ -377,6 +463,8 @@ class StrategyDesignOptimizer:
                 return await reader.all(cls.RUN_SCHEDULE_TABLE)
         except commons_errors.DatabaseNotFoundError:
             return []
+        except json.JSONDecodeError:
+            return []
 
     @classmethod
     def get_run_hash(cls, run_data):
@@ -403,8 +491,12 @@ class StrategyDesignOptimizer:
                     # delete every run, just delete the whole optimizer run
                     await writer_reader.delete(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue["id"])
                     return updated_queue
-                db_optimizer_run = \
-                    (await writer_reader.select(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue[cls.CONFIG_ID]))[0]
+                db_optimizer_run = []
+                try:
+                    db_optimizer_run = \
+                        (await writer_reader.select(cls.RUN_SCHEDULE_TABLE, query.id == updated_queue[cls.CONFIG_ID]))[0]
+                except json.JSONDecodeError:
+                    pass
                 existing_runs = set(
                     cls.get_run_hash(run_data)
                     for run_data in db_optimizer_run.get(cls.CONFIG_RUNS).values()
@@ -439,45 +531,55 @@ class StrategyDesignOptimizer:
                 pass
             return updated_queue
 
+    async def _synchronized_pick_run(self, run_queue, run_details_by_hash):
+        try:
+            # acquire MultiprocessingLocks.DBLock to wait for re-ordering if it happens during a run
+            with multiprocessing_util.get_lock(commons_enums.MultiprocessingLocks.DBLock.value):
+                # wait for a very short  time to allow queue sync between processes
+                selected_run_hash = run_queue.get(timeout=0.5)
+            run_details = run_details_by_hash.pop(selected_run_hash, None)
+            self.logger.error(f"Selecting: {run_details}")
+            return selected_run_hash, run_details
+        except queue.Empty:
+            raise NoMoreRunError("Nothing to run")
+        except Exception as e:
+            self.logger.exception(e)
+
     async def run_single_iteration(self,
                                    optimizer_id,
-                                   randomly_chose_runs=False,
+                                   run_queue,
+                                   run_data_by_hash,
+                                   run_data,
                                    start_timestamp=None,
                                    end_timestamp=None):
-        data_files = run_data = run_id = run_details = None
+        data_files = run_details = selected_run_hash = None
         start_run = False
-        async with databases.DBWriterReader.database(
-                self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) \
-                as writer_reader:
-            run_data = await self._get_run_data_from_db(optimizer_id, writer_reader)
-            if run_data and run_data[0][self.CONFIG_RUNS]:
-                runs = run_data[0][self.CONFIG_RUNS]
-                data_files = run_data[0][self.CONFIG_DATA_FILES]
-                run_ids = list(runs)
-                run_count = len(run_ids)
-                run_id = random.randrange(run_count) if randomly_chose_runs else run_ids[0]
-                run_details = runs.pop(run_id)
-            if data_files:
-                query = await writer_reader.search()
-                updated_data = {
-                    self.CONFIG_RUNS: run_data[0][self.CONFIG_RUNS]
-                }
-                await writer_reader.update(self.RUN_SCHEDULE_TABLE, updated_data, query.id == optimizer_id)
-
-            if data_files and run_details:
-                # start backtesting run ids at 1
-                backtesting_run_id = int(run_id) + 1
-                # always ensure backtesting id is unique
-                db_manager = databases.DatabaseManager(
-                    self.trading_mode, self.optimization_campaign_name,
-                    optimizer_id=optimizer_id, backtesting_id=backtesting_run_id
-                )
+        if run_data and run_data[0][self.CONFIG_RUNS]:
+            selected_run_hash, run_details = await self._synchronized_pick_run(run_queue[self.START_QUEUE_KEY],
+                                                                               run_data_by_hash)
+            data_files = run_data[0][self.CONFIG_DATA_FILES]
+        if data_files and run_details:
+            # start backtesting run ids at 1
+            backtesting_run_id = 1
+            # always ensure backtesting id is unique
+            db_manager = databases.DatabaseManager(
+                self.trading_mode, self.optimization_campaign_name,
+                optimizer_id=optimizer_id, backtesting_id=backtesting_run_id
+            )
+            # acquire MultiprocessingLocks.DBLock to avoid conflicts during multi processing runs
+            with multiprocessing_util.get_lock(commons_enums.MultiprocessingLocks.DBLock.value):
                 backtesting_run_id = await db_manager.generate_new_backtesting_id()
+                db_manager.backtesting_id = backtesting_run_id
                 await db_manager.initialize()
-                start_run = True
+            start_run = True
         if start_run:
-            return await self._run_with_config(optimizer_id, data_files, backtesting_run_id, run_details,
-                                               start_timestamp=start_timestamp, end_timestamp=end_timestamp)
+            try:
+                run_result = await self._run_with_config(optimizer_id, data_files, backtesting_run_id, run_details,
+                                                         start_timestamp=start_timestamp, end_timestamp=end_timestamp)
+                return run_result
+            finally:
+                if selected_run_hash is not None:
+                    run_queue[self.DONE_QUEUE_KEY].put(selected_run_hash)
         raise NoMoreRunError("Nothing to run")
 
     async def _run_with_config(self, optimizer_id, data_files, run_id, run_config,
@@ -706,4 +808,10 @@ class StrategyDesignOptimizer:
         self.total_nb_runs = len(runs)
         async with databases.DBWriter.database(self.database_manager.get_optimizer_runs_schedule_identifier(),
                                                with_lock=True) as writer:
-            await writer.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
+            try:
+                await writer.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
+            except json.JSONDecodeError:
+                self.logger.error(f"Invalid data in run schedule, clearing runs.")
+                # error in database, reset it
+                await writer.hard_reset()
+                await writer.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
