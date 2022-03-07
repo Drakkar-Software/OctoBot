@@ -566,11 +566,13 @@ class StrategyDesignOptimizer:
                 self.trading_mode, self.optimization_campaign_name,
                 optimizer_id=optimizer_id, backtesting_id=backtesting_run_id
             )
+            self.logger.error(f"Waiting to gen backtesting id")
             # acquire MultiprocessingLocks.DBLock to avoid conflicts during multi processing runs
             with multiprocessing_util.get_lock(commons_enums.MultiprocessingLocks.DBLock.value):
                 backtesting_run_id = await db_manager.generate_new_backtesting_id()
                 db_manager.backtesting_id = backtesting_run_id
                 await db_manager.initialize()
+            self.logger.error(f"Using backtesting id: {backtesting_run_id}")
             start_run = True
         if start_run:
             try:
@@ -578,6 +580,7 @@ class StrategyDesignOptimizer:
                                                          start_timestamp=start_timestamp, end_timestamp=end_timestamp)
                 return run_result
             finally:
+                self.logger.error(f"Run done for backtesting id: {backtesting_run_id}")
                 if selected_run_hash is not None:
                     run_queue[self.DONE_QUEUE_KEY].put(selected_run_hash)
         raise NoMoreRunError("Nothing to run")
