@@ -536,11 +536,12 @@ class StrategyDesignOptimizer:
             # acquire MultiprocessingLocks.DBLock to wait for re-ordering if it happens during a run
             with multiprocessing_util.get_lock(commons_enums.MultiprocessingLocks.DBLock.value):
                 # wait for a very short  time to allow queue sync between processes
-                selected_run_hash = run_queue.get(timeout=0.5)
+                selected_run_hash = run_queue.get(timeout=1)
             run_details = run_details_by_hash.pop(selected_run_hash, None)
             self.logger.error(f"Selecting: {run_details}")
             return selected_run_hash, run_details
         except queue.Empty:
+            self.logger.error(f"No more run (get timeout)")
             raise NoMoreRunError("Nothing to run")
         except Exception as e:
             self.logger.exception(e)
