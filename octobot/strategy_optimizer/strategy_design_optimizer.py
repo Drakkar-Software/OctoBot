@@ -194,7 +194,8 @@ class StrategyDesignOptimizer:
                 finally:
                     t0 = time.time()
                     # properly empty and close queues to avoid underlying thread issues
-                    for run_queues in run_queues_by_optimizer_id.values():
+                    for optimizer_id, run_queues in run_queues_by_optimizer_id.items():
+                        await self._update_runs_from_done_queue(run_queues, optimizer_id)
                         for run_queue in run_queues.values():
                             # empty queues
                             while not run_queue.empty():
@@ -319,7 +320,7 @@ class StrategyDesignOptimizer:
         if not completed_run_hashes:
             return
         async with databases.DBWriterReader.database(
-                self.database_manager.get_optimizer_runs_schedule_identifier()) \
+                self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) \
                 as writer_reader:
             run_data = await self._get_run_data_from_db(optimizer_id, writer_reader)
             updated_queue = run_data[0]
