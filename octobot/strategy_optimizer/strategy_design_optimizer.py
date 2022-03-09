@@ -97,7 +97,7 @@ class StrategyDesignOptimizer:
         self.optimization_campaign_name = optimization_campaign.OptimizationCampaign.get_campaign_name(
             tentacles_setup_config
         )
-        self.database_manager = databases.DatabaseManager(self.trading_mode, self.optimization_campaign_name)
+        self.run_dbs_identifier = databases.RunDatabasesIdentifier(self.trading_mode, self.optimization_campaign_name)
 
         self.is_computing = False
         self.is_finished = False
@@ -146,6 +146,7 @@ class StrategyDesignOptimizer:
         self.average_run_time = 0
         self.active_processes_count = multiprocessing.cpu_count() - abs(required_idle_cores)
         shared_run_time = multiprocessing.Array(ctypes.c_float, [0.0 for _ in range(self.active_processes_count)])
+        self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
         try:
             async for selected_optimizer_ids in self._all_optimizer_ids(optimizer_ids, empty_the_queue):
                 run_queues_by_optimizer_id = {
@@ -195,7 +196,10 @@ class StrategyDesignOptimizer:
                     t0 = time.time()
                     # properly empty and close queues to avoid underlying thread issues
                     for optimizer_id, run_queues in run_queues_by_optimizer_id.items():
-                        await self._update_runs_from_done_queue(run_queues, optimizer_id)
+                        try:
+                            await self._update_runs_from_done_queue(run_queues, optimizer_id)
+                        except Exception as e:
+                            self.logger.exception(e, True, f"Error on final db queue update: {e}")
                         for run_queue in run_queues.values():
                             # empty queues
                             while not run_queue.empty():
@@ -268,7 +272,7 @@ class StrategyDesignOptimizer:
         # time.sleep(0.1)
 
     async def _get_optimizer_runs_details_and_hashes(self, optimizer_id):
-        async with databases.DBReader.database(self.database_manager.get_optimizer_runs_schedule_identifier()) \
+        async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
                 as reader:
             run_data = await self._get_run_data_from_db(optimizer_id, reader)
         return run_data, {
@@ -320,9 +324,12 @@ class StrategyDesignOptimizer:
         if not completed_run_hashes:
             return
         async with databases.DBWriterReader.database(
-                self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) \
+                self.run_dbs_identifier.get_optimizer_runs_schedule_identifier(), with_lock=True) \
                 as writer_reader:
             run_data = await self._get_run_data_from_db(optimizer_id, writer_reader)
+            if not run_data:
+                # db already empty, nothing to do
+                return
             updated_queue = run_data[0]
             runs = [run_details
                     for run_details in updated_queue[self.CONFIG_RUNS].values()
@@ -338,7 +345,7 @@ class StrategyDesignOptimizer:
 
     async def drop_optimizer_run_from_queue(self, optimizer_id):
         async with databases.DBWriter.database(
-                self.database_manager.get_optimizer_runs_schedule_identifier(), with_lock=True) as writer:
+                self.run_dbs_identifier.get_optimizer_runs_schedule_identifier(), with_lock=True) as writer:
             query = await writer.search()
             await writer.delete(self.RUN_SCHEDULE_TABLE, query.id == optimizer_id)
 
@@ -449,17 +456,17 @@ class StrategyDesignOptimizer:
 
     async def generate_and_save_run(self):
         taken_ids = await self.get_queued_optimizer_ids()
-        self.optimizer_id = await self.database_manager.generate_new_optimizer_id(taken_ids)
-        self.database_manager.optimizer_id = self.optimizer_id
-        await self.database_manager.initialize()
+        self.optimizer_id = await self.run_dbs_identifier.generate_new_optimizer_id(taken_ids)
+        self.run_dbs_identifier.optimizer_id = self.optimizer_id
+        await self.run_dbs_identifier.initialize()
         return await self._generate_and_store_backtesting_runs_schedule()
 
     @classmethod
     async def get_run_queue(cls, trading_mode, campaign_name=None):
         campaign_name = campaign_name or optimization_campaign.OptimizationCampaign.get_campaign_name()
-        db_manager = databases.DatabaseManager(trading_mode, campaign_name)
+        run_dbs_identifier = databases.RunDatabasesIdentifier(trading_mode, campaign_name)
         try:
-            async with databases.DBReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
+            async with databases.DBReader.database(run_dbs_identifier.get_optimizer_runs_schedule_identifier(),
                                                    with_lock=True) as reader:
                 return await reader.all(cls.RUN_SCHEDULE_TABLE)
         except commons_errors.DatabaseNotFoundError:
@@ -481,9 +488,9 @@ class StrategyDesignOptimizer:
 
     @classmethod
     async def update_run_queue(cls, trading_mode, updated_queue):
-        db_manager = databases.DatabaseManager(trading_mode,
-                                               optimization_campaign.OptimizationCampaign.get_campaign_name())
-        async with databases.DBWriterReader.database(db_manager.get_optimizer_runs_schedule_identifier(),
+        run_dbs_identifier = databases.RunDatabasesIdentifier(
+            trading_mode, optimization_campaign.OptimizationCampaign.get_campaign_name())
+        async with databases.DBWriterReader.database(run_dbs_identifier.get_optimizer_runs_schedule_identifier(),
                                                      with_lock=True) as writer_reader:
             query = await writer_reader.search()
             try:
@@ -549,7 +556,7 @@ class StrategyDesignOptimizer:
 
     async def run_single_iteration(self,
                                    optimizer_id,
-                                   run_queue,
+                                   run_queues,
                                    run_data_by_hash,
                                    run_data,
                                    start_timestamp=None,
@@ -557,23 +564,23 @@ class StrategyDesignOptimizer:
         data_files = run_details = selected_run_hash = None
         start_run = False
         if run_data and run_data[0][self.CONFIG_RUNS]:
-            selected_run_hash, run_details = await self._synchronized_pick_run(run_queue[self.START_QUEUE_KEY],
+            selected_run_hash, run_details = await self._synchronized_pick_run(run_queues[self.START_QUEUE_KEY],
                                                                                run_data_by_hash)
             data_files = run_data[0][self.CONFIG_DATA_FILES]
         if data_files and run_details:
             # start backtesting run ids at 1
             backtesting_run_id = 1
             # always ensure backtesting id is unique
-            db_manager = databases.DatabaseManager(
+            run_dbs_identifier = databases.RunDatabasesIdentifier(
                 self.trading_mode, self.optimization_campaign_name,
                 optimizer_id=optimizer_id, backtesting_id=backtesting_run_id
             )
             self.logger.error(f"Waiting to gen backtesting id")
             # acquire MultiprocessingLocks.DBLock to avoid conflicts during multi processing runs
             with multiprocessing_util.get_lock(commons_enums.MultiprocessingLocks.DBLock.value):
-                backtesting_run_id = await db_manager.generate_new_backtesting_id()
-                db_manager.backtesting_id = backtesting_run_id
-                await db_manager.initialize()
+                backtesting_run_id = await run_dbs_identifier.generate_new_backtesting_id()
+                run_dbs_identifier.backtesting_id = backtesting_run_id
+                await run_dbs_identifier.initialize()
             self.logger.error(f"Using backtesting id: {backtesting_run_id}")
             start_run = True
         if start_run:
@@ -584,7 +591,7 @@ class StrategyDesignOptimizer:
             finally:
                 self.logger.error(f"Run done for backtesting id: {backtesting_run_id}")
                 if selected_run_hash is not None:
-                    run_queue[self.DONE_QUEUE_KEY].put(selected_run_hash)
+                    run_queues[self.DONE_QUEUE_KEY].put(selected_run_hash)
         raise NoMoreRunError("Nothing to run")
 
     async def _run_with_config(self, optimizer_id, data_files, run_id, run_config,
@@ -636,9 +643,9 @@ class StrategyDesignOptimizer:
 
     def _get_custom_tentacles_setup_config(self, optimizer_id, run_id, run_config):
         local_tentacles_setup_config = copy.deepcopy(self.base_tentacles_setup_config)
-        run_db_manager = databases.DatabaseManager(self.trading_mode, self.optimization_campaign_name,
-                                                   optimizer_id=optimizer_id, backtesting_id=run_id)
-        run_folder = run_db_manager.get_backtesting_run_folder()
+        run_dbs_identifier = databases.RunDatabasesIdentifier(
+            self.trading_mode, self.optimization_campaign_name, optimizer_id=optimizer_id, backtesting_id=run_id)
+        run_folder = run_dbs_identifier.get_backtesting_run_folder()
         tentacles_setup_config_path = os.path.join(run_folder, commons_constants.CONFIG_TENTACLES_FILE)
         tentacles_manager_api.set_tentacles_setup_configuration_path(local_tentacles_setup_config,
                                                                      tentacles_setup_config_path)
@@ -811,7 +818,7 @@ class StrategyDesignOptimizer:
             self.CONFIG_ID: self.optimizer_id
         }
         self.total_nb_runs = len(runs)
-        async with databases.DBWriter.database(self.database_manager.get_optimizer_runs_schedule_identifier(),
+        async with databases.DBWriter.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier(),
                                                with_lock=True) as writer:
             try:
                 await writer.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
