@@ -390,19 +390,24 @@ class StrategyDesignOptimizer:
         if self.process_pool_handle is not None:
             self.process_pool_handle.cancel()
 
-    async def _get_remaining_runs_count_from_db(self, optimizer_id):
-        async with databases.DBReader.database(self.database_manager.get_optimizer_runs_schedule_identifier(),
-                                               with_lock=True) as reader:
-            run_data = await self._get_run_data_from_db(optimizer_id, reader)
-        if run_data and run_data[0][self.CONFIG_RUNS]:
-            return len(run_data[0][self.CONFIG_RUNS])
-        return 0
+    async def _get_remaining_runs_count_from_multi_process_queue(self, optimizer_ids):
+        try:
+            if not isinstance(optimizer_ids, list):
+                optimizer_ids = [optimizer_ids]
+            run_queues_by_optimizer_id = multiprocessing_util.get_shared_element(self.SHARED_RUNS_QUEUES_KEY)
+            return sum(run_queues[self.START_QUEUE_KEY].qsize()
+                       for optimizer_id, run_queues in run_queues_by_optimizer_id.items()
+                       if optimizer_id in optimizer_ids or self.empty_the_queue)
+        except KeyError:
+            return 0
 
     async def get_overall_progress(self):
         if self.optimizer_id is None:
-            remaining_runs = await self._get_total_nb_runs(self.prioritized_optimizer_ids)
+            remaining_runs = await self._get_remaining_runs_count_from_multi_process_queue(
+                self.prioritized_optimizer_ids)
         else:
-            remaining_runs = await self._get_remaining_runs_count_from_db(self.optimizer_id)
+            remaining_runs = await self._get_remaining_runs_count_from_multi_process_queue(
+                self.optimizer_id)
         if self.is_computing and remaining_runs == 0:
             remaining_runs = 1
         done_runs = self.total_nb_runs - remaining_runs
