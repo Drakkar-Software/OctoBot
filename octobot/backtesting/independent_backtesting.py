@@ -24,6 +24,8 @@ import octobot_commons.errors as errors
 import octobot_commons.logging as commons_logging
 import octobot_commons.pretty_printer as pretty_printer
 import octobot_commons.symbol_util as symbol_util
+import octobot_commons.databases as databases
+import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.time_frame_manager as time_frame_manager
 
 import octobot.backtesting as backtesting
@@ -87,6 +89,7 @@ class IndependentBacktesting:
             if not self.enable_logs:
                 commons_logging.set_global_logger_level(logging.ERROR)
             await self.initialize_config()
+            await self._generate_backtesting_id_if_missing()
             self._add_crypto_currencies_config()
             await self.octobot_backtesting.initialize_and_run()
             self._post_backtesting_start()
@@ -319,6 +322,17 @@ class IndependentBacktesting:
         if self.forced_time_frames:
             self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = self.forced_time_frames
         self._add_config_default_backtesting_values()
+
+    async def _generate_backtesting_id_if_missing(self):
+        if self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] is None:
+            run_dbs_identifier = databases.RunDatabasesIdentifier(
+                trading_api.get_activated_trading_mode(self.tentacles_setup_config),
+                optimization_campaign.OptimizationCampaign.get_campaign_name(self.tentacles_setup_config)
+            )
+            run_dbs_identifier.backtesting_id = await run_dbs_identifier.generate_new_backtesting_id()
+            # initialize to lock the backtesting id
+            await run_dbs_identifier.initialize()
+            self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] = run_dbs_identifier.backtesting_id
 
     def _find_reference_market(self):
         ref_market_candidate = None
