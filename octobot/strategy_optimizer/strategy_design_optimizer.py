@@ -84,13 +84,13 @@ class StrategyDesignOptimizer:
     CONFIG_DELETE_EVERY_RUN = "delete_every_run"
     CONFIG_ROLE = "role"
 
-    def __init__(self, trading_mode, config, tentacles_setup_config, optimizer_config, data_files):
+    def __init__(self, trading_mode, config, tentacles_setup_config, optimizer_config, data_files, optimizer_id=None):
         self.config = config
         self.base_tentacles_setup_config = tentacles_setup_config
         self.trading_mode = trading_mode
         self.optimizer_config = optimizer_config
         self.data_files = data_files
-        self.optimizer_id = None
+        self.optimizer_id = optimizer_id
         self.current_backtesting_id = None
         self.runs_schedule = None
         self.logger = commons_logging.get_logger(self.__class__.__name__)
@@ -461,7 +461,8 @@ class StrategyDesignOptimizer:
 
     async def generate_and_save_run(self):
         taken_ids = await self.get_queued_optimizer_ids()
-        self.optimizer_id = await self.run_dbs_identifier.generate_new_optimizer_id(taken_ids)
+        self.optimizer_id = await self.run_dbs_identifier.generate_new_optimizer_id(taken_ids) \
+            if self.optimizer_id is None else self.optimizer_id
         self.run_dbs_identifier.optimizer_id = self.optimizer_id
         await self.run_dbs_identifier.initialize()
         return await self._generate_and_store_backtesting_runs_schedule()
@@ -823,12 +824,22 @@ class StrategyDesignOptimizer:
             self.CONFIG_ID: self.optimizer_id
         }
         self.total_nb_runs = len(runs)
-        async with databases.DBWriter.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier(),
-                                               with_lock=True) as writer:
+        async with databases.DBWriterReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier(),
+                                                     with_lock=True) as writer_reader:
             try:
-                await writer.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
+                existing_runs = await self._get_run_data_from_db(self.optimizer_id, writer_reader)
+                if existing_runs:
+                    merged_runs = tuple(existing_runs[0][self.CONFIG_RUNS].values()) + \
+                        tuple(self.runs_schedule[self.CONFIG_RUNS].values())
+                    self.runs_schedule[self.CONFIG_RUNS] = {
+                        f"{index}": details
+                        for index, details in enumerate(merged_runs)
+                    }
+                    await writer_reader.delete(self.RUN_SCHEDULE_TABLE, (await writer_reader.search()).id ==
+                                               self.optimizer_id)
+                await writer_reader.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
             except json.JSONDecodeError:
                 self.logger.error(f"Invalid data in run schedule, clearing runs.")
                 # error in database, reset it
-                await writer.hard_reset()
-                await writer.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
+                await writer_reader.hard_reset()
+                await writer_reader.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
