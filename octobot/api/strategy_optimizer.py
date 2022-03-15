@@ -37,8 +37,9 @@ async def update_strategy_optimizer_total_runs(optimizer, runs):
 
 
 async def generate_and_save_strategy_optimizer_runs(trading_mode, tentacles_setup_config,
-                                                    optimizer_config, data_files) -> list:
-    optimizer = StrategyDesignOptimizer(trading_mode, None, tentacles_setup_config, optimizer_config, data_files)
+                                                    optimizer_config, data_files, optimizer_id) -> list:
+    optimizer = StrategyDesignOptimizer(trading_mode, None, tentacles_setup_config,
+                                        optimizer_config, data_files, optimizer_id)
     return await optimizer.generate_and_save_run()
 
 
