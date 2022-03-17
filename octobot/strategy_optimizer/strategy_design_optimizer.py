@@ -71,7 +71,7 @@ class StrategyDesignOptimizer:
     CONFIG_FILTER_SETTINGS = "filters_settings"
     CONFIG_VALUE = "value"
     CONFIG_TENTACLE = "tentacle"
-    CONFIG_NESTED_TENTACLE_SEPARATOR = "_-_"
+    CONFIG_NESTED_TENTACLE_SEPARATOR = "_------_"
     CONFIG_TYPE = "type"
     CONFIG_ENABLED = "enabled"
     CONFIG_MIN = "min"
