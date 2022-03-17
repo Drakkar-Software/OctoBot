@@ -829,11 +829,19 @@ class StrategyDesignOptimizer:
             try:
                 existing_runs = await self._get_run_data_from_db(self.optimizer_id, writer_reader)
                 if existing_runs:
-                    merged_runs = tuple(existing_runs[0][self.CONFIG_RUNS].values()) + \
-                        tuple(self.runs_schedule[self.CONFIG_RUNS].values())
+                    merged_runs = {
+                        self.get_run_hash(run_data): run_data
+                        for run_data in existing_runs[0][self.CONFIG_RUNS].values()
+                        if run_data
+                    }
+                    merged_runs.update({
+                        self.get_run_hash(run_data): run_data
+                        for run_data in self.runs_schedule[self.CONFIG_RUNS].values()
+                        if run_data
+                    })
                     self.runs_schedule[self.CONFIG_RUNS] = {
                         f"{index}": details
-                        for index, details in enumerate(merged_runs)
+                        for index, details in enumerate(merged_runs.values())
                     }
                     await writer_reader.delete(self.RUN_SCHEDULE_TABLE, (await writer_reader.search()).id ==
                                                self.optimizer_id)
