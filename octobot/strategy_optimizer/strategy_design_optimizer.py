@@ -275,10 +275,12 @@ class StrategyDesignOptimizer:
         async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
                 as reader:
             run_data = await self._get_run_data_from_db(optimizer_id, reader)
-        return run_data, {
-            self.get_run_hash(run_details): run_details
-            for run_details in run_data[0][self.CONFIG_RUNS].values()
-        }
+        if run_data:
+            return run_data, {
+                self.get_run_hash(run_details): run_details
+                for run_details in run_data[0][self.CONFIG_RUNS].values()
+            }
+        raise NoMoreRunError
 
     async def _execute_optimizer_run(self, optimizer_id, run_queues, update_database,
                                      start_timestamp, end_timestamp):
@@ -287,7 +289,6 @@ class StrategyDesignOptimizer:
             await self.drop_optimizer_run_from_queue(optimizer_id)
             return
         try:
-            # TODO: fix reading time on 10k runs
             t0 = time.time()
             run_data, run_data_by_hash = await self._get_optimizer_runs_details_and_hashes(optimizer_id)
             self.logger.error(f"run_data_by_hash {time.time()-t0}")
