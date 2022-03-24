@@ -37,6 +37,7 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_commons.databases as databases
 import octobot_commons.dict_util as dict_util
+import octobot_commons.logical_operators as logical_operators
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.constants as tentacles_manager_constants
@@ -101,7 +102,6 @@ class StrategyDesignOptimizer:
 
         self.is_computing = False
         self.is_finished = False
-        self.current_run_id = 0
         self.total_nb_runs = 0
         self.prioritized_optimizer_ids = []
         self.empty_the_queue = False
@@ -140,60 +140,25 @@ class StrategyDesignOptimizer:
         optimizer_ids = optimizer_ids or [self.optimizer_id]
         self.is_computing = True
         self.is_finished = False
+        self.average_run_time = 0
+        self.active_processes_count = multiprocessing.cpu_count() - abs(required_idle_cores)
+        self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
         global_t0 = time.time()
         lock = multiprocessing.RLock()
         shared_keep_running = multiprocessing.Value(ctypes.c_bool, True)
-        self.average_run_time = 0
-        self.active_processes_count = multiprocessing.cpu_count() - abs(required_idle_cores)
         shared_run_time = multiprocessing.Array(ctypes.c_float, [0.0 for _ in range(self.active_processes_count)])
-        self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
         try:
             async for selected_optimizer_ids in self._all_optimizer_ids(optimizer_ids, empty_the_queue):
                 run_queues_by_optimizer_id = {
                     optimizer_id: await self._create_run_queues(optimizer_id)
                     for optimizer_id in selected_optimizer_ids
                 }
-                self.current_run_id = 1
                 try:
-                    with multiprocessing_util.registered_lock_and_shared_elements(
-                            commons_enums.MultiprocessingLocks.DBLock.value,
-                            lock,
-                            {
-                                self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
-                                self.SHARED_RUN_TIMES_KEY: shared_run_time,
-                                self.SHARED_RUNS_QUEUES_KEY: run_queues_by_optimizer_id,
-                            }),\
-                         concurrent.futures.ProcessPoolExecutor(
-                            initializer=multiprocessing_util.register_lock_and_shared_elements,
-                            initargs=(commons_enums.MultiprocessingLocks.DBLock.value,
-                                      lock,
-                                      {
-                                          self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
-                                          self.SHARED_RUN_TIMES_KEY: shared_run_time,
-                                          self.SHARED_RUNS_QUEUES_KEY: run_queues_by_optimizer_id,
-                                      })) as pool:
-                        coros = []
-                        self.logger.info(f"Dispatching optimizer backtesting runs into {self.active_processes_count} "
-                                         f"parallel processes (based on the current computer physical processors).")
-                        if self.active_processes_count < 1:
-                            idle_cores_message = f"Requiring to leave {required_idle_cores} idle core. " \
-                                if required_idle_cores else ""
-                            raise RuntimeError(f"{idle_cores_message}At lease one core is required to "
-                                               f"start a strategy optimizer. "
-                                               f"There are {pool._max_workers} total available cores on this computer.")
-                        for index in range(self.active_processes_count):
-                            coros.append(
-                                    asyncio.get_event_loop().run_in_executor(
-                                        pool,
-                                        self.find_optimal_configuration_wrapper,
-                                        index == 0,
-                                        start_timestamp,
-                                        end_timestamp
-                                    )
-                                )
-                        self.process_pool_handle = await asyncio.gather(*coros)
+                    await self._run_multi_processed_optimizer(
+                        lock, required_idle_cores,
+                        shared_keep_running, shared_run_time, run_queues_by_optimizer_id,
+                        start_timestamp, end_timestamp)
                 finally:
-                    t0 = time.time()
                     # properly empty and close queues to avoid underlying thread issues
                     for optimizer_id, run_queues in run_queues_by_optimizer_id.items():
                         try:
@@ -206,7 +171,6 @@ class StrategyDesignOptimizer:
                                 run_queue.get()
                             run_queue.close()
                             run_queue.cancel_join_thread()
-                    self.logger.info(f"close done in {time.time()-t0}s")
         except Exception as e:
             self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
         finally:
@@ -219,6 +183,48 @@ class StrategyDesignOptimizer:
             self.is_computing = False
             self.is_finished = True
         self.logger.info(f"Optimizer runs complete in {time.time() - global_t0} seconds.")
+
+    async def _run_multi_processed_optimizer(self, lock, required_idle_cores,
+                                             shared_keep_running, shared_run_time, run_queues_by_optimizer_id,
+                                             start_timestamp, end_timestamp):
+        with multiprocessing_util.registered_lock_and_shared_elements(
+                commons_enums.MultiprocessingLocks.DBLock.value,
+                lock,
+                {
+                    self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
+                    self.SHARED_RUN_TIMES_KEY: shared_run_time,
+                    self.SHARED_RUNS_QUEUES_KEY: run_queues_by_optimizer_id,
+                }), \
+                concurrent.futures.ProcessPoolExecutor(
+                    max_workers=self.active_processes_count,
+                    initializer=multiprocessing_util.register_lock_and_shared_elements,
+                    initargs=(commons_enums.MultiprocessingLocks.DBLock.value,
+                              lock,
+                              {
+                                  self.SHARED_KEEP_RUNNING_KEY: shared_keep_running,
+                                  self.SHARED_RUN_TIMES_KEY: shared_run_time,
+                                  self.SHARED_RUNS_QUEUES_KEY: run_queues_by_optimizer_id,
+                              })) as pool:
+            coros = []
+            self.logger.info(f"Dispatching optimizer backtesting runs into {self.active_processes_count} "
+                             f"parallel processes (based on the current computer physical processors).")
+            if self.active_processes_count < 1:
+                idle_cores_message = f"Requiring to leave {required_idle_cores} idle core. " \
+                    if required_idle_cores else ""
+                raise RuntimeError(f"{idle_cores_message}At lease one core is required to "
+                                   f"start a strategy optimizer. "
+                                   f"There are {multiprocessing.cpu_count()} total available cores on this computer.")
+            for index in range(self.active_processes_count):
+                coros.append(
+                    asyncio.get_event_loop().run_in_executor(
+                        pool,
+                        self.find_optimal_configuration_wrapper,
+                        index == 0,
+                        start_timestamp,
+                        end_timestamp
+                    )
+                )
+            self.process_pool_handle = await asyncio.gather(*coros)
 
     async def _all_optimizer_ids(self, prioritized_ids, empty_the_queue):
         if prioritized_ids:
@@ -289,9 +295,7 @@ class StrategyDesignOptimizer:
             await self.drop_optimizer_run_from_queue(optimizer_id)
             return
         try:
-            t0 = time.time()
             run_data, run_data_by_hash = await self._get_optimizer_runs_details_and_hashes(optimizer_id)
-            self.logger.error(f"run_data_by_hash {time.time()-t0}")
             t_start = time.time()
             last_db_update_time = t_start
             while self._should_keep_running():
@@ -305,10 +309,7 @@ class StrategyDesignOptimizer:
                     self.first_iteration_time = time.time() - t_start
                     self._register_run_time(self.first_iteration_time)
                 if update_database and time.time() - last_db_update_time > self.DB_UPDATE_PERIOD:
-                    self.logger.error("updating queue")
-                    t0 = time.time()
                     await self._update_runs_from_done_queue(run_queues, optimizer_id)
-                    self.logger.error(f"updated in {time.time()-t0}")
                     last_db_update_time = time.time()
             if update_database:
                 # stopped run: update queue
@@ -553,10 +554,9 @@ class StrategyDesignOptimizer:
                 # wait for a very short  time to allow queue sync between processes
                 selected_run_hash = run_queue.get(timeout=1)
             run_details = run_details_by_hash.pop(selected_run_hash, None)
-            self.logger.error(f"Selecting: {run_details}")
+            self.logger.info(f"Selecting: {run_details}")
             return selected_run_hash, run_details
         except queue.Empty:
-            self.logger.error(f"No more run (get timeout)")
             raise NoMoreRunError("Nothing to run")
         except Exception as e:
             self.logger.exception(e)
@@ -582,13 +582,11 @@ class StrategyDesignOptimizer:
                 self.trading_mode, self.optimization_campaign_name,
                 optimizer_id=optimizer_id, backtesting_id=backtesting_run_id
             )
-            self.logger.error(f"Waiting to gen backtesting id")
             # acquire MultiprocessingLocks.DBLock to avoid conflicts during multi processing runs
             with multiprocessing_util.get_lock(commons_enums.MultiprocessingLocks.DBLock.value):
                 backtesting_run_id = await run_dbs_identifier.generate_new_backtesting_id()
                 run_dbs_identifier.backtesting_id = backtesting_run_id
                 await run_dbs_identifier.initialize()
-            self.logger.error(f"Using backtesting id: {backtesting_run_id}")
             start_run = True
         if start_run:
             try:
@@ -596,7 +594,6 @@ class StrategyDesignOptimizer:
                                                          start_timestamp=start_timestamp, end_timestamp=end_timestamp)
                 return run_result
             finally:
-                self.logger.error(f"Run done for backtesting id: {backtesting_run_id}")
                 if selected_run_hash is not None:
                     run_queues[self.DONE_QUEUE_KEY].put(selected_run_hash)
         raise NoMoreRunError("Nothing to run")
