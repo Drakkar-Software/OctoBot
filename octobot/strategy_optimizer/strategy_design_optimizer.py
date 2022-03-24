@@ -721,20 +721,7 @@ class StrategyDesignOptimizer:
             right_operand = decimal.Decimal(right_operand)
         except decimal.InvalidOperation:
             right_operand = str(right_operand)
-
-        if operator == "lower_than":
-            return left_operand < right_operand
-        if operator == "higher_than":
-            return left_operand > right_operand
-        if operator == "lower_or_equal_to":
-            return left_operand <= right_operand
-        if operator == "higher_or_equal_to":
-            return left_operand >= right_operand
-        if operator == "equal_to":
-            return left_operand == right_operand
-        if operator == "different_from":
-            return left_operand != right_operand
-        raise RuntimeError(f"Unknown operator: {operator}")
+        return logical_operators.evaluate_condition(left_operand, right_operand, operator)
 
     def _parse_filter_entry(self, run, run_filter_config):
         user_input_left_operand_key = run_filter_config["user_input_left_operand"][self.CONFIG_VALUE]
