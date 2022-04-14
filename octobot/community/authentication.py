@@ -22,6 +22,7 @@ import aiohttp
 
 import octobot.constants as constants
 import octobot.community.community_supports as community_supports
+import octobot.community.community_feed as community_feed
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
 
@@ -36,9 +37,10 @@ class CommunityAuthentication(authentication.Authenticator):
     REFRESH_TOKEN = "refresh_token"
     GRANT_TYPE = "grant_type"
 
-    def __init__(self, authentication_url, username=None, password=None, config=None):
+    def __init__(self, authentication_url, feed_url, username=None, password=None, config=None):
         super().__init__()
         self.authentication_url = authentication_url
+        self.feed_url = feed_url
         self.refresh_token = None
         self.edited_config = config
         self.identifier = None
@@ -49,7 +51,9 @@ class CommunityAuthentication(authentication.Authenticator):
         self._session = requests.Session()
         self._aiohttp_session = None
         self._cache = {}
+        self.initialized_event = None
         self._fetch_supports_task = None
+        self._community_feed = None
 
         if username and password:
             self.login(username, password)
@@ -70,6 +74,22 @@ class CommunityAuthentication(authentication.Authenticator):
     def init_supports(self):
         self.initialized_event = asyncio.Event()
         self._fetch_supports_task = asyncio.create_task(self._auth_and_fetch_supports())
+
+    async def _ensure_init_community_feed(self):
+        if self._community_feed is None:
+            self._community_feed = community_feed.CommunityFeed(self.feed_url, self)
+            await self._community_feed.start()
+
+    async def register_feed_callback(self, channel_type, callback, identifier=None):
+        await self._ensure_init_community_feed()
+        await self._community_feed.register_feed_callback(channel_type, callback, identifier=identifier)
+
+    async def send(self, message, channel_type, identifier=None):
+        """
+        Sends a signal
+        """
+        await self._ensure_init_community_feed()
+        await self._community_feed.send(message, channel_type, identifier)
 
     def can_authenticate(self):
         return "todo" not in self.authentication_url

@@ -55,21 +55,21 @@ class MockedResponse:
 def logged_in_auth():
     with mock.patch.object(requests, "post", mock.Mock(return_value=MockedResponse(json=AUTH_RETURN))), \
             mock.patch.object(community.CommunityAuthentication, "update_supports", mock.Mock()):
-        auth = community.CommunityAuthentication(AUTH_URL)
+        auth = community.CommunityAuthentication(AUTH_URL, None)
         auth.login("username", "login")
         return auth
 
 
 @pytest.fixture
 def auth():
-    return community.CommunityAuthentication(AUTH_URL)
+    return community.CommunityAuthentication(AUTH_URL, None)
 
 
 def test_constructor():
     with mock.patch.object(community.CommunityAuthentication, "login", mock.Mock()) as login_mock:
-        community.CommunityAuthentication(AUTH_URL)
+        community.CommunityAuthentication(AUTH_URL, None)
         login_mock.assert_not_called()
-        auth = community.CommunityAuthentication(AUTH_URL, "username", "password")
+        auth = community.CommunityAuthentication(AUTH_URL, None, "username", "password")
         login_mock.assert_called_with("username", "password")
         assert not auth.supports.is_supporting()
         assert auth.initialized_event is None
@@ -320,21 +320,21 @@ def test_is_logged_in(auth):
 
 def test_ensure_token_validity():
     with pytest.raises(authentication.AuthenticationRequired):
-        community.CommunityAuthentication(AUTH_URL).ensure_token_validity()
+        community.CommunityAuthentication(AUTH_URL, None).ensure_token_validity()
     with pytest.raises(authentication.AuthenticationRequired):
-        auth = community.CommunityAuthentication(AUTH_URL)
+        auth = community.CommunityAuthentication(AUTH_URL, None)
         auth._auth_token = "1"
         auth.refresh_token = "1"
         auth._expire_at = None
-        community.CommunityAuthentication(AUTH_URL).ensure_token_validity()
+        community.CommunityAuthentication(AUTH_URL, None).ensure_token_validity()
     with pytest.raises(authentication.AuthenticationRequired):
-        auth = community.CommunityAuthentication(AUTH_URL)
+        auth = community.CommunityAuthentication(AUTH_URL, None)
         auth._auth_token = "1"
         auth.refresh_token = "1"
         auth._expire_at = "1"
         auth._reset_tokens()
-        community.CommunityAuthentication(AUTH_URL).ensure_token_validity()
-    auth = community.CommunityAuthentication(AUTH_URL)
+        community.CommunityAuthentication(AUTH_URL, None).ensure_token_validity()
+    auth = community.CommunityAuthentication(AUTH_URL, None)
     with mock.patch.object(auth, "is_logged_in", mock.Mock(return_value=False)) as is_logged_in_mock, \
          mock.patch.object(auth, "_try_auto_login", mock.Mock()) as _try_auto_login_mock:
         with pytest.raises(authentication.AuthenticationRequired):
@@ -345,7 +345,7 @@ def test_ensure_token_validity():
         with pytest.raises(authentication.AuthenticationRequired):
             auth.ensure_token_validity()
         _try_auto_login_mock.assert_called_once()
-    auth = community.CommunityAuthentication(AUTH_URL)
+    auth = community.CommunityAuthentication(AUTH_URL, None)
     auth._auth_token = "1"
     auth.refresh_token = "1"
     # refresh required
