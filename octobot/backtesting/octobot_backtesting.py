@@ -93,6 +93,8 @@ class OctoBotBacktesting:
             except KeyError:
                 # exchange managers are not added in global exchange list when an exception occurred
                 pass
+            # close run databases
+            await trading_api.close_bot_storage(self.bot_id)
             for evaluators in self.evaluators:
                 # evaluators by type
                 for evaluator in evaluators:
