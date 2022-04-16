@@ -66,8 +66,8 @@ class OctoBot:
         # community if enabled
         self.community_handler = None
 
-        # community authentication
-        self.community_auth = community_manager.CommunityAuthentication(
+        # initialize community authentication
+        self.community_auth = community_manager.CommunityAuthentication.instance(
             constants.OCTOBOT_COMMUNITY_AUTH_URL,
             constants.OCTOBOT_COMMUNITY_FEED_URL,
             config=self.get_edited_config(constants.CONFIG_KEY, dict_only=False),
