@@ -69,7 +69,7 @@ def _build_message(value):
     }
 
 
-async def echo_or_signal_reply_handler(websocket, path):
+async def echo_or_signal_reply_handler(websocket, _):
     async for message in websocket:
         parsed_message = json.loads(message)
         if parsed_message.get("command") == "subscribe":
@@ -90,6 +90,8 @@ async def community_echo_server():
 async def authenticator():
     auth = community.CommunityAuthentication(None, None)
     auth._auth_token = TOKEN
+    auth.refresh_token = TOKEN
+    auth._expire_at = 11
     return auth
 
 

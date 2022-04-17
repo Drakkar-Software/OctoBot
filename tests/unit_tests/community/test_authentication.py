@@ -131,12 +131,12 @@ async def test_refresh_session(auth):
         community.CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {auth._auth_token}",
         community.CommunityAuthentication.IDENTIFIER_HEADER: auth.identifier
     }
-    with mock.patch.object(community.CommunityAuthentication, "_get_headers", mock.Mock(return_value=headers_mock)) \
-         as _get_headers_mock:
+    with mock.patch.object(community.CommunityAuthentication, "get_headers", mock.Mock(return_value=headers_mock)) \
+         as get_headers_mock:
         auth._session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] = "3"
         assert community.CommunityAuthentication.AUTHORIZATION_HEADER not in auth._session.headers
         auth._refresh_session()
-        _get_headers_mock.assert_called_once()
+        get_headers_mock.assert_called_once()
         assert auth._session.headers[community.CommunityAuthentication.AUTHORIZATION_HEADER] == \
                f"Bearer {auth._auth_token}"
         assert auth._session.headers[community.CommunityAuthentication.IDENTIFIER_HEADER] == "4"
@@ -152,20 +152,20 @@ async def test_refresh_session(auth):
 @pytest.mark.asyncio
 async def test_update_aiohttp_session_headers(auth):
     auth._aiohttp_session = mock.Mock()
-    with mock.patch.object(community.CommunityAuthentication, "_get_headers", mock.Mock(return_value={})) \
-         as _get_headers_mock:
+    with mock.patch.object(community.CommunityAuthentication, "get_headers", mock.Mock(return_value={})) \
+         as get_headers_mock:
         auth._update_aiohttp_session_headers()
-        _get_headers_mock.assert_called_once()
+        get_headers_mock.assert_called_once()
         auth._aiohttp_session.headers.update.assert_called_once_with({})
 
 
 @pytest.mark.asyncio
 async def test_get_headers(auth):
     auth._auth_token = "1"
-    assert auth._get_headers() == {community.CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {auth._auth_token}"}
+    assert auth.get_headers() == {community.CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {auth._auth_token}"}
     auth._auth_token = "2"
     auth.identifier = "2"
-    assert auth._get_headers() == {
+    assert auth.get_headers() == {
         community.CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {auth._auth_token}",
         community.CommunityAuthentication.IDENTIFIER_HEADER: auth.identifier
     }
