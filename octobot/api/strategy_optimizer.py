@@ -22,8 +22,8 @@ def create_strategy_optimizer(config, tentacles_setup_config, strategy_name) -> 
 
 
 def create_design_strategy_optimizer(trading_mode, config=None, tentacles_setup_config=None,
-                                     optimizer_config=None, data_files=None) -> StrategyDesignOptimizer:
-    return StrategyDesignOptimizer(trading_mode, config, tentacles_setup_config, optimizer_config, data_files)
+                                     optimizer_config=None) -> StrategyDesignOptimizer:
+    return StrategyDesignOptimizer(trading_mode, config, tentacles_setup_config, optimizer_config)
 
 
 async def initialize_design_strategy_optimizer(strategy_optimizer, is_resuming, is_computing=False):
@@ -37,17 +37,17 @@ async def update_strategy_optimizer_total_runs(optimizer, runs):
 
 
 async def generate_and_save_strategy_optimizer_runs(trading_mode, tentacles_setup_config,
-                                                    optimizer_config, data_files, optimizer_id) -> list:
+                                                    optimizer_config, optimizer_id) -> list:
     optimizer = StrategyDesignOptimizer(trading_mode, None, tentacles_setup_config,
-                                        optimizer_config, data_files, optimizer_id)
+                                        optimizer_config, optimizer_id)
     return await optimizer.generate_and_save_run()
 
 
-async def resume_design_strategy_optimizer(optimizer, randomly_chose_runs, start_timestamp, end_timestamp,
+async def resume_design_strategy_optimizer(optimizer, data_files, randomly_chose_runs, start_timestamp, end_timestamp,
                                            required_idle_cores, notify_when_complete=False, optimizer_ids=None):
     empty_the_queue = optimizer_ids is None  # continue till the queue is empty if no optimizer id is specified
     optimizer_ids = optimizer_ids or await optimizer.get_queued_optimizer_ids()
-    return await optimizer.resume(optimizer_ids, randomly_chose_runs,
+    return await optimizer.resume(data_files, optimizer_ids, randomly_chose_runs,
                                   start_timestamp=start_timestamp,
                                   end_timestamp=end_timestamp,
                                   empty_the_queue=empty_the_queue,
@@ -57,16 +57,6 @@ async def resume_design_strategy_optimizer(optimizer, randomly_chose_runs, start
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
     strategy_optimizer.find_optimal_configuration(TAs=TAs, time_frames=time_frames, risks=risks)
-
-
-async def start_design_strategy_optimizer(strategy_optimizer, randomly_chose_runs,
-                                          start_timestamp, end_timestamp,
-                                          required_idle_cores, notify_when_complete):
-    await strategy_optimizer.multi_processed_optimize(randomly_chose_runs=randomly_chose_runs,
-                                                      start_timestamp=start_timestamp,
-                                                      end_timestamp=end_timestamp,
-                                                      required_idle_cores=required_idle_cores,
-                                                      notify_when_complete=notify_when_complete)
 
 
 def cancel_strategy_optimizer(strategy_optimizer):
