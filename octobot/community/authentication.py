@@ -86,7 +86,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def send(self, message, channel_type, identifier=None):
         """
-        Sends a signal
+        Sends a message
         """
         await self._ensure_init_community_feed()
         await self._community_feed.send(message, channel_type, identifier)
@@ -264,15 +264,15 @@ class CommunityAuthentication(authentication.Authenticator):
             raise authentication.AuthenticationError(f"Error code: {status_code}")
 
     def _refresh_session(self):
-        self._session.headers.update(self._get_headers())
+        self._session.headers.update(self.get_headers())
 
         if self._aiohttp_session is not None:
             self._update_aiohttp_session_headers()
 
     def _update_aiohttp_session_headers(self):
-        self._aiohttp_session.headers.update(self._get_headers())
+        self._aiohttp_session.headers.update(self.get_headers())
 
-    def _get_headers(self):
+    def get_headers(self):
         headers = {
             CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {self._auth_token}"
         }

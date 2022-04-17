@@ -57,14 +57,16 @@ class CommunityFeed:
     async def start(self):
         await self._ensure_connection()
         if self.consumer_task is None or self.consumer_task.done():
-            self.consumer_task = asyncio.create_task(self.start_consumer("default_path"))
+            self.consumer_task = asyncio.create_task(self.start_consumer())
 
     async def stop(self):
         self.should_stop = True
-        await self.websocket_connection.close()
-        self.consumer_task.cancel()
+        if self.websocket_connection is not None:
+            await self.websocket_connection.close()
+        if self.consumer_task is not None:
+            self.consumer_task.cancel()
 
-    async def start_consumer(self, path):
+    async def start_consumer(self):
         while not self.should_stop:
             await self._ensure_connection()
             async for message in self.websocket_connection:
@@ -137,8 +139,7 @@ class CommunityFeed:
         # end TMP
         async with self.authenticator.get_aiohttp_session().get(constants.OCTOBOT_COMMUNITY_FETCH_FEED_IDENTIFIER_URL,
                                                                 params=params) as resp:
-            stream_id = await resp.json()
-            return stream_id
+            return await resp.json()
 
     def _get_callbacks(self, parsed_message):
         channel_type = self._get_channel_type(parsed_message)
@@ -199,11 +200,11 @@ class CommunityFeed:
     async def _connect(self):
         if self.authenticator.initialized_event is not None:
             await asyncio.wait_for(self.authenticator.initialized_event.wait(), self.INIT_TIMEOUT)
-        if self.authenticator._auth_token is None:
+        if not self.authenticator.is_logged_in():
             raise authentication.AuthenticationRequired("OctoBot Community authentication is required to "
                                                         "use community trading signals")
-        headers = {"Authorization": f"Bearer {self.authenticator._auth_token}"}
-        self.websocket_connection = await websockets.connect(self.feed_url, extra_headers=headers)
+        self.websocket_connection = await websockets.connect(self.feed_url,
+                                                             extra_headers=self.authenticator.get_headers())
         await self._subscribe()
         self.logger.info("Connected to community feed")
 
