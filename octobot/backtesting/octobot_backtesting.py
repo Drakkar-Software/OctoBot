@@ -214,6 +214,7 @@ class OctoBotBacktesting:
                                                                         data_files=self.backtesting_files)
         # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
         # initialize
+        trading_api.init_bot_storage(self.bot_id, self.backtesting_config, self.tentacles_setup_config)
         await backtesting_api.adapt_backtesting_channels(self.backtesting,
                                                          self.backtesting_config,
                                                          importers.ExchangeDataImporter,

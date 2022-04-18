@@ -24,3 +24,5 @@ cdef class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
     cdef bint ignore_config
 
     cdef public list exchange_manager_ids
+
+    cdef object _init_bot_storage(self) # return object to propagate exceptions
