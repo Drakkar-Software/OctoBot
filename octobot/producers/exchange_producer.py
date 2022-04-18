@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot_commons.enums as common_enums
 import octobot_commons.constants as common_constants
+import octobot_commons.errors as common_errors
 
 import octobot_trading.api as trading_api
 import octobot_trading.octobot_channel_consumer as trading_channel_consumer
@@ -32,6 +33,7 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
         self.exchange_manager_ids = []
 
     async def start(self):
+        self._init_bot_storage()
         for exchange_name in self.octobot.config[common_constants.CONFIG_EXCHANGES]:
             if self.octobot.config[common_constants.CONFIG_EXCHANGES][exchange_name].get(
                     common_constants.CONFIG_ENABLED_OPTION, True):
@@ -55,3 +57,9 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
                                 self.octobot.config,
                             trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_NAME.value: exchange_name,
                         })
+
+    def _init_bot_storage(self):
+        try:
+            trading_api.init_bot_storage(self.octobot.bot_id, self.octobot.config, self.octobot.tentacles_setup_config)
+        except common_errors.ConfigTradingError as e:
+            self.logger.info(f"Skipping bot storage creation: {e}")
