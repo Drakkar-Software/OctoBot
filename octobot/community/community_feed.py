@@ -40,6 +40,7 @@ class CHANNELS(enum.Enum):
 
 class CommunityFeed:
     INIT_TIMEOUT = 60
+    RECONNECT_DELAY = 15
 
     def __init__(self, feed_url, authenticator):
         self.logger: bot_logging.BotLogger = bot_logging.get_logger(
@@ -68,12 +69,18 @@ class CommunityFeed:
 
     async def start_consumer(self):
         while not self.should_stop:
-            await self._ensure_connection()
-            async for message in self.websocket_connection:
-                try:
-                    await self.consume(message)
-                except Exception as e:
-                    self.logger.exception(e, True, f"Error while consuming feed: {e}")
+            try:
+                await self._ensure_connection()
+                async for message in self.websocket_connection:
+                    try:
+                        await self.consume(message)
+                    except Exception as e:
+                        self.logger.exception(e, True, f"Error while consuming feed: {e}")
+            except (websockets.ConnectionClosedError, ConnectionRefusedError):
+                self.logger.warning(f"Disconnected from community, retrying to connect in {self.RECONNECT_DELAY}s")
+                await asyncio.sleep(self.RECONNECT_DELAY)
+            except Exception as e:
+                self.logger.exception(e, True, f"Unexpected exception when receiving community feed: {e}")
 
     async def consume(self, message):
         if message.startswith('{"type":"ping"'):
