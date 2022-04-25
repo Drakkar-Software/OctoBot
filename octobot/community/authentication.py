@@ -62,7 +62,10 @@ class CommunityAuthentication(authentication.Authenticator):
         return self.get(constants.OCTOBOT_COMMUNITY_ACCOUNT_URL).json()["data"]["attributes"]["email"]
 
     def get_packages(self):
-        return self.get(constants.OCTOBOT_COMMUNITY_PACKAGES_URL).json()["data"]
+        try:
+            return self.get(constants.OCTOBOT_COMMUNITY_PACKAGES_URL).json()["data"]
+        except json.JSONDecodeError:
+            return []
 
     def update_supports(self):
         resp = self.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL)
