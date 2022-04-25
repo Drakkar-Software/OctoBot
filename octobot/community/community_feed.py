@@ -76,6 +76,10 @@ class CommunityFeed:
                     self.logger.exception(e, True, f"Error while consuming feed: {e}")
 
     async def consume(self, message):
+        if message.startswith('{"type":"ping"'):
+            # nothing to do
+            # TODO figure out if we need to reply something (pong ?) websockets seems to send it by itself
+            return
         parsed_message = json.loads(message)["message"]
         try:
             self._ensure_supported(parsed_message)
@@ -95,6 +99,8 @@ class CommunityFeed:
                    command=COMMANDS.MESSAGE.value, reconnect_if_necessary=True):
         if reconnect_if_necessary:
             await self._ensure_connection()
+        if identifier is not None:
+            await self._ensure_stream_identifier(identifier)
         await self.websocket_connection.send(self._build_ws_message(message, channel_type, command, identifier))
 
     def _build_ws_message(self, message, channel_type, command, identifier):
@@ -106,18 +112,19 @@ class CommunityFeed:
 
     def _build_data(self, channel_type, identifier, message):
         if message:
-            return {
+            return json.dumps({
                 "topic": channel_type,
                 "feed_id": self._build_stream_id(identifier),
                 "version": constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION,
-                "value": message,
-            }
+                "value": json.dumps(message),
+            })
         return {}
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
         """
         Registers a feed callback
         """
+        await self._ensure_stream_identifier(identifier)
         if identifier not in list(self._identifier_by_stream_id.values()):
             stream_id = await self._fetch_stream_identifier(identifier)
             self._identifier_by_stream_id[stream_id] = identifier
@@ -127,6 +134,11 @@ class CommunityFeed:
             if channel_type not in self.feed_callbacks:
                 self.feed_callbacks[channel_type] = {}
             self.feed_callbacks[channel_type][identifier] = [callback]
+
+    async def _ensure_stream_identifier(self, identifier):
+        if identifier not in list(self._identifier_by_stream_id.values()):
+            stream_id = await self._fetch_stream_identifier(identifier)
+            self._identifier_by_stream_id[stream_id] = identifier
 
     async def _fetch_stream_identifier(self, identifier):
         if identifier is None:
@@ -164,14 +176,14 @@ class CommunityFeed:
         return self._identifier_by_stream_id[message[commons_enums.CommunityFeedAttrs.STREAM_ID.value]]
 
     def _build_channel_identifier(self):
-        return {
+        return json.dumps({
             "channel": CHANNELS.MESSAGE.value
-        }
+        })
 
     def _build_stream_id(self, requested_identifier):
         for stream_id, identifier in self._identifier_by_stream_id.items():
             if requested_identifier == identifier:
-                return identifier
+                return stream_id
         return None
 
     async def _subscribe(self):
