@@ -151,7 +151,7 @@ class CommunityFeed:
         if identifier is None:
             return None
         params = {
-            "slug": identifier
+            "identifier": identifier
         }
         # TMP as long as endpoint is not available
         return 1
