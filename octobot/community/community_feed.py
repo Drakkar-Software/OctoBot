@@ -150,15 +150,9 @@ class CommunityFeed:
     async def _fetch_stream_identifier(self, identifier):
         if identifier is None:
             return None
-        params = {
-            "identifier": identifier
-        }
-        # TMP as long as endpoint is not available
-        return 1
-        # end TMP
-        async with self.authenticator.get_aiohttp_session().get(constants.OCTOBOT_COMMUNITY_FETCH_FEED_IDENTIFIER_URL,
-                                                                params=params) as resp:
-            return await resp.json()
+        async with self.authenticator.get_aiohttp_session().get(
+                f"{constants.OCTOBOT_COMMUNITY_FETCH_FEED_IDENTIFIER_URL}/{identifier}") as resp:
+            return (await resp.json())["feed_id"]
 
     def _get_callbacks(self, parsed_message):
         channel_type = self._get_channel_type(parsed_message)
