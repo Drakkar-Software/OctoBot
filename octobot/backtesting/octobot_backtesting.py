@@ -31,6 +31,9 @@ import octobot_trading.exchanges as exchanges
 import octobot_trading.exchange_data as exchange_data
 import octobot_trading.api as trading_api
 
+import octobot_commons.databases as databases
+import octobot_commons.constants as commons_constants
+
 import octobot.logger as logger
 
 
@@ -95,12 +98,15 @@ class OctoBotBacktesting:
                 pass
             # close run databases
             await trading_api.close_bot_storage(self.bot_id)
+            # stop evaluators
             for evaluators in self.evaluators:
                 # evaluators by type
                 for evaluator in evaluators:
                     # evaluator instance
                     if evaluator is not None:
                         await evaluator_api.stop_evaluator(evaluator)
+            # close all caches (if caches have to be used later on, they can always be re-opened)
+            await databases.CacheManager().close_cache(commons_constants.UNPROVIDED_CACHE_IDENTIFIER)
             try:
                 await evaluator_api.stop_all_evaluator_channels(self.matrix_id)
             except KeyError:
