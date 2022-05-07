@@ -176,6 +176,7 @@ class StrategyDesignOptimizer:
             if notify_when_complete:
                 await services_api.send_notification(
                     services_api.create_notification(f"Your strategy optimizer just finished.",
+                                                     sound=services_enums.NotificationSound.FINISHED_PROCESSING,
                                                      category=services_enums.NotificationCategory.OTHER)
                 )
             self.process_pool_handle = None
