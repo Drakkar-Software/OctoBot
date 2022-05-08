@@ -1,18 +1,18 @@
-# OctoBot [0.4.3](https://github.com/Drakkar-Software/OctoBot/tree/dev/CHANGELOG.md)
-[![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://pypi.python.org/pypi/OctoBot/)
+# OctoBot [0.4.3](https://octobot.click/changelog)
+[![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://octobot.click/pypi)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
-[![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://hub.docker.com/r/drakkarsoftware/octobot)
+[![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://octobot.click/dockerhub)
 [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/OctoBot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev)
 [![OctoBot-CI](https://github.com/Drakkar-Software/OctoBot/workflows/OctoBot-CI/badge.svg)](https://github.com/Drakkar-Software/OctoBot/actions)
 [![Build Status](https://cloud.drone.io/api/badges/Drakkar-Software/OctoBot/status.svg)](https://cloud.drone.io/Drakkar-Software/OctoBot)
-[![UptimeRobot](https://img.shields.io/uptimerobot/ratio/30/m786447893-903b482e5158c8b6483760e8)](https://status.octobot.online/)
+[![UptimeRobot](https://img.shields.io/uptimerobot/ratio/30/m786447893-903b482e5158c8b6483760e8)](https://octobot.click/status)
 
 #### Octobot Community
 [![Active OctoBot](https://img.shields.io/badge/dynamic/json.svg?&url=https://octobotmetrics.herokuapp.com/metrics/community/count/0/-1/0&query=$.total&color=green&label=OctoBots%20online%20this%20month)]()
-[![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg)](https://t.me/joinchat/F9cyfxV97ZOaXQ47H5dRWw)
-[![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord)](https://discord.gg/vHkcb8W)
+[![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg)](https://octobot.click/telegram)
+[![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord)](https://octobot.click/discord)
 [![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg)](https://t.me/OctoBot_Project)
-[![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=Follow&style=social)](https://twitter.com/DrakkarsOctobot)
+[![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=Follow&style=social)](https://octobot.click/twitter)
 <p align="center">
 <img src="../assets/octopus.svg" alt="Octobot Logo" height="400" width="400">
 </p>
@@ -28,11 +28,11 @@ This repository contains all the features of the bot (trading tools, evaluation 
 
 To install OctoBot with its tentacles, just use the [latest release for your system](https://github.com/Drakkar-Software/OctoBot/releases/latest) and your OctoBot is ready ! 
 
-Find the answers to the most common questions in [our FAQ](https://octobot.info/usage/frequently-asked-questions-faq).
+Find the answers to the most common questions in [our FAQ](https://www.octobot.info/usage/frequently-asked-questions-faq).
 
 ## Your Octobot
 <a href="https://www.octobot.online/guides/#telegram"><img src="../assets/telegram-interface.png" height="414" alt="Telegram interface"></a>
-[![Twitter Interface](../assets/twitter-interface.png)](https://octobot.info/interfaces/twitter-interface)
+[![Twitter Interface](../assets/twitter-interface.png)](https://www.octobot.info/interfaces/twitter-interface)
 
 OctoBot is highly customizable using its configuration and tentacles system. 
 You can build your own bot using the infinite [configuration](https://www.octobot.online/guides/#trading_modes) possibilities such as 
@@ -41,7 +41,7 @@ You can build your own bot using the infinite [configuration](https://www.octobo
 OctoBot is **AI ready**: Python being the main language for OctoBot, it's easy to integrate machine-learning libraries such as [Tensorflow](https://github.com/tensorflow/tensorflow) or
 any other lib and take advantage of all the available data and create a very powerful trading strategy. 
 
-Octobot's main feature is **evolution** : you can [install](https://octobot.info/advanced_usage/tentacle-manager), 
+Octobot's main feature is **evolution** : you can [install](https://www.octobot.info/advanced_usage/tentacle-manager), 
 [modify](https://developer.octobot.info/guides/customize-your-octobot) and even [create](https://developer.octobot.info/guides/developer-guide) any tentacle you want to build your ideal cryptocurrency trading robot. You can even share your OctoBot evolutions!
 
 ## Hardware requirements
@@ -52,13 +52,13 @@ Octobot's main feature is **evolution** : you can [install](https://octobot.info
 ## Installation
 OctoBot's installation is **very simple**... because **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
 
-#### [With executable](https://octobot.info/installation/with-binary)
+#### [With executable](https://www.octobot.info/installation/with-binary)
 Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
 
 In short:
 - Use the latest release on the [release page](https://github.com/Drakkar-Software/OctoBot/releases/latest)
 
-#### [With Docker](https://octobot.info/installation/with-docker)
+#### [With Docker](https://www.octobot.info/installation/with-docker)
 Follow the [docker installation guide](https://www.octobot.online/docker_installation/) 
 
 In short :
@@ -73,7 +73,7 @@ docker-compose up -d
 ```
 And then open [https://octobot.localhost](https://octobot.localhost).
 
-#### [With pip](https://octobot.info/installation/with-pip)
+#### [With pip](https://octobot.click/pip-install)
 
 In short :
 ```
@@ -81,7 +81,7 @@ pip install OctoBot>=0.4.1
 Octobot
 ```
 
-#### [With python sources](https://octobot.info/installation/with-python-only)
+#### [With python sources](https://octobot.click/python-install)
 Follow the [python installation guide](https://www.octobot.online/python_installation/) 
 
 In short :
@@ -93,30 +93,30 @@ python3 start.py
 ```
 
 #### One click deployment
-Follow the [Digital Ocean installation guide](https://www.octobot.online/digital_ocean_installation/) 
+Follow the [Digital Ocean installation guide](https://octobot.click/do-install) 
 
 In short :
 
-[![Deploy to DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/Drakkar-Software/OctoBot/tree/master&refcode=40c9737100b1)
+[![Deploy to DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://octobot.click/do-deploy)
 
 - Get 60-day free Digital Ocean hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
 
-[![Develop on Okteto](https://okteto.com/develop-okteto.svg)](https://cloud.okteto.com/deploy?repository=https://github.com/Drakkar-Software/OctoBot&branch=master)
+[![Develop on Okteto](https://okteto.com/develop-okteto.svg)](https://octobot.click/okteto-deploy)
 
 - Free 24-hour demo repeatable indefinitely on Okteto simply using your Github account
 
 ## Exchanges
-[![Binance](../assets/binance-logo.png)](https://accounts.binance.com/en/register?ref=135007948)
-[![Binance](../assets/ftx-logo.png)](https://ftx.com/#a=2525542)
-[![Binance](../assets/okex-logo.png)](https://www.okex.com/join/9403477)
-[![Binance](../assets/gateio-logo.png)](https://www.gate.io/signup/6206289)
-[![Binance](../assets/huobi-logo.png)](https://www.huobi.com/en-us/topic/double-reward/?invite_code=nwcu2223)
-[![Bitmax](../assets/ascendex-logo.png)](https://ascendex.com/en-us/register?inviteCode=ULWCFWL6G)
+[![Binance](../assets/binance-logo.png)](https://octobot.click/binance)
+[![Binance](../assets/ftx-logo.png)](https://octobot.click/ftx)
+[![Binance](../assets/okex-logo.png)](https://octobot.click/okex)
+[![Binance](../assets/gateio-logo.png)](https://octobot.click/gateio)
+[![Binance](../assets/huobi-logo.png)](https://octobot.click/huobi)
+[![Bitmax](../assets/ascendex-logo.png)](https://octobot.click/ascendex)
 [![Coinbase](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
 [![Kucoin](../assets/kucoin-logo.png)](https://www.kucoin.com)
 [![Bitmex](../assets/bitmex-logo.png)](https://bitmex.com)
 
-Octobot supports many [exchanges](https://exchanges.octobot.info/) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
+Octobot supports many [exchanges](https://octobot.click/exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, just configure OctoBot with your api keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
 
 ## Disclaimer
@@ -132,7 +132,7 @@ Do not hesitate to read the source code and understand the mechanism of this bot
 ## License
 GNU General Public License v3.0 or later.
 
-See [LICENSE](https://github.com/Drakkar-Software/OctoBot/blob/master/LICENSE) to see the full text.
+See [LICENSE](https://octobot.click/license) to see the full text.
 
 ## Sponsors
 <table>
