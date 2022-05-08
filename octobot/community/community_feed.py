@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import copy
+import random
+import time
 
 import websockets
 import asyncio
@@ -41,6 +43,7 @@ class CHANNELS(enum.Enum):
 class CommunityFeed:
     INIT_TIMEOUT = 60
     RECONNECT_DELAY = 15
+    STALE_CONNECTION_TIMEOUT = 30   # ws server sends a ping every 3s
 
     def __init__(self, feed_url, authenticator):
         self.logger: bot_logging.BotLogger = bot_logging.get_logger(
@@ -49,16 +52,22 @@ class CommunityFeed:
         self.feed_url = feed_url
         self.should_stop = False
         self.websocket_connection = None
-        self.consumer_task = None
         self.lock = asyncio.Lock()
         self.authenticator = authenticator
         self.feed_callbacks = {}
+
+        self.consumer_task = None
+        self.watcher_task = None
         self._identifier_by_stream_id = {}
+        self._reconnect_attempts = 0
+        self._last_ping_time = None
 
     async def start(self):
         await self._ensure_connection()
         if self.consumer_task is None or self.consumer_task.done():
             self.consumer_task = asyncio.create_task(self.start_consumer())
+        if self.watcher_task is None or self.watcher_task.done():
+            self.watcher_task = asyncio.create_task(self.connection_watcher())
 
     async def stop(self):
         self.should_stop = True
@@ -66,6 +75,8 @@ class CommunityFeed:
             await self.websocket_connection.close()
         if self.consumer_task is not None:
             self.consumer_task.cancel()
+        if self.watcher_task is not None:
+            self.watcher_task.cancel()
 
     async def start_consumer(self):
         while not self.should_stop:
@@ -77,15 +88,30 @@ class CommunityFeed:
                     except Exception as e:
                         self.logger.exception(e, True, f"Error while consuming feed: {e}")
             except (websockets.ConnectionClosedError, ConnectionRefusedError):
-                self.logger.warning(f"Disconnected from community, retrying to connect in {self.RECONNECT_DELAY}s")
-                await asyncio.sleep(self.RECONNECT_DELAY)
+                if self._reconnect_attempts == 0:
+                    self.logger.warning(f"Disconnected from community, reconnecting now.")
+                    # first reconnect instantly
+                else:
+                    # use self.RECONNECT_DELAY + or - 0-10 %
+                    reconnect_delay = self.RECONNECT_DELAY * (1 + (random.random() * 2 - 1) / 10)
+                    self.logger.warning(f"Disconnected from community, retrying to connect in {reconnect_delay}s "
+                                        f"({self._reconnect_attempts} attempts)")
+                    await asyncio.sleep(reconnect_delay)
             except Exception as e:
                 self.logger.exception(e, True, f"Unexpected exception when receiving community feed: {e}")
 
+    async def connection_watcher(self):
+        while not self.should_stop:
+            await asyncio.sleep(self.STALE_CONNECTION_TIMEOUT)
+            if self._last_ping_time is not None and \
+                    time.time() - self._last_ping_time > self.STALE_CONNECTION_TIMEOUT:
+                self.logger.error("Stale community connection detected, resetting the connection")
+                # close websocket_connection, the next _ensure_connection call will restart it
+                await self.websocket_connection.close()
+
     async def consume(self, message):
         if message.startswith('{"type":"ping"'):
-            # nothing to do
-            # TODO figure out if we need to reply something (pong ?) websockets seems to send it by itself
+            self._last_ping_time = time.time()
             return
         parsed_message = json.loads(message)["message"]
         try:
@@ -208,7 +234,9 @@ class CommunityFeed:
             async with self.lock:
                 if not self.is_connected():
                     # (re)connect websocket
+                    self._reconnect_attempts += 1
                     await self._connect()
+                    self._reconnect_attempts = 0
 
     async def _connect(self):
         if self.authenticator.initialized_event is not None:
@@ -217,7 +245,8 @@ class CommunityFeed:
             raise authentication.AuthenticationRequired("OctoBot Community authentication is required to "
                                                         "use community trading signals")
         self.websocket_connection = await websockets.connect(self.feed_url,
-                                                             extra_headers=self.authenticator.get_headers())
+                                                             extra_headers=self.authenticator.get_headers(),
+                                                             ping_interval=None)
         await self._subscribe()
         self.logger.info("Connected to community feed")
 
