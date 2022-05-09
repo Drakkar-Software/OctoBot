@@ -338,6 +338,13 @@ class IndependentBacktesting:
         ref_market_candidate = None
         ref_market_candidates = {}
         for pairs in self.symbols_to_create_exchange_classes.values():
+            if self.octobot_backtesting.is_future and \
+               trading_api.is_inverse_future_contract(self.octobot_backtesting.futures_contract_type):
+                if len(pairs) > 1:
+                    self.logger.error(f"Only one trading pair is supported in inverse contracts backtesting. "
+                                      f"Found: the following pairs: {pairs}")
+                # in inverse contracts, use BTC for BTC/USD trading as reference market
+                return symbol_util.split_symbol(pairs[0])[0]
             for pair in pairs:
                 base = symbol_util.split_symbol(pair)[1]
                 if ref_market_candidate is None:
