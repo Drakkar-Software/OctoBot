@@ -30,6 +30,7 @@ import octobot_services.api as service_api
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchange_data as exchange_data
 import octobot_trading.api as trading_api
+import octobot_trading.enums as trading_enums
 
 import octobot_commons.databases as databases
 import octobot_commons.constants as commons_constants
@@ -62,6 +63,8 @@ class OctoBotBacktesting:
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
         self.enable_logs = enable_logs
+        self.is_future = False
+        self.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -235,6 +238,7 @@ class OctoBotBacktesting:
                 .set_bot_id(self.bot_id) \
                 .is_simulated() \
                 .is_rest_only() \
+                .is_future(self.is_future, self.futures_contract_type) \
                 .is_backtesting(self.backtesting)
             try:
                 await exchange_builder.build()
