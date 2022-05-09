@@ -291,9 +291,9 @@ class IndependentBacktesting:
     def _log_global_report(self, exchange_manager):
         _, profitability, _, market_average_profitability, _ = trading_api.get_profitability_stats(exchange_manager)
         reference_market = trading_api.get_reference_market(self.backtesting_config)
-        end_portfolio = trading_api.get_portfolio(exchange_manager)
+        end_portfolio = trading_api.get_portfolio(exchange_manager, as_decimal=False)
         end_portfolio_value = trading_api.get_current_portfolio_value(exchange_manager)
-        starting_portfolio = trading_api.get_origin_portfolio(exchange_manager)
+        starting_portfolio = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
         starting_portfolio_value = trading_api.get_origin_portfolio_value(exchange_manager)
 
         self.logger.info(f"[End portfolio]      value {round(end_portfolio_value, 5)} {reference_market} "
