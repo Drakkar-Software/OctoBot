@@ -1,18 +1,18 @@
-# OctoBot [0.4.3](https://octobot.click/changelog)
-[![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://octobot.click/pypi)
+# OctoBot [0.4.3](https://octobot.click/gh-changelog)
+[![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://octobot.click/gh-pypi)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
-[![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://octobot.click/dockerhub)
+[![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://octobot.click/gh-dockerhub)
 [![Coverage Status](https://coveralls.io/repos/github/Drakkar-Software/OctoBot/badge.svg?branch=dev)](https://coveralls.io/github/Drakkar-Software/OctoBot?branch=dev)
 [![OctoBot-CI](https://github.com/Drakkar-Software/OctoBot/workflows/OctoBot-CI/badge.svg)](https://github.com/Drakkar-Software/OctoBot/actions)
 [![Build Status](https://cloud.drone.io/api/badges/Drakkar-Software/OctoBot/status.svg)](https://cloud.drone.io/Drakkar-Software/OctoBot)
-[![UptimeRobot](https://img.shields.io/uptimerobot/ratio/30/m786447893-903b482e5158c8b6483760e8)](https://octobot.click/status)
+[![UptimeRobot](https://img.shields.io/uptimerobot/ratio/30/m786447893-903b482e5158c8b6483760e8)](https://octobot.click/gh-status)
 
 #### Octobot Community
 [![Active OctoBot](https://img.shields.io/badge/dynamic/json.svg?&url=https://octobotmetrics.herokuapp.com/metrics/community/count/0/-1/0&query=$.total&color=green&label=OctoBots%20online%20this%20month)]()
-[![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg)](https://octobot.click/telegram)
-[![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord)](https://octobot.click/discord)
+[![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg)](https://octobot.click/gh-telegram)
+[![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord)](https://octobot.click/gh-discord)
 [![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg)](https://t.me/OctoBot_Project)
-[![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=Follow&style=social)](https://octobot.click/twitter)
+[![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=Follow&style=social)](https://octobot.click/gh-twitter)
 <p align="center">
 <img src="../assets/octopus.svg" alt="Octobot Logo" height="400" width="400">
 </p>
@@ -73,7 +73,7 @@ docker-compose up -d
 ```
 And then open [https://octobot.localhost](https://octobot.localhost).
 
-#### [With pip](https://octobot.click/pip-install)
+#### [With pip](https://octobot.click/gh-pip-install)
 
 In short :
 ```
@@ -81,7 +81,7 @@ pip install OctoBot>=0.4.1
 Octobot
 ```
 
-#### [With python sources](https://octobot.click/python-install)
+#### [With python sources](https://octobot.click/gh-python-install)
 Follow the [python installation guide](https://www.octobot.online/python_installation/) 
 
 In short :
@@ -93,30 +93,30 @@ python3 start.py
 ```
 
 #### One click deployment
-Follow the [Digital Ocean installation guide](https://octobot.click/do-install) 
+Follow the [Digital Ocean installation guide](https://octobot.click/gh-do-install) 
 
 In short :
 
-[![Deploy to DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://octobot.click/do-deploy)
+[![Deploy to DO](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://octobot.click/gh-do-deploy)
 
 - Get 60-day free Digital Ocean hosting by registering with [OctoBot referral link](https://m.do.co/c/40c9737100b1).
 
-[![Develop on Okteto](https://okteto.com/develop-okteto.svg)](https://octobot.click/okteto-deploy)
+[![Develop on Okteto](https://okteto.com/develop-okteto.svg)](https://octobot.click/gh-okteto-deploy)
 
 - Free 24-hour demo repeatable indefinitely on Okteto simply using your Github account
 
 ## Exchanges
-[![Binance](../assets/binance-logo.png)](https://octobot.click/binance)
-[![Binance](../assets/ftx-logo.png)](https://octobot.click/ftx)
-[![Binance](../assets/okex-logo.png)](https://octobot.click/okex)
-[![Binance](../assets/gateio-logo.png)](https://octobot.click/gateio)
-[![Binance](../assets/huobi-logo.png)](https://octobot.click/huobi)
-[![Bitmax](../assets/ascendex-logo.png)](https://octobot.click/ascendex)
+[![Binance](../assets/binance-logo.png)](https://octobot.click/gh-binance)
+[![Binance](../assets/ftx-logo.png)](https://octobot.click/gh-ftx)
+[![Binance](../assets/okex-logo.png)](https://octobot.click/gh-okex)
+[![Binance](../assets/gateio-logo.png)](https://octobot.click/gh-gateio)
+[![Binance](../assets/huobi-logo.png)](https://octobot.click/gh-huobi)
+[![Bitmax](../assets/ascendex-logo.png)](https://octobot.click/gh-ascendex)
 [![Coinbase](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
 [![Kucoin](../assets/kucoin-logo.png)](https://www.kucoin.com)
 [![Bitmex](../assets/bitmex-logo.png)](https://bitmex.com)
 
-Octobot supports many [exchanges](https://octobot.click/exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
+Octobot supports many [exchanges](https://octobot.click/gh-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, just configure OctoBot with your api keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
 
 ## Disclaimer
@@ -132,7 +132,7 @@ Do not hesitate to read the source code and understand the mechanism of this bot
 ## License
 GNU General Public License v3.0 or later.
 
-See [LICENSE](https://octobot.click/license) to see the full text.
+See [LICENSE](https://octobot.click/gh-license) to see the full text.
 
 ## Sponsors
 <table>
