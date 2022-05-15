@@ -71,8 +71,10 @@ LOGS_FOLDER = "logs"
 ENV_ENABLE_DEBUG_LOGS = "ENABLE_DEBUG_LOGS"
 
 # errors
-ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.online/")
-ERRORS_POST_ENDPOINT = f"{ERRORS_URL}errors"
+ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "sentry-errors-drakkarsoftware.cloud.okteto.net")
+ERRORS_PROJECT_ID = os.getenv("ERRORS_PROJECT_ID", 2)
+ERRORS_PUB_KEY = os.getenv("ERRORS_PUB_KEY", "64e86bf0e3bb41bfb238bd6beaa1c9d3")
+ERRORS_POST_ENDPOINT = f"https://{ERRORS_PUB_KEY}@{ERRORS_URL}/{ERRORS_PROJECT_ID}"
 UPLOAD_ERRORS = os_util.parse_boolean_environment_var("UPLOAD_ERRORS", "True")
 DEFAULT_METRICS_ID = "UNSET"
 

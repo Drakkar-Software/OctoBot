@@ -11,6 +11,9 @@ OctoBot-Backtesting==1.6.29
 Async-Channel==2.0.13
 trading-backend==1.0.12
 
+# errors
+sentry-sdk==1.5.12
+
 ## Others
 colorlog==4.7.2
 yarl==1.7.2

@@ -15,8 +15,10 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import aiohttp
+import octobot.constants as constants
 
 import octobot_commons.logging
+import sentry_sdk
 
 
 class ErrorsUploader:
@@ -33,6 +35,14 @@ class ErrorsUploader:
         self._upload_task = None
 
         self.logger = octobot_commons.logging.get_logger(self.__class__.__name__)
+
+        sentry_sdk.init(
+            constants.ERRORS_POST_ENDPOINT,
+            traces_sample_rate=0,
+            sample_rate=1,
+            release=constants.LONG_VERSION,
+            auto_session_tracking=True,
+        )
 
     def schedule_error_upload(self, error):
         """
@@ -63,12 +73,13 @@ class ErrorsUploader:
             )
 
     async def _upload_errors(self, session, errors):
-        async with session.post(self.upload_url, json=self._get_formatted_errors(errors)) as resp:
-            if resp.status != 200:
-                self.logger.error(
-                    f"Impossible to upload error : status code: {resp.status}, text: {await resp.text()}",
-                    skip_post_callback=True
-                )
+        for error in errors:
+            with sentry_sdk.push_scope() as scope:
+                scope.set_tag("title", error.title)
+                scope.set_tag("type", error.type)
+                scope.set_user({"id": error.metrics_id})
+                if not sentry_sdk.capture_exception(error.error, scope=scope):
+                    self.logger.error(f"Impossible to upload error",  skip_post_callback=True)
 
     @staticmethod
     def _get_formatted_errors(errors):
