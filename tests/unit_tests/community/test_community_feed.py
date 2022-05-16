@@ -75,7 +75,7 @@ async def echo_or_signal_reply_handler(websocket, _):
         if parsed_message.get("command") == "subscribe":
             await websocket.send(json.dumps({"type": "confirm_subscription"}))
         else:
-            value = parsed_message.get("data", {}).get("value")
+            value = json.loads(json.loads(parsed_message.get("data", "")).get("value"))
             base_message = _build_message(_mocked_signal().to_dict() if value == "signal" else value)
             await websocket.send(json.dumps({"message": base_message}))
 
@@ -158,7 +158,7 @@ async def test_consume_signal_message(community_echo_server, connected_community
 
 async def test_send_base_message(community_mocked_consumer_server, connected_community_feed):
     community_mocked_consumer_server.assert_called_once_with(
-        '{"command": "subscribe", "identifier": {"channel": "Spree::MessageChannel"}, "data": {}}'
+        '{"command": "subscribe", "identifier": "{\\"channel\\": \\"Spree::MessageChannel\\"}", "data": {}}'
     )
     community_mocked_consumer_server.reset_mock()
     consume_mock = connected_community_feed.feed_callbacks[commons_enums.CommunityChannelTypes.SIGNAL][None][0]
@@ -166,8 +166,9 @@ async def test_send_base_message(community_mocked_consumer_server, connected_com
     await connected_community_feed.send("signal", commons_enums.CommunityChannelTypes.SIGNAL.value, None)
     await _wait_for_receive()
     community_mocked_consumer_server.assert_called_once_with(
-        '{"command": "message", "identifier": {"channel": "Spree::MessageChannel"}, '
-        '"data": {"topic": "t", "feed_id": null, "version": "1.0.0", "value": "signal"}}'
+        '{"command": "message", "identifier": "{\\"channel\\": \\"Spree::MessageChannel\\"}", "data": '
+        '"{\\"topic\\": \\"t\\", \\"feed_id\\": 1, \\"version\\": \\"1.0.0\\", '
+        '\\"value\\": \\"\\\\\\"signal\\\\\\"\\"}"}'
     )
     consume_mock.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': 1})
     consume_mock.reset_mock()
@@ -175,16 +176,17 @@ async def test_send_base_message(community_mocked_consumer_server, connected_com
     await connected_community_feed.send(DATA_DICT, commons_enums.CommunityChannelTypes.SIGNAL.value, None)
     await _wait_for_receive()
     assert community_mocked_consumer_server.call_count == 2
+    identifier_str = json.dumps({"channel": "Spree::MessageChannel"})
+    sub_data_str = json.dumps({"data": "yes", "content": {"hi": 1, "a": ["@@@", 1]}})
+    data_str = json.dumps({"topic": "t", "feed_id": 1, "version": "1.0.0", "value": sub_data_str})
     assert community_mocked_consumer_server.mock_calls[1].args == \
-       ('{"command": "message", "identifier": {"channel": "Spree::MessageChannel"}, '
-        '"data": {"topic": "t", ''"feed_id": null, "version": "1.0.0", "value": ' 
-        '{"data": "yes", "content": {"hi": 1, "a": ["@@@", 1]}}}}', )
+       (json.dumps({"command": "message", "identifier": identifier_str, "data": data_str}), )
     consume_mock.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': 2})
 
 
 async def test_send_signal_message(community_mocked_consumer_server, connected_community_feed):
     community_mocked_consumer_server.assert_called_once_with(
-        '{"command": "subscribe", "identifier": {"channel": "Spree::MessageChannel"}, "data": {}}'
+        '{"command": "subscribe", "identifier": "{\\"channel\\": \\"Spree::MessageChannel\\"}", "data": {}}'
     )
     community_mocked_consumer_server.reset_mock()
     consume_mock = connected_community_feed.feed_callbacks[commons_enums.CommunityChannelTypes.SIGNAL][None][0]
@@ -192,12 +194,12 @@ async def test_send_signal_message(community_mocked_consumer_server, connected_c
     await connected_community_feed.send(_mocked_signal().to_dict(),
                                         commons_enums.CommunityChannelTypes.SIGNAL.value, None)
     await _wait_for_receive()
-    '{"command": "message", "identifier": {"channel": "Spree::MessageChannel"}, "data": {"topic": "t", "feed_id": nul... "exchange_type": "future", "symbol": "symbol", "description": "description", "state": "state", "orders": "orders"}}}'
+
+    identifier_str = json.dumps({"channel": "Spree::MessageChannel"})
+    sub_data_str = json.dumps(_mocked_signal().to_dict())
+    data_str = json.dumps({"topic": "t", "feed_id": 1, "version": "1.0.0", "value": sub_data_str})
     community_mocked_consumer_server.assert_called_once_with(
-        '{"command": "message", "identifier": {"channel": "Spree::MessageChannel"}, '
-        '"data": {"topic": "t", "feed_id": null, "version": "1.0.0", "value": ' +
-        json.dumps(_mocked_signal().to_dict()) + "}}"
-    )
+        json.dumps({"command": "message", "identifier": identifier_str, "data": data_str}))
     consume_mock.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': 1})
 
 
