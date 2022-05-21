@@ -31,7 +31,7 @@ class OctoBotBacktestingFactory(octobot_class.OctoBot):
         self.independent_backtesting = None
         self.log_report = log_report
         self.run_on_common_part_only = run_on_common_part_only
-        self.enable_join_timeout = enable_join_timeout,
+        self.enable_join_timeout = enable_join_timeout
         self.enable_logs = enable_logs
 
     async def initialize(self):
@@ -53,6 +53,6 @@ class OctoBotBacktestingFactory(octobot_class.OctoBot):
                 octobot_backtesting_api.log_independent_backtesting_report(self.independent_backtesting)
             await octobot_backtesting_api.stop_independent_backtesting(self.independent_backtesting, memory_check=False)
         except Exception as e:
-            self.logger.error(f"Error when starting backtesting: {e.__class__.__name__}")
+            self.logger.exception(e, True, f"Error when starting backtesting: {e.__class__.__name__}")
         finally:
             self.task_manager.stop_tasks(stop_octobot=False)
