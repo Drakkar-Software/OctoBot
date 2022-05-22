@@ -20,6 +20,8 @@ cimport octobot.backtesting.octobot_backtesting as octobot_backtesting
 
 cdef class IndependentBacktesting:
     cdef list forced_time_frames
+    cdef object optimizer_id
+    cdef object backtesting_id
 
     cdef public dict octobot_origin_config
     cdef public dict backtesting_config
@@ -28,8 +30,8 @@ cdef class IndependentBacktesting:
 
     cdef object logger
     cdef object join_backtesting_timeout
-    cdef bint enable_logs
     cdef bint stop_when_finished
+    cdef public bint enable_logs
 
     cdef public str data_file_path
     cdef public dict symbols_to_create_exchange_classes
@@ -39,6 +41,7 @@ cdef class IndependentBacktesting:
     cdef public bint stopped
 
     cdef public object post_backtesting_task
+    cdef public object previous_log_level
     cdef public object stopped_event
 
     cdef public octobot_backtesting.OctoBotBacktesting octobot_backtesting
