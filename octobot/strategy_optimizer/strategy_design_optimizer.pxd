@@ -1,3 +1,4 @@
+# cython: language_level=3
 #  Drakkar-Software OctoBot
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -16,6 +17,4 @@
 
 
 cdef class StrategyDesignOptimizer:
-    cdef object trading_mode
-
-    cdef public str get_name
+    pass

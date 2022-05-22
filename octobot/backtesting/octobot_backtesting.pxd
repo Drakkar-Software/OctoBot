@@ -34,10 +34,11 @@ cdef class OctoBotBacktesting:
     cdef public bint run_on_common_part_only
     cdef public object start_timestamp
     cdef public object end_timestamp
+    cdef public bint enable_logs
     cdef public bint is_future
     cdef public object futures_contract_type
 
-    cpdef void memory_leak_checkup(self, list to_check_elements)
-    cpdef void check_remaining_objects(self)
+    cpdef object memory_leak_checkup(self, list to_check_elements)
+    cpdef object check_remaining_objects(self)
 
 cdef str _get_remaining_object_error(object obj, int expected, tuple actual)

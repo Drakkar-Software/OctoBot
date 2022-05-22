@@ -25,7 +25,8 @@ cdef class StrategyOptimizer:
     cdef object current_test_suite
     cdef set errors
     cdef int run_id
-    cdef int total_nb_runs
+    cdef bint keep_running
+    cdef total_nb_runs
 
     cdef public bint is_properly_initialized
     cdef public object trading_mode
