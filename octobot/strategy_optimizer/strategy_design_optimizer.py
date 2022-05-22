@@ -113,7 +113,7 @@ class StrategyDesignOptimizer:
         if not is_resuming:
             await self.generate_and_save_run()
 
-    def get_name(self) -> str:
+    def get_name(self):
         return f"{self.trading_mode.get_name()}_{self.__class__.__name__}"
 
     async def _create_run_queues(self, optimizer_id):
