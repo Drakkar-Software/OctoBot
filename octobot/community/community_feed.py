@@ -54,6 +54,7 @@ class CommunityFeed:
         self.lock = asyncio.Lock()
         self.authenticator = authenticator
         self.feed_callbacks = {}
+        self.is_subscribed = False
 
         self.consumer_task = None
         self.watcher_task = None
@@ -227,6 +228,7 @@ class CommunityFeed:
             resp = json.loads(message)
             # TODO handle subscribe errors
             if resp.get("type") and resp.get("type") == "confirm_subscription":
+                self.is_subscribed = True
                 return
 
     # pylint: disable=E1101
@@ -240,6 +242,7 @@ class CommunityFeed:
                     self._reconnect_attempts = 0
 
     async def _connect(self):
+        self.is_subscribed = False
         if self.authenticator.initialized_event is not None:
             await asyncio.wait_for(self.authenticator.initialized_event.wait(), self.INIT_TIMEOUT)
         if not self.authenticator.is_logged_in():
