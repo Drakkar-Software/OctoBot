@@ -264,7 +264,7 @@ async def test_reconnect(authenticator):
         # wait for client reconnection
         t0 = time.time()
         while time.time() - t0 < 5:
-            if client.is_connected():
+            if client.is_connected() and client.is_subscribed:
                 break
             else:
                 await asyncio.sleep(0.05)
