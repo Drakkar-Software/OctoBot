@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import copy
 import random
 import time
 
@@ -78,6 +77,7 @@ class CommunityFeed:
         if self.watcher_task is not None:
             self.watcher_task.cancel()
 
+    # pylint: disable=E1101
     async def start_consumer(self):
         while not self.should_stop:
             try:
@@ -229,6 +229,7 @@ class CommunityFeed:
             if resp.get("type") and resp.get("type") == "confirm_subscription":
                 return
 
+    # pylint: disable=E1101
     async def _ensure_connection(self):
         if not self.is_connected():
             async with self.lock:
