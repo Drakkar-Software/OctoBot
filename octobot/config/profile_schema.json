@@ -62,6 +62,9 @@
               "properties": {
                 "enabled": {
                   "type": "boolean"
+                },
+                "exchange-type": {
+                  "type": "string"
                 }
               },
               "required": [
