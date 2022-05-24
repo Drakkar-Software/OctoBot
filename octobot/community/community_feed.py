@@ -97,7 +97,8 @@ class CommunityFeed:
                     reconnect_delay = self.RECONNECT_DELAY * (1 + (random.random() * 2 - 1) / 10)
                     self.logger.warning(f"Disconnected from community, retrying to connect in {reconnect_delay}s "
                                         f"({self._reconnect_attempts} attempts)")
-                    await asyncio.sleep(reconnect_delay)
+                    if reconnect_delay > 0:
+                        await asyncio.sleep(reconnect_delay)
             except Exception as e:
                 self.logger.exception(e, True, f"Unexpected exception when receiving community feed: {e}")
 

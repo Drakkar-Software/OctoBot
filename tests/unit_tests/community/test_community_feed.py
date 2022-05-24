@@ -29,7 +29,7 @@ import octobot_trading.signals as trading_signals
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
-HOST = "localhost"
+HOST = "127.0.0.1"
 PORT = 8765
 TOKEN = "acb1"
 
@@ -209,6 +209,7 @@ async def test_reconnect(authenticator):
         server = await websockets.serve(echo_or_signal_reply_handler, HOST, PORT)
         client_handler = mock.AsyncMock()
         client = community.CommunityFeed(f"ws://{HOST}:{PORT}", authenticator)
+        client.RECONNECT_DELAY = 0
         await client.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, client_handler)
         await client.start()
 
@@ -240,7 +241,7 @@ async def test_reconnect(authenticator):
         # 4. re-exchange message using the same client (reconnected through send method)
         assert not client.is_connected()
         await client.send("plop", commons_enums.CommunityChannelTypes.SIGNAL.value, None)
-        assert client.is_connected()
+        await _wait_for_connection_and_subscribe(client)
         await _wait_for_receive()
         client_handler.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': "plop"})
         client_handler.reset_mock()
@@ -262,13 +263,7 @@ async def test_reconnect(authenticator):
         server = await websockets.serve(echo_or_signal_reply_handler, HOST, PORT)
         client_handler.assert_not_called()
         # wait for client reconnection
-        t0 = time.time()
-        while time.time() - t0 < 5:
-            if client.is_connected() and client.is_subscribed:
-                break
-            else:
-                await asyncio.sleep(0.05)
-        assert client.is_connected()
+        await _wait_for_connection_and_subscribe(client)
 
         # 7. send message from server with a consuming only client
         await next(iter(server.websockets)).send(json.dumps({"message": _build_message("greetings")}))
@@ -285,7 +280,18 @@ async def test_reconnect(authenticator):
             await server.wait_closed()
 
 
-async def _wait_for_receive(wait_cycles=5):
+async def _wait_for_connection_and_subscribe(client):
+    t0 = time.time()
+    while time.time() - t0 < 5:
+        if client.is_connected() and client.is_subscribed:
+            break
+        else:
+            await asyncio.sleep(0.05)
+    assert client.is_connected()
+    assert client.is_subscribed
+
+
+async def _wait_for_receive(wait_cycles=8):
     # 5 necessary wait_cycles for both sending, receiving, replying and receiving a reply
     for _ in range(wait_cycles):
         # wait for websockets lib trigger client
