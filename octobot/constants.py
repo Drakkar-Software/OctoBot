@@ -19,7 +19,7 @@ import octobot_commons.os_util as os_util
 
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
-SHORT_VERSION = "0.4.3"  # major.minor.revision
+SHORT_VERSION = "0.4.4"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
 VERSION_DEV_PHASE = ""  # alpha : a / beta : b / release candidate : rc
 VERSION_PHASE = ""  # XX
@@ -41,11 +41,15 @@ TENTACLE_PACKAGES = "packages"
 COMPILED_TENTACLE_CATEGORY = "extra"
 
 DEFAULT_COMMUNITY_URL = "https://community.octobot.online/"
+DEFAULT_COMMUNITY_WS_URL = "ws://community2.octobot.cloud/"   #TODO
 OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", DEFAULT_COMMUNITY_URL)
+OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_WS_URL", f"{DEFAULT_COMMUNITY_WS_URL}cable")
 OCTOBOT_COMMUNITY_AUTH_URL = f"{OCTOBOT_COMMUNITY_URL}spree_oauth/token"
 OCTOBOT_COMMUNITY_ACCOUNT_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/account"
 OCTOBOT_COMMUNITY_PACKAGES_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/tentacle/packages"
 OCTOBOT_COMMUNITY_SUPPORTS_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/supports"
+OCTOBOT_COMMUNITY_FETCH_FEED_IDENTIFIER_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/feeds/id"
+COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 
@@ -108,6 +112,7 @@ LOG_FILE = f"{LOGS_FOLDER}/{PROJECT_NAME}.log"
 # Optimizer
 OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION = False
 OPTIMIZER_DATA_FILES_FOLDER = f"{OCTOBOT_FOLDER}/strategy_optimizer/optimizer_data_files"
+OPTIMIZATION_CAMPAIGN_KEY = "optimization_campaign"
 
 # Channel
 OCTOBOT_CHANNEL = "OctoBot"

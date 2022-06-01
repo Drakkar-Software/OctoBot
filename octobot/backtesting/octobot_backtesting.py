@@ -30,6 +30,10 @@ import octobot_services.api as service_api
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchange_data as exchange_data
 import octobot_trading.api as trading_api
+import octobot_trading.enums as trading_enums
+
+import octobot_commons.databases as databases
+import octobot_commons.constants as commons_constants
 
 import octobot.logger as logger
 
@@ -42,7 +46,8 @@ class OctoBotBacktesting:
                  backtesting_files,
                  run_on_common_part_only,
                  start_timestamp=None,
-                 end_timestamp=None):
+                 end_timestamp=None,
+                 enable_logs=True):
         self.logger = logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -57,6 +62,9 @@ class OctoBotBacktesting:
         self.run_on_common_part_only = run_on_common_part_only
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
+        self.enable_logs = enable_logs
+        self.is_future = False
+        self.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -66,7 +74,7 @@ class OctoBotBacktesting:
         await self._create_evaluators()
         await self._create_service_feeds()
         await backtesting_api.start_backtesting(self.backtesting)
-        if logger.BOT_CHANNEL_LOGGER is not None:
+        if logger.BOT_CHANNEL_LOGGER is not None and self.enable_logs:
             await self.start_loggers()
 
     async def stop_importers(self):
@@ -80,7 +88,10 @@ class OctoBotBacktesting:
         self.logger.info(f"Stopping for {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
         exchange_managers = []
         try:
-            await backtesting_api.stop_backtesting(self.backtesting)
+            if self.backtesting is None:
+                self.logger.warning("No backtesting to stop, there was probably an issue when starting the backtesting")
+            else:
+                await backtesting_api.stop_backtesting(self.backtesting)
             try:
                 for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids):
                     exchange_managers.append(exchange_manager)
@@ -88,13 +99,23 @@ class OctoBotBacktesting:
             except KeyError:
                 # exchange managers are not added in global exchange list when an exception occurred
                 pass
+            # close run databases
+            await trading_api.close_bot_storage(self.bot_id)
+            # stop evaluators
             for evaluators in self.evaluators:
                 # evaluators by type
                 for evaluator in evaluators:
                     # evaluator instance
                     if evaluator is not None:
                         await evaluator_api.stop_evaluator(evaluator)
-            await evaluator_api.stop_all_evaluator_channels(self.matrix_id)
+            # close all caches (if caches have to be used later on, they can always be re-opened)
+            await databases.CacheManager().close_cache(commons_constants.UNPROVIDED_CACHE_IDENTIFIER)
+            try:
+                await evaluator_api.stop_all_evaluator_channels(self.matrix_id)
+            except KeyError:
+                if self.evaluators:
+                    raise
+                # matrix not created (and no evaluator, KeyError is expected)
             evaluator_api.del_evaluator_channels(self.matrix_id)
             evaluator_api.del_matrix(self.matrix_id)
             for service_feed in self.service_feeds:
@@ -179,7 +200,7 @@ class OctoBotBacktesting:
     async def _create_evaluators(self):
         for exchange_id in self.exchange_manager_ids:
             exchange_configuration = trading_api.get_exchange_configuration_from_exchange_id(exchange_id)
-            self.evaluators = await evaluator_api.create_all_type_evaluators(
+            self.evaluators = await evaluator_api.create_and_start_all_type_evaluators(
                 self.tentacles_setup_config,
                 matrix_id=self.matrix_id,
                 exchange_name=exchange_configuration.exchange_name,
@@ -202,6 +223,7 @@ class OctoBotBacktesting:
                                                                         data_files=self.backtesting_files)
         # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
         # initialize
+        trading_api.init_bot_storage(self.bot_id, self.backtesting_config, self.tentacles_setup_config)
         await backtesting_api.adapt_backtesting_channels(self.backtesting,
                                                          self.backtesting_config,
                                                          importers.ExchangeDataImporter,
@@ -216,6 +238,7 @@ class OctoBotBacktesting:
                 .set_bot_id(self.bot_id) \
                 .is_simulated() \
                 .is_rest_only() \
+                .is_future(self.is_future, self.futures_contract_type) \
                 .is_backtesting(self.backtesting)
             try:
                 await exchange_builder.build()

@@ -66,8 +66,11 @@ class StrategyOptimizer:
         self.errors = set()
 
         self.is_computing = False
+        self.is_finished = False
         self.run_id = 0
         self.total_nb_runs = 0
+
+        self.keep_running = True
 
         if not self.strategy_class:
             self.logger.error(f"Impossible to find a strategy matching class name: {strategy_name} in installed "
@@ -117,6 +120,7 @@ class StrategyOptimizer:
                 self.current_test_suite = None
                 common_logging.set_global_logger_level(previous_log_level)
                 self.is_computing = False
+                self.is_finished = True
                 self.logger.info(f"{self.get_name()} finished computation.")
                 self.logger.info("Logging level restored.")
         else:
@@ -150,6 +154,8 @@ class StrategyOptimizer:
                                 for nb_time_frames in range(1, nb_TFs + 1):
                                     # test different configurations
                                     for _ in range(nb_TFs):
+                                        if not self.keep_running:
+                                            return
                                         self._run_on_config(risk, current_forced_time_frame, nb_time_frames,
                                                             time_frames_conf_history, activated_evaluators)
 
@@ -239,11 +245,14 @@ class StrategyOptimizer:
         self.logger.info(f"{best_result[CONFIG].get_result_string()} "
                          f"average trades count: {best_result[TRADES_IN_RESULT]:f}")
 
-    def get_overall_progress(self):
-        return int((self.run_id - 1) / self.total_nb_runs * 100) if self.total_nb_runs else 0
+    async def get_overall_progress(self):
+        return int((self.run_id - 1) / self.total_nb_runs * 100) if self.total_nb_runs else 0, 0
 
-    def is_in_progress(self):
+    async def is_in_progress(self):
         return self.get_overall_progress() != 100
+
+    def cancel(self):
+        self.keep_running = False
 
     def get_current_test_suite_progress(self):
         return self.current_test_suite.current_progress if self.current_test_suite else 0

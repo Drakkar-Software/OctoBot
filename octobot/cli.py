@@ -217,7 +217,8 @@ def start_octobot(args):
         if args.backtesting:
             bot = octobot_backtesting.OctoBotBacktestingFactory(config,
                                                                 run_on_common_part_only=not args.whole_data_range,
-                                                                enable_join_timeout=args.enable_backtesting_timeout)
+                                                                enable_join_timeout=args.enable_backtesting_timeout,
+                                                                enable_logs=not args.no_logs)
         else:
             bot = octobot_class.OctoBot(config, reset_trading_history=args.reset_trading_history)
 
@@ -304,6 +305,8 @@ def octobot_parser(parser):
     parser.add_argument('-r', '--risk', type=float, help='Force a specific risk configuration (between 0 and 1).')
     parser.add_argument('-nw', '--no_web', help="Don't start OctoBot web interface.",
                         action='store_true')
+    parser.add_argument('-nl', '--no_logs', help="Disable OctoBot logs in backtesting.",
+                        action='store_true')
     parser.add_argument('-nt', '--no-telegram', help='Start OctoBot without telegram interface, even if telegram '
                                                      'credentials are in config. With this parameter, your Octobot '
                                                      'won`t reply to any telegram command but is still able to listen '
@@ -345,6 +348,7 @@ def start_background_octobot_with_args(version=False,
                                        backtesting_files=None,
                                        no_telegram=False,
                                        no_web=False,
+                                       no_logs=False,
                                        backtesting=False,
                                        identifier=None,
                                        whole_data_range=True,
@@ -352,7 +356,7 @@ def start_background_octobot_with_args(version=False,
                                        simulate=True,
                                        risk=None,
                                        in_subprocess=False,
-                                       reset_trading_history=False):
+                                       reset_trading_history=False,):
     if backtesting_files is None:
         backtesting_files = []
     args = argparse.Namespace(version=version,
@@ -363,6 +367,7 @@ def start_background_octobot_with_args(version=False,
                               backtesting_files=backtesting_files,
                               no_telegram=no_telegram,
                               no_web=no_web,
+                              no_logs=no_logs,
                               backtesting=backtesting,
                               identifier=identifier,
                               whole_data_range=whole_data_range,

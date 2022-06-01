@@ -23,6 +23,7 @@ import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
 import octobot_commons.os_util as os_util
 import octobot_commons.symbol_util as symbol_util
+import octobot_commons.authentication as authentication
 
 import octobot_commons.constants as common_constants
 
@@ -193,7 +194,7 @@ class CommunityManager:
                and trading_api.is_sponsoring(exchange_name) \
                and trading_api.is_valid_account(exchange_manager):
                 supporting_exchanges.append(exchange_name)
-        supports = self.octobot_api.get_community_auth().supports
+        supports = authentication.Authenticator.instance().supports
         return {
             community_fields.CommunityFields.EXCHANGES.value: supporting_exchanges,
             community_fields.CommunityFields.ROLES.value: [supports.support_role],

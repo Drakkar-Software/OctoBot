@@ -70,9 +70,9 @@ class TaskManager:
                                                     name=f"OctoBot Main Thread")
         self.loop_forever_thread.start()
 
-    def stop_tasks(self):
+    def stop_tasks(self, stop_octobot=True):
         self.logger.info("Stopping tasks...")
-        stop_coroutines = [self.octobot.stop()]
+        stop_coroutines = [self.octobot.stop()] if stop_octobot else []
 
         if self.tools_task_group:
             self.tools_task_group.cancel()
@@ -85,7 +85,8 @@ class TaskManager:
             # await this gather to be sure to complete the each stop call
             await asyncio.gather(*tasks)
 
-        asyncio_tools.run_coroutine_in_asyncio_loop(_await_gather(stop_coroutines), self.async_loop)
+        if stop_coroutines:
+            asyncio_tools.run_coroutine_in_asyncio_loop(_await_gather(stop_coroutines), self.async_loop)
         self.async_loop.stop()
         # ensure there is at least one element in the event loop tasks
         # not to block on base_event.py#self._selector.select(timeout) which prevents run_forever() from completing
