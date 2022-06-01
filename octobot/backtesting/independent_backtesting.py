@@ -23,7 +23,7 @@ import octobot_commons.enums as enums
 import octobot_commons.errors as errors
 import octobot_commons.logging as commons_logging
 import octobot_commons.pretty_printer as pretty_printer
-import octobot_commons.symbol_util as symbol_util
+import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.databases as databases
 import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.time_frame_manager as time_frame_manager
@@ -338,24 +338,24 @@ class IndependentBacktesting:
         ref_market_candidate = None
         ref_market_candidates = {}
         for pairs in self.symbols_to_create_exchange_classes.values():
-            if self.octobot_backtesting.is_future and \
-               trading_api.is_inverse_future_contract(self.octobot_backtesting.futures_contract_type):
+            symbol = symbol_util.parse_symbol(pairs[0])
+            if self.octobot_backtesting.is_future and symbol.is_inverse():
                 if len(pairs) > 1:
                     self.logger.error(f"Only one trading pair is supported in inverse contracts backtesting. "
                                       f"Found: the following pairs: {pairs}")
                 # in inverse contracts, use BTC for BTC/USD trading as reference market
-                return symbol_util.split_symbol(pairs[0])[0]
+                return symbol.settlement_asset
             for pair in pairs:
-                base = symbol_util.split_symbol(pair)[1]
+                quote = symbol_util.parse_symbol(pair).quote
                 if ref_market_candidate is None:
-                    ref_market_candidate = base
-                if base in ref_market_candidates:
-                    ref_market_candidates[base] += 1
+                    ref_market_candidate = quote
+                if quote in ref_market_candidates:
+                    ref_market_candidates[quote] += 1
                 else:
-                    ref_market_candidates[base] = 1
-                if ref_market_candidate != base and \
-                        ref_market_candidates[ref_market_candidate] < ref_market_candidates[base]:
-                    ref_market_candidate = base
+                    ref_market_candidates[quote] = 1
+                if ref_market_candidate != quote and \
+                        ref_market_candidates[ref_market_candidate] < ref_market_candidates[quote]:
+                    ref_market_candidate = quote
         return ref_market_candidate
 
     def _add_config_default_backtesting_values(self):
