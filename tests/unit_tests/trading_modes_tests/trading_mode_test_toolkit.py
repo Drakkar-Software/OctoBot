@@ -50,21 +50,25 @@ def check_order_limits(order, market_status):
     assert str(order.origin_quantity)[::-1].find(".") <= maximal_volume_digits
 
 
-def check_linked_order(order, linked_order, order_type, order_price, market_status):
-    assert linked_order.exchange_manager == order.exchange_manager
-    assert linked_order.trader == order.trader
-    assert linked_order.order_type == order_type
-    assert linked_order.created_last_price == order.created_last_price
-    assert linked_order.origin_price == order_price
-    assert linked_order.linked_orders[0] == order
-    assert linked_order.created_last_price == order.created_last_price
-    assert linked_order.currency == order.currency
-    assert linked_order.fee == order.fee
-    assert linked_order.filled_price == order.filled_price
-    assert linked_order.filled_quantity == order.filled_quantity
-    assert linked_order.linked_to == order
-    assert linked_order.status == order.status
-    assert linked_order.symbol == order.symbol
+def check_oco_order_group(order, order_type, order_price, market_status):
+    orders_from_group = [found_order
+                         for found_order in order.order_group.get_group_open_orders()
+                         if found_order is not order]
+    assert len(orders_from_group) == 1
+    other_order_from_oco_group = orders_from_group[0]
+    assert other_order_from_oco_group.exchange_manager == order.exchange_manager
+    assert other_order_from_oco_group.trader == order.trader
+    assert other_order_from_oco_group.order_type == order_type
+    assert other_order_from_oco_group.created_last_price == order.created_last_price
+    assert other_order_from_oco_group.origin_price == order_price
+    assert other_order_from_oco_group.order_group is order.order_group
+    assert other_order_from_oco_group.created_last_price == order.created_last_price
+    assert other_order_from_oco_group.currency == order.currency
+    assert other_order_from_oco_group.fee == order.fee
+    assert other_order_from_oco_group.filled_price == order.filled_price
+    assert other_order_from_oco_group.filled_quantity == order.filled_quantity
+    assert other_order_from_oco_group.status == order.status
+    assert other_order_from_oco_group.symbol == order.symbol
     check_order_limits(order, market_status)
 
 
@@ -86,14 +90,12 @@ def check_orders(orders, evaluation, state, nb_orders, market_status):
                 trading_enum.TraderOrderType.SELL_MARKET, trading_enum.TraderOrderType.BUY_MARKET):
                     assert order.status == trading_enum.OrderStatus.FILLED
                     assert order.simulated is True
-                    assert order.linked_to is None
                     assert order.fee
                     assert order.filled_price > trading_constants.ZERO
                     assert order.filled_quantity == order.origin_quantity
                 else:
                     assert order.status == trading_enum.OrderStatus.OPEN
                     assert order.simulated is True
-                    assert order.linked_to is None
                     assert order.fee is None
                     assert order.filled_price == trading_constants.ZERO
                     assert order.filled_quantity == order.origin_quantity
@@ -131,7 +133,7 @@ def check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False)
                 orders_market_amount += order.origin_quantity * order.origin_price
             else:
                 orders_currency_amount += order.origin_quantity
-            for symbol in portfolio.portfolio.keys():
+            for symbol in [market, order_symbol]:
                 assert portfolio.get_currency_portfolio(symbol).total >= trading_constants.ZERO
                 assert portfolio.get_currency_portfolio(symbol).available >= trading_constants.ZERO
                 if not only_positivity:
@@ -139,23 +141,19 @@ def check_portfolio(portfolio, initial_portfolio, orders, only_positivity=False)
                     trading_enum.TraderOrderType.SELL_MARKET, trading_enum.TraderOrderType.BUY_MARKET) and \
                             symbol in [order.market, order.currency]:
                         # order is filled
-                        assert initial_portfolio.get_currency_portfolio(symbol).total != \
-                               portfolio.get_currency_portfolio(symbol).total
-                        assert initial_portfolio.get_currency_portfolio(symbol).available != \
-                               portfolio.get_currency_portfolio(symbol).available
+                        assert initial_portfolio.get_currency_portfolio(symbol) != \
+                               portfolio.get_currency_portfolio(symbol)
                     else:
                         if order_symbol == symbol:
                             assert initial_portfolio.get_currency_portfolio(symbol).total == \
                                    portfolio.get_currency_portfolio(symbol).total
-                            assert "{:f}".format(
-                                initial_portfolio.get_currency_portfolio(symbol).available - orders_currency_amount) == \
-                                   "{:f}".format(portfolio.get_currency_portfolio(symbol).available)
+                            assert initial_portfolio.get_currency_portfolio(symbol).available - orders_currency_amount \
+                                   == portfolio.get_currency_portfolio(symbol).available
                         elif market == symbol:
                             assert initial_portfolio.get_currency_portfolio(market).total == \
                                    portfolio.get_currency_portfolio(market).total
-                            assert "{:f}".format(
-                                initial_portfolio.get_currency_portfolio(market).available - orders_market_amount) \
-                                   == "{:f}".format(portfolio.get_currency_portfolio(market).available)
+                            assert initial_portfolio.get_currency_portfolio(market).available - orders_market_amount \
+                                   == portfolio.get_currency_portfolio(market).available
 
 
 async def fill_orders(orders, trader):

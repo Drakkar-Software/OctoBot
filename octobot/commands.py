@@ -77,6 +77,7 @@ def start_strategy_optimizer(config, commands):
 
 
 def run_tentacles_install_or_update(config):
+    _check_tentacles_install_exit()
     asyncio.run(install_or_update_tentacles(config))
 
 

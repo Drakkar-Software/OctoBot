@@ -25,7 +25,8 @@ cdef class StrategyOptimizer:
     cdef object current_test_suite
     cdef set errors
     cdef int run_id
-    cdef int total_nb_runs
+    cdef bint keep_running
+    cdef total_nb_runs
 
     cdef public bint is_properly_initialized
     cdef public object trading_mode
@@ -34,12 +35,11 @@ cdef class StrategyOptimizer:
     cdef public list all_TAs
     cdef public list risks
     cdef public bint is_computing
+    cdef public bint is_finished
     cdef public list run_results
 
     cpdef void find_optimal_configuration(self, list TAs=*, list time_frames=*, list risks=*)
     cpdef void print_report(self)
-    cpdef int get_overall_progress(self)
-    cpdef bint is_in_progress(self)
     cpdef int get_current_test_suite_progress(self)
     cpdef list get_report(self)
     cpdef object get_errors_description(self)

@@ -15,14 +15,17 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import copy
+import logging
 import os.path as path
 
 import octobot_commons.constants as common_constants
 import octobot_commons.enums as enums
 import octobot_commons.errors as errors
-import octobot_commons.logging as logging
+import octobot_commons.logging as commons_logging
 import octobot_commons.pretty_printer as pretty_printer
 import octobot_commons.symbol_util as symbol_util
+import octobot_commons.databases as databases
+import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.time_frame_manager as time_frame_manager
 
 import octobot.backtesting as backtesting
@@ -44,33 +47,49 @@ class IndependentBacktesting:
                  run_on_common_part_only=True,
                  join_backtesting_timeout=backtesting_constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
                  start_timestamp=None,
-                 end_timestamp=None):
+                 end_timestamp=None,
+                 enable_logs=True,
+                 stop_when_finished=False):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
         self.backtesting_files = backtesting_files
-        self.logger = logging.get_logger(self.__class__.__name__)
+        self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.data_file_path = data_file_path
         self.symbols_to_create_exchange_classes = {}
         self.risk = 0.1
         self.starting_portfolio = {}
         self.fees_config = {}
         self.forced_time_frames = []
+        self.optimizer_id = None
+        self.backtesting_id = None
         self._init_default_config_values()
         self.stopped = False
+        self.stopped_event = None
         self.post_backtesting_task = None
         self.join_backtesting_timeout = join_backtesting_timeout
+        self.enable_logs = enable_logs
+        self.stop_when_finished = stop_when_finished
+        self.previous_log_level = commons_logging.get_global_logger_level()
         self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
                                                                   self.tentacles_setup_config,
                                                                   self.symbols_to_create_exchange_classes,
                                                                   self.backtesting_files,
                                                                   run_on_common_part_only,
                                                                   start_timestamp=start_timestamp,
-                                                                  end_timestamp=end_timestamp)
+                                                                  end_timestamp=end_timestamp,
+                                                                  enable_logs=self.enable_logs)
 
     async def initialize_and_run(self, log_errors=True):
         try:
+            # create stopped_event here only to be sure to create it in the same loop as the one of the
+            # backtesting run
+            if self.stop_when_finished:
+                self.stopped_event = asyncio.Event()
+            if not self.enable_logs:
+                commons_logging.set_global_logger_level(logging.ERROR)
             await self.initialize_config()
+            await self._generate_backtesting_id_if_missing()
             self._add_crypto_currencies_config()
             await self.octobot_backtesting.initialize_and_run()
             self._post_backtesting_start()
@@ -87,6 +106,11 @@ class IndependentBacktesting:
         self._adapt_config()
         return self.backtesting_config
 
+    async def join_stop_event(self, timeout=None):
+        if self.stopped_event is None:
+            return
+        await asyncio.wait_for(self.stopped_event.wait(), timeout)
+
     async def join_backtesting_updater(self, timeout=None):
         if self.octobot_backtesting.backtesting is not None:
             await asyncio.wait_for(self.octobot_backtesting.backtesting.time_updater.finished_event.wait(), timeout)
@@ -97,10 +121,20 @@ class IndependentBacktesting:
                 await self.octobot_backtesting.stop(memory_check=memory_check, should_raise=should_raise)
         finally:
             self.stopped = True
+            if self.stopped_event is not None:
+                self.stopped_event.set()
+            if not self.enable_logs:
+                commons_logging.set_global_logger_level(self.previous_log_level)
 
     def is_in_progress(self):
         if self.octobot_backtesting.backtesting:
             return self.octobot_backtesting.backtesting.is_in_progress()
+        else:
+            return False
+
+    def has_finished(self):
+        if self.octobot_backtesting.backtesting:
+            return self.octobot_backtesting.backtesting.has_finished()
         else:
             return False
 
@@ -111,8 +145,8 @@ class IndependentBacktesting:
             return 0
 
     def _post_backtesting_start(self):
-        logging.reset_backtesting_errors()
-        logging.set_error_publication_enabled(False)
+        commons_logging.reset_backtesting_errors()
+        commons_logging.set_error_publication_enabled(False)
         self.post_backtesting_task = asyncio.create_task(self._register_post_backtesting_end_callback())
 
     async def _register_post_backtesting_end_callback(self):
@@ -121,9 +155,12 @@ class IndependentBacktesting:
 
     async def _post_backtesting_end_callback(self):
         # re enable logs
-        logging.set_error_publication_enabled(True)
-        # stop backtesting importers to release database files
-        await self.octobot_backtesting.stop_importers()
+        commons_logging.set_error_publication_enabled(True)
+        if self.stop_when_finished:
+            await self.stop()
+        else:
+            # stop backtesting importers to release database files
+            await self.octobot_backtesting.stop_importers()
 
     @staticmethod
     def _get_market_delta(symbol, exchange_manager, min_timeframe):
@@ -161,6 +198,8 @@ class IndependentBacktesting:
         if evaluator_constants.CONFIG_FORCED_TIME_FRAME in self.octobot_origin_config:
             self.forced_time_frames = copy.deepcopy(self.octobot_origin_config[
                                                         evaluator_constants.CONFIG_FORCED_TIME_FRAME])
+        self.optimizer_id = self.octobot_origin_config.get(common_constants.CONFIG_OPTIMIZER_ID)
+        self.backtesting_id = self.octobot_origin_config.get(common_constants.CONFIG_BACKTESTING_ID)
         self.backtesting_config = {
             backtesting_constants.CONFIG_BACKTESTING: {},
             common_constants.CONFIG_CRYPTO_CURRENCIES: {},
@@ -189,7 +228,7 @@ class IndependentBacktesting:
             SYMBOL_REPORT: [],
             BOT_REPORT: {},
             CHART_IDENTIFIERS: [],
-            ERRORS_COUNT: logging.get_backtesting_errors_count()
+            ERRORS_COUNT: commons_logging.get_backtesting_errors_count()
         }
         profitabilities = {}
         market_average_profitabilities = {}
@@ -252,9 +291,9 @@ class IndependentBacktesting:
     def _log_global_report(self, exchange_manager):
         _, profitability, _, market_average_profitability, _ = trading_api.get_profitability_stats(exchange_manager)
         reference_market = trading_api.get_reference_market(self.backtesting_config)
-        end_portfolio = trading_api.get_portfolio(exchange_manager)
+        end_portfolio = trading_api.get_portfolio(exchange_manager, as_decimal=False)
         end_portfolio_value = trading_api.get_current_portfolio_value(exchange_manager)
-        starting_portfolio = trading_api.get_origin_portfolio(exchange_manager)
+        starting_portfolio = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
         starting_portfolio_value = trading_api.get_origin_portfolio_value(exchange_manager)
 
         self.logger.info(f"[End portfolio]      value {round(end_portfolio_value, 5)} {reference_market} "
@@ -278,14 +317,34 @@ class IndependentBacktesting:
             common_constants.CONFIG_STARTING_PORTFOLIO] = self.starting_portfolio
         self.backtesting_config[common_constants.CONFIG_SIMULATOR][
             common_constants.CONFIG_SIMULATOR_FEES] = self.fees_config
+        self.backtesting_config[common_constants.CONFIG_OPTIMIZER_ID] = self.optimizer_id
+        self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] = self.backtesting_id
         if self.forced_time_frames:
             self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = self.forced_time_frames
         self._add_config_default_backtesting_values()
+
+    async def _generate_backtesting_id_if_missing(self):
+        if self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] is None:
+            run_dbs_identifier = databases.RunDatabasesIdentifier(
+                trading_api.get_activated_trading_mode(self.tentacles_setup_config),
+                optimization_campaign.OptimizationCampaign.get_campaign_name(self.tentacles_setup_config)
+            )
+            run_dbs_identifier.backtesting_id = await run_dbs_identifier.generate_new_backtesting_id()
+            # initialize to lock the backtesting id
+            await run_dbs_identifier.initialize()
+            self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] = run_dbs_identifier.backtesting_id
 
     def _find_reference_market(self):
         ref_market_candidate = None
         ref_market_candidates = {}
         for pairs in self.symbols_to_create_exchange_classes.values():
+            if self.octobot_backtesting.is_future and \
+               trading_api.is_inverse_future_contract(self.octobot_backtesting.futures_contract_type):
+                if len(pairs) > 1:
+                    self.logger.error(f"Only one trading pair is supported in inverse contracts backtesting. "
+                                      f"Found: the following pairs: {pairs}")
+                # in inverse contracts, use BTC for BTC/USD trading as reference market
+                return symbol_util.split_symbol(pairs[0])[0]
             for pair in pairs:
                 base = symbol_util.split_symbol(pair)[1]
                 if ref_market_candidate is None:

@@ -24,13 +24,17 @@ def create_independent_backtesting(config,
                                    join_backtesting_timeout=constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT,
                                    run_on_common_part_only=True,
                                    start_timestamp=None,
-                                   end_timestamp=None) -> backtesting.IndependentBacktesting:
+                                   end_timestamp=None,
+                                   enable_logs=True,
+                                   stop_when_finished=False) -> backtesting.IndependentBacktesting:
     return backtesting.IndependentBacktesting(config, tentacles_setup_config, data_files,
                                               data_file_path,
                                               run_on_common_part_only=run_on_common_part_only,
                                               join_backtesting_timeout=join_backtesting_timeout,
                                               start_timestamp=start_timestamp,
-                                              end_timestamp=end_timestamp)
+                                              end_timestamp=end_timestamp,
+                                              enable_logs=enable_logs,
+                                              stop_when_finished=stop_when_finished)
 
 
 async def initialize_and_run_independent_backtesting(independent_backtesting, log_errors=True) -> None:
@@ -47,6 +51,10 @@ async def initialize_independent_backtesting_config(independent_backtesting) -> 
 
 async def stop_independent_backtesting(independent_backtesting, memory_check=False, should_raise=False) -> None:
     await independent_backtesting.stop(memory_check=memory_check, should_raise=should_raise)
+
+
+async def join_independent_backtesting_stop(independent_backtesting, timeout=None):
+    await independent_backtesting.join_stop_event(timeout=timeout)
 
 
 def check_independent_backtesting_remaining_objects(independent_backtesting) -> None:
@@ -66,7 +74,7 @@ def get_independent_backtesting_progress(independent_backtesting) -> float:
 
 
 def is_independent_backtesting_finished(independent_backtesting) -> bool:
-    return independent_backtesting.get_progress() == 1.0
+    return independent_backtesting.has_finished()
 
 
 def is_independent_backtesting_stopped(independent_backtesting) -> bool:

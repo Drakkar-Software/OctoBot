@@ -121,7 +121,7 @@ jobs:
         if: github.event_name != 'push'
         run: |
           echo Start OctoBot docker with branche_name tentacles package
-          docker run -id -e TENTACLES_PACKAGES_SOURCE=dev -e TENTACLES_URL_TAG=${GITHUB_HEAD_REF////_} -e DISABLE_SENTRY=True --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
+          docker run -id -e TENTACLES_REPOSITORY=dev-tentacles -e TENTACLES_URL_TAG=${GITHUB_HEAD_REF////_} -e DISABLE_SENTRY=True --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE }}:${{ env.LATEST }}
           sleep ${{ env.CHECK_TENTACLE_CONTAINER_TIME }}
           if docker logs ${{ env.CONTAINER_NAME }} | grep "octobot_tentacles_manager.api.util.tentacles_management Failed to download file at url :" ; then
               docker rm -f ${{ env.CONTAINER_NAME }}
