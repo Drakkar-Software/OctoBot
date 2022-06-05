@@ -35,7 +35,7 @@ cdef class OctoBotBacktesting:
     cdef public object start_timestamp
     cdef public object end_timestamp
     cdef public bint enable_logs
-    cdef public bint is_future
+    cdef public str exchange_type
     cdef public object futures_contract_type
 
     cpdef object memory_leak_checkup(self, list to_check_elements)

@@ -311,6 +311,14 @@ class IndependentBacktesting:
             f"{round(backtesting_api.get_backtesting_duration(self.octobot_backtesting.backtesting), 3)} sec")
 
     def _adapt_config(self):
+        self._init_exchange_type()
+        self.backtesting_config[common_constants.CONFIG_EXCHANGES] = copy.deepcopy(
+            self.octobot_origin_config[common_constants.CONFIG_EXCHANGES])
+        for exchange_details in self.backtesting_config[common_constants.CONFIG_EXCHANGES].values():
+            exchange_details.pop(common_constants.CONFIG_EXCHANGE_KEY, None)
+            exchange_details.pop(common_constants.CONFIG_EXCHANGE_SECRET, None)
+            exchange_details.pop(common_constants.CONFIG_EXCHANGE_PASSWORD, None)
+            exchange_details.pop(common_constants.CONFIG_EXCHANGE_SANDBOXED, None)
         self.backtesting_config[common_constants.CONFIG_TRADING][common_constants.CONFIG_TRADER_RISK] = self.risk
         self.backtesting_config[common_constants.CONFIG_TRADING][
             common_constants.CONFIG_TRADER_REFERENCE_MARKET] = self._find_reference_market()
@@ -323,6 +331,16 @@ class IndependentBacktesting:
         if self.forced_time_frames:
             self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = self.forced_time_frames
         self._add_config_default_backtesting_values()
+
+    def _init_exchange_type(self):
+        try:
+            first_exchange = next(iter(self.symbols_to_create_exchange_classes.keys()))
+            # use current profile config to create a spot/future/margin backtesting exchange
+            self.octobot_backtesting.exchange_type = self.octobot_origin_config[common_constants.CONFIG_EXCHANGES].get(
+                first_exchange, {}).get(common_constants.CONFIG_EXCHANGE_TYPE, common_constants.DEFAULT_EXCHANGE_TYPE)
+        except StopIteration:
+            # use default exchange type
+            pass
 
     async def _generate_backtesting_id_if_missing(self):
         if self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] is None:
@@ -340,7 +358,7 @@ class IndependentBacktesting:
         ref_market_candidates = {}
         for symbols in self.symbols_to_create_exchange_classes.values():
             symbol = symbols[0]
-            if self.octobot_backtesting.is_future:
+            if self.octobot_backtesting.exchange_type == common_constants.CONFIG_EXCHANGE_FUTURE:
                 if symbol.is_inverse():
                     if len(symbols) > 1:
                         self.logger.error(f"Only one trading pair is supported in inverse contracts backtesting. "
