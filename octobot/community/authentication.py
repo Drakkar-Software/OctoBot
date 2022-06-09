@@ -131,6 +131,15 @@ class CommunityAuthentication(authentication.Authenticator):
             return self._session.get(url, params=params, **kwargs)
 
     @authentication.authenticated
+    def download(self, url, target_file, params=None, **kwargs):
+        with self._session.get(url, stream=True, params=params, **kwargs) as r:
+            r.raise_for_status()
+            with open(target_file, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        return target_file
+
+    @authentication.authenticated
     def post(self, url, data=None, json=None, **kwargs):
         return self._session.post(url, data=data, json=json, **kwargs)
 
