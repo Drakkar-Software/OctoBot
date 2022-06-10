@@ -128,11 +128,13 @@ def _create_startup_config(logger):
 
 def _read_config(config, logger):
     try:
-        config.read(should_raise=False, fill_missing_fields=True)
+        config.read(should_raise=True, fill_missing_fields=True)
     except errors.NoProfileError:
         _repair_with_default_profile(config, logger)
         config = _create_configuration()
         config.read(should_raise=False, fill_missing_fields=True)
+    except Exception as e:
+        raise errors.ConfigError(e)
 
 
 def _validate_config(config, logger):
@@ -245,9 +247,9 @@ def start_octobot(args):
 
         commands.run_bot(bot, logger)
 
-    except errors.ConfigError:
+    except errors.ConfigError as e:
         logger.error("OctoBot can't start without a valid " + common_constants.CONFIG_FILE
-                     + " configuration file." + "\nYou can use " +
+                     + " configuration file.\nError: " + str(e) + "\nYou can use " +
                      constants.DEFAULT_CONFIG_FILE + " as an example to fix it.")
         os._exit(-1)
 
