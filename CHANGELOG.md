@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.5] - 2022-06-12
+### Fixed
+- [Trading modes] Stop loss are not created after instantly filled limit orders
+- [Exchanges] Multiple backtesting issues
+- [WebInterface] Portfolio value sorting
+
 ## [0.4.4] - 2022-06-01
 ### Added
 - [Exchanges] Future trading engine
