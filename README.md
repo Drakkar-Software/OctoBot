@@ -14,7 +14,7 @@
 [![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg)](https://t.me/OctoBot_Project)
 [![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=Follow&style=social)](https://octobot.click/gh-twitter)
 <p align="center">
-<img src="../assets/octopus.svg" alt="Octobot Logo" height="400" width="400">
+<img src="../assets/OctoBot-icon-only.svg" alt="Octobot Logo" height="400" width="400">
 </p>
 
 ![Web Interface](../assets/web-interface.gif)
