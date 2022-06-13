@@ -1,4 +1,4 @@
-# OctoBot [0.4.4](https://octobot.click/gh-changelog)
+# OctoBot [0.4.5](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://octobot.click/gh-pypi)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://octobot.click/gh-dockerhub)
@@ -14,7 +14,7 @@
 [![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg)](https://t.me/OctoBot_Project)
 [![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=Follow&style=social)](https://octobot.click/gh-twitter)
 <p align="center">
-<img src="../assets/octopus.svg" alt="Octobot Logo" height="400" width="400">
+<img src="../assets/OctoBot-icon-only.svg" alt="Octobot Logo" height="400" width="400">
 </p>
 
 ![Web Interface](../assets/web-interface.gif)
