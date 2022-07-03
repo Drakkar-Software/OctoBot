@@ -362,11 +362,11 @@ class IndependentBacktesting:
             if next(iter(self.octobot_backtesting.exchange_type_by_exchange.values())) \
                     == common_constants.CONFIG_EXCHANGE_FUTURE:
                 if symbol.is_inverse():
-                    if not all(symbol.is_inverse() for symbol in symbols):
+                    if not all([symbol.is_inverse() for symbol in symbols]):
                         self.logger.error(f"Mixed inverse and linear contracts backtesting are not supported yet")
                     self.octobot_backtesting.futures_contract_type = trading_enums.FutureContractType.INVERSE_PERPETUAL
                 else:
-                    if not all(symbol.is_linear() for symbol in symbols):
+                    if not all([symbol.is_linear() for symbol in symbols]):
                         self.logger.error(f"Mixed inverse and linear contracts backtesting are not supported yet")
                     self.octobot_backtesting.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
                 # in inverse contracts, use BTC for BTC/USD trading as reference market
