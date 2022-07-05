@@ -25,7 +25,7 @@ from octobot.community import authentication
 from octobot.community import community_tentacles_package
 from octobot.community import community_supports
 from octobot.community import community_donation
-from octobot.community import community_feed
+from octobot.community import feeds
 from octobot.community import errors_upload
 
 from octobot.community.community_analysis import (
@@ -48,8 +48,11 @@ from octobot.community.community_supports import (
 from octobot.community.community_donation import (
     CommunityDonation
 )
-from octobot.community.community_feed import (
-    CommunityFeed
+from octobot.community.feeds import (
+    AbstractFeed,
+    CommunityWSFeed,
+    CommunityMQTTFeed,
+    community_feed_factory,
 )
 from octobot.community.errors_upload import (
     register_error_uploader,
@@ -70,4 +73,8 @@ __all__ = [
     "register_error_uploader",
     "Error",
     "ErrorsUploader",
+    "AbstractFeed",
+    "CommunityWSFeed",
+    "CommunityMQTTFeed",
+    "community_feed_factory",
 ]

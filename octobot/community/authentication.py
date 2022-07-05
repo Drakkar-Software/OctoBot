@@ -22,7 +22,7 @@ import aiohttp
 
 import octobot.constants as constants
 import octobot.community.community_supports as community_supports
-import octobot.community.community_feed as community_feed
+import octobot.community.feeds as community_feeds
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
 
@@ -80,7 +80,11 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _ensure_init_community_feed(self):
         if self._community_feed is None:
-            self._community_feed = community_feed.CommunityFeed(self.feed_url, self)
+            self._community_feed = community_feeds.community_feed_factory(
+                self.feed_url,
+                self,
+                constants.COMMUNITY_FEED_DEFAULT_TYPE
+            )
             await self._community_feed.start()
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):

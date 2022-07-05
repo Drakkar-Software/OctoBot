@@ -16,6 +16,7 @@
 import os
 import pathlib
 import octobot_commons.os_util as os_util
+import octobot.enums
 
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
@@ -44,12 +45,14 @@ DEFAULT_COMMUNITY_URL = "https://community.octobot.online/"
 DEFAULT_COMMUNITY_WS_URL = "ws://community2.octobot.cloud/"   #TODO
 OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", DEFAULT_COMMUNITY_URL)
 OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_WS_URL", f"{DEFAULT_COMMUNITY_WS_URL}cable")
+OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")    #TODO
 OCTOBOT_COMMUNITY_AUTH_URL = f"{OCTOBOT_COMMUNITY_URL}spree_oauth/token"
 OCTOBOT_COMMUNITY_ACCOUNT_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/account"
 OCTOBOT_COMMUNITY_PACKAGES_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/tentacle/packages"
 OCTOBOT_COMMUNITY_SUPPORTS_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/supports"
 OCTOBOT_COMMUNITY_FETCH_FEED_IDENTIFIER_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/feeds/id"
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
+COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 

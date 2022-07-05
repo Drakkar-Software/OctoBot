@@ -16,4 +16,7 @@ colorlog==4.7.2
 yarl==1.7.2
 idna<2.9,>=2.5
 requests==2.25.1
+
+# Community
 websockets
+gmqtt==0.6.11
