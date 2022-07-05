@@ -116,7 +116,7 @@ async def community_mocked_consumer_server():
 async def connected_community_feed(authenticator):
     feed = None
     try:
-        feed = community.CommunityFeed(f"ws://{HOST}:{PORT}", authenticator)
+        feed = community.CommunityWSFeed(f"ws://{HOST}:{PORT}", authenticator)
         feed.INIT_TIMEOUT = 1
         with mock.patch.object(feed, "_fetch_stream_identifier", mock.AsyncMock(return_value=1)) \
                 as _fetch_stream_identifier_mock:
@@ -209,7 +209,7 @@ async def test_reconnect(authenticator):
     try:
         server = await websockets.serve(echo_or_signal_reply_handler, HOST, PORT)
         client_handler = mock.AsyncMock()
-        client = community.CommunityFeed(f"ws://{HOST}:{PORT}", authenticator)
+        client = community.CommunityWSFeed(f"ws://{HOST}:{PORT}", authenticator)
         client.RECONNECT_DELAY = 0
         await client.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, client_handler)
         await client.start()
