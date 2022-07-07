@@ -27,6 +27,7 @@ import octobot.constants as constants
 class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     MQTT_VERSION = gmqtt.constants.MQTTv311
     MQTT_BROKER_PORT = 1883
+    RECONNECT_DELAY = 15
 
     # Quality of Service level determines the reliability of the data flow between a client and a message broker.
     # The message may be sent in three ways:
@@ -82,9 +83,10 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return f"{channel_type.value}/{identifier}"
 
     async def _on_message(self, client, topic, payload, qos, properties):
-        self.logger.debug(f"RECV MSG {client._client_id} TOPIC: {topic,} PAYLOAD: {payload} "
-                          f"QOS: {qos} PROPERTIES: {properties}")
-        parsed_message = json.loads(zlib.decompress(payload).decode())
+        uncompressed_payload = zlib.decompress(payload).decode()
+        self.logger.debug(f"Received message, client_id: {client._client_id}, topic: {topic}, "
+                          f"uncompressed payload: {uncompressed_payload}, QOS: {qos}, properties: {properties}")
+        parsed_message = json.loads(uncompressed_payload)
         try:
             self._ensure_supported(parsed_message)
             for callback in self._get_callbacks(topic):
@@ -93,6 +95,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self.logger.error(f"Unsupported message: {e}")
 
     async def send(self, message, channel_type, identifier, **kwargs):
+        topic = self._build_topic(channel_type, identifier)
+        self.logger.debug(f"Sending message on topic: {topic}, message: {message}")
         self._mqtt_client.publish(
             self._build_topic(channel_type, identifier),
             self._build_message(channel_type, message),
@@ -110,7 +114,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         if message:
             return zlib.compress(
                 json.dumps({
-                    commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value: channel_type,
+                    commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value: channel_type.value,
                     commons_enums.CommunityFeedAttrs.VERSION.value: constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION,
                     commons_enums.CommunityFeedAttrs.VALUE.value: message,
                 }).encode()
@@ -125,12 +129,12 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             )
 
     def _on_connect(self, client, flags, rc, properties):
-        self.logger.info(f"CONNECTED, client_id={client._client_id}")
+        self.logger.info(f"Connected, client_id: {client._client_id}")
         # Auto subscribe to known topics (mainly used in case of reconnection)
         self._subscribe(self._subscription_topics)
 
     def _on_disconnect(self, client, packet, exc=None):
-        self.logger.info(f"DISCONNECTED, client_id={client._client_id}")
+        self.logger.info(f"Disconnected, client_id: {client._client_id}")
 
     def _on_subscribe(self, client, mid, qos, properties):
         # from https://github.com/wialon/gmqtt/blob/master/examples/resubscription.py#L28
@@ -140,10 +144,12 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         for subscription, granted_qos in zip(subscriptions, qos):
             # in case of bad suback code, we can resend  subscription
             if granted_qos >= gmqtt.constants.SubAckReasonCode.UNSPECIFIED_ERROR.value:
-                self.logger.warning(f"[RETRYING SUB {client._client_id}] mid {mid,}, "
+                self.logger.warning(f"Retrying subscribe, client_id: {client._client_id}, mid: {mid}, "
                                     f"reason code: {granted_qos}, properties {properties}")
+                #TODO try only X times
                 client.resubscribe(subscription)
-            self.logger.info(f"[SUBSCRIBED {client._client_id}] mid {mid}, QOS: {granted_qos}, properties {properties}")
+            self.logger.info(f"Subscribed, client_id: {client._client_id}, mid {mid}, QOS: {granted_qos}, "
+                             f"properties {properties}")
 
     def _register_callbacks(self, client):
         client.on_connect = self._on_connect
@@ -151,8 +157,17 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         client.on_disconnect = self._on_disconnect
         client.on_subscribe = self._on_subscribe
 
+    def _update_client_config(self, client):
+        default_config = gmqtt.constants.DEFAULT_CONFIG
+        default_config.update({
+            'reconnect_delay': self.RECONNECT_DELAY,
+            'reconnect_retries': gmqtt.constants.UNLIMITED_RECONNECTS,
+        })
+        client.set_config(default_config)
+
     async def _connect(self):
         self._mqtt_client = gmqtt.Client(self.__class__.__name__)
+        self._update_client_config(self._mqtt_client)
         self._register_callbacks(self._mqtt_client)
         self._mqtt_client.set_auth_credentials(self._device_credential, None)
         self.logger.debug(f"Connecting client")
@@ -166,5 +181,5 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             gmqtt.Subscription(topic, qos=self.default_QOS)
             for topic in topics
         ]
-        self.logger.debug(f"Subscribing to {','.join(topics)}")
+        self.logger.debug(f"Subscribing to {', '.join(topics)}")
         self._mqtt_client.subscribe(subscriptions)
