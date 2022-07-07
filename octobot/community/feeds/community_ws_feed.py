@@ -140,7 +140,7 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
     def _build_data(self, channel_type, identifier, message):
         if message:
             return json.dumps({
-                "topic": channel_type,
+                "topic": channel_type.value,
                 "feed_id": self._build_stream_id(identifier),
                 "version": constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION,
                 "value": json.dumps(message),
