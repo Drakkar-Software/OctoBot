@@ -13,9 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import uuid
 import gmqtt
 import json
 import zlib
+import asyncio
 import distutils.version as loose_version
 
 import octobot_commons.enums as commons_enums
@@ -28,6 +30,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     MQTT_VERSION = gmqtt.constants.MQTTv311
     MQTT_BROKER_PORT = 1883
     RECONNECT_DELAY = 15
+    MAX_MESSAGE_ID_CACHE_SIZE = 100
 
     # Quality of Service level determines the reliability of the data flow between a client and a message broker.
     # The message may be sent in three ways:
@@ -46,12 +49,20 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._mqtt_client: gmqtt.Client = None
         self._device_credential: str = None
         self._subscription_topics = set()
+        self._reconnect_task = None
+        self._processed_messages = set()
 
     async def start(self):
         await self._fetch_device_credential()
         await self._connect()
 
     async def stop(self):
+        self.should_stop = True
+        await self._stop_mqtt_client()
+        if self._reconnect_task is not None and not self._reconnect_task.done():
+            self._reconnect_task.cancel()
+
+    async def _stop_mqtt_client(self):
         if self._mqtt_client is not None and self._mqtt_client.is_connected:
             await self._mqtt_client.disconnect()
 
@@ -89,10 +100,24 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         parsed_message = json.loads(uncompressed_payload)
         try:
             self._ensure_supported(parsed_message)
-            for callback in self._get_callbacks(topic):
-                await callback(parsed_message)
+            if self._should_process(parsed_message):
+                for callback in self._get_callbacks(topic):
+                    await callback(parsed_message)
         except commons_errors.UnsupportedError as e:
             self.logger.error(f"Unsupported message: {e}")
+
+    def _should_process(self, parsed_message):
+        if parsed_message[commons_enums.CommunityFeedAttrs.ID.value] in self._processed_messages:
+            self.logger.debug(f"Ignored already processed message with id: "
+                              f"{parsed_message[commons_enums.CommunityFeedAttrs.ID.value]}")
+            return False
+        self._processed_messages.add(parsed_message[commons_enums.CommunityFeedAttrs.ID.value])
+        if len(self._processed_messages) > self.MAX_MESSAGE_ID_CACHE_SIZE:
+            self._processed_messages = [
+                message_id
+                for message_id in self._processed_messages[self.MAX_MESSAGE_ID_CACHE_SIZE // 2:]
+            ]
+        return True
 
     async def send(self, message, channel_type, identifier, **kwargs):
         topic = self._build_topic(channel_type, identifier)
@@ -117,6 +142,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
                     commons_enums.CommunityFeedAttrs.CHANNEL_TYPE.value: channel_type.value,
                     commons_enums.CommunityFeedAttrs.VERSION.value: constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION,
                     commons_enums.CommunityFeedAttrs.VALUE.value: message,
+                    commons_enums.CommunityFeedAttrs.ID.value: str(uuid.uuid4()),  # assign unique id to each message
                 }).encode()
             )
         return {}
@@ -133,8 +159,30 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         # Auto subscribe to known topics (mainly used in case of reconnection)
         self._subscribe(self._subscription_topics)
 
+    def _try_reconnect_if_necessary(self, client):
+        if self._reconnect_task is None or self._reconnect_task.done():
+            self._reconnect_task = asyncio.create_task(self._reconnect(client))
+
+    async def _reconnect(self, client):
+        try:
+            await self._stop_mqtt_client()
+        except Exception as e:
+            self.logger.debug(f"Ignored error while stopping client: {e}.")
+        first_reconnect = True
+        while not self.should_stop:
+            try:
+                self.logger.info(f"Reconnecting, client_id: {client._client_id}")
+                await self._connect()
+                return
+            except Exception as e:
+                delay = 0 if first_reconnect else self.RECONNECT_DELAY
+                first_reconnect = False
+                self.logger.debug(f"Error while reconnecting: {e}. Trying again in {delay} seconds.")
+                await asyncio.sleep(delay)
+
     def _on_disconnect(self, client, packet, exc=None):
         self.logger.info(f"Disconnected, client_id: {client._client_id}")
+        self._try_reconnect_if_necessary(client)
 
     def _on_subscribe(self, client, mid, qos, properties):
         # from https://github.com/wialon/gmqtt/blob/master/examples/resubscription.py#L28
@@ -159,9 +207,9 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     def _update_client_config(self, client):
         default_config = gmqtt.constants.DEFAULT_CONFIG
+        # prevent default auto-reconnect as it loop infinitely on windows long disconnections
         default_config.update({
-            'reconnect_delay': self.RECONNECT_DELAY,
-            'reconnect_retries': gmqtt.constants.UNLIMITED_RECONNECTS,
+            'reconnect_retries': -2,
         })
         client.set_config(default_config)
 
