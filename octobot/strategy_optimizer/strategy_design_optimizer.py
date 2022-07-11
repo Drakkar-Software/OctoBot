@@ -28,6 +28,7 @@ import time
 import numpy
 import logging
 import ctypes
+import random
 
 import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.constants as commons_constants
@@ -84,12 +85,14 @@ class StrategyDesignOptimizer:
     CONFIG_DELETE_EVERY_RUN = "delete_every_run"
     CONFIG_ROLE = "role"
 
-    def __init__(self, trading_mode, config, tentacles_setup_config, optimizer_config, optimizer_id=None):
+    def __init__(self, trading_mode, config, tentacles_setup_config, optimizer_config,
+                 optimizer_id=None, queue_size=None):
         self.config = config
         self.base_tentacles_setup_config = tentacles_setup_config
         self.trading_mode = trading_mode
         self.optimizer_config = optimizer_config
         self.optimizer_id = optimizer_id
+        self.queue_size = queue_size
         self.current_backtesting_id = None
         self.runs_schedule = None
         self.logger = commons_logging.get_logger(self.__class__.__name__)
@@ -702,6 +705,10 @@ class StrategyDesignOptimizer:
             if self._is_run_allowed(run)
         }
         if runs:
+            temp_runs = list(runs.values())
+            random.shuffle(temp_runs)
+            temp_runs = temp_runs[:self.queue_size]
+            runs = dict(zip(runs, temp_runs))
             for run in runs.values():
                 for run_input in run:
                     # do not store self.CONFIG_KEY
