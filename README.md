@@ -111,10 +111,11 @@ In short :
 [![Binance](../assets/okex-logo.png)](https://octobot.click/gh-okex)
 [![Binance](../assets/gateio-logo.png)](https://octobot.click/gh-gateio)
 [![Binance](../assets/huobi-logo.png)](https://octobot.click/gh-huobi)
-[![Bitmax](../assets/ascendex-logo.png)](https://octobot.click/gh-ascendex)
+[![Hollaex](../assets/hollaex-logo.png)](https://octobot.click/gh-hollaex)
 [![Coinbase](../assets/coinbasepro-logo.png)](https://pro.coinbase.com)
 [![Kucoin](../assets/kucoin-logo.png)](https://www.kucoin.com)
 [![Bitmex](../assets/bitmex-logo.png)](https://bitmex.com)
+[![Bitmax](../assets/ascendex-logo.png)](https://octobot.click/gh-ascendex)
 
 Octobot supports many [exchanges](https://octobot.click/gh-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
 To activate trading on an exchange, just configure OctoBot with your api keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
