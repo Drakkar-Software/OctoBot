@@ -23,7 +23,7 @@ import octobot_commons.enums as enums
 import octobot_commons.errors as errors
 import octobot_commons.logging as commons_logging
 import octobot_commons.pretty_printer as pretty_printer
-import octobot_commons.symbol_util as symbol_util
+import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.databases as databases
 import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.time_frame_manager as time_frame_manager
@@ -37,6 +37,7 @@ import octobot_backtesting.data as backtesting_data
 import octobot_evaluators.constants as evaluator_constants
 
 import octobot_trading.api as trading_api
+import octobot_trading.enums as trading_enums
 
 
 class IndependentBacktesting:
@@ -165,7 +166,7 @@ class IndependentBacktesting:
     @staticmethod
     def _get_market_delta(symbol, exchange_manager, min_timeframe):
         market_data = trading_api.get_symbol_historical_candles(
-            trading_api.get_symbol_data(exchange_manager, symbol), min_timeframe)
+            trading_api.get_symbol_data(exchange_manager, symbol.legacy_symbol()), min_timeframe)
         market_begin = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][0]
         market_end = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][-1]
 
@@ -186,7 +187,7 @@ class IndependentBacktesting:
             if exchange_name not in self.symbols_to_create_exchange_classes:
                 self.symbols_to_create_exchange_classes[exchange_name] = []
             for symbol in description[backtesting_enums.DataFormatKeys.SYMBOLS.value]:
-                self.symbols_to_create_exchange_classes[exchange_name].append(symbol)
+                self.symbols_to_create_exchange_classes[exchange_name].append(symbol_util.parse_symbol(symbol))
 
     def _init_default_config_values(self):
         self.risk = copy.deepcopy(self.octobot_origin_config[common_constants.CONFIG_TRADING][
@@ -241,9 +242,9 @@ class IndependentBacktesting:
             exchange_name = trading_api.get_exchange_name(exchange_manager)
             for symbol in self.symbols_to_create_exchange_classes[exchange_name]:
                 market_delta = self._get_market_delta(symbol, exchange_manager, min_timeframe)
-                report[SYMBOL_REPORT].append({symbol: market_delta * 100})
+                report[SYMBOL_REPORT].append({symbol.symbol_str: market_delta * 100})
                 report[CHART_IDENTIFIERS].append({
-                    "symbol": symbol,
+                    "symbol": symbol.symbol_str,
                     "exchange_id": exchange_id,
                     "exchange_name": exchange_name,
                     "time_frame": min_timeframe.value
@@ -286,7 +287,7 @@ class IndependentBacktesting:
 
     def _log_symbol_report(self, symbol, exchange_manager, min_time_frame):
         market_delta = self._get_market_delta(symbol, exchange_manager, min_time_frame)
-        self.logger.info(f"{symbol} Profitability : {market_delta * 100}%")
+        self.logger.info(f"{symbol.symbol_str} Profitability : {market_delta * 100}%")
 
     def _log_global_report(self, exchange_manager):
         _, profitability, _, market_average_profitability, _ = trading_api.get_profitability_stats(exchange_manager)
@@ -310,6 +311,14 @@ class IndependentBacktesting:
             f"{round(backtesting_api.get_backtesting_duration(self.octobot_backtesting.backtesting), 3)} sec")
 
     def _adapt_config(self):
+        self._init_exchange_type()
+        self.backtesting_config[common_constants.CONFIG_EXCHANGES] = copy.deepcopy(
+            self.octobot_origin_config[common_constants.CONFIG_EXCHANGES])
+        for exchange_details in self.backtesting_config[common_constants.CONFIG_EXCHANGES].values():
+            exchange_details.pop(common_constants.CONFIG_EXCHANGE_KEY, None)
+            exchange_details.pop(common_constants.CONFIG_EXCHANGE_SECRET, None)
+            exchange_details.pop(common_constants.CONFIG_EXCHANGE_PASSWORD, None)
+            exchange_details.pop(common_constants.CONFIG_EXCHANGE_SANDBOXED, None)
         self.backtesting_config[common_constants.CONFIG_TRADING][common_constants.CONFIG_TRADER_RISK] = self.risk
         self.backtesting_config[common_constants.CONFIG_TRADING][
             common_constants.CONFIG_TRADER_REFERENCE_MARKET] = self._find_reference_market()
@@ -322,6 +331,17 @@ class IndependentBacktesting:
         if self.forced_time_frames:
             self.backtesting_config[evaluator_constants.CONFIG_FORCED_TIME_FRAME] = self.forced_time_frames
         self._add_config_default_backtesting_values()
+
+    def _init_exchange_type(self):
+        try:
+            for exchange_name in self.symbols_to_create_exchange_classes:
+                # use current profile config to create a spot/future/margin backtesting exchange
+                self.octobot_backtesting.exchange_type_by_exchange[exchange_name] = \
+                    self.octobot_origin_config[common_constants.CONFIG_EXCHANGES].get(exchange_name, {}).\
+                    get(common_constants.CONFIG_EXCHANGE_TYPE, common_constants.DEFAULT_EXCHANGE_TYPE)
+        except StopIteration:
+            # use default exchange type
+            pass
 
     async def _generate_backtesting_id_if_missing(self):
         if self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] is None:
@@ -337,25 +357,31 @@ class IndependentBacktesting:
     def _find_reference_market(self):
         ref_market_candidate = None
         ref_market_candidates = {}
-        for pairs in self.symbols_to_create_exchange_classes.values():
-            if self.octobot_backtesting.is_future and \
-               trading_api.is_inverse_future_contract(self.octobot_backtesting.futures_contract_type):
-                if len(pairs) > 1:
-                    self.logger.error(f"Only one trading pair is supported in inverse contracts backtesting. "
-                                      f"Found: the following pairs: {pairs}")
-                # in inverse contracts, use BTC for BTC/USD trading as reference market
-                return symbol_util.split_symbol(pairs[0])[0]
-            for pair in pairs:
-                base = symbol_util.split_symbol(pair)[1]
-                if ref_market_candidate is None:
-                    ref_market_candidate = base
-                if base in ref_market_candidates:
-                    ref_market_candidates[base] += 1
+        for symbols in self.symbols_to_create_exchange_classes.values():
+            symbol = symbols[0]
+            if next(iter(self.octobot_backtesting.exchange_type_by_exchange.values())) \
+                    == common_constants.CONFIG_EXCHANGE_FUTURE:
+                if symbol.is_inverse():
+                    if not all([symbol.is_inverse() for symbol in symbols]):
+                        self.logger.error(f"Mixed inverse and linear contracts backtesting are not supported yet")
+                    self.octobot_backtesting.futures_contract_type = trading_enums.FutureContractType.INVERSE_PERPETUAL
                 else:
-                    ref_market_candidates[base] = 1
-                if ref_market_candidate != base and \
-                        ref_market_candidates[ref_market_candidate] < ref_market_candidates[base]:
-                    ref_market_candidate = base
+                    if not all([symbol.is_linear() for symbol in symbols]):
+                        self.logger.error(f"Mixed inverse and linear contracts backtesting are not supported yet")
+                    self.octobot_backtesting.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
+                # in inverse contracts, use BTC for BTC/USD trading as reference market
+                return symbol.settlement_asset
+            for symbol in symbols:
+                quote = symbol.quote
+                if ref_market_candidate is None:
+                    ref_market_candidate = quote
+                if quote in ref_market_candidates:
+                    ref_market_candidates[quote] += 1
+                else:
+                    ref_market_candidates[quote] = 1
+                if ref_market_candidate != quote and \
+                        ref_market_candidates[ref_market_candidate] < ref_market_candidates[quote]:
+                    ref_market_candidate = quote
         return ref_market_candidate
 
     def _add_config_default_backtesting_values(self):
@@ -366,11 +392,12 @@ class IndependentBacktesting:
         self.backtesting_config[common_constants.CONFIG_SIMULATOR][common_constants.CONFIG_ENABLED_OPTION] = True
 
     def _add_crypto_currencies_config(self):
-        for pairs in self.symbols_to_create_exchange_classes.values():
-            for pair in pairs:
-                if pair not in self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES]:
-                    self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES][pair] = {
+        for symbols in self.symbols_to_create_exchange_classes.values():
+            for symbol in symbols:
+                symbol_id = symbol.legacy_symbol()
+                if symbol_id not in self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES]:
+                    self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES][symbol_id] = {
                         common_constants.CONFIG_CRYPTO_PAIRS: []
                     }
-                    self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES][pair][
-                        common_constants.CONFIG_CRYPTO_PAIRS] = [pair]
+                    self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES][symbol_id][
+                        common_constants.CONFIG_CRYPTO_PAIRS] = [symbol_id]

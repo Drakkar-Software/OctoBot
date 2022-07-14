@@ -22,7 +22,7 @@ import threading
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
 import octobot_commons.os_util as os_util
-import octobot_commons.symbol_util as symbol_util
+import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.authentication as authentication
 
 import octobot_commons.constants as common_constants
@@ -179,7 +179,7 @@ class CommunityManager:
                 trades += trading_api.get_trade_history(exchange_manager, since=self.octobot_api.get_start_time())
             for trade in trades:
                 # cost is in quote currency for a traded pair
-                currency = symbol_util.split_symbol(trade.symbol)[-1]
+                currency = symbol_util.parse_symbol(trade.symbol).quote
                 if currency in volume_by_currency:
                     volume_by_currency[currency] += float(trade.total_cost)
                 else:
