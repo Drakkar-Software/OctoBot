@@ -63,7 +63,7 @@ class OctoBotBacktesting:
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
         self.enable_logs = enable_logs
-        self.is_future = False
+        self.exchange_type_by_exchange = {}
         self.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
 
     async def initialize_and_run(self):
@@ -232,14 +232,16 @@ class OctoBotBacktesting:
                                                          end_timestamp=self.end_timestamp)
 
         for exchange_class_string in self.symbols_to_create_exchange_classes.keys():
+            is_future = self.exchange_type_by_exchange[exchange_class_string] == \
+                        commons_constants.CONFIG_EXCHANGE_FUTURE
             exchange_builder = trading_api.create_exchange_builder(self.backtesting_config, exchange_class_string) \
                 .has_matrix(self.matrix_id) \
                 .use_tentacles_setup_config(self.tentacles_setup_config) \
                 .set_bot_id(self.bot_id) \
                 .is_simulated() \
                 .is_rest_only() \
-                .is_future(self.is_future, self.futures_contract_type) \
-                .is_backtesting(self.backtesting)
+                .is_backtesting(self.backtesting) \
+                .is_future(is_future, self.futures_contract_type)
             try:
                 await exchange_builder.build()
             finally:
