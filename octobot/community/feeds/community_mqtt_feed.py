@@ -31,6 +31,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     MQTT_BROKER_PORT = 1883
     RECONNECT_DELAY = 15
     MAX_MESSAGE_ID_CACHE_SIZE = 100
+    DISABLE_RECONNECT_VALUE = -2
 
     # Quality of Service level determines the reliability of the data flow between a client and a message broker.
     # The message may be sent in three ways:
@@ -53,7 +54,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._processed_messages = set()
 
     async def start(self):
-        await self._fetch_device_credential()
+        await self._fetch_device_credentials()
         await self._connect()
 
     async def stop(self):
@@ -72,11 +73,11 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self.feed_callbacks[topic].append(callback)
         except KeyError:
             self.feed_callbacks[topic] = [callback]
-        if identifier not in self._subscription_topics:
+        if topic not in self._subscription_topics:
             self._subscription_topics.add(topic)
             self._subscribe((topic, ))
 
-    async def _fetch_device_credential(self):
+    async def _fetch_device_credentials(self):
         # TODO
         self._device_credential = "a8e68204-4c51-47c0-bb22-b24fae14d546"
 
@@ -209,7 +210,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         default_config = gmqtt.constants.DEFAULT_CONFIG
         # prevent default auto-reconnect as it loop infinitely on windows long disconnections
         default_config.update({
-            'reconnect_retries': -2,
+            'reconnect_retries': self.DISABLE_RECONNECT_VALUE,
         })
         client.set_config(default_config)
 
