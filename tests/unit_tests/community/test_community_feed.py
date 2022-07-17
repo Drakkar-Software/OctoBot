@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
+import pytest_asyncio
 import mock
 import asyncio
 import json
@@ -80,13 +81,13 @@ async def echo_or_signal_reply_handler(websocket, _):
             await websocket.send(json.dumps({"message": base_message}))
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def community_echo_server():
     async with websockets.serve(echo_or_signal_reply_handler, HOST, PORT):
         yield
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def authenticator():
     auth = community.CommunityAuthentication(None, None)
     auth._auth_token = TOKEN
@@ -95,7 +96,7 @@ async def authenticator():
     return auth
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def community_mocked_consumer_server():
     mock_consumer = mock.AsyncMock()
 
@@ -111,7 +112,7 @@ async def community_mocked_consumer_server():
         yield mock_consumer
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def connected_community_feed(authenticator):
     feed = None
     try:
