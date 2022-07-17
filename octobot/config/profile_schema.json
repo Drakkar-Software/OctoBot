@@ -138,6 +138,10 @@
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            },
+            "current-bot-recording-id": {
+              "type": "integer",
+              "minimum": 1
             }
           },
           "required": [

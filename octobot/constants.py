@@ -154,6 +154,9 @@ OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION = False
 OPTIMIZER_DATA_FILES_FOLDER = f"{OCTOBOT_FOLDER}/strategy_optimizer/optimizer_data_files"
 OPTIMIZATION_CAMPAIGN_KEY = "optimization_campaign"
 
+CURRENT_BOT_RECORDING_ID = "current-bot-recording-id"
+DEFAULT_BOT_RECORDING_ID = 1
+
 # Channel
 OCTOBOT_CHANNEL = "OctoBot"
 
