@@ -14,9 +14,9 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import base64
 import contextlib
 import json
-import time
 import requests
 import aiohttp
 
@@ -32,42 +32,48 @@ class CommunityAuthentication(authentication.Authenticator):
     Authentication utility
     """
     ALLOWED_TIME_DELAY = 1 * commons_constants.MINUTE_TO_SECONDS
-    AUTHORIZATION_HEADER = "Authorization"
-    IDENTIFIER_HEADER = "Identifier"
-    REFRESH_TOKEN = "refresh_token"
-    GRANT_TYPE = "grant_type"
+    AUTHORIZATION_HEADER = "authorization"
+    SESSION_HEADER = "X-Session"
 
     def __init__(self, authentication_url, feed_url, username=None, password=None, config=None):
         super().__init__()
         self.authentication_url = authentication_url
         self.feed_url = feed_url
-        self.refresh_token = None
         self.edited_config = config
-        self.identifier = None
         self.supports = community_supports.CommunitySupports()
+        self.initialized_event = None
 
+        self._profile_raw_data = None
+        self._community_token = self._get_encoded_community_token()
         self._auth_token = None
-        self._expire_at = None
         self._session = requests.Session()
         self._aiohttp_session = None
         self._cache = {}
-        self.initialized_event = None
         self._fetch_supports_task = None
         self._community_feed = None
+
+        self._update_sessions_headers()
 
         if username and password:
             self.login(username, password)
 
     def get_logged_in_email(self):
-        return self.get(constants.OCTOBOT_COMMUNITY_ACCOUNT_URL).json()["data"]["attributes"]["email"]
+        if self._profile_raw_data:
+            return self._profile_raw_data["email"]
+        raise authentication.AuthenticationRequired()
 
     def get_packages(self):
         try:
+            #TODO
+            return []
             return self.get(constants.OCTOBOT_COMMUNITY_PACKAGES_URL).json()["data"]
         except json.JSONDecodeError:
             return []
 
     def update_supports(self):
+        self._update_supports(200, self._supports_mock())
+        return
+        #TODO
         resp = self.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL)
         self._update_supports(resp.status_code, resp.json())
 
@@ -105,13 +111,12 @@ class CommunityAuthentication(authentication.Authenticator):
         self._ensure_community_url()
         self._reset_tokens()
         params = {
-            "username": username,
+            "email": username,
             "password": password,
-            "grant_type": "password",
         }
-        resp = requests.post(self.authentication_url, params=params)
+        resp = self._session.post(self.authentication_url, json=params)
         try:
-            self._handle_auth_result(resp.status_code, resp.json())
+            self._handle_auth_result(resp.status_code, resp.json(), resp.headers)
         except json.JSONDecodeError as e:
             raise authentication.FailedAuthentication(e)
         if self.is_logged_in():
@@ -148,7 +153,7 @@ class CommunityAuthentication(authentication.Authenticator):
         return self._session.post(url, data=data, json=json, **kwargs)
 
     def is_logged_in(self):
-        return bool(self._auth_token and self.refresh_token and self._expire_at)
+        return bool(self._auth_token)
 
     def ensure_token_validity(self):
         if not self.is_logged_in():
@@ -157,18 +162,16 @@ class CommunityAuthentication(authentication.Authenticator):
             if not self.is_logged_in():
                 # still not logged in: raise
                 raise authentication.AuthenticationRequired()
-        if time.time() >= self._expire_at:
-            self._refresh_auth()
 
     def remove_login_detail(self):
+        self._profile_raw_data = None
         self._save_login_token("")
         self.logger.debug("Removed community login data")
 
-    def get_aiohttp_session(self, should_update_headers=True):
+    def get_aiohttp_session(self):
         if self._aiohttp_session is None:
             self._aiohttp_session = aiohttp.ClientSession()
-            if should_update_headers:
-                self._update_aiohttp_session_headers()
+            self._update_sessions_headers()
         return self._aiohttp_session
 
     async def stop(self):
@@ -185,11 +188,23 @@ class CommunityAuthentication(authentication.Authenticator):
             self.logger.error(f"Error when fetching community support, "
                               f"error code: {resp_status}")
 
+    def _supports_mock(self):
+        return {
+            "data": {
+                "attributes": {
+                    "support_role": "OctoBot tester"
+                }
+            }
+        }
+
     async def _auth_and_fetch_supports(self):
         try:
             await self._async_try_auto_login()
             if not self.is_logged_in():
                 return
+            self._update_supports(200, self._supports_mock())
+            return
+            # TODO use real support fetch when implemented
             async with self._aiohttp_session.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL) as resp:
                 self._update_supports(resp.status, await resp.json())
         except Exception as e:
@@ -202,26 +217,25 @@ class CommunityAuthentication(authentication.Authenticator):
             self.edited_config.config[commons_constants.CONFIG_COMMUNITY_TOKEN] = value
             self.edited_config.save()
 
-    def get_token(self):
+    def _get_saved_token(self):
         if self.edited_config is not None:
             return self.edited_config.config.get(commons_constants.CONFIG_COMMUNITY_TOKEN, "")
         return None
 
     def _try_auto_login(self):
-        token = self.get_token()
-        if token:
+        self._auth_token = self._get_saved_token()
+        if self._auth_token:
             # try to login using config data
-            self._auto_login(token)
+            self._auto_login()
 
     async def _async_try_auto_login(self):
-        token = self.get_token()
-        if token:
+        self._auth_token = self._get_saved_token()
+        if self._auth_token:
             # try to login using config data
-            await self._async_auto_login(token)
+            await self._async_auto_login()
 
     @contextlib.contextmanager
-    def _auth_handler(self, token):
-        self.refresh_token = token
+    def _auth_handler(self):
         try:
             yield
         except authentication.FailedAuthentication as e:
@@ -232,72 +246,72 @@ class CommunityAuthentication(authentication.Authenticator):
         except Exception as e:
             self.logger.exception(e, True, f"Error when trying to refresh community login: {e}")
 
-    def _auto_login(self, token):
-        with self._auth_handler(token):
-            self._refresh_auth()
+    def _auto_login(self):
+        with self._auth_handler():
+            self._check_auth()
 
-    async def _async_auto_login(self, token):
-        with self._auth_handler(token):
-            await self._async_refresh_auth()
+    async def _async_auto_login(self):
+        with self._auth_handler():
+            await self._async_check_auth()
 
     @contextlib.contextmanager
     def _auth_context(self):
-        params = {
-            CommunityAuthentication.REFRESH_TOKEN: self.refresh_token,
-            CommunityAuthentication.GRANT_TYPE: CommunityAuthentication.REFRESH_TOKEN,
-        }
         self._ensure_community_url()
         try:
-            yield params
-        except requests.ConnectionError as e:
+            yield
+        except (requests.ConnectionError, aiohttp.ClientConnectionError) as e:
             raise authentication.UnavailableError from e
 
-    def _refresh_auth(self):
-        with self._auth_context() as params:
-            resp = requests.post(self.authentication_url, params=params)
-            self._handle_auth_result(resp.status_code, resp.json())
+    def _check_auth(self):
+        with self._auth_context():
+            with self._session.get(f"{constants.COMMUNITY_BACKEND_API_URL}/account") as resp:
+                self._handle_auth_result(resp.status_code, resp.json(), resp.headers)
 
-    async def _async_refresh_auth(self):
-        with self._auth_context() as params:
-            async with self.get_aiohttp_session(should_update_headers=False).post(self.authentication_url,
-                                                                                  params=params) as resp:
-                self._handle_auth_result(resp.status, await resp.json())
+    async def _async_check_auth(self):
+        with self._auth_context():
+            async with self.get_aiohttp_session().get(f"{constants.COMMUNITY_BACKEND_API_URL}/account") as resp:
+                self._handle_auth_result(resp.status, await resp.json(), resp.headers)
 
     def _ensure_community_url(self):
         if not self.can_authenticate():
             raise authentication.UnavailableError("Community url required")
 
-    def _handle_auth_result(self, status_code, json_resp):
-        if status_code == 200:
-            self._auth_token = json_resp["access_token"]
-            self.refresh_token = json_resp[CommunityAuthentication.REFRESH_TOKEN]
-            self._expire_at = time.time() + json_resp["expires_in"] - CommunityAuthentication.ALLOWED_TIME_DELAY
-            self._refresh_session()
-            self._save_login_token(self.refresh_token)
-        elif status_code == 400:
-            raise authentication.FailedAuthentication("Invalid username or password.")
+    def _handle_auth_result(self, status_code, json_resp, reps_headers):
+        if status_code == 200 and json_resp is not None:
+            if new_token := reps_headers.get(self.SESSION_HEADER):
+                self._auth_token = new_token
+                self._save_login_token(self._auth_token)
+                self._update_sessions_headers()
+            self._profile_raw_data = json_resp
+        elif json_resp is None and status_code < 500:
+            if json_resp is not None:
+                if error := json_resp.get("error", None):
+                    raise authentication.FailedAuthentication(f"Error when authenticating: {error['message']}")
+            raise authentication.FailedAuthentication("Invalid username or password." if self._auth_token is None else
+                                                      "Token expired. Please re-login to your community account")
         else:
             raise authentication.AuthenticationError(f"Error code: {status_code}")
 
-    def _refresh_session(self):
-        self._session.headers.update(self.get_headers())
-
+    def _update_sessions_headers(self):
+        headers = self.get_headers()
+        self._session.headers.update(headers)
         if self._aiohttp_session is not None:
-            self._update_aiohttp_session_headers()
-
-    def _update_aiohttp_session_headers(self):
-        self._aiohttp_session.headers.update(self.get_headers())
+            self._aiohttp_session.headers.update(headers)
 
     def get_headers(self):
         headers = {
-            CommunityAuthentication.AUTHORIZATION_HEADER: f"Bearer {self._auth_token}"
+            CommunityAuthentication.AUTHORIZATION_HEADER: f"Basic {self._community_token}",
         }
-        if self.identifier is not None:
-            headers[CommunityAuthentication.IDENTIFIER_HEADER] = self.identifier
+        if self._auth_token is not None:
+            headers[CommunityAuthentication.SESSION_HEADER] = self._auth_token
         return headers
 
     def _reset_tokens(self):
         self._auth_token = None
-        self.refresh_token = None
-        self._expire_at = None
-        self._session.headers.pop(CommunityAuthentication.AUTHORIZATION_HEADER, None)
+        self._session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
+        if self._aiohttp_session is not None:
+            self._aiohttp_session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
+
+    @staticmethod
+    def _get_encoded_community_token():
+        return base64.encodebytes(constants.COMMUNITY_TOKEN.encode()).decode().strip()
