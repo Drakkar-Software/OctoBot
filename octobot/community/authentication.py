@@ -34,6 +34,7 @@ class CommunityAuthentication(authentication.Authenticator):
     ALLOWED_TIME_DELAY = 1 * commons_constants.MINUTE_TO_SECONDS
     AUTHORIZATION_HEADER = "authorization"
     SESSION_HEADER = "X-Session"
+    GQL_SESSION_HEADER = "GQL-Session"
 
     def __init__(self, authentication_url, feed_url, username=None, password=None, config=None):
         super().__init__()
@@ -103,6 +104,33 @@ class CommunityAuthentication(authentication.Authenticator):
         """
         await self._ensure_init_community_feed()
         await self._community_feed.send(message, channel_type, identifier)
+
+    @staticmethod
+    def _build_gql_request_body(query, variables, operation_name):
+        request_body = {
+            "query": query
+        }
+        if variables is not None:
+            request_body["variables"] = variables
+        if operation_name is not None:
+            request_body["operationName"] = operation_name
+        return request_body
+
+    async def async_graphql_query(self, endpoint, query, variables=None, operation_name=None):
+        with self._qgl_session(True) as session:
+            return await session.post(
+                f"{constants.COMMUNITY_GQL_BACKEND_API_URL}/{endpoint}",
+                self._build_gql_request_body(query, variables, operation_name)
+            )
+
+    @contextlib.contextmanager
+    def _qgl_session(self, is_async):
+        session = self.get_aiohttp_session() if is_async else self._session
+        try:
+            session.headers[self.GQL_SESSION_HEADER] = self._profile_raw_data["auth_token"]
+            yield
+        finally:
+            session.headers.pop(self.GQL_SESSION_HEADER)
 
     def can_authenticate(self):
         return "todo" not in self.authentication_url
