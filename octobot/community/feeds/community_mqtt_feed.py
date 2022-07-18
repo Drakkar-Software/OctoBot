@@ -82,13 +82,16 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._device_credential = "a8e68204-4c51-47c0-bb22-b24fae14d546"
 
         return
+        # TODO
         device_creds_fetch_url = None
-        async with self.authenticator.get_aiohttp_session().get(device_creds_fetch_url) as resp:
-            if resp.status == 200:
-                self._device_credential = await resp.json()
-            else:
-                raise RuntimeError(f"Error when fetching device creds: status: {resp.status}, "
-                                   f"text: {await resp.text()}")
+        device_creds_fetch_query = None
+        resp = await self.authenticator.async_graphql_query(device_creds_fetch_url, device_creds_fetch_query)
+        if resp.status == 200:
+            self._device_credential = await resp.json()
+            # TODO store _device_credential if necessary
+        else:
+            raise RuntimeError(f"Error when fetching device creds: status: {resp.status}, "
+                               f"text: {await resp.text()}")
 
     @staticmethod
     def _build_topic(channel_type, identifier):
