@@ -54,6 +54,7 @@ COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
 
 COMMUNITY_BACKEND_API_URL = "https://octo-bot.swell.store/api"
+COMMUNITY_GQL_BACKEND_API_URL = "https://todo/api"
 COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
 COMMUNITY_TOKEN = os.getenv("COMMUNITY_TOKEN", "pk_mvKn5XznfVVSyp3XZlgodBKWlRhazeSu")
 
