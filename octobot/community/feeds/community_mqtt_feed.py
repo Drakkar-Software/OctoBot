@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import enum
+import time
 import uuid
 import gmqtt
 import json
@@ -22,8 +24,14 @@ import distutils.version as loose_version
 
 import octobot_commons.enums as commons_enums
 import octobot_commons.errors as commons_errors
+import octobot_commons.constants as commons_constants
 import octobot.community.feeds.abstract_feed as abstract_feed
 import octobot.constants as constants
+
+
+class GQLContentStages(enum.Enum):
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
 
 
 class CommunityMQTTFeed(abstract_feed.AbstractFeed):
@@ -32,6 +40,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     RECONNECT_DELAY = 15
     MAX_MESSAGE_ID_CACHE_SIZE = 100
     DISABLE_RECONNECT_VALUE = -2
+    DEVICE_CREATE_TIMEOUT = 5 * commons_constants.MINUTE_TO_SECONDS
+    DEVICE_CREATION_REFRESH_DELAY = 2
 
     # Quality of Service level determines the reliability of the data flow between a client and a message broker.
     # The message may be sent in three ways:
@@ -49,6 +59,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
         self._mqtt_client: gmqtt.Client = None
         self._device_credential: str = None
+        self._device_id: str = None
         self._subscription_topics = set()
         self._reconnect_task = None
         self._processed_messages = set()
@@ -77,21 +88,68 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self._subscription_topics.add(topic)
             self._subscribe((topic, ))
 
-    async def _fetch_device_credentials(self):
-        # TODO
-        self._device_credential = "a8e68204-4c51-47c0-bb22-b24fae14d546"
-
-        return
-        # TODO
-        device_creds_fetch_url = None
-        device_creds_fetch_query = None
-        resp = await self.authenticator.async_graphql_query(device_creds_fetch_url, device_creds_fetch_query)
-        if resp.status == 200:
-            self._device_credential = await resp.json()
-            # TODO store _device_credential if necessary
+    async def _create_new_device(self):
+        create_query = """
+        mutation CreateDevice {
+          createDevice(data: {}) {
+            id
+            uuid
+          }
+        }
+        """
+        create_resp = await self.authenticator.async_graphql_query(create_query)
+        if create_resp.status == 200:
+            self._device_id = (await create_resp.json())["data"]["createDevice"]["id"]
         else:
-            raise RuntimeError(f"Error when fetching device creds: status: {resp.status}, "
-                               f"text: {await resp.text()}")
+            raise RuntimeError(
+                f"Error when creating mqtt device, code: {create_resp.status}, text: {await create_resp.text()}"
+            )
+
+    async def _fetch_device_uuid(self):
+        select_query = """
+        query SelectDeviceUUID($device_id: ID, $stage: Stage!) {
+          device(where: {id: $device_id}, stage: $stage) {
+            id
+            uuid
+          }
+        }
+        """
+        t0 = time.time()
+        stage = GQLContentStages.DRAFT
+        while time.time() - t0 < self.DEVICE_CREATE_TIMEOUT:
+            # loop until the device uuid is available
+            select_variables = {"device_id": self._device_id, "stage": stage.value}
+            select_resp = await self.authenticator.async_graphql_query(select_query, variables=select_variables)
+            if select_resp.status == 200:
+                device_data = (await select_resp.json())["data"]["device"]
+                if device_data is None:
+                    if stage is GQLContentStages.DRAFT:
+                        # content is now published
+                        stage = GQLContentStages.PUBLISHED
+                    else:
+                        raise RuntimeError(f"Error when fetching mqtt device uuid: can't find content with id: "
+                                           f"{self._device_id}")
+                elif device_uuid := device_data["uuid"]:
+                    self._device_credential = device_uuid
+                    return
+                # retry soon
+                await asyncio.sleep(self.DEVICE_CREATION_REFRESH_DELAY)
+            else:
+                # should never happen unless there is a real issue
+                raise RuntimeError(
+                    f"Error when fetching mqtt device uuid, code: {select_resp.status}, "
+                    f"text: {await select_resp.text()}"
+                )
+        raise RuntimeError(
+            f"Timeout when fetching mqtt device uuid: no uuid to be found after {self.DEVICE_CREATE_TIMEOUT} seconds"
+        )
+
+    async def _fetch_device_credentials(self):
+        try:
+            await self._create_new_device()
+            await self._fetch_device_uuid()
+        except Exception as e:
+            self.logger.exception(e, True, f"Error when fetching device id: {e}")
 
     @staticmethod
     def _build_topic(channel_type, identifier):
