@@ -65,6 +65,12 @@ class IndependentBacktesting:
         self.optimizer_id = None
         self.backtesting_id = None
         self._init_default_config_values()
+        try:
+            self.backtesting_config[common_constants.CONFIG_EXCHANGE_TYPE] \
+                = config[common_constants.CONFIG_EXCHANGE_TYPE]
+        except KeyError:
+            self.backtesting_config[common_constants.CONFIG_EXCHANGE_TYPE] \
+                = common_constants.CONFIG_EXCHANGE_CURRENT_PROFILE
         self.stopped = False
         self.stopped_event = None
         self.post_backtesting_task = None
