@@ -58,14 +58,16 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self.default_QOS = self.default_QOS
 
         self._mqtt_client: gmqtt.Client = None
-        self._device_credential: str = None
+        self._device_uuid: str = None
         self._device_id: str = None
+        self._fetching_uuid = False
+        self._fetched_uuid = asyncio.Event()
         self._subscription_topics = set()
         self._reconnect_task = None
         self._processed_messages = set()
 
     async def start(self):
-        await self._fetch_device_credentials()
+        await self.get_or_fetch_device_uuid()
         await self._connect()
 
     async def stop(self):
@@ -130,7 +132,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
                         raise RuntimeError(f"Error when fetching mqtt device uuid: can't find content with id: "
                                            f"{self._device_id}")
                 elif device_uuid := device_data["uuid"]:
-                    self._device_credential = device_uuid
+                    self._device_uuid = device_uuid
+                    self._save_device_uuid(self._device_uuid)
                     return
                 # retry soon
                 await asyncio.sleep(self.DEVICE_CREATION_REFRESH_DELAY)
@@ -144,12 +147,43 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             f"Timeout when fetching mqtt device uuid: no uuid to be found after {self.DEVICE_CREATE_TIMEOUT} seconds"
         )
 
-    async def _fetch_device_credentials(self):
+    def _get_saved_device_uuid(self):
+        if self.authenticator.edited_config is not None:
+            return self.authenticator.edited_config.config.get(constants.CONFIG_COMMUNITY_MQTT_UUID, "")
+        return None
+
+    def _save_device_uuid(self, value):
+        if self.authenticator.edited_config is not None:
+            self.authenticator.edited_config.config[constants.CONFIG_COMMUNITY_MQTT_UUID] = value
+            self.authenticator.edited_config.save()
+
+    async def get_or_fetch_device_uuid(self):
+        if saved_uuid := self._get_saved_device_uuid():
+            self._device_uuid = saved_uuid
+            self._fetched_uuid.set()
+        else:
+            if self._fetching_uuid:
+                self.logger.info(f"Waiting for feed UUID fetching")
+                await asyncio.wait_for(self._fetched_uuid.wait(), self.DEVICE_CREATE_TIMEOUT + 2)
+            else:
+                await self._fetch_new_device_uuid()
+
+    def remove_device_details(self):
+        self._device_id = None
+        self._fetched_uuid.clear()
+        self._device_uuid = None
+        self._save_device_uuid("")
+
+    async def _fetch_new_device_uuid(self):
         try:
+            self._fetching_uuid = True
             await self._create_new_device()
             await self._fetch_device_uuid()
         except Exception as e:
             self.logger.exception(e, True, f"Error when fetching device id: {e}")
+        finally:
+            self._fetching_uuid = False
+            self._fetched_uuid.set()
 
     @staticmethod
     def _build_topic(channel_type, identifier):
@@ -279,7 +313,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._mqtt_client = gmqtt.Client(self.__class__.__name__)
         self._update_client_config(self._mqtt_client)
         self._register_callbacks(self._mqtt_client)
-        self._mqtt_client.set_auth_credentials(self._device_credential, None)
+        self._mqtt_client.set_auth_credentials(self._device_uuid, None)
         self.logger.debug(f"Connecting client")
         await self._mqtt_client.connect(self.feed_url, self.mqtt_broker_port, version=self.MQTT_VERSION)
 
