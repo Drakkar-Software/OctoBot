@@ -36,7 +36,7 @@ class CommunityAuthentication(authentication.Authenticator):
     SESSION_HEADER = "X-Session"
     GQL_AUTHORIZATION_HEADER = "Authorization"
 
-    def __init__(self, authentication_url, feed_url, username=None, password=None, config=None):
+    def __init__(self, authentication_url, feed_url, config=None):
         super().__init__()
         self.authentication_url = authentication_url
         self.feed_url = feed_url
@@ -51,12 +51,10 @@ class CommunityAuthentication(authentication.Authenticator):
         self._aiohttp_session = None
         self._cache = {}
         self._fetch_supports_task = None
+        self._fetch_device_uuid_task = None
         self._community_feed = None
 
         self._update_sessions_headers()
-
-        if username and password:
-            self.login(username, password)
 
     def get_logged_in_email(self):
         if self._profile_raw_data:
@@ -71,12 +69,12 @@ class CommunityAuthentication(authentication.Authenticator):
         except json.JSONDecodeError:
             return []
 
-    def update_supports(self):
+    async def update_supports(self):
         self._update_supports(200, self._supports_mock())
         return
-        #TODO
-        resp = self.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL)
-        self._update_supports(resp.status_code, resp.json())
+        # TODO use real support fetch when implemented
+        async with self._aiohttp_session.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL) as resp:
+            self._update_supports(resp.status, await resp.json())
 
     def is_initialized(self):
         return self._fetch_supports_task is not None and self._fetch_supports_task.done()
@@ -85,14 +83,23 @@ class CommunityAuthentication(authentication.Authenticator):
         self.initialized_event = asyncio.Event()
         self._fetch_supports_task = asyncio.create_task(self._auth_and_fetch_supports())
 
-    async def _ensure_init_community_feed(self):
+    def _create_community_feed_if_necessary(self) -> bool:
         if self._community_feed is None:
             self._community_feed = community_feeds.community_feed_factory(
                 self.feed_url,
                 self,
                 constants.COMMUNITY_FEED_DEFAULT_TYPE
             )
+            return True
+        return False
+
+    async def _ensure_init_community_feed(self):
+        if self._create_community_feed_if_necessary():
             await self._community_feed.start()
+
+    async def _ensure_community_feed_device_uuid(self):
+        self._create_community_feed_if_necessary()
+        await self._community_feed.get_or_fetch_device_uuid()
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
         await self._ensure_init_community_feed()
@@ -135,7 +142,7 @@ class CommunityAuthentication(authentication.Authenticator):
     def can_authenticate(self):
         return "todo" not in self.authentication_url
 
-    def login(self, username, password):
+    async def login(self, username, password):
         self._ensure_community_url()
         self._reset_tokens()
         params = {
@@ -148,12 +155,23 @@ class CommunityAuthentication(authentication.Authenticator):
         except json.JSONDecodeError as e:
             raise authentication.FailedAuthentication(e)
         if self.is_logged_in():
-            self.update_supports()
+            await self.update_supports()
+            await self._update_feed_device_uuid()
+
+    async def _update_feed_device_uuid(self):
+        if self._fetch_device_uuid_task is None or self._fetch_device_uuid_task.done():
+            self._fetch_device_uuid_task = asyncio.create_task(self._ensure_community_feed_device_uuid())
 
     def logout(self):
         self._reset_tokens()
         self.clear_cache()
         self.remove_login_detail()
+        if self._fetch_device_uuid_task is not None and not self._fetch_device_uuid_task.done():
+            self._fetch_device_uuid_task.cancel()
+            self._fetch_device_uuid_task = None
+        self._create_community_feed_if_necessary()
+        self._community_feed.remove_device_details()
+        # TODO stop community feed if running and restart it on login ?
 
     def clear_cache(self):
         self._cache = {}
@@ -205,6 +223,8 @@ class CommunityAuthentication(authentication.Authenticator):
     async def stop(self):
         if self.is_initialized():
             self._fetch_supports_task.cancel()
+        if self._fetch_device_uuid_task is not None and not self._fetch_device_uuid_task.done():
+            self._fetch_device_uuid_task.cancel()
         if self._aiohttp_session is not None:
             await self._aiohttp_session.close()
 
@@ -230,11 +250,7 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._async_try_auto_login()
             if not self.is_logged_in():
                 return
-            self._update_supports(200, self._supports_mock())
-            return
-            # TODO use real support fetch when implemented
-            async with self._aiohttp_session.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL) as resp:
-                self._update_supports(resp.status, await resp.json())
+            await self.update_supports()
         except Exception as e:
             self.logger.exception(e, True, f"Error when fetching community supports: {e})")
         finally:

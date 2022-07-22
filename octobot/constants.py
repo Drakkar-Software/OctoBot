@@ -57,6 +57,7 @@ COMMUNITY_BACKEND_API_URL = "https://octo-bot.swell.store/api"
 COMMUNITY_GQL_BACKEND_API_URL = "https://api-eu-west-2.hygraph.com/v2/cl5hryevz1nwx01ujaea04r8x/master"
 COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
 COMMUNITY_TOKEN = os.getenv("COMMUNITY_TOKEN", "pk_mvKn5XznfVVSyp3XZlgodBKWlRhazeSu")
+CONFIG_COMMUNITY_MQTT_UUID = "community-mqtt_uui"
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 

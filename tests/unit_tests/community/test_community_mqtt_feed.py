@@ -62,14 +62,14 @@ async def connected_community_feed(authenticator):
     try:
         feed = community.CommunityMQTTFeed(FEED_URL, authenticator)
         feed.INIT_TIMEOUT = 1
-        with mock.patch.object(feed, "_fetch_device_credentials", mock.AsyncMock()) as _fetch_device_credentials_mock, \
+        with mock.patch.object(feed, "get_or_fetch_device_uuid", mock.AsyncMock()) as get_or_fetch_device_uuid_mock, \
              mock.patch.object(feed, "_subscribe", mock.AsyncMock()) as _subscribe_mock, \
              mock.patch.object(gmqtt.Client, "connect", mock.AsyncMock()) as _connect_mock:
             await feed.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, mock.AsyncMock())
             _subscribe_mock.assert_called_once_with((f"{commons_enums.CommunityChannelTypes.SIGNAL.value}/None", ))
-            feed._device_credential = TOKEN
+            feed._device_uuid = TOKEN
             await feed.start()
-            _fetch_device_credentials_mock.assert_called_once()
+            get_or_fetch_device_uuid_mock.assert_called_once()
             _connect_mock.assert_called_once_with(FEED_URL, feed.mqtt_broker_port, version=feed.MQTT_VERSION)
             yield feed
     finally:
