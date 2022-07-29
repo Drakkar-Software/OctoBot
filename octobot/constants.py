@@ -54,10 +54,12 @@ COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
 
 COMMUNITY_BACKEND_API_URL = "https://octo-bot.swell.store/api"
-COMMUNITY_GQL_BACKEND_API_URL = "https://api-eu-west-2.hygraph.com/v2/cl5hryevz1nwx01ujaea04r8x/master"
+COMMUNITY_GQL_BACKEND_API_URL = "https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/community-backend-production-wgdgz/graphql"
+COMMUNITY_GQL_AUTH_URL = "https://realm.mongodb.com/api/client/v2.0/app/community-backend-production-wgdgz/auth/providers/api-key/login"
+COMMUNITY_GQL_REFRESH_AUTH_URL = "https://realm.mongodb.com/api/client/v2.0/auth/session"
 COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
 COMMUNITY_TOKEN = os.getenv("COMMUNITY_TOKEN", "pk_mvKn5XznfVVSyp3XZlgodBKWlRhazeSu")
-CONFIG_COMMUNITY_MQTT_UUID = "community-mqtt_uui"
+CONFIG_COMMUNITY_MQTT_UUID = "community-mqtt_uuid"
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 
