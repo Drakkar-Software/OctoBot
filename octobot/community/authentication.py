@@ -32,9 +32,11 @@ class CommunityAuthentication(authentication.Authenticator):
     Authentication utility
     """
     ALLOWED_TIME_DELAY = 1 * commons_constants.MINUTE_TO_SECONDS
+    LOGIN_TIMEOUT = 20
     AUTHORIZATION_HEADER = "authorization"
     SESSION_HEADER = "X-Session"
     GQL_AUTHORIZATION_HEADER = "Authorization"
+    USER_DATA_CONTENT = "content"
 
     def __init__(self, authentication_url, feed_url, config=None):
         super().__init__()
@@ -46,6 +48,8 @@ class CommunityAuthentication(authentication.Authenticator):
 
         self._profile_raw_data = None
         self._community_token = self._get_encoded_community_token()
+        self._gql_access_token = None
+        self.gql_user_id = None
         self._auth_token = None
         self._session = requests.Session()
         self._aiohttp_session = None
@@ -53,6 +57,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._fetch_supports_task = None
         self._fetch_device_uuid_task = None
         self._community_feed = None
+        self._login_completed = None
 
         self._update_sessions_headers()
 
@@ -123,21 +128,60 @@ class CommunityAuthentication(authentication.Authenticator):
             request_body["operationName"] = operation_name
         return request_body
 
-    async def async_graphql_query(self, query, variables=None, operation_name=None):
-        with self._qgl_session(True) as session:
-            return await session.post(
-                f"{constants.COMMUNITY_GQL_BACKEND_API_URL}",
-                json=self._build_gql_request_body(query, variables, operation_name)
-            )
-
-    @contextlib.contextmanager
-    def _qgl_session(self, is_async):
-        session = self.get_aiohttp_session() if is_async else self._session
+    async def async_graphql_query(self, query, variables=None, operation_name=None, allow_retry_on_expired_token=True):
         try:
-            session.headers[self.GQL_AUTHORIZATION_HEADER] = f"Bearer {self._profile_raw_data['graph_token']}"
+            async with self._authenticated_qgl_session() as session:
+                resp = await session.post(
+                    f"{constants.COMMUNITY_GQL_BACKEND_API_URL}",
+                    json=self._build_gql_request_body(query, variables, operation_name)
+                )
+                if resp.status == 401:
+                    # access token expired
+                    raise authentication.AuthenticationRequired
+                json_resp = await resp.json()
+                if errors := json_resp.get("errors"):
+                    raise RuntimeError(f"Error when running graphql query: {errors[0].get('message', errors)}")
+                return resp
+        except authentication.AuthenticationRequired:
+            if allow_retry_on_expired_token:
+                return await self.async_graphql_query(query, variables=variables, operation_name=operation_name,
+                                                      allow_retry_on_expired_token=False)
+            else:
+                raise
+
+    @contextlib.asynccontextmanager
+    async def _authenticated_qgl_session(self):
+        await self.gql_login_if_required()
+        session = self.get_aiohttp_session()
+        try:
+            session.headers[self.GQL_AUTHORIZATION_HEADER] = f"Bearer {self._gql_access_token}"
             yield session
+        except authentication.AuthenticationRequired:
+            # reset token to force re-login
+            self._gql_access_token = None
+            raise
         finally:
             session.headers.pop(self.GQL_AUTHORIZATION_HEADER)
+
+    async def wait_for_login_if_processing(self):
+        if self._profile_raw_data is None and self._login_completed is not None:
+            # ensure login details have been fetched
+            await asyncio.wait_for(self._login_completed.wait(), self.LOGIN_TIMEOUT)
+
+    async def gql_login_if_required(self):
+        await self.wait_for_login_if_processing()
+        try:
+            token = self._profile_raw_data[self.USER_DATA_CONTENT]["graph_token"]
+        except KeyError:
+            raise authentication.AuthenticationRequired("Authentication required")
+        async with self.get_aiohttp_session().get(constants.COMMUNITY_GQL_AUTH_URL, json={"key": token}) as resp:
+            json_resp = await resp.json()
+            if resp.status == 200:
+                self._gql_access_token = json_resp["access_token"]
+                self.gql_user_id = json_resp["user_id"]
+            else:
+                raise authentication.FailedAuthentication(f"Failed to authenticate to graphql server: "
+                                                          f"status: {resp.status}, data: {json_resp}")
 
     def can_authenticate(self):
         return "todo" not in self.authentication_url
@@ -312,9 +356,15 @@ class CommunityAuthentication(authentication.Authenticator):
                 self._handle_auth_result(resp.status_code, resp.json(), resp.headers)
 
     async def _async_check_auth(self):
+        if self._login_completed is None:
+            self._login_completed = asyncio.Event()
+        self._login_completed.clear()
         with self._auth_context():
             async with self.get_aiohttp_session().get(f"{constants.COMMUNITY_BACKEND_API_URL}/account") as resp:
-                self._handle_auth_result(resp.status, await resp.json(), resp.headers)
+                try:
+                    self._handle_auth_result(resp.status, await resp.json(), resp.headers)
+                finally:
+                    self._login_completed.set()
 
     def _ensure_community_url(self):
         if not self.can_authenticate():
@@ -352,6 +402,8 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def _reset_tokens(self):
         self._auth_token = None
+        self._gql_access_token = None
+        self.gql_user_id = None
         self._session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
         if self._aiohttp_session is not None:
             self._aiohttp_session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
