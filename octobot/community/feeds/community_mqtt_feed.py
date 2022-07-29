@@ -29,16 +29,12 @@ import octobot.community.feeds.abstract_feed as abstract_feed
 import octobot.constants as constants
 
 
-class GQLContentStages(enum.Enum):
-    DRAFT = "DRAFT"
-    PUBLISHED = "PUBLISHED"
-
-
 class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     MQTT_VERSION = gmqtt.constants.MQTTv311
     MQTT_BROKER_PORT = 1883
     RECONNECT_DELAY = 15
     MAX_MESSAGE_ID_CACHE_SIZE = 100
+    MAX_SUBSCRIPTION_ATTEMPTS = 5
     DISABLE_RECONNECT_VALUE = -2
     DEVICE_CREATE_TIMEOUT = 5 * commons_constants.MINUTE_TO_SECONDS
     DEVICE_CREATION_REFRESH_DELAY = 2
@@ -59,8 +55,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
         self._mqtt_client: gmqtt.Client = None
         self._device_uuid: str = None
-        self._device_id: str = None
         self._fetching_uuid = False
+        self._subscription_attempts = 0
         self._fetched_uuid = asyncio.Event()
         self._subscription_topics = set()
         self._reconnect_task = None
@@ -92,45 +88,44 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     async def _create_new_device(self):
         create_query = """
-        mutation CreateDevice {
-          createDevice(data: {}) {
-            id
-            uuid
+        mutation CreateDevice($user_id: ObjectId) {
+          insertOneDevice(data: {user_id: $user_id}) {
+            _id
           }
         }
         """
-        create_resp = await self.authenticator.async_graphql_query(create_query)
+        await self.authenticator.gql_login_if_required()
+        create_variables = {"user_id": self.authenticator.gql_user_id}
+        error_message = "Error when creating mqtt device"
+        try:
+            create_resp = await self.authenticator.async_graphql_query(create_query, variables=create_variables)
+        except RuntimeError as e:
+            raise RuntimeError(f"{error_message}, {e}")
         if create_resp.status == 200:
-            self._device_id = (await create_resp.json())["data"]["createDevice"]["id"]
+            json_resp = await create_resp.json()
+            return json_resp["data"]["insertOneDevice"]["_id"]
         else:
-            raise RuntimeError(
-                f"Error when creating mqtt device, code: {create_resp.status}, text: {await create_resp.text()}"
-            )
+            raise RuntimeError(f"{error_message}, code: {create_resp.status}, text: {await create_resp.text()}")
 
-    async def _fetch_device_uuid(self):
+    async def _fetch_device_uuid(self, device_id):
         select_query = """
-        query SelectDeviceUUID($device_id: ID, $stage: Stage!) {
-          device(where: {id: $device_id}, stage: $stage) {
-            id
+        query SelectDeviceUUID($_id: ObjectId, $user_id: ObjectId) {
+          device(query: {_id: $_id, user_id: $user_id}) {
+            _id
             uuid
           }
         }
         """
         t0 = time.time()
-        stage = GQLContentStages.DRAFT
         while time.time() - t0 < self.DEVICE_CREATE_TIMEOUT:
             # loop until the device uuid is available
-            select_variables = {"device_id": self._device_id, "stage": stage.value}
+            select_variables = {"_id": device_id, "user_id": self.authenticator.gql_user_id}
             select_resp = await self.authenticator.async_graphql_query(select_query, variables=select_variables)
             if select_resp.status == 200:
                 device_data = (await select_resp.json())["data"]["device"]
                 if device_data is None:
-                    if stage is GQLContentStages.DRAFT:
-                        # content is now published
-                        stage = GQLContentStages.PUBLISHED
-                    else:
-                        raise RuntimeError(f"Error when fetching mqtt device uuid: can't find content with id: "
-                                           f"{self._device_id}")
+                    raise RuntimeError(f"Error when fetching mqtt device uuid: can't find content with id: "
+                                       f"{device_id}")
                 elif device_uuid := device_data["uuid"]:
                     self._device_uuid = device_uuid
                     self._save_device_uuid(self._device_uuid)
@@ -169,7 +164,6 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
                 await self._fetch_new_device_uuid()
 
     def remove_device_details(self):
-        self._device_id = None
         self._fetched_uuid.clear()
         self._device_uuid = None
         self._save_device_uuid("")
@@ -177,10 +171,12 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     async def _fetch_new_device_uuid(self):
         try:
             self._fetching_uuid = True
-            await self._create_new_device()
-            await self._fetch_device_uuid()
+            device_id = await self._create_new_device()
+            await self._fetch_device_uuid(device_id)
+            self.logger.debug("Successfully fetched mqtt device id")
         except Exception as e:
             self.logger.exception(e, True, f"Error when fetching device id: {e}")
+            raise
         finally:
             self._fetching_uuid = False
             self._fetched_uuid.set()
@@ -290,8 +286,16 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             if granted_qos >= gmqtt.constants.SubAckReasonCode.UNSPECIFIED_ERROR.value:
                 self.logger.warning(f"Retrying subscribe, client_id: {client._client_id}, mid: {mid}, "
                                     f"reason code: {granted_qos}, properties {properties}")
-                #TODO try only X times
-                client.resubscribe(subscription)
+                if self._subscription_attempts < self.MAX_SUBSCRIPTION_ATTEMPTS * len(subscriptions):
+                    self._subscription_attempts += 1
+                    client.resubscribe(subscription)
+                else:
+                    self.logger.error(f"Max subscription attempts reached, stopping subscription "
+                                      f"to {[s.topic for s in subscriptions]}. Do are you subscribing to this "
+                                      f"strategy ?")
+                    return
+            else:
+                self._subscription_attempts = 0
             self.logger.info(f"Subscribed, client_id: {client._client_id}, mid {mid}, QOS: {granted_qos}, "
                              f"properties {properties}")
 
@@ -318,6 +322,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         await self._mqtt_client.connect(self.feed_url, self.mqtt_broker_port, version=self.MQTT_VERSION)
 
     def _subscribe(self, topics):
+        topics = [self._device_uuid]
         if not topics:
             self.logger.debug("No topic to subscribe to, skipping subscribe for now")
             return
