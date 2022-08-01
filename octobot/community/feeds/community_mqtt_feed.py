@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import enum
 import time
 import uuid
 import gmqtt
@@ -26,6 +25,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.errors as commons_errors
 import octobot_commons.constants as commons_constants
 import octobot.community.feeds.abstract_feed as abstract_feed
+import octobot.community.graphql_requests as graphql_requests
 import octobot.constants as constants
 
 
@@ -87,18 +87,11 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self._subscribe((topic, ))
 
     async def _create_new_device(self):
-        create_query = """
-        mutation CreateDevice($user_id: ObjectId) {
-          insertOneDevice(data: {user_id: $user_id}) {
-            _id
-          }
-        }
-        """
         await self.authenticator.gql_login_if_required()
-        create_variables = {"user_id": self.authenticator.gql_user_id}
         error_message = "Error when creating mqtt device"
+        query, variables = graphql_requests.create_new_device_query(self.authenticator.gql_user_id)
         try:
-            create_resp = await self.authenticator.async_graphql_query(create_query, variables=create_variables)
+            create_resp = await self.authenticator.async_graphql_query(query, variables=variables)
         except RuntimeError as e:
             raise RuntimeError(f"{error_message}, {e}")
         if create_resp.status == 200:
@@ -108,19 +101,11 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             raise RuntimeError(f"{error_message}, code: {create_resp.status}, text: {await create_resp.text()}")
 
     async def _fetch_device_uuid(self, device_id):
-        select_query = """
-        query SelectDeviceUUID($_id: ObjectId, $user_id: ObjectId) {
-          device(query: {_id: $_id, user_id: $user_id}) {
-            _id
-            uuid
-          }
-        }
-        """
         t0 = time.time()
+        query, variables = graphql_requests.select_device_uuid(device_id, self.authenticator.gql_user_id)
         while time.time() - t0 < self.DEVICE_CREATE_TIMEOUT:
             # loop until the device uuid is available
-            select_variables = {"_id": device_id, "user_id": self.authenticator.gql_user_id}
-            select_resp = await self.authenticator.async_graphql_query(select_query, variables=select_variables)
+            select_resp = await self.authenticator.async_graphql_query(query, variables=variables)
             if select_resp.status == 200:
                 device_data = (await select_resp.json())["data"]["device"]
                 if device_data is None:
