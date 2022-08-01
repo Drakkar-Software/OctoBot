@@ -25,6 +25,7 @@ from octobot.community import authentication
 from octobot.community import community_tentacles_package
 from octobot.community import community_supports
 from octobot.community import community_donation
+from octobot.community import graphql_requests
 from octobot.community import feeds
 from octobot.community import errors_upload
 
@@ -47,6 +48,10 @@ from octobot.community.community_supports import (
 )
 from octobot.community.community_donation import (
     CommunityDonation
+)
+from octobot.community.graphql_requests import (
+    create_new_device_query,
+    select_device_uuid,
 )
 from octobot.community.feeds import (
     AbstractFeed,
@@ -73,6 +78,8 @@ __all__ = [
     "register_error_uploader",
     "Error",
     "ErrorsUploader",
+    "create_new_device_query",
+    "select_device_uuid",
     "AbstractFeed",
     "CommunityWSFeed",
     "CommunityMQTTFeed",
