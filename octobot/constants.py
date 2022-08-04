@@ -41,24 +41,19 @@ TENTACLE_PACKAGE_NAME = "base"
 TENTACLE_PACKAGES = "packages"
 COMPILED_TENTACLE_CATEGORY = "extra"
 
-DEFAULT_COMMUNITY_URL = "https://community.octobot.online/"
-DEFAULT_COMMUNITY_WS_URL = "ws://community2.octobot.cloud/"   #TODO
-OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", DEFAULT_COMMUNITY_URL)
-OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_WS_URL", f"{DEFAULT_COMMUNITY_WS_URL}cable")
-OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")    #TODO
-OCTOBOT_COMMUNITY_ACCOUNT_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/account"
-OCTOBOT_COMMUNITY_PACKAGES_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/tentacle/packages"
-OCTOBOT_COMMUNITY_SUPPORTS_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/supports"
-OCTOBOT_COMMUNITY_FETCH_FEED_IDENTIFIER_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/feeds/id"
+OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://community.octobot.online/")
+
+OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
 
 COMMUNITY_BACKEND_API_URL = "https://octo-bot.swell.store/api"
-COMMUNITY_GQL_BACKEND_API_URL = "https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/community-backend-production-wgdgz/graphql"
-COMMUNITY_GQL_AUTH_URL = "https://realm.mongodb.com/api/client/v2.0/app/community-backend-production-wgdgz/auth/providers/api-key/login"
-COMMUNITY_GQL_REFRESH_AUTH_URL = "https://realm.mongodb.com/api/client/v2.0/auth/session"
 COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
-COMMUNITY_TOKEN = os.getenv("COMMUNITY_TOKEN", "pk_mvKn5XznfVVSyp3XZlgodBKWlRhazeSu")
+COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN", "pk_mvKn5XznfVVSyp3XZlgodBKWlRhazeSu")
+COMMUNITY_MONGO_REALM_URL = "https://realm.mongodb.com/api/client/v2.0"
+COMMUNITY_GQL_BACKEND_API_URL = "https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/community-backend-production-wgdgz/graphql"
+COMMUNITY_GQL_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/app/community-backend-production-wgdgz/auth/providers/api-key/login"
+COMMUNITY_GQL_REFRESH_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/auth/session"
 CONFIG_COMMUNITY_MQTT_UUID = "community-mqtt_uuid"
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
