@@ -170,11 +170,13 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def gql_login_if_required(self):
         await self.wait_for_login_if_processing()
+        if self._gql_access_token is not None:
+            return
         try:
             token = self._profile_raw_data[self.USER_DATA_CONTENT]["graph_token"]
         except KeyError:
             raise authentication.AuthenticationRequired("Authentication required")
-        async with self.get_aiohttp_session().get(constants.COMMUNITY_GQL_AUTH_URL, json={"key": token}) as resp:
+        async with self.get_aiohttp_session().post(constants.COMMUNITY_GQL_AUTH_URL, json={"key": token}) as resp:
             json_resp = await resp.json()
             if resp.status == 200:
                 self._gql_access_token = json_resp["access_token"]
@@ -186,11 +188,11 @@ class CommunityAuthentication(authentication.Authenticator):
     def can_authenticate(self):
         return "todo" not in self.authentication_url
 
-    async def login(self, username, password):
+    async def login(self, email, password):
         self._ensure_community_url()
         self._reset_tokens()
         params = {
-            "email": username,
+            "email": email,
             "password": password,
         }
         resp = self._session.post(self.authentication_url, json=params)
