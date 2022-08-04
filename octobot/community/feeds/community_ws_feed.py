@@ -171,7 +171,7 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
         if identifier is None:
             return None
         async with self.authenticator.get_aiohttp_session().get(
-                f"{constants.OCTOBOT_COMMUNITY_FETCH_FEED_IDENTIFIER_URL}/{identifier}") as resp:
+                f"{constants.OCTOBOT_COMMUNITY_URL}api/v2/storefront/feeds/id/{identifier}") as resp:
             return (await resp.json())["feed_id"]
 
     def _get_callbacks(self, parsed_message):

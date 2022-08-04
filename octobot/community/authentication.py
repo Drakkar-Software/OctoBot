@@ -70,7 +70,6 @@ class CommunityAuthentication(authentication.Authenticator):
         try:
             #TODO
             return []
-            return self.get(constants.OCTOBOT_COMMUNITY_PACKAGES_URL).json()["data"]
         except json.JSONDecodeError:
             return []
 
@@ -78,7 +77,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._update_supports(200, self._supports_mock())
         return
         # TODO use real support fetch when implemented
-        async with self._aiohttp_session.get(constants.OCTOBOT_COMMUNITY_SUPPORTS_URL) as resp:
+        async with self._aiohttp_session.get("supports_url") as resp:
             self._update_supports(resp.status, await resp.json())
 
     def is_initialized(self):
@@ -412,4 +411,4 @@ class CommunityAuthentication(authentication.Authenticator):
 
     @staticmethod
     def _get_encoded_community_token():
-        return base64.encodebytes(constants.COMMUNITY_TOKEN.encode()).decode().strip()
+        return base64.encodebytes(constants.COMMUNITY_BACKEND_PUBLIC_TOKEN.encode()).decode().strip()
