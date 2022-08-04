@@ -276,8 +276,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
                     client.resubscribe(subscription)
                 else:
                     self.logger.error(f"Max subscription attempts reached, stopping subscription "
-                                      f"to {[s.topic for s in subscriptions]}. Do are you subscribing to this "
-                                      f"strategy ?")
+                                      f"to {[s.topic for s in subscriptions]}. Are you copying this "
+                                      f"strategy on your OctoBot account ?")
                     return
             else:
                 self._subscription_attempts = 0
@@ -307,7 +307,6 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         await self._mqtt_client.connect(self.feed_url, self.mqtt_broker_port, version=self.MQTT_VERSION)
 
     def _subscribe(self, topics):
-        topics = [self._device_uuid]
         if not topics:
             self.logger.debug("No topic to subscribe to, skipping subscribe for now")
             return
