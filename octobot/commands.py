@@ -118,16 +118,12 @@ async def install_all_tentacles(tentacles_url=None):
     if tentacles_url is None:
         tentacles_url = configuration_manager.get_default_tentacles_url()
     async with aiohttp.ClientSession() as aiohttp_session:
-        await tentacles_manager_api.install_all_tentacles(tentacles_url,
-                                                          aiohttp_session=aiohttp_session,
-                                                          bot_install_dir=os.getcwd())
-        # compiled_tentacles_url = tentacles_manager_api.get_compiled_tentacles_url(
-        #     constants.DEFAULT_COMPILED_TENTACLES_URL,
-        #     constants.TENTACLES_REQUIRED_VERSION
-        # )
-        # await tentacles_manager_api.install_all_tentacles(compiled_tentacles_url,
-        #                                                   aiohttp_session=aiohttp_session,
-        #                                                   bot_install_dir=constants.OCTOBOT_FOLDER)
+        for url in (tentacles_url, constants.ADDITIONAL_TENTACLES_PACKAGE_URL):
+            if url is None:
+                continue
+            await tentacles_manager_api.install_all_tentacles(url,
+                                                              aiohttp_session=aiohttp_session,
+                                                              bot_install_dir=os.getcwd())
 
 
 def _signal_handler(_, __):
