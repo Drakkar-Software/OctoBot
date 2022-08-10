@@ -285,10 +285,18 @@ class CommunityAuthentication(authentication.Authenticator):
         return {
             "data": {
                 "attributes": {
-                    "support_role": "OctoBot tester"
+                    "support_role": self._get_support_role()
                 }
             }
         }
+
+    def _get_support_role(self):
+        try:
+            if self._profile_raw_data[self.USER_DATA_CONTENT]["has_donated"]:
+                return community_supports.CommunitySupports.OCTOBOT_DONOR_ROLE
+        except KeyError:
+            pass
+        return community_supports.CommunitySupports.DEFAULT_SUPPORT_ROLE
 
     async def _auth_and_fetch_supports(self):
         try:
