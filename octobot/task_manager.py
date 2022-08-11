@@ -119,8 +119,8 @@ class TaskManager:
                                                     name=f"{self.get_name()} new asyncio main loop")
         self.current_loop_thread.start()
 
-    def run_in_main_asyncio_loop(self, coroutine):
-        return asyncio_tools.run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
+    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True):
+        return asyncio_tools.run_coroutine_in_asyncio_loop(coroutine, self.async_loop, log_exceptions=log_exceptions)
 
     def run_in_async_executor(self, coroutine):
         if self.executors is not None:
