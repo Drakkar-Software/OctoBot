@@ -162,8 +162,8 @@ class OctoBot:
         except StopIteration:
             return None
 
-    def run_in_main_asyncio_loop(self, coroutine):
-        return self.task_manager.run_in_main_asyncio_loop(coroutine)
+    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True):
+        return self.task_manager.run_in_main_asyncio_loop(coroutine, log_exceptions=log_exceptions)
 
     def set_watcher(self, watcher):
         self.task_manager.watcher = watcher
