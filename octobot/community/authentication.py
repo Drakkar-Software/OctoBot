@@ -187,7 +187,11 @@ class CommunityAuthentication(authentication.Authenticator):
     def can_authenticate(self):
         return "todo" not in self.authentication_url
 
+    def must_be_authenticated_through_authenticator(self):
+        return constants.IS_CLOUD_ENV
+
     async def login(self, email, password):
+        self._ensure_email(email)
         self._ensure_community_url()
         self._reset_tokens()
         params = {
@@ -374,6 +378,10 @@ class CommunityAuthentication(authentication.Authenticator):
                     self._handle_auth_result(resp.status, await resp.json(), resp.headers)
                 finally:
                     self._login_completed.set()
+
+    def _ensure_email(self, email):
+        if constants.USER_ACCOUNT_EMAIL is not None and email != constants.USER_ACCOUNT_EMAIL:
+            raise authentication.AuthenticationError("The given email doesn't match the expected user email.")
 
     def _ensure_community_url(self):
         if not self.can_authenticate():

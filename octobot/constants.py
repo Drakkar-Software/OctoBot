@@ -61,6 +61,9 @@ COMMUNITY_GQL_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/app/community-backend-pro
 COMMUNITY_GQL_REFRESH_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/auth/session"
 CONFIG_COMMUNITY_MQTT_UUID = "community-mqtt_uuid"
 
+USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", None)
+IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "False")
+
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 
 # tentacles
