@@ -49,11 +49,14 @@ OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
 
-COMMUNITY_BACKEND_API_URL = "https://octo-bot.swell.store/api"
-COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
+COMMUNITY_BACKEND_API_URL = os.getenv("COMMUNITY_BACKEND_API_URL", "https://octo-bot.swell.store/api")
 COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN", "pk_mvKn5XznfVVSyp3XZlgodBKWlRhazeSu")
-COMMUNITY_MONGO_REALM_URL = "https://realm.mongodb.com/api/client/v2.0"
-COMMUNITY_GQL_BACKEND_API_URL = "https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/community-backend-production-wgdgz/graphql"
+COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
+COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
+    "COMMUNITY_GQL_BACKEND_API_URL",
+    "https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/community-backend-production-wgdgz/graphql"
+)
+COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
 COMMUNITY_GQL_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/app/community-backend-production-wgdgz/auth/providers/api-key/login"
 COMMUNITY_GQL_REFRESH_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/auth/session"
 CONFIG_COMMUNITY_MQTT_UUID = "community-mqtt_uuid"
