@@ -42,6 +42,8 @@ TENTACLE_PACKAGES = "packages"
 COMPILED_TENTACLE_CATEGORY = "extra"
 
 OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://community.octobot.online/")
+OCTOBOT_DONATION_URL = "https://forms.gle/Bagagc7dyjJGDT1t9"
+OCTOBOT_FEEDBACK_FORM_URL = "https://goo.gl/forms/vspraniXPY7rvtKN2"
 
 OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
