@@ -56,6 +56,10 @@ class BinaryUpdater(updater_class.Updater):
         return self._parse_latest_version(await self._get_latest_release_data())
 
     async def update_impl(self) -> bool:
+        # TODO fix binary updater to use release endpoint (assents can't be downloaded from gh directly)
+        self.logger.error(f"Please manually update your OctoBot executable from this page: "
+                          f"{self._get_latest_release_url(False)}")
+        return False
         new_binary_file = await self._download_binary()
         if new_binary_file is not None:
             self._give_execution_rights(new_binary_file)
@@ -63,14 +67,13 @@ class BinaryUpdater(updater_class.Updater):
             return True
         return False
 
-    def _get_latest_release_url(self):
-        return f"{commons_constants.GITHUB_API_CONTENT_URL}/repos/" \
-               f"{commons_constants.GITHUB_ORGANISATION}/" \
-               f"{constants.OCTOBOT_BINARY_PROJECT_NAME}/releases/latest"
+    def _get_latest_release_url(self, use_api_url):
+        base = f"{commons_constants.GITHUB_API_CONTENT_URL}/repos" if use_api_url else commons_constants.GITHUB_BASE_URL
+        return f"{base}/{commons_constants.GITHUB_ORGANISATION}/{constants.PROJECT_NAME}/releases/latest"
 
     async def _get_latest_release_data(self):
         try:
-            async with aiohttp.ClientSession().get(self._get_latest_release_url()) as resp:
+            async with aiohttp.ClientSession().get(self._get_latest_release_url(True)) as resp:
                 text = await resp.text()
                 if resp.status == 200:
                     return json.loads(text)
