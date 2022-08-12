@@ -203,6 +203,9 @@ def start_octobot(args):
         # add args to config
         update_config_with_args(args, config, logger)
 
+        # switch environments if necessary
+        octobot_community.IdentifiersProvider.use_environment_from_config(config)
+
         # show terms
         _log_terms_if_unaccepted(config, logger)
 

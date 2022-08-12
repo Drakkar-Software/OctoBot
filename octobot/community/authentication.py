@@ -21,6 +21,7 @@ import requests
 import aiohttp
 
 import octobot.constants as constants
+import octobot.community.identifiers_provider as identifiers_provider
 import octobot.community.community_supports as community_supports
 import octobot.community.feeds as community_feeds
 import octobot_commons.constants as commons_constants
@@ -131,7 +132,7 @@ class CommunityAuthentication(authentication.Authenticator):
         try:
             async with self._authenticated_qgl_session() as session:
                 resp = await session.post(
-                    f"{constants.COMMUNITY_GQL_BACKEND_API_URL}",
+                    f"{identifiers_provider.IdentifiersProvider.GQL_BACKEND_API_URL}",
                     json=self._build_gql_request_body(query, variables, operation_name)
                 )
                 if resp.status == 401:
@@ -175,7 +176,9 @@ class CommunityAuthentication(authentication.Authenticator):
             token = self._profile_raw_data[self.USER_DATA_CONTENT]["graph_token"]
         except KeyError:
             raise authentication.AuthenticationRequired("Authentication required")
-        async with self.get_aiohttp_session().post(constants.COMMUNITY_GQL_AUTH_URL, json={"key": token}) as resp:
+        async with self.get_aiohttp_session().post(
+                identifiers_provider.IdentifiersProvider.GQL_AUTH_URL, json={"key": token}
+        ) as resp:
             json_resp = await resp.json()
             if resp.status == 200:
                 self._gql_access_token = json_resp["access_token"]
@@ -365,7 +368,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def _check_auth(self):
         with self._auth_context():
-            with self._session.get(f"{constants.COMMUNITY_BACKEND_API_URL}/account") as resp:
+            with self._session.get(f"{identifiers_provider.IdentifiersProvider.BACKEND_API_URL}/account") as resp:
                 self._handle_auth_result(resp.status_code, resp.json(), resp.headers)
 
     async def _async_check_auth(self):
@@ -373,7 +376,9 @@ class CommunityAuthentication(authentication.Authenticator):
             self._login_completed = asyncio.Event()
         self._login_completed.clear()
         with self._auth_context():
-            async with self.get_aiohttp_session().get(f"{constants.COMMUNITY_BACKEND_API_URL}/account") as resp:
+            async with self.get_aiohttp_session().get(
+                    f"{identifiers_provider.IdentifiersProvider.BACKEND_API_URL}/account"
+            ) as resp:
                 try:
                     self._handle_auth_result(resp.status, await resp.json(), resp.headers)
                 finally:
@@ -427,4 +432,4 @@ class CommunityAuthentication(authentication.Authenticator):
 
     @staticmethod
     def _get_encoded_community_token():
-        return base64.encodebytes(constants.COMMUNITY_BACKEND_PUBLIC_TOKEN.encode()).decode().strip()
+        return base64.encodebytes(identifiers_provider.IdentifiersProvider.BACKEND_PUBLIC_TOKEN.encode()).decode().strip()

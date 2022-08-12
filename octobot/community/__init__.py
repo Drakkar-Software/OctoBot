@@ -14,6 +14,10 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+from octobot.community import identifiers_provider
+from octobot.community.identifiers_provider import (
+    IdentifiersProvider,
+)
 from octobot.community import community_fields
 from octobot.community.community_fields import (
     CommunityFields,
@@ -66,6 +70,7 @@ from octobot.community.errors_upload import (
 )
 
 __all__ = [
+    "IdentifiersProvider",
     "CommunityFields",
     "get_community_metrics",
     "get_current_octobots_stats",

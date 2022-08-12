@@ -41,26 +41,46 @@ TENTACLE_PACKAGE_NAME = "base"
 TENTACLE_PACKAGES = "packages"
 COMPILED_TENTACLE_CATEGORY = "extra"
 
-OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://community.octobot.online/")
 OCTOBOT_DONATION_URL = "https://forms.gle/Bagagc7dyjJGDT1t9"
 OCTOBOT_FEEDBACK_FORM_URL = "https://goo.gl/forms/vspraniXPY7rvtKN2"
+OCTOBOT_BETA_PROGRAM_FORM_URL = "https://forms.gle/igqn1TjQ8XVA1dXBA"
 
-OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
-
-COMMUNITY_BACKEND_API_URL = os.getenv("COMMUNITY_BACKEND_API_URL", "https://octo-bot.swell.store/api")
-COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN", "pk_mvKn5XznfVVSyp3XZlgodBKWlRhazeSu")
-COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
-COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
-    "COMMUNITY_GQL_BACKEND_API_URL",
-    "https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/community-backend-production-wgdgz/graphql"
-)
-COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
-COMMUNITY_GQL_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/app/community-backend-production-wgdgz/auth/providers/api-key/login"
-COMMUNITY_GQL_REFRESH_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/auth/session"
 CONFIG_COMMUNITY_MQTT_UUID = "community-mqtt_uuid"
 
+# production env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
+OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://octobot.store/")
+OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")
+COMMUNITY_BACKEND_API_URL = os.getenv("COMMUNITY_BACKEND_API_URL", "https://octo-bot.swell.store/api")
+COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
+COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN", "pk_mvKn5XznfVVSyp3XZlgodBKWlRhazeSu")
+COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
+COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "community-backend-production-wgdgz")
+COMMUNITY_GQL_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/app/{COMMUNITY_MONGO_APP_ID}/auth/providers/api-key/login"
+COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
+    "COMMUNITY_GQL_BACKEND_API_URL",
+    f"https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/{COMMUNITY_MONGO_APP_ID}/graphql"
+)
+
+# staging env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
+STAGING_OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://octobot.store/")
+STAGING_OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")
+STAGING_COMMUNITY_BACKEND_API_URL = os.getenv("COMMUNITY_BACKEND_API_URL", "https://octo-bot.swell.store/api")
+STAGING_COMMUNITY_BACKEND_AUTH_URL = f"{STAGING_COMMUNITY_BACKEND_API_URL}/account/login"
+STAGING_COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN",
+                                                   "pk_mvKn5XznfVVSyp3XZlgodBKWlRhazeSu")
+STAGING_COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
+STAGING_COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "community-backend-production-wgdgz")
+STAGING_COMMUNITY_GQL_AUTH_URL = f"{STAGING_COMMUNITY_MONGO_REALM_URL}/app/{STAGING_COMMUNITY_MONGO_APP_ID}/" \
+                                 f"auth/providers/api-key/login"
+STAGING_COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
+    "COMMUNITY_GQL_BACKEND_API_URL",
+    f"https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/{STAGING_COMMUNITY_MONGO_APP_ID}/graphql"
+)
+
+CONFIG_COMMUNITY_ENVIRONMENT = "community_environment"
+USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "False")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", None)
 IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "False")
 
