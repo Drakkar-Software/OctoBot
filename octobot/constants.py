@@ -47,7 +47,7 @@ OCTOBOT_BETA_PROGRAM_FORM_URL = "https://forms.gle/igqn1TjQ8XVA1dXBA"
 
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
-CONFIG_COMMUNITY_MQTT_UUID = "community-mqtt_uuid"
+CONFIG_COMMUNITY_DEVICE_ID = "community-device_id"
 
 # production env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
 OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://octobot.store/")

@@ -53,26 +53,29 @@ class MockedResponse:
 
 @pytest_asyncio.fixture
 async def logged_in_auth():
+    community.IdentifiersProvider.use_production()
     auth = community.CommunityAuthentication(AUTH_URL, None)
     with mock.patch.object(auth._session, "post", mock.Mock(return_value=MockedResponse(
             json=EMAIL_RETURN, headers={auth.SESSION_HEADER: "hi"}))), \
             mock.patch.object(community.CommunityAuthentication, "update_supports", mock.AsyncMock()), \
-            mock.patch.object(community.CommunityAuthentication, "_update_feed_device_uuid", mock.AsyncMock()):
+            mock.patch.object(community.CommunityAuthentication, "update_selected_device", mock.AsyncMock()):
         await auth.login("username", "login")
         return auth
 
 
 @pytest.fixture
 def auth():
+    community.IdentifiersProvider.use_production()
     return community.CommunityAuthentication(AUTH_URL, None)
 
 
 def test_constructor():
     with mock.patch.object(community.CommunityAuthentication, "login", mock.Mock()) as login_mock:
+        community.IdentifiersProvider.use_production()
         community.CommunityAuthentication(AUTH_URL, None)
         auth = community.CommunityAuthentication(AUTH_URL, None)
         login_mock.assert_not_called()
-        assert not auth.supports.is_supporting()
+        assert not auth.user_account.supports.is_supporting()
         assert auth.initialized_event is None
 
 
@@ -85,20 +88,20 @@ async def test_login(auth):
             mock.patch.object(auth._session, "post", mock.Mock(return_value=resp_mock)) as post_mock, \
             mock.patch.object(community.CommunityAuthentication, "update_supports", mock.AsyncMock()) \
             as update_supports_mock, \
-            mock.patch.object(community.CommunityAuthentication, "_update_feed_device_uuid", mock.AsyncMock()) \
-            as _update_feed_device_uuid_mock:
+            mock.patch.object(community.CommunityAuthentication, "update_selected_device", mock.AsyncMock()) \
+            as update_selected_device_mock:
         await auth.login("username", "password")
         reset_mock.assert_called_once()
         post_mock.assert_called_once()
         update_supports_mock.assert_not_called()
-        _update_feed_device_uuid_mock.assert_not_called()
+        update_selected_device_mock.assert_not_called()
         auth_res_mock.assert_called_once_with(resp_mock.status_code, resp_mock.json(), resp_mock.headers)
         with mock.patch.object(community.CommunityAuthentication, "is_logged_in", mock.Mock(return_value=True)) \
                 as is_logged_in_mock:
             await auth.login("username", "password")
             is_logged_in_mock.assert_called_once()
             update_supports_mock.assert_called_once()
-            _update_feed_device_uuid_mock.assert_called_once()
+            update_selected_device_mock.assert_called_once()
 
 
 def test_logout(auth):
@@ -480,7 +483,7 @@ async def _test_auth_and_fetch_supports(auth):
     with mock.patch.object(auth, "_async_try_auto_login", mock.AsyncMock()) as _async_try_auto_login_mock:
         with mock.patch.object(auth, "is_logged_in", mock.Mock(return_value=False)) as is_logged_in_mock:
             auth.initialized_event = asyncio.Event()
-            await auth._auth_and_fetch_supports()
+            await auth._auth_and_fetch_account()
             _async_try_auto_login_mock.assert_called_once()
             is_logged_in_mock.assert_called_once()
             assert auth.initialized_event.is_set()
@@ -498,7 +501,7 @@ async def _test_auth_and_fetch_supports(auth):
             auth._aiohttp_session = mock.AsyncMock()
             auth._aiohttp_session.get = async_get
             auth.initialized_event = asyncio.Event()
-            await auth._auth_and_fetch_supports()
+            await auth._auth_and_fetch_account()
             _async_try_auto_login_mock.assert_called_once()
             is_logged_in_mock.assert_called_once()
             _update_supports_mock.assert_called_once_with(200, "plop")
@@ -517,28 +520,28 @@ def _test_public_update_supports(auth):
 
 def test_is_initialized(auth):
     assert auth.is_initialized() is False
-    auth._fetch_supports_task = mock.Mock()
-    auth._fetch_supports_task.done = mock.Mock(return_value=False)
+    auth._fetch_account_task = mock.Mock()
+    auth._fetch_account_task.done = mock.Mock(return_value=False)
     assert auth.is_initialized() is False
-    auth._fetch_supports_task.done = mock.Mock(return_value=True)
+    auth._fetch_account_task.done = mock.Mock(return_value=True)
     assert auth.is_initialized() is True
 
 
-def test_init_supports(auth):
+def test_init_account(auth):
     with mock.patch.object(asyncio, "create_task", mock.Mock(return_value="task")) as create_task_mock, \
-            mock.patch.object(auth, "_auth_and_fetch_supports", mock.Mock(return_value="coro")) \
-            as _auth_and_fetch_supports_mock:
-        auth.init_supports()
+            mock.patch.object(auth, "_auth_and_fetch_account", mock.Mock(return_value="coro")) \
+            as _auth_and_fetch_account_mock:
+        auth.init_account()
         assert isinstance(auth.initialized_event, asyncio.Event)
         create_task_mock.assert_called_once_with("coro")
-        _auth_and_fetch_supports_mock.assert_called_once()
-        assert auth._fetch_supports_task == "task"
+        _auth_and_fetch_account_mock.assert_called_once()
+        assert auth._fetch_account_task == "task"
 
 
 @pytest.mark.asyncio
 async def test_stop(auth):
-    auth._fetch_supports_task = mock.Mock()
-    auth._fetch_supports_task.cancel = mock.Mock()
+    auth._fetch_account_task = mock.Mock()
+    auth._fetch_account_task.cancel = mock.Mock()
     auth._fetch_device_uuid_task = mock.Mock()
     auth._fetch_device_uuid_task.cancel = mock.Mock()
     auth._aiohttp_session = mock.Mock()
@@ -548,7 +551,7 @@ async def test_stop(auth):
         await auth.stop()
         is_initialized_mock.assert_called_once()
         done_mock.assert_called_once()
-        auth._fetch_supports_task.cancel.assert_not_called()
+        auth._fetch_account_task.cancel.assert_not_called()
         auth._fetch_device_uuid_task.cancel.assert_not_called()
         auth._aiohttp_session.close.reset_mock()
     with mock.patch.object(auth, "is_initialized", mock.Mock(return_value=True)) as is_initialized_mock, \
@@ -556,13 +559,13 @@ async def test_stop(auth):
         await auth.stop()
         is_initialized_mock.assert_called_once()
         done_mock.assert_called_once()
-        auth._fetch_supports_task.cancel.assert_called_once()
+        auth._fetch_account_task.cancel.assert_called_once()
         auth._fetch_device_uuid_task.cancel.assert_called_once()
         auth._aiohttp_session.close.assert_called_once()
 
         auth._aiohttp_session = None
-        auth._fetch_supports_task.cancel.reset_mock()
+        auth._fetch_account_task.cancel.reset_mock()
         auth._fetch_device_uuid_task.cancel.reset_mock()
         await auth.stop()
-        auth._fetch_supports_task.cancel.assert_called_once()
+        auth._fetch_account_task.cancel.assert_called_once()
         auth._fetch_device_uuid_task.cancel.assert_called_once()

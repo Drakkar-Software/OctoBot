@@ -25,12 +25,23 @@ mutation CreateDevice($user_id: ObjectId) {
     """, {"user_id": user_id}
 
 
-def select_device_uuid(device_id, user_id) -> (str, dict):
+def select_device(device_id) -> (str, dict):
     return """
-query SelectDeviceUUID($_id: ObjectId, $user_id: ObjectId) {
-  device(query: {_id: $_id, user_id: $user_id}) {
+query SelectDeviceUUID($_id: ObjectId) {
+  device(query: {_id: $_id}) {
     _id
     uuid
   }
 }
-    """, {"_id": device_id, "user_id": user_id}
+    """, {"_id": device_id}
+
+
+def select_devices(user_id) -> (str, dict):
+    return """
+query SelectDevices($user_id: ObjectId) {
+  devices(query: {user_id: $user_id}) {
+    _id
+    uuid
+  }
+}
+    """, {"user_id": user_id}

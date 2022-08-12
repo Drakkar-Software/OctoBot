@@ -89,6 +89,7 @@ async def community_echo_server():
 
 @pytest_asyncio.fixture
 async def authenticator():
+    community.IdentifiersProvider.use_production()
     auth = community.CommunityAuthentication(None, None)
     auth._auth_token = TOKEN
     auth.refresh_token = TOKEN

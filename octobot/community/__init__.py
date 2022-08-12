@@ -18,6 +18,10 @@ from octobot.community import identifiers_provider
 from octobot.community.identifiers_provider import (
     IdentifiersProvider,
 )
+from octobot.community import community_user_account
+from octobot.community.community_user_account import (
+    CommunityUserAccount,
+)
 from octobot.community import community_fields
 from octobot.community.community_fields import (
     CommunityFields,
@@ -55,7 +59,8 @@ from octobot.community.community_donation import (
 )
 from octobot.community.graphql_requests import (
     create_new_device_query,
-    select_device_uuid,
+    select_device,
+    select_devices,
 )
 from octobot.community.feeds import (
     AbstractFeed,
@@ -71,6 +76,7 @@ from octobot.community.errors_upload import (
 
 __all__ = [
     "IdentifiersProvider",
+    "CommunityUserAccount",
     "CommunityFields",
     "get_community_metrics",
     "get_current_octobots_stats",
@@ -84,7 +90,8 @@ __all__ = [
     "Error",
     "ErrorsUploader",
     "create_new_device_query",
-    "select_device_uuid",
+    "select_device",
+    "select_devices",
     "AbstractFeed",
     "CommunityWSFeed",
     "CommunityMQTTFeed",
