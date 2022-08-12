@@ -174,8 +174,8 @@ class CommunityAuthentication(authentication.Authenticator):
             return
         try:
             token = self._profile_raw_data[self.USER_DATA_CONTENT]["graph_token"]
-        except KeyError:
-            raise authentication.AuthenticationRequired("Authentication required")
+        except KeyError as e:
+            raise authentication.AuthenticationRequired("Authentication required") from e
         async with self.get_aiohttp_session().post(
                 identifiers_provider.IdentifiersProvider.GQL_AUTH_URL, json={"key": token}
         ) as resp:
@@ -399,14 +399,19 @@ class CommunityAuthentication(authentication.Authenticator):
                 self._save_login_token(self._auth_token)
                 self._update_sessions_headers()
             self._profile_raw_data = json_resp
+            return
         elif json_resp is None and status_code < 500:
             if json_resp is not None:
                 if error := json_resp.get("error", None):
                     raise authentication.FailedAuthentication(f"Error when authenticating: {error['message']}")
             raise authentication.FailedAuthentication("Invalid username or password." if self._auth_token is None else
                                                       "Token expired. Please re-login to your community account")
-        else:
-            raise authentication.AuthenticationError(f"Error code: {status_code}")
+        elif json_resp and status_code == 400:
+            if error := json_resp.get("error", None):
+                if "logged in" in error['message'].lower():
+                    raise authentication.FailedAuthentication(f"Error when authenticating, please "
+                                                              f"re-login to your community account")
+        raise authentication.AuthenticationError(f"Error code: {status_code}")
 
     def _update_sessions_headers(self):
         headers = self.get_headers()
