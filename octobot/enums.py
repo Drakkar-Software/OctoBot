@@ -19,3 +19,8 @@ import enum
 class CommunityFeedType(enum.Enum):
     WebsocketFeed = "WebsocketFeed"
     MQTTFeed = "MQTTFeed"
+
+
+class CommunityEnvironments(enum.Enum):
+    Staging = "Staging"
+    Production = "Production"
