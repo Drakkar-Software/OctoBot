@@ -16,7 +16,7 @@
     "profile": {
       "type": "string"
     },
-    "community-mqtt_uuid": {
+    "community-device_id": {
       "type": "string"
     },
     "community-token": {

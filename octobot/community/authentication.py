@@ -24,6 +24,8 @@ import octobot.constants as constants
 import octobot.community.identifiers_provider as identifiers_provider
 import octobot.community.community_supports as community_supports
 import octobot.community.feeds as community_feeds
+import octobot.community.graphql_requests as graphql_requests
+import octobot.community.community_user_account as community_user_account
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
 
@@ -37,25 +39,21 @@ class CommunityAuthentication(authentication.Authenticator):
     AUTHORIZATION_HEADER = "authorization"
     SESSION_HEADER = "X-Session"
     GQL_AUTHORIZATION_HEADER = "Authorization"
-    USER_DATA_CONTENT = "content"
 
     def __init__(self, authentication_url, feed_url, config=None):
         super().__init__()
         self.authentication_url = authentication_url
         self.feed_url = feed_url
         self.edited_config = config
-        self.supports = community_supports.CommunitySupports()
         self.initialized_event = None
 
-        self._profile_raw_data = None
+        self.user_account = community_user_account.CommunityUserAccount()
         self._community_token = self._get_encoded_community_token()
-        self._gql_access_token = None
-        self.gql_user_id = None
         self._auth_token = None
         self._session = requests.Session()
         self._aiohttp_session = None
         self._cache = {}
-        self._fetch_supports_task = None
+        self._fetch_account_task = None
         self._fetch_device_uuid_task = None
         self._community_feed = None
         self._login_completed = None
@@ -63,8 +61,8 @@ class CommunityAuthentication(authentication.Authenticator):
         self._update_sessions_headers()
 
     def get_logged_in_email(self):
-        if self._profile_raw_data:
-            return self._profile_raw_data["email"]
+        if self.user_account.has_user_data():
+            return self.user_account.get_email()
         raise authentication.AuthenticationRequired()
 
     def get_packages(self):
@@ -82,11 +80,11 @@ class CommunityAuthentication(authentication.Authenticator):
             self._update_supports(resp.status, await resp.json())
 
     def is_initialized(self):
-        return self._fetch_supports_task is not None and self._fetch_supports_task.done()
+        return self._fetch_account_task is not None and self._fetch_account_task.done()
 
-    def init_supports(self):
+    def init_account(self):
         self.initialized_event = asyncio.Event()
-        self._fetch_supports_task = asyncio.create_task(self._auth_and_fetch_supports())
+        self._fetch_account_task = asyncio.create_task(self._auth_and_fetch_account())
 
     def _create_community_feed_if_necessary(self) -> bool:
         if self._community_feed is None:
@@ -95,16 +93,13 @@ class CommunityAuthentication(authentication.Authenticator):
                 self,
                 constants.COMMUNITY_FEED_DEFAULT_TYPE
             )
+            self._community_feed.associated_gql_device_id = self.user_account.gql_device_id
             return True
         return False
 
     async def _ensure_init_community_feed(self):
         if self._create_community_feed_if_necessary():
             await self._community_feed.start()
-
-    async def _ensure_community_feed_device_uuid(self):
-        self._create_community_feed_if_necessary()
-        await self._community_feed.get_or_fetch_device_uuid()
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
         await self._ensure_init_community_feed()
@@ -154,26 +149,27 @@ class CommunityAuthentication(authentication.Authenticator):
         await self.gql_login_if_required()
         session = self.get_aiohttp_session()
         try:
-            session.headers[self.GQL_AUTHORIZATION_HEADER] = f"Bearer {self._gql_access_token}"
+            session.headers[self.GQL_AUTHORIZATION_HEADER] = f"Bearer {self.user_account.gql_access_token}"
             yield session
         except authentication.AuthenticationRequired:
             # reset token to force re-login
-            self._gql_access_token = None
+            self.user_account.gql_access_token = None
             raise
         finally:
-            session.headers.pop(self.GQL_AUTHORIZATION_HEADER)
+            if self.GQL_AUTHORIZATION_HEADER in session.headers:
+                session.headers.pop(self.GQL_AUTHORIZATION_HEADER)
 
     async def wait_for_login_if_processing(self):
-        if self._profile_raw_data is None and self._login_completed is not None:
+        if self.user_account.has_user_data() is None and self._login_completed is not None:
             # ensure login details have been fetched
             await asyncio.wait_for(self._login_completed.wait(), self.LOGIN_TIMEOUT)
 
     async def gql_login_if_required(self):
         await self.wait_for_login_if_processing()
-        if self._gql_access_token is not None:
+        if self.user_account.gql_access_token is not None:
             return
         try:
-            token = self._profile_raw_data[self.USER_DATA_CONTENT]["graph_token"]
+            token = self.user_account.get_graph_token()
         except KeyError as e:
             raise authentication.AuthenticationRequired("Authentication required") from e
         async with self.get_aiohttp_session().post(
@@ -181,8 +177,8 @@ class CommunityAuthentication(authentication.Authenticator):
         ) as resp:
             json_resp = await resp.json()
             if resp.status == 200:
-                self._gql_access_token = json_resp["access_token"]
-                self.gql_user_id = json_resp["user_id"]
+                self.user_account.gql_access_token = json_resp["access_token"]
+                self.user_account.gql_user_id = json_resp["user_id"]
             else:
                 raise authentication.FailedAuthentication(f"Failed to authenticate to graphql server: "
                                                           f"status: {resp.status}, data: {json_resp}")
@@ -208,19 +204,102 @@ class CommunityAuthentication(authentication.Authenticator):
             raise authentication.FailedAuthentication(e)
         if self.is_logged_in():
             await self.update_supports()
-            await self._update_feed_device_uuid()
+            await self.update_selected_device()
+
+    async def update_selected_device(self):
+        self.user_account.flush_device_details()
+        await self._load_device_if_selected()
+        if not self.user_account.has_selected_device_data():
+            self.logger.info("No selected device. Please select a device to enable your community features.")
+
+    async def _load_device_if_selected(self):
+        # 1. use user selected device id if any
+        if saved_uuid := self._get_saved_gql_device_id():
+            await self.select_device(saved_uuid)
+        else:
+            # 2. fetch all user devices and create one if none, otherwise if there is only one, use it
+            await self.load_user_devices()
+            if len(self.user_account.get_all_user_devices_raw_data()) == 0:
+                await self.select_device(
+                    self.user_account.get_device_id(
+                        self.create_new_device()
+                    )
+                )
+            # 3. fetch all user devices and if there is only one, use it
+            if len(self.user_account.get_all_user_devices_raw_data()) == 1:
+                await self.select_device(
+                    self.user_account.get_device_id(
+                        self.user_account.get_all_user_devices_raw_data()[0]
+                    )
+                )
+            # more than one possible device, can't auto-select one
+
+    async def select_device(self, device_id):
+        self.user_account.set_selected_device_raw_data(await self.fetch_device(device_id))
+        self.user_account.gql_device_id = device_id
+        self._save_gql_device_id(self.user_account.gql_device_id)
+        await self.on_new_device_select()
+
+    async def load_user_devices(self):
+        self.user_account.set_all_user_devices_raw_data(await self._fetch_devices())
+
+    async def on_new_device_select(self):
+        await self._update_feed_device_uuid()
+
+    async def _fetch_devices(self):
+        query, variables = graphql_requests.select_devices(self.user_account.gql_user_id)
+        select_resp = await self.async_graphql_query(query, variables=variables)
+        if select_resp.status == 200:
+            json_resp = await select_resp.json()
+            return json_resp["data"]["devices"]
+        else:
+            raise RuntimeError(f"Error when fetching devices, code: {select_resp.status}, "
+                               f"text: {await select_resp.text()}")
+
+    async def fetch_device(self, device_id):
+        query, variables = graphql_requests.select_device(device_id)
+        select_resp = await self.async_graphql_query(query, variables=variables)
+        if select_resp.status == 200:
+            json_resp = await select_resp.json()
+            return json_resp["data"]["device"]
+        else:
+            raise RuntimeError(f"Error when fetching device, code: {select_resp.status}, "
+                               f"text: {await select_resp.text()}")
+
+    async def create_new_device(self):
+        await self.gql_login_if_required()
+        error_message = "Error when creating device"
+        query, variables = graphql_requests.create_new_device_query(self.user_account.gql_user_id)
+        try:
+            create_resp = await self.async_graphql_query(query, variables=variables)
+        except RuntimeError as e:
+            raise RuntimeError(f"{error_message}, {e}")
+        if create_resp.status == 200:
+            json_resp = await create_resp.json()
+            return json_resp["data"]["insertOneDevice"]
+        else:
+            raise RuntimeError(f"{error_message}, code: {create_resp.status}, text: {await create_resp.text()}")
 
     async def _update_feed_device_uuid(self):
-        if self._fetch_device_uuid_task is None or self._fetch_device_uuid_task.done():
-            self._fetch_device_uuid_task = asyncio.create_task(self._ensure_community_feed_device_uuid())
+        self._create_community_feed_if_necessary()
+        if self._community_feed.associated_gql_device_id != self.user_account.gql_device_id:
+            # device id changed, need to refresh uuid
+            # reset _fetch_device_uuid_task if running
+            if self._fetch_device_uuid_task is not None and not self._fetch_device_uuid_task.done():
+                self._fetch_device_uuid_task.cancel()
+                self._community_feed.remove_device_details()
+            task = self._community_feed.restart if self._community_feed.is_connected() \
+                else self._community_feed.fetch_mqtt_device_uuid
+            self._fetch_device_uuid_task = asyncio.create_task(task())
 
     def logout(self):
         self._reset_tokens()
         self.clear_cache()
         self.remove_login_detail()
-        if self._fetch_device_uuid_task is not None and not self._fetch_device_uuid_task.done():
-            self._fetch_device_uuid_task.cancel()
-            self._fetch_device_uuid_task = None
+        for task in (self._fetch_device_uuid_task, self._fetch_account_task):
+            if task is not None and not task.done():
+                task.cancel()
+        self._fetch_device_uuid_task = self._fetch_account_task = None
         self._create_community_feed_if_necessary()
         self._community_feed.remove_device_details()
         # TODO stop community feed if running and restart it on login ?
@@ -262,8 +341,9 @@ class CommunityAuthentication(authentication.Authenticator):
                 raise authentication.AuthenticationRequired()
 
     def remove_login_detail(self):
-        self._profile_raw_data = None
+        self.user_account.flush()
         self._save_login_token("")
+        self._save_gql_device_id("")
         self.logger.debug("Removed community login data")
 
     def get_aiohttp_session(self):
@@ -274,7 +354,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def stop(self):
         if self.is_initialized():
-            self._fetch_supports_task.cancel()
+            self._fetch_account_task.cancel()
         if self._fetch_device_uuid_task is not None and not self._fetch_device_uuid_task.done():
             self._fetch_device_uuid_task.cancel()
         if self._aiohttp_session is not None:
@@ -282,7 +362,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def _update_supports(self, resp_status, json_data):
         if resp_status == 200:
-            self.supports = community_supports.CommunitySupports.from_community_dict(json_data)
+            self.user_account.supports = community_supports.CommunitySupports.from_community_dict(json_data)
             self.logger.debug(f"Fetched supports data.")
         else:
             self.logger.error(f"Error when fetching community support, "
@@ -299,31 +379,44 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def _get_support_role(self):
         try:
-            if self._profile_raw_data[self.USER_DATA_CONTENT]["has_donated"]:
+            if self.user_account.get_has_donated():
                 return community_supports.CommunitySupports.OCTOBOT_DONOR_ROLE
         except KeyError:
             pass
         return community_supports.CommunitySupports.DEFAULT_SUPPORT_ROLE
 
-    async def _auth_and_fetch_supports(self):
+    async def _auth_and_fetch_account(self):
         try:
             await self._async_try_auto_login()
             if not self.is_logged_in():
                 return
             await self.update_supports()
+            await self.update_selected_device()
         except Exception as e:
             self.logger.exception(e, True, f"Error when fetching community supports: {e})")
         finally:
             self.initialized_event.set()
 
     def _save_login_token(self, value):
-        if self.edited_config is not None:
-            self.edited_config.config[commons_constants.CONFIG_COMMUNITY_TOKEN] = value
-            self.edited_config.save()
+        self._save_value_in_config(commons_constants.CONFIG_COMMUNITY_TOKEN, value)
+
+    def _save_gql_device_id(self, gql_device_id):
+        self._save_value_in_config(constants.CONFIG_COMMUNITY_DEVICE_ID, gql_device_id)
 
     def _get_saved_token(self):
+        return self._get_value_in_config(commons_constants.CONFIG_COMMUNITY_TOKEN)
+
+    def _get_saved_gql_device_id(self):
+        return self._get_value_in_config(constants.CONFIG_COMMUNITY_DEVICE_ID)
+
+    def _save_value_in_config(self, key, value):
         if self.edited_config is not None:
-            return self.edited_config.config.get(commons_constants.CONFIG_COMMUNITY_TOKEN, "")
+            self.edited_config.config[key] = value
+            self.edited_config.save()
+
+    def _get_value_in_config(self, key):
+        if self.edited_config is not None:
+            return self.edited_config.config.get(key, "")
         return None
 
     def _try_auto_login(self):
@@ -398,7 +491,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 self._auth_token = new_token
                 self._save_login_token(self._auth_token)
                 self._update_sessions_headers()
-            self._profile_raw_data = json_resp
+            self.user_account.set_profile_raw_data(json_resp)
             return
         elif json_resp is None and status_code < 500:
             if json_resp is not None:
@@ -429,8 +522,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def _reset_tokens(self):
         self._auth_token = None
-        self._gql_access_token = None
-        self.gql_user_id = None
+        self.user_account.flush()
         self._session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
         if self._aiohttp_session is not None:
             self._aiohttp_session.headers.pop(CommunityAuthentication.SESSION_HEADER, None)
