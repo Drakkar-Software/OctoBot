@@ -25,7 +25,7 @@ import octobot_services.api as service_api
 import octobot_trading.api as trading_api
 
 import octobot.logger as logger
-import octobot.community as community_manager
+import octobot.community as community
 import octobot.constants as constants
 import octobot.configuration_manager as configuration_manager
 import octobot.task_manager as task_manager
@@ -67,9 +67,9 @@ class OctoBot:
         self.community_handler = None
 
         # initialize community authentication
-        self.community_auth = community_manager.CommunityAuthentication.instance(
-            constants.COMMUNITY_BACKEND_AUTH_URL,
-            constants.OCTOBOT_COMMUNITY_FEED_URL,
+        self.community_auth = community.CommunityAuthentication.instance(
+            community.IdentifiersProvider.BACKEND_AUTH_URL,
+            community.IdentifiersProvider.FEED_URL,
             config=self.get_edited_config(constants.CONFIG_KEY, dict_only=False),
         )
 
@@ -142,7 +142,7 @@ class OctoBot:
         await self.task_manager.start_tools_tasks()
 
     def _init_community(self):
-        self.community_handler = community_manager.CommunityManager(self.octobot_api)
+        self.community_handler = community.CommunityManager(self.octobot_api)
 
     def get_edited_config(self, config_key, dict_only=True):
         return self.configuration_manager.get_edited_config(config_key, dict_only)

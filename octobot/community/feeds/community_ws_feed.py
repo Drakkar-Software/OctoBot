@@ -27,6 +27,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
 import octobot.constants as constants
 import octobot.community.feeds.abstract_feed as abstract_feed
+import octobot.community.identifiers_provider as identifiers_provider
 
 
 class COMMANDS(enum.Enum):
@@ -171,7 +172,8 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
         if identifier is None:
             return None
         async with self.authenticator.get_aiohttp_session().get(
-                f"{constants.OCTOBOT_COMMUNITY_URL}api/v2/storefront/feeds/id/{identifier}") as resp:
+                f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}api/v2/storefront/feeds/id/{identifier}"
+        ) as resp:
             return (await resp.json())["feed_id"]
 
     def _get_callbacks(self, parsed_message):
