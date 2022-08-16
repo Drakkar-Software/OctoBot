@@ -222,7 +222,7 @@ class CommunityAuthentication(authentication.Authenticator):
             if len(self.user_account.get_all_user_devices_raw_data()) == 0:
                 await self.select_device(
                     self.user_account.get_device_id(
-                        self.create_new_device()
+                        await self.create_new_device()
                     )
                 )
             # 3. fetch all user devices and if there is only one, use it
@@ -283,7 +283,8 @@ class CommunityAuthentication(authentication.Authenticator):
     async def _update_feed_device_uuid(self):
         self._create_community_feed_if_necessary()
         if self._community_feed.associated_gql_device_id != self.user_account.gql_device_id:
-            # device id changed, need to refresh uuid
+            # only device id changed, need to refresh uuid. Otherwise it means that no feed was started with a
+            # different uuid, no need to update
             # reset _fetch_device_uuid_task if running
             if self._fetch_device_uuid_task is not None and not self._fetch_device_uuid_task.done():
                 self._fetch_device_uuid_task.cancel()
@@ -293,6 +294,10 @@ class CommunityAuthentication(authentication.Authenticator):
             self._fetch_device_uuid_task = asyncio.create_task(task())
 
     def logout(self):
+        """
+        logout and remove saved auth details
+        Warning: also call stop_feeds if feeds have to be stopped (not done here to keep method sync)
+        """
         self._reset_tokens()
         self.clear_cache()
         self.remove_login_detail()
@@ -302,7 +307,10 @@ class CommunityAuthentication(authentication.Authenticator):
         self._fetch_device_uuid_task = self._fetch_account_task = None
         self._create_community_feed_if_necessary()
         self._community_feed.remove_device_details()
-        # TODO stop community feed if running and restart it on login ?
+
+    async def stop_feeds(self):
+        if self._community_feed.is_connected():
+            await self._community_feed.stop()
 
     def clear_cache(self):
         self._cache = {}
