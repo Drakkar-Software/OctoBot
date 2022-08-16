@@ -47,7 +47,6 @@ OCTOBOT_BETA_PROGRAM_FORM_URL = "https://forms.gle/igqn1TjQ8XVA1dXBA"
 
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
-CONFIG_COMMUNITY_DEVICE_ID = "community-device_id"
 
 # production env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
 OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://www.astrolab.cloud")
@@ -79,7 +78,10 @@ STAGING_COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
     f"https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/{STAGING_COMMUNITY_MONGO_APP_ID}/graphql"
 )
 
-CONFIG_COMMUNITY_ENVIRONMENT = "community_environment"
+CONFIG_COMMUNITY = "community"
+CONFIG_COMMUNITY_TOKEN = "token"
+CONFIG_COMMUNITY_DEVICE_ID = "device_id"
+CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "False")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", None)
 IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "False")

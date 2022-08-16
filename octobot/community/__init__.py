@@ -14,6 +14,11 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+from octobot.community import errors
+from octobot.community.errors import (
+    RequestError,
+    StatusCodeRequestError,
+)
 from octobot.community import identifiers_provider
 from octobot.community.identifiers_provider import (
     IdentifiersProvider,
@@ -75,6 +80,8 @@ from octobot.community.errors_upload import (
 )
 
 __all__ = [
+    "RequestError",
+    "StatusCodeRequestError",
     "IdentifiersProvider",
     "CommunityUserAccount",
     "CommunityFields",

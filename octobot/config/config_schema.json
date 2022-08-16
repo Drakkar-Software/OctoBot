@@ -16,14 +16,19 @@
     "profile": {
       "type": "string"
     },
-    "community-device_id": {
-      "type": "string"
-    },
-    "community-token": {
-      "type": "string"
-    },
-    "community_environment": {
-      "type": "string"
+    "community": {
+      "type": "object",
+      "properties": {
+        "device_id": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "string"
+        }
+      }
     },
     "backtesting": {
       "type": "object",

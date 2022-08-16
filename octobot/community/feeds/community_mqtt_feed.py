@@ -24,8 +24,8 @@ import distutils.version as loose_version
 import octobot_commons.enums as commons_enums
 import octobot_commons.errors as commons_errors
 import octobot_commons.constants as commons_constants
+import octobot.community.errors as errors
 import octobot.community.feeds.abstract_feed as abstract_feed
-import octobot.community.graphql_requests as graphql_requests
 import octobot.constants as constants
 
 
@@ -135,17 +135,17 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             try:
                 device_data = await self.authenticator.fetch_device(self.authenticator.user_account.gql_device_id)
                 if device_data is None:
-                    raise RuntimeError(f"Error when fetching mqtt device uuid: can't find content with id: "
-                                       f"{self.authenticator.user_account.gql_device_id}")
+                    raise errors.RequestError(f"Error when fetching mqtt device uuid: can't find content with id: "
+                                              f"{self.authenticator.user_account.gql_device_id}")
                 elif device_uuid := device_data["uuid"]:
                     self._device_uuid = device_uuid
                     return
                 # retry soon
                 await asyncio.sleep(self.DEVICE_CREATION_REFRESH_DELAY)
             # should never happen unless there is a real issue
-            except RuntimeError:
+            except errors.RequestError:
                 raise
-        raise RuntimeError(
+        raise errors.RequestError(
             f"Timeout when fetching mqtt device uuid: no uuid to be found after {self.DEVICE_CREATE_TIMEOUT} seconds"
         )
 
