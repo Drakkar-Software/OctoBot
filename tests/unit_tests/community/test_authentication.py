@@ -23,9 +23,9 @@ import requests
 import aiohttp
 
 import octobot.community as community
+import octobot.constants as constants
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration
-import octobot_commons.constants as commons_constants
 
 AUTH_URL = "https://oh.fake/auth"
 AUTH_RETURN = {
@@ -343,7 +343,7 @@ def test_save_login_token(auth):
         auth.edited_config = octobot_commons.configuration.Configuration("", "")
         auth.edited_config.config = {}
         auth._save_login_token("plop")
-        assert auth.edited_config.config[commons_constants.CONFIG_COMMUNITY_TOKEN] == "plop"
+        assert auth.edited_config.config[constants.CONFIG_COMMUNITY][constants.CONFIG_COMMUNITY_TOKEN] == "plop"
         save_mock.assert_called_once_with()
 
 
@@ -351,7 +351,9 @@ def test_get_saved_token(auth):
     assert auth._get_saved_token() is None
     auth.edited_config = octobot_commons.configuration.Configuration("", "")
     auth.edited_config.config = {
-        commons_constants.CONFIG_COMMUNITY_TOKEN: "plop"
+        constants.CONFIG_COMMUNITY: {
+            constants.CONFIG_COMMUNITY_TOKEN: "plop"
+        }
     }
     assert auth._get_saved_token() == "plop"
 

@@ -72,12 +72,11 @@ class IdentifiersProvider:
 
     @staticmethod
     def is_staging_environment_enabled(config: dict):
-        if env := config.get(constants.CONFIG_COMMUNITY_ENVIRONMENT, None):
-            try:
-                return enums.CommunityEnvironments(env) is enums.CommunityEnvironments.Staging
-            except ValueError:
-                return False
-        return False
+        try:
+            env = config[constants.CONFIG_COMMUNITY][constants.CONFIG_COMMUNITY_ENVIRONMENT]
+            return enums.CommunityEnvironments(env) is enums.CommunityEnvironments.Staging
+        except (KeyError, ValueError):
+            return False
 
     @staticmethod
     def use_environment_from_config(config: configuration.Configuration):

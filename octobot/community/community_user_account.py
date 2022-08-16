@@ -58,9 +58,8 @@ class CommunityUserAccount:
         return device["_id"]
 
     @staticmethod
-    def get_device_name(device):
-        return f"TODO {CommunityUserAccount.get_device_id(device)}"
-        return device["name"]
+    def get_device_name_or_id(device):
+        return device["name"] or CommunityUserAccount.get_device_id(device)
 
     def set_profile_raw_data(self, profile_raw_data):
         self._profile_raw_data = profile_raw_data
