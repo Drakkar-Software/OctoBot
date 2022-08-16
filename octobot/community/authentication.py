@@ -21,6 +21,7 @@ import requests
 import aiohttp
 
 import octobot.constants as constants
+import octobot.community.errors as errors
 import octobot.community.identifiers_provider as identifiers_provider
 import octobot.community.community_supports as community_supports
 import octobot.community.feeds as community_feeds
@@ -123,7 +124,8 @@ class CommunityAuthentication(authentication.Authenticator):
             request_body["operationName"] = operation_name
         return request_body
 
-    async def async_graphql_query(self, query, variables=None, operation_name=None, allow_retry_on_expired_token=True):
+    async def async_graphql_query(self, query, query_name, variables=None, operation_name=None,
+                                  expected_code=None, allow_retry_on_expired_token=True):
         try:
             async with self._authenticated_qgl_session() as session:
                 resp = await session.post(
@@ -134,13 +136,19 @@ class CommunityAuthentication(authentication.Authenticator):
                     # access token expired
                     raise authentication.AuthenticationRequired
                 json_resp = await resp.json()
-                if errors := json_resp.get("errors"):
-                    raise RuntimeError(f"Error when running graphql query: {errors[0].get('message', errors)}")
-                return resp
+                if errs := json_resp.get("errors"):
+                    raise errors.RequestError(f"Error when running graphql query [{query_name}]: "
+                                              f"{errs[0].get('message', errs)}")
+                if expected_code is None or resp.status == expected_code:
+                    return json_resp["data"][query_name]
+                raise errors.StatusCodeRequestError(
+                    f"Wrong status code running graphql query [{query_name}]: expected {expected_code}, "
+                    f"got: {resp.status}. Text: {await resp.text()}")
         except authentication.AuthenticationRequired:
             if allow_retry_on_expired_token:
-                return await self.async_graphql_query(query, variables=variables, operation_name=operation_name,
-                                                      allow_retry_on_expired_token=False)
+                return await self.async_graphql_query(
+                    query, query_name, variables=variables, operation_name=operation_name,
+                    expected_code=expected_code, allow_retry_on_expired_token=False)
             else:
                 raise
 
@@ -217,19 +225,12 @@ class CommunityAuthentication(authentication.Authenticator):
         if saved_uuid := self._get_saved_gql_device_id():
             await self.select_device(saved_uuid)
         else:
-            # 2. fetch all user devices and create one if none, otherwise if there is only one, use it
+            # 2. fetch all user devices and create one if none, otherwise ask use for which one to use
             await self.load_user_devices()
             if len(self.user_account.get_all_user_devices_raw_data()) == 0:
                 await self.select_device(
                     self.user_account.get_device_id(
                         await self.create_new_device()
-                    )
-                )
-            # 3. fetch all user devices and if there is only one, use it
-            if len(self.user_account.get_all_user_devices_raw_data()) == 1:
-                await self.select_device(
-                    self.user_account.get_device_id(
-                        self.user_account.get_all_user_devices_raw_data()[0]
                     )
                 )
             # more than one possible device, can't auto-select one
@@ -248,37 +249,16 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _fetch_devices(self):
         query, variables = graphql_requests.select_devices(self.user_account.gql_user_id)
-        select_resp = await self.async_graphql_query(query, variables=variables)
-        if select_resp.status == 200:
-            json_resp = await select_resp.json()
-            return json_resp["data"]["devices"]
-        else:
-            raise RuntimeError(f"Error when fetching devices, code: {select_resp.status}, "
-                               f"text: {await select_resp.text()}")
+        return await self.async_graphql_query(query, "devices", variables=variables, expected_code=200)
 
     async def fetch_device(self, device_id):
         query, variables = graphql_requests.select_device(device_id)
-        select_resp = await self.async_graphql_query(query, variables=variables)
-        if select_resp.status == 200:
-            json_resp = await select_resp.json()
-            return json_resp["data"]["device"]
-        else:
-            raise RuntimeError(f"Error when fetching device, code: {select_resp.status}, "
-                               f"text: {await select_resp.text()}")
+        return await self.async_graphql_query(query, "device", variables=variables, expected_code=200)
 
     async def create_new_device(self):
         await self.gql_login_if_required()
-        error_message = "Error when creating device"
         query, variables = graphql_requests.create_new_device_query(self.user_account.gql_user_id)
-        try:
-            create_resp = await self.async_graphql_query(query, variables=variables)
-        except RuntimeError as e:
-            raise RuntimeError(f"{error_message}, {e}")
-        if create_resp.status == 200:
-            json_resp = await create_resp.json()
-            return json_resp["data"]["insertOneDevice"]
-        else:
-            raise RuntimeError(f"{error_message}, code: {create_resp.status}, text: {await create_resp.text()}")
+        return await self.async_graphql_query(query, "insertOneDevice", variables=variables, expected_code=200)
 
     async def _update_feed_device_uuid(self):
         self._create_community_feed_if_necessary()
@@ -406,25 +386,30 @@ class CommunityAuthentication(authentication.Authenticator):
             self.initialized_event.set()
 
     def _save_login_token(self, value):
-        self._save_value_in_config(commons_constants.CONFIG_COMMUNITY_TOKEN, value)
+        self._save_value_in_config(constants.CONFIG_COMMUNITY_TOKEN, value)
 
     def _save_gql_device_id(self, gql_device_id):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_DEVICE_ID, gql_device_id)
 
     def _get_saved_token(self):
-        return self._get_value_in_config(commons_constants.CONFIG_COMMUNITY_TOKEN)
+        return self._get_value_in_config(constants.CONFIG_COMMUNITY_TOKEN)
 
     def _get_saved_gql_device_id(self):
         return self._get_value_in_config(constants.CONFIG_COMMUNITY_DEVICE_ID)
 
     def _save_value_in_config(self, key, value):
         if self.edited_config is not None:
-            self.edited_config.config[key] = value
+            if constants.CONFIG_COMMUNITY not in self.edited_config.config:
+                self.edited_config.config[constants.CONFIG_COMMUNITY] = {}
+            self.edited_config.config[constants.CONFIG_COMMUNITY][key] = value
             self.edited_config.save()
 
     def _get_value_in_config(self, key):
         if self.edited_config is not None:
-            return self.edited_config.config.get(key, "")
+            try:
+                return self.edited_config.config[constants.CONFIG_COMMUNITY][key]
+            except KeyError:
+                return ""
         return None
 
     def _try_auto_login(self):

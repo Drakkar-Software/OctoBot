@@ -15,35 +15,9 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 
-def create_new_device_query(user_id) -> (str, dict):
-    return """
-mutation CreateDevice($user_id: ObjectId) {
-  insertOneDevice(data: {user_id: $user_id}) {
-    _id
-  }
-}
-    """, {"user_id": user_id}
+class RequestError(Exception):
+    pass
 
 
-def select_device(device_id) -> (str, dict):
-    return """
-query SelectDeviceUUID($_id: ObjectId) {
-  device(query: {_id: $_id}) {
-    _id
-    uuid
-    name
-  }
-}
-    """, {"_id": device_id}
-
-
-def select_devices(user_id) -> (str, dict):
-    return """
-query SelectDevices($user_id: ObjectId) {
-  devices(query: {user_id: $user_id}) {
-    _id
-    uuid
-    name
-  }
-}
-    """, {"user_id": user_id}
+class StatusCodeRequestError(RequestError):
+    pass
