@@ -51,7 +51,7 @@ class CommunityUserAccount:
         return self._selected_device_raw_data
 
     def get_selected_device_uuid(self):
-        return self._selected_device_raw_data["uuid"]
+        return self.get_selected_device_raw_data().get("uuid", None)
 
     @staticmethod
     def get_device_id(device):
