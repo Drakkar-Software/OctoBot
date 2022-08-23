@@ -20,6 +20,7 @@ import aiohttp
 import octobot_commons.enums as enums
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
+import octobot_commons.signals as signals
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
@@ -135,6 +136,7 @@ class OctoBot:
         service_api.stop_services()
         await self.interface_producer.stop()
         await self.community_auth.stop()
+        signals.SignalPublisher.instance().stop()
         self.logger.info("Shutting down.")
 
     async def _start_tools_tasks(self):
