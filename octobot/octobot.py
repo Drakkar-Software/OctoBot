@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
 import time
 import uuid
 import aiohttp
@@ -97,8 +98,10 @@ class OctoBot:
         self.service_feed_producer = None
 
         self.async_loop = None
+        self.stopped = None
 
     async def initialize(self):
+        self.stopped = asyncio.Event()
         self.community_auth.init_account()
         await self.initializer.create()
         await self._start_tools_tasks()
@@ -131,13 +134,16 @@ class OctoBot:
                                             markdown_format=enums.MarkdownFormat.ITALIC))
 
     async def stop(self):
-        await self.exchange_producer.stop()
-        await self.service_feed_producer.stop()
-        service_api.stop_services()
-        await self.interface_producer.stop()
-        await self.community_auth.stop()
-        signals.SignalPublisher.instance().stop()
-        self.logger.info("Shutting down.")
+        try:
+            signals.SignalPublisher.instance().stop()
+            await self.exchange_producer.stop()
+            await self.community_auth.stop()
+            await self.service_feed_producer.stop()
+            service_api.stop_services()
+            await self.interface_producer.stop()
+        finally:
+            self.stopped.set()
+            self.logger.info("Shutting down.")
 
     async def _start_tools_tasks(self):
         self._init_community()
