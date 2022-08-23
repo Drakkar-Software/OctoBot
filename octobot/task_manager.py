@@ -72,7 +72,15 @@ class TaskManager:
 
     def stop_tasks(self, stop_octobot=True):
         self.logger.info("Stopping tasks...")
-        stop_coroutines = [self.octobot.stop()] if stop_octobot else []
+
+        async def stop_timeout(timeout):
+            await asyncio.wait_for(self.octobot.stopped.wait(), timeout)
+
+        stop_coroutines = []
+        if stop_octobot:
+            allowed_seconds_to_stop = 10
+            stop_coroutines.append(self.octobot.stop())
+            stop_coroutines.append(stop_timeout(allowed_seconds_to_stop))
 
         if self.tools_task_group:
             self.tools_task_group.cancel()
@@ -81,12 +89,15 @@ class TaskManager:
         if self.octobot.community_handler:
             stop_coroutines.append(self.octobot.community_handler.stop_task())
 
-        async def _await_gather(tasks):
-            # await this gather to be sure to complete the each stop call
-            await asyncio.gather(*tasks)
+        async def _await_timeouted_gather(tasks):
+            # await this gather to be sure to complete the each stop call or timeout
+            try:
+                await asyncio.gather(*tasks)
+            except asyncio.exceptions.TimeoutError:
+                self.logger.warning(f"Timeout while stopping tasks, forcing stop.")
 
         if stop_coroutines:
-            asyncio_tools.run_coroutine_in_asyncio_loop(_await_gather(stop_coroutines), self.async_loop)
+            asyncio_tools.run_coroutine_in_asyncio_loop(_await_timeouted_gather(stop_coroutines), self.async_loop)
         self.async_loop.stop()
         # ensure there is at least one element in the event loop tasks
         # not to block on base_event.py#self._selector.select(timeout) which prevents run_forever() from completing
