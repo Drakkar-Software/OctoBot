@@ -40,6 +40,7 @@ cdef class OctoBot:
     cdef public object community_auth
     cdef public object async_loop
     cdef public object tentacles_setup_config
+    cdef public object stopped  # asyncio.Event
 
     cdef public initializer.Initializer initializer
     cdef public task_manager.TaskManager task_manager
