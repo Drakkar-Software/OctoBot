@@ -25,7 +25,7 @@ import octobot.community as community
 import octobot.constants as constants
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.enums as commons_enums
-import octobot_trading.signals as trading_signals
+import octobot_commons.signals as commons_signals
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -56,9 +56,13 @@ class MockedResponse:
 
 
 def _mocked_signal():
-    return trading_signals.TradingSignal("strategy", "exchange", "future", "symbol",
-                                         "description", "state", "orders", identifier="identifier",
-                                         version="version")
+    return commons_signals.Signal(
+        "identifier", 
+        {
+            "key1": 11,
+            "key2": "random value"
+        }
+    )
 
 
 def _build_message(value):
