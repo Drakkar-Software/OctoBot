@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -16,6 +16,7 @@
 import typing
 import packaging.version
 
+import octobot.community.identifiers_provider as identifiers_provider
 import octobot.constants as constants
 
 
@@ -34,13 +35,14 @@ class CommunityTentaclesPackage:
     @staticmethod
     def from_community_dict(data):
         data_attributes = data["attributes"]
+        # todo update with new urls
         return CommunityTentaclesPackage(
             data_attributes.get("name"),
             data_attributes.get("description"),
-            f"{constants.OCTOBOT_COMMUNITY_URL}products/{data_attributes.get('product_slug')}",
+            f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}products/{data_attributes.get('product_slug')}",
             data_attributes.get("activated"),
             data["relationships"].get('images')['data'],
-            f"{constants.OCTOBOT_COMMUNITY_URL}{data_attributes.get('download_path')}",
+            f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}{data_attributes.get('download_path')}",
             data_attributes.get("versions"),
             data_attributes.get("last_version")
         )

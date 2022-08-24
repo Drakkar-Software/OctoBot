@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -202,6 +202,9 @@ def start_octobot(args):
 
         # add args to config
         update_config_with_args(args, config, logger)
+
+        # switch environments if necessary
+        octobot_community.IdentifiersProvider.use_environment_from_config(config)
 
         # show terms
         _log_terms_if_unaccepted(config, logger)

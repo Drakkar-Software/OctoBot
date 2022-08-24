@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -19,13 +19,17 @@ import octobot_commons.support as support
 
 class CommunitySupports(support.Support):
     DEFAULT_SUPPORT_ROLE = "default"
+    OCTOBOT_DONOR_ROLE = "donor"
 
     def __init__(self, support_role: str = None, donations: list = None):
         self.support_role = support_role or CommunitySupports.DEFAULT_SUPPORT_ROLE
         self.donations = donations or []
 
     def is_supporting(self) -> bool:
-        return self.support_role != self.DEFAULT_SUPPORT_ROLE or bool(self.donations)
+        return self.support_role != self.DEFAULT_SUPPORT_ROLE or self.is_donor()
+
+    def is_donor(self) -> bool:
+        return self.support_role == self.OCTOBOT_DONOR_ROLE or bool(self.donations)
 
     @staticmethod
     def from_community_dict(data):

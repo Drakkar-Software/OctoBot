@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
+import pytest_asyncio
 import mock
 import asyncio
 import json
@@ -24,7 +25,7 @@ import octobot.community as community
 import octobot.constants as constants
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.enums as commons_enums
-import octobot_trading.signals as trading_signals
+import octobot_commons.signals as commons_signals
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -55,9 +56,13 @@ class MockedResponse:
 
 
 def _mocked_signal():
-    return trading_signals.TradingSignal("strategy", "exchange", "future", "symbol",
-                                         "description", "state", "orders", identifier="identifier",
-                                         version="version")
+    return commons_signals.Signal(
+        "identifier", 
+        {
+            "key1": 11,
+            "key2": "random value"
+        }
+    )
 
 
 def _build_message(value):
@@ -80,14 +85,15 @@ async def echo_or_signal_reply_handler(websocket, _):
             await websocket.send(json.dumps({"message": base_message}))
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def community_echo_server():
     async with websockets.serve(echo_or_signal_reply_handler, HOST, PORT):
         yield
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def authenticator():
+    community.IdentifiersProvider.use_production()
     auth = community.CommunityAuthentication(None, None)
     auth._auth_token = TOKEN
     auth.refresh_token = TOKEN
@@ -95,7 +101,7 @@ async def authenticator():
     return auth
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def community_mocked_consumer_server():
     mock_consumer = mock.AsyncMock()
 
@@ -111,18 +117,18 @@ async def community_mocked_consumer_server():
         yield mock_consumer
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def connected_community_feed(authenticator):
     feed = None
     try:
-        feed = community.CommunityFeed(f"ws://{HOST}:{PORT}", authenticator)
+        feed = community.CommunityWSFeed(f"ws://{HOST}:{PORT}", authenticator)
         feed.INIT_TIMEOUT = 1
         with mock.patch.object(feed, "_fetch_stream_identifier", mock.AsyncMock(return_value=1)) \
                 as _fetch_stream_identifier_mock:
             await feed.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, mock.AsyncMock())
             _fetch_stream_identifier_mock.assert_called_once_with(None)
-        await feed.start()
-        yield feed
+            await feed.start()
+            yield feed
     finally:
         if feed is not None:
             await feed.stop()
@@ -131,12 +137,12 @@ async def connected_community_feed(authenticator):
 async def test_consume_base_message(community_echo_server, connected_community_feed):
     consume_mock = connected_community_feed.feed_callbacks[commons_enums.CommunityChannelTypes.SIGNAL][None][0]
     consume_mock.assert_not_called()
-    await connected_community_feed.send("hiiiii", commons_enums.CommunityChannelTypes.SIGNAL.value, None)
+    await connected_community_feed.send("hiiiii", commons_enums.CommunityChannelTypes.SIGNAL, None)
     await _wait_for_receive()
     consume_mock.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': 'hiiiii'})
     consume_mock.reset_mock()
 
-    await connected_community_feed.send(json.dumps(DATA_DICT), commons_enums.CommunityChannelTypes.SIGNAL.value, None)
+    await connected_community_feed.send(json.dumps(DATA_DICT), commons_enums.CommunityChannelTypes.SIGNAL, None)
     await _wait_for_receive()
     consume_mock.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': json.dumps(DATA_DICT)})
 
@@ -151,7 +157,7 @@ async def test_consume_signal_message(community_echo_server, connected_community
     }
     connected_community_feed._identifier_by_stream_id[1] = "strat1"
     consume_mock.assert_not_called()
-    await connected_community_feed.send("signal", commons_enums.CommunityChannelTypes.SIGNAL.value, "strat1")
+    await connected_community_feed.send("signal", commons_enums.CommunityChannelTypes.SIGNAL, "strat1")
     await _wait_for_receive()
     consume_mock.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': _mocked_signal().to_dict()})
 
@@ -163,7 +169,7 @@ async def test_send_base_message(community_mocked_consumer_server, connected_com
     community_mocked_consumer_server.reset_mock()
     consume_mock = connected_community_feed.feed_callbacks[commons_enums.CommunityChannelTypes.SIGNAL][None][0]
     consume_mock.assert_not_called()
-    await connected_community_feed.send("signal", commons_enums.CommunityChannelTypes.SIGNAL.value, None)
+    await connected_community_feed.send("signal", commons_enums.CommunityChannelTypes.SIGNAL, None)
     await _wait_for_receive()
     community_mocked_consumer_server.assert_called_once_with(
         '{"command": "message", "identifier": "{\\"channel\\": \\"Spree::MessageChannel\\"}", "data": '
@@ -173,7 +179,7 @@ async def test_send_base_message(community_mocked_consumer_server, connected_com
     consume_mock.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': 1})
     consume_mock.reset_mock()
 
-    await connected_community_feed.send(DATA_DICT, commons_enums.CommunityChannelTypes.SIGNAL.value, None)
+    await connected_community_feed.send(DATA_DICT, commons_enums.CommunityChannelTypes.SIGNAL, None)
     await _wait_for_receive()
     assert community_mocked_consumer_server.call_count == 2
     identifier_str = json.dumps({"channel": "Spree::MessageChannel"})
@@ -192,7 +198,7 @@ async def test_send_signal_message(community_mocked_consumer_server, connected_c
     consume_mock = connected_community_feed.feed_callbacks[commons_enums.CommunityChannelTypes.SIGNAL][None][0]
     consume_mock.assert_not_called()
     await connected_community_feed.send(_mocked_signal().to_dict(),
-                                        commons_enums.CommunityChannelTypes.SIGNAL.value, None)
+                                        commons_enums.CommunityChannelTypes.SIGNAL, None)
     await _wait_for_receive()
 
     identifier_str = json.dumps({"channel": "Spree::MessageChannel"})
@@ -208,18 +214,18 @@ async def test_reconnect(authenticator):
     try:
         server = await websockets.serve(echo_or_signal_reply_handler, HOST, PORT)
         client_handler = mock.AsyncMock()
-        client = community.CommunityFeed(f"ws://{HOST}:{PORT}", authenticator)
+        client = community.CommunityWSFeed(f"ws://{HOST}:{PORT}", authenticator)
         client.RECONNECT_DELAY = 0
         await client.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, client_handler)
         await client.start()
 
         # 1. ensure client is both receiving and sending messages
         client_handler.assert_not_called()
-        await client.send("plop", commons_enums.CommunityChannelTypes.SIGNAL.value, None)
+        await client.send("plop", commons_enums.CommunityChannelTypes.SIGNAL, None)
         await _wait_for_receive()
         client_handler.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': "plop"})
         client_handler.reset_mock()
-        await client.send("hii", commons_enums.CommunityChannelTypes.SIGNAL.value, None)
+        await client.send("hii", commons_enums.CommunityChannelTypes.SIGNAL, None)
         await _wait_for_receive()
         client_handler.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': "hii"})
         client_handler.reset_mock()
@@ -228,7 +234,7 @@ async def test_reconnect(authenticator):
         server.close()
         await server.wait_closed()
         with pytest.raises(websockets.ConnectionClosed):
-            await client.send("hii", commons_enums.CommunityChannelTypes.SIGNAL.value, None,
+            await client.send("hii", commons_enums.CommunityChannelTypes.SIGNAL, None,
                               reconnect_if_necessary=False)
         await _wait_for_receive()
         client_handler.assert_not_called()
@@ -240,12 +246,12 @@ async def test_reconnect(authenticator):
 
         # 4. re-exchange message using the same client (reconnected through send method)
         assert not client.is_connected()
-        await client.send("plop", commons_enums.CommunityChannelTypes.SIGNAL.value, None)
+        await client.send("plop", commons_enums.CommunityChannelTypes.SIGNAL, None)
         await _wait_for_connection_and_subscribe(client)
         await _wait_for_receive()
         client_handler.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': "plop"})
         client_handler.reset_mock()
-        await client.send("hii", commons_enums.CommunityChannelTypes.SIGNAL.value, None)
+        await client.send("hii", commons_enums.CommunityChannelTypes.SIGNAL, None)
         await _wait_for_receive()
         client_handler.assert_called_once_with({'v': '1.0.0', 't': 't', 'i': 1, 's': "hii"})
         client_handler.reset_mock()
@@ -254,7 +260,7 @@ async def test_reconnect(authenticator):
         server.close()
         await server.wait_closed()
         with pytest.raises(websockets.ConnectionClosed):
-            await client.send("hii", commons_enums.CommunityChannelTypes.SIGNAL.value, None,
+            await client.send("hii", commons_enums.CommunityChannelTypes.SIGNAL, None,
                               reconnect_if_necessary=False)
         await _wait_for_receive()
         client_handler.assert_not_called()

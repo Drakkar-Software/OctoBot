@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -30,7 +30,10 @@ class Updater:
         :return: True if the updater version is greater than current bot version
         """
         try:
-            return packaging_version.parse(await self.get_latest_version()) > packaging_version.parse(constants.VERSION)
+            latest_version = await self.get_latest_version()
+            if latest_version is None:
+                return False
+            return packaging_version.parse(latest_version) > packaging_version.parse(constants.VERSION)
         except TypeError as e:
             self.logger.debug(f"Error when comparing latest with current OctoBot version: {e}")
 

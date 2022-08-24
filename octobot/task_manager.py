@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -72,7 +72,15 @@ class TaskManager:
 
     def stop_tasks(self, stop_octobot=True):
         self.logger.info("Stopping tasks...")
-        stop_coroutines = [self.octobot.stop()] if stop_octobot else []
+
+        async def stop_timeout(timeout):
+            await asyncio.wait_for(self.octobot.stopped.wait(), timeout)
+
+        stop_coroutines = []
+        if stop_octobot:
+            allowed_seconds_to_stop = 10
+            stop_coroutines.append(self.octobot.stop())
+            stop_coroutines.append(stop_timeout(allowed_seconds_to_stop))
 
         if self.tools_task_group:
             self.tools_task_group.cancel()
@@ -81,12 +89,15 @@ class TaskManager:
         if self.octobot.community_handler:
             stop_coroutines.append(self.octobot.community_handler.stop_task())
 
-        async def _await_gather(tasks):
-            # await this gather to be sure to complete the each stop call
-            await asyncio.gather(*tasks)
+        async def _await_timeouted_gather(tasks):
+            # await this gather to be sure to complete the each stop call or timeout
+            try:
+                await asyncio.gather(*tasks)
+            except asyncio.exceptions.TimeoutError:
+                self.logger.warning(f"Timeout while stopping tasks, forcing stop.")
 
         if stop_coroutines:
-            asyncio_tools.run_coroutine_in_asyncio_loop(_await_gather(stop_coroutines), self.async_loop)
+            asyncio_tools.run_coroutine_in_asyncio_loop(_await_timeouted_gather(stop_coroutines), self.async_loop)
         self.async_loop.stop()
         # ensure there is at least one element in the event loop tasks
         # not to block on base_event.py#self._selector.select(timeout) which prevents run_forever() from completing
@@ -119,8 +130,8 @@ class TaskManager:
                                                     name=f"{self.get_name()} new asyncio main loop")
         self.current_loop_thread.start()
 
-    def run_in_main_asyncio_loop(self, coroutine):
-        return asyncio_tools.run_coroutine_in_asyncio_loop(coroutine, self.async_loop)
+    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True):
+        return asyncio_tools.run_coroutine_in_asyncio_loop(coroutine, self.async_loop, log_exceptions=log_exceptions)
 
     def run_in_async_executor(self, coroutine):
         if self.executors is not None:

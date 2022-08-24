@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -370,7 +370,9 @@ class IndependentBacktesting:
                         self.logger.error(f"Mixed inverse and linear contracts backtesting are not supported yet")
                     self.octobot_backtesting.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
                 # in inverse contracts, use BTC for BTC/USD trading as reference market
-                return symbol.settlement_asset
+                if symbol.settlement_asset:
+                    # only use settlement asset if available
+                    return symbol.settlement_asset
             for symbol in symbols:
                 quote = symbol.quote
                 if ref_market_candidate is None:

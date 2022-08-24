@@ -40,6 +40,7 @@ cdef class OctoBot:
     cdef public object community_auth
     cdef public object async_loop
     cdef public object tentacles_setup_config
+    cdef public object stopped  # asyncio.Event
 
     cdef public initializer.Initializer initializer
     cdef public task_manager.TaskManager task_manager
@@ -51,7 +52,7 @@ cdef class OctoBot:
     cdef public octobot_channel_consumer.OctoBotChannelGlobalConsumer global_consumer
     cdef public configuration_manager.ConfigurationManager configuration_manager
 
-    cpdef object run_in_main_asyncio_loop(self, object coroutine)
+    cpdef object run_in_main_asyncio_loop(self, object coroutine, bint log_exceptions=*)
     cpdef void set_watcher(self, object watcher)
     cpdef object get_aiohttp_session(self)
     cpdef object get_edited_config(self, str config_key, bint dict_only=*)

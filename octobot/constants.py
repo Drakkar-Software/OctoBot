@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -16,10 +16,11 @@
 import os
 import pathlib
 import octobot_commons.os_util as os_util
+import octobot.enums
 
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
-SHORT_VERSION = "0.4.5"  # major.minor.revision
+SHORT_VERSION = "0.4.6"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
 VERSION_DEV_PHASE = ""  # alpha : a / beta : b / release candidate : rc
 VERSION_PHASE = ""  # XX
@@ -40,16 +41,50 @@ TENTACLE_PACKAGE_NAME = "base"
 TENTACLE_PACKAGES = "packages"
 COMPILED_TENTACLE_CATEGORY = "extra"
 
-DEFAULT_COMMUNITY_URL = "https://community.octobot.online/"
-DEFAULT_COMMUNITY_WS_URL = "ws://community2.octobot.cloud/"   #TODO
-OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", DEFAULT_COMMUNITY_URL)
-OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_WS_URL", f"{DEFAULT_COMMUNITY_WS_URL}cable")
-OCTOBOT_COMMUNITY_AUTH_URL = f"{OCTOBOT_COMMUNITY_URL}spree_oauth/token"
-OCTOBOT_COMMUNITY_ACCOUNT_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/account"
-OCTOBOT_COMMUNITY_PACKAGES_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/tentacle/packages"
-OCTOBOT_COMMUNITY_SUPPORTS_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/supports"
-OCTOBOT_COMMUNITY_FETCH_FEED_IDENTIFIER_URL = f"{OCTOBOT_COMMUNITY_URL}api/v2/storefront/feeds/id"
+OCTOBOT_DONATION_URL = "https://forms.gle/Bagagc7dyjJGDT1t9"
+OCTOBOT_FEEDBACK_FORM_URL = "https://goo.gl/forms/vspraniXPY7rvtKN2"
+OCTOBOT_BETA_PROGRAM_FORM_URL = "https://forms.gle/igqn1TjQ8XVA1dXBA"
+
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
+COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
+
+# production env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
+OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://www.astrolab.cloud")
+OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")
+COMMUNITY_BACKEND_API_URL = os.getenv("COMMUNITY_BACKEND_API_URL", "https://astro-lab.swell.store/api")
+COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
+COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN", "pk_bw3xUzAtCRyy0HcgKkuY8vQha5qN5Amd")
+COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
+COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "astrolab-joenf")
+COMMUNITY_GQL_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/app/{COMMUNITY_MONGO_APP_ID}/auth/providers/api-key/login"
+COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
+    "COMMUNITY_GQL_BACKEND_API_URL",
+    f"https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/{COMMUNITY_MONGO_APP_ID}/graphql"
+)
+
+# staging env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
+STAGING_OCTOBOT_COMMUNITY_URL = os.getenv("COMMUNITY_SERVER_URL", "https://beta.astrolab.cloud/")
+STAGING_OCTOBOT_COMMUNITY_FEED_URL = os.getenv("OCTOBOT_COMMUNITY_MQTT_URL", "iot.fr-par.scw.cloud")
+STAGING_COMMUNITY_BACKEND_API_URL = os.getenv("COMMUNITY_BACKEND_API_URL", "https://astro-lab-staging.swell.store/api")
+STAGING_COMMUNITY_BACKEND_AUTH_URL = f"{STAGING_COMMUNITY_BACKEND_API_URL}/account/login"
+STAGING_COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN",
+                                                   "pk_akVFLvtDFvZlmTVyJwz9Z1N0TQQlycOh")
+STAGING_COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
+STAGING_COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "astrolab-staging-mpura")
+STAGING_COMMUNITY_GQL_AUTH_URL = f"{STAGING_COMMUNITY_MONGO_REALM_URL}/app/{STAGING_COMMUNITY_MONGO_APP_ID}/" \
+                                 f"auth/providers/api-key/login"
+STAGING_COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
+    "COMMUNITY_GQL_BACKEND_API_URL",
+    f"https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/{STAGING_COMMUNITY_MONGO_APP_ID}/graphql"
+)
+
+CONFIG_COMMUNITY = "community"
+CONFIG_COMMUNITY_TOKEN = "token"
+CONFIG_COMMUNITY_DEVICE_ID = "device_id"
+CONFIG_COMMUNITY_ENVIRONMENT = "environment"
+USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "False")
+USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", None)
+IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "False")
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
 
@@ -66,13 +101,14 @@ ENV_COMPILED_TENTACLES_PACKAGES_TYPE = "COMPILED_TENTACLES_PACKAGES_TYPE"
 ENV_TENTACLE_CATEGORY = "TENTACLE_CATEGORY"
 ENV_COMPILED_TENTACLES_SUBCATEGORY = "COMPILED_TENTACLES_SUBCATEGORY"
 TENTACLES_REQUIRED_VERSION = f"{os.getenv(ENV_TENTACLES_URL_TAG, LONG_VERSION)}"
+ADDITIONAL_TENTACLES_PACKAGE_URL = os.getenv("ADDITIONAL_TENTACLES_PACKAGE_URL", None)
 # url ending example: 	tentacles/officials/packages/full/base/latest/any_platform.zip
 
 DEFAULT_TENTACLES_PACKAGE_NAME = "OctoBot-Default-Tentacles"
 
 # logs
 LOGS_FOLDER = "logs"
-ENV_ENABLE_DEBUG_LOGS = "ENABLE_DEBUG_LOGS"
+ENV_TRADING_ENABLE_DEBUG_LOGS = os_util.parse_boolean_environment_var("ENV_TRADING_ENABLE_DEBUG_LOGS", "False")
 
 # errors
 ERRORS_URL = os.getenv("ERRORS_OCTOBOT_ONLINE_URL", "https://errors.octobot.online/")

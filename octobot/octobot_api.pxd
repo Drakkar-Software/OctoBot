@@ -33,7 +33,7 @@ cdef class OctoBotAPI:
     cpdef str get_bot_id(self)
     cpdef str get_matrix_id(self)
     cpdef object get_aiohttp_session(self)
-    cpdef object run_in_main_asyncio_loop(self, object coroutine)
+    cpdef object run_in_main_asyncio_loop(self, object coroutine, bint log_exceptions=*)
     cpdef void stop_tasks(self)
     cpdef void stop_bot(self)
     cpdef void update_bot(self)
