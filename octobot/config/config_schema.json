@@ -16,6 +16,20 @@
     "profile": {
       "type": "string"
     },
+    "community": {
+      "type": "object",
+      "properties": {
+        "device_id": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "string"
+        }
+      }
+    },
     "backtesting": {
       "type": "object",
       "properties": {

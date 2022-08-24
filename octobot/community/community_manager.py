@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -194,7 +194,7 @@ class CommunityManager:
                and trading_api.is_sponsoring(exchange_name) \
                and trading_api.is_valid_account(exchange_manager):
                 supporting_exchanges.append(exchange_name)
-        supports = authentication.Authenticator.instance().supports
+        supports = authentication.Authenticator.instance().user_account.supports
         return {
             community_fields.CommunityFields.EXCHANGES.value: supporting_exchanges,
             community_fields.CommunityFields.ROLES.value: [supports.support_role],

@@ -36,4 +36,4 @@ cdef class TaskManager:
     cpdef void run_forever(self, object coroutine)
     cpdef void create_pool_executor(self, int workers=*)
     cpdef void init_async_loop(self)
-    cpdef object run_in_main_asyncio_loop(self, object coroutine)
+    cpdef object run_in_main_asyncio_loop(self, object coroutine, bint log_exceptions=*)

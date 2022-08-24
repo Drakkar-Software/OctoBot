@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -22,12 +22,12 @@ import enum
 import json
 import distutils.version as loose_version
 
-
-import octobot_commons.logging as bot_logging
 import octobot_commons.errors as commons_errors
 import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
 import octobot.constants as constants
+import octobot.community.feeds.abstract_feed as abstract_feed
+import octobot.community.identifiers_provider as identifiers_provider
 
 
 class COMMANDS(enum.Enum):
@@ -39,22 +39,15 @@ class CHANNELS(enum.Enum):
     MESSAGE = "Spree::MessageChannel"
 
 
-class CommunityFeed:
+class CommunityWSFeed(abstract_feed.AbstractFeed):
     INIT_TIMEOUT = 60
     RECONNECT_DELAY = 15
     STALE_CONNECTION_TIMEOUT = 30   # ws server sends a ping every 3s
 
     def __init__(self, feed_url, authenticator):
-        self.logger: bot_logging.BotLogger = bot_logging.get_logger(
-            self.__class__.__name__
-        )
-        self.feed_url = feed_url
-        self.should_stop = False
+        super().__init__(feed_url, authenticator)
         self.websocket_connection = None
         self.lock = asyncio.Lock()
-        self.authenticator = authenticator
-        self.feed_callbacks = {}
-        self.is_subscribed = False
 
         self.consumer_task = None
         self.watcher_task = None
@@ -148,7 +141,7 @@ class CommunityFeed:
     def _build_data(self, channel_type, identifier, message):
         if message:
             return json.dumps({
-                "topic": channel_type,
+                "topic": channel_type.value,
                 "feed_id": self._build_stream_id(identifier),
                 "version": constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION,
                 "value": json.dumps(message),
@@ -179,7 +172,8 @@ class CommunityFeed:
         if identifier is None:
             return None
         async with self.authenticator.get_aiohttp_session().get(
-                f"{constants.OCTOBOT_COMMUNITY_FETCH_FEED_IDENTIFIER_URL}/{identifier}") as resp:
+                f"{identifiers_provider.IdentifiersProvider.COMMUNITY_URL}api/v2/storefront/feeds/id/{identifier}"
+        ) as resp:
             return (await resp.json())["feed_id"]
 
     def _get_callbacks(self, parsed_message):

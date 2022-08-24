@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -23,6 +23,7 @@ from octobot_commons.tests.test_config import load_test_config
 from octobot.commands import start_bot
 from octobot.logger import init_logger
 from octobot.octobot import OctoBot
+import octobot.community as community
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -32,6 +33,7 @@ pytestmark = pytest.mark.asyncio
 async def test_run_bot():
     # avoid web interface in this test
     WebInterface.enabled = False
+    community.IdentifiersProvider.use_production()
     bot = OctoBot(load_test_config(dict_only=False), ignore_config=True)
     bot.task_manager.init_async_loop()
     await start_bot(bot, init_logger())

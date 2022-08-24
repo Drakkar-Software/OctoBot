@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
 import time
 import uuid
 import aiohttp
@@ -20,12 +21,13 @@ import aiohttp
 import octobot_commons.enums as enums
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
+import octobot_commons.signals as signals
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
 
 import octobot.logger as logger
-import octobot.community as community_manager
+import octobot.community as community
 import octobot.constants as constants
 import octobot.configuration_manager as configuration_manager
 import octobot.task_manager as task_manager
@@ -67,9 +69,9 @@ class OctoBot:
         self.community_handler = None
 
         # initialize community authentication
-        self.community_auth = community_manager.CommunityAuthentication.instance(
-            constants.OCTOBOT_COMMUNITY_AUTH_URL,
-            constants.OCTOBOT_COMMUNITY_FEED_URL,
+        self.community_auth = community.CommunityAuthentication.instance(
+            community.IdentifiersProvider.BACKEND_AUTH_URL,
+            community.IdentifiersProvider.FEED_URL,
             config=self.get_edited_config(constants.CONFIG_KEY, dict_only=False),
         )
 
@@ -96,9 +98,11 @@ class OctoBot:
         self.service_feed_producer = None
 
         self.async_loop = None
+        self.stopped = None
 
     async def initialize(self):
-        self.community_auth.init_supports()
+        self.stopped = asyncio.Event()
+        self.community_auth.init_account()
         await self.initializer.create()
         await self._start_tools_tasks()
         await logger.init_octobot_chan_logger(self.bot_id)
@@ -130,19 +134,23 @@ class OctoBot:
                                             markdown_format=enums.MarkdownFormat.ITALIC))
 
     async def stop(self):
-        await self.exchange_producer.stop()
-        await self.service_feed_producer.stop()
-        service_api.stop_services()
-        await self.interface_producer.stop()
-        await self.community_auth.stop()
-        self.logger.info("Shutting down.")
+        try:
+            signals.SignalPublisher.instance().stop()
+            await self.exchange_producer.stop()
+            await self.community_auth.stop()
+            await self.service_feed_producer.stop()
+            service_api.stop_services()
+            await self.interface_producer.stop()
+        finally:
+            self.stopped.set()
+            self.logger.info("Shutting down.")
 
     async def _start_tools_tasks(self):
         self._init_community()
         await self.task_manager.start_tools_tasks()
 
     def _init_community(self):
-        self.community_handler = community_manager.CommunityManager(self.octobot_api)
+        self.community_handler = community.CommunityManager(self.octobot_api)
 
     def get_edited_config(self, config_key, dict_only=True):
         return self.configuration_manager.get_edited_config(config_key, dict_only)
@@ -162,8 +170,8 @@ class OctoBot:
         except StopIteration:
             return None
 
-    def run_in_main_asyncio_loop(self, coroutine):
-        return self.task_manager.run_in_main_asyncio_loop(coroutine)
+    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True):
+        return self.task_manager.run_in_main_asyncio_loop(coroutine, log_exceptions=log_exceptions)
 
     def set_watcher(self, watcher):
         self.task_manager.watcher = watcher

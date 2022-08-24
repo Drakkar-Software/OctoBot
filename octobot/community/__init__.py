@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -14,6 +14,19 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+from octobot.community import errors
+from octobot.community.errors import (
+    RequestError,
+    StatusCodeRequestError,
+)
+from octobot.community import identifiers_provider
+from octobot.community.identifiers_provider import (
+    IdentifiersProvider,
+)
+from octobot.community import community_user_account
+from octobot.community.community_user_account import (
+    CommunityUserAccount,
+)
 from octobot.community import community_fields
 from octobot.community.community_fields import (
     CommunityFields,
@@ -25,7 +38,8 @@ from octobot.community import authentication
 from octobot.community import community_tentacles_package
 from octobot.community import community_supports
 from octobot.community import community_donation
-from octobot.community import community_feed
+from octobot.community import graphql_requests
+from octobot.community import feeds
 from octobot.community import errors_upload
 
 from octobot.community.community_analysis import (
@@ -48,8 +62,16 @@ from octobot.community.community_supports import (
 from octobot.community.community_donation import (
     CommunityDonation
 )
-from octobot.community.community_feed import (
-    CommunityFeed
+from octobot.community.graphql_requests import (
+    create_new_device_query,
+    select_device,
+    select_devices,
+)
+from octobot.community.feeds import (
+    AbstractFeed,
+    CommunityWSFeed,
+    CommunityMQTTFeed,
+    community_feed_factory,
 )
 from octobot.community.errors_upload import (
     register_error_uploader,
@@ -58,6 +80,10 @@ from octobot.community.errors_upload import (
 )
 
 __all__ = [
+    "RequestError",
+    "StatusCodeRequestError",
+    "IdentifiersProvider",
+    "CommunityUserAccount",
     "CommunityFields",
     "get_community_metrics",
     "get_current_octobots_stats",
@@ -70,4 +96,11 @@ __all__ = [
     "register_error_uploader",
     "Error",
     "ErrorsUploader",
+    "create_new_device_query",
+    "select_device",
+    "select_devices",
+    "AbstractFeed",
+    "CommunityWSFeed",
+    "CommunityMQTTFeed",
+    "community_feed_factory",
 ]

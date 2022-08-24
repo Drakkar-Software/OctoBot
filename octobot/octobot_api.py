@@ -1,5 +1,5 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2021 Drakkar-Software, All rights reserved.
+#  Copyright (c) 2022 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -65,8 +65,8 @@ class OctoBotAPI:
     def get_aiohttp_session(self) -> object:
         return self._octobot.get_aiohttp_session()
 
-    def run_in_main_asyncio_loop(self, coroutine):
-        return self._octobot.run_in_main_asyncio_loop(coroutine)
+    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True):
+        return self._octobot.run_in_main_asyncio_loop(coroutine, log_exceptions=log_exceptions)
 
     def run_in_async_executor(self, coroutine):
         return self._octobot.task_manager.run_in_async_executor(coroutine)
