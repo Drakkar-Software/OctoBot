@@ -56,16 +56,14 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
         self._mqtt_client: gmqtt.Client = None
         self._device_uuid: str = None
-        self._fetching_uuid = False
         self._subscription_attempts = 0
-        self._fetched_uuid = asyncio.Event()
         self._subscription_topics = set()
         self._reconnect_task = None
         self._processed_messages = set()
 
     async def start(self):
         self.should_stop = False
-        await self.fetch_mqtt_device_uuid()
+        self._device_uuid = self.authenticator.user_account.get_selected_device_uuid()
         await self._connect()
 
     async def stop(self):
@@ -100,54 +98,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self._subscription_topics.add(topic)
             self._subscribe((topic, ))
 
-    async def fetch_mqtt_device_uuid(self):
-        if self._fetching_uuid:
-            self.logger.info(f"Waiting for feed UUID fetching")
-            await asyncio.wait_for(self._fetched_uuid.wait(), self.DEVICE_CREATE_TIMEOUT + 2)
-        else:
-            await self._fetch_mqtt_device_uuid()
-
     def remove_device_details(self):
-        self._fetched_uuid.clear()
         self._device_uuid = None
-
-    async def _fetch_mqtt_device_uuid(self):
-        try:
-            self._fetching_uuid = True
-            if device_uuid := self.authenticator.user_account.get_selected_device_uuid():
-                self._device_uuid = device_uuid
-                self.logger.debug("Using fetched mqtt device id")
-            else:
-                await self._poll_mqtt_device_uuid()
-                self.logger.debug("Successfully waited for mqtt device id")
-        except Exception as e:
-            self.logger.exception(e, True, f"Error when fetching device id: {e}")
-            raise
-        finally:
-            self._fetching_uuid = False
-            self._fetched_uuid.set()
-
-    async def _poll_mqtt_device_uuid(self):
-        t0 = time.time()
-        while time.time() - t0 < self.DEVICE_CREATE_TIMEOUT:
-            # loop until the device uuid is available
-            # used when a new gql device is created its uuid is not instantly filled
-            try:
-                device_data = await self.authenticator.fetch_device(self.authenticator.user_account.gql_device_id)
-                if device_data is None:
-                    raise errors.RequestError(f"Error when fetching mqtt device uuid: can't find content with id: "
-                                              f"{self.authenticator.user_account.gql_device_id}")
-                elif device_uuid := device_data["uuid"]:
-                    self._device_uuid = device_uuid
-                    return
-                # retry soon
-                await asyncio.sleep(self.DEVICE_CREATION_REFRESH_DELAY)
-            # should never happen unless there is a real issue
-            except errors.RequestError:
-                raise
-        raise errors.RequestError(
-            f"Timeout when fetching mqtt device uuid: no uuid to be found after {self.DEVICE_CREATE_TIMEOUT} seconds"
-        )
 
     @staticmethod
     def _build_topic(channel_type, identifier):

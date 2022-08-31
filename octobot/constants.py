@@ -55,11 +55,11 @@ COMMUNITY_BACKEND_API_URL = os.getenv("COMMUNITY_BACKEND_API_URL", "https://astr
 COMMUNITY_BACKEND_AUTH_URL = f"{COMMUNITY_BACKEND_API_URL}/account/login"
 COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN", "pk_bw3xUzAtCRyy0HcgKkuY8vQha5qN5Amd")
 COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
-COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "astrolab-joenf")
+COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "astrolab-uprcv")
 COMMUNITY_GQL_AUTH_URL = f"{COMMUNITY_MONGO_REALM_URL}/app/{COMMUNITY_MONGO_APP_ID}/auth/providers/api-key/login"
 COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
     "COMMUNITY_GQL_BACKEND_API_URL",
-    f"https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/{COMMUNITY_MONGO_APP_ID}/graphql"
+    f"https://realm.mongodb.com/api/client/v2.0/app/{COMMUNITY_MONGO_APP_ID}/graphql"
 )
 
 # staging env SHOULD ONLY BE USED THROUGH CommunityIdentifiersProvider
@@ -70,12 +70,12 @@ STAGING_COMMUNITY_BACKEND_AUTH_URL = f"{STAGING_COMMUNITY_BACKEND_API_URL}/accou
 STAGING_COMMUNITY_BACKEND_PUBLIC_TOKEN = os.getenv("COMMUNITY_BACKEND_PUBLIC_TOKEN",
                                                    "pk_akVFLvtDFvZlmTVyJwz9Z1N0TQQlycOh")
 STAGING_COMMUNITY_MONGO_REALM_URL = os.getenv("COMMUNITY_MONGO_REALM_URL", "https://realm.mongodb.com/api/client/v2.0")
-STAGING_COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "astrolab-staging-mpura")
+STAGING_COMMUNITY_MONGO_APP_ID = os.getenv("COMMUNITY_MONGO_APP_ID", "astrolab-fsuua")
 STAGING_COMMUNITY_GQL_AUTH_URL = f"{STAGING_COMMUNITY_MONGO_REALM_URL}/app/{STAGING_COMMUNITY_MONGO_APP_ID}/" \
                                  f"auth/providers/api-key/login"
 STAGING_COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
     "COMMUNITY_GQL_BACKEND_API_URL",
-    f"https://eu-west-1.aws.realm.mongodb.com/api/client/v2.0/app/{STAGING_COMMUNITY_MONGO_APP_ID}/graphql"
+    f"https://realm.mongodb.com/api/client/v2.0/app/{STAGING_COMMUNITY_MONGO_APP_ID}/graphql"
 )
 
 CONFIG_COMMUNITY = "community"
