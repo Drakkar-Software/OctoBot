@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import octobot_commons.authentication as commons_authentication
 
 
 class RequestError(Exception):
@@ -20,4 +21,8 @@ class RequestError(Exception):
 
 
 class StatusCodeRequestError(RequestError):
+    pass
+
+
+class DeviceError(commons_authentication.UnavailableError):
     pass
