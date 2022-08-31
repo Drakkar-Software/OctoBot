@@ -234,6 +234,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         client.set_config(default_config)
 
     async def _connect(self):
+        if self._device_uuid is None:
+            raise errors.DeviceError("mqtt device uuid is None, impossible to connect client")
         self._mqtt_client = gmqtt.Client(self.__class__.__name__)
         self._update_client_config(self._mqtt_client)
         self._register_callbacks(self._mqtt_client)
