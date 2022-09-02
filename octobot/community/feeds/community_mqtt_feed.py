@@ -55,10 +55,13 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self.associated_gql_device_id = None
 
         self._mqtt_client: gmqtt.Client = None
+        self._valid_auth = True
         self._device_uuid: str = None
         self._subscription_attempts = 0
         self._subscription_topics = set()
         self._reconnect_task = None
+        self._connect_task = None
+        self._connected_at_least_once = False
         self._processed_messages = set()
 
     async def start(self):
@@ -71,15 +74,23 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         await self._stop_mqtt_client()
         if self._reconnect_task is not None and not self._reconnect_task.done():
             self._reconnect_task.cancel()
+        if self._connect_task is not None and not self._connect_task.done():
+            self._connect_task.cancel()
         self._reset()
 
     async def restart(self):
-        await self.stop()
-        await self.start()
+        try:
+            await self.stop()
+            await self.start()
+        except Exception as e:
+            self.logger.exception(e, True, f"Error when restarting mqtt feed: {e}")
 
     def _reset(self):
+        self._connected_at_least_once = False
         self._subscription_attempts = 0
         self._subscription_topics = set()
+        self._connect_task = None
+        self._valid_auth = True
 
     async def _stop_mqtt_client(self):
         if self.is_connected():
@@ -87,6 +98,9 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     def is_connected(self):
         return self._mqtt_client is not None and self._mqtt_client.is_connected
+
+    def can_connect(self):
+        return self._valid_auth
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
         topic = self._build_topic(channel_type, identifier)
@@ -96,7 +110,10 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self.feed_callbacks[topic] = [callback]
         if topic not in self._subscription_topics:
             self._subscription_topics.add(topic)
-            self._subscribe((topic, ))
+            if self._valid_auth:
+                self._subscribe((topic, ))
+            else:
+                self.logger.error(f"Can't subscribe to {channel_type.name} feed, invalid authentication")
 
     def remove_device_details(self):
         self._device_uuid = None
@@ -132,6 +149,9 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return True
 
     async def send(self, message, channel_type, identifier, **kwargs):
+        if not self._valid_auth:
+            self.logger.warning(f"Can't send {channel_type.name}, invalid feed authentication.")
+            return
         topic = self._build_topic(channel_type, identifier)
         self.logger.debug(f"Sending message on topic: {topic}, message: {message}")
         self._mqtt_client.publish(
@@ -193,8 +213,12 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
                 await asyncio.sleep(delay)
 
     def _on_disconnect(self, client, packet, exc=None):
-        self.logger.info(f"Disconnected, client_id: {client._client_id}")
-        self._try_reconnect_if_necessary(client)
+        if self._connected_at_least_once:
+            self.logger.info(f"Disconnected, client_id: {client._client_id}")
+            self._try_reconnect_if_necessary(client)
+        else:
+            if self._connect_task is not None and not self._connect_task.done():
+                self._connect_task.cancel()
 
     def _on_subscribe(self, client, mid, qos, properties):
         # from https://github.com/wialon/gmqtt/blob/master/examples/resubscription.py#L28
@@ -235,13 +259,24 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     async def _connect(self):
         if self._device_uuid is None:
+            self._valid_auth = False
             raise errors.DeviceError("mqtt device uuid is None, impossible to connect client")
         self._mqtt_client = gmqtt.Client(self.__class__.__name__)
         self._update_client_config(self._mqtt_client)
         self._register_callbacks(self._mqtt_client)
         self._mqtt_client.set_auth_credentials(self._device_uuid, None)
         self.logger.debug(f"Connecting client")
-        await self._mqtt_client.connect(self.feed_url, self.mqtt_broker_port, version=self.MQTT_VERSION)
+        self._connect_task = asyncio.create_task(
+            self._mqtt_client.connect(self.feed_url, self.mqtt_broker_port, version=self.MQTT_VERSION)
+        )
+        try:
+            await self._connect_task
+            self._connected_at_least_once = True
+        except asyncio.CancelledError:
+            # got cancelled by on_disconnect, can't connect
+            self.logger.error(f"Can't connect to server, please check your device uuid. "
+                              f"Current mqtt uuid is: {self._device_uuid}")
+            self._valid_auth = False
 
     def _subscribe(self, topics):
         if not topics:
