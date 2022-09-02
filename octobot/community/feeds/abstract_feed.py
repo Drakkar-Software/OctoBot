@@ -38,3 +38,6 @@ class AbstractFeed:
 
     async def send(self, message, channel_type, identifier, **kwargs):
         raise NotImplementedError("send is not implemented")
+
+    def can_connect(self):
+        return True

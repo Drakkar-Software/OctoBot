@@ -102,7 +102,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _ensure_init_community_feed(self):
         self._create_community_feed_if_necessary()
-        if not self._community_feed.is_connected():
+        if not self._community_feed.is_connected() and self._community_feed.can_connect():
             if self.initialized_event is not None and not self.initialized_event.is_set():
                 await asyncio.wait_for(self.initialized_event.wait(), self.LOGIN_TIMEOUT)
             if not self.is_logged_in():
@@ -278,7 +278,7 @@ class CommunityAuthentication(authentication.Authenticator):
             if self._restart_task is not None and not self._restart_task.done():
                 self._restart_task.cancel()
                 self._community_feed.remove_device_details()
-            if self._community_feed.is_connected():
+            if self._community_feed.is_connected() or not self._community_feed.can_connect():
                 self._restart_task = asyncio.create_task(self._community_feed.restart())
 
     def logout(self):
