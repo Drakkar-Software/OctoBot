@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.7] - 2022-09-03
+### Updated
+- [Astrolab] Improvements and fixes
+
 ## [0.4.6] - 2022-08-23
 ### Added
 - [Trading] Futures trading
