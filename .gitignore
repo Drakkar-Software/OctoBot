@@ -9,7 +9,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-.idea
 .pytest_cache/
 env/
 build/
@@ -102,6 +101,8 @@ ENV/
 
 # IDE
 .vscode/
+.idea
+.gitpod.yml
 
 # Tentacles manager temporary files
 octobot/creator_temp/

@@ -17,6 +17,8 @@ import asyncio
 import base64
 import contextlib
 import json
+import time
+
 import requests
 import aiohttp
 
@@ -55,7 +57,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._aiohttp_session = None
         self._cache = {}
         self._fetch_account_task = None
-        self._fetch_device_uuid_task = None
+        self._restart_task = None
         self._community_feed = None
         self._login_completed = None
 
@@ -100,7 +102,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _ensure_init_community_feed(self):
         self._create_community_feed_if_necessary()
-        if not self._community_feed.is_connected():
+        if not self._community_feed.is_connected() and self._community_feed.can_connect():
             if self.initialized_event is not None and not self.initialized_event.is_set():
                 await asyncio.wait_for(self.initialized_event.wait(), self.LOGIN_TIMEOUT)
             if not self.is_logged_in():
@@ -134,10 +136,13 @@ class CommunityAuthentication(authentication.Authenticator):
                                   expected_code=None, allow_retry_on_expired_token=True):
         try:
             async with self._authenticated_qgl_session() as session:
+                t0 = time.time()
+                self.logger.debug(f"starting {query_name} graphql query")
                 resp = await session.post(
                     f"{identifiers_provider.IdentifiersProvider.GQL_BACKEND_API_URL}",
                     json=self._build_gql_request_body(query, variables, operation_name)
                 )
+                self.logger.debug(f"graphql query {query_name} done in {time.time() - t0} seconds")
                 if resp.status == 401:
                     # access token expired
                     raise authentication.AuthenticationRequired
@@ -254,7 +259,7 @@ class CommunityAuthentication(authentication.Authenticator):
         await self._update_feed_device_uuid()
 
     async def _fetch_devices(self):
-        query, variables = graphql_requests.select_devices(self.user_account.gql_user_id)
+        query, variables = graphql_requests.select_devices()
         return await self.async_graphql_query(query, "devices", variables=variables, expected_code=200)
 
     async def fetch_device(self, device_id):
@@ -263,21 +268,20 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def create_new_device(self):
         await self.gql_login_if_required()
-        query, variables = graphql_requests.create_new_device_query(self.user_account.gql_user_id)
-        return await self.async_graphql_query(query, "insertOneDevice", variables=variables, expected_code=200)
+        query, variables = graphql_requests.create_new_device_query()
+        return await self.async_graphql_query(query, "createDevice", variables=variables, expected_code=200)
 
     async def _update_feed_device_uuid(self):
         self._create_community_feed_if_necessary()
         if self._community_feed.associated_gql_device_id != self.user_account.gql_device_id:
-            # only device id changed, need to refresh uuid. Otherwise it means that no feed was started with a
+            # only device id changed, need to refresh uuid. Otherwise, it means that no feed was started with a
             # different uuid, no need to update
-            # reset _fetch_device_uuid_task if running
-            if self._fetch_device_uuid_task is not None and not self._fetch_device_uuid_task.done():
-                self._fetch_device_uuid_task.cancel()
+            # reset restart task if running
+            if self._restart_task is not None and not self._restart_task.done():
+                self._restart_task.cancel()
                 self._community_feed.remove_device_details()
-            task = self._community_feed.restart if self._community_feed.is_connected() \
-                else self._community_feed.fetch_mqtt_device_uuid
-            self._fetch_device_uuid_task = asyncio.create_task(task())
+            if self._community_feed.is_connected() or not self._community_feed.can_connect():
+                self._restart_task = asyncio.create_task(self._community_feed.restart())
 
     def logout(self):
         """
@@ -287,10 +291,10 @@ class CommunityAuthentication(authentication.Authenticator):
         self._reset_tokens()
         self.clear_cache()
         self.remove_login_detail()
-        for task in (self._fetch_device_uuid_task, self._fetch_account_task):
+        for task in (self._restart_task, self._fetch_account_task):
             if task is not None and not task.done():
                 task.cancel()
-        self._fetch_device_uuid_task = self._fetch_account_task = None
+        self._restart_task = self._fetch_account_task = None
         self._create_community_feed_if_necessary()
         self._community_feed.remove_device_details()
 
@@ -349,8 +353,8 @@ class CommunityAuthentication(authentication.Authenticator):
     async def stop(self):
         if self.is_initialized():
             self._fetch_account_task.cancel()
-        if self._fetch_device_uuid_task is not None and not self._fetch_device_uuid_task.done():
-            self._fetch_device_uuid_task.cancel()
+        if self._restart_task is not None and not self._restart_task.done():
+            self._restart_task.cancel()
         if self._aiohttp_session is not None:
             await self._aiohttp_session.close()
 
