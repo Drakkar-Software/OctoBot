@@ -15,14 +15,17 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 
-def create_new_device_query(user_id) -> (str, dict):
+def create_new_device_query() -> (str, dict):
     return """
-mutation CreateDevice($user_id: ObjectId) {
-  insertOneDevice(data: {user_id: $user_id}) {
+mutation CreateDevice {
+  createDevice {
     _id
+    name
+    user_id
+    uuid
   }
 }
-    """, {"user_id": user_id}
+    """, {}
 
 
 def select_device(device_id) -> (str, dict):
@@ -37,13 +40,13 @@ query SelectDeviceUUID($_id: ObjectId) {
     """, {"_id": device_id}
 
 
-def select_devices(user_id) -> (str, dict):
+def select_devices() -> (str, dict):
     return """
-query SelectDevices($user_id: ObjectId) {
-  devices(query: {user_id: $user_id}) {
+query SelectDevices {
+  devices {
     _id
     uuid
     name
   }
 }
-    """, {"user_id": user_id}
+    """, {}
