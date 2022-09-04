@@ -18,7 +18,12 @@
 def create_new_device_query() -> (str, dict):
     return """
 mutation CreateDevice {
-  createDevice
+  createDevice {
+    _id
+    name
+    user_id
+    uuid
+  }
 }
     """, {}
 
@@ -35,13 +40,13 @@ query SelectDeviceUUID($_id: ObjectId) {
     """, {"_id": device_id}
 
 
-def select_devices(user_id) -> (str, dict):
+def select_devices() -> (str, dict):
     return """
-query SelectDevices($user_id: ObjectId) {
-  devices(query: {user_id: $user_id}) {
+query SelectDevices {
+  devices {
     _id
     uuid
     name
   }
 }
-    """, {"user_id": user_id}
+    """, {}
