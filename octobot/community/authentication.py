@@ -240,7 +240,9 @@ class CommunityAuthentication(authentication.Authenticator):
             await self.load_user_devices()
             if len(self.user_account.get_all_user_devices_raw_data()) == 0:
                 await self.select_device(
-                    await self.create_new_device()
+                    self.user_account.get_device_id(
+                        await self.create_new_device()
+                    )
                 )
             # more than one possible device, can't auto-select one
 
@@ -257,7 +259,7 @@ class CommunityAuthentication(authentication.Authenticator):
         await self._update_feed_device_uuid()
 
     async def _fetch_devices(self):
-        query, variables = graphql_requests.select_devices(self.user_account.gql_user_id)
+        query, variables = graphql_requests.select_devices()
         return await self.async_graphql_query(query, "devices", variables=variables, expected_code=200)
 
     async def fetch_device(self, device_id):
