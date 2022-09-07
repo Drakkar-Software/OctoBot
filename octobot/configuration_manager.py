@@ -22,6 +22,7 @@ import octobot.constants as constants
 import octobot_commons.configuration as configuration
 import octobot_commons.constants as common_constants
 import octobot_commons.logging as logging
+import octobot_commons.errors as common_errors
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 
 import octobot_trading.api as trading_api
@@ -144,13 +145,19 @@ def set_default_profile(config, from_default_config_file=constants.DEFAULT_CONFI
 
 
 def get_default_tentacles_url(version=None):
+    beta_tentacle_bundle = os.getenv(constants.ENV_BETA_TENTACLES_PACKAGE_NAME, constants.BETA_TENTACLE_PACKAGE_NAME)
+    # use beta tentacles repository for beta tentacles
+    tentacles_repository = \
+        os.getenv(constants.ENV_BETA_TENTACLES_REPOSITORY, constants.BETA_TENTACLES_REPOSITORY) \
+        if version == beta_tentacle_bundle else \
+        os.getenv(constants.ENV_TENTACLES_REPOSITORY, constants.TENTACLES_REPOSITORY)
     if version is None:
         version = constants.TENTACLES_REQUIRED_VERSION \
             if constants.TENTACLES_REQUIRED_VERSION else constants.LONG_VERSION
     return os.getenv(
         constants.ENV_TENTACLES_URL,
         f"{constants.OCTOBOT_ONLINE}/"
-        f"{os.getenv(constants.ENV_TENTACLES_REPOSITORY, constants.TENTACLES_REPOSITORY)}/"
+        f"{tentacles_repository}/"
         f"{os.getenv(constants.ENV_TENTACLES_PACKAGES_SOURCE, constants.OFFICIALS)}/"
         f"{os.getenv(constants.ENV_TENTACLES_PACKAGES_TYPE, constants.TENTACLE_PACKAGES)}/"
         f"{os.getenv(constants.ENV_TENTACLE_CATEGORY, constants.TENTACLE_CATEGORY)}/"
