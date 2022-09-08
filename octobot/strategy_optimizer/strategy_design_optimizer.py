@@ -697,6 +697,12 @@ class StrategyDesignOptimizer:
         await self._save_run_schedule(runs)
         return runs
 
+    def _shuffle_and_select_runs(self, runs, select_size=None) -> dict:
+        shuffled_runs = list(runs.values())
+        random.shuffle(shuffled_runs)
+        selected_runs = shuffled_runs if select_size is None else shuffled_runs[:select_size]
+        return {i: run for i, run in enumerate(selected_runs)}
+
     def _generate_runs(self):
         iterations = [i for i in self._get_config_possible_iterations() if i]
         runs = {
@@ -705,11 +711,7 @@ class StrategyDesignOptimizer:
             if self._is_run_allowed(run)
         }
         if runs:
-            temp_runs = list(runs.values())
-            random.shuffle(temp_runs)
-            temp_runs = temp_runs[:self.queue_size]
-            runs = dict(zip(runs, temp_runs))
-            for run in runs.values():
+            for run in self._shuffle_and_select_runs(runs, select_size=self.queue_size).values():
                 for run_input in run:
                     # do not store self.CONFIG_KEY
                     run_input.pop(self.CONFIG_KEY, None)
