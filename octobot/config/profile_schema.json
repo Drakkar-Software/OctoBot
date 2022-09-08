@@ -139,7 +139,7 @@
               "minimum": 0,
               "maximum": 1
             },
-            "current-bot-recording-id": {
+            "current-live-id": {
               "type": "integer",
               "minimum": 1
             }
