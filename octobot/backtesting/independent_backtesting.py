@@ -65,12 +65,6 @@ class IndependentBacktesting:
         self.optimizer_id = None
         self.backtesting_id = None
         self._init_default_config_values()
-        try:
-            self.backtesting_config[common_constants.CONFIG_EXCHANGE_TYPE] \
-                = config[common_constants.CONFIG_EXCHANGE_TYPE]
-        except KeyError:
-            self.backtesting_config[common_constants.CONFIG_EXCHANGE_TYPE] \
-                = common_constants.CONFIG_EXCHANGE_CURRENT_PROFILE
         self.stopped = False
         self.stopped_event = None
         self.post_backtesting_task = None
@@ -327,7 +321,7 @@ class IndependentBacktesting:
             exchange_details.pop(common_constants.CONFIG_EXCHANGE_SANDBOXED, None)
         self.backtesting_config[common_constants.CONFIG_TRADING][common_constants.CONFIG_TRADER_RISK] = self.risk
         self.backtesting_config[common_constants.CONFIG_TRADING][
-            common_constants.CONFIG_TRADER_REFERENCE_MARKET] = self._find_reference_market()
+            common_constants.CONFIG_TRADER_REFERENCE_MARKET] = self._find_reference_market_and_update_contract_type()
         self.backtesting_config[common_constants.CONFIG_SIMULATOR][
             common_constants.CONFIG_STARTING_PORTFOLIO] = self.starting_portfolio
         self.backtesting_config[common_constants.CONFIG_SIMULATOR][
@@ -339,12 +333,17 @@ class IndependentBacktesting:
         self._add_config_default_backtesting_values()
 
     def _init_exchange_type(self):
+        forced_exchange_type = self.octobot_origin_config.get(common_constants.CONFIG_EXCHANGE_TYPE,
+                                                              common_constants.USE_CURRENT_PROFILE)
         try:
             for exchange_name in self.symbols_to_create_exchange_classes:
-                # use current profile config to create a spot/future/margin backtesting exchange
-                self.octobot_backtesting.exchange_type_by_exchange[exchange_name] = \
-                    self.octobot_origin_config[common_constants.CONFIG_EXCHANGES].get(exchange_name, {}).\
-                    get(common_constants.CONFIG_EXCHANGE_TYPE, common_constants.DEFAULT_EXCHANGE_TYPE)
+                if forced_exchange_type == common_constants.USE_CURRENT_PROFILE:
+                    # use current profile config to create a spot/future/margin backtesting exchange
+                    self.octobot_backtesting.exchange_type_by_exchange[exchange_name] = \
+                        self.octobot_origin_config[common_constants.CONFIG_EXCHANGES].get(exchange_name, {}).\
+                        get(common_constants.CONFIG_EXCHANGE_TYPE, common_constants.DEFAULT_EXCHANGE_TYPE)
+                else:
+                    self.octobot_backtesting.exchange_type_by_exchange[exchange_name] = forced_exchange_type
         except StopIteration:
             # use default exchange type
             pass
@@ -360,25 +359,36 @@ class IndependentBacktesting:
             await run_dbs_identifier.initialize()
             self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] = run_dbs_identifier.backtesting_id
 
-    def _find_reference_market(self):
+    def _find_reference_market_and_update_contract_type(self):
         ref_market_candidate = None
         ref_market_candidates = {}
+        forced_contract_type = self.octobot_origin_config.get(common_constants.CONFIG_CONTRACT_TYPE,
+                                                              common_constants.USE_CURRENT_PROFILE)
         for symbols in self.symbols_to_create_exchange_classes.values():
             symbol = symbols[0]
             if next(iter(self.octobot_backtesting.exchange_type_by_exchange.values())) \
                     == common_constants.CONFIG_EXCHANGE_FUTURE:
-                if symbol.is_inverse():
-                    if not all([symbol.is_inverse() for symbol in symbols]):
-                        self.logger.error(f"Mixed inverse and linear contracts backtesting are not supported yet")
-                    self.octobot_backtesting.futures_contract_type = trading_enums.FutureContractType.INVERSE_PERPETUAL
+                if forced_contract_type == common_constants.USE_CURRENT_PROFILE:
+                    if symbol.is_inverse():
+                        if not all([symbol.is_inverse() for symbol in symbols]):
+                            self.logger.error(f"Mixed inverse and linear contracts backtesting are not supported yet")
+                            self.octobot_backtesting.futures_contract_type = \
+                                trading_enums.FutureContractType.INVERSE_PERPETUAL
+                    else:
+                        if not all([symbol.is_linear() for symbol in symbols]):
+                            self.logger.error(f"Mixed inverse and linear contracts backtesting are not supported yet")
+                        self.octobot_backtesting.futures_contract_type = \
+                            trading_enums.FutureContractType.LINEAR_PERPETUAL
+                    # in inverse contracts, use BTC for BTC/USD trading as reference market
+                    if symbol.settlement_asset:
+                        # only use settlement asset if available
+                        return symbol.settlement_asset
                 else:
-                    if not all([symbol.is_linear() for symbol in symbols]):
-                        self.logger.error(f"Mixed inverse and linear contracts backtesting are not supported yet")
-                    self.octobot_backtesting.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
-                # in inverse contracts, use BTC for BTC/USD trading as reference market
-                if symbol.settlement_asset:
-                    # only use settlement asset if available
-                    return symbol.settlement_asset
+                    self.octobot_backtesting.futures_contract_type = forced_contract_type
+                    return symbol.base \
+                        if forced_contract_type is trading_enums.FutureContractType.INVERSE_PERPETUAL \
+                        else symbol.quote
+
             for symbol in symbols:
                 quote = symbol.quote
                 if ref_market_candidate is None:

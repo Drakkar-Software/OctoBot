@@ -217,24 +217,6 @@ class OctoBotBacktesting:
                                   f"might not work properly")
 
     async def _init_exchanges(self):
-        if self.backtesting_config[commons_constants.CONFIG_EXCHANGE_TYPE] \
-                != commons_constants.CONFIG_EXCHANGE_CURRENT_PROFILE:
-            for exchange in self.exchange_type_by_exchange:
-                if self.backtesting_config[commons_constants.CONFIG_EXCHANGE_TYPE] \
-                        == trading_enums.ExchangeTypes.SPOT.value:
-                    self.exchange_type_by_exchange[exchange] = commons_constants.CONFIG_EXCHANGE_SPOT
-                elif self.backtesting_config[commons_constants.CONFIG_EXCHANGE_TYPE] \
-                        == trading_enums.FutureContractType.INVERSE_PERPETUAL.value:
-                    self.exchange_type_by_exchange[exchange] = commons_constants.CONFIG_EXCHANGE_FUTURE
-                    self.futures_contract_type = trading_enums.FutureContractType.INVERSE_PERPETUAL
-                elif self.backtesting_config[commons_constants.CONFIG_EXCHANGE_TYPE] \
-                        == trading_enums.FutureContractType.LINEAR_PERPETUAL.value:
-                    self.exchange_type_by_exchange[exchange] = commons_constants.CONFIG_EXCHANGE_FUTURE
-                    self.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
-                elif self.backtesting_config[commons_constants.CONFIG_EXCHANGE_TYPE] \
-                        == trading_enums.ExchangeTypes.MARGIN.value:
-                    self.exchange_type_by_exchange[exchange] = commons_constants.CONFIG_EXCHANGE_MARGIN
-
         self.backtesting = await backtesting_api.initialize_backtesting(self.backtesting_config,
                                                                         exchange_ids=self.exchange_manager_ids,
                                                                         matrix_id=self.matrix_id,
