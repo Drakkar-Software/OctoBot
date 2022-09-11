@@ -162,7 +162,8 @@ def _load_or_create_tentacles(config, logger):
     if os.path.isfile(tentacles_manager_constants.USER_REFERENCE_TENTACLE_CONFIG_FILE_PATH):
         config.load_profiles_if_possible_and_necessary()
         tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
-            config.get_tentacles_config_path())
+            config.get_tentacles_config_path()
+        )
         commands.run_update_or_repair_tentacles_if_necessary(config, tentacles_setup_config)
     else:
         # when no tentacles folder has been found
