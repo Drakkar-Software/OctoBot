@@ -26,3 +26,7 @@ class StatusCodeRequestError(RequestError):
 
 class DeviceError(commons_authentication.UnavailableError):
     pass
+
+
+class DeviceNotFoundError(DeviceError):
+    pass
