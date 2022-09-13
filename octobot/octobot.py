@@ -19,6 +19,7 @@ import uuid
 import aiohttp
 
 import octobot_commons.enums as enums
+import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
 import octobot_commons.signals as signals
@@ -170,8 +171,9 @@ class OctoBot:
         except StopIteration:
             return None
 
-    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True):
-        return self.task_manager.run_in_main_asyncio_loop(coroutine, log_exceptions=log_exceptions)
+    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True,
+                                 timeout=commons_constants.DEFAULT_FUTURE_TIMEOUT):
+        return self.task_manager.run_in_main_asyncio_loop(coroutine, log_exceptions=log_exceptions, timeout=timeout)
 
     def set_watcher(self, watcher):
         self.task_manager.watcher = watcher
