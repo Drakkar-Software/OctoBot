@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.10] - 2022-09-13
+### Updated
+- Beta tentacles
+### Fixed
+- Kucoin rate limit issues
+- Futures trading issues
+- Tentacles versioning in profile import
+
 ## [0.4.9] - 2022-09-07
 ### Updated
 - Beta tentacles
