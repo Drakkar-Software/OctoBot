@@ -112,8 +112,11 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._community_feed.start()
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
-        await self._ensure_init_community_feed()
-        await self._community_feed.register_feed_callback(channel_type, callback, identifier=identifier)
+        try:
+            await self._ensure_init_community_feed()
+            await self._community_feed.register_feed_callback(channel_type, callback, identifier=identifier)
+        except errors.DeviceError as e:
+            self.logger.error(f"Impossible to connect to community signals: {e}")
 
     async def send(self, message, channel_type, identifier=None):
         """
@@ -230,7 +233,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self.user_account.flush_device_details()
         await self._load_device_if_selected()
         if not self.user_account.has_selected_device_data():
-            self.logger.info("No selected device. Please select a device to enable your community features.")
+            self.logger.info(self.user_account.NO_SELECTED_DEVICE_DESC)
 
     async def _load_device_if_selected(self):
         # 1. use user selected device id if any
