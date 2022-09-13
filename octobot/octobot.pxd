@@ -52,7 +52,7 @@ cdef class OctoBot:
     cdef public octobot_channel_consumer.OctoBotChannelGlobalConsumer global_consumer
     cdef public configuration_manager.ConfigurationManager configuration_manager
 
-    cpdef object run_in_main_asyncio_loop(self, object coroutine, bint log_exceptions=*)
+    cpdef object run_in_main_asyncio_loop(self, object coroutine, bint log_exceptions=*, object timeout=*)
     cpdef void set_watcher(self, object watcher)
     cpdef object get_aiohttp_session(self)
     cpdef object get_edited_config(self, str config_key, bint dict_only=*)

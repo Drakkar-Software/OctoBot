@@ -1,4 +1,4 @@
-# OctoBot [0.4.9](https://octobot.click/gh-changelog)
+# OctoBot [0.4.10](https://octobot.click/gh-changelog)
 [![PyPI](https://img.shields.io/pypi/v/OctoBot.svg)](https://octobot.click/gh-pypi)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e07fb190156d4efb8e7d07aaa5eff2e1)](https://app.codacy.com/gh/Drakkar-Software/OctoBot?utm_source=github.com&utm_medium=referral&utm_content=Drakkar-Software/OctoBot&utm_campaign=Badge_Grade_Dashboard)[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
 [![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg)](https://octobot.click/gh-dockerhub)
@@ -46,11 +46,11 @@ Octobot's main feature is **evolution** : you can [install](https://www.octobot.
 
 ## Hardware requirements
 - CPU : 1 Core / 1GHz
-- RAM : 250 Mo
-- Disk : 1 Go
+- RAM : 250 MB
+- Disk : 1 GB
 
 ## Installation
-OctoBot's installation is **very simple**... because **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
+OctoBot's installation is **very simple**... because it is **very documented** ! See the [installation guides](https://www.octobot.online/guides/#installation) for more info.
 
 #### [With executable](https://www.octobot.info/installation/with-binary)
 Follow the [2 steps installation guide](https://www.octobot.online/executable_installation/) 
@@ -114,17 +114,16 @@ In short :
 [![Bitmax](../assets/ascendex-logo.png)](https://octobot.click/gh-ascendex)
 
 Octobot supports many [exchanges](https://octobot.click/gh-exchanges) thanks to the [ccxt library](https://github.com/ccxt/ccxt). 
-To activate trading on an exchange, just configure OctoBot with your api keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
+To activate trading on an exchange, just configure OctoBot with your API keys as described [on the exchange documentation](https://www.octobot.online/guides/#exchanges).
 
 ## Disclaimer
 Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
 AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS. 
 
 Always start by running a trading bot in simulation mode and do not engage money
-before you understand how it works and what profit/loss you should
-expect.
+before you understand how it works and what profit/loss you should expect.
 
-Do not hesitate to read the source code and understand the mechanism of this bot.
+Please feel free to read the source code and understand the mechanism of this bot.
 
 ## License
 GNU General Public License v3.0 or later.

@@ -228,20 +228,21 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         for subscription, granted_qos in zip(subscriptions, qos):
             # in case of bad suback code, we can resend  subscription
             if granted_qos >= gmqtt.constants.SubAckReasonCode.UNSPECIFIED_ERROR.value:
-                self.logger.warning(f"Retrying subscribe, client_id: {client._client_id}, mid: {mid}, "
+                self.logger.warning(f"Retrying subscribe to {[s.topic for s in subscriptions]}, "
+                                    f"client_id: {client._client_id}, mid: {mid}, "
                                     f"reason code: {granted_qos}, properties {properties}")
                 if self._subscription_attempts < self.MAX_SUBSCRIPTION_ATTEMPTS * len(subscriptions):
                     self._subscription_attempts += 1
                     client.resubscribe(subscription)
                 else:
                     self.logger.error(f"Max subscription attempts reached, stopping subscription "
-                                      f"to {[s.topic for s in subscriptions]}. Are you copying this "
+                                      f"to {[s.topic for s in subscriptions]}. Are you subscribing to this "
                                       f"strategy on your OctoBot account ?")
                     return
             else:
                 self._subscription_attempts = 0
-            self.logger.info(f"Subscribed, client_id: {client._client_id}, mid {mid}, QOS: {granted_qos}, "
-                             f"properties {properties}")
+                self.logger.info(f"Subscribed, client_id: {client._client_id}, mid {mid}, QOS: {granted_qos}, "
+                                 f"properties {properties}")
 
     def _register_callbacks(self, client):
         client.on_connect = self._on_connect

@@ -39,6 +39,7 @@ class CommunityAuthentication(authentication.Authenticator):
     """
     ALLOWED_TIME_DELAY = 1 * commons_constants.MINUTE_TO_SECONDS
     LOGIN_TIMEOUT = 20
+    DEVICE_NOT_FOUND_RETRY_DELAY = 1
     AUTHORIZATION_HEADER = "authorization"
     SESSION_HEADER = "X-Session"
     GQL_AUTHORIZATION_HEADER = "Authorization"
@@ -111,8 +112,11 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._community_feed.start()
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
-        await self._ensure_init_community_feed()
-        await self._community_feed.register_feed_callback(channel_type, callback, identifier=identifier)
+        try:
+            await self._ensure_init_community_feed()
+            await self._community_feed.register_feed_callback(channel_type, callback, identifier=identifier)
+        except errors.DeviceError as e:
+            self.logger.error(f"Impossible to connect to community signals: {e}")
 
     async def send(self, message, channel_type, identifier=None):
         """
@@ -229,25 +233,36 @@ class CommunityAuthentication(authentication.Authenticator):
         self.user_account.flush_device_details()
         await self._load_device_if_selected()
         if not self.user_account.has_selected_device_data():
-            self.logger.info("No selected device. Please select a device to enable your community features.")
+            self.logger.info(self.user_account.NO_SELECTED_DEVICE_DESC)
 
     async def _load_device_if_selected(self):
         # 1. use user selected device id if any
         if saved_uuid := self._get_saved_gql_device_id():
-            await self.select_device(saved_uuid)
-        else:
-            # 2. fetch all user devices and create one if none, otherwise ask use for which one to use
-            await self.load_user_devices()
-            if len(self.user_account.get_all_user_devices_raw_data()) == 0:
-                await self.select_device(
-                    self.user_account.get_device_id(
-                        await self.create_new_device()
-                    )
+            try:
+                await self.select_device(saved_uuid)
+                return
+            except errors.DeviceNotFoundError:
+                # proceed to 2.
+                pass
+        # 2. fetch all user devices and create one if none, otherwise ask use for which one to use
+        await self.load_user_devices()
+        if len(self.user_account.get_all_user_devices_raw_data()) == 0:
+            await self.select_device(
+                self.user_account.get_device_id(
+                    await self.create_new_device()
                 )
-            # more than one possible device, can't auto-select one
+            )
+        # more than one possible device, can't auto-select one
 
     async def select_device(self, device_id):
-        self.user_account.set_selected_device_raw_data(await self.fetch_device(device_id))
+        fetched_device = await self.fetch_device(device_id)
+        if fetched_device is None:
+            # retry after some time, if still None, there is an issue
+            await asyncio.sleep(self.DEVICE_NOT_FOUND_RETRY_DELAY)
+            fetched_device = await self.fetch_device(device_id)
+        if fetched_device is None:
+            raise errors.DeviceNotFoundError(f"Can't find device with id: {device_id}")
+        self.user_account.set_selected_device_raw_data(fetched_device)
         self.user_account.gql_device_id = device_id
         self._save_gql_device_id(self.user_account.gql_device_id)
         await self.on_new_device_select()

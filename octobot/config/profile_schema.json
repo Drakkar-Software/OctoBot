@@ -138,6 +138,10 @@
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            },
+            "current-live-id": {
+              "type": "integer",
+              "minimum": 1
             }
           },
           "required": [

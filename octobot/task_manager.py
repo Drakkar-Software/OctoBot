@@ -20,6 +20,7 @@ import traceback
 
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.logging as logging
+import octobot_commons.constants as commons_constants
 
 import octobot.constants as constants
 
@@ -130,8 +131,10 @@ class TaskManager:
                                                     name=f"{self.get_name()} new asyncio main loop")
         self.current_loop_thread.start()
 
-    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True):
-        return asyncio_tools.run_coroutine_in_asyncio_loop(coroutine, self.async_loop, log_exceptions=log_exceptions)
+    def run_in_main_asyncio_loop(self, coroutine, log_exceptions=True,
+                                 timeout=commons_constants.DEFAULT_FUTURE_TIMEOUT):
+        return asyncio_tools.run_coroutine_in_asyncio_loop(coroutine, self.async_loop,
+                                                           log_exceptions=log_exceptions, timeout=timeout)
 
     def run_in_async_executor(self, coroutine):
         if self.executors is not None:
