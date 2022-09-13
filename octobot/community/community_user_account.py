@@ -14,10 +14,13 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot.community.community_supports as community_supports
+import octobot.community.errors as errors
 
 
 class CommunityUserAccount:
     USER_DATA_CONTENT = "content"
+    NO_SELECTED_DEVICE_DESC = "No selected device. Please select a device to enable your community features."
+
 
     def __init__(self):
         self.gql_user_id = None
@@ -51,7 +54,10 @@ class CommunityUserAccount:
         return self._selected_device_raw_data
 
     def get_selected_device_uuid(self):
-        return self.get_selected_device_raw_data().get("uuid", None)
+        try:
+            return self.get_selected_device_raw_data().get("uuid", None)
+        except AttributeError:
+            raise errors.DeviceError(self.NO_SELECTED_DEVICE_DESC)
 
     @staticmethod
     def get_device_id(device):
