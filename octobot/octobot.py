@@ -104,6 +104,7 @@ class OctoBot:
     async def initialize(self):
         self.stopped = asyncio.Event()
         self.community_auth.init_account()
+        self._log_config()
         await self.initializer.create()
         await self._start_tools_tasks()
         await logger.init_octobot_chan_logger(self.bot_id)
@@ -152,6 +153,19 @@ class OctoBot:
 
     def _init_community(self):
         self.community_handler = community.CommunityManager(self.octobot_api)
+
+    def _log_config(self):
+        exchanges = [
+            f"{exchange}[{config.get(commons_constants.CONFIG_EXCHANGE_TYPE, commons_constants.CONFIG_EXCHANGE_TYPE)}]"
+            for exchange, config in self.config[commons_constants.CONFIG_EXCHANGES].items()
+            if config.get(commons_constants.CONFIG_ENABLED_OPTION, True)
+        ]
+        has_real_trader = trading_api.is_trader_enabled_in_config(self.config)
+        has_simulated_trader = trading_api.is_trader_simulator_enabled_in_config(self.config)
+        trader_str = "real trader" if has_real_trader else "simulated trader" if has_simulated_trader else "no trader"
+        traded_symbols = trading_api.get_config_symbols(self.config, True)
+        self.logger.info(f"Starting OctoBot with {trader_str} on {', '.join(exchanges)} "
+                         f"trading {', '.join(set(traded_symbols))}.")
 
     def get_edited_config(self, config_key, dict_only=True):
         return self.configuration_manager.get_edited_config(config_key, dict_only)
