@@ -51,8 +51,7 @@ spec:
       restartPolicy: Always
       volumes:
         - name: octobot-logs
-          persistentVolumeClaim:
-            claimName: octobot-logs
+          emptyDir: {}
         - name: octobot-backtesting
           persistentVolumeClaim:
             claimName: octobot-backtesting
@@ -62,22 +61,6 @@ spec:
         - name: octobot-user
           persistentVolumeClaim:
             claimName: octobot-user
-status: {}
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  labels:
-    service: octobot
-  name: octobot-logs
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
-status: {}
 
 ---
 apiVersion: v1
@@ -92,7 +75,6 @@ spec:
   resources:
     requests:
       storage: 100Mi
-status: {}
 
 ---
 apiVersion: v1
@@ -107,7 +89,6 @@ spec:
   resources:
     requests:
       storage: 100Mi
-status: {}
 
 ---
 apiVersion: v1
@@ -122,4 +103,3 @@ spec:
   resources:
     requests:
       storage: 100Mi
-status: {}
