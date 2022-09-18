@@ -36,6 +36,9 @@ spec:
           ports:
             - containerPort: 5001
               name: octobot
+          env:
+            - name: IS_CLOUD_ENV
+              value: "true"
           volumeMounts:
             - mountPath: /octobot/logs
               name: octobot-logs
