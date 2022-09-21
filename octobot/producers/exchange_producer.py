@@ -40,8 +40,10 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
                 await self.create_exchange(exchange_name, self.backtesting)
 
     async def stop(self):
+        self.logger.debug("Stopping ...")
         for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids):
             await trading_api.stop_exchange(exchange_manager)
+        self.logger.debug("Stopped")
 
     async def create_exchange(self, exchange_name, backtesting):
         await self.send(bot_id=self.octobot.bot_id,

@@ -86,8 +86,10 @@ class CommunityManager:
                 self.logger.debug(f"Exception when handling community registration: {e}")
 
     async def stop_task(self):
+        self.logger.debug("Stopping ...")
         self.keep_running = False
         await self.session.close()
+        self.logger.debug("Stopped ...")
 
     @staticmethod
     def should_register_bot(config: configuration.Configuration):
