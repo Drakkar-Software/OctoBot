@@ -63,6 +63,7 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
             self.watcher_task = asyncio.create_task(self.connection_watcher())
 
     async def stop(self):
+        self.logger.debug("Stopping ...")
         self.should_stop = True
         if self.websocket_connection is not None:
             await self.websocket_connection.close()
@@ -70,6 +71,7 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
             self.consumer_task.cancel()
         if self.watcher_task is not None:
             self.watcher_task.cancel()
+        self.logger.debug("Stopped")
 
     # pylint: disable=E1101
     async def start_consumer(self):

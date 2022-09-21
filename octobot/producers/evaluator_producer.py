@@ -55,4 +55,7 @@ class EvaluatorProducer(octobot_channel.OctoBotChannelProducer):
                                 exchange_configuration
                         })
 
-
+    async def stop(self):
+        self.logger.debug("Stopping ...")
+        await evaluator_api.stop_all_evaluator_channels(self.matrix_id)
+        self.logger.debug("Stopped")
