@@ -314,7 +314,7 @@ class CommunityAuthentication(authentication.Authenticator):
         self._community_feed.remove_device_details()
 
     async def stop_feeds(self):
-        if self._community_feed.is_connected():
+        if self._community_feed is not None and self._community_feed.is_connected():
             await self._community_feed.stop()
 
     def clear_cache(self):
@@ -366,12 +366,15 @@ class CommunityAuthentication(authentication.Authenticator):
         return self._aiohttp_session
 
     async def stop(self):
-        if self.is_initialized():
+        self.logger.debug("Stopping ...")
+        await self.stop_feeds()
+        if self._fetch_account_task is not None and not self._fetch_account_task.done():
             self._fetch_account_task.cancel()
         if self._restart_task is not None and not self._restart_task.done():
             self._restart_task.cancel()
         if self._aiohttp_session is not None:
             await self._aiohttp_session.close()
+        self.logger.debug("Stopped")
 
     def _update_supports(self, resp_status, json_data):
         if resp_status == 200:
@@ -405,8 +408,11 @@ class CommunityAuthentication(authentication.Authenticator):
                 return
             await self.update_supports()
             await self.update_selected_device()
+        except authentication.UnavailableError as e:
+            self.logger.exception(e, True, f"Error when fetching community supports, "
+                                           f"please check your internet connection.")
         except Exception as e:
-            self.logger.exception(e, True, f"Error when fetching community supports: {e})")
+            self.logger.exception(e, True, f"Error when fetching community supports: {e}({e.__class__.__name__})")
         finally:
             self.initialized_event.set()
 

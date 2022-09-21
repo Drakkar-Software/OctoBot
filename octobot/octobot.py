@@ -137,7 +137,9 @@ class OctoBot:
 
     async def stop(self):
         try:
+            self.logger.debug("Stopping ...")
             signals.SignalPublisher.instance().stop()
+            await self.evaluator_producer.stop()
             await self.exchange_producer.stop()
             await self.community_auth.stop()
             await self.service_feed_producer.stop()
@@ -145,7 +147,7 @@ class OctoBot:
             await self.interface_producer.stop()
         finally:
             self.stopped.set()
-            self.logger.info("Shutting down.")
+            self.logger.info("Stopped, now shutting down.")
 
     async def _start_tools_tasks(self):
         self._init_community()
@@ -165,7 +167,7 @@ class OctoBot:
         trader_str = "real trader" if has_real_trader else "simulated trader" if has_simulated_trader else "no trader"
         traded_symbols = trading_api.get_config_symbols(self.config, True)
         self.logger.info(f"Starting OctoBot with {trader_str} on {', '.join(exchanges)} "
-                         f"trading {', '.join(set(traded_symbols))}.")
+                         f"trading {', '.join(set(traded_symbols))} and using bot_id: {self.bot_id}")
 
     def get_edited_config(self, config_key, dict_only=True):
         return self.configuration_manager.get_edited_config(config_key, dict_only)

@@ -70,6 +70,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         await self._connect()
 
     async def stop(self):
+        self.logger.debug("Stopping ...")
         self.should_stop = True
         await self._stop_mqtt_client()
         if self._reconnect_task is not None and not self._reconnect_task.done():
@@ -77,6 +78,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         if self._connect_task is not None and not self._connect_task.done():
             self._connect_task.cancel()
         self._reset()
+        self.logger.debug("Stopped")
 
     async def restart(self):
         try:

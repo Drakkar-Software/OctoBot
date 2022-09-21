@@ -159,4 +159,6 @@ class InterfaceProducer(octobot_channels.OctoBotChannelProducer):
                not backtesting_enabled
 
     async def stop(self):
+        self.logger.debug("Stopping ...")
         await service_managers.stop_interfaces(self.interfaces)
+        self.logger.debug("Stopped")

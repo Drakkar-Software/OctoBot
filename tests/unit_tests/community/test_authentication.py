@@ -544,22 +544,24 @@ def test_init_account(auth):
 async def test_stop(auth):
     auth._fetch_account_task = mock.Mock()
     auth._fetch_account_task.cancel = mock.Mock()
+    auth._fetch_account_task.done = mock.Mock(return_value=True)
     auth._restart_task = mock.Mock()
     auth._restart_task.cancel = mock.Mock()
     auth._aiohttp_session = mock.Mock()
     auth._aiohttp_session.close = mock.AsyncMock()
-    with mock.patch.object(auth, "is_initialized", mock.Mock(return_value=False)) as is_initialized_mock, \
+    with mock.patch.object(auth, "stop_feeds", mock.AsyncMock()) as stop_feeds_mock, \
          mock.patch.object(auth._restart_task, "done", mock.Mock(return_value=True)) as done_mock:
         await auth.stop()
-        is_initialized_mock.assert_called_once()
+        stop_feeds_mock.assert_called_once()
         done_mock.assert_called_once()
         auth._fetch_account_task.cancel.assert_not_called()
         auth._restart_task.cancel.assert_not_called()
         auth._aiohttp_session.close.reset_mock()
-    with mock.patch.object(auth, "is_initialized", mock.Mock(return_value=True)) as is_initialized_mock, \
+    auth._fetch_account_task.done = mock.Mock(return_value=False)
+    with mock.patch.object(auth, "stop_feeds", mock.AsyncMock(side_effect=auth.stop_feeds)) as stop_feeds_mock, \
          mock.patch.object(auth._restart_task, "done", mock.Mock(return_value=False)) as done_mock:
         await auth.stop()
-        is_initialized_mock.assert_called_once()
+        stop_feeds_mock.assert_called_once()
         done_mock.assert_called_once()
         auth._fetch_account_task.cancel.assert_called_once()
         auth._restart_task.cancel.assert_called_once()
