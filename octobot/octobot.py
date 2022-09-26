@@ -23,6 +23,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
 import octobot_commons.signals as signals
+import octobot_commons.databases as databases
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
@@ -105,7 +106,7 @@ class OctoBot:
         self.stopped = asyncio.Event()
         self.community_auth.init_account()
         self._log_config()
-        await self.initializer.create()
+        await self.initializer.create(True)
         await self._start_tools_tasks()
         await logger.init_octobot_chan_logger(self.bot_id)
         await self.create_producers()
@@ -145,6 +146,8 @@ class OctoBot:
             await self.service_feed_producer.stop()
             service_api.stop_services()
             await self.interface_producer.stop()
+            await databases.close_bot_storage(self.bot_id)
+
         finally:
             self.stopped.set()
             self.logger.info("Stopped, now shutting down.")

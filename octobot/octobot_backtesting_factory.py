@@ -36,7 +36,7 @@ class OctoBotBacktestingFactory(octobot_class.OctoBot):
 
     async def initialize(self):
         try:
-            await self.initializer.create()
+            await self.initializer.create(False)
             join_backtesting_timeout = constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT if self.enable_join_timeout else None
             self.independent_backtesting = octobot_backtesting_api.create_independent_backtesting(
                 self.config,
