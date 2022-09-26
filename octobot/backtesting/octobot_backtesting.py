@@ -36,6 +36,7 @@ import octobot_commons.databases as databases
 import octobot_commons.constants as commons_constants
 
 import octobot.logger as logger
+import octobot.databases_util as databases_util
 
 
 class OctoBotBacktesting:
@@ -68,6 +69,14 @@ class OctoBotBacktesting:
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
+        await databases.init_bot_storage(
+            self.bot_id,
+            databases_util.get_run_databases_identifier(
+                self.backtesting_config,
+                self.tentacles_setup_config
+            ),
+            False
+        )
         await self._init_evaluators()
         await self._init_service_feeds()
         await self._init_exchanges()
@@ -100,7 +109,7 @@ class OctoBotBacktesting:
                 # exchange managers are not added in global exchange list when an exception occurred
                 pass
             # close run databases
-            await trading_api.close_bot_storage(self.bot_id)
+            await databases.close_bot_storage(self.bot_id)
             # stop evaluators
             for evaluators in self.evaluators:
                 # evaluators by type
@@ -223,7 +232,6 @@ class OctoBotBacktesting:
                                                                         data_files=self.backtesting_files)
         # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
         # initialize
-        trading_api.init_bot_storage(self.bot_id, self.backtesting_config, self.tentacles_setup_config)
         await backtesting_api.adapt_backtesting_channels(self.backtesting,
                                                          self.backtesting_config,
                                                          importers.ExchangeDataImporter,

@@ -15,6 +15,8 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot.constants as constants
+import octobot_commons.databases as databases
+import octobot.databases_util as databases_util
 
 
 class Initializer:
@@ -25,11 +27,22 @@ class Initializer:
     def __init__(self, octobot):
         self.octobot = octobot
 
-    async def create(self):
+    async def create(self, init_bot_storage):
         # initialize tentacle configuration
         tentacles_config_path = self.octobot.get_startup_config(constants.CONFIG_KEY, dict_only=False).\
             get_tentacles_config_path()
         self.octobot.tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(tentacles_config_path)
+
+        if init_bot_storage:
+            # init bot storage
+            await databases.init_bot_storage(
+                self.octobot.bot_id,
+                databases_util.get_run_databases_identifier(
+                    self.octobot.config,
+                    self.octobot.tentacles_setup_config
+                ),
+                True
+            )
 
         # create OctoBot channel
         await self.octobot.global_consumer.initialize()
