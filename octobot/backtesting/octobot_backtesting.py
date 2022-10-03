@@ -13,12 +13,18 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import json
 import uuid
 import gc
 import sys
 import asyncio
+import time
 
-import octobot_commons.logging as logging
+import octobot_commons.logging as commons_logging
+import octobot_commons.configuration as commons_configuration
+import octobot_commons.databases as commons_databases
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 
 import octobot_backtesting.api as backtesting_api
 import octobot_backtesting.importers as importers
@@ -32,10 +38,8 @@ import octobot_trading.exchange_data as exchange_data
 import octobot_trading.api as trading_api
 import octobot_trading.enums as trading_enums
 
-import octobot_commons.databases as databases
-import octobot_commons.constants as commons_constants
-
 import octobot.logger as logger
+import octobot.storage as storage
 import octobot.databases_util as databases_util
 
 
@@ -49,7 +53,7 @@ class OctoBotBacktesting:
                  start_timestamp=None,
                  end_timestamp=None,
                  enable_logs=True):
-        self.logger = logging.get_logger(self.__class__.__name__)
+        self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
         self.bot_id = str(uuid.uuid4())
@@ -61,6 +65,7 @@ class OctoBotBacktesting:
         self.backtesting_files = backtesting_files
         self.backtesting = None
         self.run_on_common_part_only = run_on_common_part_only
+        self.start_time = None
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
         self.enable_logs = enable_logs
@@ -69,7 +74,8 @@ class OctoBotBacktesting:
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
-        await databases.init_bot_storage(
+        self.start_time = time.time()
+        await commons_databases.init_bot_storage(
             self.bot_id,
             databases_util.get_run_databases_identifier(
                 self.backtesting_config,
@@ -100,16 +106,26 @@ class OctoBotBacktesting:
             if self.backtesting is None:
                 self.logger.warning("No backtesting to stop, there was probably an issue when starting the backtesting")
             else:
+                exchange_managers = trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids)
+                try:
+                    for exchange_manager in exchange_managers:
+                        await trading_api.store_history_in_run_storage(exchange_manager)
+                except Exception as e:
+                    self.logger.exception(e, True, f"Error when saving exchange historical data: {e}")
+                try:
+                    await self._store_metadata(exchange_managers)
+                    self.logger.info(f"Stored backtesting run metadata")
+                except Exception as e:
+                    self.logger.exception(e, True, f"Error when saving run metadata: {e}")
                 await backtesting_api.stop_backtesting(self.backtesting)
             try:
-                for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids):
-                    exchange_managers.append(exchange_manager)
+                for exchange_manager in exchange_managers:
                     await trading_api.stop_exchange(exchange_manager)
             except KeyError:
                 # exchange managers are not added in global exchange list when an exception occurred
                 pass
             # close run databases
-            await databases.close_bot_storage(self.bot_id)
+            await commons_databases.close_bot_storage(self.bot_id)
             # stop evaluators
             for evaluators in self.evaluators:
                 # evaluators by type
@@ -118,7 +134,7 @@ class OctoBotBacktesting:
                     if evaluator is not None:
                         await evaluator_api.stop_evaluator(evaluator)
             # close all caches (if caches have to be used later on, they can always be re-opened)
-            await databases.CacheManager().close_cache(commons_constants.UNPROVIDED_CACHE_IDENTIFIER)
+            await commons_databases.CacheManager().close_cache(commons_constants.UNPROVIDED_CACHE_IDENTIFIER)
             try:
                 await evaluator_api.stop_all_evaluator_channels(self.matrix_id)
             except KeyError:
@@ -194,6 +210,24 @@ class OctoBotBacktesting:
             raise AssertionError(
                 f"[Dev oriented error: no effect on backtesting result, please report if you see it]: {errors}"
             )
+
+    async def _store_metadata(self, exchange_managers):
+        run_db = commons_databases.RunDatabasesProvider.instance().get_run_db(self.bot_id)
+        await run_db.flush()
+        user_inputs = await commons_configuration.get_user_inputs(run_db)
+        await storage.store_run_metadata(
+            self.bot_id,
+            exchange_managers,
+            self.start_time,
+            user_inputs=user_inputs,
+        )
+        metadata = await storage.store_backtesting_run_metadata(
+            exchange_managers,
+            self.start_time,
+            user_inputs,
+            commons_databases.RunDatabasesProvider.instance().get_run_databases_identifier(self.bot_id),
+        )
+        self.logger.info(f"Backtesting metadata:\n{json.dumps(metadata, indent=4)}")
 
     async def _init_evaluators(self):
         self.matrix_id = await evaluator_api.initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
