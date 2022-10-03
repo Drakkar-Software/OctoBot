@@ -13,9 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-# prevents distutils_patch.py:26: UserWarning: Distutils was imported before Setuptools. This usage is discouraged
-# and may exhibit undesirable behaviors or errors. Please use Setuptools' objects directly or at least import Setuptools
-# first
+
 from distutils.version import LooseVersion
 
 import argparse

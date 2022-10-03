@@ -16,6 +16,7 @@
 import os
 import pathlib
 import octobot_commons.os_util as os_util
+import octobot_commons.enums
 import octobot.enums
 
 PROJECT_NAME = "OctoBot"
@@ -156,5 +157,12 @@ OPTIMIZATION_CAMPAIGN_KEY = "optimization_campaign"
 
 # Channel
 OCTOBOT_CHANNEL = "OctoBot"
+
+# Initialization
+REQUIRED_TOPIC_FOR_DATA_INIT = [
+    octobot_commons.enums.InitializationEventExchangeTopics.CANDLES,
+    octobot_commons.enums.InitializationEventExchangeTopics.CONTRACTS,
+    octobot_commons.enums.InitializationEventExchangeTopics.PRICE,
+]
 
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='
