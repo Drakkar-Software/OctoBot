@@ -32,6 +32,7 @@ cdef class OctoBotBacktesting:
     cdef public list backtesting_files
     cdef public object backtesting
     cdef public bint run_on_common_part_only
+    cdef public object start_time
     cdef public object start_timestamp
     cdef public object end_timestamp
     cdef public bint enable_logs

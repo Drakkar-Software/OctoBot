@@ -24,6 +24,7 @@ import octobot_commons.logging as logging
 import octobot_commons.configuration as configuration
 import octobot_commons.signals as signals
 import octobot_commons.databases as databases
+import octobot_commons.tree as commons_tree
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
@@ -37,6 +38,7 @@ import octobot.octobot_channel_consumer as octobot_channel_consumer
 import octobot.octobot_api as octobot_api
 import octobot.initializer as initializer
 import octobot.producers as producers
+import octobot.storage as storage
 
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
@@ -92,6 +94,7 @@ class OctoBot:
         # Initialize octobot main tools
         self.initializer = initializer.Initializer(self)
         self.task_manager = task_manager.TaskManager(self)
+        self._init_metadata_run_task = None
 
         # Producers
         self.exchange_producer = None
@@ -111,6 +114,7 @@ class OctoBot:
         await logger.init_octobot_chan_logger(self.bot_id)
         await self.create_producers()
         await self.start_producers()
+        await self._post_initialize()
 
     async def create_producers(self):
         self.exchange_producer = producers.ExchangeProducer(self.global_consumer.octobot_channel, self,
@@ -125,7 +129,6 @@ class OctoBot:
         # Start service feeds now that evaluators registered their feed requirements
         await self.service_feed_producer.run()
         await self.interface_producer.run()
-        await self._post_initialize()
 
     async def _post_initialize(self):
         self.initialized = True
@@ -135,10 +138,35 @@ class OctoBot:
         await service_api.send_notification(
             service_api.create_notification(f"{constants.PROJECT_NAME} {constants.LONG_VERSION} is starting ...",
                                             markdown_format=enums.MarkdownFormat.ITALIC))
+        self._init_metadata_run_task = asyncio.create_task(self._store_run_metadata_when_available())
+
+    async def _wait_for_run_data_init(self, exchange_managers, timeout):
+        for exchange_manager in exchange_managers:
+            for topic in constants.REQUIRED_TOPIC_FOR_DATA_INIT:
+                await commons_tree.EventProvider.instance().wait_for_event(
+                    self.bot_id,
+                    commons_tree.get_exchange_path(
+                        trading_api.get_exchange_name(exchange_manager),
+                        topic.value
+                    ),
+                    timeout
+                )
+
+    async def _store_run_metadata_when_available(self):
+        run_metadata_init_timeout = 5 * commons_constants.MINUTE_TO_SECONDS
+        exchange_managers = [
+            trading_api.get_exchange_manager_from_exchange_id(exchange_manager_id)
+            for exchange_manager_id in self.exchange_producer.exchange_manager_ids
+        ]
+        await self._wait_for_run_data_init(exchange_managers, run_metadata_init_timeout)
+        await storage.clear_run_metadata(self.bot_id)
+        await storage.store_run_metadata(self.bot_id, exchange_managers, self.start_time)
 
     async def stop(self):
         try:
             self.logger.debug("Stopping ...")
+            if self._init_metadata_run_task is not None and not self._init_metadata_run_task.done():
+                self._init_metadata_run_task.cancel()
             signals.SignalPublisher.instance().stop()
             await self.evaluator_producer.stop()
             await self.exchange_producer.stop()
