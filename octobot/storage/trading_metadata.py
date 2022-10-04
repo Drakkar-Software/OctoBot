@@ -45,7 +45,6 @@ async def store_run_metadata(bot_id, exchange_managers, start_time, user_inputs=
 
 async def store_backtesting_run_metadata(exchange_managers, start_time, user_inputs, run_dbs_identifier) -> dict:
     run_metadata = await _get_trading_metadata(exchange_managers, start_time, user_inputs, run_dbs_identifier, True)
-
     # use local database as a lock is required
     async with commons_databases.DBWriter.database(
          run_dbs_identifier.get_backtesting_metadata_identifier(),
@@ -56,7 +55,21 @@ async def store_backtesting_run_metadata(exchange_managers, start_time, user_inp
 
 async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, run_dbs_identifier, is_backtesting) \
         -> dict:
-    # multi exchange data
+    multi_exchanges_data = await _get_multi_exchange_data(exchange_managers, is_backtesting)
+    single_exchange_data = await _get_single_exchange_data(
+        exchange_managers[0],
+        run_start_time,
+        user_inputs,
+        run_dbs_identifier,
+        is_backtesting
+    )
+    return {
+        **single_exchange_data,
+        **multi_exchanges_data
+    }
+
+
+async def _get_multi_exchange_data(exchange_managers, is_backtesting):
     symbols = list(set(
         symbol
         for exchange_manager in exchange_managers
@@ -137,7 +150,7 @@ async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, 
         backtesting_api.get_backtesting_duration(exchange_manager.exchange.backtesting)
         for exchange_manager in exchange_managers
     ), 3)
-    if is_backtesting:
+    if trading_api.get_is_backtesting(exchange_managers[0]):
         start_time = min(
             backtesting_api.get_backtesting_starting_time(exchange_manager.exchange.backtesting)
             for exchange_manager in exchange_managers
@@ -171,33 +184,9 @@ async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, 
                 for key, value in value_dict.items():
                     pf_value[key] = pf_value.get(key, 0) + value
 
-    # single exchange data (use 1st exchange)
-    exchange_manager = exchange_managers[0]
-    trading_mode = trading_api.get_trading_modes(exchange_manager)[0]
-
-    exchange_type = trading_enums.ExchangeTypes.FUTURE.value if exchange_manager.is_future \
-        else trading_enums.ExchangeTypes.SPOT.value
-    if user_inputs is None:
-        user_inputs = {}
-    formatted_user_inputs = {}
-    for user_input in user_inputs:
-        if not user_input["is_nested_config"]:
-            try:
-                formatted_user_inputs[user_input["tentacle"]][user_input["name"]] = user_input["value"]
-            except KeyError:
-                formatted_user_inputs[user_input["tentacle"]] = {
-                    user_input["name"]: user_input["value"]
-                }
-    leverage = 0
-    if exchange_manager.is_future and hasattr(exchange_manager.exchange, "get_pair_future_contract"):
-        leverage = float(trading_api.get_pair_contracts(exchange_manager)[symbols[0]].current_leverage)
-
     backtesting_only_metadata = {
-        common_enums.BacktestingMetadata.ID.value: run_dbs_identifier.backtesting_id,
-        common_enums.BacktestingMetadata.OPTIMIZATION_CAMPAIGN.value: run_dbs_identifier.optimization_campaign_name,
         common_enums.BacktestingMetadata.DURATION.value: duration,
         common_enums.BacktestingMetadata.BACKTESTING_FILES.value: data_files,
-        common_enums.BacktestingMetadata.USER_INPUTS.value: formatted_user_inputs,
     } if is_backtesting else {}
     return {
         **backtesting_only_metadata,
@@ -216,15 +205,47 @@ async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, 
             common_enums.BacktestingMetadata.WINS.value: wins,
             common_enums.BacktestingMetadata.LOSES.value: len(entries) - wins,
             common_enums.BacktestingMetadata.TRADES.value: len(trades),
+            common_enums.DBRows.EXCHANGES.value: exchange_names,
+            common_enums.DBRows.START_TIME.value: start_time,
+            common_enums.DBRows.END_TIME.value: end_time,
+            common_enums.DBRows.FUTURE_CONTRACTS.value: future_contracts_by_exchange,
+        }
+    }
+
+
+async def _get_single_exchange_data(exchange_manager, run_start_time, user_inputs, run_dbs_identifier, is_backtesting):
+    trading_mode = trading_api.get_trading_modes(exchange_manager)[0]
+
+    exchange_type = trading_enums.ExchangeTypes.FUTURE.value if exchange_manager.is_future \
+        else trading_enums.ExchangeTypes.SPOT.value
+    if user_inputs is None:
+        user_inputs = {}
+    formatted_user_inputs = {}
+    for user_input in user_inputs:
+        if not user_input["is_nested_config"]:
+            try:
+                formatted_user_inputs[user_input["tentacle"]][user_input["name"]] = user_input["value"]
+            except KeyError:
+                formatted_user_inputs[user_input["tentacle"]] = {
+                    user_input["name"]: user_input["value"]
+                }
+    leverage = 0
+    if exchange_manager.is_future and hasattr(exchange_manager.exchange, "get_pair_future_contract"):
+        leverage = float(next(iter(trading_api.get_pair_contracts(exchange_manager).values())).current_leverage)
+
+    backtesting_only_metadata = {
+        common_enums.BacktestingMetadata.ID.value: run_dbs_identifier.backtesting_id,
+        common_enums.BacktestingMetadata.OPTIMIZATION_CAMPAIGN.value: run_dbs_identifier.optimization_campaign_name,
+        common_enums.BacktestingMetadata.USER_INPUTS.value: formatted_user_inputs,
+    } if is_backtesting else {}
+    return {
+        **backtesting_only_metadata,
+        **{
             common_enums.BacktestingMetadata.TIMESTAMP.value: run_start_time,
             common_enums.BacktestingMetadata.NAME.value: trading_mode.get_name(),
             common_enums.BacktestingMetadata.LEVERAGE.value: leverage,
             common_enums.DBRows.TRADING_TYPE.value: exchange_type,
-            common_enums.DBRows.EXCHANGES.value: exchange_names,
             common_enums.DBRows.REFERENCE_MARKET.value: trading_api.get_reference_market(exchange_manager.config),
-            common_enums.DBRows.START_TIME.value: start_time,
-            common_enums.DBRows.END_TIME.value: end_time,
-            common_enums.DBRows.FUTURE_CONTRACTS.value: future_contracts_by_exchange,
         },
         **(await trading_mode.get_additional_metadata(is_backtesting))
     }
