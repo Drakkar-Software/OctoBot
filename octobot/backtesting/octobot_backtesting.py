@@ -107,17 +107,18 @@ class OctoBotBacktesting:
                 self.logger.warning("No backtesting to stop, there was probably an issue when starting the backtesting")
             else:
                 exchange_managers = trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids)
-                try:
-                    for exchange_manager in exchange_managers:
-                        await trading_api.store_history_in_run_storage(exchange_manager)
-                except Exception as e:
-                    self.logger.exception(e, True, f"Error when saving exchange historical data: {e}")
-                try:
-                    await self._store_metadata(exchange_managers)
-                    self.logger.info(f"Stored backtesting run metadata")
-                except Exception as e:
-                    self.logger.exception(e, True, f"Error when saving run metadata: {e}")
-                await backtesting_api.stop_backtesting(self.backtesting)
+                if exchange_managers:
+                    try:
+                        for exchange_manager in exchange_managers:
+                            await trading_api.store_history_in_run_storage(exchange_manager)
+                    except Exception as e:
+                        self.logger.exception(e, True, f"Error when saving exchange historical data: {e}")
+                    try:
+                        await self._store_metadata(exchange_managers)
+                        self.logger.info(f"Stored backtesting run metadata")
+                    except Exception as e:
+                        self.logger.exception(e, True, f"Error when saving run metadata: {e}")
+                    await backtesting_api.stop_backtesting(self.backtesting)
             try:
                 for exchange_manager in exchange_managers:
                     await trading_api.stop_exchange(exchange_manager)

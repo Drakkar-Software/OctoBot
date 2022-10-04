@@ -13,8 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import math
+import numpy
+
 import octobot_commons.enums as common_enums
-import octobot_commons.constants as common_constants
 import octobot_commons.databases as commons_databases
 import octobot_commons.configuration as commons_configuration
 
@@ -54,53 +56,129 @@ async def store_backtesting_run_metadata(exchange_managers, start_time, user_inp
 
 async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, run_dbs_identifier, is_backtesting) \
         -> dict:
-    # todo handle multiple exchanges metadata
+    # multi exchange data
+    symbols = list(set(
+        symbol
+        for exchange_manager in exchange_managers
+        for symbol in trading_api.get_trading_pairs(exchange_manager)
+    ))
+    time_frames = list(set(
+        tf.value
+        for exchange_manager in exchange_managers
+        for tf in trading_api.get_relevant_time_frames(exchange_manager)
+    ))
+    data_files = list(set(
+        data_file
+        for exchange_manager in exchange_managers
+        for data_file in trading_api.get_backtesting_data_files(exchange_manager)
+    ))
+    profitability = numpy.average(tuple(
+        float(trading_api.get_profitability_stats(exchange_manager)[0])
+        for exchange_manager in exchange_managers
+    ))
+    profitability_percent = numpy.average(tuple(
+        float(trading_api.get_profitability_stats(exchange_manager)[1])
+        for exchange_manager in exchange_managers
+    ))
+    exchange_names = [
+        trading_api.get_exchange_name(exchange_manager)
+        for exchange_manager in exchange_managers
+    ]
+    future_contracts_by_exchange = {
+        trading_api.get_exchange_name(exchange_manager): {
+            symbol: {
+                "contract_type": contract.contract_type.value,
+                "position_mode": contract.position_mode.value,
+                "margin_type": contract.margin_type.value
+            }
+            for symbol, contract in trading_api.get_pair_contracts(exchange_manager).items()
+            if symbol in trading_api.get_trading_pairs(exchange_manager)
+        }
+        for exchange_manager in exchange_managers
+        if exchange_manager.is_future and hasattr(exchange_manager.exchange, "pair_contracts")
+    }
+    trades = [
+        trade
+        for exchange_manager in exchange_managers
+        for trade in trading_api.get_trade_history(exchange_manager, include_cancelled=False)
+    ]
+    entries = [
+        trade
+        for trade in trades
+        if trade.status is trading_enums.OrderStatus.FILLED and trade.side is trading_enums.TradeOrderSide.BUY
+    ]
+    win_rate = round(numpy.average(tuple(
+        float(trading_api.get_win_rate(exchange_manager) * 100)
+        for exchange_manager in exchange_managers
+    )), 3)
+    wins = 0 if math.isnan(win_rate) else round(win_rate * len(entries) / 100)
+    draw_down = round(numpy.average(tuple(
+        float(trading_api.get_draw_down(exchange_manager))
+        for exchange_manager in exchange_managers
+    )), 3)
+    try:
+        r_sq_end_balance = numpy.average([
+            await trading_api.get_coefficient_of_determination(
+                exchange_manager,
+                use_high_instead_of_end_balance=False
+            )
+            for exchange_manager in exchange_managers
+        ])
+    except KeyError:
+        r_sq_end_balance = None
+    try:
+        r_sq_max_balance = numpy.average([
+            await trading_api.get_coefficient_of_determination(exchange_manager)
+            for exchange_manager in exchange_managers
+        ])
+    except KeyError:
+        r_sq_max_balance = None
+    duration = round(max(
+        backtesting_api.get_backtesting_duration(exchange_manager.exchange.backtesting)
+        for exchange_manager in exchange_managers
+    ), 3)
+    if is_backtesting:
+        start_time = min(
+            backtesting_api.get_backtesting_starting_time(exchange_manager.exchange.backtesting)
+            for exchange_manager in exchange_managers
+        )
+        end_time = max(
+            backtesting_api.get_backtesting_ending_time(exchange_manager.exchange.backtesting)
+            for exchange_manager in exchange_managers
+        )
+    else:
+        start_time = exchange_managers[0].exchange.get_exchange_current_time()
+        end_time = -1
+    origin_portfolio = {}
+    end_portfolio = {}
+    for exchange_manager in exchange_managers:
+        exchange_origin_portfolio = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
+        exchange_end_portfolio = trading_api.get_portfolio(exchange_manager, as_decimal=False)
+        for portfolio in (exchange_origin_portfolio, exchange_end_portfolio):
+            for values in portfolio.values():
+                values.pop("available", None)
+        if exchange_manager.is_future:
+            for position in trading_api.get_positions(exchange_manager):
+                exchange_end_portfolio[position.get_currency()]["position"] = float(position.quantity)
+        for exchange_portfolio, portfolio in zip((exchange_origin_portfolio, exchange_end_portfolio),
+                                                 (origin_portfolio, end_portfolio)):
+            for currency, value_dict in exchange_portfolio.items():
+                try:
+                    pf_value = portfolio[currency]
+                except KeyError:
+                    pf_value = {}
+                    portfolio[currency] = pf_value
+                for key, value in value_dict.items():
+                    pf_value[key] = pf_value.get(key, 0) + value
+
+    # single exchange data (use 1st exchange)
     exchange_manager = exchange_managers[0]
     trading_mode = trading_api.get_trading_modes(exchange_manager)[0]
-    symbols = exchange_manager.exchange_config.traded_symbol_pairs
-    portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager.portfolio_profitability
-    profitability = portfolio_manager.profitability
-    profitability_percent = portfolio_manager.profitability_percent
+
+    exchange_type = trading_enums.ExchangeTypes.FUTURE.value if exchange_manager.is_future \
+        else trading_enums.ExchangeTypes.SPOT.value
     if user_inputs is None:
         user_inputs = {}
-    origin_portfolio = trading_api.get_origin_portfolio(exchange_manager, as_decimal=False)
-    end_portfolio = trading_api.get_portfolio(exchange_manager, as_decimal=False)
-    for portfolio in (origin_portfolio, end_portfolio):
-        for values in portfolio.values():
-            values.pop("available", None)
-    if exchange_manager.is_future:
-        for position in trading_api.get_positions(exchange_manager):
-            end_portfolio[position.get_currency()]["position"] = float(position.quantity)
-    time_frames = [
-        tf.value
-        for tf in trading_api.get_relevant_time_frames(exchange_manager)
-    ]
-    start_time = backtesting_api.get_backtesting_starting_time(exchange_manager.exchange.backtesting) \
-        if exchange_manager.is_backtesting \
-        else exchange_manager.exchange.get_exchange_current_time()
-    end_time = backtesting_api.get_backtesting_ending_time(exchange_manager.exchange.backtesting) \
-        if exchange_manager.is_backtesting \
-        else -1
-    exchange_type = "spot"
-    exchange_names = [
-        exchange
-        for exchange, config in exchange_manager.config[common_constants.CONFIG_EXCHANGES].items()
-        if config.get(common_constants.CONFIG_ENABLED_OPTION, True)
-    ]
-    future_contracts_by_exchange = {}
-    if exchange_manager.is_future and hasattr(exchange_manager.exchange, "pair_contracts"):
-        exchange_type = "future"
-        future_contracts_by_exchange = {
-            exchange_manager.exchange_name: {
-                symbol: {
-                    "contract_type": contract.contract_type.value,
-                    "position_mode": contract.position_mode.value,
-                    "margin_type": contract.margin_type.value
-                }
-                for symbol, contract in trading_api.get_pair_contracts(exchange_manager).items()
-                if symbol in trading_api.get_trading_pairs(exchange_manager)
-            }
-        }
     formatted_user_inputs = {}
     for user_input in user_inputs:
         if not user_input["is_nested_config"]:
@@ -113,37 +191,12 @@ async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, 
     leverage = 0
     if exchange_manager.is_future and hasattr(exchange_manager.exchange, "get_pair_future_contract"):
         leverage = float(trading_api.get_pair_contracts(exchange_manager)[symbols[0]].current_leverage)
-    trades = [
-        trade
-        for trade in trading_api.get_trade_history(exchange_manager, include_cancelled=False)
-    ]
-    entries = [
-        trade
-        for trade in trades
-        if trade.status is trading_enums.OrderStatus.FILLED and trade.side is trading_enums.TradeOrderSide.BUY
-    ]
-    win_rate = round(float(trading_api.get_win_rate(exchange_manager) * 100), 3)
-    wins = round(win_rate * len(entries) / 100)
-    draw_down = round(float(trading_api.get_draw_down(exchange_manager)), 3)
-    try:
-        r_sq_end_balance = await trading_api.get_coefficient_of_determination(
-            exchange_manager,
-            use_high_instead_of_end_balance=False
-        )
-    except KeyError:
-        r_sq_end_balance = None
-    try:
-        r_sq_max_balance = await trading_api.get_coefficient_of_determination(exchange_manager)
-    except KeyError:
-        r_sq_max_balance = None
 
     backtesting_only_metadata = {
         common_enums.BacktestingMetadata.ID.value: run_dbs_identifier.backtesting_id,
         common_enums.BacktestingMetadata.OPTIMIZATION_CAMPAIGN.value: run_dbs_identifier.optimization_campaign_name,
-        common_enums.BacktestingMetadata.DURATION.value: round(backtesting_api.get_backtesting_duration(
-            exchange_manager.exchange.backtesting), 3),
-        common_enums.BacktestingMetadata.BACKTESTING_FILES.value:
-            exchange_manager.exchange.get_backtesting_data_files(),
+        common_enums.BacktestingMetadata.DURATION.value: duration,
+        common_enums.BacktestingMetadata.BACKTESTING_FILES.value: data_files,
         common_enums.BacktestingMetadata.USER_INPUTS.value: formatted_user_inputs,
     } if is_backtesting else {}
     return {
