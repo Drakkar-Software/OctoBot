@@ -113,10 +113,13 @@ class StrategyTestSuite(octobot_backtesting.AbstractBacktestingTest):
         independent_backtesting = None
         try:
             config_to_use = copy.deepcopy(self.config)
-            independent_backtesting = octobot_backtesting_api.create_independent_backtesting(config_to_use,
-                                                                                 self.tentacles_setup_config,
-                                                                                 [data_file_to_use],
-                                                                                 "")
+            independent_backtesting = octobot_backtesting_api.create_independent_backtesting(
+                config_to_use,
+                self.tentacles_setup_config,
+                [data_file_to_use],
+                "",
+                enforce_total_databases_max_size_after_run=False,
+            )
             await octobot_backtesting_api.initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
             await octobot_backtesting_api.join_independent_backtesting(independent_backtesting)
             return independent_backtesting
