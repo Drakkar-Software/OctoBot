@@ -13,22 +13,16 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-from octobot.storage import trading_metadata
-from octobot.storage import db_databases_prunning
-
-from octobot.storage.trading_metadata import (
-    clear_run_metadata,
-    store_run_metadata,
-    store_backtesting_run_metadata,
-)
-from octobot.storage.db_databases_prunning import (
-    enforce_total_databases_max_size
-)
+import octobot_commons.databases as databases
+import octobot.constants as constants
 
 
-__all__ = [
-    "clear_run_metadata",
-    "store_run_metadata",
-    "store_backtesting_run_metadata",
-    "enforce_total_databases_max_size",
-]
+async def enforce_total_databases_max_size():
+    run_databases_identifier = databases.RunDatabasesProvider.instance().get_any_run_databases_identifier()
+    pruner = databases.RunDatabasesPruner(
+        run_databases_identifier.data_path,
+        constants.MAX_TOTAL_RUN_DATABASES_SIZE,
+        run_databases_identifier.database_adaptor
+    )
+    await pruner.explore()
+    await pruner.prune_oldest_run_databases()
