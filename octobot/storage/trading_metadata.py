@@ -84,7 +84,7 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
         data_file
         for exchange_manager in exchange_managers
         for data_file in trading_api.get_backtesting_data_files(exchange_manager)
-    ))
+    )) if is_backtesting else []
     profitability = numpy.average(tuple(
         float(trading_api.get_profitability_stats(exchange_manager)[0])
         for exchange_manager in exchange_managers
@@ -149,7 +149,7 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
     duration = round(max(
         backtesting_api.get_backtesting_duration(exchange_manager.exchange.backtesting)
         for exchange_manager in exchange_managers
-    ), 3)
+    ), 3) if is_backtesting else 0
     if trading_api.get_is_backtesting(exchange_managers[0]):
         start_time = min(
             backtesting_api.get_backtesting_starting_time(exchange_manager.exchange.backtesting)
