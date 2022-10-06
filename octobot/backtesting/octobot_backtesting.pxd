@@ -38,6 +38,7 @@ cdef class OctoBotBacktesting:
     cdef public bint enable_logs
     cdef public dict exchange_type_by_exchange
     cdef public object futures_contract_type
+    cdef public bint enable_storage
 
     cpdef object memory_leak_checkup(self, list to_check_elements)
     cpdef object check_remaining_objects(self)

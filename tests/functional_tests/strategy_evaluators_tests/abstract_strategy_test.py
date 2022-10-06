@@ -63,10 +63,14 @@ class AbstractStrategyTest(octobot_backtesting.AbstractBacktestingTest, abc.ABC)
 
     async def _run_backtesting_with_current_config(self, data_file_to_use):
         config_to_use = copy.deepcopy(self.config)
-        independent_backtesting = octobot_api.create_independent_backtesting(config_to_use,
-                                                                             self.tentacles_setup_config,
-                                                                             [data_file_to_use],
-                                                                             "")
+        independent_backtesting = octobot_api.create_independent_backtesting(
+            config_to_use,
+            self.tentacles_setup_config,
+            [data_file_to_use],
+            "",
+            enforce_total_databases_max_size_after_run=False,
+            enable_storage=False,
+        )
         await octobot_api.initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
         await octobot_api.join_independent_backtesting(independent_backtesting)
         return independent_backtesting

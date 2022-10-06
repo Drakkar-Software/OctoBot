@@ -19,11 +19,12 @@ import octobot_commons.optimization_campaign as optimization_campaign
 import octobot_commons.constants as commons_constants
 
 
-def get_run_databases_identifier(config, tentacles_setup_config, trading_mode_class=None):
+def get_run_databases_identifier(config, tentacles_setup_config, trading_mode_class=None, enable_storage=True):
     return databases.RunDatabasesIdentifier(
         trading_mode_class or trading_api.get_activated_trading_mode(tentacles_setup_config),
         optimization_campaign.OptimizationCampaign.get_campaign_name(tentacles_setup_config),
         backtesting_id=config.get(commons_constants.CONFIG_BACKTESTING_ID),
         optimizer_id=config.get(commons_constants.CONFIG_OPTIMIZER_ID),
-        live_id=trading_api.get_current_bot_live_id(config)
+        live_id=trading_api.get_current_bot_live_id(config),
+        enable_storage=enable_storage
     )

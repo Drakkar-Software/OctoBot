@@ -53,7 +53,8 @@ class IndependentBacktesting:
                  end_timestamp=None,
                  enable_logs=True,
                  stop_when_finished=False,
-                 enforce_total_databases_max_size_after_run=True):
+                 enforce_total_databases_max_size_after_run=True,
+                 enable_storage=True):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -83,7 +84,8 @@ class IndependentBacktesting:
                                                                   run_on_common_part_only,
                                                                   start_timestamp=start_timestamp,
                                                                   end_timestamp=end_timestamp,
-                                                                  enable_logs=self.enable_logs)
+                                                                  enable_logs=self.enable_logs,
+                                                                  enable_storage=enable_storage)
 
     async def initialize_and_run(self, log_errors=True):
         try:
@@ -364,8 +366,9 @@ class IndependentBacktesting:
                 optimization_campaign.OptimizationCampaign.get_campaign_name(self.tentacles_setup_config)
             )
             run_dbs_identifier.backtesting_id = await run_dbs_identifier.generate_new_backtesting_id()
-            # initialize to lock the backtesting id
-            await run_dbs_identifier.initialize()
+            if self.octobot_backtesting.enable_storage:
+                # initialize to lock the backtesting id
+                await run_dbs_identifier.initialize()
             self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] = run_dbs_identifier.backtesting_id
 
     def _find_reference_market_and_update_contract_type(self):
