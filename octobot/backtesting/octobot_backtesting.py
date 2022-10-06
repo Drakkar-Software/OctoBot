@@ -24,7 +24,6 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.databases as commons_databases
 import octobot_commons.constants as commons_constants
-import octobot_commons.enums as commons_enums
 
 import octobot_backtesting.api as backtesting_api
 import octobot_backtesting.importers as importers
@@ -52,7 +51,8 @@ class OctoBotBacktesting:
                  run_on_common_part_only,
                  start_timestamp=None,
                  end_timestamp=None,
-                 enable_logs=True):
+                 enable_logs=True,
+                 enable_storage=True):
         self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
@@ -71,6 +71,7 @@ class OctoBotBacktesting:
         self.enable_logs = enable_logs
         self.exchange_type_by_exchange = {}
         self.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
+        self.enable_storage = enable_storage
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
@@ -79,7 +80,8 @@ class OctoBotBacktesting:
             self.bot_id,
             databases_util.get_run_databases_identifier(
                 self.backtesting_config,
-                self.tentacles_setup_config
+                self.tentacles_setup_config,
+                enable_storage=self.enable_storage,
             ),
             False
         )
@@ -107,7 +109,7 @@ class OctoBotBacktesting:
                 self.logger.warning("No backtesting to stop, there was probably an issue when starting the backtesting")
             else:
                 exchange_managers = trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids)
-                if exchange_managers:
+                if exchange_managers and self.enable_storage:
                     try:
                         for exchange_manager in exchange_managers:
                             await trading_api.store_history_in_run_storage(exchange_manager)
@@ -118,7 +120,7 @@ class OctoBotBacktesting:
                         self.logger.info(f"Stored backtesting run metadata")
                     except Exception as e:
                         self.logger.exception(e, True, f"Error when saving run metadata: {e}")
-                    await backtesting_api.stop_backtesting(self.backtesting)
+                await backtesting_api.stop_backtesting(self.backtesting)
             try:
                 for exchange_manager in exchange_managers:
                     await trading_api.stop_exchange(exchange_manager)
@@ -284,7 +286,8 @@ class OctoBotBacktesting:
                 .is_simulated() \
                 .is_rest_only() \
                 .is_backtesting(self.backtesting) \
-                .is_future(is_future, self.futures_contract_type)
+                .is_future(is_future, self.futures_contract_type) \
+                .enable_storage(self.enable_storage)
             try:
                 await exchange_builder.build()
             finally:
