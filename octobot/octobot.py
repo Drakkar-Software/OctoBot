@@ -154,6 +154,8 @@ class OctoBot:
 
     async def _store_run_metadata_when_available(self):
         run_metadata_init_timeout = 5 * commons_constants.MINUTE_TO_SECONDS
+        # first wait for all exchanges to be created
+        await asyncio.wait_for(self.exchange_producer.created_all_exchanges.wait(), run_metadata_init_timeout)
         exchange_managers = [
             trading_api.get_exchange_manager_from_exchange_id(exchange_manager_id)
             for exchange_manager_id in self.exchange_producer.exchange_manager_ids
