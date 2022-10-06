@@ -13,9 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
+
 import octobot_commons.enums as common_enums
 import octobot_commons.constants as common_constants
-import octobot_commons.errors as common_errors
 
 import octobot_trading.api as trading_api
 import octobot_trading.octobot_channel_consumer as trading_channel_consumer
@@ -32,11 +33,23 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
         self.backtesting = backtesting
         self.exchange_manager_ids = []
 
+        self.to_create_exchanges_count = 0
+        self.created_all_exchanges = asyncio.Event()
+
     async def start(self):
+        self.to_create_exchanges_count = 0
+        self.created_all_exchanges.clear()
         for exchange_name in self.octobot.config[common_constants.CONFIG_EXCHANGES]:
             if self.octobot.config[common_constants.CONFIG_EXCHANGES][exchange_name].get(
                     common_constants.CONFIG_ENABLED_OPTION, True):
                 await self.create_exchange(exchange_name, self.backtesting)
+                self.to_create_exchanges_count += 1
+
+    def register_created_exchange_id(self, exchange_id):
+        self.exchange_manager_ids.append(exchange_id)
+        if len(self.exchange_manager_ids) == self.to_create_exchanges_count:
+            self.created_all_exchanges.set()
+            self.logger.debug(f"Exchange(s) created")
 
     async def stop(self):
         self.logger.debug("Stopping ...")
