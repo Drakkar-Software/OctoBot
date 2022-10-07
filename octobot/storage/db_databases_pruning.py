@@ -19,10 +19,9 @@ import octobot.constants as constants
 
 async def enforce_total_databases_max_size():
     run_databases_identifier = databases.RunDatabasesProvider.instance().get_any_run_databases_identifier()
-    pruner = databases.RunDatabasesPruner(
-        run_databases_identifier.data_path,
+    pruner = databases.run_databases_pruner_factory(
+        run_databases_identifier,
         constants.MAX_TOTAL_RUN_DATABASES_SIZE,
-        run_databases_identifier.database_adaptor
     )
     await pruner.explore()
     await pruner.prune_oldest_run_databases()

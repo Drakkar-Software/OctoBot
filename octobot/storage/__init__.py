@@ -14,14 +14,14 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 from octobot.storage import trading_metadata
-from octobot.storage import db_databases_prunning
+from octobot.storage import db_databases_pruning
 
 from octobot.storage.trading_metadata import (
     clear_run_metadata,
     store_run_metadata,
     store_backtesting_run_metadata,
 )
-from octobot.storage.db_databases_prunning import (
+from octobot.storage.db_databases_pruning import (
     enforce_total_databases_max_size
 )
 
