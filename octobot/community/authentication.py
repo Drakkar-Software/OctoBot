@@ -39,7 +39,7 @@ class CommunityAuthentication(authentication.Authenticator):
     """
     ALLOWED_TIME_DELAY = 1 * commons_constants.MINUTE_TO_SECONDS
     LOGIN_TIMEOUT = 20
-    DEVICE_NOT_FOUND_RETRY_DELAY = 1
+    BOT_NOT_FOUND_RETRY_DELAY = 1
     AUTHORIZATION_HEADER = "authorization"
     SESSION_HEADER = "X-Session"
     GQL_AUTHORIZATION_HEADER = "Authorization"
@@ -90,32 +90,41 @@ class CommunityAuthentication(authentication.Authenticator):
         self.initialized_event = asyncio.Event()
         self._fetch_account_task = asyncio.create_task(self._auth_and_fetch_account())
 
-    def _create_community_feed_if_necessary(self) -> bool:
+    async def _ensure_bot_device(self):
+        try:
+            self.user_account.get_selected_bot_device_uuid()
+        except errors.NoBotDeviceError:
+            bot_id = self.user_account.get_bot_id(self.user_account.get_selected_bot_raw_data())
+            self.logger.info(f"Creating a bot device for current bot with id: {bot_id} (no associated bot device)")
+            self.user_account.set_selected_bot_device_raw_data(await self._create_new_bot_device(bot_id))
+
+    async def _create_community_feed_if_necessary(self) -> bool:
         if self._community_feed is None:
             self._community_feed = community_feeds.community_feed_factory(
                 self.feed_url,
                 self,
                 constants.COMMUNITY_FEED_DEFAULT_TYPE
             )
-            self._community_feed.associated_gql_device_id = self.user_account.gql_device_id
+            self._community_feed.associated_gql_bot_id = self.user_account.gql_bot_id
             return True
         return False
 
     async def _ensure_init_community_feed(self):
-        self._create_community_feed_if_necessary()
+        await self._create_community_feed_if_necessary()
         if not self._community_feed.is_connected() and self._community_feed.can_connect():
             if self.initialized_event is not None and not self.initialized_event.is_set():
                 await asyncio.wait_for(self.initialized_event.wait(), self.LOGIN_TIMEOUT)
             if not self.is_logged_in():
                 raise authentication.AuthenticationRequired("You need to be authenticated to be able to "
                                                             "connect to signals")
+            await self._ensure_bot_device()
             await self._community_feed.start()
 
     async def register_feed_callback(self, channel_type, callback, identifier=None):
         try:
             await self._ensure_init_community_feed()
             await self._community_feed.register_feed_callback(channel_type, callback, identifier=identifier)
-        except errors.DeviceError as e:
+        except errors.BotError as e:
             self.logger.error(f"Impossible to connect to community signals: {e}")
 
     async def send(self, message, channel_type, identifier=None):
@@ -227,68 +236,74 @@ class CommunityAuthentication(authentication.Authenticator):
             raise authentication.FailedAuthentication(e)
         if self.is_logged_in():
             await self.update_supports()
-            await self.update_selected_device()
+            await self.update_selected_bot()
 
-    async def update_selected_device(self):
-        self.user_account.flush_device_details()
-        await self._load_device_if_selected()
-        if not self.user_account.has_selected_device_data():
-            self.logger.info(self.user_account.NO_SELECTED_DEVICE_DESC)
+    async def update_selected_bot(self):
+        self.user_account.flush_bot_details()
+        await self._load_bot_if_selected()
+        if not self.user_account.has_selected_bot_data():
+            self.logger.info(self.user_account.NO_SELECTED_BOT_DESC)
 
-    async def _load_device_if_selected(self):
-        # 1. use user selected device id if any
-        if saved_uuid := self._get_saved_gql_device_id():
+    async def _load_bot_if_selected(self):
+        # 1. use user selected bot id if any
+        if saved_uuid := self._get_saved_gql_bot_id():
             try:
-                await self.select_device(saved_uuid)
+                await self.select_bot(saved_uuid)
                 return
-            except errors.DeviceNotFoundError:
+            except errors.BotNotFoundError:
                 # proceed to 2.
                 pass
-        # 2. fetch all user devices and create one if none, otherwise ask use for which one to use
-        await self.load_user_devices()
-        if len(self.user_account.get_all_user_devices_raw_data()) == 0:
-            await self.select_device(
-                self.user_account.get_device_id(
-                    await self.create_new_device()
+        # 2. fetch all user bots and create one if none, otherwise ask use for which one to use
+        await self.load_user_bots()
+        if len(self.user_account.get_all_user_bots_raw_data()) == 0:
+            await self.select_bot(
+                self.user_account.get_bot_id(
+                    await self.create_new_bot()
                 )
             )
-        # more than one possible device, can't auto-select one
+        # more than one possible bot, can't auto-select one
 
-    async def select_device(self, device_id):
-        fetched_device = await self.fetch_device(device_id)
-        if fetched_device is None:
+    async def select_bot(self, bot_id):
+        fetched_bot = await self._fetch_bot(bot_id)
+        if fetched_bot is None:
             # retry after some time, if still None, there is an issue
-            await asyncio.sleep(self.DEVICE_NOT_FOUND_RETRY_DELAY)
-            fetched_device = await self.fetch_device(device_id)
-        if fetched_device is None:
-            raise errors.DeviceNotFoundError(f"Can't find device with id: {device_id}")
-        self.user_account.set_selected_device_raw_data(fetched_device)
-        self.user_account.gql_device_id = device_id
-        self._save_gql_device_id(self.user_account.gql_device_id)
-        await self.on_new_device_select()
+            await asyncio.sleep(self.BOT_NOT_FOUND_RETRY_DELAY)
+            fetched_bot = await self._fetch_bot(bot_id)
+        if fetched_bot is None:
+            raise errors.BotNotFoundError(f"Can't find bot with id: {bot_id}")
+        self.user_account.set_selected_bot_raw_data(fetched_bot)
+        self.user_account.gql_bot_id = bot_id
+        self._save_gql_bot_id(self.user_account.gql_bot_id)
+        await self.on_new_bot_select()
 
-    async def load_user_devices(self):
-        self.user_account.set_all_user_devices_raw_data(await self._fetch_devices())
+    async def load_user_bots(self):
+        self.user_account.set_all_user_bots_raw_data(await self._fetch_bots())
 
-    async def on_new_device_select(self):
-        await self._update_feed_device_uuid()
+    async def on_new_bot_select(self):
+        await self._update_feed_device_uuid_if_necessary()
 
-    async def _fetch_devices(self):
-        query, variables = graphql_requests.select_devices()
-        return await self.async_graphql_query(query, "devices", variables=variables, expected_code=200)
+    async def _fetch_bots(self):
+        query, variables = graphql_requests.select_bots_query()
+        return await self.async_graphql_query(query, "bots", variables=variables, expected_code=200)
 
-    async def fetch_device(self, device_id):
-        query, variables = graphql_requests.select_device(device_id)
-        return await self.async_graphql_query(query, "device", variables=variables, expected_code=200)
+    async def _fetch_bot(self, bot_id):
+        query, variables = graphql_requests.select_bot_query(bot_id)
+        return await self.async_graphql_query(query, "bot", variables=variables, expected_code=200)
 
-    async def create_new_device(self):
+    async def create_new_bot(self):
         await self.gql_login_if_required()
-        query, variables = graphql_requests.create_new_device_query()
-        return await self.async_graphql_query(query, "createDevice", variables=variables, expected_code=200)
+        query, variables = graphql_requests.create_bot_query(not constants.IS_CLOUD_ENV)
+        return await self.async_graphql_query(query, "createBot", variables=variables, expected_code=200)
 
-    async def _update_feed_device_uuid(self):
-        self._create_community_feed_if_necessary()
-        if self._community_feed.associated_gql_device_id != self.user_account.gql_device_id:
+    async def _create_new_bot_device(self, bot_id):
+        query, variables = graphql_requests.create_bot_device_query(bot_id)
+        return await self.async_graphql_query(query, "createBotDevice", variables=variables, expected_code=200)
+
+    async def _update_feed_device_uuid_if_necessary(self):
+        if self._community_feed is None:
+            # only create a new community feed if necessary
+            return
+        if self._community_feed.associated_gql_bot_id != self.user_account.gql_bot_id:
             # only device id changed, need to refresh uuid. Otherwise, it means that no feed was started with a
             # different uuid, no need to update
             # reset restart task if running
@@ -296,6 +311,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 self._restart_task.cancel()
                 self._community_feed.remove_device_details()
             if self._community_feed.is_connected() or not self._community_feed.can_connect():
+                await self._ensure_bot_device()
                 self._restart_task = asyncio.create_task(self._community_feed.restart())
 
     def logout(self):
@@ -310,8 +326,8 @@ class CommunityAuthentication(authentication.Authenticator):
             if task is not None and not task.done():
                 task.cancel()
         self._restart_task = self._fetch_account_task = None
-        self._create_community_feed_if_necessary()
-        self._community_feed.remove_device_details()
+        if self._community_feed is not None:
+            self._community_feed.remove_device_details()
 
     async def stop_feeds(self):
         if self._community_feed is not None and self._community_feed.is_connected():
@@ -356,7 +372,7 @@ class CommunityAuthentication(authentication.Authenticator):
     def remove_login_detail(self):
         self.user_account.flush()
         self._save_login_token("")
-        self._save_gql_device_id("")
+        self._save_gql_bot_id("")
         self.logger.debug("Removed community login data")
 
     def get_aiohttp_session(self):
@@ -407,7 +423,7 @@ class CommunityAuthentication(authentication.Authenticator):
             if not self.is_logged_in():
                 return
             await self.update_supports()
-            await self.update_selected_device()
+            await self.update_selected_bot()
         except authentication.UnavailableError as e:
             self.logger.exception(e, True, f"Error when fetching community supports, "
                                            f"please check your internet connection.")
@@ -419,14 +435,14 @@ class CommunityAuthentication(authentication.Authenticator):
     def _save_login_token(self, value):
         self._save_value_in_config(constants.CONFIG_COMMUNITY_TOKEN, value)
 
-    def _save_gql_device_id(self, gql_device_id):
-        self._save_value_in_config(constants.CONFIG_COMMUNITY_DEVICE_ID, gql_device_id)
+    def _save_gql_bot_id(self, gql_bot_id):
+        self._save_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID, gql_bot_id)
 
     def _get_saved_token(self):
         return self._get_value_in_config(constants.CONFIG_COMMUNITY_TOKEN)
 
-    def _get_saved_gql_device_id(self):
-        return self._get_value_in_config(constants.CONFIG_COMMUNITY_DEVICE_ID)
+    def _get_saved_gql_bot_id(self):
+        return self._get_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID)
 
     def _save_value_in_config(self, key, value):
         if self.edited_config is not None:

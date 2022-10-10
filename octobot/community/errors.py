@@ -24,9 +24,13 @@ class StatusCodeRequestError(RequestError):
     pass
 
 
-class DeviceError(commons_authentication.UnavailableError):
+class BotError(commons_authentication.UnavailableError):
     pass
 
 
-class DeviceNotFoundError(DeviceError):
+class BotNotFoundError(BotError):
+    pass
+
+
+class NoBotDeviceError(BotError):
     pass
