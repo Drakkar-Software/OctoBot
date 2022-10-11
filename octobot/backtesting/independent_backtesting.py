@@ -177,7 +177,7 @@ class IndependentBacktesting:
     @staticmethod
     def _get_market_delta(symbol, exchange_manager, min_timeframe):
         market_data = trading_api.get_symbol_historical_candles(
-            trading_api.get_symbol_data(exchange_manager, symbol.legacy_symbol()), min_timeframe)
+            trading_api.get_symbol_data(exchange_manager, str(symbol)), min_timeframe)
         market_begin = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][0]
         market_end = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][-1]
 
@@ -424,7 +424,7 @@ class IndependentBacktesting:
     def _add_crypto_currencies_config(self):
         for symbols in self.symbols_to_create_exchange_classes.values():
             for symbol in symbols:
-                symbol_id = symbol.legacy_symbol()
+                symbol_id = str(symbol)
                 if symbol_id not in self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES]:
                     self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES][symbol_id] = {
                         common_constants.CONFIG_CRYPTO_PAIRS: []
