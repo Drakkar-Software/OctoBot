@@ -297,7 +297,9 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _create_new_bot_device(self, bot_id):
         query, variables = graphql_requests.create_bot_device_query(bot_id)
-        return await self.async_graphql_query(query, "createBotDevice", variables=variables, expected_code=200)
+        await self.async_graphql_query(query, "createBotDevice", variables=variables, expected_code=200)
+        # issue with createBotDevice not always returning the created device, fetch bot again to fetch device with it
+        return await self._fetch_bot(bot_id)
 
     async def _update_feed_device_uuid_if_necessary(self):
         if self._community_feed is None:
