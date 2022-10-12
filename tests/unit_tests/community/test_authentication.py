@@ -58,7 +58,7 @@ async def logged_in_auth():
     with mock.patch.object(auth._session, "post", mock.Mock(return_value=MockedResponse(
             json=EMAIL_RETURN, headers={auth.SESSION_HEADER: "hi"}))), \
             mock.patch.object(community.CommunityAuthentication, "update_supports", mock.AsyncMock()), \
-            mock.patch.object(community.CommunityAuthentication, "update_selected_device", mock.AsyncMock()):
+            mock.patch.object(community.CommunityAuthentication, "update_selected_bot", mock.AsyncMock()):
         await auth.login("username", "login")
         return auth
 
@@ -88,20 +88,20 @@ async def test_login(auth):
             mock.patch.object(auth._session, "post", mock.Mock(return_value=resp_mock)) as post_mock, \
             mock.patch.object(community.CommunityAuthentication, "update_supports", mock.AsyncMock()) \
             as update_supports_mock, \
-            mock.patch.object(community.CommunityAuthentication, "update_selected_device", mock.AsyncMock()) \
-            as update_selected_device_mock:
+            mock.patch.object(community.CommunityAuthentication, "update_selected_bot", mock.AsyncMock()) \
+            as update_selected_bot_mock:
         await auth.login("username", "password")
         reset_mock.assert_called_once()
         post_mock.assert_called_once()
         update_supports_mock.assert_not_called()
-        update_selected_device_mock.assert_not_called()
+        update_selected_bot_mock.assert_not_called()
         auth_res_mock.assert_called_once_with(resp_mock.status_code, resp_mock.json(), resp_mock.headers)
         with mock.patch.object(community.CommunityAuthentication, "is_logged_in", mock.Mock(return_value=True)) \
                 as is_logged_in_mock:
             await auth.login("username", "password")
             is_logged_in_mock.assert_called_once()
             update_supports_mock.assert_called_once()
-            update_selected_device_mock.assert_called_once()
+            update_selected_bot_mock.assert_called_once()
 
 
 def test_logout(auth):
