@@ -52,7 +52,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self.mqtt_version = self.MQTT_VERSION
         self.mqtt_broker_port = self.MQTT_BROKER_PORT
         self.default_QOS = self.default_QOS
-        self.associated_gql_device_id = None
+        self.associated_gql_bot_id = None
 
         self._mqtt_client: gmqtt.Client = None
         self._valid_auth = True
@@ -66,7 +66,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     async def start(self):
         self.should_stop = False
-        self._device_uuid = self.authenticator.user_account.get_selected_device_uuid()
+        self._device_uuid = self.authenticator.user_account.get_selected_bot_device_uuid()
         await self._connect()
 
     async def stop(self):
@@ -263,7 +263,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     async def _connect(self):
         if self._device_uuid is None:
             self._valid_auth = False
-            raise errors.DeviceError("mqtt device uuid is None, impossible to connect client")
+            raise errors.BotError("mqtt device uuid is None, impossible to connect client")
         self._mqtt_client = gmqtt.Client(self.__class__.__name__)
         self._update_client_config(self._mqtt_client)
         self._register_callbacks(self._mqtt_client)
