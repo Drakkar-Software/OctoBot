@@ -29,4 +29,3 @@ cdef class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
     cdef public object created_all_exchanges
 
     cpdef void register_created_exchange_id(self, str exchange_id)
-    cdef object _init_bot_storage(self) # return object to propagate exceptions
