@@ -198,6 +198,10 @@ class OctoBotBacktesting:
         }
         for obj in gc.get_objects():
             if isinstance(obj, to_watch_objects):
+                if isinstance(obj, exchanges.ExchangeManager) and not obj.is_initialized:
+                    # Ignore exchange managers that have not been initialized
+                    # and are irrelevant. Pytest fixtures can also retain references failing tests
+                    continue
                 objects_references[type(obj)][1].append(obj)
                 objects_references[type(obj)] = (objects_references[type(obj)][0] + 1,
                                                  objects_references[type(obj)][1])
