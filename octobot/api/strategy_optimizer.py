@@ -44,7 +44,9 @@ async def generate_and_save_strategy_optimizer_runs(trading_mode, tentacles_setu
 
 
 async def resume_design_strategy_optimizer(optimizer, data_files, randomly_chose_runs, start_timestamp, end_timestamp,
-                                           required_idle_cores, notify_when_complete=False, optimizer_ids=None):
+                                           required_idle_cores, notify_when_complete=False, optimizer_ids=None,
+                                           enable_automated_optimization=False,
+                                           automated_optimization_iterations_count=None):
     empty_the_queue = optimizer_ids is None  # continue till the queue is empty if no optimizer id is specified
     optimizer_ids = optimizer_ids or await optimizer.get_queued_optimizer_ids()
     return await optimizer.resume(data_files, optimizer_ids, randomly_chose_runs,
@@ -52,7 +54,9 @@ async def resume_design_strategy_optimizer(optimizer, data_files, randomly_chose
                                   end_timestamp=end_timestamp,
                                   empty_the_queue=empty_the_queue,
                                   required_idle_cores=required_idle_cores,
-                                  notify_when_complete=notify_when_complete)
+                                  notify_when_complete=notify_when_complete,
+                                  enable_automated_optimization=enable_automated_optimization,
+                                  automated_optimization_iterations_count=automated_optimization_iterations_count)
 
 
 def find_optimal_configuration(strategy_optimizer, TAs=None, time_frames=None, risks=None) -> None:
