@@ -16,11 +16,12 @@
 import os
 import pathlib
 import octobot_commons.os_util as os_util
+import octobot_commons.enums
 import octobot.enums
 
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
-SHORT_VERSION = "0.4.10"  # major.minor.revision
+SHORT_VERSION = "0.4.11"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
 VERSION_DEV_PHASE = ""  # alpha : a / beta : b / release candidate : rc
 VERSION_PHASE = ""  # XX
@@ -45,7 +46,7 @@ COMPILED_TENTACLE_CATEGORY = "extra"
 
 OCTOBOT_DONATION_URL = "https://forms.gle/Bagagc7dyjJGDT1t9"
 OCTOBOT_FEEDBACK_FORM_URL = "https://goo.gl/forms/vspraniXPY7rvtKN2"
-OCTOBOT_BETA_PROGRAM_FORM_URL = "https://forms.gle/igqn1TjQ8XVA1dXBA"
+OCTOBOT_BETA_PROGRAM_FORM_URL = "https://octobot.click/docs-join-beta"
 
 COMMUNITY_FEED_CURRENT_MINIMUM_VERSION = "1.0.0"
 COMMUNITY_FEED_DEFAULT_TYPE = octobot.enums.CommunityFeedType.MQTTFeed
@@ -82,7 +83,7 @@ STAGING_COMMUNITY_GQL_BACKEND_API_URL = os.getenv(
 
 CONFIG_COMMUNITY = "community"
 CONFIG_COMMUNITY_TOKEN = "token"
-CONFIG_COMMUNITY_DEVICE_ID = "device_id"
+CONFIG_COMMUNITY_BOT_ID = "bot_id"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "False")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", None)
@@ -154,7 +155,18 @@ OPTIMIZER_FORCE_ASYNCIO_DEBUG_OPTION = False
 OPTIMIZER_DATA_FILES_FOLDER = f"{OCTOBOT_FOLDER}/strategy_optimizer/optimizer_data_files"
 OPTIMIZATION_CAMPAIGN_KEY = "optimization_campaign"
 
+# Databases
+DEFAULT_MAX_TOTAL_RUN_DATABASES_SIZE = 1000000000   # 1GB
+MAX_TOTAL_RUN_DATABASES_SIZE = os.getenv("MAX_TOTAL_RUN_DATABASES_SIZE", DEFAULT_MAX_TOTAL_RUN_DATABASES_SIZE)
+
 # Channel
 OCTOBOT_CHANNEL = "OctoBot"
+
+# Initialization
+REQUIRED_TOPIC_FOR_DATA_INIT = [
+    octobot_commons.enums.InitializationEventExchangeTopics.CANDLES,
+    octobot_commons.enums.InitializationEventExchangeTopics.CONTRACTS,
+    octobot_commons.enums.InitializationEventExchangeTopics.PRICE,
+]
 
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='

@@ -36,7 +36,7 @@ class OctoBotBacktestingFactory(octobot_class.OctoBot):
 
     async def initialize(self):
         try:
-            await self.initializer.create()
+            await self.initializer.create(False)
             join_backtesting_timeout = constants.BACKTESTING_DEFAULT_JOIN_TIMEOUT if self.enable_join_timeout else None
             self.independent_backtesting = octobot_backtesting_api.create_independent_backtesting(
                 self.config,
@@ -44,7 +44,8 @@ class OctoBotBacktestingFactory(octobot_class.OctoBot):
                 backtesting_api.get_backtesting_data_files(self.config),
                 run_on_common_part_only=self.run_on_common_part_only,
                 join_backtesting_timeout=join_backtesting_timeout,
-                enable_logs=self.enable_logs)
+                enable_logs=self.enable_logs,
+                enforce_total_databases_max_size_after_run=True)
             await octobot_backtesting_api.initialize_and_run_independent_backtesting(self.independent_backtesting,
                                                                                      log_errors=False)
             await octobot_backtesting_api.join_independent_backtesting(self.independent_backtesting,

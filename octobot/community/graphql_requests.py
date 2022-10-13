@@ -15,38 +15,65 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 
-def create_new_device_query() -> (str, dict):
-    return """
-mutation CreateDevice {
-  createDevice {
+_INNER_BOT_QUERY = """
     _id
     name
+    device {
+      _id
+      host
+      name
+      region
+      uuid
+    }
+    deployment {
+      _id
+      host
+      region
+      status
+      subscription_id
+      type
+      url
+      uuid
+    }
     user_id
-    uuid
-  }
+"""
+
+
+def select_bots_query() -> (str, dict):
+    return """
+query SelectBots {  
+    bots {
+""" + _INNER_BOT_QUERY + """
+    }
 }
     """, {}
 
 
-def select_device(device_id) -> (str, dict):
+def select_bot_query(bot_id) -> (str, dict):
     return """
-query SelectDeviceUUID($_id: ObjectId) {
-  device(query: {_id: $_id}) {
-    _id
-    uuid
-    name
-  }
+query SelectBot($_id: ObjectId) {  
+    bot (query: {_id: $_id}) {
+""" + _INNER_BOT_QUERY + """
+    }
 }
-    """, {"_id": device_id}
+    """, {"_id": bot_id}
 
 
-def select_devices() -> (str, dict):
+def create_bot_query(is_self_hosted) -> (str, dict):
     return """
-query SelectDevices {
-  devices {
-    _id
-    uuid
-    name
+mutation CreateBot($isSelfHosted: Boolean) {  
+    createBot (input: {isSelfHosted: $isSelfHosted}) {
+""" + _INNER_BOT_QUERY + """
+    }
+}
+    """, {"_id": is_self_hosted}
+
+
+def create_bot_device_query(bot_id) -> (str, dict):
+    return """
+mutation CreateBotDevice($bot_id: ObjectId) {
+  createBotDevice(input: $bot_id) {
+    """ + _INNER_BOT_QUERY + """
   }
 }
-    """, {}
+    """, {"bot_id": bot_id}

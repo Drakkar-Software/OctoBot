@@ -53,8 +53,8 @@ def event_loop():
 
 async def test_single_data_file_backtesting():
     await _check_double_backtesting(
-        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]]),
-        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]])
+        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], enable_storage=True),
+        run_independent_backtesting([DATA_FILES[BACKTESTING_SYMBOLS[0]]], enable_storage=True)
     )
 
 

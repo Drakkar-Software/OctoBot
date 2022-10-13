@@ -13,10 +13,8 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-# prevents distutils_patch.py:26: UserWarning: Distutils was imported before Setuptools. This usage is discouraged
-# and may exhibit undesirable behaviors or errors. Please use Setuptools' objects directly or at least import Setuptools
-# first
-from distutils.version import LooseVersion
+
+import packaging.version as packaging_version
 
 import argparse
 import os
@@ -401,7 +399,7 @@ def main(args=None):
     try:
         from octobot_tentacles_manager import VERSION
 
-        if LooseVersion(VERSION) < MIN_TENTACLE_MANAGER_VERSION:
+        if packaging_version.Version(VERSION) < packaging_version.Version(MIN_TENTACLE_MANAGER_VERSION):
             print("OctoBot requires OctoBot-Tentacles-Manager in a minimum version of " + MIN_TENTACLE_MANAGER_VERSION +
                   " you can install and update OctoBot-Tentacles-Manager using the following command: "
                   "python3 -m pip install -U OctoBot-Tentacles-Manager", file=sys.stderr)

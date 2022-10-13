@@ -34,7 +34,8 @@ async def initialize_bot(bot):
     await bot.initialize()
 
 
-async def run_independent_backtesting(data_files, timeout=10, use_loggers=True, run_on_common_part_only=True):
+async def run_independent_backtesting(data_files, timeout=10, use_loggers=True, run_on_common_part_only=True,
+                                      enable_storage=False):
     independent_backtesting = None
     try:
         config_to_use = load_test_config()
@@ -44,7 +45,8 @@ async def run_independent_backtesting(data_files, timeout=10, use_loggers=True, 
                                                                  load_test_tentacles_config(),
                                                                  data_files,
                                                                  "",
-                                                                 run_on_common_part_only=run_on_common_part_only)
+                                                                 run_on_common_part_only=run_on_common_part_only,
+                                                                 enable_storage=enable_storage)
         await initialize_and_run_independent_backtesting(independent_backtesting, log_errors=False)
         await independent_backtesting.join_backtesting_updater(timeout)
         return independent_backtesting

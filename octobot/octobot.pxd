@@ -44,6 +44,7 @@ cdef class OctoBot:
 
     cdef public initializer.Initializer initializer
     cdef public task_manager.TaskManager task_manager
+    cdef object _init_metadata_run_task
     cdef public producers.ExchangeProducer exchange_producer
     cdef public producers.EvaluatorProducer evaluator_producer
     cdef public producers.InterfaceProducer interface_producer

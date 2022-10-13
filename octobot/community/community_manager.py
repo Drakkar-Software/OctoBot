@@ -86,8 +86,10 @@ class CommunityManager:
                 self.logger.debug(f"Exception when handling community registration: {e}")
 
     async def stop_task(self):
+        self.logger.debug("Stopping ...")
         self.keep_running = False
         await self.session.close()
+        self.logger.debug("Stopped ...")
 
     @staticmethod
     def should_register_bot(config: configuration.Configuration):
@@ -100,7 +102,7 @@ class CommunityManager:
     @staticmethod
     def background_get_id_and_register_bot(octobot_api):
         community_manager = CommunityManager(octobot_api)
-        threading.Thread(target=community_manager._blocking_get_id_and_register).start()
+        threading.Thread(target=community_manager._blocking_get_id_and_register, name="CommunityManagerGetId").start()
 
     def _blocking_get_id_and_register(self):
         try:

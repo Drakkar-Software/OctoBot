@@ -13,13 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import time
 import uuid
 import gmqtt
 import json
 import zlib
 import asyncio
-import distutils.version as loose_version
+import packaging.version as packaging_version
 
 import octobot_commons.enums as commons_enums
 import octobot_commons.errors as commons_errors
@@ -52,7 +51,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self.mqtt_version = self.MQTT_VERSION
         self.mqtt_broker_port = self.MQTT_BROKER_PORT
         self.default_QOS = self.default_QOS
-        self.associated_gql_device_id = None
+        self.associated_gql_bot_id = None
 
         self._mqtt_client: gmqtt.Client = None
         self._valid_auth = True
@@ -66,10 +65,11 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
 
     async def start(self):
         self.should_stop = False
-        self._device_uuid = self.authenticator.user_account.get_selected_device_uuid()
+        self._device_uuid = self.authenticator.user_account.get_selected_bot_device_uuid()
         await self._connect()
 
     async def stop(self):
+        self.logger.debug("Stopping ...")
         self.should_stop = True
         await self._stop_mqtt_client()
         if self._reconnect_task is not None and not self._reconnect_task.done():
@@ -77,6 +77,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         if self._connect_task is not None and not self._connect_task.done():
             self._connect_task.cancel()
         self._reset()
+        self.logger.debug("Stopped")
 
     async def restart(self):
         try:
@@ -180,8 +181,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return {}
 
     def _ensure_supported(self, parsed_message):
-        if loose_version.LooseVersion(parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value]) \
-                < loose_version.LooseVersion(constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION):
+        if packaging_version.Version(parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value]) \
+                < packaging_version.Version(constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION):
             raise commons_errors.UnsupportedError(
                 f"Minimum version: {constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION}"
             )
@@ -261,7 +262,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     async def _connect(self):
         if self._device_uuid is None:
             self._valid_auth = False
-            raise errors.DeviceError("mqtt device uuid is None, impossible to connect client")
+            raise errors.BotError("mqtt device uuid is None, impossible to connect client")
         self._mqtt_client = gmqtt.Client(self.__class__.__name__)
         self._update_client_config(self._mqtt_client)
         self._register_callbacks(self._mqtt_client)

@@ -63,9 +63,10 @@ from octobot.community.community_donation import (
     CommunityDonation
 )
 from octobot.community.graphql_requests import (
-    create_new_device_query,
-    select_device,
-    select_devices,
+    select_bot_query,
+    select_bots_query,
+    create_bot_query,
+    create_bot_device_query,
 )
 from octobot.community.feeds import (
     AbstractFeed,
@@ -96,9 +97,10 @@ __all__ = [
     "register_error_uploader",
     "Error",
     "ErrorsUploader",
-    "create_new_device_query",
-    "select_device",
-    "select_devices",
+    "select_bot_query",
+    "select_bots_query",
+    "create_bot_query",
+    "create_bot_device_query",
     "AbstractFeed",
     "CommunityWSFeed",
     "CommunityMQTTFeed",

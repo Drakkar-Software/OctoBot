@@ -19,24 +19,25 @@ import octobot.community.errors as errors
 
 class CommunityUserAccount:
     USER_DATA_CONTENT = "content"
-    NO_SELECTED_DEVICE_DESC = "No selected device. Please select a device to enable your community features."
+    BOT_DEVICE = "device"
+    NO_SELECTED_BOT_DESC = "No selected bot. Please select a bot to enable your community features."
 
 
     def __init__(self):
         self.gql_user_id = None
-        self.gql_device_id = None
+        self.gql_bot_id = None
         self.gql_access_token = None
         self.supports = community_supports.CommunitySupports()
 
         self._profile_raw_data = None
-        self._selected_device_raw_data = None
-        self._all_user_devices_raw_data = []
+        self._selected_bot_raw_data = None
+        self._all_user_bots_raw_data = []
 
     def has_user_data(self):
         return self._profile_raw_data is not None
 
-    def has_selected_device_data(self):
-        return self._selected_device_raw_data is not None
+    def has_selected_bot_data(self):
+        return self._selected_bot_raw_data is not None
 
     def get_email(self):
         return self._profile_raw_data["email"]
@@ -47,46 +48,51 @@ class CommunityUserAccount:
     def get_has_donated(self):
         return self._get_user_data_content()["has_donated"]
 
-    def get_all_user_devices_raw_data(self):
-        return self._all_user_devices_raw_data
+    def get_all_user_bots_raw_data(self):
+        return self._all_user_bots_raw_data
 
-    def get_selected_device_raw_data(self):
-        return self._selected_device_raw_data
+    def get_selected_bot_raw_data(self, raise_on_missing=False):
+        if raise_on_missing and self._selected_bot_raw_data is None:
+            raise errors.BotError(self.NO_SELECTED_BOT_DESC)
+        return self._selected_bot_raw_data
 
-    def get_selected_device_uuid(self):
+    def get_selected_bot_device_uuid(self):
         try:
-            return self.get_selected_device_raw_data().get("uuid", None)
+            return self.get_selected_bot_raw_data(raise_on_missing=True).get(self.BOT_DEVICE, {}).get("uuid", None)
         except AttributeError:
-            raise errors.DeviceError(self.NO_SELECTED_DEVICE_DESC)
+            raise errors.NoBotDeviceError("No device associated to the select bot")
 
     @staticmethod
-    def get_device_id(device):
-        return device["_id"]
+    def get_bot_id(bot):
+        return bot["_id"]
 
     @staticmethod
-    def get_device_name_or_id(device):
-        return device["name"] or CommunityUserAccount.get_device_id(device)
+    def get_bot_name_or_id(bot):
+        return bot["name"] or CommunityUserAccount.get_bot_id(bot)
 
     def set_profile_raw_data(self, profile_raw_data):
         self._profile_raw_data = profile_raw_data
 
-    def set_selected_device_raw_data(self, selected_device_raw_data):
-        self._selected_device_raw_data = selected_device_raw_data
+    def set_selected_bot_raw_data(self, selected_bot_raw_data):
+        self._selected_bot_raw_data = selected_bot_raw_data
 
-    def set_all_user_devices_raw_data(self, all_user_devices_raw_data):
-        self._all_user_devices_raw_data = all_user_devices_raw_data
+    def set_selected_bot_device_raw_data(self, bot_raw_data_with_device):
+        self._selected_bot_raw_data[self.BOT_DEVICE] = bot_raw_data_with_device[self.BOT_DEVICE]
+
+    def set_all_user_bots_raw_data(self, all_user_bots_raw_data):
+        self._all_user_bots_raw_data = all_user_bots_raw_data
 
     def _get_user_data_content(self):
         return self._profile_raw_data[self.USER_DATA_CONTENT]
 
-    def flush_device_details(self):
-        self.gql_device_id = None
-        self._selected_device_raw_data = None
-        self._all_user_devices_raw_data = []
+    def flush_bot_details(self):
+        self.gql_bot_id = None
+        self._selected_bot_raw_data = None
+        self._all_user_bots_raw_data = []
 
     def flush(self):
         self.gql_user_id = None
         self.gql_access_token = None
         self.supports = community_supports.CommunitySupports()
         self._profile_raw_data = None
-        self.flush_device_details()
+        self.flush_bot_details()
