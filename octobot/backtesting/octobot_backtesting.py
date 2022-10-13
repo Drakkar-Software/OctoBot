@@ -306,5 +306,8 @@ class OctoBotBacktesting:
 def _get_remaining_object_error(obj, expected, actual):
     error = f"too many remaining {obj.__name__} instances: expected: {expected} actual {actual[0]}"
     for i in range(len(actual[1])):
-        error += f"{sys.getrefcount(actual[1][i])} references on {actual[1][i]}"
+        debug_info = ""
+        if isinstance(actual[1][i], exchanges.ExchangeManager):
+            debug_info = f" ({actual[1][i].debug_info})"
+        error += f"{sys.getrefcount(actual[1][i])} references on {actual[1][i]} {debug_info}"
         return error
