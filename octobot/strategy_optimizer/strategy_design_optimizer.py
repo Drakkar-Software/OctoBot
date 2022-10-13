@@ -59,6 +59,14 @@ class NoMoreRunError(Exception):
 
 class StrategyDesignOptimizer:
     MAX_OPTIMIZER_RUNS = 100000
+    DEFAULT_GENERATIONS_COUNT = 10
+    DEFAULT_SCORING_PARAMETERS = [
+        commons_enums.BacktestingMetadata.PERCENT_GAINS.value,
+        commons_enums.BacktestingMetadata.PERCENT_GAINS.value,
+        commons_enums.BacktestingMetadata.COEFFICIENT_OF_DETERMINATION_MAX_BALANCE.value,
+    ]
+    DEFAULT_MUTATION_PERCENT = 65
+    DEFAULT_CROSSOVER_PERCENT = 15
     SHARED_KEEP_RUNNING_KEY = "keep_running"
     SHARED_RUN_TIMES_KEY = "run_times"
     SHARED_RUNS_QUEUES_KEY = "runs_queues"
@@ -111,6 +119,7 @@ class StrategyDesignOptimizer:
         self.process_pool_handle = None
         self.average_run_time = 0
         self.first_iteration_time = 0
+        self.enable_automated_optimization = False
 
     async def initialize(self, is_resuming):
         if not is_resuming:
@@ -119,8 +128,9 @@ class StrategyDesignOptimizer:
     def get_name(self):
         return f"{self.trading_mode.get_name()}_{self.__class__.__name__}"
 
-    async def _create_run_queues(self, optimizer_id):
-        run_data, run_data_by_hash = await self._get_optimizer_runs_details_and_hashes(optimizer_id)
+    async def _create_run_queues(self, optimizer_id, run_data):
+        run_data_by_hash = self._get_optimizer_runs_details_and_hashes(run_data) if run_data \
+            else await self._read_optimizer_runs_details_and_hashes(optimizer_id)
         start_queue = multiprocessing.Queue(len(run_data_by_hash))
         done_queue = multiprocessing.Queue(len(run_data_by_hash))
         for run_hash in run_data_by_hash:
@@ -138,8 +148,10 @@ class StrategyDesignOptimizer:
                                        end_timestamp=None,
                                        empty_the_queue=False,
                                        required_idle_cores=0,
-                                       notify_when_complete=False):
+                                       notify_when_complete=False,
+                                       run_data_by_optimizer_id=None, ):
         optimizer_ids = optimizer_ids or [self.optimizer_id]
+        run_data_by_optimizer_id = run_data_by_optimizer_id or {}
         self.is_computing = True
         self.is_finished = False
         self.average_run_time = 0
@@ -152,7 +164,8 @@ class StrategyDesignOptimizer:
         try:
             async for selected_optimizer_ids in self._all_optimizer_ids(optimizer_ids, empty_the_queue):
                 run_queues_by_optimizer_id = {
-                    optimizer_id: await self._create_run_queues(optimizer_id)
+                    optimizer_id: await self._create_run_queues(optimizer_id,
+                                                                run_data_by_optimizer_id.get(optimizer_id))
                     for optimizer_id in selected_optimizer_ids
                 }
                 try:
@@ -177,11 +190,7 @@ class StrategyDesignOptimizer:
             self.logger.exception(e, True, f"Error when running optimizer processes: {e}")
         finally:
             if notify_when_complete:
-                await services_api.send_notification(
-                    services_api.create_notification(f"Your strategy optimizer just finished.",
-                                                     sound=services_enums.NotificationSound.FINISHED_PROCESSING,
-                                                     category=services_enums.NotificationCategory.OTHER)
-                )
+                await self._send_optimizer_finished_notification()
             self.process_pool_handle = None
             self.is_computing = False
             self.is_finished = True
@@ -281,17 +290,21 @@ class StrategyDesignOptimizer:
                 # stopped run: update queue
                 await self._update_runs_from_done_queue(run_queues, optimizer_id)
             raise
-        # let done queue push thread finish
-        # time.sleep(0.1)
 
-    async def _get_optimizer_runs_details_and_hashes(self, optimizer_id):
+    async def _read_optimizer_runs_details_and_hashes(self, optimizer_id):
         async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
                 as reader:
             run_data = await self._get_run_data_from_db(optimizer_id, reader)
+        try:
+            return self._get_optimizer_runs_details_and_hashes(run_data[0][self.CONFIG_RUNS])
+        except IndexError:
+            raise NoMoreRunError
+
+    def _get_optimizer_runs_details_and_hashes(self, run_data):
         if run_data:
-            return run_data, {
+            return {
                 self.get_run_hash(run_details): run_details
-                for run_details in run_data[0][self.CONFIG_RUNS].values()
+                for run_details in run_data.values()
             }
         raise NoMoreRunError
 
@@ -302,14 +315,13 @@ class StrategyDesignOptimizer:
             await self.drop_optimizer_run_from_queue(optimizer_id)
             return
         try:
-            run_data, run_data_by_hash = await self._get_optimizer_runs_details_and_hashes(optimizer_id)
+            run_data_by_hash = await self._read_optimizer_runs_details_and_hashes(optimizer_id)
             t_start = time.time()
             last_db_update_time = t_start
             while self._should_keep_running():
                 await self.run_single_iteration(optimizer_id,
                                                 run_queues,
                                                 run_data_by_hash,
-                                                run_data,
                                                 data_files,
                                                 start_timestamp=start_timestamp,
                                                 end_timestamp=end_timestamp)
@@ -451,18 +463,168 @@ class StrategyDesignOptimizer:
                      end_timestamp=None,
                      empty_the_queue=False,
                      required_idle_cores=0,
-                     notify_when_complete=False):
+                     notify_when_complete=False,
+                     enable_automated_optimization=False,
+                     automated_optimization_iterations_count=None,
+                     relevant_scoring_parameters=None):
         self.empty_the_queue = empty_the_queue
         self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
         self.prioritized_optimizer_ids = optimizer_ids
-        await self.multi_processed_optimize(data_files,
-                                            optimizer_ids=optimizer_ids,
-                                            randomly_chose_runs=randomly_chose_runs,
-                                            start_timestamp=start_timestamp,
-                                            end_timestamp=end_timestamp,
-                                            empty_the_queue=empty_the_queue,
-                                            required_idle_cores=required_idle_cores,
-                                            notify_when_complete=notify_when_complete)
+        self.enable_automated_optimization = enable_automated_optimization
+        automated_optimization_iterations_count = automated_optimization_iterations_count \
+            or self.DEFAULT_GENERATIONS_COUNT
+        if self.enable_automated_optimization:
+            await self._launch_automated_optimization(
+                data_files,
+                optimizer_ids=optimizer_ids,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                required_idle_cores=required_idle_cores,
+                notify_when_complete=notify_when_complete,
+                automated_optimization_iterations_count=automated_optimization_iterations_count,
+                relevant_scoring_parameters=relevant_scoring_parameters,
+            )
+        else:
+            await self.multi_processed_optimize(
+                data_files,
+                optimizer_ids=optimizer_ids,
+                randomly_chose_runs=randomly_chose_runs,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                empty_the_queue=empty_the_queue,
+                required_idle_cores=required_idle_cores,
+                notify_when_complete=notify_when_complete
+            )
+
+    async def _launch_automated_optimization(
+        self,
+        data_files,
+        optimizer_ids=None,
+        start_timestamp=None,
+        end_timestamp=None,
+        required_idle_cores=0,
+        notify_when_complete=False,
+        automated_optimization_iterations_count=DEFAULT_GENERATIONS_COUNT,
+        relevant_scoring_parameters=None,
+    ):
+        optimizer_id = optimizer_ids[0]
+        relevant_scoring_parameters = relevant_scoring_parameters or self.DEFAULT_SCORING_PARAMETERS
+        generation_run_data = await self._generate_first_generation_run_data(optimizer_id,
+                                                                             automated_optimization_iterations_count)
+        for generation_id in range(automated_optimization_iterations_count):
+            # 1. run current generation
+            await self.multi_processed_optimize(
+                data_files,
+                optimizer_ids=[optimizer_id],
+                randomly_chose_runs=False,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                empty_the_queue=False,
+                required_idle_cores=required_idle_cores,
+                notify_when_complete=False,
+                run_data_by_optimizer_id={
+                    optimizer_id: generation_run_data
+                },
+            )
+            # 2. score results (fitness function)
+            current_generation_results = await self._score_current_generation(generation_run_data,
+                                                                              optimizer_id,
+                                                                              relevant_scoring_parameters)
+            # 3. create next generation (crossover and mutation)
+            generation_run_data = self._create_next_generation(
+                current_generation_results,
+                automated_optimization_iterations_count
+            )
+        if notify_when_complete:
+            await self._send_optimizer_finished_notification()
+
+    async def _score_current_generation(self, generation_run_data, optimizer_id, relevant_scoring_parameters):
+        # 1. get current generation results from metadata
+        db_identifier = databases.RunDatabasesIdentifier(
+            self.trading_mode, self.optimization_campaign_name,
+            optimizer_id=optimizer_id
+        )
+        async with databases.DBReader.database(db_identifier.get_backtesting_metadata_identifier()) as reader:
+            full_run_data = await reader.read()
+        run_results = []
+        # 2. find results of generation_run_data
+        if full_run_data:
+            for run_data_from_runs in full_run_data.reverse():
+                for to_find_run_data in generation_run_data:
+                    if self._is_using_these_user_inputs(
+                        run_data_from_runs[commons_enums.BacktestingMetadata.USER_INPUTS.value],
+                        to_find_run_data
+                    ):
+                        run_results.append(
+                            RunResult(
+                                run_data_from_runs[commons_enums.BacktestingMetadata.USER_INPUTS.value],
+                                to_find_run_data
+                            )
+                        )
+        if len(run_results) != generation_run_data:
+            self.logger.warning(f"Different run results than expected: expected {len(generation_run_data)}, "
+                                f"found: {len(run_results)}")
+        # 3 compute score
+        for run_result in run_results:
+            run_result.compute_score(relevant_scoring_parameters)
+        return sorted(run_results, key=lambda r: r.score)
+
+    def _is_using_these_user_inputs(self, full_run_data, to_find_run_data):
+        full_run_data_user_inputs = full_run_data[commons_enums.BacktestingMetadata.USER_INPUTS.value]
+        for user_input_data in to_find_run_data:
+            try:
+                # todo handle user input with object config
+                if full_run_data_user_inputs[user_input_data[self.CONFIG_TENTACLE]] \
+                   [user_input_data[self.CONFIG_USER_INPUT]] != user_input_data[self.CONFIG_VALUE]:
+                    return False
+            except KeyError:
+                return False
+        return False
+
+    async def _create_next_generation(self, current_generation_results, automated_optimization_iterations_count):
+        crossovers_count = int(automated_optimization_iterations_count * self.DEFAULT_CROSSOVER_PERCENT / 100)
+        mutuations_count = int(automated_optimization_iterations_count * self.DEFAULT_MUTATION_PERCENT / 100)
+        parents_count = automated_optimization_iterations_count - crossovers_count - mutuations_count
+        new_generation = current_generation_results[:parents_count]
+        current_gen_len = len(current_generation_results)
+        # 1. crossover
+        i = 0
+        while i < crossovers_count + mutuations_count and i < len(current_generation_results) - 1:
+            parent_1 = current_generation_results[i % current_gen_len]
+            parent_2 = current_generation_results[(i + 1 + i // current_gen_len) % current_gen_len]
+            new_generation.append(self._crossover(parent_1, parent_2))
+            i += 1
+        # 2. mutations
+        start_mutations_index = crossovers_count + parents_count
+        for run_data in new_generation[start_mutations_index:]:
+            self._mutate(run_data)
+        # 3. return new generation
+        return {
+            i: run
+            for i, run in enumerate(self.shuffle_and_select_runs(new_generation))
+        }
+
+    def _crossover(self, parent_1, parent_2):
+        # TODO average parents taking filters into account
+        pass
+
+    def _mutate(self, run_data):
+        # TODO mutate run_data taking filters into account
+        pass
+
+    async def _generate_first_generation_run_data(self, optimizer_id, automated_optimization_iterations_count):
+        async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
+                as reader:
+            run_data = await self._get_run_data_from_db(optimizer_id, reader)
+        return self.shuffle_and_select_runs(run_data[0][self.CONFIG_RUNS],
+                                            select_size=automated_optimization_iterations_count)
+
+    async def _send_optimizer_finished_notification(self):
+        await services_api.send_notification(
+            services_api.create_notification(f"Your strategy optimizer just finished.",
+                                             sound=services_enums.NotificationSound.FINISHED_PROCESSING,
+                                             category=services_enums.NotificationCategory.OTHER)
+        )
 
     async def _get_total_nb_runs(self, optimizer_ids):
         full_queue = await self.get_run_queue(self.trading_mode)
@@ -574,15 +736,12 @@ class StrategyDesignOptimizer:
                                    optimizer_id,
                                    run_queues,
                                    run_data_by_hash,
-                                   run_data,
                                    data_files,
                                    start_timestamp=None,
                                    end_timestamp=None):
-        run_details = selected_run_hash = None
         start_run = False
-        if run_data and run_data[0][self.CONFIG_RUNS]:
-            selected_run_hash, run_details = await self._synchronized_pick_run(run_queues[self.START_QUEUE_KEY],
-                                                                               run_data_by_hash)
+        selected_run_hash, run_details = await self._synchronized_pick_run(run_queues[self.START_QUEUE_KEY],
+                                                                           run_data_by_hash)
         if run_details:
             # start backtesting run ids at 1
             backtesting_run_id = 1
@@ -698,7 +857,8 @@ class StrategyDesignOptimizer:
         await self._save_run_schedule(runs)
         return runs
 
-    def _shuffle_and_select_runs(self, runs, select_size=None) -> dict:
+    @staticmethod
+    def shuffle_and_select_runs(runs, select_size=None) -> dict:
         shuffled_runs = list(runs.values())
         random.shuffle(shuffled_runs)
         selected_runs = shuffled_runs if select_size is None else shuffled_runs[:select_size]
@@ -712,7 +872,7 @@ class StrategyDesignOptimizer:
             if self._is_run_allowed(run)
         }
         if runs:
-            shuffled_runs = self._shuffle_and_select_runs(runs, select_size=self.queue_size)
+            shuffled_runs = self.shuffle_and_select_runs(runs, select_size=self.queue_size)
             for run in shuffled_runs.values():
                 for run_input in run:
                     # do not store self.CONFIG_KEY
@@ -852,3 +1012,26 @@ class StrategyDesignOptimizer:
                 # error in database, reset it
                 await writer_reader.hard_reset()
                 await writer_reader.log(self.RUN_SCHEDULE_TABLE, self.runs_schedule)
+
+
+class RunResult:
+    def __init__(self, full_result, optimizer_run_data):
+        self.full_result = full_result
+        self.optimizer_run_data = optimizer_run_data
+        self.score = 0
+
+    def compute_score(self, relevant_scoring_parameters):
+        self.score = 0
+        self.score = numpy.average([
+            self._compute_score(scoring_parameter)
+            for scoring_parameter in relevant_scoring_parameters
+        ])
+
+    def _compute_score(self, scoring_parameter):
+        try:
+            return self.full_result[scoring_parameter] * self._get_parameter_normalizer(scoring_parameter)
+        except KeyError:
+            return 0
+
+    def _get_parameter_normalizer(self, parameter):
+        return 0.01 if "%" in parameter else 1
