@@ -13,12 +13,17 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import json
 import uuid
 import gc
 import sys
 import asyncio
+import time
 
-import octobot_commons.logging as logging
+import octobot_commons.logging as commons_logging
+import octobot_commons.configuration as commons_configuration
+import octobot_commons.databases as commons_databases
+import octobot_commons.constants as commons_constants
 
 import octobot_backtesting.api as backtesting_api
 import octobot_backtesting.importers as importers
@@ -32,10 +37,9 @@ import octobot_trading.exchange_data as exchange_data
 import octobot_trading.api as trading_api
 import octobot_trading.enums as trading_enums
 
-import octobot_commons.databases as databases
-import octobot_commons.constants as commons_constants
-
 import octobot.logger as logger
+import octobot.storage as storage
+import octobot.databases_util as databases_util
 
 
 class OctoBotBacktesting:
@@ -47,8 +51,9 @@ class OctoBotBacktesting:
                  run_on_common_part_only,
                  start_timestamp=None,
                  end_timestamp=None,
-                 enable_logs=True):
-        self.logger = logging.get_logger(self.__class__.__name__)
+                 enable_logs=True,
+                 enable_storage=True):
+        self.logger = commons_logging.get_logger(self.__class__.__name__)
         self.backtesting_config = backtesting_config
         self.tentacles_setup_config = tentacles_setup_config
         self.bot_id = str(uuid.uuid4())
@@ -60,14 +65,26 @@ class OctoBotBacktesting:
         self.backtesting_files = backtesting_files
         self.backtesting = None
         self.run_on_common_part_only = run_on_common_part_only
+        self.start_time = None
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
         self.enable_logs = enable_logs
         self.exchange_type_by_exchange = {}
         self.futures_contract_type = trading_enums.FutureContractType.LINEAR_PERPETUAL
+        self.enable_storage = enable_storage
 
     async def initialize_and_run(self):
         self.logger.info(f"Starting on {self.backtesting_files} with {self.symbols_to_create_exchange_classes}")
+        self.start_time = time.time()
+        await commons_databases.init_bot_storage(
+            self.bot_id,
+            databases_util.get_run_databases_identifier(
+                self.backtesting_config,
+                self.tentacles_setup_config,
+                enable_storage=self.enable_storage,
+            ),
+            False
+        )
         await self._init_evaluators()
         await self._init_service_feeds()
         await self._init_exchanges()
@@ -91,16 +108,27 @@ class OctoBotBacktesting:
             if self.backtesting is None:
                 self.logger.warning("No backtesting to stop, there was probably an issue when starting the backtesting")
             else:
+                exchange_managers = trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids)
+                if exchange_managers and self.enable_storage:
+                    try:
+                        for exchange_manager in exchange_managers:
+                            await trading_api.store_history_in_run_storage(exchange_manager)
+                    except Exception as e:
+                        self.logger.exception(e, True, f"Error when saving exchange historical data: {e}")
+                    try:
+                        await self._store_metadata(exchange_managers)
+                        self.logger.info(f"Stored backtesting run metadata")
+                    except Exception as e:
+                        self.logger.exception(e, True, f"Error when saving run metadata: {e}")
                 await backtesting_api.stop_backtesting(self.backtesting)
             try:
-                for exchange_manager in trading_api.get_exchange_managers_from_exchange_ids(self.exchange_manager_ids):
-                    exchange_managers.append(exchange_manager)
+                for exchange_manager in exchange_managers:
                     await trading_api.stop_exchange(exchange_manager)
             except KeyError:
                 # exchange managers are not added in global exchange list when an exception occurred
                 pass
             # close run databases
-            await trading_api.close_bot_storage(self.bot_id)
+            await commons_databases.close_bot_storage(self.bot_id)
             # stop evaluators
             for evaluators in self.evaluators:
                 # evaluators by type
@@ -109,7 +137,7 @@ class OctoBotBacktesting:
                     if evaluator is not None:
                         await evaluator_api.stop_evaluator(evaluator)
             # close all caches (if caches have to be used later on, they can always be re-opened)
-            await databases.CacheManager().close_cache(commons_constants.UNPROVIDED_CACHE_IDENTIFIER)
+            await commons_databases.CacheManager().close_cache(commons_constants.UNPROVIDED_CACHE_IDENTIFIER)
             try:
                 await evaluator_api.stop_all_evaluator_channels(self.matrix_id)
             except KeyError:
@@ -170,6 +198,10 @@ class OctoBotBacktesting:
         }
         for obj in gc.get_objects():
             if isinstance(obj, to_watch_objects):
+                if isinstance(obj, exchanges.ExchangeManager) and not obj.is_initialized:
+                    # Ignore exchange managers that have not been initialized
+                    # and are irrelevant. Pytest fixtures can also retain references failing tests
+                    continue
                 objects_references[type(obj)][1].append(obj)
                 objects_references[type(obj)] = (objects_references[type(obj)][0] + 1,
                                                  objects_references[type(obj)][1])
@@ -185,6 +217,24 @@ class OctoBotBacktesting:
             raise AssertionError(
                 f"[Dev oriented error: no effect on backtesting result, please report if you see it]: {errors}"
             )
+
+    async def _store_metadata(self, exchange_managers):
+        run_db = commons_databases.RunDatabasesProvider.instance().get_run_db(self.bot_id)
+        await run_db.flush()
+        user_inputs = await commons_configuration.get_user_inputs(run_db)
+        await storage.store_run_metadata(
+            self.bot_id,
+            exchange_managers,
+            self.start_time,
+            user_inputs=user_inputs,
+        )
+        metadata = await storage.store_backtesting_run_metadata(
+            exchange_managers,
+            self.start_time,
+            user_inputs,
+            commons_databases.RunDatabasesProvider.instance().get_run_databases_identifier(self.bot_id),
+        )
+        self.logger.info(f"Backtesting metadata:\n{json.dumps(metadata, indent=4)}")
 
     async def _init_evaluators(self):
         self.matrix_id = await evaluator_api.initialize_evaluators(self.backtesting_config, self.tentacles_setup_config)
@@ -223,7 +273,6 @@ class OctoBotBacktesting:
                                                                         data_files=self.backtesting_files)
         # modify_backtesting_channels before creating exchanges as they require the current backtesting time to
         # initialize
-        trading_api.init_bot_storage(self.bot_id, self.backtesting_config, self.tentacles_setup_config)
         await backtesting_api.adapt_backtesting_channels(self.backtesting,
                                                          self.backtesting_config,
                                                          importers.ExchangeDataImporter,
@@ -241,7 +290,8 @@ class OctoBotBacktesting:
                 .is_simulated() \
                 .is_rest_only() \
                 .is_backtesting(self.backtesting) \
-                .is_future(is_future, self.futures_contract_type)
+                .is_future(is_future, self.futures_contract_type) \
+                .enable_storage(self.enable_storage)
             try:
                 await exchange_builder.build()
             finally:
@@ -260,5 +310,8 @@ class OctoBotBacktesting:
 def _get_remaining_object_error(obj, expected, actual):
     error = f"too many remaining {obj.__name__} instances: expected: {expected} actual {actual[0]}"
     for i in range(len(actual[1])):
-        error += f"{sys.getrefcount(actual[1][i])} references on {actual[1][i]}"
+        debug_info = ""
+        if isinstance(actual[1][i], exchanges.ExchangeManager):
+            debug_info = f" ({actual[1][i].debug_info})"
+        error += f"{sys.getrefcount(actual[1][i])} references on {actual[1][i]} {debug_info}"
         return error

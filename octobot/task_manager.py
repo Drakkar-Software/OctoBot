@@ -17,6 +17,7 @@ import asyncio
 import threading
 import concurrent.futures as thread
 import traceback
+import sys
 
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.logging as logging
@@ -91,20 +92,32 @@ class TaskManager:
             stop_coroutines.append(self.octobot.community_handler.stop_task())
 
         async def _await_timeouted_gather(tasks):
-            # await this gather to be sure to complete the each stop call or timeout
+            # await this gather to be sure to complete each stop call or timeout
             try:
                 await asyncio.gather(*tasks)
             except asyncio.exceptions.TimeoutError:
                 self.logger.warning(f"Timeout while stopping tasks, forcing stop.")
+                raise
 
         if stop_coroutines:
-            asyncio_tools.run_coroutine_in_asyncio_loop(_await_timeouted_gather(stop_coroutines), self.async_loop)
+            try:
+                asyncio_tools.run_coroutine_in_asyncio_loop(_await_timeouted_gather(stop_coroutines), self.async_loop)
+            except asyncio.exceptions.TimeoutError:
+                self.logger.info(f"Remaining threads: {self._get_remaining_threads()}")
+                sys.exit(-1)
         self.async_loop.stop()
         # ensure there is at least one element in the event loop tasks
         # not to block on base_event.py#self._selector.select(timeout) which prevents run_forever() from completing
         asyncio.run_coroutine_threadsafe(asyncio_tools.wait_asyncio_next_cycle(), self.async_loop)
 
+        self.logger.debug(f"Remaining threads: {self._get_remaining_threads()}")
         self.logger.info("Tasks stopped.")
+
+    def _get_remaining_threads(self):
+        return [
+            f"{alive_thread.name}{'[daemon]' if alive_thread.daemon else ''}"
+            for alive_thread in threading.enumerate()
+        ]
 
     @classmethod
     def get_name(cls):

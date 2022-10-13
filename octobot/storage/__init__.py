@@ -13,24 +13,22 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import octobot_commons.authentication as commons_authentication
+from octobot.storage import trading_metadata
+from octobot.storage import db_databases_pruning
+
+from octobot.storage.trading_metadata import (
+    clear_run_metadata,
+    store_run_metadata,
+    store_backtesting_run_metadata,
+)
+from octobot.storage.db_databases_pruning import (
+    enforce_total_databases_max_size
+)
 
 
-class RequestError(Exception):
-    pass
-
-
-class StatusCodeRequestError(RequestError):
-    pass
-
-
-class BotError(commons_authentication.UnavailableError):
-    pass
-
-
-class BotNotFoundError(BotError):
-    pass
-
-
-class NoBotDeviceError(BotError):
-    pass
+__all__ = [
+    "clear_run_metadata",
+    "store_run_metadata",
+    "store_backtesting_run_metadata",
+    "enforce_total_databases_max_size",
+]

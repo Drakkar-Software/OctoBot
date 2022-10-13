@@ -20,7 +20,7 @@ import websockets
 import asyncio
 import enum
 import json
-import distutils.version as loose_version
+import packaging.version as packaging_version
 
 import octobot_commons.errors as commons_errors
 import octobot_commons.enums as commons_enums
@@ -63,6 +63,7 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
             self.watcher_task = asyncio.create_task(self.connection_watcher())
 
     async def stop(self):
+        self.logger.debug("Stopping ...")
         self.should_stop = True
         if self.websocket_connection is not None:
             await self.websocket_connection.close()
@@ -70,6 +71,7 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
             self.consumer_task.cancel()
         if self.watcher_task is not None:
             self.watcher_task.cancel()
+        self.logger.debug("Stopped")
 
     # pylint: disable=E1101
     async def start_consumer(self):
@@ -117,8 +119,8 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
             self.logger.error(f"Unsupported message: {e}")
 
     def _ensure_supported(self, parsed_message):
-        if loose_version.LooseVersion(parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value]) \
-                < loose_version.LooseVersion(constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION):
+        if packaging_version.Version(parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value]) \
+                < packaging_version.Version(constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION):
             raise commons_errors.UnsupportedError(
                 f"Minimum version: {constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION}"
             )

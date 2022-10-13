@@ -39,6 +39,8 @@ import octobot_evaluators.constants as evaluator_constants
 import octobot_trading.api as trading_api
 import octobot_trading.enums as trading_enums
 
+import octobot.storage as storage
+
 
 class IndependentBacktesting:
     def __init__(self, config,
@@ -50,7 +52,9 @@ class IndependentBacktesting:
                  start_timestamp=None,
                  end_timestamp=None,
                  enable_logs=True,
-                 stop_when_finished=False):
+                 stop_when_finished=False,
+                 enforce_total_databases_max_size_after_run=True,
+                 enable_storage=True):
         self.octobot_origin_config = config
         self.tentacles_setup_config = tentacles_setup_config
         self.backtesting_config = {}
@@ -72,6 +76,7 @@ class IndependentBacktesting:
         self.enable_logs = enable_logs
         self.stop_when_finished = stop_when_finished
         self.previous_log_level = commons_logging.get_global_logger_level()
+        self.enforce_total_databases_max_size_after_run = enforce_total_databases_max_size_after_run
         self.octobot_backtesting = backtesting.OctoBotBacktesting(self.backtesting_config,
                                                                   self.tentacles_setup_config,
                                                                   self.symbols_to_create_exchange_classes,
@@ -79,7 +84,8 @@ class IndependentBacktesting:
                                                                   run_on_common_part_only,
                                                                   start_timestamp=start_timestamp,
                                                                   end_timestamp=end_timestamp,
-                                                                  enable_logs=self.enable_logs)
+                                                                  enable_logs=self.enable_logs,
+                                                                  enable_storage=enable_storage)
 
     async def initialize_and_run(self, log_errors=True):
         try:
@@ -162,11 +168,16 @@ class IndependentBacktesting:
         else:
             # stop backtesting importers to release database files
             await self.octobot_backtesting.stop_importers()
+        if self.enforce_total_databases_max_size_after_run:
+            try:
+                await storage.enforce_total_databases_max_size()
+            except Exception as e:
+                self.logger.exception(e, True, f"Error when enforcing max run databases size: {e}")
 
     @staticmethod
     def _get_market_delta(symbol, exchange_manager, min_timeframe):
         market_data = trading_api.get_symbol_historical_candles(
-            trading_api.get_symbol_data(exchange_manager, symbol.legacy_symbol()), min_timeframe)
+            trading_api.get_symbol_data(exchange_manager, str(symbol)), min_timeframe)
         market_begin = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][0]
         market_end = market_data[enums.PriceIndexes.IND_PRICE_CLOSE.value][-1]
 
@@ -355,8 +366,9 @@ class IndependentBacktesting:
                 optimization_campaign.OptimizationCampaign.get_campaign_name(self.tentacles_setup_config)
             )
             run_dbs_identifier.backtesting_id = await run_dbs_identifier.generate_new_backtesting_id()
-            # initialize to lock the backtesting id
-            await run_dbs_identifier.initialize()
+            if self.octobot_backtesting.enable_storage:
+                # initialize to lock the backtesting id
+                await run_dbs_identifier.initialize()
             self.backtesting_config[common_constants.CONFIG_BACKTESTING_ID] = run_dbs_identifier.backtesting_id
 
     def _find_reference_market_and_update_contract_type(self):
@@ -412,7 +424,7 @@ class IndependentBacktesting:
     def _add_crypto_currencies_config(self):
         for symbols in self.symbols_to_create_exchange_classes.values():
             for symbol in symbols:
-                symbol_id = symbol.legacy_symbol()
+                symbol_id = str(symbol)
                 if symbol_id not in self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES]:
                     self.backtesting_config[common_constants.CONFIG_CRYPTO_CURRENCIES][symbol_id] = {
                         common_constants.CONFIG_CRYPTO_PAIRS: []

@@ -26,15 +26,22 @@ def create_independent_backtesting(config,
                                    start_timestamp=None,
                                    end_timestamp=None,
                                    enable_logs=True,
-                                   stop_when_finished=False) -> backtesting.IndependentBacktesting:
-    return backtesting.IndependentBacktesting(config, tentacles_setup_config, data_files,
-                                              data_file_path,
-                                              run_on_common_part_only=run_on_common_part_only,
-                                              join_backtesting_timeout=join_backtesting_timeout,
-                                              start_timestamp=start_timestamp,
-                                              end_timestamp=end_timestamp,
-                                              enable_logs=enable_logs,
-                                              stop_when_finished=stop_when_finished)
+                                   stop_when_finished=False,
+                                   enforce_total_databases_max_size_after_run=True,
+                                   enable_storage=True) \
+        -> backtesting.IndependentBacktesting:
+    return backtesting.IndependentBacktesting(
+        config, tentacles_setup_config, data_files,
+        data_file_path,
+        run_on_common_part_only=run_on_common_part_only,
+        join_backtesting_timeout=join_backtesting_timeout,
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
+        enable_logs=enable_logs,
+        stop_when_finished=stop_when_finished,
+        enforce_total_databases_max_size_after_run=enforce_total_databases_max_size_after_run,
+        enable_storage=enable_storage,
+    )
 
 
 async def initialize_and_run_independent_backtesting(independent_backtesting, log_errors=True) -> None:

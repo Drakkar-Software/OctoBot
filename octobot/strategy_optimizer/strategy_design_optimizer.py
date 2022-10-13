@@ -624,7 +624,8 @@ class StrategyDesignOptimizer:
                 tentacles_setup_config,
                 data_files,
                 start_timestamp=start_timestamp,
-                end_timestamp=end_timestamp
+                end_timestamp=end_timestamp,
+                enforce_total_databases_max_size_after_run=False,
             )
             await octobot_backtesting_api.initialize_and_run_independent_backtesting(independent_backtesting,
                                                                                      log_errors=False)

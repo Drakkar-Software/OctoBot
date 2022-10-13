@@ -32,11 +32,13 @@ cdef class OctoBotBacktesting:
     cdef public list backtesting_files
     cdef public object backtesting
     cdef public bint run_on_common_part_only
+    cdef public object start_time
     cdef public object start_timestamp
     cdef public object end_timestamp
     cdef public bint enable_logs
     cdef public dict exchange_type_by_exchange
     cdef public object futures_contract_type
+    cdef public bint enable_storage
 
     cpdef object memory_leak_checkup(self, list to_check_elements)
     cpdef object check_remaining_objects(self)
