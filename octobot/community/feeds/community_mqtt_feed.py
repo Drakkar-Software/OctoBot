@@ -13,13 +13,12 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import time
 import uuid
 import gmqtt
 import json
 import zlib
 import asyncio
-import distutils.version as loose_version
+import packaging.version as packaging_version
 
 import octobot_commons.enums as commons_enums
 import octobot_commons.errors as commons_errors
@@ -182,8 +181,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         return {}
 
     def _ensure_supported(self, parsed_message):
-        if loose_version.LooseVersion(parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value]) \
-                < loose_version.LooseVersion(constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION):
+        if packaging_version.Version(parsed_message[commons_enums.CommunityFeedAttrs.VERSION.value]) \
+                < packaging_version.Version(constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION):
             raise commons_errors.UnsupportedError(
                 f"Minimum version: {constants.COMMUNITY_FEED_CURRENT_MINIMUM_VERSION}"
             )
