@@ -6,7 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
-## [0.4.11] - 2022-10-12
+## [0.4.12] - 2022-10-15
+### Fixed
+- Copy trading
+
+## [0.4.11] - 2022-10-14
 ### Added
 - User inputs system
 - Phemex exchange
@@ -14,8 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Updated
 - Configuration for each tentacle
 - Community bot system instead of devices
-### Fixed
-- Exchange API issues (Bybit, Kucoin)
 
 ## [0.4.10] - 2022-09-13
 ### Updated
