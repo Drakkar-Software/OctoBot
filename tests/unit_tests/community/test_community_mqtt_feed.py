@@ -30,6 +30,7 @@ pytestmark = pytest.mark.asyncio
 
 FEED_URL = "x.y.z"
 TOKEN = "acb1"
+NAME = "name_a"
 
 
 def _build_message(value, identifier):
@@ -65,6 +66,8 @@ async def connected_community_feed(authenticator):
         feed.INIT_TIMEOUT = 1
         with mock.patch.object(authenticator.user_account, "get_selected_bot_device_uuid", mock.Mock(return_value=TOKEN)) \
                 as get_selected_bot_device_uuid_mock, \
+             mock.patch.object(authenticator.user_account, "get_selected_bot_device_name", mock.Mock(return_value=NAME)
+                               ) as _get_selected_bot_device_uuid_mock, \
              mock.patch.object(feed, "_subscribe", mock.AsyncMock()) as _subscribe_mock, \
              mock.patch.object(gmqtt.Client, "connect", mock.AsyncMock()) as _connect_mock:
             await feed.register_feed_callback(commons_enums.CommunityChannelTypes.SIGNAL, mock.AsyncMock())

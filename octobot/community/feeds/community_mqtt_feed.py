@@ -267,7 +267,8 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
         self._update_client_config(self._mqtt_client)
         self._register_callbacks(self._mqtt_client)
         self._mqtt_client.set_auth_credentials(self._device_uuid, None)
-        self.logger.debug(f"Connecting client")
+        self.logger.debug(f"Connecting client using device "
+                          f"'{self.authenticator.user_account.get_selected_bot_device_name()}'")
         self._connect_task = asyncio.create_task(
             self._mqtt_client.connect(self.feed_url, self.mqtt_broker_port, version=self.MQTT_VERSION)
         )
