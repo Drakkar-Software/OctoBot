@@ -120,6 +120,7 @@ def _create_startup_config(logger):
         config.read(should_raise=False)
     else:
         _read_config(config, logger)
+        _ensure_profile(config, logger)
         _validate_config(config, logger)
     return config
 
@@ -133,6 +134,19 @@ def _read_config(config, logger):
         config.read(should_raise=False, fill_missing_fields=True)
     except Exception as e:
         raise errors.ConfigError(e)
+
+
+def _ensure_profile(config, logger):
+    if config.profile is None:
+        # no selected profile or profile not found
+        try:
+            config.select_profile(common_constants.DEFAULT_PROFILE)
+        except KeyError:
+            logger.error(f"Missing default profiles. Please make sure that the {config.profiles_path} "
+                         f"folder is accessible. To reinstall default profiles, delete the "
+                         f"'{tentacles_manager_constants.TENTACLES_PATH}' "
+                         f"folder or start OctoBot with the following arguments: tentacles --install --all")
+            raise errors.NoProfileError
 
 
 def _validate_config(config, logger):
