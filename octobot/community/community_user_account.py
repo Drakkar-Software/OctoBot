@@ -22,7 +22,6 @@ class CommunityUserAccount:
     BOT_DEVICE = "device"
     NO_SELECTED_BOT_DESC = "No selected bot. Please select a bot to enable your community features."
 
-
     def __init__(self):
         self.gql_user_id = None
         self.gql_bot_id = None
@@ -59,6 +58,12 @@ class CommunityUserAccount:
     def get_selected_bot_device_uuid(self):
         try:
             return self.get_selected_bot_raw_data(raise_on_missing=True).get(self.BOT_DEVICE, {}).get("uuid", None)
+        except AttributeError:
+            raise errors.NoBotDeviceError("No device associated to the select bot")
+
+    def get_selected_bot_device_name(self):
+        try:
+            return self.get_selected_bot_raw_data(raise_on_missing=True).get(self.BOT_DEVICE, {}).get("name", None)
         except AttributeError:
             raise errors.NoBotDeviceError("No device associated to the select bot")
 
