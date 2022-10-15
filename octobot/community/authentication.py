@@ -272,6 +272,8 @@ class CommunityAuthentication(authentication.Authenticator):
         if fetched_bot is None:
             raise errors.BotNotFoundError(f"Can't find bot with id: {bot_id}")
         self.user_account.set_selected_bot_raw_data(fetched_bot)
+        bot_name = self.user_account.get_bot_name_or_id(self.user_account.get_selected_bot_raw_data())
+        self.logger.debug(f"Selected bot '{bot_name}'")
         self.user_account.gql_bot_id = bot_id
         self._save_gql_bot_id(self.user_account.gql_bot_id)
         await self.on_new_bot_select()
