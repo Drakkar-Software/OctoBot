@@ -712,11 +712,12 @@ class StrategyDesignOptimizer:
             if self._is_run_allowed(run)
         }
         if runs:
-            for run in self._shuffle_and_select_runs(runs, select_size=self.queue_size).values():
+            shuffled_runs = self._shuffle_and_select_runs(runs, select_size=self.queue_size)
+            for run in shuffled_runs.values():
                 for run_input in run:
                     # do not store self.CONFIG_KEY
                     run_input.pop(self.CONFIG_KEY, None)
-            return runs
+            return shuffled_runs
         raise RuntimeError("No optimizer run to schedule with this configuration")
 
     def _is_run_allowed(self, run):
