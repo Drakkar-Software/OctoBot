@@ -55,9 +55,11 @@ async def store_backtesting_run_metadata(exchange_managers, start_time, user_inp
 
 async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, run_dbs_identifier, is_backtesting) \
         -> dict:
+    trading_mode = trading_api.get_trading_modes(exchange_managers[0])[0]
     multi_exchanges_data = await _get_multi_exchange_data(exchange_managers, is_backtesting)
     single_exchange_data = await _get_single_exchange_data(
         exchange_managers[0],
+        trading_mode,
         run_start_time,
         user_inputs,
         run_dbs_identifier,
@@ -65,7 +67,8 @@ async def _get_trading_metadata(exchange_managers, run_start_time, user_inputs, 
     )
     return {
         **single_exchange_data,
-        **multi_exchanges_data
+        **multi_exchanges_data,
+        **(await trading_mode.get_additional_metadata(is_backtesting))
     }
 
 
@@ -213,9 +216,7 @@ async def _get_multi_exchange_data(exchange_managers, is_backtesting):
     }
 
 
-async def _get_single_exchange_data(exchange_manager, run_start_time, user_inputs, run_dbs_identifier, is_backtesting):
-    trading_mode = trading_api.get_trading_modes(exchange_manager)[0]
-
+async def _get_single_exchange_data(exchange_manager, trading_mode, run_start_time, user_inputs, run_dbs_identifier, is_backtesting):
     exchange_type = trading_enums.ExchangeTypes.FUTURE.value if exchange_manager.is_future \
         else trading_enums.ExchangeTypes.SPOT.value
     if user_inputs is None:
@@ -246,6 +247,5 @@ async def _get_single_exchange_data(exchange_manager, run_start_time, user_input
             common_enums.BacktestingMetadata.LEVERAGE.value: leverage,
             common_enums.DBRows.TRADING_TYPE.value: exchange_type,
             common_enums.DBRows.REFERENCE_MARKET.value: trading_api.get_reference_market(exchange_manager.config),
-        },
-        **(await trading_mode.get_additional_metadata(is_backtesting))
+        }
     }
