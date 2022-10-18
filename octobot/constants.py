@@ -167,6 +167,7 @@ REQUIRED_TOPIC_FOR_DATA_INIT = [
     octobot_commons.enums.InitializationEventExchangeTopics.CANDLES,
     octobot_commons.enums.InitializationEventExchangeTopics.CONTRACTS,
     octobot_commons.enums.InitializationEventExchangeTopics.PRICE,
+    octobot_commons.enums.InitializationEventExchangeTopics.BALANCE,
 ]
 
 OCTOBOT_KEY = b'uVEw_JJe7uiXepaU_DR4T-ThkjZlDn8Pzl8hYPIv7w0='
