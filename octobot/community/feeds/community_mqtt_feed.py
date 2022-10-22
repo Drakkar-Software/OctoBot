@@ -154,7 +154,7 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
             self.logger.warning(f"Can't send {channel_type.name}, invalid feed authentication.")
             return
         topic = self._build_topic(channel_type, identifier)
-        self.logger.debug(f"Sending message on topic: {topic}, message: {message}")
+        self.logger.info(f"Sending message on topic: {topic}, message: {message}")
         self._mqtt_client.publish(
             self._build_topic(channel_type, identifier),
             self._build_message(channel_type, message),
