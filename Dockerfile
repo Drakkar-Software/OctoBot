@@ -36,9 +36,11 @@ COPY docker-entrypoint.sh docker-entrypoint.sh
 # 2. Add cloudflare gpg key and add cloudflare repo in apt repositories (from https://pkg.cloudflare.com/index.html)
 # 3. Install required packages
 # 4. Finish env setup
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update \ 
     && apt-get install -y --no-install-recommends curl \
-    && mkdir -p --mode=0755 /usr/share/keyrings \ 
+    && mkdir -p /usr/share/keyrings \ 
+    && chmod 0755 /usr/share/keyrings \
     && curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null \ 
     && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared buster main' | tee /etc/apt/sources.list.d/cloudflared.list \
     && apt-get update \ 
