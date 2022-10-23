@@ -23,12 +23,26 @@ ARG TENTACLES_URL_TAG=""
 ENV TENTACLES_URL_TAG=$TENTACLES_URL_TAG
 
 WORKDIR /octobot
+
+# Import python dependencies
 COPY --from=base /opt/venv /opt/venv
+
+# Add default config files
 COPY octobot/config /octobot/octobot/config
+
 COPY docker-entrypoint.sh docker-entrypoint.sh
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
+# 1. Install requirements
+# 2. Add cloudflare gpg key and add cloudflare repo in apt repositories (from https://pkg.cloudflare.com/index.html)
+# 3. Install required packages
+# 4. Finish env setup
+RUN apt-get update \ 
+    && apt-get install -y --no-install-recommends curl \
+    && mkdir -p --mode=0755 /usr/share/keyrings \ 
+    && curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null \ 
+    && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared buster main' | tee /etc/apt/sources.list.d/cloudflared.list \
+    && apt-get update \ 
+    && apt-get install -y --no-install-recommends curl cloudflared libxslt-dev libxcb-xinput0 libjpeg62-turbo-dev zlib1g-dev libblas-dev liblapack-dev libatlas-base-dev libopenjp2-7 libtiff-dev \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /opt/venv/bin/OctoBot OctoBot # Make sure we use the virtualenv \
     && chmod +x docker-entrypoint.sh
@@ -37,7 +51,9 @@ VOLUME /octobot/backtesting
 VOLUME /octobot/logs
 VOLUME /octobot/tentacles
 VOLUME /octobot/user
+
 EXPOSE 5001
 
-HEALTHCHECK --interval=1m --timeout=30s --retries=3 CMD curl -sS http://127.0.0.1:5001 || exit 1
+HEALTHCHECK --interval=15s --timeout=10s --retries=5 CMD curl -sS http://127.0.0.1:5001 || exit 1
+
 ENTRYPOINT ["./docker-entrypoint.sh"]
