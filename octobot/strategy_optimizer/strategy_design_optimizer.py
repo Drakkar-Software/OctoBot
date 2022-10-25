@@ -60,6 +60,7 @@ class NoMoreRunError(Exception):
 class StrategyDesignOptimizer:
     MAX_OPTIMIZER_RUNS = 100000
     DEFAULT_GENERATIONS_COUNT = 10
+    DEFAULT_RUN_PER_GENERATION = 80
     DEFAULT_SCORING_PARAMETERS = [
         commons_enums.BacktestingMetadata.PERCENT_GAINS.value,
         commons_enums.BacktestingMetadata.PERCENT_GAINS.value,
@@ -466,6 +467,7 @@ class StrategyDesignOptimizer:
                      notify_when_complete=False,
                      enable_automated_optimization=False,
                      automated_optimization_iterations_count=None,
+                     run_per_generation=None,
                      relevant_scoring_parameters=None):
         self.empty_the_queue = empty_the_queue
         self.total_nb_runs = await self._get_total_nb_runs(optimizer_ids)
@@ -473,6 +475,7 @@ class StrategyDesignOptimizer:
         self.enable_automated_optimization = enable_automated_optimization
         automated_optimization_iterations_count = automated_optimization_iterations_count \
             or self.DEFAULT_GENERATIONS_COUNT
+        run_per_generation = run_per_generation or self.DEFAULT_RUN_PER_GENERATION
         if self.enable_automated_optimization:
             await self._launch_automated_optimization(
                 data_files,
@@ -482,6 +485,7 @@ class StrategyDesignOptimizer:
                 required_idle_cores=required_idle_cores,
                 notify_when_complete=notify_when_complete,
                 automated_optimization_iterations_count=automated_optimization_iterations_count,
+                run_per_generation=run_per_generation,
                 relevant_scoring_parameters=relevant_scoring_parameters,
             )
         else:
@@ -505,12 +509,12 @@ class StrategyDesignOptimizer:
         required_idle_cores=0,
         notify_when_complete=False,
         automated_optimization_iterations_count=DEFAULT_GENERATIONS_COUNT,
+        run_per_generation=DEFAULT_RUN_PER_GENERATION,
         relevant_scoring_parameters=None,
     ):
         optimizer_id = optimizer_ids[0]
         relevant_scoring_parameters = relevant_scoring_parameters or self.DEFAULT_SCORING_PARAMETERS
-        generation_run_data = await self._generate_first_generation_run_data(optimizer_id,
-                                                                             automated_optimization_iterations_count)
+        generation_run_data = await self._generate_first_generation_run_data(optimizer_id, run_per_generation)
         for generation_id in range(automated_optimization_iterations_count):
             # 1. run current generation
             await self.multi_processed_optimize(
@@ -533,7 +537,8 @@ class StrategyDesignOptimizer:
             # 3. create next generation (crossover and mutation)
             generation_run_data = self._create_next_generation(
                 current_generation_results,
-                automated_optimization_iterations_count
+                automated_optimization_iterations_count,
+                generation_id
             )
         if notify_when_complete:
             await self._send_optimizer_finished_notification()
@@ -581,10 +586,16 @@ class StrategyDesignOptimizer:
                 return False
         return False
 
-    async def _create_next_generation(self, current_generation_results, automated_optimization_iterations_count):
-        crossovers_count = int(automated_optimization_iterations_count * self.DEFAULT_CROSSOVER_PERCENT / 100)
-        mutuations_count = int(automated_optimization_iterations_count * self.DEFAULT_MUTATION_PERCENT / 100)
-        parents_count = automated_optimization_iterations_count - crossovers_count - mutuations_count
+    async def _create_next_generation(
+            self,
+            current_generation_results,
+            automated_optimization_iterations_count,
+            generation_id,
+            run_per_generation
+    ):
+        crossovers_count = int(run_per_generation * self.DEFAULT_CROSSOVER_PERCENT / 100)
+        mutuations_count = int(run_per_generation * self.DEFAULT_MUTATION_PERCENT / 100)
+        parents_count = run_per_generation - crossovers_count - mutuations_count
         new_generation = current_generation_results[:parents_count]
         current_gen_len = len(current_generation_results)
         # 1. crossover
@@ -597,27 +608,71 @@ class StrategyDesignOptimizer:
         # 2. mutations
         start_mutations_index = crossovers_count + parents_count
         for run_data in new_generation[start_mutations_index:]:
-            self._mutate(run_data)
+            self._mutate(run_data, 1 - generation_id/automated_optimization_iterations_count)
+        # filter here ?
         # 3. return new generation
         return {
-            i: run
-            for i, run in enumerate(self.shuffle_and_select_runs(new_generation))
+            index: run
+            for index, run in enumerate(self.shuffle_and_select_runs(new_generation))
         }
 
     def _crossover(self, parent_1, parent_2):
-        # TODO average parents taking filters into account
+        child_ui_data_elements = []
+        for parent_1_ui_data, parent_2_ui_data in zip(parent_1.optimizer_run_data, parent_2.optimizer_run_data):
+            child_ui_data_element = copy.deepcopy(parent_1_ui_data)
+            min_val, _, step = self._get_number_config_step(self._get_config_key(child_ui_data_element))
+            child_ui_data_element[self.CONFIG_VALUE] = self._get_child_value(
+                parent_1_ui_data,
+                parent_2_ui_data,
+                min_val,
+                step
+            )
+            child_ui_data_elements.append(child_ui_data_element)
+        return child_ui_data_elements
+
+    def _mutate(self, run_data, mutation_intensity):
+        # the closer to 1 is mutation_intensity, the stronger the mutations
+        max_mutation_probability_percent = 50
+        min_mutation_probability_percent = 10
+        intensity_multiplier = mutation_intensity + (min_mutation_probability_percent / 100)
+        mutation_trigger_threshold = max_mutation_probability_percent / ((100 + min_mutation_probability_percent) / 100)
+        for ui_element in run_data:
+            if random.randint(0, 100) <= intensity_multiplier * mutation_trigger_threshold:
+                self._mutate_element_if_possible(ui_element, mutation_intensity)
+
+    def _mutate_element_if_possible(self, ui_element, mutation_intensity):
+        # todo mutate value and ensure filters
         pass
 
-    def _mutate(self, run_data):
-        # TODO mutate run_data taking filters into account
-        pass
+    def _get_child_value(self, parent_1_ui, parent_2_ui, min_val, step):
+        value_1 = parent_1_ui[self.CONFIG_VALUE]
+        value_2 = parent_2_ui[self.CONFIG_VALUE]
+        if type(value_1) != type(value_2):
+            raise TypeError(f"{value_1} and {value_2} have a different type")
+        ui_type = self._get_config_type(parent_1_ui)
+        if ui_type in (ConfigTypes.OPTIONS, ConfigTypes.BOOLEAN):
+            # on options and booleans, don't generate values, use a parent value
+            return value_1 if random.randint(0, 1) == 1 else value_2
+        if ui_type is ConfigTypes.NUMBER:
+            # on numbers, generate a value between parents taking step into account
+            child_value = int((decimal.Decimal(str(value_1)) + decimal.Decimal(str(value_2))) / decimal.Decimal(2))
+            # ensure step is taken into account
+            normalized_value = child_value - min_val
+            normalized_mod = normalized_value % step
+            if normalized_mod == 0:
+                return child_value
+            # find the closest valid value
+            to_add_val = step - normalized_mod
+            if normalized_mod < step / 2:
+                to_add_val = -to_add_val
+            return child_value + to_add_val
+        raise TypeError(f"unsupported config type: {ui_type}")
 
-    async def _generate_first_generation_run_data(self, optimizer_id, automated_optimization_iterations_count):
+    async def _generate_first_generation_run_data(self, optimizer_id, run_per_generation):
         async with databases.DBReader.database(self.run_dbs_identifier.get_optimizer_runs_schedule_identifier()) \
                 as reader:
             run_data = await self._get_run_data_from_db(optimizer_id, reader)
-        return self.shuffle_and_select_runs(run_data[0][self.CONFIG_RUNS],
-                                            select_size=automated_optimization_iterations_count)
+        return self.shuffle_and_select_runs(run_data[0][self.CONFIG_RUNS], select_size=run_per_generation)
 
     async def _send_optimizer_finished_notification(self):
         await services_api.send_notification(
@@ -960,6 +1015,21 @@ class StrategyDesignOptimizer:
                 self.CONFIG_VALUE: val,
                 self.CONFIG_TYPE: self._get_config_type(val)
             }
+
+    def _get_config_key(self, ui_element):
+        # todo check
+        return f"{ui_element[self.CONFIG_TENTACLE]}{self.CONFIG_NESTED_TENTACLE_SEPARATOR}{self.CONFIG_TENTACLE}"
+
+    def _get_number_config_step(self, config_key):
+        for key, val in self.optimizer_config[self.CONFIG_USER_INPUTS].items():
+            if key == config_key:
+                # todo check
+                config_val = val[self.CONFIG_VALUE][self.CONFIG_VALUE]
+                return \
+                    config_val[self.CONFIG_MIN], \
+                    config_val[self.CONFIG_MAX], \
+                    config_val[self.CONFIG_STEP]
+        raise KeyError(config_key)
 
     def _get_config_type(self, value):
         config_values = value[self.CONFIG_VALUE]
