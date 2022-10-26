@@ -523,23 +523,23 @@ class StrategyDesignOptimizer:
         try:
             for generation_id in range(automated_optimization_iterations_count):
                 # 1. run current generation
-                await self.multi_processed_optimize(
-                    data_files,
-                    optimizer_ids=[optimizer_id],
-                    randomly_chose_runs=False,
-                    start_timestamp=start_timestamp,
-                    end_timestamp=end_timestamp,
-                    empty_the_queue=False,
-                    required_idle_cores=required_idle_cores,
-                    notify_when_complete=False,
-                    run_data_by_optimizer_id={
-                        optimizer_id: {
-                            index: value
-                            for index, value in generation_run_data
-                            if index < already_run_index
-                        }
-                    },
-                )
+                # await self.multi_processed_optimize(
+                #     data_files,
+                #     optimizer_ids=[optimizer_id],
+                #     randomly_chose_runs=False,
+                #     start_timestamp=start_timestamp,
+                #     end_timestamp=end_timestamp,
+                #     empty_the_queue=False,
+                #     required_idle_cores=required_idle_cores,
+                #     notify_when_complete=False,
+                #     run_data_by_optimizer_id={
+                #         optimizer_id: {
+                #             index: value
+                #             for index, value in generation_run_data.items()
+                #             if index < already_run_index
+                #         }
+                #     },
+                # )
                 # 2. score results (fitness function)
                 all_run_results = await self._get_all_finished_run_results(optimizer_id)
                 current_generation_results = await self._score_current_generation(generation_run_data,
@@ -578,10 +578,10 @@ class StrategyDesignOptimizer:
 
     def _get_from_run_results(self, run_data_elements, all_run_results):
         if all_run_results:
-            for run_data_from_runs in all_run_results.reverse():
-                for to_find_run_data in run_data_elements:
+            for run_data_from_runs in reversed(all_run_results):
+                for to_find_run_data in run_data_elements.values():
                     if self._is_using_these_user_inputs(
-                        run_data_from_runs[commons_enums.BacktestingMetadata.USER_INPUTS.value],
+                        run_data_from_runs,
                         to_find_run_data
                     ):
                         yield to_find_run_data, run_data_from_runs
@@ -592,7 +592,7 @@ class StrategyDesignOptimizer:
             optimizer_id=optimizer_id
         )
         async with databases.DBReader.database(db_identifier.get_backtesting_metadata_identifier()) as reader:
-            return await reader.read()
+            return await reader.all(commons_enums.DBTables.METADATA.value)
 
     def _is_using_these_user_inputs(self, full_run_data, to_find_run_data):
         full_run_data_user_inputs = full_run_data[commons_enums.BacktestingMetadata.USER_INPUTS.value]
