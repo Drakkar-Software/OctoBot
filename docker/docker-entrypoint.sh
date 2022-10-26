@@ -5,7 +5,8 @@ if [[ -n "${OCTOBOT_CONFIG}" ]]; then
   echo "$OCTOBOT_CONFIG" | tee /octobot/user/config.json >/dev/null
 fi
 
-bash aws.sh
+python aws.py
+
 bash tunnel.sh
 
 ./OctoBot
