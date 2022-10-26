@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source .env
+
 export TUNNEL_LOGFILE=/root/cloudflared.log
 export TUNNEL_LOGLEVEL=info
 
