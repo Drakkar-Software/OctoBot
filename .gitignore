@@ -130,3 +130,6 @@ logs
 
 # Debug
 cython_debug/
+
+# dev env
+.env
