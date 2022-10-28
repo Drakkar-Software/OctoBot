@@ -32,7 +32,6 @@ _INNER_BOT_QUERY = """
       status
       subscription_id
       type
-      url
       uuid
     }
     user_id
