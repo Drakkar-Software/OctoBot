@@ -17,6 +17,7 @@ yarl==1.7.2
 idna<2.9,>=2.5
 requests==2.25.1
 packaging==21.3
+python-dotenv==0.21.0
 
 # Community
 websockets
