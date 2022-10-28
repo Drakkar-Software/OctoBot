@@ -5,8 +5,8 @@ services:
     image: drakkarsoftware/octobot:stable
     labels:
       - traefik.enable=true
-      - traefik.http.routers.octobot.rule=Host("${HOST}")
-      - traefik.http.services.octobot.loadbalancer.server.port=${PORT}
+      - traefik.http.routers.octobot.rule=Host("${HOST:-octobot.localhost}")
+      - traefik.http.services.octobot.loadbalancer.server.port=${PORT:-5001}
       - traefik.http.routers.octobot.tls=true
     volumes:
        - ./logs:/octobot/logs
@@ -14,7 +14,7 @@ services:
        - ./tentacles:/octobot/tentacles
        - ./user:/octobot/user
     expose:
-       - ${PORT}
+       - ${PORT:-5001}
     restart: always
 
   traefik:
