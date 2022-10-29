@@ -198,7 +198,7 @@ class OctoBot:
 
     def _log_config(self):
         exchanges = [
-            f"{exchange}[{config.get(commons_constants.CONFIG_EXCHANGE_TYPE, commons_constants.CONFIG_EXCHANGE_TYPE)}]"
+            f"{exchange}[{config.get(commons_constants.CONFIG_EXCHANGE_TYPE, commons_constants.CONFIG_EXCHANGE_SPOT)}]"
             for exchange, config in self.config[commons_constants.CONFIG_EXCHANGES].items()
             if config.get(commons_constants.CONFIG_ENABLED_OPTION, True)
         ]
