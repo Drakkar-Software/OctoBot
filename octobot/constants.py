@@ -15,18 +15,23 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import os
 import pathlib
+import dotenv
+
 import octobot_commons.os_util as os_util
 import octobot_commons.enums
 import octobot.enums
 
 PROJECT_NAME = "OctoBot"
 AUTHOR = "DrakkarSoftware"
-SHORT_VERSION = "0.4.15"  # major.minor.revision
+SHORT_VERSION = "0.4.16"  # major.minor.revision
 PATCH_VERSION = ""  # patch : pX
 VERSION_DEV_PHASE = ""  # alpha : a / beta : b / release candidate : rc
 VERSION_PHASE = ""  # XX
 VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
+
+# load environment variables from .env file if exists
+dotenv.load_dotenv(verbose=False)
 
 # OctoBot urls
 OCTOBOT_WEBSITE_URL = os.getenv("OCTOBOT_ONLINE_URL", "https://www.octobot.online")
@@ -157,7 +162,8 @@ OPTIMIZATION_CAMPAIGN_KEY = "optimization_campaign"
 
 # Databases
 DEFAULT_MAX_TOTAL_RUN_DATABASES_SIZE = 1000000000   # 1GB
-MAX_TOTAL_RUN_DATABASES_SIZE = os.getenv("MAX_TOTAL_RUN_DATABASES_SIZE", DEFAULT_MAX_TOTAL_RUN_DATABASES_SIZE)
+ENABLE_RUN_DATABASE_LIMIT = os_util.parse_boolean_environment_var("EXIT_BEFORE_TENTACLES_AUTO_REINSTALL", "True")
+MAX_TOTAL_RUN_DATABASES_SIZE = int(os.getenv("MAX_TOTAL_RUN_DATABASES_SIZE", DEFAULT_MAX_TOTAL_RUN_DATABASES_SIZE))
 
 # Channel
 OCTOBOT_CHANNEL = "OctoBot"

@@ -25,6 +25,7 @@ import octobot_commons.configuration as configuration
 import octobot_commons.signals as signals
 import octobot_commons.databases as databases
 import octobot_commons.tree as commons_tree
+import octobot_commons.os_clock_sync as os_clock_sync
 
 import octobot_services.api as service_api
 import octobot_trading.api as trading_api
@@ -107,6 +108,7 @@ class OctoBot:
 
     async def initialize(self):
         self.stopped = asyncio.Event()
+        await self._ensure_clock()
         self.community_auth.init_account()
         self._log_config()
         await self.initializer.create(True)
@@ -174,6 +176,7 @@ class OctoBot:
             await self.exchange_producer.stop()
             await self.community_auth.stop()
             await self.service_feed_producer.stop()
+            await os_clock_sync.stop_clock_synchronizer()
             service_api.stop_services()
             await self.interface_producer.stop()
             await databases.close_bot_storage(self.bot_id)
@@ -189,9 +192,13 @@ class OctoBot:
     def _init_community(self):
         self.community_handler = community.CommunityManager(self.octobot_api)
 
+    async def _ensure_clock(self):
+        if trading_api.is_trader_enabled_in_config(self.config):
+            await os_clock_sync.start_clock_synchronizer()
+
     def _log_config(self):
         exchanges = [
-            f"{exchange}[{config.get(commons_constants.CONFIG_EXCHANGE_TYPE, commons_constants.CONFIG_EXCHANGE_TYPE)}]"
+            f"{exchange}[{config.get(commons_constants.CONFIG_EXCHANGE_TYPE, commons_constants.CONFIG_EXCHANGE_SPOT)}]"
             for exchange, config in self.config[commons_constants.CONFIG_EXCHANGES].items()
             if config.get(commons_constants.CONFIG_ENABLED_OPTION, True)
         ]
