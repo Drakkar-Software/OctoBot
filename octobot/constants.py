@@ -31,7 +31,8 @@ VERSION = f"{SHORT_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 LONG_VERSION = f"{SHORT_VERSION}{PATCH_VERSION}{VERSION_DEV_PHASE}{VERSION_PHASE}"
 
 # load environment variables from .env file if exists
-dotenv.load_dotenv(verbose=False)
+DOTENV_PATH = os.getenv("DOTENV_PATH", os.path.curdir)
+dotenv.load_dotenv(os.path.join(DOTENV_PATH, ".env"), verbose=False)
 
 # OctoBot urls
 OCTOBOT_WEBSITE_URL = os.getenv("OCTOBOT_ONLINE_URL", "https://www.octobot.online")
