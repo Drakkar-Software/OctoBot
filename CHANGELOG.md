@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [0.4.16] - 2022-10-23
+### Updated
+- Copy trading configuration
+- CCXT configuration via environment variables
+### Fixed
+- Dip Analyser configuration 
+- Bitget & Coinex order handling
+
 ## [0.4.15] - 2022-10-23
 ### Fixed
 - Copy trading
