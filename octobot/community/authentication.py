@@ -446,7 +446,7 @@ class CommunityAuthentication(authentication.Authenticator):
         return self._get_value_in_config(constants.CONFIG_COMMUNITY_TOKEN)
 
     def _get_saved_gql_bot_id(self):
-        return self._get_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID)
+        return constants.COMMUNITY_BOT_ID or self._get_value_in_config(constants.CONFIG_COMMUNITY_BOT_ID)
 
     def _save_value_in_config(self, key, value):
         if self.edited_config is not None:
