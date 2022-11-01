@@ -522,7 +522,7 @@ class CommunityAuthentication(authentication.Authenticator):
                     self._login_completed.set()
 
     def _ensure_email(self, email):
-        if constants.USER_ACCOUNT_EMAIL is not None and email != constants.USER_ACCOUNT_EMAIL:
+        if constants.USER_ACCOUNT_EMAIL and email != constants.USER_ACCOUNT_EMAIL:
             raise authentication.AuthenticationError("The given email doesn't match the expected user email.")
 
     def _ensure_community_url(self):
