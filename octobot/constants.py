@@ -93,6 +93,7 @@ CONFIG_COMMUNITY_BOT_ID = "bot_id"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 USE_BETA_EARLY_ACCESS = os_util.parse_boolean_environment_var("USE_BETA_EARLY_ACCESS", "False")
 USER_ACCOUNT_EMAIL = os.getenv("USER_ACCOUNT_EMAIL", None)
+COMMUNITY_BOT_ID = os.getenv("COMMUNITY_BOT_ID", None)
 IS_CLOUD_ENV = os_util.parse_boolean_environment_var("IS_CLOUD_ENV", "False")
 
 OCTOBOT_BINARY_PROJECT_NAME = "OctoBot-Binary"
