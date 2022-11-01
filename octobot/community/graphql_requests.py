@@ -65,7 +65,7 @@ mutation CreateBot($isSelfHosted: Boolean) {
 """ + _INNER_BOT_QUERY + """
     }
 }
-    """, {"_id": is_self_hosted}
+    """, {"isSelfHosted": is_self_hosted}
 
 
 def create_bot_device_query(bot_id) -> (str, dict):
