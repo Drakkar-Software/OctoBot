@@ -89,7 +89,6 @@ class CommunityMQTTFeed(abstract_feed.AbstractFeed):
     def _reset(self):
         self._connected_at_least_once = False
         self._subscription_attempts = 0
-        self._subscription_topics = set()
         self._connect_task = None
         self._valid_auth = True
 
